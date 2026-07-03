@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Validator health metrics: agreement rates, validation counts, amendment status, UNL expiry, server state tracking, and ledger close rates. Requires push_metrics.py or equivalent OTel metric source.",
+  "description": "Validator agreement rates, validation counts, amendment and UNL status, server state tracking, and ledger close rate.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -23,7 +23,7 @@
     },
     {
       "title": "Agreement % (1h)",
-      "description": "Validation agreement percentage over the last 1 hour. Values below 80% indicate the validator is frequently disagreeing with the network consensus.",
+      "description": "**What:** Share of ledgers over the last hour where this validator agreed with the network consensus.\n**How it's computed:** Instantaneous gauge reading of the 1-hour agreement percentage.\n**Reading it:** Higher is better; green at 95%+, yellow from 80%, red below.\n**Healthy range:** 95-100%.\n**Watch for:** Values below 80%, meaning the validator frequently disagrees with consensus.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerValidationAgreementGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -74,7 +74,7 @@
     },
     {
       "title": "Agreement % (24h)",
-      "description": "Validation agreement percentage over the last 24 hours. A sustained value below 90% may indicate configuration drift or network partition.",
+      "description": "**What:** Share of ledgers over the last 24 hours where this validator agreed with consensus.\n**How it's computed:** Instantaneous gauge reading of the 24-hour agreement percentage.\n**Reading it:** Higher is better; a smoother, longer-term view than the 1h stat.\n**Healthy range:** 95-100%.\n**Watch for:** A sustained dip below 90%, which can indicate configuration drift or a network partition.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerValidationAgreementGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -125,7 +125,7 @@
     },
     {
       "title": "Agreements vs Missed (1h)",
-      "description": "Comparison of successful agreements and missed validations over 1 hour. High missed count indicates the validator is not participating in consensus rounds.",
+      "description": "**What:** Counts of agreed versus missed validations over the last hour.\n**How it's computed:** Instantaneous gauge readings of the 1-hour agreed and missed counts.\n**Reading it:** Agreements should dominate; missed should be small.\n**Healthy range:** Missed near 0.\n**Watch for:** A high missed count, meaning the validator is skipping consensus rounds.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerValidationAgreementGauge",
       "type": "bargauge",
       "gridPos": {
         "h": 8,
@@ -191,7 +191,7 @@
     },
     {
       "title": "Agreements vs Missed (24h)",
-      "description": "Comparison of successful agreements and missed validations over 24 hours. Provides a longer-term view of validator reliability.",
+      "description": "**What:** Counts of agreed versus missed validations over the last 24 hours.\n**How it's computed:** Instantaneous gauge readings of the 24-hour agreed and missed counts.\n**Reading it:** Agreements should dominate over the full day.\n**Healthy range:** Missed a small fraction of agreements.\n**Watch for:** A growing missed share, signalling longer-term reliability problems.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerValidationAgreementGauge",
       "type": "bargauge",
       "gridPos": {
         "h": 8,
@@ -269,7 +269,7 @@
     },
     {
       "title": "Validation Rate",
-      "description": "Rate of validations sent per minute (5m average). Indicates how actively this node is producing validations. Expected ~10-12/min on mainnet (one per ledger close).",
+      "description": "**What:** Validations this node sends per minute.\n**How it's computed:** Per-second rate of the sent-validations counter over 5 minutes, scaled to per minute.\n**Reading it:** Should track the ledger close cadence; roughly one validation per closed ledger.\n**Healthy range:** About 10-12 per minute on mainnet.\n**Watch for:** A drop toward zero, meaning the validator has stopped participating.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:incrementValidationsSent (caller src/xrpld/app/consensus/RCLConsensus.cpp)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -318,7 +318,7 @@
     },
     {
       "title": "Validations Checked Rate",
-      "description": "Rate of validations checked (received from peers) per minute (5m average). Indicates how many validations from the network are being processed.",
+      "description": "**What:** Validations received from peers and checked per minute.\n**How it's computed:** Per-second rate of the checked-validations counter over 5 minutes, scaled to per minute.\n**Reading it:** Reflects how much validation traffic the network is delivering to this node.\n**Healthy range:** Workload-dependent; scales with trusted validator count.\n**Watch for:** A sudden collapse, which suggests peer connectivity loss or network isolation.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:incrementValidationsChecked (caller src/xrpld/app/misc/NetworkOPs.cpp)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -351,7 +351,7 @@
     },
     {
       "title": "Amendment Blocked",
-      "description": "Whether the node is amendment-blocked (1=blocked, 0=normal). An amendment-blocked node cannot validate and needs a software upgrade.",
+      "description": "**What:** Whether the node is amendment-blocked (OK/BLOCKED).\n**How it's computed:** Instantaneous gauge reading of the amendment-blocked flag.\n**Reading it:** OK is healthy; BLOCKED means an enabled amendment is unsupported by this build.\n**Healthy range:** OK.\n**Watch for:** A BLOCKED state, which halts validation and requires a software upgrade.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerValidatorHealthGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -416,7 +416,7 @@
     },
     {
       "title": "UNL Expiry (days)",
-      "description": "Days until the UNL (Unique Node List) expires. A value below 7 requires attention to renew the UNL before it expires and the validator stops trusting peers.",
+      "description": "**What:** Days remaining until the current UNL (trusted validator list) expires.\n**How it's computed:** Instantaneous gauge reading of days-to-expiry.\n**Reading it:** Higher is safer; green at 30+, yellow under 7, red at expiry.\n**Healthy range:** 30+ days.\n**Watch for:** Fewer than 7 days, after which the node loses its trusted validator set if not renewed.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerValidatorHealthGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -465,7 +465,7 @@
     },
     {
       "title": "UNL Blocked",
-      "description": "Whether the node's UNL (Unique Node List) is blocked (1=blocked, 0=normal). A UNL-blocked node cannot determine validator trust and may stop participating in consensus.",
+      "description": "**What:** Whether the node's UNL is blocked (OK/BLOCKED).\n**How it's computed:** Instantaneous gauge reading of the UNL-blocked flag.\n**Reading it:** OK is healthy; BLOCKED means validator trust cannot be established.\n**Healthy range:** OK.\n**Watch for:** A BLOCKED state, which can stop the node participating in consensus.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerValidatorHealthGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -530,7 +530,7 @@
     },
     {
       "title": "Agreement/Missed Counters (Rate)",
-      "description": "Rate of cumulative validation agreements and misses per minute. These monotonic counters complement the rolling window percentages above.",
+      "description": "**What:** Rate of cumulative agreement and missed-validation counters per minute.\n**How it's computed:** Per-second rate of each monotonic counter over 5 minutes, scaled to per minute.\n**Reading it:** Agreements should dominate; the missed line should stay low.\n**Healthy range:** Missed rate near 0.\n**Watch for:** A rising missed rate, complementing the windowed agreement percentages above.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerValidationTotalsCounters",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -610,7 +610,7 @@
     },
     {
       "title": "Validation Quorum",
-      "description": "Minimum number of trusted validations needed to declare a ledger validated. Tracks the current quorum requirement from the validator list.",
+      "description": "**What:** Minimum number of trusted validations required to declare a ledger fully validated.\n**How it's computed:** Instantaneous gauge reading of the current quorum requirement.\n**Reading it:** Tracks the quorum derived from the active validator list; changes when the list changes.\n**Healthy range:** Stable at the network-appropriate value.\n**Watch for:** An unexpected drop, which can weaken consensus safety guarantees.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerValidatorHealthGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -643,7 +643,7 @@
     },
     {
       "title": "State Value Timeline",
-      "description": "Numeric encoding of the server operating state over time. Useful for correlating state changes with other metrics.",
+      "description": "**What:** Numeric encoding of the server operating state (disconnected, connected, syncing, tracking, full) over time.\n**How it's computed:** Instantaneous gauge reading of the encoded state value.\n**Reading it:** A flat line at the full-operation state is healthy; steps show transitions.\n**Healthy range:** Steady at the highest (full) state.\n**Watch for:** Frequent transitions, useful for correlating state flapping with other metrics.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerStateTrackingGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -688,7 +688,7 @@
     },
     {
       "title": "Time in Current State",
-      "description": "How long the server has been in its current operating state, in seconds. Short durations with frequent changes indicate instability.",
+      "description": "**What:** How long the server has held its current operating state, in seconds.\n**How it's computed:** Instantaneous gauge reading of the time-in-state value.\n**Reading it:** Long, growing durations indicate stability.\n**Healthy range:** Long and increasing while in the full-operation state.\n**Watch for:** Short durations resetting often, a sign of state instability; this value may read 0 where not yet populated.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerStateTrackingGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -721,7 +721,7 @@
     },
     {
       "title": "State Changes Rate",
-      "description": "Rate of server state changes per hour. A healthy node should have near-zero state changes. Frequent transitions indicate network or configuration issues.",
+      "description": "**What:** Rate of server operating-state changes per hour.\n**How it's computed:** Per-second rate of the state-change counter over a 1-hour window.\n**Reading it:** Near zero is healthy; each increment is one state transition.\n**Healthy range:** Near 0 changes per hour.\n**Watch for:** Frequent transitions, which point to network instability or configuration problems.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:incrementStateChanges (caller src/xrpld/app/misc/NetworkOPs.cpp)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -770,7 +770,7 @@
     },
     {
       "title": "Ledgers Closed Rate",
-      "description": "Rate of ledgers closed per minute (5m average). On mainnet, expect roughly 10-12/min. Deviations indicate consensus timing issues.",
+      "description": "**What:** Ledgers closed per minute by this node.\n**How it's computed:** Per-second rate of the ledgers-closed counter over 5 minutes, scaled to per minute.\n**Reading it:** Should match the network's steady close cadence.\n**Healthy range:** About 10-12 per minute on mainnet.\n**Watch for:** Deviation from the expected cadence, which indicates consensus timing trouble or the node falling behind.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:incrementLedgersClosed (caller src/xrpld/app/consensus/RCLConsensus.cpp)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -819,7 +819,7 @@
     },
     {
       "title": "Agreement % (7d)",
-      "description": "Validation agreement percentage over the trailing 7 days \u2014 the long-term reliability window used by external validator dashboards. Complements the 1h/24h stats.",
+      "description": "**What:** Share of ledgers over the trailing 7 days where this validator agreed with consensus.\n**How it's computed:** Instantaneous gauge reading of the 7-day agreement percentage.\n**Reading it:** The long-term reliability window; higher is better.\n**Healthy range:** 95-100%.\n**Watch for:** A gradual decline, which reflects chronic rather than transient disagreement.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerValidationAgreementGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -870,7 +870,7 @@
     },
     {
       "title": "Agreements vs Missed (7d)",
-      "description": "Agreed vs missed validation counts over the trailing 7 days. A rising missed trend signals sustained validator unreliability.",
+      "description": "**What:** Agreed versus missed validation counts over the trailing 7 days.\n**How it's computed:** Instantaneous gauge readings of the 7-day agreed and missed counts.\n**Reading it:** Agreements should dominate across the week.\n**Healthy range:** Missed a small fraction of agreements.\n**Watch for:** A rising missed trend, signalling sustained validator unreliability.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerValidationAgreementGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,

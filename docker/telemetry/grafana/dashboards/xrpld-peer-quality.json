@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Peer network quality metrics: latency, divergence, version distribution, upgrade recommendations, disconnects, and connection direction balance. Requires push_metrics.py or equivalent OTel metric source.",
+  "description": "Peer connection quality: latency, divergence, version distribution and upgrade guidance, resource disconnects, and inbound/outbound balance.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "P90 Peer Latency",
-      "description": "90th percentile peer-to-peer latency in milliseconds over time. High latency indicates network congestion or geographically distant peers.",
+      "description": "**What:** 90th-percentile round-trip latency to connected peers, in milliseconds.\n**How it's computed:** Instantaneous gauge reading of the p90 peer latency.\n**Reading it:** Lower is better; green under 200ms, yellow to 500ms, red above.\n**Healthy range:** Under 200ms.\n**Watch for:** Rising latency, which points to network congestion or geographically distant, poorly performing peers.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerPeerQualityGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -72,7 +72,7 @@
     },
     {
       "title": "Insane/Diverged Peers",
-      "description": "Count of peers whose ledger state is considered insane or diverged from the network. Non-zero values suggest those peers are misbehaving or on a fork.",
+      "description": "**What:** Count of connected peers whose ledger state is insane or diverged from the network.\n**How it's computed:** Instantaneous gauge reading of the diverged-peer count.\n**Reading it:** Zero is healthy; any count means those peers disagree on ledger state.\n**Healthy range:** 0 diverged peers.\n**Watch for:** A persistent non-zero count, which can indicate peers on a fork or misbehaving/malicious peers.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerPeerQualityGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -121,7 +121,7 @@
     },
     {
       "title": "Higher Version Peers %",
-      "description": "Percentage of connected peers running a higher rippled version. A high percentage suggests this node should be upgraded.",
+      "description": "**What:** Percentage of connected peers running a newer rippled version than this node.\n**How it's computed:** Instantaneous gauge reading of the higher-version peer percentage.\n**Reading it:** A high percentage suggests this node is behind and should be upgraded.\n**Healthy range:** Under 30%.\n**Watch for:** A majority of peers on a newer version, a strong upgrade signal.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerPeerQualityGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -172,7 +172,7 @@
     },
     {
       "title": "Upgrade Recommended",
-      "description": "Whether an upgrade is recommended based on peer version analysis (1=recommended, 0=not needed). Triggered when a majority of peers run a newer version.",
+      "description": "**What:** A flag indicating whether an upgrade is advised based on peer version analysis (Yes/No).\n**How it's computed:** Instantaneous gauge reading of the upgrade-recommended flag.\n**Reading it:** No is healthy; Yes means most peers run a newer version.\n**Healthy range:** No.\n**Watch for:** A Yes state, indicating the node risks falling out of step with the network.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerPeerQualityGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -237,7 +237,7 @@
     },
     {
       "title": "Resource Disconnects",
-      "description": "Cumulative peer disconnections due to resource limit violations over time. Rising values indicate aggressive or misbehaving peers being dropped.",
+      "description": "**What:** Cumulative count of peers dropped for exceeding resource (load) limits.\n**How it's computed:** Instantaneous gauge reading of the resource-disconnect total over time.\n**Reading it:** A flat line is healthy; a rising line means peers are being dropped for overuse.\n**Healthy range:** Flat / near constant.\n**Watch for:** A steep climb, which flags aggressive or misbehaving peers being shed as backpressure.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerServerInfoGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -282,7 +282,7 @@
     },
     {
       "title": "Inbound vs Outbound Peers",
-      "description": "Comparison of active inbound and outbound peer connections. A healthy node should have a balanced mix. All-inbound may indicate NAT/firewall issues preventing outbound connections.",
+      "description": "**What:** Active inbound versus outbound peer connection counts.\n**How it's computed:** Instantaneous gauge readings of active inbound and outbound peer counts.\n**Reading it:** A balanced mix is healthy for connectivity and resilience.\n**Healthy range:** A mix of both; some outbound connections present.\n**Watch for:** All-inbound with no outbound, which usually means NAT or firewall issues block outbound peering.\n**Source:** src/xrpld/peerfinder/detail/PeerfinderManager.cpp:Logic Stats ctor",
       "type": "bargauge",
       "gridPos": {
         "h": 8,
@@ -363,7 +363,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["peer", "network"],
+  "tags": ["network", "peer"],
   "templating": {
     "list": [
       {
