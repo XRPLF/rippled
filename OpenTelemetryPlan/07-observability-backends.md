@@ -141,7 +141,7 @@ flowchart TB
 **Reading the diagram:**
 
 - **Validator / Stock Nodes**: All xrpld nodes emit trace data via OTLP. Validators and stock nodes are grouped separately because they may reside in different network zones.
-- **Collector Cluster (DC1, DC2)**: Regional collectors receive OTLP from nodes in their datacenter, apply processing (sampling, enrichment), and fan out to multiple backends.
+- **Collector Cluster (DC1, DC2)**: Regional collectors receive OTLP from nodes in their datacenter, apply processing (sampling, enrichment), and fan out to multiple backends. Enrichment includes deployment-tier tagging: each collector stamps `deployment.environment` and (as a fallback) `xrpl.network.type` so one Grafana stack can filter data from many collectors by tier.
 - **Storage Backends**: Tempo and Elastic provide queryable trace storage; S3/GCS Archive provides long-term cold storage for compliance or post-incident analysis.
 - **Grafana Dashboards**: The single visualization layer that queries both Tempo and Elastic, giving operators a unified view of all traces.
 - **Data flow direction**: Nodes → Collectors → Storage → Grafana. Each arrow represents a network hop; minimizing collector-to-backend hops reduces latency.
