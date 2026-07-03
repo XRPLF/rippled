@@ -118,7 +118,12 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
             // Unreachable: reaching here means sfSponsor is absent, which is already checked above,
             // and preflight1Sponsor already rejects sfSponsorFlags present without sfSponsor with
             // temINVALID_FLAG. Keep this as a defensive check.
-            return temINVALID_FLAG;  // LCOV_EXCL_LINE
+            // LCOV_EXCL_START
+            UNREACHABLE(
+                "xrpl::SponsorshipTransfer::preflight : sfSponsorFlags present without sfSponsor "
+                "when ending sponsorship");
+            return temINVALID_FLAG;
+            // LCOV_EXCL_STOP
         }
 
         if (ctx.tx.isFieldPresent(sfSponsee) &&
@@ -156,8 +161,6 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         return newSponsorSleExpected.error();  // LCOV_EXCL_LINE
     auto const newSponsorSle = *newSponsorSleExpected;
 
-    bool const isObjectSponsor = objectID.has_value();
-
     auto const account = ctx.tx[sfAccount];
     auto const sponseeID = ctx.tx[~sfSponsee].value_or(account);
     auto const sponseeSle = ctx.view.read(keylet::account(sponseeID));
@@ -179,24 +182,24 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
     SLE::const_pointer targetSle = sponseeSle;
     auto sponsorField = &sfSponsor;
 
-    if (isObjectSponsor)
+    if (objectID.has_value())
     {
-        auto const sle = ctx.view.read(keylet::unchecked(*objectID));
-        if (!sle)
+        auto const objectSle = ctx.view.read(keylet::unchecked(*objectID));
+        if (!objectSle)
             return tecNO_ENTRY;
 
-        if (!isLedgerEntrySupportedBySponsorship(sle))
+        if (!isLedgerEntrySupportedBySponsorship(objectSle))
             return tecNO_PERMISSION;
 
-        auto const owner = getLedgerEntryOwner(ctx.view, sle, sponseeID);
+        auto const owner = getLedgerEntryOwner(ctx.view, objectSle, sponseeID);
         if (!owner.has_value() || owner.value() != sponseeID)
             return tecNO_PERMISSION;
 
         // Object transfer: the target is the object, and its sponsor field
         // depends on the object type, a RippleState stores the sponsor in
         // sfHighSponsor/sfLowSponsor, while other object type uses sfSponsor.
-        targetSle = sle;
-        sponsorField = &getLedgerEntrySponsorField(sle, owner.value());
+        targetSle = objectSle;
+        sponsorField = &getLedgerEntrySponsorField(objectSle, owner.value());
     }
 
     bool const isSponsored = targetSle->isFieldPresent(*sponsorField);
