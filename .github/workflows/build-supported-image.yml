@@ -37,9 +37,7 @@ env:
   # The supported .deb artifact uploaded by reusable-package.yml:
   # <artifact_name>-pkg, where artifact_name carries the -supported suffix.
   DEB_ARTIFACT: xrpld-ubuntu-gcc-release-amd64-supported-pkg
-  IMAGE_NAME: ghcr.io/xrplf/xrpld/supported
-  SOURCE_RUN_ID: ${{ github.event.workflow_run.id || inputs.trigger_run_id }}
-
+  SOURCE_RUN_ID: ${{ github.event.workflow_run.id || github.event.inputs.trigger_run_id }}
 jobs:
   image:
     # Only for successful Trigger runs (workflow_run), and only on the canonical
