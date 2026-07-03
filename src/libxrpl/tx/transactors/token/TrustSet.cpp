@@ -332,6 +332,10 @@ TrustSet::doApply()
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
 
+    auto getSponsor = [&sponsorSle = *sponsorSle, this](AccountID const& account) {
+        return (sponsorSle && account == accountID_) ? sponsorSle : SLE::pointer();
+    };
+
     // The "free-tier" shortcut (ownerCount < 2) only applies when there is no sponsor.
     // With any sponsor on the tx, the sponsor must cover the reserve (via balance or
     // prefunded budget), so the reserve check always runs.
@@ -533,8 +537,7 @@ TrustSet::doApply()
 
         if (bLowReserveSet && !bLowReserved)
         {
-            SLE::pointer const lowSponsor =
-                *sponsorSle && uLowAccountID == accountID_ ? *sponsorSle : SLE::pointer();
+            SLE::pointer const lowSponsor = getSponsor(uLowAccountID);
 
             // should be checked PreFunded Sponsor before increaseOwnerCount()
             // For PreFunded sponsors, we need to check if there are sufficient reserves before
@@ -570,8 +573,7 @@ TrustSet::doApply()
 
         if (bHighReserveSet && !bHighReserved)
         {
-            SLE::pointer const highSponsor =
-                *sponsorSle && uHighAccountID == accountID_ ? *sponsorSle : SLE::pointer();
+            SLE::pointer const highSponsor = getSponsor(uHighAccountID);
 
             // should be checked PreFunded Sponsor before increaseOwnerCount()
             // For PreFunded sponsors, we need to check if there are sufficient reserves before
