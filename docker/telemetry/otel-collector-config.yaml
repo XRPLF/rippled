@@ -167,5 +167,5 @@ service:
     # batches entries, and exports to Loki for log-trace correlation.
     logs:
       receivers: [filelog]
-      processors: [resource/logs, batch]
+      processors: [resource/logs, resource/tier, batch]
       exporters: [otlphttp/loki]
