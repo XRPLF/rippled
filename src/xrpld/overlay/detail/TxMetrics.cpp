@@ -14,9 +14,9 @@
 namespace xrpl::metrics {
 
 void
-TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)
+TxMetrics::addMetrics(protocol::MessageType type, std::uint64_t val)
 {
-    auto add = [&](auto& m, std::uint32_t val) {
+    auto add = [&](auto& m, std::uint64_t val) {
         std::scoped_lock const lock(mutex);
         m.addMetrics(val);
     };
@@ -60,20 +60,20 @@ TxMetrics::addMetrics(std::uint32_t missing)
 }
 
 void
-MultipleMetrics::addMetrics(std::uint32_t val2)
+MultipleMetrics::addMetrics(std::uint64_t val2)
 {
     addMetrics(1, val2);
 }
 
 void
-MultipleMetrics::addMetrics(std::uint32_t val1, std::uint32_t val2)
+MultipleMetrics::addMetrics(std::uint64_t val1, std::uint64_t val2)
 {
     m1.addMetrics(val1);
     m2.addMetrics(val2);
 }
 
 void
-SingleMetrics::addMetrics(std::uint32_t val)
+SingleMetrics::addMetrics(std::uint64_t val)
 {
     using namespace std::chrono_literals;
     accum += val;
