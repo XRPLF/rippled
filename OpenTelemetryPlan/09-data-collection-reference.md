@@ -580,11 +580,19 @@ The Consensus Health dashboard includes 5 close-time panels added in Phase 4:
 
 **Template variables** (Consensus Health dashboard):
 
-| Variable                | Source Attribute                      | Description                                                              |
-| ----------------------- | ------------------------------------- | ------------------------------------------------------------------------ |
-| `$node`                 | `exported_instance`                   | Filter by xrpld node instance                                            |
-| `$close_time_correct`   | `xrpl_consensus_close_time_correct`   | Filter by close time correctness (`true` / `false`)                      |
-| `$resolution_direction` | `xrpl_consensus_resolution_direction` | Filter by resolution direction (`increased` / `decreased` / `unchanged`) |
+| Variable                  | Source Attribute                      | Description                                                              |
+| ------------------------- | ------------------------------------- | ------------------------------------------------------------------------ |
+| `$node`                   | `exported_instance`                   | Filter by xrpld node instance                                            |
+| `$service_name`           | `service_name`                        | Filter by service (`service.name`, e.g. `xrpld`)                         |
+| `$deployment_environment` | `deployment_environment`              | Filter by deployment tier (`local` / `test` / `ci` / `prod`)             |
+| `$xrpl_network_type`      | `xrpl_network_type`                   | Filter by network (`mainnet` / `testnet` / `devnet`)                     |
+| `$close_time_correct`     | `xrpl_consensus_close_time_correct`   | Filter by close time correctness (`true` / `false`)                      |
+| `$resolution_direction`   | `xrpl_consensus_resolution_direction` | Filter by resolution direction (`increased` / `decreased` / `unchanged`) |
+
+The `$service_name`, `$deployment_environment`, and `$xrpl_network_type`
+variables are present on all dashboards; each variable name matches its
+Prometheus label. See [telemetry-runbook.md](../docs/telemetry-runbook.md)
+"Deployment Tiers" for how the tier attributes are set and reach metrics.
 
 ### 3.4 Accessing the Dashboards
 
