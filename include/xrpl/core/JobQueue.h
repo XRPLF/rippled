@@ -159,11 +159,10 @@ public:
 
         @return true if jobHandler added to queue.
     */
-    template <
-        typename JobHandler,
-        typename = std::enable_if_t<std::is_same_v<decltype(std::declval<JobHandler&&>()()), void>>>
+    template <typename JobHandler>
     bool
     addJob(JobType type, std::string const& name, JobHandler&& jobHandler)
+        requires(std::is_same_v<decltype(std::declval<JobHandler &&>()()), void>)
     {
         if (auto optionalCountedJob = jobCounter_.wrap(std::forward<JobHandler>(jobHandler)))
         {

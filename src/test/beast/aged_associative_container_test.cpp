@@ -408,8 +408,9 @@ public:
     checkMapContents(Container& c, Values const& v);
 
     template <class Container, class Values>
-    std::enable_if_t<!(Container::is_map::value && !Container::is_multi::value)>
+    void
     checkMapContents(Container, Values const&)
+        requires(!(Container::is_map::value && !Container::is_multi::value))
     {
     }
 
@@ -419,8 +420,9 @@ public:
     checkUnorderedContentsRefRef(C&& c, Values const& v);
 
     template <class C, class Values>
-    std::enable_if_t<!std::remove_reference_t<C>::is_unordered::value>
+    void
     checkUnorderedContentsRefRef(C&&, Values const&)
+        requires(!std::remove_reference_t<C>::is_unordered::value)
     {
     }
 
@@ -486,8 +488,9 @@ public:
     testReverseIterator();
 
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<IsUnordered>
+    void
     testReverseIterator()
+        requires IsUnordered
     {
     }
 
@@ -535,8 +538,9 @@ public:
     testArrayCreate();
 
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<!IsMap || IsMulti>
+    void
     testArrayCreate()
+        requires(!IsMap || IsMulti)
     {
     }
 
@@ -579,8 +583,9 @@ public:
     testCompare();
 
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<IsUnordered>
+    void
     testCompare()
+        requires IsUnordered
     {
     }
 

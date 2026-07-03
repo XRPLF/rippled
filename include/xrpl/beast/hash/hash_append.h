@@ -200,26 +200,29 @@ struct IsContiguouslyHashable<T[N], HashAlgorithm>
 // scalars
 
 template <class Hasher, class T>
-inline std::enable_if_t<IsContiguouslyHashable<T, Hasher>::value>
+inline void
 hash_append(Hasher& h, T const& t) noexcept
+    requires IsContiguouslyHashable<T, Hasher>::value
 {
     // NOLINTNEXTLINE(bugprone-sizeof-expression)
     h(static_cast<void const*>(std::addressof(t)), sizeof(t));
 }
 
 template <class Hasher, class T>
-inline std::enable_if_t<
-    !IsContiguouslyHashable<T, Hasher>::value &&
-    (std::is_integral_v<T> || std::is_pointer_v<T> || std::is_enum_v<T>)>
+inline void
 hash_append(Hasher& h, T t) noexcept
+    requires(
+        !IsContiguouslyHashable<T, Hasher>::value &&
+        (std::is_integral_v<T> || std::is_pointer_v<T> || std::is_enum_v<T>))
 {
     detail::reverseBytes(t);
     h(std::addressof(t), sizeof(t));
 }
 
 template <class Hasher, class T>
-inline std::enable_if_t<std::is_floating_point_v<T>>
+inline void
 hash_append(Hasher& h, T t) noexcept
+    requires(std::is_floating_point_v<T>)
 {
     if (t == 0)
         t = 0;
