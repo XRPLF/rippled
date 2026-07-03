@@ -10,7 +10,7 @@
   "panels": [
     {
       "title": "RPC Request Rate by Command",
-      "description": "Per-second rate of RPC command executions, broken down by command name (e.g. server_info, submit). Calculated as rate(traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}) over a 5m window, grouped by the command span attribute.",
+      "description": "**What:** How many times each RPC command runs per second.\n**How it's computed:** Per-second rate of command executions over 5 minutes, grouped by command name and node.\n**Reading it:** Compare bars/lines across commands to see which endpoints drive load.\n**Healthy range:** Workload-dependent; dominated by whichever commands clients call most.\n**Watch for:** A single command spiking far above its norm, consistent with a client hammering one endpoint.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -49,7 +49,7 @@
     },
     {
       "title": "RPC Latency P95 by Command",
-      "description": "95th percentile response time for each RPC command. Computed from the spanmetrics duration histogram using histogram_quantile(0.95) over rpc.command.* spans, grouped by command. High values indicate slow commands that may need optimization.",
+      "description": "**What:** The 95th-percentile response time for each RPC command.\n**How it's computed:** 95th-percentile of per-command execution durations over 5 minutes, grouped by command and node.\n**Reading it:** Lower is better; watch the slowest commands.\n**Healthy range:** Fast lookups a few ms; heavy queries tens to hundreds of ms. Workload-dependent.\n**Watch for:** A command whose latency climbs steadily, pointing to an expensive or degrading query path.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -88,7 +88,7 @@
     },
     {
       "title": "RPC Error Rate",
-      "description": "Percentage of RPC commands that completed with an error status, per command. Calculated as (error calls / total calls) * 100, where errors have status_code=STATUS_CODE_ERROR. Thresholds: green < 1%, yellow 1-5%, red > 5%.",
+      "description": "**What:** The percentage of each command's calls that finished with an error.\n**How it's computed:** Error calls divided by total calls per command over 5 minutes, expressed as a percent.\n**Reading it:** Green under 1%, yellow 1-5%, red above 5%.\n**Healthy range:** Below 1% per command in normal operation.\n**Watch for:** A command sitting red, indicating malformed input, overload, or a broken handler.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
       "type": "bargauge",
       "gridPos": {
         "h": 8,
@@ -136,7 +136,7 @@
     },
     {
       "title": "RPC Latency Heatmap",
-      "description": "Distribution of RPC command response times across histogram buckets. Shows the density of requests at each latency level over time. Each cell represents the count of requests that fell into that duration bucket in a 5m window. Useful for spotting bimodal latency patterns.",
+      "description": "**What:** The full distribution of RPC response times over the window.\n**How it's computed:** Counts of requests in each latency band per 5-minute window, shown as color density.\n**Reading it:** A tight low band is healthy; multiple bands mean mixed fast/slow requests.\n**Healthy range:** Most mass in the low-latency bands; workload-dependent.\n**Watch for:** A distinct high-latency cluster (bimodal behavior) that percentiles alone would hide.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
       "type": "heatmap",
       "gridPos": {
         "h": 8,
@@ -172,7 +172,7 @@
     },
     {
       "title": "Overall RPC Throughput",
-      "description": "Aggregate RPC throughput showing two layers of the request pipeline. rpc.http_request is the outer HTTP handler (ServerHandler.cpp) that accepts incoming connections. rpc.process is the inner processing layer (ServerHandler.cpp) that parses and dispatches. A gap between the two indicates requests being queued or rejected before processing.",
+      "description": "**What:** Two layers of the request pipeline: connections accepted by the HTTP handler versus requests parsed and dispatched.\n**How it's computed:** Per-second rates of the outer request-accept layer and the inner processing layer over 5 minutes, per node.\n**Reading it:** The two lines should track each other closely.\n**Healthy range:** Workload-dependent; both lines roughly equal.\n**Watch for:** A gap between accept and process, meaning requests are queued or rejected before dispatch.\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp:ServerHandler::processSession; src/xrpld/rpc/detail/ServerHandler.cpp:ServerHandler::processRequest",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -218,7 +218,7 @@
     },
     {
       "title": "RPC Success vs Error",
-      "description": "Aggregate rate of successful vs failed RPC commands across all command types. Success = status_code UNSET (OpenTelemetry default for OK spans). Error = status_code STATUS_CODE_ERROR. A sustained error rate warrants investigation via per-command breakdown above.",
+      "description": "**What:** Aggregate rate of successful versus failed RPC commands across all command types.\n**How it's computed:** Per-second rates of ok and errored command completions over 5 minutes, per node.\n**Reading it:** Success should dominate; the error line should stay near the floor.\n**Healthy range:** Error line near zero relative to success; workload-dependent.\n**Watch for:** A sustained error line, which warrants drilling into the per-command breakdown.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -264,7 +264,7 @@
     },
     {
       "title": "Top Commands by Volume",
-      "description": "Top 10 most frequently called RPC commands by total invocation count over the last 5 minutes. Uses topk(10, increase(calls_total)) to rank commands. Helps identify the hottest API endpoints driving load on the node.",
+      "description": "**What:** The ten most-called RPC commands over the recent window.\n**How it's computed:** Total invocation counts per command over the last 5 minutes, ranked and capped at ten.\n**Reading it:** The top bars are the hottest endpoints driving node load.\n**Healthy range:** Workload-dependent; typically led by lightweight status queries.\n**Watch for:** An unexpected command dominating the ranking, consistent with automated abuse.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
       "type": "bargauge",
       "gridPos": {
         "h": 8,
@@ -296,7 +296,7 @@
     },
     {
       "title": "WebSocket Message Rate",
-      "description": "Rate of incoming WebSocket RPC messages processed by the server. Sourced from the rpc.ws_message span (ServerHandler.cpp). Only active when clients connect via WebSocket instead of HTTP. Zero is normal if only HTTP RPC is in use.",
+      "description": "**What:** How many RPC messages arrive over WebSocket connections per second.\n**How it's computed:** Per-second rate of processed WebSocket RPC messages over 5 minutes, per node.\n**Reading it:** Non-zero only when clients use WebSocket; zero is normal for HTTP-only nodes.\n**Healthy range:** Workload-dependent; zero if no WebSocket clients.\n**Watch for:** A sudden surge from a single source, consistent with a chatty or abusive subscription client.\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp:ServerHandler::processSession",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -328,7 +328,7 @@
     },
     {
       "title": "RPC Resource Cost by Command",
-      "description": "RPC commands grouped by load_type (resource cost category). High-cost categories like exception_rpc or malformed_rpc indicate problematic clients.",
+      "description": "**What:** RPC traffic grouped by resource-cost category rather than by command name.\n**How it's computed:** Per-second rate of commands over 5 minutes, grouped by load/cost category.\n**Reading it:** Cheap categories should dominate; costly ones should be a small slice.\n**Healthy range:** Workload-dependent; low-cost categories carry most traffic.\n**Watch for:** Growth in high-cost categories such as exception or malformed requests, which point to problematic clients.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -372,7 +372,7 @@
     },
     {
       "title": "Batch vs Single RPC Requests",
-      "description": "Rate of batch RPC requests vs single requests. High batch rate may indicate bulk automation clients.",
+      "description": "**What:** The rate of batched RPC requests versus single-command requests.\n**How it's computed:** Per-second rates of batch and single requests over 5 minutes, per node.\n**Reading it:** Single requests usually dominate; batch is used by bulk clients.\n**Healthy range:** Workload-dependent; batch typically a minority.\n**Watch for:** A batch rate climbing sharply, consistent with bulk automation or amplification attempts.\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp:ServerHandler::processRequest",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -484,7 +484,7 @@
       {
         "name": "node",
         "label": "Node",
-        "description": "Filter by rippled node (service.instance.id \u2014 e.g. Node-1)",
+        "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
         "type": "query",
         "query": "label_values(traces_span_metrics_calls_total, exported_instance)",
         "datasource": {
@@ -529,5 +529,6 @@
   },
   "title": "RPC Performance",
   "uid": "xrpld-rpc-perf",
-  "refresh": "5s"
+  "refresh": "5s",
+  "description": "RPC command traffic, latency, error rates, and request shape for this node."
 }

@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Requires trace_peer=1 in the [telemetry] config section.",
+  "description": "Consensus proposals and validations received from peers, and transaction relay efficiency for this node.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Peer Proposal Receive Rate",
-      "description": "Rate of consensus proposals received from network peers. The peer.proposal.receive span (PeerImp.cpp) fires in onMessage(TMProposeSet) for each incoming proposal. Records xrpl.peer.id (sending peer) and proposal_trusted (whether the proposer is in our UNL). Requires trace_peer=1 in the telemetry config.",
+      "description": "**What:** How many consensus proposals this node receives from peers per second.\n**How it's computed:** Per-second rate of received proposals over 5 minutes, per node.\n**Reading it:** A steady rate roughly proportional to the number of proposing validators.\n**Healthy range:** Workload-dependent; scales with validator count and connectivity.\n**Watch for:** A drop toward zero (isolation from the network) or a sudden flood far above baseline (proposal spam).\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMProposeSet)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -50,7 +50,7 @@
     },
     {
       "title": "Peer Validation Receive Rate",
-      "description": "Rate of ledger validations received from network peers. The peer.validation.receive span (PeerImp.cpp) fires in onMessage(TMValidation) for each incoming validation message. Records xrpl.peer.id (sending peer) and validation_trusted (whether the validator is trusted). Requires trace_peer=1 in the telemetry config.",
+      "description": "**What:** How many ledger validations this node receives from peers per second.\n**How it's computed:** Per-second rate of received validations over 5 minutes, per node.\n**Reading it:** Steady and proportional to the number of validators the node hears from.\n**Healthy range:** Workload-dependent; roughly one burst per validator per closed ledger.\n**Watch for:** A fall toward zero (loss of validator connectivity) or an abnormal surge from untrusted sources.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMValidation)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -89,7 +89,7 @@
     },
     {
       "title": "Proposals Trusted vs Untrusted",
-      "description": "Pie chart showing the ratio of proposals received from trusted validators (in our UNL) vs untrusted validators. Grouped by the proposal_trusted span attribute (true/false). A healthy node connected to a well-configured UNL should see a significant portion of trusted proposals. Note: proposals that fail early validation may not have the trusted attribute set.",
+      "description": "**What:** The share of received proposals that come from trusted (UNL) validators versus everyone else.\n**How it's computed:** Received-proposal rate split by trust status over 5 minutes, shown as proportions.\n**Reading it:** A healthy node with a good UNL shows a solid trusted slice.\n**Healthy range:** Workload-dependent; a meaningful trusted fraction is expected.\n**Watch for:** A collapsing trusted share or a large untrusted volume, consistent with proposal flooding from non-UNL peers.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMProposeSet)",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -121,7 +121,7 @@
     },
     {
       "title": "Validations Trusted vs Untrusted",
-      "description": "Pie chart showing the ratio of validations received from trusted validators (in our UNL) vs untrusted validators. Grouped by the validation_trusted span attribute (true/false). Monitoring this helps detect if the node is receiving validations from the expected set of trusted validators. Note: validations that fail early checks may not have the trusted attribute set.",
+      "description": "**What:** The share of received validations from trusted (UNL) validators versus untrusted sources.\n**How it's computed:** Received-validation rate split by trust status over 5 minutes, shown as proportions.\n**Reading it:** The trusted slice should dominate for a well-configured node.\n**Healthy range:** Workload-dependent; trusted validations expected to be the majority.\n**Watch for:** A shrinking trusted share or a spike of untrusted validations, which can indicate misconfiguration or abuse.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMValidation)",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -153,7 +153,7 @@
     },
     {
       "title": "Reduce-Relay Peer Selection",
-      "description": "Transaction reduce-relay efficiency: peers selected as relay sources vs suppressed, plus peers with the feature disabled. A high suppressed:selected ratio proves reduce-relay is saving bandwidth; a high not_enabled count means stale peers force full relay.",
+      "description": "**What:** How transaction relay picks peers: chosen relay sources, suppressed peers, and peers with the feature off.\n**How it's computed:** Current peer counts in each category (selected, suppressed, not-enabled), per node.\n**Reading it:** A high suppressed-to-selected ratio means relay is saving bandwidth as intended.\n**Healthy range:** Workload-dependent; suppressed should exceed selected in a well-connected mesh.\n**Watch for:** A large not-enabled count (older peers forcing full relay) or selected climbing while suppressed falls.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerReduceRelayGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -206,7 +206,7 @@
     },
     {
       "title": "Reduce-Relay Missing-Tx Frequency",
-      "description": "Frequency of on-demand transaction fetches triggered when a peer is missing a relayed transaction. A rising value means the suppression is too aggressive and the on-demand fetch path is growing.",
+      "description": "**What:** How often a peer has to fetch a transaction it missed because relay suppressed it.\n**How it's computed:** The reported frequency of on-demand missing-transaction fetches, per node.\n**Reading it:** Lower is better; near-flat means suppression is well tuned.\n**Healthy range:** Workload-dependent; a low, stable value is expected.\n**Watch for:** A rising trend, meaning suppression is too aggressive and the on-demand fetch path is growing.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerReduceRelayGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -245,7 +245,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["peer"],
+  "tags": ["network", "peer"],
   "templating": {
     "list": [
       {
@@ -311,7 +311,7 @@
       {
         "name": "node",
         "label": "Node",
-        "description": "Filter by rippled node (service.instance.id \u2014 e.g. Node-1)",
+        "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
         "type": "query",
         "query": "label_values(traces_span_metrics_calls_total, exported_instance)",
         "datasource": {
