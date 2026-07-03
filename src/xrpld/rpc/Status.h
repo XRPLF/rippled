@@ -33,7 +33,7 @@ public:
 
     Status() = default;
 
-    // The enable_if allows only integers (not enums).  Prevents enum narrowing.
+    // The constraint allows only integers (not enums).  Prevents enum narrowing.
     template <typename T>
     Status(T code, Strings d = {})
         requires(std::is_integral_v<T>)

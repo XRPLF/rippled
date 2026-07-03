@@ -411,7 +411,7 @@ TERtoInt(TECcodes v)
 
 //------------------------------------------------------------------------------
 // Template class that is specific to selected ranges of error codes.  The
-// Trait tells std::enable_if which ranges are allowed.
+// Trait tells the requires-clause which ranges are allowed.
 template <template <typename> class Trait>
 class TERSubset
 {
@@ -437,7 +437,7 @@ public:
         return TERSubset(from);
     }
 
-    // Trait tells enable_if which types are allowed for construction.
+    // Trait tells the requires-clause which types are allowed for construction.
     template <typename T>
     constexpr TERSubset(T rhs)
         requires(Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value)
@@ -451,7 +451,7 @@ public:
     constexpr TERSubset&
     operator=(TERSubset&& rhs) = default;
 
-    // Trait tells enable_if which types are allowed for assignment.
+    // Trait tells the requires-clause which types are allowed for assignment.
     template <typename T>
     constexpr auto
     operator=(T rhs) -> TERSubset&

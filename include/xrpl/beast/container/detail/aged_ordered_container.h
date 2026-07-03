@@ -870,13 +870,13 @@ public:
         return emplace<MaybeMulti>(std::forward<Args>(args)...);
     }
 
-    // enable_if prevents erase (reverse_iterator pos) from compiling
+    // The constraint prevents erase (reverse_iterator pos) from compiling
     template <bool IsConst, class Iterator>
     beast::detail::AgedContainerIterator<false, Iterator>
     erase(beast::detail::AgedContainerIterator<IsConst, Iterator> pos)
         requires(!IsBoostReverseIterator<Iterator>::value);
 
-    // enable_if prevents erase (reverse_iterator first, reverse_iterator last)
+    // The constraint prevents erase (reverse_iterator first, reverse_iterator last)
     // from compiling
     template <bool IsConst, class Iterator>
     beast::detail::AgedContainerIterator<false, Iterator>
@@ -894,7 +894,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    // enable_if prevents touch (reverse_iterator pos) from compiling
+    // The constraint prevents touch (reverse_iterator pos) from compiling
     template <bool IsConst, class Iterator>
     void
     touch(beast::detail::AgedContainerIterator<IsConst, Iterator> pos)
@@ -1129,7 +1129,7 @@ public:
     }
 
 private:
-    // enable_if prevents erase (reverse_iterator pos, now) from compiling
+    // The constraint prevents erase (reverse_iterator pos, now) from compiling
     template <bool IsConst, class Iterator>
     void
     touch(
