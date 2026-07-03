@@ -10,7 +10,7 @@
   "panels": [
     {
       "title": "Ledger Build Rate",
-      "description": "Rate at which new ledgers are being built. The ledger.build span (BuildLedger.cpp) wraps the entire buildLedgerImpl() function which creates a new ledger from a parent, applies transactions, flushes SHAMap nodes, and sets the accepted state. Should match the consensus close rate (~0.25/sec on mainnet with ~4s rounds).",
+      "description": "**What:** How often the node constructs a new ledger from its parent, applying transactions and writing state.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should match the consensus close cadence.\n**Healthy range:** About 0.25/s on mainnet (~4s rounds).\n**Watch for:** A drop below the close rate means the node is not keeping up with ledger construction.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -42,7 +42,7 @@
     },
     {
       "title": "Ledger Build Duration",
-      "description": "p95 and p50 duration of ledger builds. Measures the full buildLedgerImpl() call including transaction application, SHAMap flushing, and ledger acceptance. The span records xrpl.ledger.seq as an attribute. Long build times indicate expensive transaction sets or I/O pressure from SHAMap flushes.",
+      "description": "**What:** Time to build a full ledger, including applying transactions, writing state, and finalising acceptance.\n**How it's computed:** 95th and 50th percentile of per-build durations over a 5-minute window, per node.\n**Reading it:** Scales with transaction volume and disk I/O.\n**Healthy range:** Tens to a few hundred milliseconds under typical load.\n**Watch for:** Long build times indicate expensive transaction sets or I/O pressure while flushing state.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -88,7 +88,7 @@
     },
     {
       "title": "Ledger Validation Rate",
-      "description": "Rate at which ledgers pass the validation threshold and are accepted as fully validated. The ledger.validate span (LedgerMaster.cpp) fires in checkAccept() only after the ledger receives sufficient trusted validations (>= quorum). Records xrpl.ledger.seq and validations (the number of validations received).",
+      "description": "**What:** How often ledgers reach the trusted-validation quorum and become fully validated.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should match the build and close rates on a healthy node.\n**Healthy range:** About 0.25/s on mainnet.\n**Watch for:** A shortfall means ledgers are not accumulating enough trusted validations to be accepted.\n**Source:** src/xrpld/app/ledger/detail/LedgerMaster.cpp:LedgerMaster::checkAccept",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -120,7 +120,7 @@
     },
     {
       "title": "Ledger Build Duration Heatmap",
-      "description": "Heatmap showing the distribution of ledger.build durations across histogram buckets over time. Each cell represents the count of ledger builds that fell into that duration bucket in a 5m window. Useful for spotting occasional slow ledger builds that may not appear in percentile charts.",
+      "description": "**What:** Distribution of ledger-build durations over time, revealing spread beyond a single percentile.\n**How it's computed:** Counts of builds by duration band in each 5-minute window, per node.\n**Reading it:** A tight band at low durations is healthy; brighter cells mark the common build time.\n**Healthy range:** Concentrated in the low tens of milliseconds.\n**Watch for:** An occasional high-duration band flags slow builds that percentile charts may miss.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl",
       "type": "heatmap",
       "gridPos": {
         "h": 8,
@@ -156,7 +156,7 @@
     },
     {
       "title": "Transaction Apply Duration",
-      "description": "p95 and p50 duration of applying the consensus transaction set during ledger building. The tx.apply span (BuildLedger.cpp) wraps applyTransactions() which iterates through the CanonicalTXSet with multiple retry passes. Records tx_count (successful) and tx_failed (failed) as attributes.",
+      "description": "**What:** Time to apply the agreed transaction set into the new ledger, including retry passes.\n**How it's computed:** 95th and 50th percentile of per-ledger apply durations over a 5-minute window, per node.\n**Reading it:** Grows with the number and complexity of transactions in the set.\n**Healthy range:** Tens to a few hundred milliseconds under normal load.\n**Watch for:** Sustained high durations indicate heavy or expensive transaction sets.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:applyTransactions",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -202,7 +202,7 @@
     },
     {
       "title": "Transaction Apply Rate",
-      "description": "Rate of tx.apply span invocations, reflecting how frequently the transaction application phase runs during ledger building. Each ledger build triggers one tx.apply call. Should closely match the ledger build rate.",
+      "description": "**What:** How often the transaction-application phase runs during ledger building.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** One apply pass per ledger build, so it should track the build rate.\n**Healthy range:** About 0.25/s on mainnet.\n**Watch for:** Divergence from the build rate signals an accounting or pipeline anomaly.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:applyTransactions",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -241,7 +241,7 @@
     },
     {
       "title": "Ledger Store Rate",
-      "description": "Rate at which ledgers are stored into the ledger history. The ledger.store span (LedgerMaster.cpp) wraps storeLedger() which inserts the ledger into the LedgerHistory cache. Records xrpl.ledger.seq. Should match the ledger build rate under normal operation.",
+      "description": "**What:** How often completed ledgers are written into the local ledger history.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Should match the build rate under normal operation.\n**Healthy range:** About 0.25/s on mainnet.\n**Watch for:** A store rate below the build rate means ledgers are being built but not persisted.\n**Source:** src/xrpld/app/ledger/detail/LedgerMaster.cpp:LedgerMaster::storeLedger",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -273,7 +273,7 @@
     },
     {
       "title": "Build vs Close Duration",
-      "description": "Compares p95 durations of ledger.build (the actual ledger construction in BuildLedger.cpp) vs consensus.ledger_close (the consensus close event in RCLConsensus.cpp). Build time is a subset of close time. A large gap between them indicates overhead in the consensus pipeline outside of ledger construction itself.",
+      "description": "**What:** Ledger construction time versus total ledger-close time; construction is a subset of close.\n**How it's computed:** 95th percentile of each duration over a 5-minute window, per node.\n**Reading it:** Build should sit at or just below close.\n**Healthy range:** Both a few hundred milliseconds or less, tracking each other.\n**Watch for:** A large gap means significant overhead in the consensus pipeline outside ledger construction.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl, src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::onClose",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -319,7 +319,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["ledger", "telemetry"],
+  "tags": ["ledger"],
   "templating": {
     "list": [
       {
@@ -385,7 +385,7 @@
       {
         "name": "node",
         "label": "Node",
-        "description": "Filter by rippled node (service.instance.id \u2014 e.g. Node-1)",
+        "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
         "type": "query",
         "query": "label_values(traces_span_metrics_calls_total, exported_instance)",
         "datasource": {
@@ -408,6 +408,7 @@
     "from": "now-1h",
     "to": "now"
   },
+  "description": "Ledger lifecycle: build rate and duration, transaction apply and store rates, validation rate, and close timing.",
   "title": "Ledger Operations",
   "uid": "xrpld-ledger-ops"
 }
