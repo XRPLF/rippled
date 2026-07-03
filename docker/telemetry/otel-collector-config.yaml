@@ -60,10 +60,16 @@ processors:
 
 connectors:
   spanmetrics:
-    # Expose service.instance.id (node public key) as a Prometheus label so
-    # Grafana dashboards can filter metrics by individual node.
+    # Resource attributes that define the resource-metrics grouping key.
+    # All resource attributes are propagated onto the output metrics
+    # regardless; promotion to Prometheus labels is handled by the
+    # prometheus exporter's resource_to_telemetry_conversion. Listing the
+    # per-node id and the deployment-tier keys keeps series from distinct
+    # nodes/tiers grouped separately.
     resource_metrics_key_attributes:
       - service.instance.id
+      - deployment.environment
+      - xrpl.network.type
     histogram:
       explicit:
         buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s]
@@ -100,6 +106,12 @@ exporters:
       insecure: true
   prometheus:
     endpoint: 0.0.0.0:8889
+    # Promote resource attributes (deployment.environment, xrpl.network.type,
+    # service.name, service.instance.id) to Prometheus labels. Without this
+    # the tier attributes stamped by resource/tier stay on the resource and
+    # never reach the metric series, so dashboards could not filter by them.
+    resource_to_telemetry_conversion:
+      enabled: true
 
 extensions:
   health_check:
@@ -114,4 +126,5 @@ service:
       exporters: [debug, otlp/tempo, spanmetrics]
     metrics:
       receivers: [spanmetrics, statsd]
+      processors: [resource/tier]
       exporters: [prometheus]
