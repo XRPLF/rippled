@@ -340,6 +340,12 @@ public:
         , txMaster_(*this)
         , collectorManager_(makeCollectorManager(
               config_->section(Sections::kInsight),
+              // Fall back to [telemetry] service_name so metrics inherit the
+              // same service.name as traces when [insight] omits it. Network
+              // type is derived from [network_id] via the shared telemetry
+              // helper, keeping metrics and traces on one network label.
+              config_->section("telemetry").valueOr<std::string>("service_name", ""),
+              telemetry::networkTypeFromId(config_->networkId),
               logs_->journal("Collector")))
         , jobQueue_(
               std::make_unique<JobQueue>(
