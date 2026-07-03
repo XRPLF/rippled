@@ -398,7 +398,7 @@
       }
     },
     {
-      "title": "OTel: NodeStore I/O",
+      "title": "NodeStore I/O",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -639,7 +639,7 @@
       }
     },
     {
-      "title": "OTel: Cache Hit Rates",
+      "title": "Cache Hit Rates",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -774,7 +774,7 @@
       }
     },
     {
-      "title": "OTel: Object Instance Counts",
+      "title": "Object Instance Counts",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -832,7 +832,7 @@
       }
     },
     {
-      "title": "OTel: Server Info",
+      "title": "Server Info",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -1178,7 +1178,7 @@
       }
     },
     {
-      "title": "OTel: Complete Ledgers & DB",
+      "title": "Complete Ledgers & DB",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -1350,7 +1350,7 @@
       }
     },
     {
-      "title": "OTel: Ledger Economy",
+      "title": "Ledger Economy",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -1555,7 +1555,7 @@
       }
     },
     {
-      "title": "Extended Metrics (Recovered from Phase 6)",
+      "title": "Extended Metrics",
       "type": "row",
       "gridPos": {
         "h": 1,
