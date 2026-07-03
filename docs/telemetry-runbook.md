@@ -748,6 +748,90 @@ These gauges are exported via the OTel Metrics SDK `PeriodicMetricReader` (10s i
 | `xrpld_pathfind_fast` | PathRequests.h:23     | Fast pathfinding duration (ms) |
 | `xrpld_pathfind_full` | PathRequests.h:24     | Full pathfinding duration (ms) |
 
+## Deployment Tiers
+
+Multiple xrpld instances can send telemetry to per-tier collectors that all
+forward to one Grafana stack. Four resource attributes segregate the data so
+one dashboard set serves every deployment:
+
+| Dimension   | Attribute                | Set by     | Example values                 |
+| ----------- | ------------------------ | ---------- | ------------------------------ |
+| Node        | `service.instance.id`    | xrpld cfg  | `alice-laptop`, `ci-runner-7`  |
+| Service     | `service.name`           | xrpld cfg  | `xrpld`, `pratik-xrpld`        |
+| Network     | `xrpl.network.type`      | xrpld node | `mainnet`, `testnet`, `devnet` |
+| Environment | `deployment.environment` | collector  | `local`, `test`, `ci`, `prod`  |
+
+Dashboards expose these as the template variables `$node`, `$service_name`,
+`$xrpl_network_type`, and `$deployment_environment` (each variable name
+matches its Prometheus label). Select them top-down — environment → network
+→ service → node. Selecting **All** matches every value, including series
+lacking the label, so mixed old/new data never disappears.
+
+### Who owns which attribute
+
+- **Node and service** come from xrpld config (`service_instance_id`,
+  `service_name`). Unique per process.
+- **Network** is a property of the chain the node joined; the node derives it
+  from `[network_id]` and stamps `xrpl.network.type` on all three signals.
+- **Environment** is a property of where the collector runs; each collector
+  serves one environment and stamps it.
+
+### The upsert vs insert rule
+
+The collector's `resource/tier` processor uses two actions on purpose:
+
+- `deployment.environment` → **`upsert`** (overwrite). The collector _is_ the
+  environment, so it is authoritative.
+- `xrpl.network.type` → **`insert`** (fill only if absent). The node knows
+  its real network, so the collector must not overwrite it — `insert` only
+  supplies a value when the source did not (e.g. an older xrpld build). This
+  is what lets a local node connected to mainnet report `network=mainnet`,
+  not the collector's default.
+
+### Configuring a collector for a tier
+
+Each tier runs its own collector. Set the two values in the `resource/tier`
+processor of the collector config (`otel-collector-config.yaml` for local
+backends, `otel-collector-config.grafanacloud.yaml` for Grafana Cloud):
+
+```yaml
+processors:
+  resource/tier:
+    attributes:
+      - key: deployment.environment
+        value: <tier> # local | test | ci | prod
+        action: upsert
+      - key: xrpl.network.type
+        value: <network> # mainnet | testnet | devnet (fallback only)
+        action: insert
+```
+
+Suggested per-tier values:
+
+| Collector           | `deployment.environment` | `xrpl.network.type` (fallback) |
+| ------------------- | ------------------------ | ------------------------------ |
+| Developer laptop    | `local`                  | `devnet`                       |
+| Test machines       | `test`                   | `testnet`                      |
+| CI runs             | `ci`                     | `testnet`                      |
+| Production observer | `prod`                   | `mainnet`                      |
+
+The `xrpl.network.type` value is only a fallback: when the node stamps its
+own network (all current builds do), the node's value wins. Set it to the
+network the collector most commonly serves.
+
+### How the tier labels reach metrics
+
+Resource attributes do not become Prometheus labels automatically. Two
+collector settings make it work, both already enabled:
+
+- `prometheus.resource_to_telemetry_conversion: enabled: true` promotes
+  resource attributes to metric labels on the local scrape surface.
+- `spanmetrics.resource_metrics_key_attributes` lists the tier attributes so
+  span-derived series stay grouped per node and tier.
+
+Traces and logs carry resource attributes natively; Grafana Cloud ingests all
+three signals' attributes over OTLP directly.
+
 ## Grafana Dashboards
 
 Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:

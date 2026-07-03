@@ -611,7 +611,22 @@ For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), fo
 | Overlay Traffic Detail | `xrpld-system-overlay-detail` | Prometheus (OTLP) | Squelch, overhead, validator lists, set get/share, have/requested tx, proof paths |
 | Ledger Data & Sync     | `xrpld-system-ledger-sync`    | Prometheus (OTLP) | Ledger data exchange, legacy ledger share/get, getobject by type, traffic heatmap |
 
-### 3.3 Accessing the Dashboards
+### 3.3 Deployment-Tier Template Variables
+
+Every dashboard carries four filtering template variables (each variable name
+matches its Prometheus label), letting one Grafana stack be sliced by tier:
+
+| Variable                  | Source label             | Description                                                  |
+| ------------------------- | ------------------------ | ------------------------------------------------------------ |
+| `$node`                   | `exported_instance`      | Filter by xrpld node instance                                |
+| `$service_name`           | `service_name`           | Filter by service (`service.name`, e.g. `xrpld`)             |
+| `$deployment_environment` | `deployment_environment` | Filter by deployment tier (`local` / `test` / `ci` / `prod`) |
+| `$xrpl_network_type`      | `xrpl_network_type`      | Filter by network (`mainnet` / `testnet` / `devnet`)         |
+
+See [telemetry-runbook.md](../docs/telemetry-runbook.md) "Deployment Tiers"
+for how the tier attributes are set and reach metrics.
+
+### 3.4 Accessing the Dashboards
 
 1. Open Grafana at **http://localhost:3000**
 2. Navigate to **Dashboards → xrpld** folder

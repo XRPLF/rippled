@@ -444,6 +444,12 @@ curl -s "$PROM/api/v1/query?query=traces_span_metrics_duration_milliseconds_coun
 # RPC calls by command
 curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}" |
     jq '.data.result[] | {command: .metric["command"], count: .value[1]}'
+
+# Deployment-tier labels present on metrics (set by the collector's
+# resource/tier processor and promoted via resource_to_telemetry_conversion).
+# Expect deployment_environment and xrpl_network_type on each series.
+curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total" |
+    jq '.data.result[0].metric | {deployment_environment, xrpl_network_type, service_name}'
 ```
 
 ### Grafana
