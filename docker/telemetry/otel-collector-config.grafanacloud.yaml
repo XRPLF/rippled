@@ -72,8 +72,8 @@ processors:
   #     stamps this, so the collector only fills it when absent -> insert.
   #     This keeps a node's real network (e.g. a local node on mainnet)
   #     from being overwritten by a collector's default.
-  # Replace the placeholder values per collector; see
-  # docker/telemetry/DEPLOYMENT_TIERS.md.
+  # Replace the placeholder values per collector; see the "Deployment
+  # Tiers" section of docs/telemetry-runbook.md.
   resource/tier:
     attributes:
       - key: deployment.environment
