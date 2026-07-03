@@ -17,9 +17,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+CLANG_TIDY_VERSION = 22
+
 
 def find_run_clang_tidy() -> str | None:
-    for candidate in ("run-clang-tidy-21", "run-clang-tidy"):
+    for candidate in (f"run-clang-tidy-{CLANG_TIDY_VERSION}", "run-clang-tidy"):
         if path := shutil.which(candidate):
             return path
     return None
@@ -44,8 +46,8 @@ def main():
     run_clang_tidy = find_run_clang_tidy()
     if not run_clang_tidy:
         print(
-            "clang-tidy check failed: TIDY is enabled but neither "
-            "'run-clang-tidy-21' nor 'run-clang-tidy' was found in PATH.",
+            f"clang-tidy check failed: TIDY is enabled but neither "
+            f"'run-clang-tidy-{CLANG_TIDY_VERSION}' nor 'run-clang-tidy' was found in PATH.",
             file=sys.stderr,
         )
         return 1
