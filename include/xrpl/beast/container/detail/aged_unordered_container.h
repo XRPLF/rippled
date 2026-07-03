@@ -117,10 +117,9 @@ private:
         {
         }
 
-        template <
-            class... Args,
-            class = std::enable_if_t<std::is_constructible_v<value_type, Args...>>>
+        template <class... Args>
         Element(time_point const& when, Args&&... args)
+            requires(std::is_constructible_v<value_type, Args...>)
             : value(std::forward<Args>(args)...), when(when)
         {
         }
@@ -841,35 +840,25 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    template <
-        class K,
-        bool MaybeMulti = IsMulti,
-        bool MaybeMap = IsMap,
-        class = std::enable_if_t<MaybeMap && !MaybeMulti>>
+    template <class K, bool MaybeMulti = IsMulti, bool MaybeMap = IsMap>
     std::conditional_t<IsMap, T, void*>&
-    at(K const& k);
+    at(K const& k)
+        requires(MaybeMap && !MaybeMulti);
 
-    template <
-        class K,
-        bool MaybeMulti = IsMulti,
-        bool MaybeMap = IsMap,
-        class = std::enable_if_t<MaybeMap && !MaybeMulti>>
+    template <class K, bool MaybeMulti = IsMulti, bool MaybeMap = IsMap>
     std::conditional<IsMap, T, void*>::type const&
-    at(K const& k) const;
+    at(K const& k) const
+        requires(MaybeMap && !MaybeMulti);
 
-    template <
-        bool MaybeMulti = IsMulti,
-        bool MaybeMap = IsMap,
-        class = std::enable_if_t<MaybeMap && !MaybeMulti>>
+    template <bool MaybeMulti = IsMulti, bool MaybeMap = IsMap>
     std::conditional_t<IsMap, T, void*>&
-    operator[](Key const& key);
+    operator[](Key const& key)
+        requires(MaybeMap && !MaybeMulti);
 
-    template <
-        bool MaybeMulti = IsMulti,
-        bool MaybeMap = IsMap,
-        class = std::enable_if_t<MaybeMap && !MaybeMulti>>
+    template <bool MaybeMulti = IsMulti, bool MaybeMap = IsMap>
     std::conditional_t<IsMap, T, void*>&
-    operator[](Key&& key);
+    operator[](Key&& key)
+        requires(MaybeMap && !MaybeMulti);
 
     //--------------------------------------------------------------------------
     //
@@ -967,28 +956,32 @@ public:
     // map, set
     template <bool MaybeMulti = IsMulti>
     auto
-    insert(value_type const& value) -> std::enable_if_t<!MaybeMulti, std::pair<iterator, bool>>;
+    insert(value_type const& value) -> std::pair<iterator, bool>
+        requires(!MaybeMulti);
 
     // multimap, multiset
     template <bool MaybeMulti = IsMulti>
     auto
-    insert(value_type const& value) -> std::enable_if_t<MaybeMulti, iterator>;
+    insert(value_type const& value) -> iterator
+        requires MaybeMulti;
 
     // map, set
     template <bool MaybeMulti = IsMulti, bool MaybeMap = IsMap>
     auto
-    insert(value_type&& value)
-        -> std::enable_if_t<!MaybeMulti && !MaybeMap, std::pair<iterator, bool>>;
+    insert(value_type&& value) -> std::pair<iterator, bool>
+        requires(!MaybeMulti && !MaybeMap);
 
     // multimap, multiset
     template <bool MaybeMulti = IsMulti, bool MaybeMap = IsMap>
     auto
-    insert(value_type&& value) -> std::enable_if_t<MaybeMulti && !MaybeMap, iterator>;
+    insert(value_type&& value) -> iterator
+        requires(MaybeMulti && !MaybeMap);
 
     // map, set
     template <bool MaybeMulti = IsMulti>
-    std::enable_if_t<!MaybeMulti, iterator>
+    iterator
     insert(const_iterator /*hint*/, value_type const& value)
+        requires(!MaybeMulti)
     {
         // Hint is ignored but we provide the interface so
         // callers may use ordered and unordered interchangeably.
@@ -997,8 +990,9 @@ public:
 
     // multimap, multiset
     template <bool MaybeMulti = IsMulti>
-    std::enable_if_t<MaybeMulti, iterator>
+    iterator
     insert(const_iterator /*hint*/, value_type const& value)
+        requires MaybeMulti
     {
         // VFALCO TODO The hint could be used to let
         //             the client order equal ranges
@@ -1007,8 +1001,9 @@ public:
 
     // map, set
     template <bool MaybeMulti = IsMulti>
-    std::enable_if_t<!MaybeMulti, iterator>
+    iterator
     insert(const_iterator /*hint*/, value_type&& value)
+        requires(!MaybeMulti)
     {
         // Hint is ignored but we provide the interface so
         // callers may use ordered and unordered interchangeably.
@@ -1017,8 +1012,9 @@ public:
 
     // multimap, multiset
     template <bool MaybeMulti = IsMulti>
-    std::enable_if_t<MaybeMulti, iterator>
+    iterator
     insert(const_iterator /*hint*/, value_type&& value)
+        requires MaybeMulti
     {
         // VFALCO TODO The hint could be used to let
         //             the client order equal ranges
@@ -1027,20 +1023,18 @@ public:
 
     // map, multimap
     template <class P, bool MaybeMap = IsMap>
-    std::enable_if_t<
-        MaybeMap && std::is_constructible_v<value_type, P&&>,
-        std::conditional_t<IsMulti, iterator, std::pair<iterator, bool>>>
+    std::conditional_t<IsMulti, iterator, std::pair<iterator, bool>>
     insert(P&& value)
+        requires(MaybeMap && std::is_constructible_v<value_type, P &&>)
     {
         return emplace(std::forward<P>(value));
     }
 
     // map, multimap
     template <class P, bool MaybeMap = IsMap>
-    std::enable_if_t<
-        MaybeMap && std::is_constructible_v<value_type, P&&>,
-        std::conditional_t<IsMulti, iterator, std::pair<iterator, bool>>>
+    std::conditional_t<IsMulti, iterator, std::pair<iterator, bool>>
     insert(const_iterator hint, P&& value)
+        requires(MaybeMap && std::is_constructible_v<value_type, P &&>)
     {
         return emplaceHint(hint, std::forward<P>(value));
     }
@@ -1061,23 +1055,26 @@ public:
     // set, map
     template <bool MaybeMulti = IsMulti, class... Args>
     auto
-    emplace(Args&&... args) -> std::enable_if_t<!MaybeMulti, std::pair<iterator, bool>>;
+    emplace(Args&&... args) -> std::pair<iterator, bool>
+        requires(!MaybeMulti);
 
     // multiset, multimap
     template <bool MaybeMulti = IsMulti, class... Args>
     auto
-    emplace(Args&&... args) -> std::enable_if_t<MaybeMulti, iterator>;
+    emplace(Args&&... args) -> iterator
+        requires MaybeMulti;
 
     // set, map
     template <bool MaybeMulti = IsMulti, class... Args>
     auto
-    emplaceHint(const_iterator /*hint*/, Args&&... args)
-        -> std::enable_if_t<!MaybeMulti, std::pair<iterator, bool>>;
+    emplaceHint(const_iterator /*hint*/, Args&&... args) -> std::pair<iterator, bool>
+        requires(!MaybeMulti);
 
     // multiset, multimap
     template <bool MaybeMulti = IsMulti, class... Args>
-    std::enable_if_t<MaybeMulti, iterator>
+    iterator
     emplaceHint(const_iterator /*hint*/, Args&&... args)
+        requires MaybeMulti
     {
         // VFALCO TODO The hint could be used for multi, to let
         //             the client order equal ranges
@@ -1308,7 +1305,7 @@ public:
         class OtherHash,
         class OtherAllocator,
         bool MaybeMulti = IsMulti>
-    std::enable_if_t<!MaybeMulti, bool>
+    bool
     operator==(AgedUnorderedContainer<
                false,
                OtherIsMap,
@@ -1317,7 +1314,8 @@ public:
                OtherDuration,
                OtherHash,
                KeyEqual,
-               OtherAllocator> const& other) const;
+               OtherAllocator> const& other) const
+        requires(!MaybeMulti);
 
     template <
         bool OtherIsMap,
@@ -1327,7 +1325,7 @@ public:
         class OtherHash,
         class OtherAllocator,
         bool MaybeMulti = IsMulti>
-    std::enable_if_t<MaybeMulti, bool>
+    bool
     operator==(AgedUnorderedContainer<
                true,
                OtherIsMap,
@@ -1336,7 +1334,8 @@ public:
                OtherDuration,
                OtherHash,
                KeyEqual,
-               OtherAllocator> const& other) const;
+               OtherAllocator> const& other) const
+        requires MaybeMulti;
 
     template <
         bool OtherIsMulti,
@@ -1381,13 +1380,14 @@ private:
     // map, set
     template <bool MaybeMulti = IsMulti>
     auto
-    insertUnchecked(value_type const& value)
-        -> std::enable_if_t<!MaybeMulti, std::pair<iterator, bool>>;
+    insertUnchecked(value_type const& value) -> std::pair<iterator, bool>
+        requires(!MaybeMulti);
 
     // multimap, multiset
     template <bool MaybeMulti = IsMulti>
     auto
-    insertUnchecked(value_type const& value) -> std::enable_if_t<MaybeMulti, iterator>;
+    insertUnchecked(value_type const& value) -> iterator
+        requires MaybeMulti;
 
     template <class InputIt>
     void
@@ -1428,8 +1428,9 @@ private:
 
     template <
         bool MaybePropagate = std::allocator_traits<Allocator>::propagate_on_container_swap::value>
-    std::enable_if_t<MaybePropagate>
+    void
     swapData(AgedUnorderedContainer& other) noexcept
+        requires MaybePropagate
     {
         std::swap(config_.hashFunction(), other.config_.hashFunction());
         std::swap(config_.keyEq(), other.config_.keyEq());
@@ -1439,8 +1440,9 @@ private:
 
     template <
         bool MaybePropagate = std::allocator_traits<Allocator>::propagate_on_container_swap::value>
-    std::enable_if_t<!MaybePropagate>
+    void
     swapData(AgedUnorderedContainer& other) noexcept
+        requires(!MaybePropagate)
     {
         std::swap(config_.hashFunction(), other.config_.hashFunction());
         std::swap(config_.keyEq(), other.config_.keyEq());
@@ -2094,9 +2096,10 @@ template <
     class Hash,
     class KeyEqual,
     class Allocator>
-template <class K, bool MaybeMulti, bool MaybeMap, class>
+template <class K, bool MaybeMulti, bool MaybeMap>
 std::conditional_t<IsMap, T, void*>&
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::at(K const& k)
+    requires(MaybeMap && !MaybeMulti)
 {
     auto const iter(
         cont_.find(k, std::cref(config_.hashFunction()), std::cref(config_.keyValueEqual())));
@@ -2114,10 +2117,11 @@ template <
     class Hash,
     class KeyEqual,
     class Allocator>
-template <class K, bool MaybeMulti, bool MaybeMap, class>
+template <class K, bool MaybeMulti, bool MaybeMap>
 std::conditional<IsMap, T, void*>::type const&
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::at(
     K const& k) const
+    requires(MaybeMap && !MaybeMulti)
 {
     auto const iter(
         cont_.find(k, std::cref(config_.hashFunction()), std::cref(config_.keyValueEqual())));
@@ -2135,10 +2139,11 @@ template <
     class Hash,
     class KeyEqual,
     class Allocator>
-template <bool MaybeMulti, bool MaybeMap, class>
+template <bool MaybeMulti, bool MaybeMap>
 std::conditional_t<IsMap, T, void*>&
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::operator[](
     Key const& key)
+    requires(MaybeMap && !MaybeMulti)
 {
     maybeRehash(1);
     typename cont_type::insert_commit_data d;
@@ -2164,10 +2169,11 @@ template <
     class Hash,
     class KeyEqual,
     class Allocator>
-template <bool MaybeMulti, bool MaybeMap, class>
+template <bool MaybeMulti, bool MaybeMap>
 std::conditional_t<IsMap, T, void*>&
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::operator[](
     Key&& key)
+    requires(MaybeMap && !MaybeMulti)
 {
     maybeRehash(1);
     typename cont_type::insert_commit_data d;
@@ -2220,7 +2226,8 @@ template <
 template <bool MaybeMulti>
 auto
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::insert(
-    value_type const& value) -> std::enable_if_t<!MaybeMulti, std::pair<iterator, bool>>
+    value_type const& value) -> std::pair<iterator, bool>
+    requires(!MaybeMulti)
 {
     maybeRehash(1);
     typename cont_type::insert_commit_data d;
@@ -2249,7 +2256,8 @@ template <
 template <bool MaybeMulti>
 auto
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::insert(
-    value_type const& value) -> std::enable_if_t<MaybeMulti, iterator>
+    value_type const& value) -> iterator
+    requires MaybeMulti
 {
     maybeRehash(1);
     Element* const p(newElement(value));
@@ -2271,7 +2279,8 @@ template <
 template <bool MaybeMulti, bool MaybeMap>
 auto
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::insert(
-    value_type&& value) -> std::enable_if_t<!MaybeMulti && !MaybeMap, std::pair<iterator, bool>>
+    value_type&& value) -> std::pair<iterator, bool>
+    requires(!MaybeMulti && !MaybeMap)
 {
     maybeRehash(1);
     typename cont_type::insert_commit_data d;
@@ -2300,7 +2309,8 @@ template <
 template <bool MaybeMulti, bool MaybeMap>
 auto
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::insert(
-    value_type&& value) -> std::enable_if_t<MaybeMulti && !MaybeMap, iterator>
+    value_type&& value) -> iterator
+    requires(MaybeMulti && !MaybeMap)
 {
     maybeRehash(1);
     Element* const p(newElement(std::move(value)));
@@ -2323,7 +2333,8 @@ template <
 template <bool MaybeMulti, class... Args>
 auto
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::emplace(
-    Args&&... args) -> std::enable_if_t<!MaybeMulti, std::pair<iterator, bool>>
+    Args&&... args) -> std::pair<iterator, bool>
+    requires(!MaybeMulti)
 {
     maybeRehash(1);
     // VFALCO NOTE Its unfortunate that we need to
@@ -2352,7 +2363,8 @@ template <
 template <bool maybe_multi, class... Args>
 auto
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::emplace(
-    Args&&... args) -> typename std::enable_if<!maybe_multi, std::pair<iterator, bool>>::type
+    Args&&... args) -> std::pair<iterator, bool>
+    requires(!maybe_multi)
 {
     maybe_rehash(1);
     // VFALCO NOTE Its unfortunate that we need to
@@ -2388,7 +2400,8 @@ template <
 template <bool MaybeMulti, class... Args>
 auto
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::emplace(
-    Args&&... args) -> std::enable_if_t<MaybeMulti, iterator>
+    Args&&... args) -> iterator
+    requires MaybeMulti
 {
     maybeRehash(1);
     Element* const p(newElement(std::forward<Args>(args)...));
@@ -2411,7 +2424,8 @@ template <bool MaybeMulti, class... Args>
 auto
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::emplaceHint(
     const_iterator /*hint*/,
-    Args&&... args) -> std::enable_if_t<!MaybeMulti, std::pair<iterator, bool>>
+    Args&&... args) -> std::pair<iterator, bool>
+    requires(!MaybeMulti)
 {
     maybeRehash(1);
     // VFALCO NOTE Its unfortunate that we need to
@@ -2562,7 +2576,7 @@ template <
     class OtherHash,
     class OtherAllocator,
     bool MaybeMulti>
-std::enable_if_t<!MaybeMulti, bool>
+bool
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::operator==(
     AgedUnorderedContainer<
         false,
@@ -2573,6 +2587,7 @@ AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>
         OtherHash,
         KeyEqual,
         OtherAllocator> const& other) const
+    requires(!MaybeMulti)
 {
     if (size() != other.size())
         return false;
@@ -2602,7 +2617,7 @@ template <
     class OtherHash,
     class OtherAllocator,
     bool MaybeMulti>
-std::enable_if_t<MaybeMulti, bool>
+bool
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::operator==(
     AgedUnorderedContainer<
         true,
@@ -2613,6 +2628,7 @@ AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>
         OtherHash,
         KeyEqual,
         OtherAllocator> const& other) const
+    requires MaybeMulti
 {
     if (size() != other.size())
         return false;
@@ -2649,7 +2665,8 @@ template <
 template <bool MaybeMulti>
 auto
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::insertUnchecked(
-    value_type const& value) -> std::enable_if_t<!MaybeMulti, std::pair<iterator, bool>>
+    value_type const& value) -> std::pair<iterator, bool>
+    requires(!MaybeMulti)
 {
     typename cont_type::insert_commit_data d;
     auto const result(cont_.insert_check(
@@ -2677,7 +2694,8 @@ template <
 template <bool MaybeMulti>
 auto
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::insertUnchecked(
-    value_type const& value) -> std::enable_if_t<MaybeMulti, iterator>
+    value_type const& value) -> iterator
+    requires MaybeMulti
 {
     Element* const p(newElement(value));
     chronological.list_.push_back(*p);

@@ -83,13 +83,12 @@ public:
      *
      * @return error_code indicating failures, if any
      */
-    template <
-        class T,
-        class = std::enable_if_t<
-            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ||
-            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>>>
+    template <class T>
     boost::system::error_code
     preConnectVerify(T& strm, std::string const& host)
+        requires(
+            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ||
+            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>)
     {
         boost::system::error_code ec;
         if (!SSL_set_tlsext_host_name(strm.native_handle(), host.c_str()))
@@ -103,11 +102,7 @@ public:
         return ec;
     }
 
-    template <
-        class T,
-        class = std::enable_if_t<
-            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ||
-            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>>>
+    template <class T>
     /**
      * @brief invoked after connect/async_connect but before sending data
      * on an ssl stream - to setup name verification.
@@ -117,6 +112,9 @@ public:
      */
     boost::system::error_code
     postConnectVerify(T& strm, std::string const& host)
+        requires(
+            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ||
+            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>)
     {
         boost::system::error_code ec;
 
