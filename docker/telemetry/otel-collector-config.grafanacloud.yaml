@@ -62,11 +62,38 @@ processors:
       - key: job
         value: xrpld
         action: upsert
+  # Deployment-tier tagging. Each collector serves ONE environment and ONE
+  # network, so it stamps both onto every signal it forwards to Grafana
+  # Cloud, letting one cloud stack hold data from many collectors and
+  # filter by tier.
+  #   - deployment.environment: the collector IS the environment (local, ci,
+  #     test, prod), so it is authoritative -> upsert (overwrite).
+  #   - xrpl.network.type: the xrpld node knows its own chain and already
+  #     stamps this, so the collector only fills it when absent -> insert.
+  #     This keeps a node's real network (e.g. a local node on mainnet)
+  #     from being overwritten by a collector's default.
+  # Replace the placeholder values per collector; see
+  # docker/telemetry/DEPLOYMENT_TIERS.md.
+  resource/tier:
+    attributes:
+      - key: deployment.environment
+        value: local
+        action: upsert
+      - key: xrpl.network.type
+        value: mainnet
+        action: insert
 
 connectors:
   spanmetrics:
+    # Resource attributes that define the resource-metrics grouping key.
+    # All resource attributes propagate to the output metrics regardless;
+    # label promotion is handled by resource_to_telemetry_conversion on the
+    # prometheus exporter. Listing the per-node id and tier keys keeps
+    # series from distinct nodes/tiers grouped separately.
     resource_metrics_key_attributes:
       - service.instance.id
+      - deployment.environment
+      - xrpl.network.type
     histogram:
       explicit:
         buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s]
@@ -107,6 +134,12 @@ exporters:
     endpoint: http://loki:3100/otlp
   prometheus:
     endpoint: 0.0.0.0:8889
+    # Promote resource attributes (deployment.environment, xrpl.network.type,
+    # service.name, service.instance.id) to Prometheus labels so the local
+    # scrape surface can be filtered by tier. (Grafana Cloud ingests the
+    # attributes natively via OTLP, so this only affects the local export.)
+    resource_to_telemetry_conversion:
+      enabled: true
   # Single OTLP/HTTP exporter to Grafana Cloud. The gateway fans the three
   # signals out to hosted Tempo (traces), Mimir/Prometheus (metrics), and
   # Loki (logs). Retry + queue guard against transient gateway errors.
@@ -127,13 +160,13 @@ service:
     # from the respective exporter lists.
     traces:
       receivers: [otlp]
-      processors: [batch]
+      processors: [resource/tier, batch]
       exporters: [debug, otlp/tempo, spanmetrics, otlphttp/grafanacloud]
     metrics:
       receivers: [otlp, spanmetrics]
-      processors: [batch]
+      processors: [resource/tier, batch]
       exporters: [prometheus, otlphttp/grafanacloud]
     logs:
       receivers: [filelog]
-      processors: [resource/logs, batch]
+      processors: [resource/logs, resource/tier, batch]
       exporters: [otlphttp/loki, otlphttp/grafanacloud]
