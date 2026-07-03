@@ -319,7 +319,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "ledger", "telemetry"],
+  "tags": ["ledger", "telemetry"],
   "templating": {
     "list": [
       {

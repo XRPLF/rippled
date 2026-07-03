@@ -592,7 +592,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "statsd", "rpc", "pathfinding", "telemetry"],
+  "tags": ["statsd", "rpc", "pathfinding", "telemetry"],
   "templating": {
     "list": [
       {

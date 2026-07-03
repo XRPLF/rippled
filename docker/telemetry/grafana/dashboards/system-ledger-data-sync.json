@@ -493,7 +493,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "statsd", "ledger", "sync", "telemetry"],
+  "tags": ["statsd", "ledger", "sync", "telemetry"],
   "templating": {
     "list": [
       {
