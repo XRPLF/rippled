@@ -861,5 +861,5 @@
     "to": "now"
   },
   "title": "Network Traffic",
-  "uid": "xrpld-system-network"
+  "uid": "network-traffic"
 }
