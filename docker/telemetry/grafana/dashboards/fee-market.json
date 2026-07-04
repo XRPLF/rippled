@@ -561,7 +561,7 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "Fee Market & TxQ",
-  "uid": "xrpld-fee-market",
+  "uid": "fee-market",
   "version": 1,
   "refresh": "5s"
 }

@@ -596,5 +596,5 @@
     "to": "now"
   },
   "title": "Ledger Data & Sync",
-  "uid": "xrpld-system-ledger-sync"
+  "uid": "ledger-data-sync"
 }

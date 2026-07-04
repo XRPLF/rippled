@@ -656,5 +656,5 @@
     "to": "now"
   },
   "title": "Overlay Traffic Detail",
-  "uid": "xrpld-system-overlay-detail"
+  "uid": "overlay-traffic-detail"
 }
