@@ -528,6 +528,6 @@
     "to": "now"
   },
   "title": "RPC Performance",
-  "uid": "xrpld-rpc-perf",
+  "uid": "rpc-performance",
   "description": "Client RPC service health: per-command request rates, latency, error rates, throughput across pipeline layers, and resource cost."
 }

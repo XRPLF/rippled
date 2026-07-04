@@ -1031,5 +1031,5 @@
   },
   "description": "Transaction pipeline overview: processing and receive rates, per-type latency and outcomes, queue behaviour, and apply-stage breakdown.",
   "title": "Transaction Overview",
-  "uid": "xrpld-transactions"
+  "uid": "transaction-overview"
 }

@@ -1144,5 +1144,5 @@
   },
   "description": "Consensus round health: round and phase durations, proposal and validation rates, close-time agreement, stall detection, and ledger-close cadence.",
   "title": "Consensus Health",
-  "uid": "xrpld-consensus"
+  "uid": "consensus-health"
 }
