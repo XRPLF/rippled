@@ -538,7 +538,7 @@ TrustSet::doApply()
             // should be checked PreFunded Sponsor before increaseOwnerCount()
             // For PreFunded sponsors, we need to check if there are sufficient reserves before
             // calling increaseOwnerCount().
-            if (auto const ret = checkInsufficientReserve(
+            if (auto const ret = checkReserve(
                     ctx_.getApplyViewContext(),
                     sleLowAccount,
                     preFeeBalance_,
@@ -572,7 +572,7 @@ TrustSet::doApply()
             // should be checked PreFunded Sponsor before increaseOwnerCount()
             // For PreFunded sponsors, we need to check if there are sufficient reserves before
             // calling increaseOwnerCount().
-            if (auto const ret = checkInsufficientReserve(
+            if (auto const ret = checkReserve(
                     ctx_.getApplyViewContext(),
                     sleHighAccount,
                     preFeeBalance_,
@@ -612,8 +612,8 @@ TrustSet::doApply()
         }
         // Reserve is not scaled by load.
         else if (
-            auto const ret = checkInsufficientReserve(
-                ctx_.getApplyViewContext(), sle, preFeeBalance_, *sponsorSle, {}, j_);
+            auto const ret =
+                checkReserve(ctx_.getApplyViewContext(), sle, preFeeBalance_, *sponsorSle, {}, j_);
             !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
         {
             JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
@@ -643,7 +643,7 @@ TrustSet::doApply()
         return tecNO_LINE_REDUNDANT;
     }
     else if (
-        auto const ret = checkInsufficientReserve(
+        auto const ret = checkReserve(
             ctx_.getApplyViewContext(),
             sle,
             preFeeBalance_,
