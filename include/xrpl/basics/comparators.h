@@ -29,6 +29,23 @@ struct less
     }
 };
 
+// Transparent specialization, mirroring std::less<void>.  A homogeneous
+// operator()(void const&, ...) would be ill-formed, so the comparison is a
+// template.
+template <>
+struct less<void>
+{
+    using result_type = bool;
+    using is_transparent = void;
+
+    template <class L, class R>
+    constexpr bool
+    operator()(L const& left, R const& right) const
+    {
+        return std::less<>()(left, right);
+    }
+};
+
 template <class T = void>
 struct equal_to
 {
@@ -38,6 +55,23 @@ struct equal_to
     operator()(T const& left, T const& right) const
     {
         return std::equal_to<T>()(left, right);
+    }
+};
+
+// Transparent specialization, mirroring std::equal_to<void>.  A homogeneous
+// operator()(void const&, ...) would be ill-formed, so the comparison is a
+// template.
+template <>
+struct equal_to<void>
+{
+    using result_type = bool;
+    using is_transparent = void;
+
+    template <class L, class R>
+    constexpr bool
+    operator()(L const& left, R const& right) const
+    {
+        return std::equal_to<>()(left, right);
     }
 };
 
