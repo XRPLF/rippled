@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Ledger data exchange and object-fetch traffic between this node and its peers: ledger sync, tree-node retrieval, and transaction-set exchange. Use it to see how much ledger data the node is pulling or serving and to spot catch-up activity.",
+  "description": "###### What this shows:\n*Ledger data exchange and object-fetch traffic between this node and its peers: ledger sync, tree-node retrieval, and transaction-set exchange.*\n\n###### Use it to:\n*See how much ledger data the node is pulling or serving and spot catch-up activity.*",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Ledger Data Exchange (Bytes In)",
-      "description": "**What:** Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.\n**How it's computed:** Per-category inbound byte counters, shown at their latest cumulative value per node.\n**Reading it:** Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.\n**Healthy range:** workload-dependent; low and steady on a synced node.\n**Watch for:** Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
+      "description": "###### What this is:\n*Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.*\n\n###### How it's computed:\n*Per-category inbound byte counters, shown at their latest cumulative value per node.*\n\n###### Reading it:\n*Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.*\n\n###### Healthy range:\n*workload-dependent; low and steady on a synced node.*\n\n###### Watch for:\n*Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -99,7 +99,7 @@
     },
     {
       "title": "Ledger Share/Get Traffic (Bytes)",
-      "description": "**What:** Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.\n**How it's computed:** Per-category inbound byte counters at their latest value per node.\n**Reading it:** Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.\n**Healthy range:** workload-dependent; low on a synced node.\n**Watch for:** Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
+      "description": "###### What this is:\n*Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.*\n\n###### How it's computed:\n*Per-category inbound byte counters at their latest value per node.*\n\n###### Reading it:\n*Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.*\n\n###### Healthy range:\n*workload-dependent; low on a synced node.*\n\n###### Watch for:\n*Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -187,7 +187,7 @@
     },
     {
       "title": "GetObject Traffic by Type (Bytes In)",
-      "description": "**What:** Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.\n**How it's computed:** Per-type inbound byte counters at their latest value per node.\n**Reading it:** Small during steady state; grows when the node fetches missing tree nodes.\n**Healthy range:** workload-dependent; low when synced.\n**Watch for:** A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
+      "description": "###### What this is:\n*Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.*\n\n###### How it's computed:\n*Per-type inbound byte counters at their latest value per node.*\n\n###### Reading it:\n*Small during steady state; grows when the node fetches missing tree nodes.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -275,7 +275,7 @@
     },
     {
       "title": "GetObject Aggregate & Special Types (Bytes In)",
-      "description": "**What:** Aggregate object-fetch inbound bytes plus special buckets: content-addressed storage fetches, bulk fetch-pack downloads used during catch-up, and bulk transaction fetches.\n**How it's computed:** Per-category inbound byte counters at their latest value per node.\n**Reading it:** Fetch-pack rises sharply while catching up a range of ledgers; near zero when fully synced.\n**Healthy range:** workload-dependent; low when synced.\n**Watch for:** Continuous fetch-pack traffic (node never fully catches up) or unexpectedly high content-store volume.\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
+      "description": "###### What this is:\n*Aggregate object-fetch inbound bytes plus special buckets: content-addressed storage fetches, bulk fetch-pack downloads used during catch-up, and bulk transaction fetches.*\n\n###### How it's computed:\n*Per-category inbound byte counters at their latest value per node.*\n\n###### Reading it:\n*Fetch-pack rises sharply while catching up a range of ledgers; near zero when fully synced.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*Continuous fetch-pack traffic (node never fully catches up) or unexpectedly high content-store volume.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -356,7 +356,7 @@
     },
     {
       "title": "GetObject Messages by Type",
-      "description": "**What:** Count of individual object-fetch request/response messages per object type.\n**How it's computed:** Per-type inbound message counters at their latest value per node.\n**Reading it:** Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.\n**Healthy range:** workload-dependent.\n**Watch for:** High message counts with tiny payloads sustained over time (inefficient per-node fetching).\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
+      "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message counters at their latest value per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -437,7 +437,7 @@
     },
     {
       "title": "Overlay Traffic Heatmap (All Categories, Bytes In)",
-      "description": "**What:** All overlay traffic categories ranked by inbound bytes, giving an at-a-glance view of which message types consume the most receive bandwidth.\n**How it's computed:** Top categories by latest inbound byte value across all traffic categories.\n**Reading it:** The longest bars are the biggest bandwidth consumers; on a synced node transactions, proposals, and validations usually lead.\n**Healthy range:** workload-dependent.\n**Watch for:** A single ledger-data or fetch category dominating (ongoing sync) or an unexpected category topping the list.\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
+      "description": "###### What this is:\n*All overlay traffic categories ranked by inbound bytes, giving an at-a-glance view of which message types consume the most receive bandwidth.*\n\n###### How it's computed:\n*Top categories by latest inbound byte value across all traffic categories.*\n\n###### Reading it:\n*The longest bars are the biggest bandwidth consumers; on a synced node transactions, proposals, and validations usually lead.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*A single ledger-data or fetch category dominating (ongoing sync) or an unexpected category topping the list.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "bargauge",
       "gridPos": {
         "h": 8,
