@@ -18,7 +18,6 @@
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
 #include <chrono>
-#include <cstddef>
 #include <cstdint>
 #include <list>
 #include <ostream>
