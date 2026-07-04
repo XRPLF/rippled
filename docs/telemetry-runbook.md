@@ -603,7 +603,7 @@ three signals' attributes over OTLP directly.
 
 Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
-### RPC Performance (`xrpld-rpc-perf`)
+### RPC Performance (`rpc-performance`)
 
 | Panel                       | Type       | PromQL                                                                                                                                    | Labels Used              |
 | --------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
@@ -616,7 +616,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Top Commands by Volume      | bargauge   | `topk(10, ...)` by `command`                                                                                                              | `command`                |
 | WebSocket Message Rate      | stat       | `rpc.ws_message` rate                                                                                                                     | —                        |
 
-### Transaction Overview (`xrpld-transactions`)
+### Transaction Overview (`transaction-overview`)
 
 | Panel                             | Type       | PromQL                                                                               | Labels Used   |
 | --------------------------------- | ---------- | ------------------------------------------------------------------------------------ | ------------- |
@@ -629,7 +629,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Peer TX Receive Rate              | timeseries | `tx.receive` rate                                                                    | —             |
 | TX Apply Failed Rate              | stat       | `tx.apply` with `STATUS_CODE_ERROR`                                                  | `status_code` |
 
-### Consensus Health (`xrpld-consensus`)
+### Consensus Health (`consensus-health`)
 
 | Panel                         | Type       | PromQL                                                                             | Labels Used      |
 | ----------------------------- | ---------- | ---------------------------------------------------------------------------------- | ---------------- |
@@ -644,7 +644,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                            | —                |
 | Accept Duration Heatmap       | heatmap    | `consensus.accept` histogram buckets                                               | `le`             |
 
-### Ledger Operations (`xrpld-ledger-ops`)
+### Ledger Operations (`ledger-operations`)
 
 | Panel                   | Type       | PromQL                                         | Labels Used |
 | ----------------------- | ---------- | ---------------------------------------------- | ----------- |
@@ -657,7 +657,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Ledger Store Rate       | stat       | `ledger.store` call rate                       | —           |
 | Build vs Close Duration | timeseries | p95 `ledger.build` vs `consensus.ledger_close` | —           |
 
-### Peer Network (`xrpld-peer-net`)
+### Peer Network (`peer-network`)
 
 Requires `trace_peer=1` in the `[telemetry]` config section.
 
@@ -668,7 +668,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Proposals Trusted vs Untrusted   | piechart   | by `proposal_trusted`          | `proposal_trusted`   |
 | Validations Trusted vs Untrusted | piechart   | by `validation_trusted`        | `validation_trusted` |
 
-### Node Health -- System Metrics (`xrpld-system-node-health`)
+### Node Health -- System Metrics (`node-health`)
 
 | Panel                                  | Type       | PromQL                                                          | Labels Used |
 | -------------------------------------- | ---------- | --------------------------------------------------------------- | ----------- |
@@ -689,7 +689,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | All Jobs Execution Time (Detail)       | timeseries | `{__name__=~"xrpld_<all_jobs>", quantile="$quantile"}`          | `quantile`  |
 | All Jobs Dequeue Wait (Detail)         | timeseries | `{__name__=~"xrpld_<all_jobs>_q", quantile="$quantile"}`        | `quantile`  |
 
-### Network Traffic -- System Metrics (`xrpld-system-network`)
+### Network Traffic -- System Metrics (`network-traffic`)
 
 | Panel                                | Type       | PromQL                                     | Labels Used |
 | ------------------------------------ | ---------- | ------------------------------------------ | ----------- |
@@ -704,7 +704,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Duplicate Traffic (Wasted Bandwidth) | timeseries | `rate(xrpld_*_duplicate_Bytes_In/Out[5m])` | —           |
 | All Traffic Categories (Detail)      | timeseries | `topk(15, rate(xrpld_*_Bytes_In[5m]))`     | —           |
 
-### RPC & Pathfinding -- System Metrics (`xrpld-system-rpc`)
+### RPC & Pathfinding -- System Metrics (`rpc-pathfinding`)
 
 | Panel                     | Type       | PromQL                                                 | Labels Used |
 | ------------------------- | ---------- | ------------------------------------------------------ | ----------- |

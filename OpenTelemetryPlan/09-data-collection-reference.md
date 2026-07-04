@@ -100,7 +100,7 @@ Controlled by `trace_rpc=1` in `[telemetry]` config.
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"rpc.http_request|rpc.command.*"}`
 
-**Grafana dashboard**: _RPC Performance_ (`xrpld-rpc-perf`)
+**Grafana dashboard**: _RPC Performance_ (`rpc-performance`)
 
 #### gRPC Spans
 
@@ -116,7 +116,7 @@ rates without TraceQL attribute filters.
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"grpc.*"}`
 
-**Grafana dashboard**: _RPC Performance_ (`xrpld-rpc-perf`)
+**Grafana dashboard**: _RPC Performance_ (`rpc-performance`)
 
 #### Transaction Spans
 
@@ -140,7 +140,7 @@ later spans — the `stage` attribute identifies where it stopped.
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"tx.process|tx.receive"}`
 or, for the apply pipeline: `{resource.service.name="xrpld" && name=~"tx.preflight|tx.preclaim|tx.transactor"}`
 
-**Grafana dashboard**: _Transaction Overview_ (`xrpld-transactions`)
+**Grafana dashboard**: _Transaction Overview_ (`transaction-overview`)
 
 #### Transaction Queue (TxQ) Spans
 
@@ -157,7 +157,7 @@ Controlled by `trace_transactions=1` in `[telemetry]` config.
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"txq.*"}`
 
-**Grafana dashboard**: _Transaction Overview_ (`xrpld-transactions`)
+**Grafana dashboard**: _Transaction Overview_ (`transaction-overview`)
 
 #### Consensus Spans
 
@@ -185,7 +185,7 @@ round trace via context propagation rather than direct parenting. The
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"consensus.*"}`
 
-**Grafana dashboard**: _Consensus Health_ (`xrpld-consensus`)
+**Grafana dashboard**: _Consensus Health_ (`consensus-health`)
 
 #### Ledger Spans
 
@@ -199,7 +199,7 @@ Controlled by `trace_ledger=1` in `[telemetry]` config.
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"ledger.*"}`
 
-**Grafana dashboard**: _Ledger Operations_ (`xrpld-ledger-ops`)
+**Grafana dashboard**: _Ledger Operations_ (`ledger-operations`)
 
 #### Peer Spans
 
@@ -212,7 +212,7 @@ Controlled by `trace_peer` in `[telemetry]` config. **Enabled by default** (high
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"peer.*"}`
 
-**Grafana dashboard**: _Peer Network_ (`xrpld-peer-net`)
+**Grafana dashboard**: _Peer Network_ (`peer-network`)
 
 #### PathFind Spans
 
@@ -519,7 +519,7 @@ prefix=xrpld
 | `xrpld_Overlay_Peer_Disconnects_Charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges | Low growth (subset of above)    |
 | `xrpld_job_count`                                 | JobQueue.cpp          | Current job queue depth                   | 0–100 (healthy)                 |
 
-**Grafana dashboard**: _Node Health_ (`xrpld-system-node-health`)
+**Grafana dashboard**: _Node Health_ (`node-health`)
 
 ### 2.2 Counters
 
@@ -533,7 +533,7 @@ prefix=xrpld
 
 **Note**: With `server=otel`, `xrpld_warn` and `xrpld_drop` are properly exported as OTel Counter instruments. The previous StatsD `|m` type limitation no longer applies.
 
-**Grafana dashboard**: _RPC & Pathfinding_ (`xrpld-system-rpc`)
+**Grafana dashboard**: _RPC & Pathfinding_ (`rpc-pathfinding`)
 
 ### 2.3 Histograms (Event timers)
 
@@ -575,7 +575,7 @@ For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), fo
 | `ping` / `status`                                                 | Keepalive and status       |
 | `set_get`                                                         | Set requests               |
 
-**Grafana dashboards**: _Network Traffic_ (`xrpld-system-network`), _Overlay Traffic Detail_ (`xrpld-system-overlay-detail`), _Ledger Data & Sync_ (`xrpld-system-ledger-sync`)
+**Grafana dashboards**: _Network Traffic_ (`network-traffic`), _Overlay Traffic Detail_ (`overlay-traffic-detail`), _Ledger Data & Sync_ (`ledger-data-sync`)
 
 ---
 
@@ -585,23 +585,23 @@ For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), fo
 
 ### 3.1 Span-Derived Dashboards (5)
 
-| Dashboard            | UID                  | Data Source              | Key Panels                                                                         |
-| -------------------- | -------------------- | ------------------------ | ---------------------------------------------------------------------------------- |
-| RPC Performance      | `xrpld-rpc-perf`     | Prometheus (SpanMetrics) | Request rate by command, p95 latency by command, error rate, heatmap, top commands |
-| Transaction Overview | `xrpld-transactions` | Prometheus (SpanMetrics) | Processing rate, latency p95/p50, local vs relay split, apply duration, heatmap    |
-| Consensus Health     | `xrpld-consensus`    | Prometheus (SpanMetrics) | Round duration p95/p50, proposals rate, close duration, mode timeline, heatmap     |
-| Ledger Operations    | `xrpld-ledger-ops`   | Prometheus (SpanMetrics) | Build rate, build duration, validation rate, store rate, build vs close comparison |
-| Peer Network         | `xrpld-peer-net`     | Prometheus (SpanMetrics) | Proposal receive rate, validation receive rate, trusted vs untrusted breakdown     |
+| Dashboard            | UID                    | Data Source              | Key Panels                                                                         |
+| -------------------- | ---------------------- | ------------------------ | ---------------------------------------------------------------------------------- |
+| RPC Performance      | `rpc-performance`      | Prometheus (SpanMetrics) | Request rate by command, p95 latency by command, error rate, heatmap, top commands |
+| Transaction Overview | `transaction-overview` | Prometheus (SpanMetrics) | Processing rate, latency p95/p50, local vs relay split, apply duration, heatmap    |
+| Consensus Health     | `consensus-health`     | Prometheus (SpanMetrics) | Round duration p95/p50, proposals rate, close duration, mode timeline, heatmap     |
+| Ledger Operations    | `ledger-operations`    | Prometheus (SpanMetrics) | Build rate, build duration, validation rate, store rate, build vs close comparison |
+| Peer Network         | `peer-network`         | Prometheus (SpanMetrics) | Proposal receive rate, validation receive rate, trusted vs untrusted breakdown     |
 
 ### 3.2 System Metrics Dashboards (5)
 
-| Dashboard              | UID                           | Data Source       | Key Panels                                                                        |
-| ---------------------- | ----------------------------- | ----------------- | --------------------------------------------------------------------------------- |
-| Node Health            | `xrpld-system-node-health`    | Prometheus (OTLP) | Ledger age, operating mode, I/O latency, job queue, fetch rate                    |
-| Network Traffic        | `xrpld-system-network`        | Prometheus (OTLP) | Active peers, disconnects, bytes in/out, messages in/out, traffic by category     |
-| RPC & Pathfinding      | `xrpld-system-rpc`            | Prometheus (OTLP) | RPC rate, response time/size, pathfinding duration, resource warnings/drops       |
-| Overlay Traffic Detail | `xrpld-system-overlay-detail` | Prometheus (OTLP) | Squelch, overhead, validator lists, set get/share, have/requested tx, proof paths |
-| Ledger Data & Sync     | `xrpld-system-ledger-sync`    | Prometheus (OTLP) | Ledger data exchange, legacy ledger share/get, getobject by type, traffic heatmap |
+| Dashboard              | UID                      | Data Source       | Key Panels                                                                        |
+| ---------------------- | ------------------------ | ----------------- | --------------------------------------------------------------------------------- |
+| Node Health            | `node-health`            | Prometheus (OTLP) | Ledger age, operating mode, I/O latency, job queue, fetch rate                    |
+| Network Traffic        | `network-traffic`        | Prometheus (OTLP) | Active peers, disconnects, bytes in/out, messages in/out, traffic by category     |
+| RPC & Pathfinding      | `rpc-pathfinding`        | Prometheus (OTLP) | RPC rate, response time/size, pathfinding duration, resource warnings/drops       |
+| Overlay Traffic Detail | `overlay-traffic-detail` | Prometheus (OTLP) | Squelch, overhead, validator lists, set get/share, have/requested tx, proof paths |
+| Ledger Data & Sync     | `ledger-data-sync`       | Prometheus (OTLP) | Ledger data exchange, legacy ledger share/get, getobject by type, traffic heatmap |
 
 ### 3.3 Deployment-Tier Template Variables
 
