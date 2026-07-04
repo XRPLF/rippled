@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "###### What this shows:\n*Per-job-type throughput, queue wait times, and execution times for the node's internal worker job queue.*\n\n###### Use it to:\n*Find job types that are backing up or running slowly and causing internal processing delays.*",
+  "description": "What this shows: Per-job-type throughput, queue wait times, and execution times for the node's internal worker job queue.\nUse it to: Find job types that are backing up or running slowly and causing internal processing delays.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,

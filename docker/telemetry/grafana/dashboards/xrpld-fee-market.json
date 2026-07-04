@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "###### What this shows:\n*Transaction queue depth and capacity, fee-escalation levels, and load-factor breakdown that together set the minimum fee to enter the open ledger.*\n\n###### Use it to:\n*Understand why the minimum transaction fee is rising and how full the open ledger and queue are.*",
+  "description": "What this shows: Transaction queue depth and capacity, fee-escalation levels, and load-factor breakdown that together set the minimum fee to enter the open ledger.\nUse it to: Understand why the minimum transaction fee is rising and how full the open ledger and queue are.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,

@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "###### What this shows:\n*Peer connectivity and overlay bandwidth for this node: peer counts, disconnects, total bytes and messages exchanged, and the transaction, proposal, and validation traffic that flows across the peer-to-peer network.*\n\n###### Use it to:\n*Gauge peer health and overall overlay bandwidth and see which message types dominate network traffic.*",
+  "description": "What this shows: Peer connectivity and overlay bandwidth for this node: peer counts, disconnects, total bytes and messages exchanged, and the transaction, proposal, and validation traffic that flows across the peer-to-peer network.\nUse it to: Gauge peer health and overall overlay bandwidth and see which message types dominate network traffic.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,

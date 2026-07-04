@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "###### What this shows:\n*Fine-grained breakdown of peer-to-peer overlay traffic beyond the main network view: squelch relay control, protocol overhead, validator-list distribution, transaction-set exchange, transaction availability, ledger-proof and replay traffic, and unclassified messages.*\n\n###### Use it to:\n*Drill into individual overlay message categories to diagnose relay efficiency, overhead, and catch-up traffic.*",
+  "description": "What this shows: Fine-grained breakdown of peer-to-peer overlay traffic beyond the main network view: squelch relay control, protocol overhead, validator-list distribution, transaction-set exchange, transaction availability, ledger-proof and replay traffic, and unclassified messages.\nUse it to: Drill into individual overlay message categories to diagnose relay efficiency, overhead, and catch-up traffic.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,

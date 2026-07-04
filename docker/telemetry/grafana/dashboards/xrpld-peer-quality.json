@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "###### What this shows:\n*Peer connection quality: latency, divergence, version distribution and upgrade guidance, resource disconnects, and inbound/outbound balance.*\n\n###### Use it to:\n*Assess how good this node's peer set is and whether connectivity or an upgrade needs attention.*",
+  "description": "What this shows: Peer connection quality: latency, divergence, version distribution and upgrade guidance, resource disconnects, and inbound/outbound balance.\nUse it to: Assess how good this node's peer set is and whether connectivity or an upgrade needs attention.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,

@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "###### What this shows:\n*Validator agreement rates, validation counts, amendment and UNL status, server state tracking, and ledger close rate.*\n\n###### Use it to:\n*Confirm the validator is participating, agreeing with the network, and closing ledgers at the expected cadence.*",
+  "description": "What this shows: Validator agreement rates, validation counts, amendment and UNL status, server state tracking, and ledger close rate.\nUse it to: Confirm the validator is participating, agreeing with the network, and closing ledgers at the expected cadence.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
