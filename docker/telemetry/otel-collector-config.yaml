@@ -36,6 +36,18 @@ processors:
       - key: xrpl.network.type
         value: mainnet
         action: insert
+  # Strip SDK-injected resource attributes (telemetry.sdk.language/name/version).
+  # The OpenTelemetry SDK auto-adds these to every Resource; they carry no
+  # operational value and clutter the attribute set on every backend, so drop
+  # them here for all signals.
+  resource/stripsdk:
+    attributes:
+      - key: telemetry.sdk.language
+        action: delete
+      - key: telemetry.sdk.name
+        action: delete
+      - key: telemetry.sdk.version
+        action: delete
 
 exporters:
   debug:
@@ -54,5 +66,5 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [resource/tier, batch]
+      processors: [resource/tier, resource/stripsdk, batch]
       exporters: [debug, otlp/tempo]
