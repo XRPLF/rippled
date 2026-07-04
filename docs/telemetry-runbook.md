@@ -479,7 +479,7 @@ three signals' attributes over OTLP directly.
 
 Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
-### RPC Performance (`xrpld-rpc-perf`)
+### RPC Performance (`rpc-performance`)
 
 | Panel                       | Type       | PromQL                                                                                                                                             | Labels Used                       |
 | --------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -488,7 +488,7 @@ Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | RPC Error Rate              | bargauge   | Error spans / total spans × 100, grouped by `xrpl_rpc_command`                                                                                     | `xrpl_rpc_command`, `status_code` |
 | RPC Latency Heatmap         | heatmap    | `sum(increase(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])) by (le)`                                          | `le` (bucket boundaries)          |
 
-### Transaction Overview (`xrpld-transactions`)
+### Transaction Overview (`transaction-overview`)
 
 | Panel                             | Type       | PromQL                                                                                       | Labels Used     |
 | --------------------------------- | ---------- | -------------------------------------------------------------------------------------------- | --------------- |
@@ -497,7 +497,7 @@ Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Transaction Path Distribution     | piechart   | `sum by (xrpl_tx_local) (rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))` | `xrpl_tx_local` |
 | Transaction Receive vs Suppressed | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.receive"}[5m])`                          | —               |
 
-### Consensus Health (`xrpld-consensus`)
+### Consensus Health (`consensus-health`)
 
 | Panel                         | Type       | PromQL                                                                             | Labels Used |
 | ----------------------------- | ---------- | ---------------------------------------------------------------------------------- | ----------- |
