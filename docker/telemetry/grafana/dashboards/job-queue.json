@@ -566,7 +566,7 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "Job Queue Analysis",
-  "uid": "xrpld-job-queue",
+  "uid": "job-queue",
   "version": 1,
   "refresh": "5s"
 }

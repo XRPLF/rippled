@@ -1006,6 +1006,6 @@
     "to": "now"
   },
   "title": "Validator Health",
-  "uid": "xrpld-validator-health",
+  "uid": "validator-health",
   "refresh": "5s"
 }

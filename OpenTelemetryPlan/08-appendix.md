@@ -229,7 +229,7 @@ This guide maps Phase 9–11 content to its location across the documentation.
 | Task list (10 tasks)            | [Phase9_taskList.md](./Phase9_taskList.md)                               |
 | Future metric definitions (~50) | [09-data-collection-reference.md §5b](./09-data-collection-reference.md) |
 | New class: `MetricsRegistry`    | `src/xrpld/telemetry/MetricsRegistry.h/.cpp` (planned)                   |
-| New dashboards                  | `xrpld-fee-market`, `xrpld-job-queue` (planned)                          |
+| New dashboards                  | `fee-market`, `job-queue` (planned)                                      |
 
 **Metric categories**: NodeStore I/O, Cache Hit Rates, TxQ, PerfLog Per-RPC, PerfLog Per-Job, Counted Objects, Fee Escalation & Load Factors.
 

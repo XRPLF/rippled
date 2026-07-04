@@ -974,7 +974,7 @@
     "to": "now"
   },
   "title": "RPC Performance",
-  "uid": "xrpld-rpc-perf",
+  "uid": "rpc-performance",
   "refresh": "5s",
   "description": "What this shows: Per-command and per-method RPC performance: call rates, error rates, and latency distributions.\nUse it to: Identify slow or failing RPC commands and track client-facing request latency."
 }

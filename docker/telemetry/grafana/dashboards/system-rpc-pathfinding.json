@@ -660,6 +660,6 @@
     "to": "now"
   },
   "title": "RPC & Pathfinding",
-  "uid": "xrpld-system-rpc",
+  "uid": "rpc-pathfinding",
   "refresh": "5s"
 }

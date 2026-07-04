@@ -2269,6 +2269,6 @@
     "to": "now"
   },
   "title": "Node Health",
-  "uid": "xrpld-system-node-health",
+  "uid": "node-health",
   "refresh": "5s"
 }

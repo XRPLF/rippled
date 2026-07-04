@@ -116,7 +116,7 @@ These metrics serve multiple external consumer categories identified during rese
 
 **Derived Prometheus metrics**: `xrpld_txq_count`, `xrpld_txq_max_size`, `xrpld_txq_open_ledger_fee_level`, etc.
 
-**Grafana dashboard**: New _Fee Market & TxQ_ dashboard (`xrpld-fee-market`).
+**Grafana dashboard**: New _Fee Market & TxQ_ dashboard (`fee-market`).
 
 ---
 
@@ -169,7 +169,7 @@ These metrics serve multiple external consumer categories identified during rese
 
 **Derived Prometheus metrics**: `xrpld_job_queued_total{job_type="ledgerData"}`, `xrpld_job_running_duration_us_bucket{job_type="transaction"}`, etc.
 
-**Grafana dashboard**: New _Job Queue Analysis_ dashboard (`xrpld-job-queue`).
+**Grafana dashboard**: New _Job Queue Analysis_ dashboard (`job-queue`).
 
 ---
 
@@ -269,7 +269,7 @@ These metrics serve multiple external consumer categories identified during rese
 
 **Derived Prometheus metrics**: `xrpld_server_info{metric="server_state"}`, `xrpld_build_info{version="2.4.0"}`, `xrpld_complete_ledgers{bound="start",index="0"}`, `xrpld_db_metrics{metric="db_kb_total"}`, etc.
 
-**Grafana dashboard**: New panels added to _Node Health_ dashboard (`system-node-health.json`).
+**Grafana dashboard**: New panels added to _Node Health_ dashboard (`node-health.json`).
 
 ---
 
@@ -280,12 +280,12 @@ These metrics serve multiple external consumer categories identified during rese
 **What to do**:
 
 - Create 2 new dashboards:
-  1. **Fee Market & TxQ** (`xrpld-fee-market`) — TxQ depth/capacity, fee levels, load factor breakdown, fee escalation timeline
-  2. **Job Queue Analysis** (`xrpld-job-queue`) — Per-job-type rates, queue wait times, execution times, job queue depth
+  1. **Fee Market & TxQ** (`fee-market`) — TxQ depth/capacity, fee levels, load factor breakdown, fee escalation timeline
+  2. **Job Queue Analysis** (`job-queue`) — Per-job-type rates, queue wait times, execution times, job queue depth
 
 - Update 2 existing dashboards:
   1. **Node Health** (`xrpld-statsd-node-health`) — Add NodeStore I/O panels, cache hit rate panels, object instance counts
-  2. **RPC Performance** (`xrpld-rpc-perf`) — Add per-method RPC breakdown panels
+  2. **RPC Performance** (`rpc-performance`) — Add per-method RPC breakdown panels
 
 **Key modified files**:
 
@@ -351,7 +351,7 @@ These metrics serve multiple external consumer categories identified during rese
 
 **Objective**: Create a Grafana dashboard for validation agreement, amendment/UNL health, and state tracking.
 
-**Dashboard**: `xrpld-validator-health.json`
+**Dashboard**: `validator-health.json`
 
 | Panel                      | Type       | PromQL                                                         |
 | -------------------------- | ---------- | -------------------------------------------------------------- |
@@ -387,7 +387,7 @@ These metrics serve multiple external consumer categories identified during rese
 
 **Objective**: Create a Grafana dashboard for peer health aggregates.
 
-**Dashboard**: `xrpld-peer-quality.json`
+**Dashboard**: `peer-quality.json`
 
 | Panel                  | Type       | PromQL                                                         |
 | ---------------------- | ---------- | -------------------------------------------------------------- |
@@ -412,7 +412,7 @@ These metrics serve multiple external consumer categories identified during rese
 
 > **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
 
-**Objective**: Add "Ledger Economy" row to the existing `system-node-health.json` dashboard.
+**Objective**: Add "Ledger Economy" row to the existing `node-health.json` dashboard.
 
 | Panel                | Type       | PromQL                                              |
 | -------------------- | ---------- | --------------------------------------------------- |
@@ -422,7 +422,7 @@ These metrics serve multiple external consumer categories identified during rese
 | Ledger Age           | stat       | `xrpld_ledger_economy{metric="ledger_age_seconds"}` |
 | Transaction Rate     | timeseries | `xrpld_ledger_economy{metric="transaction_rate"}`   |
 
-**Key modified files**: `docker/telemetry/grafana/dashboards/system-node-health.json`
+**Key modified files**: `docker/telemetry/grafana/dashboards/node-health.json`
 
 **Exit Criteria**:
 

@@ -453,6 +453,6 @@
     "to": "now"
   },
   "title": "Peer Quality",
-  "uid": "xrpld-peer-quality",
+  "uid": "peer-quality",
   "refresh": "5s"
 }
