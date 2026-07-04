@@ -82,6 +82,31 @@ processors:
       - key: xrpl.network.type
         value: mainnet
         action: insert
+  # Strip SDK-injected resource attributes (telemetry.sdk.language/name/version).
+  # The OpenTelemetry SDK auto-adds these to every Resource; they carry no
+  # operational value, so drop them for every signal on every backend.
+  resource/stripsdk:
+    attributes:
+      - key: telemetry.sdk.language
+        action: delete
+      - key: telemetry.sdk.name
+        action: delete
+      - key: telemetry.sdk.version
+        action: delete
+  # Grafana Cloud ingests metrics via OTLP (no Prometheus scrape), so the
+  # tier/instance resource attributes never become series labels the way the
+  # local prometheus exporter promotes them (resource_to_telemetry_conversion
+  # is Prometheus-exporter-only). Copy them onto datapoint labels so the
+  # dashboards' $node / $deployment_environment / $xrpl_network_type filters
+  # resolve on Cloud exactly as they do locally. exported_instance mirrors the
+  # instance label the local Prometheus scrape produces from service.instance.id.
+  transform/cloudlabels:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(attributes["exported_instance"], resource.attributes["service.instance.id"])
+          - set(attributes["deployment_environment"], resource.attributes["deployment.environment"])
+          - set(attributes["xrpl_network_type"], resource.attributes["xrpl.network.type"])
 
 connectors:
   spanmetrics:
@@ -160,13 +185,23 @@ service:
     # from the respective exporter lists.
     traces:
       receivers: [otlp]
-      processors: [resource/tier, batch]
+      processors: [resource/tier, resource/stripsdk, batch]
       exporters: [debug, otlp/tempo, spanmetrics, otlphttp/grafanacloud]
-    metrics:
+    # The local Prometheus scrape promotes tier/instance resource attrs to
+    # labels via resource_to_telemetry_conversion; Grafana Cloud (OTLP) does
+    # not, so it runs a separate pipeline that copies them onto datapoint
+    # labels via transform/cloudlabels. Splitting avoids the local scrape and
+    # the transform both writing an exported_instance label on the same series.
+    metrics/local:
       receivers: [otlp, spanmetrics]
-      processors: [resource/tier, batch]
-      exporters: [prometheus, otlphttp/grafanacloud]
+      processors: [resource/tier, resource/stripsdk, batch]
+      exporters: [prometheus]
+    metrics/cloud:
+      receivers: [otlp, spanmetrics]
+      processors:
+        [resource/tier, resource/stripsdk, transform/cloudlabels, batch]
+      exporters: [otlphttp/grafanacloud]
     logs:
       receivers: [filelog]
-      processors: [resource/logs, resource/tier, batch]
+      processors: [resource/logs, resource/tier, resource/stripsdk, batch]
       exporters: [otlphttp/loki, otlphttp/grafanacloud]
