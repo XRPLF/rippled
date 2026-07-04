@@ -410,5 +410,5 @@
   },
   "description": "Ledger lifecycle: build rate and duration, transaction apply and store rates, validation rate, and close timing.",
   "title": "Ledger Operations",
-  "uid": "xrpld-ledger-ops"
+  "uid": "ledger-operations"
 }

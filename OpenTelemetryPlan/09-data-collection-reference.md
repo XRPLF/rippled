@@ -96,7 +96,7 @@ Controlled by `trace_rpc=1` in `[telemetry]` config.
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"rpc.http_request|rpc.command.*"}`
 
-**Grafana dashboard**: _RPC Performance_ (`xrpld-rpc-perf`)
+**Grafana dashboard**: _RPC Performance_ (`rpc-performance`)
 
 #### Transaction Spans
 
@@ -120,7 +120,7 @@ later spans — the `stage` attribute identifies where it stopped.
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"tx.process|tx.receive"}`
 or, for the apply pipeline: `{resource.service.name="xrpld" && name=~"tx.preflight|tx.preclaim|tx.transactor"}`
 
-**Grafana dashboard**: _Transaction Overview_ (`xrpld-transactions`)
+**Grafana dashboard**: _Transaction Overview_ (`transaction-overview`)
 
 #### PathFind Spans
 
@@ -136,7 +136,7 @@ Controlled by `trace_rpc=1` in `[telemetry]` config (pathfinding spans fire with
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"pathfind.*"}`
 
-**Grafana dashboard**: _RPC & Pathfinding (StatsD)_ (`xrpld-statsd-rpc`) for StatsD timers; span-derived metrics via _RPC Performance_ (`xrpld-rpc-perf`)
+**Grafana dashboard**: _RPC & Pathfinding (StatsD)_ (`xrpld-statsd-rpc`) for StatsD timers; span-derived metrics via _RPC Performance_ (`rpc-performance`)
 
 #### TxQ Spans
 
@@ -153,7 +153,7 @@ Controlled by `trace_transactions=1` in `[telemetry]` config.
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"txq.*"}`
 
-**Grafana dashboard**: _Transaction Overview_ (`xrpld-transactions`)
+**Grafana dashboard**: _Transaction Overview_ (`transaction-overview`)
 
 #### gRPC Spans
 
@@ -186,7 +186,7 @@ Controlled by `trace_consensus=1` in `[telemetry]` config.
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"consensus.*"}`
 
-**Grafana dashboard**: _Consensus Health_ (`xrpld-consensus`)
+**Grafana dashboard**: _Consensus Health_ (`consensus-health`)
 
 #### Ledger Spans
 
@@ -200,7 +200,7 @@ Controlled by `trace_ledger=1` in `[telemetry]` config.
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"ledger.*"}`
 
-**Grafana dashboard**: _Ledger Operations_ (`xrpld-ledger-ops`)
+**Grafana dashboard**: _Ledger Operations_ (`ledger-operations`)
 
 #### Peer Spans
 
@@ -213,7 +213,7 @@ Controlled by `trace_peer` in `[telemetry]` config. **Enabled by default** (high
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"peer.*"}`
 
-**Grafana dashboard**: _Peer Network_ (`xrpld-peer-net`)
+**Grafana dashboard**: _Peer Network_ (`peer-network`)
 
 ---
 
@@ -548,13 +548,13 @@ Special job types (`limit=0`: `peerCommand`, `diskAccess`, `processTransaction`,
 
 ### 3.1 Span-Derived Dashboards (5)
 
-| Dashboard            | UID                  | Data Source              | Key Panels                                                                                                                                                                                               |
-| -------------------- | -------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RPC Performance      | `xrpld-rpc-perf`     | Prometheus (SpanMetrics) | Request rate by command, p95 latency by command, error rate, heatmap, top commands                                                                                                                       |
-| Transaction Overview | `xrpld-transactions` | Prometheus (SpanMetrics) | Processing rate, latency p95/p50, local vs relay split, apply duration, heatmap                                                                                                                          |
-| Consensus Health     | `xrpld-consensus`    | Prometheus (SpanMetrics) | Round duration p95/p50, proposals rate, close duration, mode timeline, heatmap, close time correctness, resolution direction, close time drift, resolution change timeline, close time vote distribution |
-| Ledger Operations    | `xrpld-ledger-ops`   | Prometheus (SpanMetrics) | Build rate, build duration, validation rate, store rate, build vs close comparison                                                                                                                       |
-| Peer Network         | `xrpld-peer-net`     | Prometheus (SpanMetrics) | Proposal receive rate, validation receive rate, trusted vs untrusted breakdown                                                                                                                           |
+| Dashboard            | UID                    | Data Source              | Key Panels                                                                                                                                                                                               |
+| -------------------- | ---------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RPC Performance      | `rpc-performance`      | Prometheus (SpanMetrics) | Request rate by command, p95 latency by command, error rate, heatmap, top commands                                                                                                                       |
+| Transaction Overview | `transaction-overview` | Prometheus (SpanMetrics) | Processing rate, latency p95/p50, local vs relay split, apply duration, heatmap                                                                                                                          |
+| Consensus Health     | `consensus-health`     | Prometheus (SpanMetrics) | Round duration p95/p50, proposals rate, close duration, mode timeline, heatmap, close time correctness, resolution direction, close time drift, resolution change timeline, close time vote distribution |
+| Ledger Operations    | `ledger-operations`    | Prometheus (SpanMetrics) | Build rate, build duration, validation rate, store rate, build vs close comparison                                                                                                                       |
+| Peer Network         | `peer-network`         | Prometheus (SpanMetrics) | Proposal receive rate, validation receive rate, trusted vs untrusted breakdown                                                                                                                           |
 
 ### 3.2 StatsD Dashboards (5)
 

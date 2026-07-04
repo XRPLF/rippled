@@ -599,7 +599,7 @@ three signals' attributes over OTLP directly.
 
 Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
-### RPC Performance (`xrpld-rpc-perf`)
+### RPC Performance (`rpc-performance`)
 
 | Panel                       | Type       | PromQL                                                                                                                                    | Labels Used              |
 | --------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
@@ -612,7 +612,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Top Commands by Volume      | bargauge   | `topk(10, ...)` by `command`                                                                                                              | `command`                |
 | WebSocket Message Rate      | stat       | `rpc.ws_message` rate                                                                                                                     | —                        |
 
-### Transaction Overview (`xrpld-transactions`)
+### Transaction Overview (`transaction-overview`)
 
 | Panel                             | Type       | PromQL                                                                               | Labels Used   |
 | --------------------------------- | ---------- | ------------------------------------------------------------------------------------ | ------------- |
@@ -625,7 +625,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Peer TX Receive Rate              | timeseries | `tx.receive` rate                                                                    | —             |
 | TX Apply Failed Rate              | stat       | `tx.apply` with `STATUS_CODE_ERROR`                                                  | `status_code` |
 
-### Consensus Health (`xrpld-consensus`)
+### Consensus Health (`consensus-health`)
 
 | Panel                         | Type       | PromQL                                                                             | Labels Used      |
 | ----------------------------- | ---------- | ---------------------------------------------------------------------------------- | ---------------- |
@@ -640,7 +640,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                            | —                |
 | Accept Duration Heatmap       | heatmap    | `consensus.accept` histogram buckets                                               | `le`             |
 
-### Ledger Operations (`xrpld-ledger-ops`)
+### Ledger Operations (`ledger-operations`)
 
 | Panel                   | Type       | PromQL                                         | Labels Used |
 | ----------------------- | ---------- | ---------------------------------------------- | ----------- |
@@ -653,7 +653,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Ledger Store Rate       | stat       | `ledger.store` call rate                       | —           |
 | Build vs Close Duration | timeseries | p95 `ledger.build` vs `consensus.ledger_close` | —           |
 
-### Peer Network (`xrpld-peer-net`)
+### Peer Network (`peer-network`)
 
 Requires `trace_peer=1` in the `[telemetry]` config section.
 
