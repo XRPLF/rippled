@@ -28,7 +28,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"peer.proposal.receive\"}[5m]))",
           "legendFormat": "Proposals Received / Sec [{{exported_instance}}]"
@@ -67,7 +68,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"peer.validation.receive\"}[5m]))",
           "legendFormat": "Validations Received / Sec [{{exported_instance}}]"
@@ -106,7 +108,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "sum by (proposal_trusted, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", proposal_trusted=~\"$proposal_trusted\", span_name=\"peer.proposal.receive\"}[5m]))",
           "legendFormat": "Trusted = {{proposal_trusted}} [{{exported_instance}}]"
@@ -138,7 +141,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "sum by (validation_trusted, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", validation_trusted=~\"$validation_trusted\", span_name=\"peer.validation.receive\"}[5m]))",
           "legendFormat": "Trusted = {{validation_trusted}} [{{exported_instance}}]"
@@ -170,21 +174,24 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_reduce_relay_metrics{metric=\"selected_peers\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Selected [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_reduce_relay_metrics{metric=\"suppressed_peers\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Suppressed [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_reduce_relay_metrics{metric=\"not_enabled_peers\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Not Enabled [{{exported_instance}}]"
@@ -223,7 +230,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_reduce_relay_metrics{metric=\"missing_tx_freq\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Missing Tx Freq [{{exported_instance}}]"
@@ -255,7 +263,7 @@
         "query": "prometheus",
         "regex": "",
         "current": {},
-        "hide": 2,
+        "hide": 0,
         "refresh": 1,
         "includeAll": false,
         "multi": false,

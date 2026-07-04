@@ -28,14 +28,16 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_txq_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"txq_count\"}",
           "legendFormat": "Queue Depth [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_txq_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"txq_max_size\"}",
           "legendFormat": "Max Capacity [{{exported_instance}}]"
@@ -76,14 +78,16 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_txq_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"txq_in_ledger\"}",
           "legendFormat": "In Ledger [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_txq_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"txq_per_ledger\"}",
           "legendFormat": "Expected Per Ledger [{{exported_instance}}]"
@@ -124,28 +128,32 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_txq_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"txq_reference_fee_level\"}",
           "legendFormat": "Reference Fee Level [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_txq_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"txq_min_processing_fee_level\"}",
           "legendFormat": "Min Processing Fee Level [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_txq_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"txq_med_fee_level\"}",
           "legendFormat": "Median Fee Level [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_txq_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"txq_open_ledger_fee_level\"}",
           "legendFormat": "Open Ledger Fee Level [{{exported_instance}}]"
@@ -190,28 +198,32 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_load_factor_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"load_factor\"}",
           "legendFormat": "Combined Load Factor [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_load_factor_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"load_factor_server\"}",
           "legendFormat": "Server [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_load_factor_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"load_factor_fee_escalation\"}",
           "legendFormat": "Fee Escalation [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_load_factor_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"load_factor_fee_queue\"}",
           "legendFormat": "Fee Queue [{{exported_instance}}]"
@@ -268,21 +280,24 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_load_factor_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"load_factor_local\"}",
           "legendFormat": "Local [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_load_factor_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"load_factor_net\"}",
           "legendFormat": "Network [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_load_factor_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"load_factor_cluster\"}",
           "legendFormat": "Cluster [{{exported_instance}}]"
@@ -323,35 +338,40 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_load_factor_metrics{metric=\"load_factor_fee_escalation\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Fee Escalation [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_load_factor_metrics{metric=\"load_factor_fee_queue\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Fee Queue [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_load_factor_metrics{metric=\"load_factor_local\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Local [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_load_factor_metrics{metric=\"load_factor_net\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Net [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "xrpld_load_factor_metrics{metric=\"load_factor_cluster\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Cluster [{{exported_instance}}]"
@@ -395,7 +415,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "sum by (exported_instance) (rate(xrpld_txq_expired_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]))",
           "legendFormat": "Expired / Sec [{{exported_instance}}]"
@@ -434,7 +455,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "sum by (reason, exported_instance) (rate(xrpld_txq_dropped_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]))",
           "legendFormat": "{{reason}} [{{exported_instance}}]"
@@ -466,7 +488,7 @@
         "query": "prometheus",
         "regex": "",
         "current": {},
-        "hide": 2,
+        "hide": 0,
         "refresh": 1,
         "includeAll": false,
         "multi": false,
