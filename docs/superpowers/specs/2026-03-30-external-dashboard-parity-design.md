@@ -524,11 +524,11 @@ Add checks to `validate_telemetry.py` for all new span attributes and metrics.
 
 **New dashboard load checks (~3)**:
 
-| Dashboard                      |
-| ------------------------------ |
-| `validator-health`             |
-| `peer-quality`                 |
-| `system-node-health` (updated) |
+| Dashboard               |
+| ----------------------- |
+| `validator-health`      |
+| `peer-quality`          |
+| `node-health` (updated) |
 
 **New metric value sanity checks (~4)**:
 
