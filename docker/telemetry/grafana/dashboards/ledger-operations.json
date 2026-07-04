@@ -10,7 +10,7 @@
   "panels": [
     {
       "title": "Ledger Build Rate",
-      "description": "**What:** How many new ledgers this node finishes building per second.\n**How it's computed:** Per-second rate of completed ledger-build operations, averaged over 5 minutes and split by node.\n**Reading it:** A steady flat line; the value should track the network close cadence.\n**Healthy range:** About 0.2-0.3 ledgers/sec on mainnet (roughly one every 3-5s); workload-dependent on test networks.\n**Watch for:** A drop toward zero (node fell out of sync or stalled) or a value well above the network rate (rebuilding history).\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl",
+      "description": "###### What this is:\n*How many new ledgers this node finishes building per second.*\n\n###### How it's computed:\n*Per-second rate of completed ledger-build operations, averaged over 5 minutes and split by node.*\n\n###### Reading it:\n*A steady flat line; the value should track the network close cadence.*\n\n###### Healthy range:\n*About 0.2-0.3 ledgers/sec on mainnet (roughly one every 3-5s); workload-dependent on test networks.*\n\n###### Watch for:\n*A drop toward zero (node fell out of sync or stalled) or a value well above the network rate (rebuilding history).*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`buildLedgerImpl`",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -42,7 +42,7 @@
     },
     {
       "title": "Ledger Build Duration",
-      "description": "**What:** The time taken to build a single ledger, at the 95th percentile.\n**How it's computed:** 95th-percentile of ledger-build durations over a 5-minute window, per node.\n**Reading it:** Lower is better; the line should stay well under the ledger interval.\n**Healthy range:** Typically tens to low hundreds of milliseconds; workload-dependent.\n**Watch for:** Sustained rises approaching the close interval, which indicate heavy transaction sets or disk/I/O pressure.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl",
+      "description": "###### What this is:\n*The time taken to build a single ledger, at the 95th percentile.*\n\n###### How it's computed:\n*95th-percentile of ledger-build durations over a 5-minute window, per node.*\n\n###### Reading it:\n*Lower is better; the line should stay well under the ledger interval.*\n\n###### Healthy range:\n*Typically tens to low hundreds of milliseconds; workload-dependent.*\n\n###### Watch for:\n*Sustained rises approaching the close interval, which indicate heavy transaction sets or disk/I/O pressure.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`buildLedgerImpl`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -81,7 +81,7 @@
     },
     {
       "title": "Ledger Validation Rate",
-      "description": "**What:** How often ledgers reach full validation (accepted by the trusted validator quorum) per second.\n**How it's computed:** Per-second rate of ledger-validation events over 5 minutes, per node.\n**Reading it:** Should closely match the build rate under normal, in-sync operation.\n**Healthy range:** About 0.2-0.3/sec on mainnet; workload-dependent elsewhere.\n**Watch for:** A validation rate that lags the build rate, signalling the node is building ahead of the network consensus it trusts.\n**Source:** src/xrpld/app/ledger/detail/LedgerMaster.cpp:LedgerMaster::checkAccept",
+      "description": "###### What this is:\n*How often ledgers reach full validation (accepted by the trusted validator quorum) per second.*\n\n###### How it's computed:\n*Per-second rate of ledger-validation events over 5 minutes, per node.*\n\n###### Reading it:\n*Should closely match the build rate under normal, in-sync operation.*\n\n###### Healthy range:\n*About 0.2-0.3/sec on mainnet; workload-dependent elsewhere.*\n\n###### Watch for:\n*A validation rate that lags the build rate, signalling the node is building ahead of the network consensus it trusts.*\n\n###### Source:\n[LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::checkAccept`",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -113,7 +113,7 @@
     },
     {
       "title": "Ledger Build Duration Heatmap",
-      "description": "**What:** The full distribution of ledger-build times over the window, not just a single percentile.\n**How it's computed:** Counts of ledger builds falling in each duration band per 5-minute window, shown as color density.\n**Reading it:** A tight low band is healthy; scattered high cells mean occasional slow builds.\n**Healthy range:** Most mass concentrated in the low-millisecond bands; workload-dependent.\n**Watch for:** A second cluster of hot cells at high durations (bimodal build times) hidden by percentile charts.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl",
+      "description": "###### What this is:\n*The full distribution of ledger-build times over the window, not just a single percentile.*\n\n###### How it's computed:\n*Counts of ledger builds falling in each duration band per 5-minute window, shown as color density.*\n\n###### Reading it:\n*A tight low band is healthy; scattered high cells mean occasional slow builds.*\n\n###### Healthy range:\n*Most mass concentrated in the low-millisecond bands; workload-dependent.*\n\n###### Watch for:\n*A second cluster of hot cells at high durations (bimodal build times) hidden by percentile charts.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`buildLedgerImpl`",
       "type": "heatmap",
       "gridPos": {
         "h": 8,
@@ -149,7 +149,7 @@
     },
     {
       "title": "Transaction Apply Duration",
-      "description": "**What:** The time spent applying the agreed transaction set into the new ledger, at the 95th percentile.\n**How it's computed:** 95th-percentile of transaction-apply durations over 5 minutes, per node.\n**Reading it:** Lower is better; this is a large share of total build time.\n**Healthy range:** A few to tens of milliseconds; scales with transaction volume per ledger.\n**Watch for:** Spikes during large or expensive transaction sets, which push out overall ledger build time.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:applyTransactions",
+      "description": "###### What this is:\n*The time spent applying the agreed transaction set into the new ledger, at the 95th percentile.*\n\n###### How it's computed:\n*95th-percentile of transaction-apply durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; this is a large share of total build time.*\n\n###### Healthy range:\n*A few to tens of milliseconds; scales with transaction volume per ledger.*\n\n###### Watch for:\n*Spikes during large or expensive transaction sets, which push out overall ledger build time.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`applyTransactions`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -188,7 +188,7 @@
     },
     {
       "title": "Transaction Apply Rate",
-      "description": "**What:** How often the transaction-apply phase runs per second (once per ledger build).\n**How it's computed:** Per-second rate of transaction-apply operations over 5 minutes, per node.\n**Reading it:** Should track the ledger build rate almost exactly.\n**Healthy range:** About 0.2-0.3/sec on mainnet; workload-dependent.\n**Watch for:** Divergence from the build rate, which would indicate a metric or pipeline anomaly.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:applyTransactions",
+      "description": "###### What this is:\n*How often the transaction-apply phase runs per second (once per ledger build).*\n\n###### How it's computed:\n*Per-second rate of transaction-apply operations over 5 minutes, per node.*\n\n###### Reading it:\n*Should track the ledger build rate almost exactly.*\n\n###### Healthy range:\n*About 0.2-0.3/sec on mainnet; workload-dependent.*\n\n###### Watch for:\n*Divergence from the build rate, which would indicate a metric or pipeline anomaly.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`applyTransactions`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -227,7 +227,7 @@
     },
     {
       "title": "Ledger Store Rate",
-      "description": "**What:** How often completed ledgers are written into ledger history per second.\n**How it's computed:** Per-second rate of ledger-store operations over 5 minutes, per node.\n**Reading it:** Should match the build rate during normal operation.\n**Healthy range:** About 0.2-0.3/sec on mainnet; can burst higher while backfilling history.\n**Watch for:** A store rate below the build rate (storage falling behind) or a stall at zero.\n**Source:** src/xrpld/app/ledger/detail/LedgerMaster.cpp:LedgerMaster::storeLedger",
+      "description": "###### What this is:\n*How often completed ledgers are written into ledger history per second.*\n\n###### How it's computed:\n*Per-second rate of ledger-store operations over 5 minutes, per node.*\n\n###### Reading it:\n*Should match the build rate during normal operation.*\n\n###### Healthy range:\n*About 0.2-0.3/sec on mainnet; can burst higher while backfilling history.*\n\n###### Watch for:\n*A store rate below the build rate (storage falling behind) or a stall at zero.*\n\n###### Source:\n[LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::storeLedger`",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -259,7 +259,7 @@
     },
     {
       "title": "Build vs Close Duration",
-      "description": "**What:** Ledger build time compared with the total consensus ledger-close time, both at the 95th percentile.\n**How it's computed:** Two 95th-percentile duration series over 5 minutes: ledger construction and the full consensus close, per node.\n**Reading it:** Build should sit below close; the gap is consensus overhead outside construction.\n**Healthy range:** Close a bit above build; both workload-dependent and under the round interval.\n**Watch for:** A widening gap (consensus-pipeline overhead growing) or build time approaching close time.\n**Source:** src/xrpld/app/ledger/detail/BuildLedger.cpp:buildLedgerImpl; src/xrpld/app/consensus/RCLConsensus.cpp:RCLConsensus::Adaptor::onClose",
+      "description": "###### What this is:\n*Ledger build time compared with the total consensus ledger-close time, both at the 95th percentile.*\n\n###### How it's computed:\n*Two 95th-percentile duration series over 5 minutes: ledger construction and the full consensus close, per node.*\n\n###### Reading it:\n*Build should sit below close; the gap is consensus overhead outside construction.*\n\n###### Healthy range:\n*Close a bit above build; both workload-dependent and under the round interval.*\n\n###### Watch for:\n*A widening gap (consensus-pipeline overhead growing) or build time approaching close time.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp) · [RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`buildLedgerImpl ; RCLConsensus::Adaptor::onClose`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -410,5 +410,5 @@
   "title": "Ledger Operations",
   "uid": "xrpld-ledger-ops",
   "refresh": "5s",
-  "description": "Ledger construction, validation, and storage activity and timing for this node."
+  "description": "###### What this shows:\n*Ledger construction, validation, and storage activity and timing for this node.*\n\n###### Use it to:\n*Confirm ledgers are being built, validated, and stored on schedule and find the slow stage when they are not.*"
 }

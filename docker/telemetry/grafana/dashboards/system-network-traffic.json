@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Peer connectivity and overlay bandwidth for this node: peer counts, disconnects, total bytes and messages exchanged, and the transaction/proposal/validation traffic that flows across the peer-to-peer network.",
+  "description": "###### What this shows:\n*Peer connectivity and overlay bandwidth for this node: peer counts, disconnects, total bytes and messages exchanged, and the transaction, proposal, and validation traffic that flows across the peer-to-peer network.*\n\n###### Use it to:\n*Gauge peer health and overall overlay bandwidth and see which message types dominate network traffic.*",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Active Peers",
-      "description": "**What:** Number of active inbound and outbound peer connections the node currently holds.\n**How it's computed:** Current value of the inbound and outbound active-peer counts per node.\n**Reading it:** Outbound is what the node dials out; inbound is what others open to it. Both should be stable.\n**Healthy range:** roughly 10-21 outbound and 0-85 inbound on mainnet, depending on config.\n**Watch for:** Outbound dropping toward zero (isolation) or inbound pinned at the limit with churn (connection pressure).\n**Source:** src/xrpld/peerfinder/detail/PeerfinderManager.cpp Logic Stats ctor",
+      "description": "###### What this is:\n*Number of active inbound and outbound peer connections the node currently holds.*\n\n###### How it's computed:\n*Current value of the inbound and outbound active-peer counts per node.*\n\n###### Reading it:\n*Outbound is what the node dials out; inbound is what others open to it. Both should be stable.*\n\n###### Healthy range:\n*roughly 10-21 outbound and 0-85 inbound on mainnet, depending on config.*\n\n###### Watch for:\n*Outbound dropping toward zero (isolation) or inbound pinned at the limit with churn (connection pressure).*\n\n###### Source:\n[PeerfinderManager.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/peerfinder/detail/PeerfinderManager.cpp)\n\n###### Function:\n`Logic Stats ctor`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -57,7 +57,7 @@
     },
     {
       "title": "Peer Disconnects",
-      "description": "**What:** Cumulative count of peer connections that have dropped.\n**How it's computed:** Running total of disconnect events per node.\n**Reading it:** A flat or slowly rising line is normal; the slope matters more than the absolute value.\n**Healthy range:** workload-dependent; slow, steady growth.\n**Watch for:** Sharp step-ups in the slope (network instability, resource exhaustion, or many peers dropping the node at once).\n**Source:** src/xrpld/overlay/detail/OverlayImpl.h OverlayImpl::Stats ctor",
+      "description": "###### What this is:\n*Cumulative count of peer connections that have dropped.*\n\n###### How it's computed:\n*Running total of disconnect events per node.*\n\n###### Reading it:\n*A flat or slowly rising line is normal; the slope matters more than the absolute value.*\n\n###### Healthy range:\n*workload-dependent; slow, steady growth.*\n\n###### Watch for:\n*Sharp step-ups in the slope (network instability, resource exhaustion, or many peers dropping the node at once).*\n\n###### Source:\n[OverlayImpl.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.h)\n\n###### Function:\n`OverlayImpl::Stats ctor`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -96,7 +96,7 @@
     },
     {
       "title": "Total Network Bytes",
-      "description": "**What:** Total bytes received and sent across all peer connections.\n**How it's computed:** Current cumulative in/out byte totals per node.\n**Reading it:** Overall bandwidth footprint; in and out usually track network activity together.\n**Healthy range:** workload-dependent.\n**Watch for:** Sudden sustained jumps not matched by ledger or transaction activity (relay storms or a noisy peer).\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
+      "description": "###### What this is:\n*Total bytes received and sent across all peer connections.*\n\n###### How it's computed:\n*Current cumulative in/out byte totals per node.*\n\n###### Reading it:\n*Overall bandwidth footprint; in and out usually track network activity together.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*Sudden sustained jumps not matched by ledger or transaction activity (relay storms or a noisy peer).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -142,7 +142,7 @@
     },
     {
       "title": "Total Network Messages",
-      "description": "**What:** Total messages received and sent across all peer connections.\n**How it's computed:** Current cumulative in/out message totals per node.\n**Reading it:** Overall message throughput of the overlay; complements the byte totals.\n**Healthy range:** workload-dependent.\n**Watch for:** Message count climbing far faster than bytes (many tiny messages, possible flooding).\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
+      "description": "###### What this is:\n*Total messages received and sent across all peer connections.*\n\n###### How it's computed:\n*Current cumulative in/out message totals per node.*\n\n###### Reading it:\n*Overall message throughput of the overlay; complements the byte totals.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*Message count climbing far faster than bytes (many tiny messages, possible flooding).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -188,7 +188,7 @@
     },
     {
       "title": "Transaction Traffic",
-      "description": "**What:** Transaction relay messages in and out, plus duplicate transaction messages received.\n**How it's computed:** Current message counts for the transaction and transaction-duplicate categories.\n**Reading it:** In/out rise with network transaction volume; duplicates are transactions the node already had.\n**Healthy range:** workload-dependent; duplicates a modest fraction of inbound.\n**Watch for:** Duplicate inbound approaching or exceeding unique inbound (redundant relay), or a sharp spike suggesting transaction flooding.\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
+      "description": "###### What this is:\n*Transaction relay messages in and out, plus duplicate transaction messages received.*\n\n###### How it's computed:\n*Current message counts for the transaction and transaction-duplicate categories.*\n\n###### Reading it:\n*In/out rise with network transaction volume; duplicates are transactions the node already had.*\n\n###### Healthy range:\n*workload-dependent; duplicates a modest fraction of inbound.*\n\n###### Watch for:\n*Duplicate inbound approaching or exceeding unique inbound (redundant relay), or a sharp spike suggesting transaction flooding.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -241,7 +241,7 @@
     },
     {
       "title": "Proposal Traffic",
-      "description": "**What:** Consensus proposal messages in/out, plus untrusted and duplicate proposal messages received.\n**How it's computed:** Current message counts for the proposal, proposal-untrusted, and proposal-duplicate categories.\n**Reading it:** Trusted in/out track consensus rounds; untrusted come from validators not on this node's trusted list.\n**Healthy range:** workload-dependent; untrusted and duplicates low relative to trusted.\n**Watch for:** High untrusted (trusted-list misconfiguration) or high duplicates (inefficient relay or proposal spam).\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
+      "description": "###### What this is:\n*Consensus proposal messages in/out, plus untrusted and duplicate proposal messages received.*\n\n###### How it's computed:\n*Current message counts for the proposal, proposal-untrusted, and proposal-duplicate categories.*\n\n###### Reading it:\n*Trusted in/out track consensus rounds; untrusted come from validators not on this node's trusted list.*\n\n###### Healthy range:\n*workload-dependent; untrusted and duplicates low relative to trusted.*\n\n###### Watch for:\n*High untrusted (trusted-list misconfiguration) or high duplicates (inefficient relay or proposal spam).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -301,7 +301,7 @@
     },
     {
       "title": "Validation Traffic",
-      "description": "**What:** Validation messages in/out, plus untrusted and duplicate validation messages received.\n**How it's computed:** Current message counts for the validation, validation-untrusted, and validation-duplicate categories.\n**Reading it:** Trusted validations should arrive steadily each ledger; untrusted come from non-trusted validators.\n**Healthy range:** workload-dependent; untrusted and duplicates low relative to trusted.\n**Watch for:** Rising untrusted or duplicate validations (trusted-list health issues or validation spam).\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
+      "description": "###### What this is:\n*Validation messages in/out, plus untrusted and duplicate validation messages received.*\n\n###### How it's computed:\n*Current message counts for the validation, validation-untrusted, and validation-duplicate categories.*\n\n###### Reading it:\n*Trusted validations should arrive steadily each ledger; untrusted come from non-trusted validators.*\n\n###### Healthy range:\n*workload-dependent; untrusted and duplicates low relative to trusted.*\n\n###### Watch for:\n*Rising untrusted or duplicate validations (trusted-list health issues or validation spam).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -361,7 +361,7 @@
     },
     {
       "title": "Overlay Traffic by Category (Bytes In)",
-      "description": "**What:** Top overlay traffic categories ranked by inbound bytes, excluding the all-traffic total.\n**How it's computed:** Top categories by latest inbound byte value per node.\n**Reading it:** Shows which message types dominate receive bandwidth right now.\n**Healthy range:** workload-dependent; transactions, proposals, and validations typically lead on a synced node.\n**Watch for:** A fetch or ledger-data category topping the list (sync activity) or an unexpected category dominating.\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
+      "description": "###### What this is:\n*Top overlay traffic categories ranked by inbound bytes, excluding the all-traffic total.*\n\n###### How it's computed:\n*Top categories by latest inbound byte value per node.*\n\n###### Reading it:\n*Shows which message types dominate receive bandwidth right now.*\n\n###### Healthy range:\n*workload-dependent; transactions, proposals, and validations typically lead on a synced node.*\n\n###### Watch for:\n*A fetch or ledger-data category topping the list (sync activity) or an unexpected category dominating.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "bargauge",
       "gridPos": {
         "h": 8,
@@ -658,7 +658,7 @@
     },
     {
       "title": "Duplicate Traffic (Wasted Bandwidth)",
-      "description": "**What:** Throughput of duplicate transaction, proposal, and validation traffic: messages the node had already seen and discarded.\n**How it's computed:** Per-second rate of the duplicate byte counters for each category, in and out.\n**Reading it:** Lower is better; this is bandwidth spent on redundant relays.\n**Healthy range:** workload-dependent; a small fraction of total traffic.\n**Watch for:** Duplicate rate climbing toward the same order as useful traffic (poor relay topology or redundant flooding).\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
+      "description": "###### What this is:\n*Throughput of duplicate transaction, proposal, and validation traffic: messages the node had already seen and discarded.*\n\n###### How it's computed:\n*Per-second rate of the duplicate byte counters for each category, in and out.*\n\n###### Reading it:\n*Lower is better; this is bandwidth spent on redundant relays.*\n\n###### Healthy range:\n*workload-dependent; a small fraction of total traffic.*\n\n###### Watch for:\n*Duplicate rate climbing toward the same order as useful traffic (poor relay topology or redundant flooding).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -732,7 +732,7 @@
     },
     {
       "title": "All Traffic Categories (Detail)",
-      "description": "**What:** The busiest overlay categories by inbound byte rate over time, excluding the all-traffic total.\n**How it's computed:** Per-second inbound byte rate for the top categories, ranked.\n**Reading it:** Time-series companion to the category bar view; shows how the traffic mix shifts over the window.\n**Healthy range:** workload-dependent.\n**Watch for:** A category ramping up and staying high, or the mix suddenly changing (sync, spam, or a misbehaving peer).\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
+      "description": "###### What this is:\n*The busiest overlay categories by inbound byte rate over time, excluding the all-traffic total.*\n\n###### How it's computed:\n*Per-second inbound byte rate for the busiest categories, ranked, excluding the all-traffic total.*\n\n###### Reading it:\n*Time-series companion to the category bar view; shows how the traffic mix shifts over the window.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*A category ramping up and staying high, or the mix suddenly changing (sync, spam, or a misbehaving peer).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -751,7 +751,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(15, rate({__name__=~\"xrpld_.*_Bytes_In\", __name__!~\"xrpld_total_{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}.*\"}[5m]))",
+          "expr": "topk(15, rate({__name__=~\"xrpld_.*_Bytes_In\", __name__!~\"xrpld_total_.*\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]))",
           "legendFormat": "{{__name__}}"
         }
       ],
