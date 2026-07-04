@@ -9,10 +9,10 @@ Validation categories:
   1. Span validation     — All 16+ span types present with required attributes
   2. Metric validation   — SpanMetrics, StatsD, and Phase 9 metrics are non-zero
   3. Log-trace correlation — Loki logs contain trace_id/span_id fields
-  4. Dashboard validation — All 13 Grafana dashboards render data
+  4. Dashboard validation — All 14 Grafana dashboards render data
   5. External parity     — Span attrs, metric existence, and value sanity for
                            external dashboard parity (validator-health,
-                           peer-quality, system-node-health)
+                           peer-quality, node-health)
 
 Usage:
     python3 validate_telemetry.py --report /tmp/validation-report.json
@@ -909,7 +909,7 @@ async def validate_span_durations(
 # ---------------------------------------------------------------------------
 
 # Span attributes that external dashboards (validator-health, peer-quality,
-# system-node-health) depend on.  Each entry maps a span name to the
+# node-health) depend on.  Each entry maps a span name to the
 # attributes that must be present for external dashboard panels to render.
 # Keys follow the 2026-05-13 span-attr naming redesign (bare/underscore form;
 # dotted xrpl.* reserved for resource attributes). The amendment_blocked,
