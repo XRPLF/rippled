@@ -444,4 +444,4 @@ These metrics serve multiple external consumer categories identified during rese
 - [ ] Documentation updated with full new metric inventory
 - [ ] Validator Health dashboard renders all 13 panels
 - [ ] Peer Quality dashboard renders all 6 panels
-- [ ] Ledger Economy panels added to system-node-health dashboard
+- [ ] Ledger Economy panels added to node-health dashboard
