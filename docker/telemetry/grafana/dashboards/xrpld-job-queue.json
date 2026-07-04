@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Per-job-type throughput, queue wait times, and execution times for the node's internal worker job queue.",
+  "description": "###### What this shows:\n*Per-job-type throughput, queue wait times, and execution times for the node's internal worker job queue.*\n\n###### Use it to:\n*Find job types that are backing up or running slowly and causing internal processing delays.*",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Current Job Latency (p99 Gauge)",
-      "description": "**What:** At-a-glance p99 of how long jobs wait in the queue and how long they run once started.\n**How it's computed:** 99th percentile derived from the job wait-time and run-time histograms over the last 5 minutes.\n**Reading it:** Lower is better; green under 100ms, yellow to 1s, red beyond 1s.\n**Healthy range:** Wait and exec p99 under 100ms.\n**Watch for:** p99 wait climbing into the red, meaning worker threads are saturated and jobs are backing up.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:recordJobStarted / recordJobFinished",
+      "description": "###### What this is:\n*At-a-glance p99 of how long jobs wait in the queue and how long they run once started.*\n\n###### How it's computed:\n*99th percentile derived from the job wait-time and run-time histograms over the last 5 minutes.*\n\n###### Reading it:\n*Lower is better; green under 100ms, yellow to 1s, red beyond 1s.*\n\n###### Healthy range:\n*Wait and exec p99 under 100ms.*\n\n###### Watch for:\n*p99 wait climbing into the red, meaning worker threads are saturated and jobs are backing up.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobStarted / recordJobFinished`",
       "type": "gauge",
       "gridPos": {
         "h": 8,
@@ -73,7 +73,7 @@
     },
     {
       "title": "Job Throughput Rate (Per Second)",
-      "description": "**What:** Rate of jobs queued, started, and finished across all job types.\n**How it's computed:** Per-second rate of each cumulative job counter over a 5-minute window.\n**Reading it:** Queued, started, and finished tracking together means the queue keeps up.\n**Healthy range:** Workload-dependent; the three rates should stay roughly equal.\n**Watch for:** Queued rate persistently above finished rate, which indicates a growing backlog.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:recordJobQueued / recordJobStarted / recordJobFinished",
+      "description": "###### What this is:\n*Rate of jobs queued, started, and finished across all job types.*\n\n###### How it's computed:\n*Per-second rate of each cumulative job counter over a 5-minute window.*\n\n###### Reading it:\n*Queued, started, and finished tracking together means the queue keeps up.*\n\n###### Healthy range:\n*Workload-dependent; the three rates should stay roughly equal.*\n\n###### Watch for:\n*Queued rate persistently above finished rate, which indicates a growing backlog.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobQueued / recordJobStarted / recordJobFinished`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -133,7 +133,7 @@
     },
     {
       "title": "Per-Job-Type Queued Rate",
-      "description": "**What:** Rate of jobs entering the queue, broken down by job type (top 10).\n**How it's computed:** Per-second rate of the queued-job counter per job_type over a 5-minute window.\n**Reading it:** Identifies which job types generate the most queue activity.\n**Healthy range:** Workload-dependent.\n**Watch for:** A single job type surging unexpectedly, which can point to a flood of a particular request or peer message.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:recordJobQueued",
+      "description": "###### What this is:\n*Rate of jobs entering the queue, broken down by job type (top 10).*\n\n###### How it's computed:\n*Per-second rate of the queued-job counter per job_type over a 5-minute window.*\n\n###### Reading it:\n*Identifies which job types generate the most queue activity.*\n\n###### Healthy range:\n*Workload-dependent.*\n\n###### Watch for:\n*A single job type surging unexpectedly, which can point to a flood of a particular request or peer message.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobQueued`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -184,7 +184,7 @@
     },
     {
       "title": "Per-Job-Type Finish Rate",
-      "description": "**What:** Rate of jobs completing, broken down by job type (top 10).\n**How it's computed:** Per-second rate of the finished-job counter per job_type over a 5-minute window.\n**Reading it:** Compare against the queued rate per type to spot which types are falling behind.\n**Healthy range:** Workload-dependent; should match the per-type queued rate.\n**Watch for:** A type whose finish rate lags its queued rate, revealing where the backlog concentrates.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:recordJobFinished",
+      "description": "###### What this is:\n*Rate of jobs completing, broken down by job type (top 10).*\n\n###### How it's computed:\n*Per-second rate of the finished-job counter per job_type over a 5-minute window.*\n\n###### Reading it:\n*Compare against the queued rate per type to spot which types are falling behind.*\n\n###### Healthy range:\n*Workload-dependent; should match the per-type queued rate.*\n\n###### Watch for:\n*A type whose finish rate lags its queued rate, revealing where the backlog concentrates.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobFinished`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -235,7 +235,7 @@
     },
     {
       "title": "Job Queue Wait Time",
-      "description": "**What:** Distribution of how long jobs sit in the queue before a worker picks them up (p75 typical, p99 tail).\n**How it's computed:** Percentiles derived from the job wait-time histogram over a 5-minute window.\n**Reading it:** Lower is better; a widening gap between p75 and p99 signals occasional stalls.\n**Healthy range:** Sub-millisecond to low-millisecond waits on an unloaded node.\n**Watch for:** Rising p99 wait, an early sign of worker-thread saturation.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:recordJobStarted",
+      "description": "###### What this is:\n*Distribution of how long jobs sit in the queue before a worker picks them up (p75 typical, p99 tail).*\n\n###### How it's computed:\n*Percentiles derived from the job wait-time histogram over a 5-minute window.*\n\n###### Reading it:\n*Lower is better; a widening gap between p75 and p99 signals occasional stalls.*\n\n###### Healthy range:\n*Sub-millisecond to low-millisecond waits on an unloaded node.*\n\n###### Watch for:\n*Rising p99 wait, an early sign of worker-thread saturation.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobStarted`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -288,7 +288,7 @@
     },
     {
       "title": "Job Execution Time",
-      "description": "**What:** Distribution of how long jobs run once started (p75 typical, p99 tail).\n**How it's computed:** Percentiles derived from the job run-time histogram over a 5-minute window.\n**Reading it:** Lower is better; stable p75 with a controlled p99 is healthy.\n**Healthy range:** Workload-dependent, but stable over time.\n**Watch for:** Growing execution times, which point to CPU pressure or expensive individual jobs.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:recordJobFinished",
+      "description": "###### What this is:\n*Distribution of how long jobs run once started (p75 typical, p99 tail).*\n\n###### How it's computed:\n*Percentiles derived from the job run-time histogram over a 5-minute window.*\n\n###### Reading it:\n*Lower is better; stable p75 with a controlled p99 is healthy.*\n\n###### Healthy range:\n*Workload-dependent, but stable over time.*\n\n###### Watch for:\n*Growing execution times, which point to CPU pressure or expensive individual jobs.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobFinished`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -341,7 +341,7 @@
     },
     {
       "title": "Per-Job-Type Execution Time (p99)",
-      "description": "**What:** The 10 slowest job types ranked by p99 execution time.\n**How it's computed:** p99 derived from the run-time histogram per job_type over a 5-minute window, top 10 selected.\n**Reading it:** Highlights which job types cost the most CPU time at the tail.\n**Healthy range:** Workload-dependent.\n**Watch for:** A job type whose p99 grows over time, indicating a slow or degrading operation.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:recordJobFinished",
+      "description": "###### What this is:\n*The 10 slowest job types ranked by p99 execution time.*\n\n###### How it's computed:\n*p99 derived from the run-time histogram per job_type over a 5-minute window, top 10 selected.*\n\n###### Reading it:\n*Highlights which job types cost the most CPU time at the tail.*\n\n###### Healthy range:\n*Workload-dependent.*\n\n###### Watch for:\n*A job type whose p99 grows over time, indicating a slow or degrading operation.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`recordJobFinished`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -392,7 +392,7 @@
     },
     {
       "title": "Transaction Overflow Rate",
-      "description": "**What:** Rate at which transaction jobs are shed because the queue's transaction limit is exceeded.\n**How it's computed:** Per-second rate of the overflow counter over a 5-minute window, scaled to per minute.\n**Reading it:** Zero is healthy; any non-zero value means transaction jobs are being dropped under load.\n**Healthy range:** 0 overflows per minute under normal operation.\n**Watch for:** Non-zero overflows, which mark heavy transaction load or a flood; note this counter is typically absent when the node is healthy.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp (job-queue transaction overflow counter)",
+      "description": "###### What this is:\n*Rate at which transaction jobs would be shed when the queue's transaction limit is exceeded.*\n\n###### How it's computed:\n*Per-second rate of the overflow counter over 5 minutes, scaled to per minute.*\n\n###### Reading it:\n*This counter is not currently wired up in the code, so the panel reads empty or zero regardless of load.*\n\n###### Healthy range:\n*Not applicable until wired; currently always empty or zero.*\n\n###### Watch for:\n*n/a until wired — this counter does not rise under load today.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`(job-queue transaction overflow counter)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,

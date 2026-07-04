@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Transaction queue depth and capacity, fee-escalation levels, and load-factor breakdown that together set the minimum fee to enter the open ledger.",
+  "description": "###### What this shows:\n*Transaction queue depth and capacity, fee-escalation levels, and load-factor breakdown that together set the minimum fee to enter the open ledger.*\n\n###### Use it to:\n*Understand why the minimum transaction fee is rising and how full the open ledger and queue are.*",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Transaction Queue Depth",
-      "description": "**What:** Transactions currently waiting in the transaction queue versus the queue's maximum capacity.\n**How it's computed:** Instantaneous gauge readings of current queue count and configured max size.\n**Reading it:** Queue depth well below capacity is normal; depth approaching capacity means the node is saturating.\n**Healthy range:** Depth near 0 in quiet periods; workload-dependent under load.\n**Watch for:** Depth pinned at capacity for sustained periods, which signals demand exceeding throughput or a fee-spam burst.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerTxqGauge",
+      "description": "###### What this is:\n*Transactions currently waiting in the transaction queue versus the queue's maximum capacity.*\n\n###### How it's computed:\n*Instantaneous gauge readings of current queue count and configured max size.*\n\n###### Reading it:\n*Queue depth well below capacity is normal; depth approaching capacity means the node is saturating.*\n\n###### Healthy range:\n*Depth near 0 in quiet periods; workload-dependent under load.*\n\n###### Watch for:\n*Depth pinned at capacity for sustained periods, which signals demand exceeding throughput or a fee-spam burst.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerTxqGauge`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -59,7 +59,7 @@
     },
     {
       "title": "Transactions Per Ledger",
-      "description": "**What:** Transactions already placed in the current open ledger versus the expected per-ledger target.\n**How it's computed:** Instantaneous gauge readings of in-ledger count and the target count that governs fee escalation.\n**Reading it:** Staying at or below the expected target is normal; exceeding it triggers open-ledger fee escalation.\n**Healthy range:** At or under the expected per-ledger target.\n**Watch for:** In-ledger count persistently above target, indicating sustained congestion pushing fees up.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerTxqGauge",
+      "description": "###### What this is:\n*Transactions already placed in the current open ledger versus the expected per-ledger target.*\n\n###### How it's computed:\n*Instantaneous gauge readings of in-ledger count and the target count that governs fee escalation.*\n\n###### Reading it:\n*Staying at or below the expected target is normal; exceeding it triggers open-ledger fee escalation.*\n\n###### Healthy range:\n*At or under the expected per-ledger target.*\n\n###### Watch for:\n*In-ledger count persistently above target, indicating sustained congestion pushing fees up.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerTxqGauge`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -107,7 +107,7 @@
     },
     {
       "title": "Fee Escalation Levels",
-      "description": "**What:** The fee levels that govern queue admission: reference (baseline), minimum processing, median, and open-ledger levels.\n**How it's computed:** Instantaneous gauge readings of each fee level, shown on a log scale.\n**Reading it:** Open-ledger level near the reference level means cheap entry; a large gap above reference means escalation is active.\n**Healthy range:** Open-ledger level at or near reference during normal traffic.\n**Watch for:** Open-ledger level spiking far above reference, the hallmark of congestion or a fee-bidding war.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerTxqGauge",
+      "description": "###### What this is:\n*The fee levels that govern queue admission: reference (baseline), minimum processing, median, and open-ledger levels.*\n\n###### How it's computed:\n*Instantaneous gauge readings of each fee level, shown on a log scale.*\n\n###### Reading it:\n*Open-ledger level near the reference level means cheap entry; a large gap above reference means escalation is active.*\n\n###### Healthy range:\n*Open-ledger level at or near reference during normal traffic.*\n\n###### Watch for:\n*Open-ledger level spiking far above reference, the hallmark of congestion or a fee-bidding war.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerTxqGauge`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -173,7 +173,7 @@
     },
     {
       "title": "Load Factor Breakdown",
-      "description": "**What:** The combined load factor and its server, fee-escalation, and fee-queue contributors as unitless fee multipliers (1.0 = no load).\n**How it's computed:** Instantaneous gauge readings of each load-factor component.\n**Reading it:** Values at 1.0 mean base fees; higher values raise the fee to transact.\n**Healthy range:** Around 1.0 under normal conditions.\n**Watch for:** Combined factor climbing well above 1.0, showing the node is charging premium fees due to congestion or overload.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerLoadFactorGauge",
+      "description": "###### What this is:\n*The combined load factor and its server, fee-escalation, and fee-queue contributors as unitless fee multipliers (1.0 = no load).*\n\n###### How it's computed:\n*Instantaneous gauge readings of each load-factor component.*\n\n###### Reading it:\n*Values at 1.0 mean base fees; higher values raise the fee to transact.*\n\n###### Healthy range:\n*Around 1.0 under normal conditions.*\n\n###### Watch for:\n*Combined factor climbing well above 1.0, showing the node is charging premium fees due to congestion or overload.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLoadFactorGauge`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -251,7 +251,7 @@
     },
     {
       "title": "Load Factor Components",
-      "description": "**What:** The individual load-factor inputs, local server load, network load, and cluster load, as unitless multipliers.\n**How it's computed:** Instantaneous gauge readings of each component.\n**Reading it:** All at 1.0 means no load pressure from any source; a raised component identifies where load originates.\n**Healthy range:** Around 1.0 for each component.\n**Watch for:** A single component rising sharply, which pinpoints whether the pressure is local, network-wide, or cluster-driven.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerLoadFactorGauge",
+      "description": "###### What this is:\n*The individual load-factor inputs, local server load, network load, and cluster load, as unitless multipliers.*\n\n###### How it's computed:\n*Instantaneous gauge readings of each component.*\n\n###### Reading it:\n*All at 1.0 means no load pressure from any source; a raised component identifies where load originates.*\n\n###### Healthy range:\n*Around 1.0 for each component.*\n\n###### Watch for:\n*A single component rising sharply, which pinpoints whether the pressure is local, network-wide, or cluster-driven.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLoadFactorGauge`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -306,7 +306,7 @@
     },
     {
       "title": "Load Factor Attribution (Stacked Components)",
-      "description": "**What:** The stacked contribution of each load-factor component (fee escalation, queue, local, net, cluster) to the effective transaction cost.\n**How it's computed:** Instantaneous gauge readings of each component stacked to show relative share.\n**Reading it:** The tallest band identifies which component is driving the fee, detail the aggregate load factor hides.\n**Healthy range:** Thin bands near 1.0 total under normal traffic.\n**Watch for:** One band dominating during a fee spike, revealing the specific driver of elevated cost.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerLoadFactorGauge",
+      "description": "###### What this is:\n*The stacked contribution of each load-factor component (fee escalation, queue, local, net, cluster) to the effective transaction cost.*\n\n###### How it's computed:\n*Instantaneous gauge readings of each component stacked to show relative share.*\n\n###### Reading it:\n*The tallest band identifies which component is driving the fee, detail the aggregate load factor hides.*\n\n###### Healthy range:\n*Thin bands near 1.0 total under normal traffic.*\n\n###### Watch for:\n*One band dominating during a fee spike, revealing the specific driver of elevated cost.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLoadFactorGauge`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -378,7 +378,7 @@
     },
     {
       "title": "Queue Abandonment Rate (Expired)",
-      "description": "**What:** Transactions dropped from the queue because their last-ledger deadline passed before they could be included.\n**How it's computed:** Per-second rate of the cumulative expired-transaction counter over a 5-minute window.\n**Reading it:** Near zero is healthy; a rising rate means submitters under-bid the escalating fee and their transactions timed out.\n**Healthy range:** Near 0 expirations per second.\n**Watch for:** Sustained expiry rate, a demand-frustration signal often coinciding with fee spikes or spam that crowds out honest traffic.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:incrementTxqExpired (caller src/xrpld/app/misc/detail/TxQ.cpp)",
+      "description": "###### What this is:\n*Transactions dropped from the queue because their last-ledger deadline passed before they could be included.*\n\n###### How it's computed:\n*Per-second rate of the cumulative expired-transaction counter over a 5-minute window.*\n\n###### Reading it:\n*Near zero is healthy; a rising rate means submitters under-bid the escalating fee and their transactions timed out.*\n\n###### Healthy range:\n*Near 0 expirations per second.*\n\n###### Watch for:\n*Sustained expiry rate, a demand-frustration signal often coinciding with fee spikes or spam that crowds out honest traffic.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementTxqExpired (caller TxQ.cpp)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -417,7 +417,7 @@
     },
     {
       "title": "Queue Admission Rejections (Dropped)",
-      "description": "**What:** Transactions refused entry to the queue, broken down by reason such as queue_full.\n**How it's computed:** Per-second rate of the cumulative dropped-transaction counter over a 5-minute window, split by reason.\n**Reading it:** Near zero is healthy; queue_full rejections mean the queue is at capacity and applying backpressure.\n**Healthy range:** Near 0 rejections per second.\n**Watch for:** A burst of queue_full drops, distinct from expiry, indicating the node is being flooded faster than it can drain.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:incrementTxqDropped (caller src/xrpld/app/misc/detail/TxQ.cpp)",
+      "description": "###### What this is:\n*Transactions refused entry to the queue, broken down by reason such as queue_full.*\n\n###### How it's computed:\n*Per-second rate of the cumulative dropped-transaction counter over a 5-minute window, split by reason.*\n\n###### Reading it:\n*Near zero is healthy; queue_full rejections mean the queue is at capacity and applying backpressure.*\n\n###### Healthy range:\n*Near 0 rejections per second.*\n\n###### Watch for:\n*A burst of queue_full drops, distinct from expiry, indicating the node is being flooded faster than it can drain.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementTxqDropped (caller TxQ.cpp)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
