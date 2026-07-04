@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "###### What this shows:\n*RPC request throughput and response timing, pathfinding cost, gRPC read traffic, and resource-manager enforcement for this node.*\n\n###### Use it to:\n*Watch client request load and cost, and confirm resource limits are protecting the node.*",
+  "description": "What this shows: RPC request throughput and response timing, pathfinding cost, gRPC read traffic, and resource-manager enforcement for this node.\nUse it to: Watch client request load and cost, and confirm resource limits are protecting the node.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,

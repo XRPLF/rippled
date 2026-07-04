@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "###### What this shows:\n*Consensus proposals and validations received from peers, and transaction relay efficiency for this node.*\n\n###### Use it to:\n*Check that peers are feeding this node proposals, validations, and transactions, and gauge relay overhead.*",
+  "description": "What this shows: Consensus proposals and validations received from peers, and transaction relay efficiency for this node.\nUse it to: Check that peers are feeding this node proposals, validations, and transactions, and gauge relay overhead.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,

@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "###### What this shows:\n*Operational health of an XRPL node: sync state, ledger progress, caches, storage, job queue, and network economy.*\n\n###### Use it to:\n*Get an at-a-glance read on whether the node is healthy, synced, and keeping up with the network.*",
+  "description": "What this shows: Operational health of an XRPL node: sync state, ledger progress, caches, storage, job queue, and network economy.\nUse it to: Get an at-a-glance read on whether the node is healthy, synced, and keeping up with the network.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,

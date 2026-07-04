@@ -1234,5 +1234,5 @@
   },
   "title": "Consensus Health",
   "uid": "xrpld-consensus",
-  "description": "###### What this shows:\n*Consensus health for XRPL nodes: how reliably and quickly the network agrees each ledger, and where agreement breaks down.*\n\n###### Use it to:\n*Spot stalled or slow consensus rounds and pinpoint the phase where agreement is failing.*"
+  "description": "What this shows: Consensus health for XRPL nodes: how reliably and quickly the network agrees each ledger, and where agreement breaks down.\nUse it to: Spot stalled or slow consensus rounds and pinpoint the phase where agreement is failing."
 }

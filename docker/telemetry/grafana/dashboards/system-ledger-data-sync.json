@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "###### What this shows:\n*Ledger data exchange and object-fetch traffic between this node and its peers: ledger sync, tree-node retrieval, and transaction-set exchange.*\n\n###### Use it to:\n*See how much ledger data the node is pulling or serving and spot catch-up activity.*",
+  "description": "What this shows: Ledger data exchange and object-fetch traffic between this node and its peers: ledger sync, tree-node retrieval, and transaction-set exchange.\nUse it to: See how much ledger data the node is pulling or serving and spot catch-up activity.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
