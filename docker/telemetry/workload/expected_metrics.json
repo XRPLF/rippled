@@ -126,20 +126,20 @@
   "grafana_dashboards": {
     "description": "All Grafana dashboards that must render data (UIDs as provisioned on disk under docker/telemetry/grafana/dashboards/).",
     "uids": [
-      "xrpld-rpc-perf",
-      "xrpld-transactions",
-      "xrpld-consensus",
-      "xrpld-ledger-ops",
-      "xrpld-peer-net",
-      "xrpld-peer-quality",
-      "xrpld-fee-market",
-      "xrpld-job-queue",
-      "xrpld-validator-health",
-      "xrpld-system-node-health",
-      "xrpld-system-network",
-      "xrpld-system-rpc",
-      "xrpld-system-overlay-detail",
-      "xrpld-system-ledger-sync"
+      "rpc-performance",
+      "transaction-overview",
+      "consensus-health",
+      "ledger-operations",
+      "peer-network",
+      "peer-quality",
+      "fee-market",
+      "job-queue",
+      "validator-health",
+      "node-health",
+      "network-traffic",
+      "rpc-pathfinding",
+      "overlay-traffic-detail",
+      "ledger-data-sync"
     ]
   }
 }
