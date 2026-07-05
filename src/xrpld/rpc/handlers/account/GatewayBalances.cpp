@@ -145,7 +145,10 @@ doGatewayBalances(RPC::JsonContext& context)
     // Traverse the cold wallet's trust lines
     {
         forEachItem(*ledger, accountID, [&](SLE::const_ref sle) {
-            if (sle->getType() == ltESCROW)
+            if (!sle)
+	    	return;
+
+	    if (sle->getType() == ltESCROW)
             {
                 auto const& escrow = sle->getFieldAmount(sfAmount);
                 // Gateway Balance should not include MPTs
