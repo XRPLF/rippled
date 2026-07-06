@@ -615,8 +615,10 @@ TEST(json_value, parse_double)
     {
         auto const v = parseValue(text);
         ASSERT_TRUE(v.has_value()) << text;
+        // NOLINTBEGIN(bugprone-unchecked-optional-access)
         EXPECT_TRUE(v->isDouble()) << text;
         EXPECT_EQ(v->asDouble(), expected) << text;
+        // NOLINTEND(bugprone-unchecked-optional-access)
     }
 
     // Magnitudes with no finite double representation are rejected.  The
