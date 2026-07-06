@@ -504,17 +504,25 @@ LedgerHistory::clearLedgerCachePrior(LedgerIndex seq)
     std::size_t cacheSize = 0;
     std::size_t indexSize = 0;
 
+    std::vector<LedgerHash> keys;
     {
         auto lock = ledger_maps_.lock();
-        for (LedgerHash it : lock->by_hash->getKeys())
+        keys = lock->by_hash->getKeys();
+    }
+
+    for (LedgerHash const& it : keys)
+    {
+        auto const ledger = getLedgerByHash(it);
+        if (!ledger || ledger->header().seq < seq)
         {
-            auto const ledger = getLedgerByHash(it);
-            if (!ledger || ledger->header().seq < seq)
-            {
-                lock->by_hash->del(it, false);
-                ++hashesCleared;
-            }
+            auto lock = ledger_maps_.lock();
+            lock->by_hash->del(it, false);
+            ++hashesCleared;
         }
+    }
+
+    {
+        auto lock = ledger_maps_.lock();
         cacheSize = lock->by_hash->size();
 
         auto it = lock->by_index.begin();
