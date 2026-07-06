@@ -152,7 +152,7 @@ isVaultPseudoAccountFrozen(
     if (auto const result = checkVaultPseudoAccountFrozenPreconditions(view, depth))
         return *result;
 
-    auto const issuanceSle = view.read(keylet::mptIssuance(mptShare.getMptID()));
+    auto const issuanceSle = view.read(keylet::mptokenIssuance(mptShare.getMptID()));
     if (issuanceSle == nullptr)
         return false;  // zero MPToken won't block deletion of MPTokenIssuance
 

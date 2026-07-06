@@ -101,7 +101,7 @@ isFrozen(ReadView const& view, AccountID const& account, SLE const& mptSle, std:
     XRPL_ASSERT(mptSle.getType() == ltMPTOKEN, "xrpl::isFrozen : MPToken SLE");
 
     MPTID const mptID = mptSle[sfMPTokenIssuanceID];
-    auto const issuanceSle = view.read(keylet::mptIssuance(mptID));
+    auto const issuanceSle = view.read(keylet::mptokenIssuance(mptID));
 
     if ((issuanceSle && isGlobalFrozen(*issuanceSle)) || isIndividualFrozen(mptSle))
         return true;
