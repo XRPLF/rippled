@@ -125,8 +125,8 @@ flow(
     // amount types.
     return std::visit(
         [&, &strands = strands]<typename TIn, typename TOut>(TIn const&, TOut const&) {
-            using TIn_ = typename TIn::amount_type;
-            using TOut_ = typename TOut::amount_type;
+            using TIn_ = TIn::amount_type;
+            using TOut_ = TOut::amount_type;
             return finishFlow(
                 sb,
                 srcAsset,

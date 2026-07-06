@@ -1359,7 +1359,7 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
 
             auto const err = book_.in.visit(
                 [&](Issue const& issue) -> std::optional<TER> {
-                    auto sle = view.read(keylet::line(*prev, cur, issue.currency));
+                    auto sle = view.read(keylet::trustLine(*prev, cur, issue.currency));
                     if (!sle)
                         return terNO_LINE;
                     if (sle->isFlag((cur > *prev) ? lsfHighNoRipple : lsfLowNoRipple))
@@ -1477,8 +1477,8 @@ bookStepEqual(Step const& step, xrpl::Book const& book)
 {
     return std::visit(
         [&]<typename TIn, typename TOut>(TIn const&, TOut const&) {
-            using TIn_ = typename TIn::amount_type;
-            using TOut_ = typename TOut::amount_type;
+            using TIn_ = TIn::amount_type;
+            using TOut_ = TOut::amount_type;
 
             if constexpr (ValidTaker<TIn_, TOut_>)
             {

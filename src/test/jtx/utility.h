@@ -2,11 +2,14 @@
 
 #include <test/jtx/Account.h>
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STObject.h>
 
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace xrpl::test::jtx {
 
@@ -50,5 +53,4 @@ fillSeq(json::Value& jv, ReadView const& view);
 /** Given an xrpld unit test rpc command, return the corresponding JSON. */
 json::Value
 cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned int apiVersion);
-
 }  // namespace xrpl::test::jtx

@@ -1,5 +1,8 @@
 #include <xrpl/basics/hardened_hash.h>
 
+#include <xrpl/beast/hash/hash_append.h>
+#include <xrpl/beast/unit_test/suite.h>
+
 #include <gtest/gtest.h>
 
 #include <array>

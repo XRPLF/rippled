@@ -3,8 +3,13 @@
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/net/IPAddress.h>
+#include <xrpl/beast/net/IPAddressV4.h>
+#include <xrpl/beast/net/IPAddressV6.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <istream>
 #include <optional>
 #include <string>
 

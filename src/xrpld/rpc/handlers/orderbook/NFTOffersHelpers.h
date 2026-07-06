@@ -5,14 +5,24 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+
+#include <cstdint>
+#include <memory>
+#include <vector>
 
 namespace xrpl {
 
@@ -78,7 +88,7 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
         if (!startAfter.parseHex(marker.asString()))
             return rpcError(RpcInvalidParams);
 
-        auto const sle = ledger->read(keylet::nftoffer(startAfter));
+        auto const sle = ledger->read(keylet::nftokenOffer(startAfter));
 
         if (!sle || nftId != sle->getFieldH256(sfNFTokenID))
             return rpcError(RpcInvalidParams);

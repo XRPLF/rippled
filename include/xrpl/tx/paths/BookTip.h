@@ -1,8 +1,11 @@
 #pragma once
 
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 
 namespace xrpl {
 
