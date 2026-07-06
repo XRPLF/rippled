@@ -55,7 +55,7 @@ datasources:
             tag: service.instance.id
             operator: "="
             scope: resource
-            type: static
+            type: dynamic
           # service.version: xrpld build version (e.g., "2.4.0-b1").
           #   Filter traces from specific software releases.
           - id: node-version
@@ -77,7 +77,7 @@ datasources:
             tag: xrpl.network.type
             operator: "="
             scope: resource
-            type: static
+            type: dynamic
           # --- Span intrinsic filters ---
           # name: the span operation name (e.g., "rpc.command.server_info").
           #   Use to find traces for a specific RPC command or subsystem.
@@ -85,21 +85,21 @@ datasources:
             tag: name
             operator: "="
             scope: intrinsic
-            type: static
+            type: dynamic
           # status: span completion status ("ok", "error", "unset").
           #   Filter for failed operations to diagnose errors.
           - id: span-status
             tag: status
             operator: "="
             scope: intrinsic
-            type: static
+            type: dynamic
           # duration: span wall-clock duration. Use with ">" operator
           #   to find slow operations (e.g., duration > 500ms).
           - id: span-duration
             tag: duration
             operator: ">"
             scope: intrinsic
-            type: static
+            type: dynamic
           # Phase 2: RPC tracing filters
           - id: rpc-command
             tag: command
@@ -164,12 +164,12 @@ datasources:
             tag: close_time_correct
             operator: "="
             scope: span
-            type: dynamic
+            type: static
           - id: consensus-state
             tag: consensus_state
             operator: "="
             scope: span
-            type: dynamic
+            type: static
           - id: consensus-close-resolution
             tag: close_resolution_ms
             operator: "="

@@ -287,9 +287,11 @@ See [Phase4_taskList.md](./Phase4_taskList.md) for full task details.
 **Objective**: Wire `TraceContextPropagator` for P2P messages (proposals,
 validations) to enable true distributed tracing between nodes.
 
-**Status**: Design documented, NOT implemented. Protobuf fields (field 1001)
-and `TraceContextPropagator` free functions exist. Wiring deferred until Phase 4a is
-validated in a multi-node environment.
+**Status**: Partially implemented. Send-side injection (proposals and
+validations) and receive-side extraction (`consensus.{proposal,validation}.
+receive` spans parented on the sender's context) are wired in Phase 4a.
+Remaining Phase 4b work: relay spans in `share(RCLCxPeerPos)` and multi-node
+validation of the propagation path.
 
 **Prerequisites**: Phase 4a complete and validated.
 

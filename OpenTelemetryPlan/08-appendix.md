@@ -186,16 +186,15 @@ flowchart TB
 
 ### Task Lists
 
-| Document                                                                   | Description                                         |
-| -------------------------------------------------------------------------- | --------------------------------------------------- |
-| [Phase2_taskList.md](./Phase2_taskList.md)                                 | RPC layer trace instrumentation                     |
-| [Phase3_taskList.md](./Phase3_taskList.md)                                 | Peer overlay & consensus tracing                    |
-| [Phase4_taskList.md](./Phase4_taskList.md)                                 | Transaction lifecycle tracing                       |
-| [Phase5_taskList.md](./Phase5_taskList.md)                                 | Ledger processing & advanced tracing                |
-| [Phase5_IntegrationTest_taskList.md](./Phase5_IntegrationTest_taskList.md) | Observability stack integration tests               |
-| [Phase7_taskList.md](./Phase7_taskList.md)                                 | Native OTel metrics migration                       |
-| [Phase8_taskList.md](./Phase8_taskList.md)                                 | Log-trace correlation                               |
-| [presentation.md](./presentation.md)                                       | Presentation slides for OpenTelemetry plan overview |
+| Document                                                                   | Description                           |
+| -------------------------------------------------------------------------- | ------------------------------------- |
+| [Phase2_taskList.md](./Phase2_taskList.md)                                 | RPC layer trace instrumentation       |
+| [Phase3_taskList.md](./Phase3_taskList.md)                                 | Peer overlay & consensus tracing      |
+| [Phase4_taskList.md](./Phase4_taskList.md)                                 | Transaction lifecycle tracing         |
+| [Phase5_taskList.md](./Phase5_taskList.md)                                 | Ledger processing & advanced tracing  |
+| [Phase5_IntegrationTest_taskList.md](./Phase5_IntegrationTest_taskList.md) | Observability stack integration tests |
+| [Phase7_taskList.md](./Phase7_taskList.md)                                 | Native OTel metrics migration         |
+| [Phase8_taskList.md](./Phase8_taskList.md)                                 | Log-trace correlation                 |
 
 ---
 

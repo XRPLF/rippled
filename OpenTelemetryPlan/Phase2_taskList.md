@@ -169,11 +169,12 @@ Node health (`amendment_blocked`, `server_state`) is not part of the telemetry s
 | `rpc.process`       | `batch_size`                 | int64  | `params.size()` (only when batch) |
 | `rpc.ws_message`    | `command`                    | string | `jv[command]` or `jv[method]`     |
 | `rpc.command.*`     | `load_type`                  | string | `context.loadType.label()`        |
-| `pathfind.compute`  | `pathfind_dest_amount`       | string | `saDstAmount_.getFullText()`      |
 | `pathfind.compute`  | `pathfind_dest_currency`     | string | `to_string(saDstAmount_.asset())` |
 | `pathfind.discover` | `pathfind_num_source_assets` | int64  | `sourceAssets.size()`             |
 
-**New attr keys**: `RpcSpanNames.h` (`isBatch`, `batchSize`, `loadType`), `PathFindSpanNames.h` (`destAmount`, `destCurrency`, `numSourceAssets`).
+_Note: `pathfind_dest_amount` was removed — the destination amount is a financial value excluded by the privacy policy (design §2.4.4)._
+
+**New attr keys**: `RpcSpanNames.h` (`isBatch`, `batchSize`, `loadType`), `PathFindSpanNames.h` (`destCurrency`, `numSourceAssets`).
 
 **Modified files**:
 
