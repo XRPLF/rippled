@@ -107,8 +107,13 @@ doAccountLines(rpc::JsonContext& context)
 
     std::string strPeer;
     if (params.isMember(jss::peer))
-        strPeer = params[jss::peer].asString();
+    {
+        if (!params[jss::peer].isString())
+            return RPC::invalid_field_error(jss::peer);
 
+        strPeer = params[jss::peer].asString();
+    }
+    
     auto const raPeerAccount = [&]() -> std::optional<AccountID> {
         return strPeer.empty() ? std::nullopt : parseBase58<AccountID>(strPeer);
     }();
