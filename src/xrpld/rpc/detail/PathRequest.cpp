@@ -72,7 +72,7 @@ PathRequest::PathRequest(
 
 PathRequest::PathRequest(
     Application& app,
-    std::function<void(void)> completion,
+    std::function<void(void)> const& completion,
     Resource::Consumer& consumer,
     int id,
     PathRequestManager& owner,

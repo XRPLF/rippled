@@ -4,16 +4,20 @@
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/BookDirs.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STAmount.h>
 
 #include <algorithm>
 #include <atomic>
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -64,49 +68,178 @@ atomicStore(std::shared_ptr<T>* p, std::shared_ptr<T> v, std::memory_order order
 
 namespace {
 
-/// Convert a raw Quality uint64 (from getQuality()) into our 16.16
-/// fixed-point edge weight.
+// 16.16 fixed-point scale for log2(cost_ratio) edge weights.
+static constexpr long double kLogWeightScale = 65536.0L;
+static constexpr long double kLog2_10 = 3.3219280948873626L;  // log2(10)
+
+// Sentinel path cost (unreachable). Fits in int64 and is far above any
+// realistic sum of log-weights on a ~8-hop path.
+static constexpr std::int64_t kCostInf = std::numeric_limits<std::int64_t>::max() / 4;
+
+// Empty-book traversal cost: worse than any real path of kMaxPathLength hops
+// but still finite so structural edges remain traversable.
+static constexpr std::int64_t kEmptyBookCost = kCostInf / 8;
+
+/// Order-preserving map int64 cost -> uint64 for min-heaps / cumQuality.
+/// Flips the sign bit so lower signed costs sort as lower unsigned ranks.
+inline std::uint64_t
+costToRank(std::int64_t cost) noexcept
+{
+    return static_cast<std::uint64_t>(cost) ^ (std::uint64_t{1} << 63);
+}
+
+/// Recover signed log-weight bits stored in Edge::qualityFixed.
+/// kNoLiquidity must be checked by the caller before calling this.
+inline std::int64_t
+signedLogWeight(std::uint32_t qualityFixed) noexcept
+{
+    return static_cast<std::int32_t>(qualityFixed);
+}
+
+/// Convert a raw Quality uint64 (from getQuality()) into a log-space edge
+/// weight that can be *added* during path search.
 ///
-/// XRPL Quality encoding stores (out/in) as a floating-point mantissa in
-/// the high bits.  A quality of 1.0 (par) ≡ QUALITY_ONE = 1e9.
-/// We normalise so that par = 65536 (1 << 16) and compute:
-///   qualityFixed = round(65536 * QUALITY_ONE / rawQuality)
-/// where rawQuality is the encoded uint64 integer representation.
+/// XRPL quality is the taker cost ratio (takerPays / takerGets).  Exchange
+/// rates compose multiplicatively along a path:
+///   total_cost = r1 * r2 * ... * rn
+/// so the natural additive edge weight is:
+///   log2(r1) + log2(r2) + ... + log2(rn) = log2(total_cost)
 ///
-/// Lower qualityFixed = better rate (taker pays less per unit received).
+/// We store log2(ratio) in 16.16 fixed-point as the int32 bit-pattern inside
+/// a uint32 (kNoLiquidity remains the all-ones sentinel and is never a valid
+/// log weight).  Lower signed weight = cheaper rate.
 ///
-/// Note: Quality::rate() returns (in/out) = the cost to the taker.
-///       qualityFixed encodes cost, so lower is better — consistent with
-///       Dijkstra minimisation.
+/// Note: log2(ratio) may be negative when ratio < 1.  Query-time search uses
+/// Dijkstra on Johnson-reweighted edges (potentials computed once per
+/// snapshot) so weights are non-negative without a per-hop bias.
 uint32_t
 qualityToFixed(uint64_t rawQuality)
 {
-    // Quality encoding: value = mantissa * 10^(exponent-97) where the
-    // packed bits store mantissa and exponent.  The simplest path is
-    // to reconstruct the rate via Quality::rate() which gives an STAmount.
-    // However STAmount involves heap allocation.  Instead we use the
-    // relationship:  rate = QUALITY_ONE / rawQuality_as_double.
-
     if (rawQuality == 0)
         return PayGraph::kNoLiquidity;
 
-    // Quality stores (out / in) as a fixed-mantissa, fixed-exponent value.
-    // Higher raw value = better quality for the taker (more out per in).
-    // We want: lower edge weight = better.  So we invert:
-    //   qualityFixed = round(kPar * kQualityMax / rawQuality)
-    // clamp to [1, kNoLiquidity-1].
-    static constexpr uint64_t kPar = 65536;
-    static constexpr uint64_t kQualityMax = 0xFFFF'FFFF'FFFF'FFFFull;
+    // Quality packing (see amountFromQuality / getRate):
+    //   ratio = mantissa * 10^exponent
+    //   mantissa: low 56 bits, exponent: high 8 bits biased by +100
+    uint64_t const mantissa = rawQuality & 0x00FFFFFFFFFFFFFFull;
+    int const exponent = static_cast<int>(rawQuality >> 56) - 100;
 
-    // Avoid divide-by-zero; rawQuality == 0 already handled above.
-    // Use 128-bit arithmetic to avoid overflow when rawQuality is small.
-    __uint128_t fixed128 = static_cast<__uint128_t>(kPar) * (kQualityMax / rawQuality);
-    uint64_t fixed = (fixed128 > static_cast<__uint128_t>(PayGraph::kNoLiquidity - 1))
-        ? static_cast<uint64_t>(PayGraph::kNoLiquidity - 1)
-        : static_cast<uint64_t>(fixed128);
-    if (fixed == 0)
-        fixed = 1;
+    if (mantissa == 0)
+        return static_cast<uint32_t>(static_cast<int32_t>(0));
+
+    // log2(mantissa * 10^exponent) = log2(mantissa) + exponent * log2(10)
+    long double const logValue = std::log2(static_cast<long double>(mantissa)) +
+        static_cast<long double>(exponent) * kLog2_10;
+
+    long long const fixed = std::llround(logValue * kLogWeightScale);
+
+    // Clamp into int32 so the bit-pattern fits in qualityFixed and never
+    // collides with kNoLiquidity (0xFFFFFFFF == -1 as int32 is a valid small
+    // weight; we only use kNoLiquidity as an explicit sentinel checked first).
+    constexpr long long kMin =
+        std::numeric_limits<int32_t>::min() + 1;  // keep -1 free? not required
+    constexpr long long kMax = std::numeric_limits<int32_t>::max();
+    long long const clamped = std::clamp(fixed, kMin, kMax);
+
+    // Avoid storing the kNoLiquidity bit pattern by coincidence.
+    auto bits = static_cast<uint32_t>(static_cast<int32_t>(clamped));
+    if (bits == PayGraph::kNoLiquidity)
+        bits = static_cast<uint32_t>(static_cast<int32_t>(clamped - 1));
+
+    return bits;
+}
+
+// Bias so log2(amount) packs into a positive uint32 over a wide range.
+// Encoding: liquidityLog = round((log2(|amount|) + kLogBias) * 65536)
+// Must stay consistent between bookLiquidityLog() and edgeCost().
+static constexpr long double kLogBias = 64.0L;
+static constexpr long double kFixedScale = 65536.0L;
+
+/// Pack log2(|amount|) into the Edge::liquidityLog encoding.
+uint32_t
+amountToLogFixed(STAmount const& amount)
+{
+    if (amount == beast::kZero || amount.mantissa() == 0)
+        return 0;
+
+    long double const logValue = std::log2(static_cast<long double>(amount.mantissa())) +
+        static_cast<long double>(amount.exponent()) * kLog2_10;
+
+    long long const fixed = std::llround((logValue + kLogBias) * kFixedScale);
+    if (fixed < 1)
+        return 1;
+    if (fixed > static_cast<long long>(PayGraph::kNoLiquidity - 1))
+        return PayGraph::kNoLiquidity - 1;
     return static_cast<uint32_t>(fixed);
+}
+
+/// True (signed) edge cost in log-space — used for path ranking and as the
+/// base for Johnson reweighting:
+///   cost = log2(rate)                            when depth covers the payment
+///   cost = log2(rate) + log2(payment/depth)      when the book is thin
+std::int64_t
+edgeCostRaw(PayGraph::Edge const& e, STAmount const* dstAmount)
+{
+    if (e.qualityFixed == PayGraph::kNoLiquidity)
+        return kEmptyBookCost;
+
+    std::int64_t cost = signedLogWeight(e.qualityFixed);
+
+    // No payment size, or no measured depth: pure rate ranking.
+    if (dstAmount == nullptr || *dstAmount == beast::kZero || e.liquidityLog == 0)
+        return cost;
+
+    // liquidityLog / payLog are both biased by kLogBias; the difference is
+    // the unbiased log2(payment/depth) shortfall (or surplus).
+    uint32_t const payLog = amountToLogFixed(*dstAmount);
+    if (payLog > e.liquidityLog)
+        cost += static_cast<std::int64_t>(payLog - e.liquidityLog);
+
+    return cost;
+}
+
+/// Non-negative Dijkstra edge weight via Johnson reweighting:
+///   w'(u,v) = w(u,v) + h[u] - h[v]
+/// where h[] are Snapshot::potential from computePotentials().
+/// Path identity: sum w' = sum w + h[src] - h[dst] (no per-hop bias).
+std::int64_t
+edgeCostDijkstra(
+    PayGraph::Snapshot const& snap,
+    PayGraph::VID u,
+    PayGraph::Edge const& e,
+    STAmount const* dstAmount)
+{
+    std::int64_t const raw = edgeCostRaw(e, dstAmount);
+    if (snap.potential.empty())
+        return raw > 0 ? raw : 0;
+
+    std::int64_t const hu = (u < snap.potential.size()) ? snap.potential[u] : 0;
+    std::int64_t const hv = (e.to < snap.potential.size()) ? snap.potential[e.to] : 0;
+
+    // w' = w + h(u) - h(v).  Guard overflow around empty-book sentinels.
+    if (raw >= kEmptyBookCost / 2)
+        return kEmptyBookCost;
+
+    std::int64_t const wp = raw + hu - hv;
+    // Numerical / incomplete-potential safety: Dijkstra requires >= 0.
+    return wp > 0 ? wp : 0;
+}
+
+/// Convert Dijkstra reweighted distance into the true signed log-path cost.
+inline std::int64_t
+truePathCost(
+    PayGraph::Snapshot const& snap,
+    PayGraph::VID src,
+    PayGraph::VID dst,
+    std::int64_t dijkstraDist) noexcept
+{
+    if (dijkstraDist >= kCostInf / 2 || snap.potential.empty())
+        return dijkstraDist;
+
+    std::int64_t const hs = (src < snap.potential.size()) ? snap.potential[src] : 0;
+    std::int64_t const hd = (dst < snap.potential.size()) ? snap.potential[dst] : 0;
+    // sum w = sum w' - h[src] + h[dst]
+    return dijkstraDist - hs + hd;
 }
 
 }  // namespace
@@ -197,6 +330,29 @@ PayGraph::topOfBookQuality(ReadView const& ledger, Book const& book)
 }
 
 //==============================================================================
+// Static: single top-of-book offer size as biased log2 fixed-point.
+//
+// One SLE read only — used for a cheap depth signal.  Never walk the whole
+// book on the hot path (that made path_find multi-second on live books).
+//==============================================================================
+
+uint32_t
+PayGraph::bookLiquidityLog(ReadView const& ledger, Book const& book)
+{
+    BookDirs dirs(ledger, book);
+    for (auto const& sle : dirs)
+    {
+        if (!sle)
+            continue;
+        auto const gets = sle->getFieldAmount(sfTakerGets);
+        if (gets == beast::kZero)
+            continue;
+        return amountToLogFixed(gets);
+    }
+    return 0;
+}
+
+//==============================================================================
 // Static: build a fresh Snapshot
 //==============================================================================
 
@@ -254,18 +410,24 @@ PayGraph::buildSnapshot(
         {
             Asset const& dst = book.out;
 
+            // Full build is rare (startup / full OB rescan), not per path_find.
+            // Quality: O(1) succ.  Depth: first offer only (one SLE).
             uint32_t const q = topOfBookQuality(ledger, book);
-            // Add edge src -> dst even if no liquidity (structural presence).
+            uint32_t const depth = bookLiquidityLog(ledger, book);
 
             VID const vSrc = ensureVertex(*snap, src);
             VID const vDst = ensureVertex(*snap, dst);
             Edge& e = ensureEdge(*snap, vSrc, vDst, EdgeKind::OrderBook);
             e.qualityFixed = q;
+            e.liquidityLog = depth;
             ++snap->stats.orderBooks;
 
             enqueue(dst);
         }
     }
+
+    // One Johnson pass per full build only (not per path_find / not every delta).
+    computePotentials(*snap);
 
     JLOG(j.debug()) << "PayGraph::buildSnapshot: " << snap->stats.vertices << " vertices, "
                     << snap->stats.edges << " edges, " << snap->stats.orderBooks << " order books";
@@ -347,21 +509,23 @@ PayGraph::applyLedgerDelta(
     next->stats.totalDeltasCalled = cur->stats.totalDeltasCalled + 1;
 
     // ---------- patch changed edges ---------------------------------------
+    // Only books that had offer activity this ledger (usually << 100).
+    // Quality: O(1) succ.  Depth: one top offer if present.  No O(VE)
+    // potential recompute — Dijkstra clamps reweighted costs to >= 0 using
+    // the last full-build potentials (good enough for ranking).
     for (Book const& book : changedBooks)
     {
         uint32_t const newQ = topOfBookQuality(newLedger, book);
+        uint32_t const newDepth = bookLiquidityLog(newLedger, book);
 
-        // Ensure both endpoints exist (a book might be new this ledger).
         VID const vSrc = ensureVertex(*next, book.in);
         VID const vDst = ensureVertex(*next, book.out);
         Edge& e = ensureEdge(*next, vSrc, vDst, EdgeKind::OrderBook);
         e.qualityFixed = newQ;
-
-        // Also update the reverse direction if that book exists.
-        // (Order books are one-directional by definition, so we only update
-        //  the forward edge.  The reverse book is a separate changedBook
-        //  entry if it also had activity.)
+        e.liquidityLog = newDepth;
     }
+
+    // Keep existing potentials; do not recompute O(VE) every ~3s ledger.
 
     JLOG(j_.trace()) << "PayGraph::applyLedgerDelta: patched " << changedBooks.size()
                      << " books, delta #" << next->stats.totalDeltasCalled;
@@ -396,11 +560,67 @@ PayGraph::assetOf(VID v) const
 }
 
 //==============================================================================
-// Dijkstra — single-source shortest paths on the asset graph.
+// Johnson potentials — computed once per snapshot (build / ledger delta).
 //
-// blocked: optional bitmask of vertices to treat as unreachable (used by
-//          Yen's algorithm to enumerate k-shortest paths by temporarily
-//          removing spur vertices).
+// Signed log2(rate) weights may be negative (cost_ratio < 1).  Dijkstra needs
+// non-negative weights, so we compute potentials h[v] such that
+//   w'(u,v) = w(u,v) + h[u] - h[v]  >= 0
+// for every real edge.  This is Bellman-Ford from a virtual super-source with
+// 0-weight edges into every vertex (i.e. initialise h = 0 and relax).  Cost is
+// O(VE) once per snapshot — not per pathfind.
+//==============================================================================
+
+void
+PayGraph::computePotentials(Snapshot& snap)
+{
+    uint32_t const n = static_cast<uint32_t>(snap.assets.size());
+    snap.potential.assign(n, 0);
+
+    if (n == 0)
+        return;
+
+    // |V|-1 relaxation rounds.  Early-exit when stable.
+    for (uint32_t pass = 0; pass + 1 < n; ++pass)
+    {
+        bool updated = false;
+        for (VID u = 0; u < n; ++u)
+        {
+            if (u >= snap.adj.size())
+                continue;
+            for (Edge const& e : snap.adj[u])
+            {
+                if (e.qualityFixed == kNoLiquidity)
+                    continue;  // structural empty — not a real rate
+                VID const v = e.to;
+                if (v >= n)
+                    continue;
+
+                std::int64_t const w = signedLogWeight(e.qualityFixed);
+                // h[v] > h[u] + w  →  improve
+                if (snap.potential[u] > kCostInf / 2 + w)
+                    continue;  // overflow guard
+                std::int64_t const cand = snap.potential[u] + w;
+                if (cand < snap.potential[v])
+                {
+                    snap.potential[v] = cand;
+                    updated = true;
+                }
+            }
+        }
+        if (!updated)
+            break;
+    }
+}
+
+//==============================================================================
+// Single-source shortest paths (Dijkstra on Johnson-reweighted log-costs).
+//
+// True edge costs are signed log2(cost_ratio) (+ optional liquidity penalty).
+// Query-time Dijkstra uses non-negative w' = w + h[u] - h[v].  True path cost
+// is recovered as dist'[dst] - h[src] + h[dst].
+//
+// blockedVerts/Edges: Yen's algorithm k-shortest enumeration
+// dstAmount: thin-book log-shortfall penalty (request-scoped, >= 0)
 //==============================================================================
 
 PayGraph::DijkResult
@@ -408,12 +628,13 @@ PayGraph::dijkstra(
     Snapshot const& snap,
     VID src,
     std::vector<bool> const* blockedVerts,
-    BlockedEdges const* blockedEdges)
+    BlockedEdges const* blockedEdges,
+    STAmount const* dstAmount)
 {
     uint32_t const n = static_cast<uint32_t>(snap.assets.size());
 
     DijkResult res;
-    res.dist.assign(n, std::numeric_limits<uint64_t>::max());
+    res.dist.assign(n, kCostInf);
     res.prev.assign(n, kNull);
 
     if (src >= n)
@@ -423,14 +644,14 @@ PayGraph::dijkstra(
 
     res.dist[src] = 0;
 
-    // Min-heap: (cost, vertex)
+    // Min-heap: (reweighted cost, vertex)
     using PQ = std::priority_queue<
-        std::pair<uint64_t, VID>,
-        std::vector<std::pair<uint64_t, VID>>,
+        std::pair<std::int64_t, VID>,
+        std::vector<std::pair<std::int64_t, VID>>,
         std::greater<>>;
 
     PQ pq;
-    pq.emplace(0ull, src);
+    pq.emplace(0, src);
 
     while (!pq.empty())
     {
@@ -438,7 +659,7 @@ PayGraph::dijkstra(
         pq.pop();
 
         if (cost > res.dist[u])
-            continue;  // stale entry
+            continue;  // stale heap entry
 
         if (u >= snap.adj.size())
             continue;
@@ -451,7 +672,6 @@ PayGraph::dijkstra(
             if ((blockedVerts != nullptr) && v < blockedVerts->size() && (*blockedVerts)[v])
                 continue;
 
-            // Check if this specific edge (u -> v) is blocked.
             if (blockedEdges != nullptr)
             {
                 bool edgeBlocked = false;
@@ -467,16 +687,11 @@ PayGraph::dijkstra(
                     continue;
             }
 
-            // Edges with no current top-of-book offer are traversed with a
-            // very high cost so they rank last.  rippleCalculate is the
-            // authoritative liquidity check — we must not skip structural
-            // edges, as offers placed before the graph was built may still
-            // be present in the ledger.
-            uint64_t const edgeCost = (e.qualityFixed == kNoLiquidity)
-                ? static_cast<uint64_t>(kNoLiquidity - 1)
-                : e.qualityFixed;
+            std::int64_t const w = edgeCostDijkstra(snap, u, e, dstAmount);
+            if (w >= kCostInf / 2 || res.dist[u] >= kCostInf - w)
+                continue;
 
-            uint64_t const newCost = cost + edgeCost;
+            std::int64_t const newCost = res.dist[u] + w;
             if (newCost < res.dist[v])
             {
                 res.dist[v] = newCost;
@@ -492,7 +707,7 @@ PayGraph::dijkstra(
 std::vector<PayGraph::VID>
 PayGraph::reconstructPath(DijkResult const& res, VID src, VID dst)
 {
-    if (res.dist[dst] == std::numeric_limits<uint64_t>::max())
+    if (dst >= res.dist.size() || res.dist[dst] >= kCostInf / 2)
         return {};  // unreachable
 
     std::vector<VID> path;
@@ -521,34 +736,38 @@ PayGraph::reconstructPath(DijkResult const& res, VID src, VID dst)
 //==============================================================================
 
 std::vector<PayGraph::AssetPath>
-PayGraph::kShortestPaths(Snapshot const& snap, VID src, VID dst, int k)
+PayGraph::kShortestPaths(Snapshot const& snap, VID src, VID dst, int k, STAmount const& dstAmount)
 {
     uint32_t const n = static_cast<uint32_t>(snap.assets.size());
     if (src >= n || dst >= n || k <= 0)
         return {};
 
+    STAmount const* const pay = (dstAmount == beast::kZero) ? nullptr : &dstAmount;
+
     std::vector<AssetPath> a;  // confirmed k-shortest paths
     a.reserve(k);
 
-    // Candidate set: (cumQuality, path) ordered by quality ascending.
+    // Candidate set: (rank, path) ordered by rank ascending (lower = better).
+    // rank = costToRank(signed log-sum) so negative costs order correctly.
     using Candidate = std::pair<uint64_t, std::vector<VID>>;
     auto cmpCand = [](Candidate const& a, Candidate const& b) {
-        return a.first > b.first;  // min-heap
+        return a.first > b.first;  // min-heap on rank
     };
     std::priority_queue<Candidate, std::vector<Candidate>, decltype(cmpCand)> b(cmpCand);
 
     // Find the first (shortest) path.
     {
-        auto res = dijkstra(snap, src);
+        auto res = dijkstra(snap, src, nullptr, nullptr, pay);
         auto path = reconstructPath(res, src, dst);
         if (path.empty())
             return {};  // no path at all
-        b.emplace(res.dist[dst], std::move(path));
+        // Rank by true log-cost (unwrap Johnson reweighting).
+        b.emplace(costToRank(truePathCost(snap, src, dst, res.dist[dst])), std::move(path));
     }
 
     while (!b.empty() && static_cast<int>(a.size()) < k)
     {
-        auto [cost, prev] = b.top();
+        auto [rank, prev] = b.top();
         b.pop();
 
         // Deduplicate (same path may be inserted multiple times).
@@ -564,7 +783,7 @@ PayGraph::kShortestPaths(Snapshot const& snap, VID src, VID dst, int k)
         if (dup)
             continue;
 
-        a.push_back({prev, cost});
+        a.push_back({prev, rank});
 
         if (static_cast<int>(a.size()) == k)
             break;
@@ -584,7 +803,7 @@ PayGraph::kShortestPaths(Snapshot const& snap, VID src, VID dst, int k)
 
             // Block forward edges from spurNode that are already used by
             // accepted paths sharing the same root prefix.  This is the
-            // critical part of Yen's: without it, Dijkstra just finds the
+            // critical part of Yen's: without it, the oracle just finds the
             // same path again instead of exploring alternatives.
             BlockedEdges blockedEdges;
             for (auto const& ap : a)
@@ -600,7 +819,7 @@ PayGraph::kShortestPaths(Snapshot const& snap, VID src, VID dst, int k)
                 }
             }
 
-            auto res = dijkstra(snap, spurNode, &blockedVerts, &blockedEdges);
+            auto res = dijkstra(snap, spurNode, &blockedVerts, &blockedEdges, pay);
             auto spur = reconstructPath(res, spurNode, dst);
             if (spur.empty())
                 continue;
@@ -609,7 +828,9 @@ PayGraph::kShortestPaths(Snapshot const& snap, VID src, VID dst, int k)
             std::vector<VID> candidate = rootPath;
             candidate.insert(candidate.end(), spur.begin() + 1, spur.end());
 
-            uint64_t candidateCost = 0;
+            // Sum *true* signed log-costs (not reweighted) so ranking matches
+            // multiplicative rate composition across hop counts.
+            std::int64_t candidateCost = 0;
             bool valid = true;
             for (std::size_t j = 0; j + 1 < candidate.size(); ++j)
             {
@@ -620,30 +841,34 @@ PayGraph::kShortestPaths(Snapshot const& snap, VID src, VID dst, int k)
                     valid = false;
                     break;
                 }
-                uint32_t bestEdge = 0;
+                std::int64_t best = kCostInf;
                 bool found = false;
                 for (auto const& e : snap.adj[u])
                 {
                     if (e.to == v)
                     {
-                        uint32_t const w =
-                            (e.qualityFixed == kNoLiquidity) ? (kNoLiquidity - 1) : e.qualityFixed;
-                        if (!found || w < bestEdge)
+                        std::int64_t const w = edgeCostRaw(e, pay);
+                        if (!found || w < best)
                         {
-                            bestEdge = w;
+                            best = w;
                             found = true;
                         }
                     }
                 }
-                if (!found)
+                if (!found || best >= kEmptyBookCost / 2)
                 {
                     valid = false;
                     break;
                 }
-                candidateCost += bestEdge;
+                if (candidateCost >= kCostInf - best)
+                {
+                    valid = false;
+                    break;
+                }
+                candidateCost += best;
             }
             if (valid)
-                b.emplace(candidateCost, std::move(candidate));
+                b.emplace(costToRank(candidateCost), std::move(candidate));
         }
     }
 
@@ -655,7 +880,7 @@ PayGraph::kShortestPaths(Snapshot const& snap, VID src, VID dst, int k)
 //==============================================================================
 
 std::vector<PayGraph::AssetPath>
-PayGraph::findPaths(Asset const& src, Asset const& dst, int k) const
+PayGraph::findPaths(Asset const& src, Asset const& dst, int k, STAmount const& dstAmount) const
 {
     auto s = snapshot();
     if (!s)
@@ -666,7 +891,7 @@ PayGraph::findPaths(Asset const& src, Asset const& dst, int k) const
     if (itSrc == s->index.end() || itDst == s->index.end())
         return {};
 
-    return kShortestPaths(*s, itSrc->second, itDst->second, k);
+    return kShortestPaths(*s, itSrc->second, itDst->second, k, dstAmount);
 }
 
 }  // namespace xrpl

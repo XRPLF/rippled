@@ -72,6 +72,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <atomic>
@@ -103,21 +104,22 @@ public:
     };
 
     /// One directed edge in the asset-exchange graph.
-    /// 12 bytes -- 5 fit in one cache line.
+    /// 16 bytes -- fits in one cache line.
     struct Edge
     {
         VID to{};                 ///< Receiving-asset vertex
-        uint32_t qualityFixed{};  ///< Top-of-book rate as 16.16 fixed-point:
-                                  ///  (takerPays / takerGets) x 65536.
-                                  ///  Lower = cheaper.  Used additively as the
-                                  ///  Dijkstra edge weight.
-                                  ///  kNoLiquidity means the book exists
-                                  ///  structurally but has no current offers.
+        uint32_t qualityFixed{};  ///< log2(cost_ratio) in 16.16 fixed-point,
+                                  ///  stored as int32 bit-pattern (lower signed
+                                  ///  value = cheaper).  Path search *adds*
+                                  ///  these so multi-hop cost = log2(∏ rates).
+                                  ///  kNoLiquidity = structural empty book.
+        uint32_t liquidityLog{};  ///< log2(|sum(takerGets)|) as biased 16.16
+                                  ///  fixed-point: (log2(amount) + 64) * 65536.
+                                  ///  Higher = more depth. 0 = empty/unknown.
         EdgeKind kind{};
-        uint8_t pad[3]{};
     };
 
-    static_assert(sizeof(Edge) == 12, "Edge must be 12 bytes");
+    static_assert(sizeof(Edge) == 16, "Edge must be 16 bytes");
 
     /// Sentinel quality: edge structurally exists but has no current offers.
     /// Dijkstra traverses these at maximum cost so they rank last; structural
@@ -134,7 +136,10 @@ public:
     struct AssetPath
     {
         std::vector<VID> vids;
-        uint64_t cumQuality{};  ///< Sum of qualityFixed (lower = better)
+        uint64_t cumQuality{};  ///< Rank of sum of log2 edge weights
+                                ///< (lower = better).  Encodes signed path
+                                ///< cost via costToRank so multi-hop products
+                                ///< compare correctly against direct paths.
     };
 
     //--------------------------------------------------------------------------
@@ -171,6 +176,12 @@ public:
 
         /// Asset -> VID for O(1) lookup.
         hash_map<Asset, VID> index;
+
+        /// Johnson potentials h[v] so reweighted edge costs
+        ///   w'(u,v) = log2(rate) + h[u] - h[v]
+        /// are non-negative.  Computed once per snapshot (build/delta), not
+        /// per pathfind, so Dijkstra stays O((V+E) log V) at query time.
+        std::vector<std::int64_t> potential;
 
         Stats stats;
     };
@@ -248,9 +259,14 @@ public:
     //--------------------------------------------------------------------------
     // K-Shortest asset paths  (Yen's algorithm over Dijkstra)
     //
-    // snap     -- snapshot obtained from snapshot() at the start of the request
-    // src/dst  -- vertex IDs of source and destination assets
-    // k        -- maximum number of paths to return
+    // snap       -- snapshot obtained from snapshot() at the start of the request
+    // src/dst    -- vertex IDs of source and destination assets
+    // k          -- maximum number of paths to return
+    // dstAmount  -- destination payment size for liquidity-aware ranking.
+    //               When non-zero, edges whose book depth cannot cover this
+    //               amount are penalized so thin top-of-book paths do not
+    //               consume scarce k-shortest candidate slots.  beast::kZero
+    //               keeps pure top-of-book ranking (legacy behavior).
     //
     // Returns up to k paths ordered by ascending cumQuality (best first).
     // Returns {} if no path exists between src and dst.
@@ -258,11 +274,17 @@ public:
     // Complexity: O(k * (V + E) log V) -- typically < 1 ms for k = 6.
     //--------------------------------------------------------------------------
     static std::vector<AssetPath>
-    kShortestPaths(Snapshot const& snap, VID src, VID dst, int k);
+    kShortestPaths(
+        Snapshot const& snap,
+        VID src,
+        VID dst,
+        int k,
+        STAmount const& dstAmount = beast::kZero);
 
     /// Convenience: grab current snapshot and run kShortestPaths.
     std::vector<AssetPath>
-    findPaths(Asset const& src, Asset const& dst, int k) const;
+    findPaths(Asset const& src, Asset const& dst, int k, STAmount const& dstAmount = beast::kZero)
+        const;
 
     //--------------------------------------------------------------------------
     Stats
@@ -297,24 +319,36 @@ private:
     static uint32_t
     topOfBookQuality(ReadView const& ledger, Book const& book);
 
+    /// Full-book depth as biased log2 fixed-point (see Edge::liquidityLog).
+    /// Sums takerGets across all offers so thin top-of-book rates can still
+    /// be scored against total available liquidity.
+    static uint32_t
+    bookLiquidityLog(ReadView const& ledger, Book const& book);
+
     //--------------------------------------------------------------------------
-    // Dijkstra internals
+    // Shortest-path internals (Dijkstra over Johnson-reweighted log-weights)
     //--------------------------------------------------------------------------
     struct DijkResult
     {
-        std::vector<uint64_t> dist;  ///< dist[v] = min cumulative cost from src
-        std::vector<VID> prev;       ///< prev[v] = predecessor (kNull = none)
+        std::vector<std::int64_t> dist;  ///< min reweighted distance from src
+        std::vector<VID> prev;           ///< predecessor (kNull = none)
     };
 
-    /// A set of directed edges (from, to) to treat as absent during Dijkstra.
+    /// A set of directed edges (from, to) to treat as absent during search.
     using BlockedEdges = std::vector<std::pair<VID, VID>>;
 
+    /// Recompute Snapshot::potential after edges change (build / ledger delta).
+    static void
+    computePotentials(Snapshot& snap);
+
+    /// Binary-heap Dijkstra on non-negative reweighted log-costs.
     static DijkResult
     dijkstra(
         Snapshot const& snap,
         VID src,
         std::vector<bool> const* blockedVerts = nullptr,
-        BlockedEdges const* blockedEdges = nullptr);
+        BlockedEdges const* blockedEdges = nullptr,
+        STAmount const* dstAmount = nullptr);
 
     static std::vector<VID>
     reconstructPath(DijkResult const& res, VID src, VID dst);

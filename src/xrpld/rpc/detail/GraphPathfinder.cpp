@@ -1,8 +1,8 @@
 #include <xrpld/rpc/detail/GraphPathfinder.h>
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/PathfinderUtils.h>
-#include <xrpld/rpc/detail/RippleLineCache.h>
 #include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/basics/Log.h>
@@ -21,6 +21,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/paths/RippleCalc.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -211,13 +212,10 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
         // by ascending cumQuality.  Materialise into concrete STPaths and
         // dedupe.
         //
-        // Oversample (kMaxK * kOversample) so that rankPaths() has spares
-        // to fall back on when individual paths fail rippleCalc liveness
-        // checks (tecPATH_PARTIAL on thin order books, AMM overflow, etc).
-        // rankPaths has its own early-exit once it has maxPaths viable
-        // entries + 3 consecutive failures, so wasted rippleCalc work is
-        // bounded.
-        static constexpr int kOversample = 3;
+        // Light oversample: rankPaths() runs expensive rippleCalculate per
+        // candidate (and AMM overflows throw FlowException with stack dumps).
+        // Keep the probe set small so startup/updateAll stays bounded.
+        static constexpr int kOversample = 2;
         std::vector<PayGraph::AssetPath> candidates;
         for (PayGraph::VID const vSrc : srcVIDs)
         {
@@ -225,7 +223,8 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
             {
                 if (vSrc == vDst)
                     continue;
-                auto paths = PayGraph::kShortestPaths(*snap_, vSrc, vDst, kMaxK * kOversample);
+                auto paths =
+                    PayGraph::kShortestPaths(*snap_, vSrc, vDst, kMaxK * kOversample, dstAmount_);
                 for (auto& p : paths)
                     candidates.push_back(std::move(p));
             }
@@ -235,13 +234,19 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
             candidates, [](auto const& a, auto const& b) { return a.cumQuality < b.cumQuality; });
 
         int accepted = 0;
-        int const acceptCap = kMaxK * kOversample;
+        // Materialise at most kMaxK concrete paths; ranking will probe these.
+        int const acceptCap = kMaxK;
         for (auto const& ap : candidates)
         {
             if (accepted >= acceptCap)
                 break;
             if (continueCallback && !continueCallback())
                 return !completePaths_.empty();
+
+            // Skip abstract paths that use a book hop known to throw FlowException
+            // from AMM (avoids re-paying Throw/logThrow on every path_find tick).
+            if (assetPathTouchesFailedAmm(ap))
+                continue;
 
             auto concrete = materialise(ap);
             if (!concrete || concrete->empty())
@@ -376,7 +381,7 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
                             return;
                         if (a == b)
                             continue;
-                        if (ledger_->read(keylet::line(a, b, targetCcy)))
+                        if (ledger_->read(keylet::trustLine(a, b, targetCcy)))
                         {
                             STPath path;
                             path.emplaceBack(
@@ -425,7 +430,7 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
                                 return;
                             if (c == b || c == a)
                                 continue;
-                            if (ledger_->read(keylet::line(c, b, targetCcy)))
+                            if (ledger_->read(keylet::trustLine(c, b, targetCcy)))
                             {
                                 STPath path;
                                 path.emplaceBack(
@@ -614,7 +619,7 @@ GraphPathfinder::materialise(PayGraph::AssetPath const& assetPath)
                 // intermediate account B that has trust lines with both G and
                 // dstAccount_.  Load dstAccount_'s trust lines (cheap: these
                 // are the user's own lines, typically very few).
-                if (!ledger_->read(keylet::line(g, dstAccount_, ccy)))
+                if (!ledger_->read(keylet::trustLine(g, dstAccount_, ccy)))
                 {
                     auto const dstLines = ledger_->read(keylet::account(dstAccount_))
                         ? cache_->getRippleLines(dstAccount_, LineDirection::Outgoing)
@@ -628,7 +633,7 @@ GraphPathfinder::materialise(PayGraph::AssetPath const& assetPath)
                             AccountID const& b = dl.getAccountIDPeer();
                             if (b == g || b == dstAccount_ || b == srcAccount_)
                                 continue;
-                            if (ledger_->read(keylet::line(g, b, ccy)))
+                            if (ledger_->read(keylet::trustLine(g, b, ccy)))
                             {
                                 path.emplaceBack(
                                     STPathElement::TypeAccount, b, xrpCurrency(), xrpAccount());
@@ -645,6 +650,77 @@ GraphPathfinder::materialise(PayGraph::AssetPath const& assetPath)
 }
 
 //==============================================================================
+// Failed-AMM hop tracking helpers
+//==============================================================================
+
+namespace {
+
+Asset
+assetFromPathElement(STPathElement const& pe)
+{
+    if (pe.hasMPT())
+        return MPTIssue{pe.getMPTID()};
+    if (isXRP(pe.getCurrency()))
+        return xrpIssue();
+    return Issue{pe.getCurrency(), pe.getIssuerID()};
+}
+
+}  // namespace
+
+bool
+GraphPathfinder::assetPathTouchesFailedAmm(PayGraph::AssetPath const& assetPath) const
+{
+    auto& prm = app_.getPathRequestManager();
+    for (std::size_t i = 0; i + 1 < assetPath.vids.size(); ++i)
+    {
+        auto const u = assetPath.vids[i];
+        auto const v = assetPath.vids[i + 1];
+        if (u >= snap_->assets.size() || v >= snap_->assets.size())
+            continue;
+        if (prm.isFailedAmmHop(snap_->assets[u], snap_->assets[v]))
+            return true;
+    }
+    return false;
+}
+
+bool
+GraphPathfinder::stPathTouchesFailedAmm(STPath const& path) const
+{
+    if (path.empty())
+        return false;
+
+    auto& prm = app_.getPathRequestManager();
+    Asset prev = srcAmount_.asset();
+    for (auto const& pe : path)
+    {
+        Asset const next = assetFromPathElement(pe);
+        if (prm.isFailedAmmHop(prev, next))
+            return true;
+        prev = next;
+    }
+    return false;
+}
+
+void
+GraphPathfinder::noteFailedAmmHopsFromPath(STPath const& path) const
+{
+    auto& prm = app_.getPathRequestManager();
+    Asset prev = srcAmount_.asset();
+    if (path.empty())
+    {
+        // Default / empty path: still record src→dst book if present.
+        prm.noteFailedAmmHop(prev, dstAmount_.asset());
+        return;
+    }
+    for (auto const& pe : path)
+    {
+        Asset const next = assetFromPathElement(pe);
+        prm.noteFailedAmmHop(prev, next);
+        prev = next;
+    }
+}
+
+//==============================================================================
 // getPathLiquidity — same logic as Pathfinder::getPathLiquidity
 //==============================================================================
 
@@ -655,6 +731,13 @@ GraphPathfinder::getPathLiquidity(
     STAmount& amountOut,
     uint64_t& qualityOut) const
 {
+    // Cheap reject before expensive rippleCalculate / AMM Throw.
+    if (stPathTouchesFailedAmm(path))
+    {
+        JLOG(j_.trace()) << "GraphPathfinder::getPathLiquidity skip known-failed AMM hop";
+        return tefEXCEPTION;
+    }
+
     STPathSet pathSet;
     pathSet.pushBack(path);
 
@@ -681,18 +764,17 @@ GraphPathfinder::getPathLiquidity(
 
         if (!isTesSuccess(rc.result()))
         {
-            JLOG(j_.info()) << "GraphPathfinder::getPathLiquidity failed: "
-                            << transHuman(rc.result()) << " src=" << toBase58(srcAccount_)
-                            << " dst=" << toBase58(dstAccount_)
-                            << " srcAmt=" << srcAmount_.getFullText() << " path="
-                            << json::Compact{pathSet.getJson(JsonOptions::Values::None)};
+            JLOG(j_.debug()) << "GraphPathfinder::getPathLiquidity failed: "
+                             << transHuman(rc.result());
             return rc.result();
         }
 
         qualityOut = getRate(rc.actualAmountOut, rc.actualAmountIn);
         amountOut = rc.actualAmountOut;
 
-        if (!convertAll_)
+        // Second pass only when we still need more liquidity for fixed dst.
+        // Skip for convert_all — one probe is enough for ranking.
+        if (!convertAll_ && amountOut < minDstAmount)
         {
             rcInput.partialPaymentAllowed = true;
             rc = path::RippleCalc::rippleCalculate(
@@ -712,9 +794,17 @@ GraphPathfinder::getPathLiquidity(
 
         return tesSUCCESS;
     }
+    catch (FlowException const&)
+    {
+        // Remember hops so the next path_find tick skips this AMM strand.
+        noteFailedAmmHopsFromPath(path);
+        JLOG(j_.debug()) << "GraphPathfinder::getPathLiquidity AMM FlowException; "
+                            "blacklisting path hops";
+        return tefEXCEPTION;
+    }
     catch (std::exception const& e)
     {
-        JLOG(j_.info()) << "GraphPathfinder::getPathLiquidity exception: " << e.what();
+        JLOG(j_.debug()) << "GraphPathfinder::getPathLiquidity exception: " << e.what();
         return tefEXCEPTION;
     }
 }
@@ -749,7 +839,12 @@ GraphPathfinder::rankPaths(
         return largestAmount(dstAmount_);
     }();
 
+    // Hard cap on expensive rippleCalculate probes.  Each failed AMM path
+    // still pays Throw/logThrow + stack dump cost even when caught.
+    int const maxProbes = std::max(maxPaths * 2, maxPaths + 3);
     int consecutiveFailures = 0;
+    int probes = 0;
+
     for (int i = 0; i < static_cast<int>(paths.size()); ++i)
     {
         if (continueCallback && !continueCallback())
@@ -758,6 +853,22 @@ GraphPathfinder::rankPaths(
         auto const& currentPath = paths[i];
         if (currentPath.empty())
             continue;
+
+        // Enough ranked paths for the caller — stop probing.
+        if (static_cast<int>(rankedPaths.size()) >= maxPaths)
+            break;
+
+        // Skip paths that use a previously-failed AMM book hop (no recompute).
+        if (stPathTouchesFailedAmm(currentPath))
+        {
+            ++consecutiveFailures;
+            if (consecutiveFailures >= 3)
+                break;
+            continue;
+        }
+
+        if (++probes > maxProbes)
+            break;
 
         STAmount liquidity;
         uint64_t quality = 0;
@@ -768,14 +879,10 @@ GraphPathfinder::rankPaths(
         }
         else
         {
-            // Bail early if too many consecutive failures (e.g. every path
-            // hits an AMM overflow that takes seconds to propagate).  Only
-            // apply this cap once we already have enough successful entries
-            // to satisfy the caller — otherwise we'd silently return fewer
-            // than maxPaths even when more viable paths exist later in the
-            // list.  Keeps individual path-find calls within a reasonable
-            // time budget without sacrificing path count.
-            if (++consecutiveFailures >= 3 && static_cast<int>(rankedPaths.size()) >= maxPaths)
+            // Bail after a short run of dry/overflow paths.  Yen already
+            // ordered by graph quality, so later candidates rarely save us
+            // once several consecutive rippleCalcs fail.
+            if (++consecutiveFailures >= 3)
                 break;
         }
     }

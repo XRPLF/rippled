@@ -380,7 +380,7 @@ public:
         , nodeFamily_(*this, *collectorManager_)
         , orderBookDB_(makeOrderBookDb(
               *this,
-              {.pathSearch = config_->pathSearch, .standalone = config_->standalone()}))
+              {.pathSearchMax = config_->pathSearch, .standalone = config_->standalone()}))
         , pathRequestManager_(
               std::make_unique<PathRequestManager>(
                   *this,

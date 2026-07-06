@@ -409,16 +409,37 @@ Payment::preclaim(PreclaimContext const& ctx)
     {
         STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 
-        if (paths.size() > kMaxPathSize || std::ranges::any_of(paths, [](STPath const& path) {
-                return path.size() > kMaxPathLength;
-            }))
+        // Validate path count and length with detailed logging
+        if (paths.size() > kMaxPathSize)
         {
+            JLOG(ctx.j.error()) << "Payment rejected: Too many paths (" << paths.size() << " > "
+                                << kMaxPathSize << ")";
             // Open view: the soft tel (unchanged). Inner batch txns are claimed
             // on a closed view, where a tel is invalid, so use the tef.
             if (ctx.view.open())
                 return telBAD_PATH_COUNT;
             if (ctx.parentBatchId && ctx.view.rules().enabled(featureBatchV1_1))
                 return tefBAD_PATH_COUNT;
+        }
+
+        // Check each path for length violations and log details
+        for (std::size_t i = 0; i < paths.size(); ++i)
+        {
+            if (paths[i].size() > kMaxPathLength)
+            {
+                JLOG(ctx.j.error()) << "Payment rejected: Path " << i << " exceeds maximum length ("
+                                    << paths[i].size() << " > " << kMaxPathLength << ")";
+                // Log the path elements for debugging
+                JLOG(ctx.j.debug()) << "Path " << i << " has " << paths[i].size()
+                                    << " elements (max allowed: " << kMaxPathLength << ")";
+
+                // Open view: the soft tel (unchanged). Inner batch txns are claimed
+                // on a closed view, where a tel is invalid, so use the tef.
+                if (ctx.view.open())
+                    return telBAD_PATH_COUNT;
+                if (ctx.parentBatchId && ctx.view.rules().enabled(featureBatchV1_1))
+                    return tefBAD_PATH_COUNT;
+            }
         }
     }
 

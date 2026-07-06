@@ -82,38 +82,30 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
     {
         std::scoped_lock const sl(lock_);
-        if (!payGraph_)
+        // Prefer a graph built after OrderBookDB's first full scan.  On
+        // networked nodes the scan is async; signalOrderBookReady builds once
+        // allBooks_ is populated.  Standalone builds immediately.
+        bool const empty = !payGraph_ || payGraph_->currentStats().orderBooks == 0;
+        if (empty)
         {
-            // Only build once OrderBookDB has finished its first full scan.
-            // On networked nodes the scan runs in a background job; if a path
-            // request arrives before it completes, allBooks_ is empty and the
-            // resulting PayGraph would have no edges.  We defer here and rely
-            // on LedgerMaster::newOrderBookDB() → signalOrderBookReady() →
-            // another updateAll() call to perform the build once allBooks_ is
-            // fully populated.
-            //
-            // In standalone mode (unit tests) the scan is always synchronous
-            // and completes during Application::setup() before any request can
-            // arrive, so the gate is not needed and we proceed unconditionally.
             if (!orderBookReady_.load(std::memory_order_acquire) && !app_.config().standalone())
                 return;
 
-            // First call after OrderBookDB is ready: build the full graph.
             payGraph_ = PayGraph::build(
                 app_.getOrderBookDB(),
                 *inLedger,
                 std::nullopt,  // domain
                 journal_);
+            graphLedgerSeq_ = inLedger->seq();
         }
         else
         {
-            // Subsequent calls: derive only the changed books from tx metadata.
+            // Warm graph: only patch books that had offer activity this ledger.
             std::vector<Book> changedBooks;
             for (auto const& [stTx, stMeta] : inLedger->txs)
             {
                 if (!stMeta)
                     continue;
-                // sfAffectedNodes is an array at the top level of the metadata.
                 if (stMeta->isFieldPresent(sfAffectedNodes))
                 {
                     auto const& nodes = stMeta->getFieldArray(sfAffectedNodes);
@@ -121,6 +113,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
                 }
             }
             payGraph_->applyLedgerDelta(app_.getOrderBookDB(), *inLedger, changedBooks);
+            graphLedgerSeq_ = inLedger->seq();
         }
     }
 

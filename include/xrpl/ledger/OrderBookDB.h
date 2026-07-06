@@ -1,11 +1,11 @@
 #pragma once
 
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/AcceptedLedgerTx.h>
-#include <xrpl/ledger/BookListeners.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
-#include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <memory>
@@ -80,7 +80,7 @@ public:
 
     /** Get all assets that appear as takerPays in any known order book.
 
-        Used by PayGraph::buildSnapshot to seed vertex discovery so that
+        Used by pathfinding to seed vertex discovery so that
         non-XRP-rooted assets are always included even when they have no
         direct XRP book.
 
@@ -89,37 +89,7 @@ public:
     */
     virtual std::vector<Asset>
     getAllTakerPaysAssets(std::optional<Domain> const& domain = std::nullopt) = 0;
-
-    /**
-     * Process a transaction for order book tracking.
-     * @param ledger The ledger the transaction was applied to
-     * @param alTx The transaction to process
-     * @param jvObj The JSON object of the transaction
-     */
-    virtual void
-    processTxn(
-        std::shared_ptr<ReadView const> const& ledger,
-        AcceptedLedgerTx const& alTx,
-        MultiApiJson const& jvObj) = 0;
-
-    /**
-     * Get the book listeners for a book.
-     * @param book The book to get the listeners for
-     * @return The book listeners for the book
-     */
-    virtual BookListeners::pointer
-    getBookListeners(Book const&) = 0;
-
-    /**
-     * Create a new book listeners for a book.
-     * @param book The book to create the listeners for
-     * @return The new book listeners for the book
-     */
-    virtual BookListeners::pointer
-    makeBookListeners(Book const&) = 0;
 };
-
-}  // namespace xrpl
 
 /** Extract the set of books affected by a transaction.
  *
@@ -138,3 +108,5 @@ public:
  */
 hash_set<Book>
 affectedBooks(AcceptedLedgerTx const& alTx, beast::Journal const& j);
+
+}  // namespace xrpl

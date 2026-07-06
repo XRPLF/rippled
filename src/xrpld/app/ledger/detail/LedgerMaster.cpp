@@ -1503,17 +1503,8 @@ LedgerMaster::isNewPathRequest()
 // If the order book is radically updated, we need to reprocess all
 // pathfinding requests.
 bool
-LedgerMaster::newOrderBookDB(std::shared_ptr<ReadView const> const& ledger)
+LedgerMaster::newOrderBookDB()
 {
-    // Signal that OrderBookDB has finished at least one full scan so the
-    // PathRequestManager knows it's safe to build the PayGraph.  This gates
-    // the race on networked nodes where the initial scan is async and may
-    // complete after the first path request arrives.  Passing the ledger
-    // allows PathRequestManager to eagerly build the PayGraph on this OB
-    // worker thread, so the first user path request doesn't pay the build
-    // cost synchronously.
-    app_.getPathRequestManager().signalOrderBookReady(ledger);
-
     std::unique_lock ml(mutex_);
     pathLedger_.reset();
 

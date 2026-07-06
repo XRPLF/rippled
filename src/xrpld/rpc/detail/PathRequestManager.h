@@ -4,14 +4,16 @@
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/PathRequest.h>
 #include <xrpld/rpc/detail/PayGraph.h>
-#include <xrpld/rpc/detail/RippleLineCache.h>
 
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/STPathSet.h>
 
 #include <atomic>
 #include <memory>
 #include <mutex>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -89,40 +91,73 @@ public:
         return payGraph_;
     }
 
-    /// Build or rebuild the (non-domain) PayGraph for the given ledger if it
-    /// has not yet been built or is stale.  Cheap: PayGraph::build() reads
-    /// only OrderBookDB's in-memory maps (no SHAMap walk).  Used by the
-    /// synchronous entry points (ripple_path_find, path_find create) so the
-    /// first response is never empty just because the async updateAll() job
-    /// hasn't run yet.
+    //----------------------------------------------------------------------
+    // Failed AMM book hops (in→out assets).  When rippleCalculate throws
+    // FlowException from an AMM offer on a hop, remember that hop so later
+    // path_find ranking skips it instead of re-paying Throw/logThrow cost.
+    // Cleared on full graph rebuild (signalOrderBookReady / empty rebuild).
+    //----------------------------------------------------------------------
+    using AmmHop = std::pair<Asset, Asset>;
+
+    void
+    noteFailedAmmHop(Asset const& in, Asset const& out)
+    {
+        std::scoped_lock const sl(failedAmmLock_);
+        failedAmmHops_.insert(AmmHop{in, out});
+    }
+
+    [[nodiscard]] bool
+    isFailedAmmHop(Asset const& in, Asset const& out) const
+    {
+        std::scoped_lock const sl(failedAmmLock_);
+        return failedAmmHops_.contains(AmmHop{in, out});
+    }
+
+    void
+    clearFailedAmmHops()
+    {
+        std::scoped_lock const sl(failedAmmLock_);
+        failedAmmHops_.clear();
+    }
+
+    /// Return the warm in-memory PayGraph for Dijkstra path_find.
+    ///
+    /// Full rebuild only when:
+    ///   - no graph yet, or
+    ///   - graph has zero books (built before OrderBookDB finished scanning)
+    /// Otherwise return the existing snapshot.  Per-ledger edge updates are
+    /// applyLedgerDelta from updateAll (~few changed books), not a full rebuild.
     std::shared_ptr<PayGraph>
     ensurePayGraph(std::shared_ptr<ReadView const> const& inLedger)
     {
         std::scoped_lock const sl(lock_);
-        auto const seq = inLedger->seq();
-        if (!payGraph_ || legacyGraphSeq_ != seq)
+        if (!inLedger || !app_.config().pathSearch)
+            return payGraph_;
+
+        bool const empty = !payGraph_ || payGraph_->currentStats().orderBooks == 0;
+        if (empty)
         {
             payGraph_ = PayGraph::build(app_.getOrderBookDB(), *inLedger, std::nullopt, journal_);
-            legacyGraphSeq_ = seq;
+            graphLedgerSeq_ = inLedger->seq();
+            clearFailedAmmHops();
         }
         return payGraph_;
     }
 
-    /// Called by LedgerMaster after OrderBookDB completes its first full scan.
-    /// Gates the initial PayGraph build so it never runs against an empty
-    /// allBooks_ (the race that occurs on networked nodes where the scan is
-    /// async).  Safe to call multiple times — only the first call matters.
-    ///
-    /// Also builds the PayGraph eagerly on the calling thread (the OB worker
-    /// thread is fine — `allBooks_` has already been swapped in by the time
-    /// this is called), so the first user path request never pays the build
-    /// cost synchronously.
+    /// OrderBookDB finished a full scan and swapped allBooks_ in (rare — not
+    /// every ~3s ledger).  Mark ready and rebuild once from the scanned set so
+    /// path_find is not stuck on an empty graph forever.
     void
     signalOrderBookReady(std::shared_ptr<ReadView const> const& ledger)
     {
         orderBookReady_.store(true, std::memory_order_release);
-        if (ledger && app_.config().pathSearch)
-            ensurePayGraph(ledger);
+        if (!ledger || !app_.config().pathSearch)
+            return;
+
+        std::scoped_lock const sl(lock_);
+        payGraph_ = PayGraph::build(app_.getOrderBookDB(), *ledger, std::nullopt, journal_);
+        graphLedgerSeq_ = ledger->seq();
+        clearFailedAmmHops();
     }
 
     /// One-shot synchronous helper used by tx-signing autofill (build_path)
@@ -162,17 +197,21 @@ private:
     // at each subsequent ledger close.
     std::shared_ptr<PayGraph> payGraph_;
 
-    // Ledger sequence at which the sync (doLegacyPathRequest) graph was last
-    // built.  When a new ledger arrives we rebuild from the updated
-    // OrderBookDB (in-memory only, no SHAMap walk) so tests and one-shot
-    // ripple_path_find calls always see current books.
-    LedgerIndex legacyGraphSeq_{0};
+    // Ledger sequence of the last PayGraph build or incremental delta.
+    // Diagnostic / freshness only — ensurePayGraph must NOT full-rebuild
+    // solely because this lags the request ledger.
+    LedgerIndex graphLedgerSeq_{0};
 
     // Set by signalOrderBookReady() when OrderBookDB finishes its first full
     // ledger scan.  Prevents PayGraph::build() from running against an empty
     // allBooks_ on networked nodes where the scan is async (the race that
     // causes the PayGraph to have no edges until restart).
     std::atomic<bool> orderBookReady_{false};
+
+    // AMM hops that recently threw FlowException during ranking probes.
+    // Separate lock so path_find ranking does not contend with request list.
+    hash_set<AmmHop> failedAmmHops_;
+    std::mutex mutable failedAmmLock_;
 
     std::atomic<int> lastIdentifier_;
 

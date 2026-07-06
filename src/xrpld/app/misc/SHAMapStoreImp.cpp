@@ -387,11 +387,21 @@ SHAMapStoreImp::dbPaths()
 {
     Section const section{app_.config().section(Sections::kNodeDatabase)};
 
-    // Skip creating the directory when an in-memory database is used.
-    if (boost::iequals(get(section, Keys::kType), "memory"))
+    // Skip creating the directory when an in-memory / pathless backend is used.
+    // type=memory and type=rwdb do not require an on-disk node store path.
+    // An empty path must not call create_directories("") — that throws
+    // boost::filesystem::filesystem_error (EINVAL / "Invalid argument").
+    auto const dbType = get(section, Keys::kType);
+    if (boost::iequals(dbType, "memory") || boost::iequals(dbType, "rwdb"))
         return;
 
     boost::filesystem::path dbPath = get(section, Keys::kPath);
+    if (dbPath.empty())
+    {
+        journal_.error() << "node db path is not configured (type=" << dbType << ")";
+        Throw<std::runtime_error>("node db path must be set for on-disk backends.");
+    }
+
     if (boost::filesystem::exists(dbPath))
     {
         if (!boost::filesystem::is_directory(dbPath))
