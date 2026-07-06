@@ -5,13 +5,13 @@
 #include <xrpld/app/rdb/backend/RWDBDatabase.h>
 #include <xrpld/app/rdb/backend/detail/Node.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -657,7 +657,7 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
 std::unique_ptr<RelationalDatabase>
 setupRelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
 {
-    auto const& rdbSection = config.section(SECTION_RELATIONAL_DB);
+    auto const& rdbSection = config.section(xrpl::Sections::kRelationalDb);
     auto const backend = rdbSection.valueOr("backend", std::string{"sqlite"});
 
     if (boost::iequals(backend, "rwdb"))

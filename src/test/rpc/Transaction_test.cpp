@@ -9,10 +9,10 @@
 
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/rpc/CTID.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/NetworkIDService.h>
@@ -59,7 +59,7 @@ class Transaction_test : public beast::unit_test::Suite
         // Use RWDB for the relational database backend only.
         // The node database stays as "memory" (the test default) to avoid
         // excessive memory usage from dual storage in the in-memory backends.
-        cfg->section(SECTION_RELATIONAL_DB).set("backend", "rwdb");
+        cfg->section(xrpl::Sections::kRelationalDb).set("backend", "rwdb");
         return cfg;
     }
 

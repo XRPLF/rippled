@@ -25,3 +25,6 @@ compiler.libcxx={{ detect_api.detect_libcxx(compiler, version, compiler_exe) }}
 {# More info: https://docs.conan.io/2/reference/extensions/binary_compatibility.html #}
 user.package:cppstd_version=23
 tools.info.package_id:confs+=["user.package:cppstd_version"]
+
+# Disable Boost test component to avoid boost_unit_test_framework requirement
+boost*:shared=False

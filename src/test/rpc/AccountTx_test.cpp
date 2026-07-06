@@ -20,9 +20,9 @@
 #include <test/jtx/trust.h>
 
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -57,7 +57,7 @@ class AccountTx_test : public beast::unit_test::Suite
     {
         // Use RWDB for the relational database backend only.
         // The node database stays as "memory" (the test default).
-        cfg->section(SECTION_RELATIONAL_DB).set("backend", "rwdb");
+        cfg->section(xrpl::Sections::kRelationalDb).set("backend", "rwdb");
         return cfg;
     }
 

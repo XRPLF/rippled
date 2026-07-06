@@ -7,7 +7,6 @@
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/PeerSet.h>
@@ -29,6 +28,8 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/jss.h>
+#include <xrpl/config/Constants.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
@@ -207,7 +208,7 @@ primeInboundLedgerForUse(
 std::uint32_t
 inboundLedgerJobLimit(Application& app)
 {
-    auto const type = get(app.config().section(ConfigSection::nodeDatabase()), "type", "");
+    auto const type = get(app.config().section(xrpl::Sections::kNodeDatabase), "type", "");
     return boost::iequals(type, "rwdb") ? 500u : 5u;
 }
 

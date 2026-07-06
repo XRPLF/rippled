@@ -2,7 +2,6 @@
 
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/ValidatorSite.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/ConnectAttempt.h>
 #include <xrpld/overlay/detail/Handshake.h>
@@ -104,7 +103,7 @@ static constexpr auto kUnl = (1 << 3);
 bool
 useSqlitePeerFinderStore(Config const& config)
 {
-    auto const& rdbSection = config.section(SECTION_RELATIONAL_DB);
+    auto const& rdbSection = config.section(xrpl::Sections::kRelationalDb);
     auto const backend = get(rdbSection, "backend", "sqlite");
     return !boost::iequals(backend, "rwdb");
 }

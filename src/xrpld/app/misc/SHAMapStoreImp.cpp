@@ -124,6 +124,33 @@ SHAMapStoreImp::SHAMapStoreImp(
     }
 
     getIfExists(section, Keys::kOnlineDelete, deleteInterval_);
+    isNullBackend_ = boost::iequals(get(section, Keys::kType), "rwdb");
+
+    // RWDB is always null-backend: the in-memory node store never
+    // persists or retrieves objects.  Set the env var so that libxrpl
+    // helpers (which cannot access Config) can detect null mode.
+    if (isNullBackend_)
+        ::setenv("XRPL_RWDB_NULL", "1", 1);
+
+    if (isNullBackend_)
+    {
+        if (config.ledgerHistory == 0)
+        {
+            Throw<std::runtime_error>("RWDB null mode requires ledger_history > 0");
+        }
+        JLOG(journal_.info()) << "RWDB null mode: node store is ephemeral, "
+                              << "retaining " << config.ledgerHistory << " ledgers in memory";
+    }
+
+    // For RWDB, default online_delete to ledger_history only if user did not
+    // explicitly set online_delete.  Clamp to the minimum so an implicit
+    // value never triggers the "online_delete must be at least ..." throw.
+    if (isNullBackend_ && deleteInterval_ == 0)
+    {
+        auto const minInterval =
+            config.standalone() ? kMinimumDeletionIntervalSa : kMinimumDeletionInterval;
+        deleteInterval_ = std::max(config.ledgerHistory, minInterval);
+    }
 
     if (deleteInterval_ != 0u)
     {

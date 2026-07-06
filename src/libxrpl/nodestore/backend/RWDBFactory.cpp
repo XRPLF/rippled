@@ -1,5 +1,6 @@
 #include <xrpl/basics/ReaderPreferringSharedMutex.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/detail/DecodedBlob.h>

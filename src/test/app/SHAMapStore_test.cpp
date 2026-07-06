@@ -60,8 +60,8 @@ class SHAMapStore_test : public beast::unit_test::Suite
     static auto
     rwdb(std::unique_ptr<Config> cfg)
     {
-        cfg->section(ConfigSection::nodeDatabase()).set("type", "rwdb");
-        cfg->section(SECTION_RELATIONAL_DB).set("backend", "rwdb");
+        cfg->section(xrpl::Sections::kNodeDatabase).set("type", "rwdb");
+        cfg->section(xrpl::Sections::kRelationalDb).set("backend", "rwdb");
         return cfg;
     }
 
