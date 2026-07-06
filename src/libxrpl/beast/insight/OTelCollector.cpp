@@ -370,7 +370,8 @@ private:
  * Example usage:
  * @code
  *   auto collector = OTelCollector::New(
- *       "http://localhost:4318/v1/metrics", "xrpld", journal);
+ *       "http://localhost:4318/v1/metrics", "xrpld",
+ *       "node-1", "xrpld", "mainnet", journal);
  *   auto counter = collector->makeCounter("rpc.requests");
  *   counter.increment(1);
  *   // Metric "xrpld_rpc_requests" exported via OTLP every 1s.
@@ -386,12 +387,18 @@ public:
      * @param prefix      Prefix for all metric names.
      * @param instanceId  Value for the service.instance.id resource attribute.
      *                    When empty, the attribute is omitted.
+     * @param serviceName Value for the service.name resource attribute.
+     *                    When empty, defaults to "xrpld".
+     * @param networkType Value for the xrpl.network.type resource attribute.
+     *                    When empty, the attribute is omitted.
      * @param journal     Journal for logging.
      */
     OTelCollectorImp(
         std::string const& endpoint,
         std::string prefix,
         std::string const& instanceId,
+        std::string const& serviceName,
+        std::string const& networkType,
         Journal journal);
 
     /**
@@ -661,6 +668,8 @@ OTelCollectorImp::OTelCollectorImp(
     std::string const& endpoint,
     std::string prefix,
     std::string const& instanceId,
+    std::string const& serviceName,
+    std::string const& networkType,
     Journal journal)
     : journal_(journal), prefix_(std::move(prefix))
 {
@@ -683,14 +692,23 @@ OTelCollectorImp::OTelCollectorImp(
     auto reader =
         metrics_sdk::PeriodicExportingMetricReaderFactory::Create(std::move(exporter), readerOpts);
 
-    // Configure resource attributes matching the trace exporter.
-    // Include service.instance.id when provided so Prometheus
-    // exported_instance labels distinguish multi-node deployments.
+    // Configure resource attributes matching the trace exporter so metrics
+    // and traces share one identity. service.name defaults to "xrpld" when
+    // unset. service.instance.id and xrpl.network.type are added when
+    // provided so Prometheus labels distinguish node and network.
+    // "xrpl.network.type" is a string literal (not the telemetry SpanNames
+    // const) because beast/insight sits below the telemetry module and
+    // cannot include it; the value must match the trace exporter's key.
     resource::ResourceAttributes attrs;
-    attrs[opentelemetry::semconv::service::kServiceName] = "xrpld";
+    attrs[opentelemetry::semconv::service::kServiceName] =
+        serviceName.empty() ? "xrpld" : serviceName;
     if (!instanceId.empty())
     {
         attrs[opentelemetry::semconv::service::kServiceInstanceId] = instanceId;
+    }
+    if (!networkType.empty())
+    {
+        attrs["xrpl.network.type"] = networkType;
     }
     auto resourceAttrs = resource::Resource::Create(attrs);
 
@@ -858,9 +876,12 @@ OTelCollector::New(
     std::string const& endpoint,
     std::string const& prefix,
     std::string const& instanceId,
+    std::string const& serviceName,
+    std::string const& networkType,
     Journal journal)
 {
-    return std::make_shared<detail::OTelCollectorImp>(endpoint, prefix, instanceId, journal);
+    return std::make_shared<detail::OTelCollectorImp>(
+        endpoint, prefix, instanceId, serviceName, networkType, journal);
 }
 
 }  // namespace beast::insight
@@ -882,6 +903,8 @@ OTelCollector::New(
     std::string const& /* endpoint */,
     std::string const& /* prefix */,
     std::string const& /* instanceId */,
+    std::string const& /* serviceName */,
+    std::string const& /* networkType */,
     Journal /* journal */)
 {
     return NullCollector::make();

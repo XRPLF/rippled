@@ -1,0 +1,904 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "What this shows: Peer connectivity and overlay bandwidth for this node: peer counts, disconnects, total bytes and messages exchanged, and the transaction, proposal, and validation traffic that flows across the peer-to-peer network.\nUse it to: Gauge peer health and overall overlay bandwidth and see which message types dominate network traffic.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Active Peers",
+      "description": "###### What this is:\n*Number of active inbound and outbound peer connections the node currently holds.*\n\n###### How it's computed:\n*Current value of the inbound and outbound active-peer counts per node.*\n\n###### Reading it:\n*Outbound is what the node dials out; inbound is what others open to it. Both should be stable.*\n\n###### Healthy range:\n*roughly 10-21 outbound and 0-85 inbound on mainnet, depending on config.*\n\n###### Watch for:\n*Outbound dropping toward zero (isolation) or inbound pinned at the limit with churn (connection pressure).*\n\n###### Source:\n[PeerfinderManager.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/peerfinder/detail/PeerfinderManager.cpp)\n\n###### Function:\n`Logic Stats ctor`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_Peer_Finder_Active_Inbound_Peers{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Inbound Peers [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_Peer_Finder_Active_Outbound_Peers{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Outbound Peers [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Peers",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Peer Disconnects",
+      "description": "###### What this is:\n*Cumulative count of peer connections that have dropped.*\n\n###### How it's computed:\n*Running total of disconnect events per node.*\n\n###### Reading it:\n*A flat or slowly rising line is normal; the slope matters more than the absolute value.*\n\n###### Healthy range:\n*workload-dependent; slow, steady growth.*\n\n###### Watch for:\n*Sharp step-ups in the slope (network instability, resource exhaustion, or many peers dropping the node at once).*\n\n###### Source:\n[OverlayImpl.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.h)\n\n###### Function:\n`OverlayImpl::Stats ctor`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_Overlay_Peer_Disconnects{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Disconnects [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Disconnects",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Total Network Bytes",
+      "description": "###### What this is:\n*Total bytes received and sent across all peer connections.*\n\n###### How it's computed:\n*Current cumulative in/out byte totals per node.*\n\n###### Reading it:\n*Overall bandwidth footprint; in and out usually track network activity together.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*Sudden sustained jumps not matched by ledger or transaction activity (relay storms or a noisy peer).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_total_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Bytes In [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_total_Bytes_Out{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Bytes Out [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "custom": {
+            "axisLabel": "Bytes",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Total Network Messages",
+      "description": "###### What this is:\n*Total messages received and sent across all peer connections.*\n\n###### How it's computed:\n*Current cumulative in/out message totals per node.*\n\n###### Reading it:\n*Overall message throughput of the overlay; complements the byte totals.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*Message count climbing far faster than bytes (many tiny messages, possible flooding).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_total_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Messages In [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_total_Messages_Out{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Messages Out [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Messages",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Transaction Traffic",
+      "description": "###### What this is:\n*Transaction relay messages in and out, plus duplicate transaction messages received.*\n\n###### How it's computed:\n*Current message counts for the transaction and transaction-duplicate categories.*\n\n###### Reading it:\n*In/out rise with network transaction volume; duplicates are transactions the node already had.*\n\n###### Healthy range:\n*workload-dependent; duplicates a modest fraction of inbound.*\n\n###### Watch for:\n*Duplicate inbound approaching or exceeding unique inbound (redundant relay), or a sharp spike suggesting transaction flooding.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_transactions_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "TX Messages In [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_transactions_Messages_Out{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "TX Messages Out [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_transactions_duplicate_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "TX Duplicate In [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Messages",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Proposal Traffic",
+      "description": "###### What this is:\n*Consensus proposal messages in/out, plus untrusted and duplicate proposal messages received.*\n\n###### How it's computed:\n*Current message counts for the proposal, proposal-untrusted, and proposal-duplicate categories.*\n\n###### Reading it:\n*Trusted in/out track consensus rounds; untrusted come from validators not on this node's trusted list.*\n\n###### Healthy range:\n*workload-dependent; untrusted and duplicates low relative to trusted.*\n\n###### Watch for:\n*High untrusted (trusted-list misconfiguration) or high duplicates (inefficient relay or proposal spam).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_proposals_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Proposals In [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_proposals_Messages_Out{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Proposals Out [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_proposals_untrusted_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Untrusted In [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_proposals_duplicate_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Duplicate In [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Messages",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Validation Traffic",
+      "description": "###### What this is:\n*Validation messages in/out, plus untrusted and duplicate validation messages received.*\n\n###### How it's computed:\n*Current message counts for the validation, validation-untrusted, and validation-duplicate categories.*\n\n###### Reading it:\n*Trusted validations should arrive steadily each ledger; untrusted come from non-trusted validators.*\n\n###### Healthy range:\n*workload-dependent; untrusted and duplicates low relative to trusted.*\n\n###### Watch for:\n*Rising untrusted or duplicate validations (trusted-list health issues or validation spam).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_validations_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Validations In [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_validations_Messages_Out{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Validations Out [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_validations_untrusted_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Untrusted In [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_validations_duplicate_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Duplicate In [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Messages",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Overlay Traffic by Category (Bytes In)",
+      "description": "###### What this is:\n*Top overlay traffic categories ranked by inbound bytes, excluding the all-traffic total.*\n\n###### How it's computed:\n*Top categories by latest inbound byte value per node.*\n\n###### Reading it:\n*Shows which message types dominate receive bandwidth right now.*\n\n###### Healthy range:\n*workload-dependent; transactions, proposals, and validations typically lead on a synced node.*\n\n###### Watch for:\n*A fetch or ledger-data category topping the list (sync activity) or an unexpected category dominating.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "topk(10, {exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", __name__=~\"xrpld_.*_Bytes_In\", __name__!~\"xrpld_total_.*\"})",
+          "legendFormat": "{{__name__}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_transactions_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Transactions"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_proposals_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Proposals"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_validations_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Validations"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_overhead_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Overhead"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_overhead_overlay_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Overhead Overlay"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_ping_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Ping"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_status_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Status"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_getObject_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Get Object"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_haveTxSet_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Have Tx Set"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_ledgerData_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Ledger Data"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_ledger_share_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Ledger Share"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_ledger_data_get_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Ledger Data Get"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_ledger_data_share_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Ledger Data Share"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_ledger_data_Account_State_Node_get_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Account State Node Get"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_ledger_data_Account_State_Node_share_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Account State Node Share"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_ledger_data_Transaction_Node_get_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Transaction Node Get"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_ledger_data_Transaction_Node_share_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Transaction Node Share"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_ledger_data_Transaction_Set_candidate_get_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Tx Set Candidate Get"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_ledger_Account_State_node_share_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Account State Node Share (Legacy)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_ledger_Transaction_Set_candidate_share_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Tx Set Candidate Share"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_ledger_Transaction_node_share_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Transaction Node Share (Legacy)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "xrpld_set_get_Bytes_In"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Set Get"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Duplicate Traffic (Wasted Bandwidth)",
+      "description": "###### What this is:\n*Throughput of duplicate transaction, proposal, and validation traffic: messages the node had already seen and discarded.*\n\n###### How it's computed:\n*Per-second rate of the duplicate byte counters for each category, in and out.*\n\n###### Reading it:\n*Lower is better; this is bandwidth spent on redundant relays.*\n\n###### Healthy range:\n*workload-dependent; a small fraction of total traffic.*\n\n###### Watch for:\n*Duplicate rate climbing toward the same order as useful traffic (poor relay topology or redundant flooding).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "rate(xrpld_transactions_duplicate_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "legendFormat": "TX Duplicate In"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "rate(xrpld_transactions_duplicate_Bytes_Out{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "legendFormat": "TX Duplicate Out"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "rate(xrpld_proposals_duplicate_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "legendFormat": "Proposals Duplicate In"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "rate(xrpld_proposals_duplicate_Bytes_Out{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "legendFormat": "Proposals Duplicate Out"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "rate(xrpld_validations_duplicate_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "legendFormat": "Validations Duplicate In"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "rate(xrpld_validations_duplicate_Bytes_Out{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "legendFormat": "Validations Duplicate Out"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "axisLabel": "Throughput",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "All Traffic Categories (Detail)",
+      "description": "###### What this is:\n*The busiest overlay categories by inbound byte rate over time, excluding the all-traffic total.*\n\n###### How it's computed:\n*Per-second inbound byte rate for the busiest categories, ranked, excluding the all-traffic total.*\n\n###### Reading it:\n*Time-series companion to the category bar view; shows how the traffic mix shifts over the window.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*A category ramping up and staying high, or the mix suddenly changing (sync, spam, or a misbehaving peer).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "topk(15, rate({__name__=~\"xrpld_.*_Bytes_In\", __name__!~\"xrpld_total_.*\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]))",
+          "legendFormat": "{{__name__}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "axisLabel": "Throughput",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["network"],
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "label": "Prometheus",
+        "query": "prometheus",
+        "regex": "",
+        "current": {},
+        "hide": 0,
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "options": []
+      },
+      {
+        "name": "service_name",
+        "label": "Service",
+        "description": "Filter by service.name (e.g. xrpld, pratik-xrpld)",
+        "type": "query",
+        "query": "label_values(service_name)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "deployment_environment",
+        "label": "Environment",
+        "description": "Filter by deployment tier (local/ci/test/prod)",
+        "type": "query",
+        "query": "label_values(deployment_environment)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "xrpl_network_type",
+        "label": "Network",
+        "description": "Filter by XRPL network (mainnet/testnet/devnet)",
+        "type": "query",
+        "query": "label_values(xrpl_network_type)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "node",
+        "label": "Node",
+        "description": "Filter by rippled node (service.instance.id)",
+        "type": "query",
+        "query": "label_values(xrpld_Peer_Finder_Active_Inbound_Peers, exported_instance)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "title": "Network Traffic",
+  "uid": "network-traffic"
+}

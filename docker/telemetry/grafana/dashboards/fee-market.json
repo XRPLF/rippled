@@ -1,0 +1,589 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "What this shows: Transaction queue depth and capacity, fee-escalation levels, and load-factor breakdown that together set the minimum fee to enter the open ledger.\nUse it to: Understand why the minimum transaction fee is rising and how full the open ledger and queue are.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Transaction Queue Depth",
+      "description": "###### What this is:\n*Transactions currently waiting in the transaction queue versus the queue's maximum capacity.*\n\n###### How it's computed:\n*Instantaneous gauge readings of current queue count and configured max size.*\n\n###### Reading it:\n*Queue depth well below capacity is normal; depth approaching capacity means the node is saturating.*\n\n###### Healthy range:\n*Depth near 0 in quiet periods; workload-dependent under load.*\n\n###### Watch for:\n*Depth pinned at capacity for sustained periods, which signals demand exceeding throughput or a fee-spam burst.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerTxqGauge`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_txq_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"txq_count\"}",
+          "legendFormat": "Queue Depth [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_txq_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"txq_max_size\"}",
+          "legendFormat": "Max Capacity [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Transactions",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Transactions Per Ledger",
+      "description": "###### What this is:\n*Transactions already placed in the current open ledger versus the expected per-ledger target.*\n\n###### How it's computed:\n*Instantaneous gauge readings of in-ledger count and the target count that governs fee escalation.*\n\n###### Reading it:\n*Staying at or below the expected target is normal; exceeding it triggers open-ledger fee escalation.*\n\n###### Healthy range:\n*At or under the expected per-ledger target.*\n\n###### Watch for:\n*In-ledger count persistently above target, indicating sustained congestion pushing fees up.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerTxqGauge`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_txq_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"txq_in_ledger\"}",
+          "legendFormat": "In Ledger [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_txq_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"txq_per_ledger\"}",
+          "legendFormat": "Expected Per Ledger [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Transactions",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Fee Escalation Levels",
+      "description": "###### What this is:\n*The fee levels that govern queue admission: reference (baseline), minimum processing, median, and open-ledger levels.*\n\n###### How it's computed:\n*Instantaneous gauge readings of each fee level, shown on a log scale.*\n\n###### Reading it:\n*Open-ledger level near the reference level means cheap entry; a large gap above reference means escalation is active.*\n\n###### Healthy range:\n*Open-ledger level at or near reference during normal traffic.*\n\n###### Watch for:\n*Open-ledger level spiking far above reference, the hallmark of congestion or a fee-bidding war.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerTxqGauge`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_txq_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"txq_reference_fee_level\"}",
+          "legendFormat": "Reference Fee Level [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_txq_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"txq_min_processing_fee_level\"}",
+          "legendFormat": "Min Processing Fee Level [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_txq_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"txq_med_fee_level\"}",
+          "legendFormat": "Median Fee Level [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_txq_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"txq_open_ledger_fee_level\"}",
+          "legendFormat": "Open Ledger Fee Level [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Fee Level",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "scaleDistribution": {
+              "type": "log",
+              "log": 2
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Load Factor Breakdown",
+      "description": "###### What this is:\n*The combined load factor and its server, fee-escalation, and fee-queue contributors as unitless fee multipliers (1.0 = no load).*\n\n###### How it's computed:\n*Instantaneous gauge readings of each load-factor component.*\n\n###### Reading it:\n*Values at 1.0 mean base fees; higher values raise the fee to transact.*\n\n###### Healthy range:\n*Around 1.0 under normal conditions.*\n\n###### Watch for:\n*Combined factor climbing well above 1.0, showing the node is charging premium fees due to congestion or overload.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLoadFactorGauge`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_load_factor_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"load_factor\"}",
+          "legendFormat": "Combined Load Factor [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_load_factor_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"load_factor_server\"}",
+          "legendFormat": "Server [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_load_factor_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"load_factor_fee_escalation\"}",
+          "legendFormat": "Fee Escalation [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_load_factor_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"load_factor_fee_queue\"}",
+          "legendFormat": "Fee Queue [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Multiplier",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 5
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Load Factor Components",
+      "description": "###### What this is:\n*The individual load-factor inputs, local server load, network load, and cluster load, as unitless multipliers.*\n\n###### How it's computed:\n*Instantaneous gauge readings of each component.*\n\n###### Reading it:\n*All at 1.0 means no load pressure from any source; a raised component identifies where load originates.*\n\n###### Healthy range:\n*Around 1.0 for each component.*\n\n###### Watch for:\n*A single component rising sharply, which pinpoints whether the pressure is local, network-wide, or cluster-driven.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLoadFactorGauge`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_load_factor_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"load_factor_local\"}",
+          "legendFormat": "Local [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_load_factor_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"load_factor_net\"}",
+          "legendFormat": "Network [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_load_factor_metrics{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"load_factor_cluster\"}",
+          "legendFormat": "Cluster [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Multiplier",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 5
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Load Factor Attribution (Stacked Components)",
+      "description": "###### What this is:\n*The stacked contribution of each load-factor component (fee escalation, queue, local, net, cluster) to the effective transaction cost.*\n\n###### How it's computed:\n*Instantaneous gauge readings of each component stacked to show relative share.*\n\n###### Reading it:\n*The tallest band identifies which component is driving the fee, detail the aggregate load factor hides.*\n\n###### Healthy range:\n*Thin bands near 1.0 total under normal traffic.*\n\n###### Watch for:\n*One band dominating during a fee spike, revealing the specific driver of elevated cost.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLoadFactorGauge`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_load_factor_metrics{metric=\"load_factor_fee_escalation\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Fee Escalation [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_load_factor_metrics{metric=\"load_factor_fee_queue\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Fee Queue [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_load_factor_metrics{metric=\"load_factor_local\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Local [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_load_factor_metrics{metric=\"load_factor_net\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Net [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "xrpld_load_factor_metrics{metric=\"load_factor_cluster\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Cluster [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Load Factor Multiplier",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "fillOpacity": 30
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Queue Abandonment Rate (Expired)",
+      "description": "###### What this is:\n*Transactions dropped from the queue because their last-ledger deadline passed before they could be included.*\n\n###### How it's computed:\n*Per-second rate of the cumulative expired-transaction counter over a 5-minute window.*\n\n###### Reading it:\n*Near zero is healthy; a rising rate means submitters under-bid the escalating fee and their transactions timed out.*\n\n###### Healthy range:\n*Near 0 expirations per second.*\n\n###### Watch for:\n*Sustained expiry rate, a demand-frustration signal often coinciding with fee spikes or spam that crowds out honest traffic.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementTxqExpired (caller TxQ.cpp)`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (exported_instance) (rate(xrpld_txq_expired_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]))",
+          "legendFormat": "Expired / Sec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Expired / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Queue Admission Rejections (Dropped)",
+      "description": "###### What this is:\n*Transactions refused entry to the queue, broken down by reason such as queue_full.*\n\n###### How it's computed:\n*Per-second rate of the cumulative dropped-transaction counter over a 5-minute window, split by reason.*\n\n###### Reading it:\n*Near zero is healthy; queue_full rejections mean the queue is at capacity and applying backpressure.*\n\n###### Healthy range:\n*Near 0 rejections per second.*\n\n###### Watch for:\n*A burst of queue_full drops, distinct from expiry, indicating the node is being flooded faster than it can drain.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementTxqDropped (caller TxQ.cpp)`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (reason, exported_instance) (rate(xrpld_txq_dropped_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]))",
+          "legendFormat": "{{reason}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Dropped / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["transactions", "fees"],
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "label": "Prometheus",
+        "query": "prometheus",
+        "regex": "",
+        "current": {},
+        "hide": 0,
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "options": []
+      },
+      {
+        "name": "service_name",
+        "label": "Service",
+        "description": "Filter by service.name (e.g. xrpld, pratik-xrpld)",
+        "type": "query",
+        "query": "label_values(service_name)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "deployment_environment",
+        "label": "Environment",
+        "description": "Filter by deployment tier (local/ci/test/prod)",
+        "type": "query",
+        "query": "label_values(deployment_environment)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "xrpl_network_type",
+        "label": "Network",
+        "description": "Filter by XRPL network (mainnet/testnet/devnet)",
+        "type": "query",
+        "query": "label_values(xrpl_network_type)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "node",
+        "label": "Node",
+        "description": "Filter by rippled node (service.instance.id)",
+        "type": "query",
+        "query": "label_values(exported_instance)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Fee Market & TxQ",
+  "uid": "fee-market",
+  "version": 1,
+  "refresh": "5s"
+}

@@ -25,7 +25,12 @@ public:
     std::unique_ptr<beast::insight::Groups> groups_;
     // NOLINTEND(readability-identifier-naming)
 
-    CollectorManagerImp(Section const& params, beast::Journal journal) : journal_(journal)
+    CollectorManagerImp(
+        Section const& params,
+        std::string const& serviceName,
+        std::string const& networkType,
+        beast::Journal journal)
+        : journal_(journal)
     {
         std::string const& server = get(params, Keys::kServer);
 
@@ -52,7 +57,16 @@ public:
             // metric sources via the exported_instance Prometheus label.
             std::string const instanceId = get(params, "service_instance_id");
 
-            collector_ = beast::insight::OTelCollector::New(endpoint, prefix, instanceId, journal);
+            // service.name from [insight] (falls back to the value the
+            // caller derived from [telemetry]); network type derived from
+            // [network_id]. Both mirror the trace exporter so metrics and
+            // traces carry the same service and network identity.
+            std::string serviceNameCfg = get(params, "service_name");
+            if (serviceNameCfg.empty())
+                serviceNameCfg = serviceName;
+
+            collector_ = beast::insight::OTelCollector::New(
+                endpoint, prefix, instanceId, serviceNameCfg, networkType, journal);
         }
         // LCOV_EXCL_STOP
         else
@@ -81,9 +95,13 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<CollectorManager>
-makeCollectorManager(Section const& params, beast::Journal journal)
+makeCollectorManager(
+    Section const& params,
+    std::string const& serviceName,
+    std::string const& networkType,
+    beast::Journal journal)
 {
-    return std::make_unique<CollectorManagerImp>(params, journal);
+    return std::make_unique<CollectorManagerImp>(params, serviceName, networkType, journal);
 }
 
 }  // namespace xrpl

@@ -640,9 +640,10 @@ struct Peer
      *
      *  The test Peer adaptor uses a static disabled NullTelemetry instance
      *  so that all shouldTrace*() checks return false and no spans are
-     *  created during simulation tests.
+     *  created during simulation tests. It is static because the shared
+     *  disabled instance does not depend on any per-peer state.
      */
-    telemetry::Telemetry&
+    static telemetry::Telemetry&
     getTelemetry()
     {
         static auto tel = telemetry::makeTelemetry(

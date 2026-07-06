@@ -10,7 +10,7 @@
   "panels": [
     {
       "title": "Transaction Apply Failed Rate",
-      "description": "Rate of tx.apply spans completing with error status, indicating transaction application failures during ledger building. The span records tx_failed as an attribute. Thresholds: green < 0.1/sec, yellow 0.1-1/sec, red > 1/sec. Some failures are normal (e.g. conflicting offers) but sustained high rates may indicate issues.",
+      "description": "###### What this is:\n*Transactions flagged with an error status during application into a ledger, per second.*\n\n###### How it's computed:\n*Per-second rate of transaction-apply operations that carry an error status, over 5 minutes, per node.*\n\n###### Reading it:\n*This view stays near zero: the count of failed transactions is recorded separately as a per-ledger attribute rather than as an apply-phase error status, so apply operations rarely report an error here.*\n\n###### Healthy range:\n*Effectively zero under normal operation, since apply-phase errors are seldom emitted.*\n\n###### Watch for:\n*Any sustained non-zero rate, which would flag an unusual apply-phase error rather than ordinary transaction failures.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`applyTransactions`",
       "type": "stat",
       "gridPos": {
         "h": 4,
@@ -28,9 +28,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.apply\", status_code=\"STATUS_CODE_ERROR\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.apply\", status_code=\"STATUS_CODE_ERROR\"}[5m]))",
           "legendFormat": "Failed / Sec [{{exported_instance}}]"
         }
       ],
@@ -60,7 +61,7 @@
     },
     {
       "title": "Transaction Processing Latency by Type",
-      "description": "Per-transaction-type processing latency (p95). Filter with $tx_type variable above.",
+      "description": "###### What this is:\n*The 95th-percentile time to process a transaction, broken down by transaction type.*\n\n###### How it's computed:\n*95th-percentile of processing durations over 5 minutes, grouped by transaction type and node.*\n\n###### Reading it:\n*Lower is better; compare types to find the expensive ones.*\n\n###### Healthy range:\n*A few milliseconds for simple payments; workload- and type-dependent.*\n\n###### Watch for:\n*A type whose latency climbs, pointing to expensive processing or resource pressure.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::processTransaction`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -83,9 +84,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, tx_type, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, tx_type, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m])))",
           "legendFormat": "{{tx_type}} [{{exported_instance}}]"
         }
       ],
@@ -106,7 +108,7 @@
     },
     {
       "title": "Transaction Rate by Type",
-      "description": "Transaction processing rate broken down by tx_type (Payment, OfferCreate, AMMDeposit, etc.). Requires tx_type dimension in spanmetrics.",
+      "description": "###### What this is:\n*How many transactions of each type enter processing per second.*\n\n###### How it's computed:\n*Per-second processing rate over 5 minutes, grouped by transaction type and node.*\n\n###### Reading it:\n*Shows the transaction mix; payments usually lead.*\n\n###### Healthy range:\n*Workload-dependent; mix reflects network activity.*\n\n###### Watch for:\n*A single type spiking far above baseline, consistent with a spam campaign of that type.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::processTransaction`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -129,9 +131,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (tx_type, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m]))",
+          "expr": "sum by (tx_type, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m]))",
           "legendFormat": "{{tx_type}} [{{exported_instance}}]"
         }
       ],
@@ -152,7 +155,7 @@
     },
     {
       "title": "Transaction Results by Type",
-      "description": "Transaction result codes (ter_result) broken down by tx_type. Shows which transaction types fail most often.",
+      "description": "###### What this is:\n*The non-success result codes transactions return, by transaction type.*\n\n###### How it's computed:\n*Per-second rate of failing transactions over 5 minutes, grouped by type and result code.*\n\n###### Reading it:\n*Fewer failures is better; use it to see which types fail and why.*\n\n###### Healthy range:\n*Workload-dependent; a modest background of expected failures is normal.*\n\n###### Watch for:\n*A surge of one failure code for one type, indicating a systemic issue or abusive submissions.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::processTransaction`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -175,9 +178,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (tx_type, ter_result, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\", ter_result=~\"$ter_result\", ter_result!=\"tesSUCCESS\"}[5m]))",
+          "expr": "sum by (tx_type, ter_result, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.process\", tx_type=~\"$tx_type\", ter_result=~\"$ter_result\", ter_result!=\"tesSUCCESS\"}[5m]))",
           "legendFormat": "{{tx_type}} [{{ter_result}}, {{exported_instance}}]"
         }
       ],
@@ -198,7 +202,7 @@
     },
     {
       "title": "Transaction Receive vs Suppressed",
-      "description": "Total rate of raw transaction messages received from peers (tx.receive span from PeerImp.cpp). This fires before deduplication via the HashRouter, so the difference between tx.receive and tx.process reflects suppressed duplicate transactions.",
+      "description": "###### What this is:\n*Raw transactions received from peers, split by whether they were duplicates suppressed before processing.*\n\n###### How it's computed:\n*Per-second rate of received transactions over the window, split by suppressed flag and node.*\n\n###### Reading it:\n*A large suppressed share is normal, since the same transaction arrives from many peers.*\n\n###### Healthy range:\n*Workload-dependent; suppressed typically exceeds newly processed.*\n\n###### Watch for:\n*A collapse in suppression (duplicate filtering failing) or an overall receive flood.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::handleTransaction`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -216,9 +220,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (suppressed, exported_instance) (rate(traces_span_metrics_calls_total{span_name=\"tx.receive\", tx_type=~\"$tx_type\", exported_instance=~\"$node\"}[$__rate_interval]))",
+          "expr": "sum by (suppressed, exported_instance) (rate(traces_span_metrics_calls_total{span_name=\"tx.receive\", tx_type=~\"$tx_type\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]))",
           "legendFormat": "Suppressed [{{suppressed}}, {{exported_instance}}]"
         }
       ],
@@ -239,7 +244,7 @@
     },
     {
       "title": "Transaction Processing Rate",
-      "description": "Rate of transactions entering the processing pipeline. tx.process (NetworkOPs.cpp) fires when a transaction is submitted locally or received from a peer and enters processTransaction(). tx.receive (PeerImp.cpp) fires when a raw transaction message arrives from a peer before deduplication.",
+      "description": "###### What this is:\n*Transactions entering the processing pipeline versus raw transactions arriving from peers.*\n\n###### How it's computed:\n*Per-second rates of processed transactions and received peer transactions over 5 minutes, per node.*\n\n###### Reading it:\n*Received sits above processed; the difference is deduplicated relay traffic.*\n\n###### Healthy range:\n*Workload-dependent; both scale with network volume.*\n\n###### Watch for:\n*A receive rate spiking well above processing, consistent with relay flooding.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp) · [PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`NetworkOPsImp::processTransaction ; PeerImp::handleTransaction`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -257,16 +262,18 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m]))",
           "legendFormat": "tx.process / Sec [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.receive\", tx_type=~\"$tx_type\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.receive\", tx_type=~\"$tx_type\"}[5m]))",
           "legendFormat": "tx.receive / Sec [{{exported_instance}}]"
         }
       ],
@@ -287,7 +294,7 @@
     },
     {
       "title": "Transaction Path Distribution",
-      "description": "Breakdown of transactions by origin path. The local attribute indicates whether the transaction was submitted locally (true) or received from a peer (false). Helps understand the ratio of locally-originated vs relayed transactions.",
+      "description": "###### What this is:\n*The split of transactions by origin: submitted locally versus relayed from peers.*\n\n###### How it's computed:\n*Processed-transaction rate over 5 minutes, split by local-origin flag and shown as proportions.*\n\n###### Reading it:\n*Most traffic on a network node is peer-relayed; local dominates on a submission node.*\n\n###### Healthy range:\n*Workload-dependent on the node's role.*\n\n###### Watch for:\n*An unexpected surge in local submissions, consistent with a local client flooding the node.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::processTransaction`",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -305,9 +312,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (local, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", local=~\"$tx_origin\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m]))",
+          "expr": "sum by (local, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", local=~\"$tx_origin\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m]))",
           "legendFormat": "Local [{{local}}, {{exported_instance}}]"
         }
       ],
@@ -315,7 +323,7 @@
     },
     {
       "title": "Transaction Processing Duration Heatmap",
-      "description": "Heatmap showing the distribution of tx.process span durations across histogram buckets over time. Each cell represents the count of transactions that completed within that latency bucket in a 5m window. Reveals whether processing times are consistent or exhibit multi-modal patterns.",
+      "description": "###### What this is:\n*The full distribution of transaction processing times over the window.*\n\n###### How it's computed:\n*Counts of transactions in each latency band per 5-minute window, shown as color density.*\n\n###### Reading it:\n*A tight low band is healthy; spread bands mean uneven processing time.*\n\n###### Healthy range:\n*Most mass in the low-latency bands; workload-dependent.*\n\n###### Watch for:\n*A distinct slow cluster (multi-modal timing) hidden by percentile charts.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::processTransaction`",
       "type": "heatmap",
       "gridPos": {
         "h": 8,
@@ -337,9 +345,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(increase(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m])) by (le)",
+          "expr": "sum(increase(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m])) by (le)",
           "legendFormat": "{{le}}",
           "format": "heatmap"
         }
@@ -353,7 +362,7 @@
     },
     {
       "title": "Peer Transaction Receive Rate",
-      "description": "Rate of transaction messages received from network peers. Sourced from the tx.receive span (PeerImp.cpp) which fires in the onMessage(TMTransaction) handler. High rates may indicate network-wide transaction volume spikes or peer flooding.",
+      "description": "###### What this is:\n*How many transaction messages arrive from network peers per second.*\n\n###### How it's computed:\n*Per-second rate of received peer transactions over 5 minutes, per node.*\n\n###### Reading it:\n*Reflects network-wide transaction volume reaching this node.*\n\n###### Healthy range:\n*Workload-dependent; tracks overall network activity.*\n\n###### Watch for:\n*A sharp spike above baseline, consistent with network-wide volume surges or peer flooding.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::handleTransaction`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -371,9 +380,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.receive\", tx_type=~\"$tx_type\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.receive\", tx_type=~\"$tx_type\"}[5m]))",
           "legendFormat": "tx.receive / Sec [{{exported_instance}}]"
         }
       ],
@@ -394,7 +404,7 @@
     },
     {
       "title": "Transactor Duration by Type (p95)",
-      "description": "Per-transactor execution time (tx.transactor span). Shows which transaction types are most expensive to execute.",
+      "description": "###### What this is:\n*The 95th-percentile execution time of the core transactor step, by transaction type.*\n\n###### How it's computed:\n*95th-percentile of transactor durations over 5 minutes, grouped by type and node.*\n\n###### Reading it:\n*Lower is better; reveals which types are most expensive to execute.*\n\n###### Healthy range:\n*Sub-millisecond to a few ms for most types; workload-dependent.*\n\n###### Watch for:\n*A type whose execution time grows, indicating expensive logic or ledger contention.*\n\n###### Source:\n[Transactor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/Transactor.cpp)\n\n###### Function:\n`Transactor::operator()`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -417,9 +427,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, tx_type, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.transactor\", tx_type=~\"$tx_type\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, tx_type, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.transactor\", tx_type=~\"$tx_type\"}[5m])))",
           "legendFormat": "{{tx_type}} [{{exported_instance}}]"
         }
       ],
@@ -440,7 +451,7 @@
     },
     {
       "title": "Tx Apply Pipeline Rate by Stage",
-      "description": "Span rate for each apply-pipeline stage (preflight, preclaim, apply). A drop between stages shows where transactions are filtered out. Requires the stage dimension in spanmetrics.",
+      "description": "###### What this is:\n*How many transactions pass through each apply-pipeline stage (preflight, preclaim, apply) per second.*\n\n###### How it's computed:\n*Per-second rate over 5 minutes, grouped by pipeline stage and node.*\n\n###### Reading it:\n*Stages should step down slightly as invalid transactions are filtered out.*\n\n###### Healthy range:\n*Workload-dependent; preflight highest, apply lowest.*\n\n###### Watch for:\n*A large drop between stages, showing where most transactions are being rejected.*\n\n###### Source:\n[applySteps.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/applySteps.cpp) · [Transactor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/Transactor.cpp)\n\n###### Function:\n`makeStageSpan ; Transactor::operator()`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -463,9 +474,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_replace(label_replace(sum by (stage, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\"}[5m])), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\")",
+          "expr": "label_replace(label_replace(label_replace(sum by (stage, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\"}[5m])), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\")",
           "legendFormat": "{{stage}} [{{exported_instance}}]"
         }
       ],
@@ -486,7 +498,7 @@
     },
     {
       "title": "Tx Apply Pipeline Latency by Stage (p95)",
-      "description": "95th-percentile duration of each apply-pipeline stage. Isolates which stage (preflight, preclaim, apply) dominates transaction processing time.",
+      "description": "###### What this is:\n*The 95th-percentile duration of each apply-pipeline stage.*\n\n###### How it's computed:\n*95th-percentile of per-stage durations over 5 minutes, grouped by stage and node.*\n\n###### Reading it:\n*Lower is better; isolates which stage dominates processing time.*\n\n###### Healthy range:\n*Each stage typically sub-millisecond to a few ms; workload-dependent.*\n\n###### Watch for:\n*One stage's latency rising, pinpointing the bottleneck in transaction handling.*\n\n###### Source:\n[applySteps.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/applySteps.cpp) · [Transactor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/Transactor.cpp)\n\n###### Function:\n`makeStageSpan ; Transactor::operator()`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -509,9 +521,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_replace(label_replace(histogram_quantile(0.95, sum by (le, stage, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\"}[5m]))), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\")",
+          "expr": "label_replace(label_replace(label_replace(histogram_quantile(0.95, sum by (le, stage, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\"}[5m]))), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\")",
           "legendFormat": "{{stage}} [{{exported_instance}}]"
         }
       ],
@@ -532,7 +545,7 @@
     },
     {
       "title": "Tx Apply Pipeline Failure Rate by Stage",
-      "description": "Rate of apply-pipeline spans whose ter_result is not tesSUCCESS, split by stage. Shows whether failures concentrate in preflight, preclaim, or apply. Filters on ter_result rather than span status because a failing ter code completes the span normally; only thrown exceptions set an error status.",
+      "description": "###### What this is:\n*How many transactions fail at each apply-pipeline stage per second.*\n\n###### How it's computed:\n*Per-second rate of non-success outcomes over 5 minutes, grouped by stage and node.*\n\n###### Reading it:\n*Shows whether rejections concentrate in preflight, preclaim, or apply.*\n\n###### Healthy range:\n*Workload-dependent; a modest background of expected rejections is normal.*\n\n###### Watch for:\n*A failure spike concentrated in one stage, consistent with malformed or spam submissions.*\n\n###### Source:\n[applySteps.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/applySteps.cpp) · [Transactor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/Transactor.cpp)\n\n###### Function:\n`makeStageSpan ; Transactor::operator()`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -555,9 +568,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_replace(label_replace(sum by (stage, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\", ter_result!~\"tesSUCCESS|\"}[5m])), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\")",
+          "expr": "label_replace(label_replace(label_replace(sum by (stage, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\", ter_result!~\"tesSUCCESS|\"}[5m])), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\")",
           "legendFormat": "{{stage}} [{{exported_instance}}]"
         }
       ],
@@ -578,7 +592,7 @@
     },
     {
       "title": "Tx Apply Pipeline Latency by Type and Stage (p95)",
-      "description": "95th-percentile duration broken down by both transaction type and apply-pipeline stage. Shows, for each transaction type, which stage (preflight, preclaim, apply) dominates its latency. Higher cardinality than the by-stage view; filter with the $tx_type and $stage variables.",
+      "description": "###### What this is:\n*The 95th-percentile stage duration broken down by both transaction type and pipeline stage.*\n\n###### How it's computed:\n*95th-percentile durations over 5 minutes, grouped by type and stage; higher cardinality than the by-stage view.*\n\n###### Reading it:\n*Lower is better; shows which stage dominates each type's latency.*\n\n###### Healthy range:\n*Workload-dependent; most type/stage pairs sub-millisecond to a few ms.*\n\n###### Watch for:\n*A specific type/stage combination rising sharply, pinpointing a costly path.*\n\n###### Source:\n[applySteps.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/applySteps.cpp) · [Transactor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/Transactor.cpp)\n\n###### Function:\n`makeStageSpan ; Transactor::operator()`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -601,9 +615,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_replace(label_replace(histogram_quantile(0.95, sum by (le, tx_type, stage, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", tx_type=~\"$tx_type\", stage=~\"$stage\"}[5m]))), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\")",
+          "expr": "label_replace(label_replace(label_replace(histogram_quantile(0.95, sum by (le, tx_type, stage, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", tx_type=~\"$tx_type\", stage=~\"$stage\"}[5m]))), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\")",
           "legendFormat": "{{tx_type}} [{{stage}}, {{exported_instance}}]"
         }
       ],
@@ -624,7 +639,7 @@
     },
     {
       "title": "Transaction Apply Duration per Ledger",
-      "description": "p95 latency of applying the consensus transaction set to a new ledger. The tx.apply span (BuildLedger.cpp) wraps the applyTransactions() function that iterates through the CanonicalTXSet and applies each transaction to the OpenView. Long durations indicate heavy transaction sets or expensive transaction processing.",
+      "description": "###### What this is:\n*The 95th-percentile time to apply the agreed transaction set into each new ledger.*\n\n###### How it's computed:\n*95th-percentile of transaction-apply durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; a major component of ledger build time.*\n\n###### Healthy range:\n*A few to tens of milliseconds; scales with transactions per ledger.*\n\n###### Watch for:\n*Rising durations during heavy or expensive transaction sets.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`applyTransactions`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -642,9 +657,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.apply\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.apply\"}[5m])))",
           "legendFormat": "tx.apply [{{exported_instance}}]"
         }
       ],
@@ -665,7 +681,7 @@
     },
     {
       "title": "TxQ Enqueue Rate by Transaction Type",
-      "description": "Rate of txq.enqueue spans broken down by transaction type (tx_type). Shows what share of inbound demand is Payment vs OfferCreate vs other transactors, and how the mix shifts as the queue fills. A spam burst of one type is a leading indicator of fee escalation.",
+      "description": "###### What this is:\n*How many transactions are queued (rather than applied immediately) per second, by type.*\n\n###### How it's computed:\n*Per-second rate of queue-enqueue operations over 5 minutes, grouped by transaction type and node.*\n\n###### Reading it:\n*Shows the demand mix hitting the queue and how it shifts as the queue fills.*\n\n###### Healthy range:\n*Workload-dependent; low or zero when the network is not congested.*\n\n###### Watch for:\n*A spam burst of one type, an early indicator of fee escalation.*\n\n###### Source:\n[TxQ.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/TxQ.cpp)\n\n###### Function:\n`TxQ::apply`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -683,9 +699,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (tx_type, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.enqueue\"}[5m]))",
+          "expr": "sum by (tx_type, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.enqueue\"}[5m]))",
           "legendFormat": "{{tx_type}} [{{exported_instance}}]"
         }
       ],
@@ -706,7 +723,7 @@
     },
     {
       "title": "TxQ Accept Status",
-      "description": "TxQ accept outcomes: applied (included in ledger), failed (removed), retried (kept for next round).",
+      "description": "###### What this is:\n*The outcome of queued transactions when the queue drains into a ledger: applied, failed, or retried.*\n\n###### How it's computed:\n*Counts of queue-accept outcomes over the window, split by status and shown as proportions.*\n\n###### Reading it:\n*A high applied share is healthy; retries indicate the transaction stayed queued.*\n\n###### Healthy range:\n*Workload-dependent; applied should dominate when not congested.*\n\n###### Watch for:\n*A rising failed or retried share, indicating queue pressure or under-bidding.*\n\n###### Source:\n[TxQ.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/TxQ.cpp)\n\n###### Function:\n`TxQ::accept`",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -728,9 +745,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (txq_status, exported_instance) (increase(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.accept_tx\", txq_status=~\"$txq_status\"}[5m]))",
+          "expr": "sum by (txq_status, exported_instance) (increase(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.accept_tx\", txq_status=~\"$txq_status\"}[5m]))",
           "legendFormat": "{{txq_status}} [{{exported_instance}}]"
         }
       ],
@@ -744,7 +762,7 @@
     },
     {
       "title": "Queue Bypass Ratio (Direct Apply vs Enqueue)",
-      "description": "Ratio of transactions that applied directly to the open ledger (txq.apply_direct) versus those that had to be queued (txq.enqueue). A falling bypass ratio is the cleanest single signal the network has entered sustained fee escalation.",
+      "description": "###### What this is:\n*The fraction of transactions that applied straight to the open ledger instead of being queued.*\n\n###### How it's computed:\n*Direct-apply rate divided by direct-apply plus enqueue rate over 5 minutes, per node.*\n\n###### Reading it:\n*Higher is better; near 1.0 means the network is not congested.*\n\n###### Healthy range:\n*Close to 1.0 when not congested; falls as demand exceeds capacity.*\n\n###### Watch for:\n*A falling ratio, the cleanest single signal the network has entered sustained fee escalation.*\n\n###### Source:\n[TxQ.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/TxQ.cpp)\n\n###### Function:\n`TxQ::tryDirectApply ; TxQ::apply`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -762,9 +780,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.apply_direct\"}[5m])) / clamp_min(sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.apply_direct\"}[5m])) + sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.enqueue\"}[5m])), 1)",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.apply_direct\"}[5m])) / clamp_min(sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.apply_direct\"}[5m])) + sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.enqueue\"}[5m])), 1)",
           "legendFormat": "Direct-Apply Fraction [{{exported_instance}}]"
         }
       ],
@@ -785,7 +804,7 @@
     },
     {
       "title": "Queue Accept (Drain) Duration per Ledger",
-      "description": "p95 duration of the txq.accept span, which drains queued transactions into a newly closed ledger. Rising drain time signals queue pressure at ledger close.",
+      "description": "###### What this is:\n*The 95th-percentile time to drain queued transactions into a newly closed ledger.*\n\n###### How it's computed:\n*95th-percentile of queue-drain durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; rising time signals queue pressure at ledger close.*\n\n###### Healthy range:\n*A few milliseconds when the queue is light; workload-dependent.*\n\n###### Watch for:\n*A sustained climb, indicating a large or contended queue slowing ledger close.*\n\n###### Source:\n[TxQ.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/TxQ.cpp)\n\n###### Function:\n`TxQ::accept`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -803,9 +822,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"txq.accept\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.accept\"}[5m])))",
           "legendFormat": "Drain [{{exported_instance}}]"
         }
       ],
@@ -826,7 +846,7 @@
     },
     {
       "title": "Queue Cleanup Rate (Expired Entries)",
-      "description": "Rate of txq.cleanup spans, which remove expired transactions from the queue each ledger. A rising rate means submitters under-bid the escalating fee and abandoned their transactions \u2014 a demand-frustration signal distinct from acceptance throughput.",
+      "description": "###### What this is:\n*How often expired transactions are removed from the queue each ledger, per second.*\n\n###### How it's computed:\n*Per-second rate of queue-cleanup operations over 5 minutes, per node.*\n\n###### Reading it:\n*Low is healthy; a rising rate means submitters are abandoning transactions.*\n\n###### Healthy range:\n*Near zero when not congested; workload-dependent.*\n\n###### Watch for:\n*A rising rate, a demand-frustration signal where submitters under-bid the escalating fee and gave up.*\n\n###### Source:\n[TxQ.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/TxQ.cpp)\n\n###### Function:\n`TxQ::processClosedLedger`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -844,9 +864,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.cleanup\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.cleanup\"}[5m]))",
           "legendFormat": "Cleanups / Sec [{{exported_instance}}]"
         }
       ],
@@ -867,18 +888,91 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["xrpld", "transactions"],
+  "tags": ["transactions"],
   "templating": {
     "list": [
       {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "label": "Prometheus",
+        "query": "prometheus",
+        "regex": "",
+        "current": {},
+        "hide": 0,
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "options": []
+      },
+      {
+        "name": "service_name",
+        "label": "Service",
+        "description": "Filter by service.name (e.g. xrpld, pratik-xrpld)",
+        "type": "query",
+        "query": "label_values(service_name)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "deployment_environment",
+        "label": "Environment",
+        "description": "Filter by deployment tier (local/ci/test/prod)",
+        "type": "query",
+        "query": "label_values(deployment_environment)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "xrpl_network_type",
+        "label": "Network",
+        "description": "Filter by XRPL network (mainnet/testnet/devnet)",
+        "type": "query",
+        "query": "label_values(xrpl_network_type)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
         "name": "node",
         "label": "Node",
-        "description": "Filter by rippled node (service.instance.id \u2014 e.g. Node-1)",
+        "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
         "type": "query",
         "query": "label_values(traces_span_metrics_calls_total, exported_instance)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -898,7 +992,7 @@
         "query": "label_values(traces_span_metrics_calls_total{span_name=\"tx.process\"}, local)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -914,7 +1008,8 @@
         "name": "tx_type",
         "type": "query",
         "datasource": {
-          "type": "prometheus"
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
         },
         "query": "label_values(traces_span_metrics_calls_total{span_name=\"tx.process\", tx_type!=\"\"}, tx_type)",
         "refresh": 2,
@@ -932,7 +1027,8 @@
         "name": "ter_result",
         "type": "query",
         "datasource": {
-          "type": "prometheus"
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
         },
         "query": "label_values(traces_span_metrics_calls_total{span_name=\"tx.process\", ter_result!=\"\"}, ter_result)",
         "refresh": 2,
@@ -950,7 +1046,8 @@
         "name": "txq_status",
         "type": "query",
         "datasource": {
-          "type": "prometheus"
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
         },
         "query": "label_values(traces_span_metrics_calls_total{span_name=\"txq.accept_tx\", txq_status!=\"\"}, txq_status)",
         "refresh": 2,
@@ -968,7 +1065,8 @@
         "name": "stage",
         "type": "query",
         "datasource": {
-          "type": "prometheus"
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
         },
         "query": "label_values(traces_span_metrics_calls_total{span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage!=\"\"}, stage)",
         "refresh": 2,
@@ -989,6 +1087,7 @@
     "to": "now"
   },
   "title": "Transaction Overview",
-  "uid": "xrpld-transactions",
-  "refresh": "5s"
+  "uid": "transaction-overview",
+  "refresh": "5s",
+  "description": "What this shows: Transaction flow through this node: receipt, processing, results, per-stage timing, and queue behavior.\nUse it to: Trace transactions from arrival to ledger, and locate stalls in processing or the queue."
 }

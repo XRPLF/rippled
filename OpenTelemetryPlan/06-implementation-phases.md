@@ -1056,7 +1056,7 @@ The validation suite (`validate_telemetry.py`) runs exactly 71 checks, broken do
 - **2 span hierarchies** — `rpc.process` -> `rpc.command.*`, `ledger.build` -> `tx.apply` (1 skipped: `rpc.request` -> `rpc.process`, cross-thread)
 - **1 span duration bounds** — all spans > 0 and < 60 s
 - **26 metric existence** — 4 SpanMetrics (`traces_span_metrics_calls_total`, `..._duration_milliseconds_{bucket,count,sum}`), 6 StatsD gauges (`LedgerMaster_Validated_Ledger_Age`, `Published_Ledger_Age`, `State_Accounting_Full_duration`, `Peer_Finder_Active_{Inbound,Outbound}_Peers`, `jobq_job_count`), 2 StatsD counters (`rpc_requests_total`, `ledger_fetches_total`), 3 StatsD histograms (`rpc_time`, `rpc_size`, `ios_latency`), 4 overlay traffic (`total_Bytes_{In,Out}`, `total_Messages_{In,Out}`), 7 Phase 9 OTLP (`nodestore_state`, `cache_metrics`, `txq_metrics`, `rpc_method_{started,finished}_total`, `object_count`, `load_factor_metrics`)
-- **10 dashboard loads** — `xrpld-rpc-perf`, `xrpld-transactions`, `xrpld-consensus`, `xrpld-ledger-ops`, `xrpld-peer-net`, `xrpld-system-node-health`, `xrpld-system-network`, `xrpld-system-rpc`, `xrpld-system-overlay-detail`, `xrpld-system-ledger-sync`
+- **10 dashboard loads** — `rpc-performance`, `transaction-overview`, `consensus-health`, `ledger-operations`, `peer-network`, `node-health`, `network-traffic`, `rpc-pathfinding`, `overlay-traffic-detail`, `ledger-data-sync`
 
 See [Phase10_taskList.md](./Phase10_taskList.md) for the full numbered check-by-check enumeration.
 

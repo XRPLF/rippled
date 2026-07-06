@@ -362,7 +362,7 @@ This phase addresses the cross-cutting gap identified during research: **xrpld h
 
 **What to do**:
 
-- **Validator Health** (`xrpld-validator-health`):
+- **Validator Health** (`validator-health`):
   - Server state timeline, state duration breakdown
   - Proposer count trend, converge time trend, validation quorum
   - Validator list expiration countdown

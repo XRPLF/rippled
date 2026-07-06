@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Requires trace_peer=1 in the [telemetry] config section.",
+  "description": "What this shows: Consensus proposals and validations received from peers, and transaction relay efficiency for this node.\nUse it to: Check that peers are feeding this node proposals, validations, and transactions, and gauge relay overhead.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Peer Proposal Receive Rate",
-      "description": "Rate of consensus proposals received from network peers. The peer.proposal.receive span (PeerImp.cpp) fires in onMessage(TMProposeSet) for each incoming proposal. Records xrpl.peer.id (sending peer) and proposal_trusted (whether the proposer is in our UNL). Requires trace_peer=1 in the telemetry config.",
+      "description": "###### What this is:\n*How many consensus proposals this node receives from peers per second.*\n\n###### How it's computed:\n*Per-second rate of received proposals over 5 minutes, per node.*\n\n###### Reading it:\n*A steady rate roughly proportional to the number of proposing validators.*\n\n###### Healthy range:\n*Workload-dependent; scales with validator count and connectivity.*\n\n###### Watch for:\n*A drop toward zero (isolation from the network) or a sudden flood far above baseline (proposal spam).*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::onMessage(TMProposeSet)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -28,9 +28,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"peer.proposal.receive\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"peer.proposal.receive\"}[5m]))",
           "legendFormat": "Proposals Received / Sec [{{exported_instance}}]"
         }
       ],
@@ -50,7 +51,7 @@
     },
     {
       "title": "Peer Validation Receive Rate",
-      "description": "Rate of ledger validations received from network peers. The peer.validation.receive span (PeerImp.cpp) fires in onMessage(TMValidation) for each incoming validation message. Records xrpl.peer.id (sending peer) and validation_trusted (whether the validator is trusted). Requires trace_peer=1 in the telemetry config.",
+      "description": "###### What this is:\n*How many ledger validations this node receives from peers per second.*\n\n###### How it's computed:\n*Per-second rate of received validations over 5 minutes, per node.*\n\n###### Reading it:\n*Steady and proportional to the number of validators the node hears from.*\n\n###### Healthy range:\n*Workload-dependent; roughly one burst per validator per closed ledger.*\n\n###### Watch for:\n*A fall toward zero (loss of validator connectivity) or an abnormal surge from untrusted sources.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::onMessage(TMValidation)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -67,9 +68,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"peer.validation.receive\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"peer.validation.receive\"}[5m]))",
           "legendFormat": "Validations Received / Sec [{{exported_instance}}]"
         }
       ],
@@ -89,7 +91,7 @@
     },
     {
       "title": "Proposals Trusted vs Untrusted",
-      "description": "Pie chart showing the ratio of proposals received from trusted validators (in our UNL) vs untrusted validators. Grouped by the proposal_trusted span attribute (true/false). A healthy node connected to a well-configured UNL should see a significant portion of trusted proposals. Note: proposals that fail early validation may not have the trusted attribute set.",
+      "description": "###### What this is:\n*The share of received proposals that come from trusted (UNL) validators versus everyone else.*\n\n###### How it's computed:\n*Received-proposal rate split by trust status over 5 minutes, shown as proportions.*\n\n###### Reading it:\n*A healthy node with a good UNL shows a solid trusted slice.*\n\n###### Healthy range:\n*Workload-dependent; a meaningful trusted fraction is expected.*\n\n###### Watch for:\n*A collapsing trusted share or a large untrusted volume, consistent with proposal flooding from non-UNL peers.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::onMessage(TMProposeSet)`",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -106,9 +108,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (proposal_trusted, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", proposal_trusted=~\"$proposal_trusted\", span_name=\"peer.proposal.receive\"}[5m]))",
+          "expr": "sum by (proposal_trusted, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", proposal_trusted=~\"$proposal_trusted\", span_name=\"peer.proposal.receive\"}[5m]))",
           "legendFormat": "Trusted = {{proposal_trusted}} [{{exported_instance}}]"
         }
       ],
@@ -121,7 +124,7 @@
     },
     {
       "title": "Validations Trusted vs Untrusted",
-      "description": "Pie chart showing the ratio of validations received from trusted validators (in our UNL) vs untrusted validators. Grouped by the validation_trusted span attribute (true/false). Monitoring this helps detect if the node is receiving validations from the expected set of trusted validators. Note: validations that fail early checks may not have the trusted attribute set.",
+      "description": "###### What this is:\n*The share of received validations from trusted (UNL) validators versus untrusted sources.*\n\n###### How it's computed:\n*Received-validation rate split by trust status over 5 minutes, shown as proportions.*\n\n###### Reading it:\n*The trusted slice should dominate for a well-configured node.*\n\n###### Healthy range:\n*Workload-dependent; trusted validations expected to be the majority.*\n\n###### Watch for:\n*A shrinking trusted share or a spike of untrusted validations, which can indicate misconfiguration or abuse.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::onMessage(TMValidation)`",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -138,9 +141,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (validation_trusted, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", validation_trusted=~\"$validation_trusted\", span_name=\"peer.validation.receive\"}[5m]))",
+          "expr": "sum by (validation_trusted, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", validation_trusted=~\"$validation_trusted\", span_name=\"peer.validation.receive\"}[5m]))",
           "legendFormat": "Trusted = {{validation_trusted}} [{{exported_instance}}]"
         }
       ],
@@ -153,7 +157,7 @@
     },
     {
       "title": "Reduce-Relay Peer Selection",
-      "description": "Transaction reduce-relay efficiency: peers selected as relay sources vs suppressed, plus peers with the feature disabled. A high suppressed:selected ratio proves reduce-relay is saving bandwidth; a high not_enabled count means stale peers force full relay.",
+      "description": "###### What this is:\n*How transaction relay picks peers: chosen relay sources, suppressed peers, and peers with the feature off.*\n\n###### How it's computed:\n*Current peer counts in each category (selected, suppressed, not-enabled), per node.*\n\n###### Reading it:\n*A high suppressed-to-selected ratio means relay is saving bandwidth as intended.*\n\n###### Healthy range:\n*Workload-dependent; suppressed should exceed selected in a well-connected mesh.*\n\n###### Watch for:\n*A large not-enabled count (older peers forcing full relay) or selected climbing while suppressed falls.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerReduceRelayGauge`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -170,23 +174,26 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "xrpld_reduce_relay_metrics{metric=\"selected_peers\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_reduce_relay_metrics{metric=\"selected_peers\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Selected [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "xrpld_reduce_relay_metrics{metric=\"suppressed_peers\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_reduce_relay_metrics{metric=\"suppressed_peers\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Suppressed [{{exported_instance}}]"
         },
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "xrpld_reduce_relay_metrics{metric=\"not_enabled_peers\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_reduce_relay_metrics{metric=\"not_enabled_peers\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Not Enabled [{{exported_instance}}]"
         }
       ],
@@ -206,7 +213,7 @@
     },
     {
       "title": "Reduce-Relay Missing-Tx Frequency",
-      "description": "Frequency of on-demand transaction fetches triggered when a peer is missing a relayed transaction. A rising value means the suppression is too aggressive and the on-demand fetch path is growing.",
+      "description": "###### What this is:\n*How often a peer has to fetch a transaction it missed because relay suppressed it.*\n\n###### How it's computed:\n*The reported frequency of on-demand missing-transaction fetches, per node.*\n\n###### Reading it:\n*Lower is better; near-flat means suppression is well tuned.*\n\n###### Healthy range:\n*Workload-dependent; a low, stable value is expected.*\n\n###### Watch for:\n*A rising trend, meaning suppression is too aggressive and the on-demand fetch path is growing.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerReduceRelayGauge`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -223,9 +230,10 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus"
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "xrpld_reduce_relay_metrics{metric=\"missing_tx_freq\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_reduce_relay_metrics{metric=\"missing_tx_freq\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Missing Tx Freq [{{exported_instance}}]"
         }
       ],
@@ -245,18 +253,91 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["xrpld", "peer"],
+  "tags": ["network", "peer"],
   "templating": {
     "list": [
       {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "label": "Prometheus",
+        "query": "prometheus",
+        "regex": "",
+        "current": {},
+        "hide": 0,
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "options": []
+      },
+      {
+        "name": "service_name",
+        "label": "Service",
+        "description": "Filter by service.name (e.g. xrpld, pratik-xrpld)",
+        "type": "query",
+        "query": "label_values(service_name)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "deployment_environment",
+        "label": "Environment",
+        "description": "Filter by deployment tier (local/ci/test/prod)",
+        "type": "query",
+        "query": "label_values(deployment_environment)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "xrpl_network_type",
+        "label": "Network",
+        "description": "Filter by XRPL network (mainnet/testnet/devnet)",
+        "type": "query",
+        "query": "label_values(xrpl_network_type)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
         "name": "node",
         "label": "Node",
-        "description": "Filter by rippled node (service.instance.id \u2014 e.g. Node-1)",
+        "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
         "type": "query",
         "query": "label_values(traces_span_metrics_calls_total, exported_instance)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -276,7 +357,7 @@
         "query": "label_values(traces_span_metrics_calls_total{span_name=\"peer.proposal.receive\"}, proposal_trusted)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -296,7 +377,7 @@
         "query": "label_values(traces_span_metrics_calls_total{span_name=\"peer.validation.receive\"}, validation_trusted)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -315,6 +396,6 @@
     "to": "now"
   },
   "title": "Peer Network",
-  "uid": "xrpld-peer-net",
+  "uid": "peer-network",
   "refresh": "5s"
 }

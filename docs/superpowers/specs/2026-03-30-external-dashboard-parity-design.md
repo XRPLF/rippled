@@ -432,7 +432,7 @@ Reads from the `ValidationTracker` (Task 7.8) to export rolling window stats.
 
 **Task 9.11: Validator Health Dashboard**
 
-New Grafana dashboard: `xrpld-validator-health.json`
+New Grafana dashboard: `validator-health.json`
 
 | Panel                      | Type       | PromQL                                                         |
 | -------------------------- | ---------- | -------------------------------------------------------------- |
@@ -456,7 +456,7 @@ New Grafana dashboard: `xrpld-validator-health.json`
 
 **Task 9.12: Peer Quality Dashboard**
 
-New Grafana dashboard: `xrpld-peer-quality.json`
+New Grafana dashboard: `peer-quality.json`
 
 | Panel                  | Type       | PromQL                                                         |
 | ---------------------- | ---------- | -------------------------------------------------------------- |
@@ -471,7 +471,7 @@ New Grafana dashboard: `xrpld-peer-quality.json`
 
 **Task 9.13: Ledger Economy Dashboard Panels**
 
-Add a "Ledger Economy" row to the existing `system-node-health.json` dashboard:
+Add a "Ledger Economy" row to the existing `node-health.json` dashboard:
 
 | Panel                | Type       | PromQL                                              |
 | -------------------- | ---------- | --------------------------------------------------- |
@@ -524,11 +524,11 @@ Add checks to `validate_telemetry.py` for all new span attributes and metrics.
 
 **New dashboard load checks (~3)**:
 
-| Dashboard                      |
-| ------------------------------ |
-| `xrpld-validator-health`       |
-| `xrpld-peer-quality`           |
-| `system-node-health` (updated) |
+| Dashboard               |
+| ----------------------- |
+| `validator-health`      |
+| `peer-quality`          |
+| `node-health` (updated) |
 
 **New metric value sanity checks (~4)**:
 

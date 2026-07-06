@@ -42,6 +42,39 @@ cmake --preset default -Dtelemetry=ON
 cmake --build --preset default
 ```
 
+### 4. Run against a live network
+
+Two ready-made configs connect a tracking node (no validator credentials) to a
+public network with all tracing and native metrics enabled:
+
+| Config                                         | Network |
+| ---------------------------------------------- | ------- |
+| `docker/telemetry/xrpld-telemetry.cfg`         | Devnet  |
+| `docker/telemetry/xrpld-telemetry-mainnet.cfg` | Mainnet |
+
+```bash
+.build/xrpld --conf docker/telemetry/xrpld-telemetry-mainnet.cfg
+```
+
+Both set `[insight] server=otel` (native metrics → collector → Prometheus, which
+drives the dashboards) and `service_instance_id`, exposed by Prometheus as the
+`exported_instance` label that the `$node` dashboard variable filters on. The
+mainnet config logs to `/home/pratik/xrpld-logs/mainnet/debug.log` — the path
+the collector's filelog receiver tails for log-trace correlation.
+
+Metrics begin flowing as soon as the node connects to peers (`server_state`
+≥ `connected`); full ledger and consensus panels populate after sync
+(`server_state` = `full`). Check progress with:
+
+```bash
+curl -s http://localhost:5005 -d '{"method":"server_info"}' |
+    jq '.result.info | {server_state, peers, complete_ledgers}'
+```
+
+> Mainnet sync is bandwidth- and disk-heavy. For a quick check use the devnet
+> config or the standalone test in `docker/telemetry/TESTING.md`, which
+> generates spans without waiting for a live sync.
+
 ## Configuration Reference
 
 | Option                     | Default                           | Description                                               |
@@ -63,6 +96,96 @@ cmake --build --preset default
 | `tls_ca_cert`              | (empty)                           | Path to CA certificate bundle                             |
 | `tls_client_cert`          | (empty)                           | Client cert (PEM) for mutual TLS; empty = one-way TLS     |
 | `tls_client_key`           | (empty)                           | Private key (PEM) for `tls_client_cert`                   |
+
+## Exporting to Grafana Cloud
+
+The collector can ship traces, metrics, and logs to a hosted **Grafana
+Cloud** stack instead of (or alongside) the local Tempo/Prometheus/Loki
+backends. This is a runtime choice — no xrpld rebuild and no change to the
+base stack. xrpld still exports to the local collector exactly as before;
+the collector adds one OTLP/HTTP exporter that forwards all three signals to
+the Grafana Cloud OTLP gateway, which fans them out to hosted Tempo, Mimir,
+and Loki.
+
+### Credentials
+
+Find these under **Grafana Cloud → Connections → OpenTelemetry (OTLP)**:
+
+| Value                         | Used as           | Notes                                              |
+| ----------------------------- | ----------------- | -------------------------------------------------- |
+| `GRAFANA_CLOUD_OTLP_ENDPOINT` | exporter endpoint | Full gateway URL incl. `/otlp` path                |
+| `GRAFANA_CLOUD_INSTANCE_ID`   | Basic-auth user   | Numeric stack/instance id                          |
+| `GRAFANA_CLOUD_API_TOKEN`     | Basic-auth pass   | Access-policy token with `*:write` for all signals |
+
+### Enable
+
+1. Copy the template and fill in the three values:
+
+   ```bash
+   cp docker/telemetry/.env.grafanacloud.example docker/telemetry/.env.grafanacloud
+   # edit .env.grafanacloud — this file is gitignored, never commit tokens
+   ```
+
+2. Bring the stack up with the base file **and** the Grafana Cloud override:
+
+   ```bash
+   docker compose -f docker/telemetry/docker-compose.yml \
+       -f docker/telemetry/docker-compose.grafanacloud.yaml up -d
+   ```
+
+To return to local-only export, bring the stack up with just the base
+`docker-compose.yml`.
+
+### Files
+
+| File                                      | Role                                                                                           |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `otel-collector-config.grafanacloud.yaml` | Collector config: local backends **plus** a Grafana Cloud OTLP exporter on all three pipelines |
+| `docker-compose.grafanacloud.yaml`        | Override that mounts that config and injects the credentials                                   |
+| `.env.grafanacloud.example`               | Credential template (copy to `.env.grafanacloud`)                                              |
+
+### Local + cloud vs cloud-only
+
+The prepared config **dual-exports**: data goes to both the local stack and
+Grafana Cloud, so the on-box backends remain a fallback. For cloud-only,
+remove the local exporters (`debug`, `otlp/tempo`, `prometheus`,
+`otlphttp/loki`) from the respective pipelines in
+`otel-collector-config.grafanacloud.yaml`, leaving only
+`otlphttp/grafanacloud`.
+
+> **Note**: shipping logs to Grafana Cloud requires keeping xrpld file
+> logging on (at least `warning` level) so the collector's filelog receiver
+> has a `debug.log` to tail. Traces and metrics are unaffected by log level.
+
+### Importing dashboards to Grafana Cloud
+
+Shipping data (above) is independent of installing the dashboards. The local
+stack auto-provisions dashboards from a mounted folder
+(`grafana/provisioning/dashboards/dashboards.yaml`, `type: file`); Grafana
+Cloud cannot read your filesystem, so its dashboards must be imported over the
+HTTP API or the UI.
+
+The dashboard JSON in `docker/telemetry/grafana/dashboards/` references its
+backends through datasource **template variables** (`${DS_PROMETHEUS}`,
+`${DS_TEMPO}`) rather than fixed UIDs. On import, Grafana binds each variable
+to a datasource of the matching type — auto-selecting it when only one exists
+(the usual case: one Mimir, one Tempo). This is what makes the same files work
+unchanged on both the local stack and Cloud.
+
+> Dashboards are parameterized by `grafana/parameterize-datasources.py`. If you
+> add a dashboard exported with hardcoded UIDs, re-run that script (idempotent)
+> before committing so it stays portable.
+
+To import:
+
+1. In Grafana Cloud, go to **Dashboards → New → Import**.
+2. Upload a file from `docker/telemetry/grafana/dashboards/` (or paste its
+   JSON), then click **Load**.
+3. At the datasource prompt, confirm the auto-selected **Prometheus/Mimir**
+   datasource — and **Tempo** for dashboards that query traces — then
+   **Import**.
+4. Repeat per dashboard. Only `consensus-health` uses Tempo; the rest need
+   only the Prometheus/Mimir datasource.
 
 ## Span Reference
 
@@ -625,11 +748,95 @@ These gauges are exported via the OTel Metrics SDK `PeriodicMetricReader` (10s i
 | `xrpld_pathfind_fast` | PathRequests.h:23     | Fast pathfinding duration (ms) |
 | `xrpld_pathfind_full` | PathRequests.h:24     | Full pathfinding duration (ms) |
 
+## Deployment Tiers
+
+Multiple xrpld instances can send telemetry to per-tier collectors that all
+forward to one Grafana stack. Four resource attributes segregate the data so
+one dashboard set serves every deployment:
+
+| Dimension   | Attribute                | Set by     | Example values                 |
+| ----------- | ------------------------ | ---------- | ------------------------------ |
+| Node        | `service.instance.id`    | xrpld cfg  | `alice-laptop`, `ci-runner-7`  |
+| Service     | `service.name`           | xrpld cfg  | `xrpld`, `pratik-xrpld`        |
+| Network     | `xrpl.network.type`      | xrpld node | `mainnet`, `testnet`, `devnet` |
+| Environment | `deployment.environment` | collector  | `local`, `test`, `ci`, `prod`  |
+
+Dashboards expose these as the template variables `$node`, `$service_name`,
+`$xrpl_network_type`, and `$deployment_environment` (each variable name
+matches its Prometheus label). Select them top-down — environment → network
+→ service → node. Selecting **All** matches every value, including series
+lacking the label, so mixed old/new data never disappears.
+
+### Who owns which attribute
+
+- **Node and service** come from xrpld config (`service_instance_id`,
+  `service_name`). Unique per process.
+- **Network** is a property of the chain the node joined; the node derives it
+  from `[network_id]` and stamps `xrpl.network.type` on all three signals.
+- **Environment** is a property of where the collector runs; each collector
+  serves one environment and stamps it.
+
+### The upsert vs insert rule
+
+The collector's `resource/tier` processor uses two actions on purpose:
+
+- `deployment.environment` → **`upsert`** (overwrite). The collector _is_ the
+  environment, so it is authoritative.
+- `xrpl.network.type` → **`insert`** (fill only if absent). The node knows
+  its real network, so the collector must not overwrite it — `insert` only
+  supplies a value when the source did not (e.g. an older xrpld build). This
+  is what lets a local node connected to mainnet report `network=mainnet`,
+  not the collector's default.
+
+### Configuring a collector for a tier
+
+Each tier runs its own collector. Set the two values in the `resource/tier`
+processor of the collector config (`otel-collector-config.yaml` for local
+backends, `otel-collector-config.grafanacloud.yaml` for Grafana Cloud):
+
+```yaml
+processors:
+  resource/tier:
+    attributes:
+      - key: deployment.environment
+        value: <tier> # local | test | ci | prod
+        action: upsert
+      - key: xrpl.network.type
+        value: <network> # mainnet | testnet | devnet (fallback only)
+        action: insert
+```
+
+Suggested per-tier values:
+
+| Collector           | `deployment.environment` | `xrpl.network.type` (fallback) |
+| ------------------- | ------------------------ | ------------------------------ |
+| Developer laptop    | `local`                  | `devnet`                       |
+| Test machines       | `test`                   | `testnet`                      |
+| CI runs             | `ci`                     | `testnet`                      |
+| Production observer | `prod`                   | `mainnet`                      |
+
+The `xrpl.network.type` value is only a fallback: when the node stamps its
+own network (all current builds do), the node's value wins. Set it to the
+network the collector most commonly serves.
+
+### How the tier labels reach metrics
+
+Resource attributes do not become Prometheus labels automatically. Two
+collector settings make it work, both already enabled:
+
+- `prometheus.resource_to_telemetry_conversion: enabled: true` promotes
+  resource attributes to metric labels on the local scrape surface.
+- `spanmetrics.resource_metrics_key_attributes` lists the tier attributes so
+  span-derived series stay grouped per node and tier.
+
+Traces and logs carry resource attributes natively; Grafana Cloud ingests all
+three signals' attributes over OTLP directly.
+
 ## Grafana Dashboards
 
 Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
-### RPC Performance (`xrpld-rpc-perf`)
+### RPC Performance (`rpc-performance`)
 
 | Panel                       | Type       | PromQL                                                                                                                                    | Labels Used              |
 | --------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
@@ -642,7 +849,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Top Commands by Volume      | bargauge   | `topk(10, ...)` by `command`                                                                                                              | `command`                |
 | WebSocket Message Rate      | stat       | `rpc.ws_message` rate                                                                                                                     | —                        |
 
-### Transaction Overview (`xrpld-transactions`)
+### Transaction Overview (`transaction-overview`)
 
 | Panel                             | Type       | PromQL                                                                               | Labels Used   |
 | --------------------------------- | ---------- | ------------------------------------------------------------------------------------ | ------------- |
@@ -655,7 +862,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Peer TX Receive Rate              | timeseries | `tx.receive` rate                                                                    | —             |
 | TX Apply Failed Rate              | stat       | `tx.apply` with `STATUS_CODE_ERROR`                                                  | `status_code` |
 
-### Consensus Health (`xrpld-consensus`)
+### Consensus Health (`consensus-health`)
 
 | Panel                         | Type       | PromQL                                                                             | Labels Used      |
 | ----------------------------- | ---------- | ---------------------------------------------------------------------------------- | ---------------- |
@@ -670,7 +877,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                            | —                |
 | Accept Duration Heatmap       | heatmap    | `consensus.accept` histogram buckets                                               | `le`             |
 
-### Ledger Operations (`xrpld-ledger-ops`)
+### Ledger Operations (`ledger-operations`)
 
 | Panel                   | Type       | PromQL                                         | Labels Used |
 | ----------------------- | ---------- | ---------------------------------------------- | ----------- |
@@ -683,7 +890,7 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Ledger Store Rate       | stat       | `ledger.store` call rate                       | —           |
 | Build vs Close Duration | timeseries | p95 `ledger.build` vs `consensus.ledger_close` | —           |
 
-### Peer Network (`xrpld-peer-net`)
+### Peer Network (`peer-network`)
 
 Requires `trace_peer=1` in the `[telemetry]` config section.
 
@@ -694,7 +901,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Proposals Trusted vs Untrusted   | piechart   | by `proposal_trusted`          | `proposal_trusted`   |
 | Validations Trusted vs Untrusted | piechart   | by `validation_trusted`        | `validation_trusted` |
 
-### Node Health -- System Metrics (`xrpld-system-node-health`)
+### Node Health -- System Metrics (`node-health`)
 
 | Panel                                  | Type       | PromQL                                                          | Labels Used      |
 | -------------------------------------- | ---------- | --------------------------------------------------------------- | ---------------- |
@@ -723,7 +930,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Database Sizes                         | timeseries | `xrpld_db_metrics{metric=~"db_kb_.*"}`                          | `metric`         |
 | Historical Fetch Rate                  | stat       | `xrpld_db_metrics{metric="historical_perminute"}`               | `metric`         |
 
-### Network Traffic -- System Metrics (`xrpld-system-network`)
+### Network Traffic -- System Metrics (`network-traffic`)
 
 | Panel                                | Type       | PromQL                                     | Labels Used |
 | ------------------------------------ | ---------- | ------------------------------------------ | ----------- |
@@ -738,7 +945,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Duplicate Traffic (Wasted Bandwidth) | timeseries | `rate(xrpld_*_duplicate_Bytes_In/Out[5m])` | —           |
 | All Traffic Categories (Detail)      | timeseries | `topk(15, rate(xrpld_*_Bytes_In[5m]))`     | —           |
 
-### RPC & Pathfinding -- System Metrics (`xrpld-system-rpc`)
+### RPC & Pathfinding -- System Metrics (`rpc-pathfinding`)
 
 | Panel                     | Type       | PromQL                                                 | Labels Used |
 | ------------------------- | ---------- | ------------------------------------------------------ | ----------- |

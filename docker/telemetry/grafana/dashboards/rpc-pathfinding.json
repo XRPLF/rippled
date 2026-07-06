@@ -1,0 +1,694 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "What this shows: RPC request throughput and response timing, pathfinding cost, gRPC read traffic, and resource-manager enforcement for this node.\nUse it to: Watch client request load and cost, and confirm resource limits are protecting the node.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "RPC Request Rate",
+      "description": "###### What this is:\n*How many RPC requests the server counts per second.*\n\n###### How it's computed:\n*Per-second rate of the RPC request counter over 5 minutes, per node.*\n\n###### Reading it:\n*A steady line proportional to client demand; cross-checks the trace-based RPC dashboard.*\n\n###### Healthy range:\n*Workload-dependent; tracks client activity.*\n\n###### Watch for:\n*A sudden surge above baseline, consistent with a client flooding the RPC endpoint.*\n\n###### Source:\n[ServerHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/ServerHandler.cpp)\n\n###### Function:\n`ServerHandler ctor`",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "rate(xrpld_rpc_requests_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "legendFormat": "Requests / Sec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "RPC Response Time",
+      "description": "###### What this is:\n*The 95th-percentile end-to-end RPC response time, including HTTP handling.*\n\n###### How it's computed:\n*95th-percentile of measured response times over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; this is broader than command-only latency.*\n\n###### Healthy range:\n*A few to tens of milliseconds; workload-dependent.*\n\n###### Watch for:\n*A sustained climb, indicating handler overload or slow downstream work.*\n\n###### Source:\n[ServerHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/ServerHandler.cpp)\n\n###### Function:\n`ServerHandler ctor`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_rpc_time_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "legendFormat": "P95 Response Time [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Latency (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "RPC Response Size",
+      "description": "###### What this is:\n*The 95th-percentile size of RPC response payloads in bytes.*\n\n###### How it's computed:\n*95th-percentile of response payload sizes over 5 minutes, per node.*\n\n###### Reading it:\n*Smaller is cheaper; large responses cost bandwidth and memory.*\n\n###### Healthy range:\n*Workload-dependent; small for status queries, large for bulk data queries.*\n\n###### Watch for:\n*Growth in large responses, consistent with expensive queries or API misuse.*\n\n###### Source:\n[ServerHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/ServerHandler.cpp)\n\n###### Function:\n`ServerHandler ctor`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_rpc_size_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "legendFormat": "P95 Response Size [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "custom": {
+            "axisLabel": "Size (Bytes)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "RPC Response Time Distribution",
+      "description": "###### What this is:\n*RPC response time at the 90th, 95th, and 99th percentiles together.*\n\n###### How it's computed:\n*Three response-time quantiles over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; the gap between P90 and P99 shows the long tail.*\n\n###### Healthy range:\n*Percentiles clustered low; workload-dependent.*\n\n###### Watch for:\n*A widening P99, revealing long-tail or bimodal slow requests.*\n\n###### Source:\n[ServerHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/ServerHandler.cpp)\n\n###### Function:\n`ServerHandler ctor`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "histogram_quantile(0.9, sum by (le, exported_instance) (rate(xrpld_rpc_time_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "legendFormat": "P90 [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_rpc_time_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "legendFormat": "P95 [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_rpc_time_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "legendFormat": "P99 [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Latency (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Pathfinding Fast Duration",
+      "description": "###### What this is:\n*The 95th-percentile time of the fast pathfinding search.*\n\n###### How it's computed:\n*95th-percentile of fast pathfinding durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; fast mode trades accuracy for speed.*\n\n###### Healthy range:\n*Typically a few to tens of milliseconds; workload-dependent.*\n\n###### Watch for:\n*A rising trend, indicating heavy pathfinding demand or an expensive order book.*\n\n###### Source:\n[PathRequestManager.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/PathRequestManager.h)\n\n###### Function:\n`ctor`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_pathfind_fast_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "legendFormat": "P95 Fast Pathfind [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Pathfinding Full Duration",
+      "description": "###### What this is:\n*The 95th-percentile time of the full, exhaustive pathfinding search.*\n\n###### How it's computed:\n*95th-percentile of full pathfinding durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; full mode is much more expensive than fast mode.*\n\n###### Healthy range:\n*Tens to hundreds of milliseconds; workload-dependent.*\n\n###### Watch for:\n*Sustained high durations, consistent with pathfinding-heavy clients straining the node.*\n\n###### Source:\n[PathRequestManager.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/PathRequestManager.h)\n\n###### Function:\n`ctor`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_pathfind_full_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "legendFormat": "P95 Full Pathfind [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Resource Warnings Rate",
+      "description": "###### What this is:\n*How often the resource manager warns a peer or client for excessive usage, per second.*\n\n###### How it's computed:\n*Per-second rate of resource-warning events over 5 minutes, per node.*\n\n###### Reading it:\n*Green near zero, yellow above 0.1/sec, red above 1/sec.*\n\n###### Healthy range:\n*Near zero in normal operation.*\n\n###### Watch for:\n*A rising rate, consistent with aggressive clients that may need throttling.*\n\n###### Source:\n[Logic.h](https://github.com/XRPLF/rippled/blob/develop/include/xrpl/resource/detail/Logic.h)\n\n###### Function:\n`Logic::Stats ctor`",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "rate(xrpld_warn_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "legendFormat": "Warnings / Sec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.1
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Resource Drops Rate",
+      "description": "###### What this is:\n*How often the resource manager drops or blocks a peer or client for abuse, per second.*\n\n###### How it's computed:\n*Per-second rate of resource-drop events over 5 minutes, per node.*\n\n###### Reading it:\n*Green near zero, yellow above 0.01/sec, red above 0.1/sec.*\n\n###### Healthy range:\n*Zero when no abusive consumers are present.*\n\n###### Watch for:\n*Non-zero values, meaning the node is actively rejecting abusive connections.*\n\n###### Source:\n[Logic.h](https://github.com/XRPLF/rippled/blob/develop/include/xrpl/resource/detail/Logic.h)\n\n###### Function:\n`Logic::Stats ctor`",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "rate(xrpld_drop_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "legendFormat": "Drops / Sec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.01
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "gRPC Request Rate by Method (Spans)",
+      "description": "###### What this is:\n*How many gRPC calls of each method the node serves per second.*\n\n###### How it's computed:\n*Per-second rate of gRPC calls over 5 minutes, grouped by method and node.*\n\n###### Reading it:\n*Non-zero only when reporting/Clio-style clients use the gRPC API.*\n\n###### Healthy range:\n*Workload-dependent; zero without gRPC traffic.*\n\n###### Watch for:\n*A single method spiking, consistent with a heavy or misbehaving gRPC consumer.*\n\n###### Source:\n[GRPCServer.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/main/GRPCServer.cpp)\n\n###### Function:\n`GRPCServerImpl::CallData::process`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (method, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m]))",
+          "legendFormat": "{{method}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Calls / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "gRPC Latency P95 by Method (Spans)",
+      "description": "###### What this is:\n*The 95th-percentile latency of each gRPC method.*\n\n###### How it's computed:\n*95th-percentile of gRPC call durations over 5 minutes, grouped by method and node.*\n\n###### Reading it:\n*Lower is better; identifies slow gRPC read paths.*\n\n###### Healthy range:\n*Workload-dependent; scales with ledger data volume served.*\n\n###### Watch for:\n*A method whose latency climbs, indicating an expensive read path.*\n\n###### Source:\n[GRPCServer.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/main/GRPCServer.cpp)\n\n###### Function:\n`GRPCServerImpl::CallData::process`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, method, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m])))",
+          "legendFormat": "{{method}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "gRPC Error Rate by Status (Spans)",
+      "description": "###### What this is:\n*gRPC call rate broken down by outcome status (success or error).*\n\n###### How it's computed:\n*Per-second rate of gRPC calls over 5 minutes, grouped by status and node.*\n\n###### Reading it:\n*Success should dominate; the error rate should stay low.*\n\n###### Healthy range:\n*Workload-dependent; errors near the floor.*\n\n###### Watch for:\n*A rising error rate, indicating gRPC clients hitting failures.*\n\n###### Source:\n[GRPCServer.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/main/GRPCServer.cpp)\n\n###### Function:\n`GRPCServerImpl::CallData::process`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (grpc_status, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"grpc\\\\..*\", grpc_status!=\"\"}[5m]))",
+          "legendFormat": "{{grpc_status}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Calls / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Pathfinding Compute Duration (Spans)",
+      "description": "###### What this is:\n*The 95th-percentile time to compute paths for a single request.*\n\n###### How it's computed:\n*95th-percentile of path-computation durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; complements the fast/full pathfinding timers with span-level detail.*\n\n###### Healthy range:\n*Workload-dependent; grows with order-book depth and request complexity.*\n\n###### Watch for:\n*A rising trend under pathfinding load, indicating expensive path computation.*\n\n###### Source:\n[PathRequest.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/PathRequest.cpp)\n\n###### Function:\n`PathRequest::doUpdate`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.compute\"}[5m])))",
+          "legendFormat": "P95 Compute [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Pathfinding Request & Discovery Rate (Spans)",
+      "description": "###### What this is:\n*The rate of client path requests versus path-discovery passes.*\n\n###### How it's computed:\n*Per-second rates of path requests and discovery passes over 5 minutes, per node.*\n\n###### Reading it:\n*Discovery cost tracks request demand; useful for subscription-heavy nodes.*\n\n###### Healthy range:\n*Workload-dependent; both zero without pathfinding clients.*\n\n###### Watch for:\n*Discovery rate climbing out of proportion to requests, a cost driver for subscription-heavy nodes.*\n\n###### Source:\n[PathFind.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/handlers/orderbook/PathFind.cpp) · [PathRequest.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/PathRequest.cpp)\n\n###### Function:\n`doPathFind ; PathRequest::findPaths`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.request\"}[5m]))",
+          "legendFormat": "Requests / Sec [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.discover\"}[5m]))",
+          "legendFormat": "Discoveries / Sec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Operations / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["rpc", "pathfinding"],
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "label": "Prometheus",
+        "query": "prometheus",
+        "regex": "",
+        "current": {},
+        "hide": 0,
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "options": []
+      },
+      {
+        "name": "service_name",
+        "label": "Service",
+        "description": "Filter by service.name (e.g. xrpld, pratik-xrpld)",
+        "type": "query",
+        "query": "label_values(service_name)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "deployment_environment",
+        "label": "Environment",
+        "description": "Filter by deployment tier (local/ci/test/prod)",
+        "type": "query",
+        "query": "label_values(deployment_environment)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "xrpl_network_type",
+        "label": "Network",
+        "description": "Filter by XRPL network (mainnet/testnet/devnet)",
+        "type": "query",
+        "query": "label_values(xrpl_network_type)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "node",
+        "label": "Node",
+        "description": "Filter by rippled node (service.instance.id)",
+        "type": "query",
+        "query": "label_values(xrpld_rpc_requests_total, exported_instance)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "grpc_method",
+        "label": "gRPC Method",
+        "description": "Filter by gRPC method (GetLedger, GetLedgerData, GetLedgerDiff, GetLedgerEntry)",
+        "type": "query",
+        "query": "label_values(traces_span_metrics_calls_total{span_name=~\"grpc\\\\..*\"}, method)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "title": "RPC & Pathfinding",
+  "uid": "rpc-pathfinding",
+  "refresh": "5s"
+}
