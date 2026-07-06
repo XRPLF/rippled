@@ -33,8 +33,7 @@ namespace xrpl {
     @param dirIndex Begin gathering account objects from this directory.
     @param entryIndex Begin gathering objects from this directory node.
     @param limit Maximum number of objects to find.
-    @param hasSponsoredFilter Whether to filter by sponsored objects.
-    @param sponsored Whether filtered objects should be sponsored.
+    @param sponsoredFilter If set, only return objects whose sponsored state matches the value.
     @param jvResult A JSON result that holds the request objects.
 */
 bool
@@ -45,8 +44,7 @@ getAccountObjects(
     uint256 dirIndex,
     uint256 entryIndex,
     std::uint32_t const limit,
-    bool const hasSponsoredFilter,
-    bool const sponsored,
+    std::optional<bool> const sponsoredFilter,
     json::Value& jvResult)
 {
     // check if dirIndex is valid
@@ -59,11 +57,8 @@ getAccountObjects(
         return it != typeFilter.end();
     };
 
-    auto sponsoredMatchesFilter = [](bool const sponsored,
-                                     std::optional<AccountID> const& sponsor) {
-        if (sponsored)
-            return sponsor.has_value();
-        return !sponsor.has_value();
+    auto sponsoredMatchesFilter = [&sponsoredFilter](std::optional<AccountID> const& sponsor) {
+        return sponsor.has_value() == *sponsoredFilter;
     };
 
     // if dirIndex != 0, then all NFTs have already been returned.  only
@@ -105,12 +100,12 @@ getAccountObjects(
         while (currentPage)
         {
             bool canAppendNFT = true;
-            if (hasSponsoredFilter)
+            if (sponsoredFilter.has_value())
             {
                 std::optional<AccountID> const nftSponsor = currentPage->isFieldPresent(sfSponsor)
                     ? currentPage->getAccountID(sfSponsor)
                     : std::optional<AccountID>(std::nullopt);
-                if (!sponsoredMatchesFilter(sponsored, nftSponsor))
+                if (!sponsoredMatchesFilter(nftSponsor))
                     canAppendNFT = false;
             }
             if (canAppendNFT)
@@ -237,7 +232,7 @@ getAccountObjects(
             };
             std::optional<AccountID> const sponsor = getSponsor();
 
-            if (hasSponsoredFilter && !sponsoredMatchesFilter(sponsored, sponsor))
+            if (sponsoredFilter.has_value() && !sponsoredMatchesFilter(sponsor))
                 canAppend = false;
 
             if (canAppend)
@@ -388,27 +383,18 @@ doAccountObjects(RPC::JsonContext& context)
             return RPC::invalidFieldError(jss::marker);
     }
 
-    bool const hasSponsoredFilter = params.isMember(jss::sponsored);
-    bool sponsored = false;
-    if (hasSponsoredFilter)
+    std::optional<bool> sponsoredFilter;
+    if (params.isMember(jss::sponsored))
     {
         auto const& sponsoredJv = params[jss::sponsored];
         if (!sponsoredJv.isBool())
             return RPC::expectedFieldError(jss::sponsored, "boolean");
 
-        sponsored = sponsoredJv.asBool();
+        sponsoredFilter = sponsoredJv.asBool();
     }
 
     if (!getAccountObjects(
-            *ledger,
-            accountID,
-            typeFilter,
-            dirIndex,
-            entryIndex,
-            limit,
-            hasSponsoredFilter,
-            sponsored,
-            result))
+            *ledger, accountID, typeFilter, dirIndex, entryIndex, limit, sponsoredFilter, result))
         return RPC::invalidFieldError(jss::marker);
 
     result[jss::account] = toBase58(accountID);
