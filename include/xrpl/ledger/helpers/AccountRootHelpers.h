@@ -83,7 +83,7 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
     return accountReserve(view, view.read(keylet::account(id)), j, adj);
 }
 
-/** Check if an account has insufficient reserve.
+/** Check if an account has sufficient reserve.
  *
  *  The transaction-level reserve sponsor (if any) is taken from
  *  `ctx.txReserveContext` and, per XLS-68, is only applied when `accSle` is the
@@ -98,7 +98,7 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
  *  @return Transaction result code
  */
 [[nodiscard]] TER
-checkInsufficientReserve(
+checkReserve(
     ApplyViewContext ctx,
     SLE::const_ref accSle,
     STAmount const& accBalance,

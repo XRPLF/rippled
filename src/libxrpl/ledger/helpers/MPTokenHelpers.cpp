@@ -206,8 +206,8 @@ authorizeMPToken(
         // budget), so this check always runs for sponsored transactions.
         if (isSponsored || ownerCount(sleAcct, journal) >= 2)
         {
-            if (auto const ret = checkInsufficientReserve(
-                    ctx, sleAcct, priorBalance, {.ownerCountDelta = 1}, journal);
+            if (auto const ret =
+                    checkReserve(ctx, sleAcct, priorBalance, {.ownerCountDelta = 1}, journal);
                 !isTesSuccess(ret))
                 return ret;
         }

@@ -70,7 +70,7 @@ escrowUnlockApplyHelper<Issue>(
     {
         // Can the account cover the trust line's reserve?
         if (auto const ret =
-                checkInsufficientReserve(ctx, sleDest, xrpBalance, {.ownerCountDelta = 1}, journal);
+                checkReserve(ctx, sleDest, xrpBalance, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
@@ -194,7 +194,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     if (!ctx.view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {
         if (auto const ret =
-                checkInsufficientReserve(ctx, sleDest, xrpBalance, {.ownerCountDelta = 1}, journal);
+                checkReserve(ctx, sleDest, xrpBalance, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
             return ret;
 

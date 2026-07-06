@@ -197,7 +197,7 @@ CheckCreate::doApply()
     // reserve to pay fees.
     auto const applyViewContext = ctx_.getApplyViewContext();
     auto const sponsorSle = applyViewContext.txReserveContext.sponsorSle;
-    if (auto const ret = checkInsufficientReserve(
+    if (auto const ret = checkReserve(
             ctx_.getApplyViewContext(), sle, preFeeBalance_, {.ownerCountDelta = 1}, ctx_.journal);
         !isTesSuccess(ret))
         return ret;

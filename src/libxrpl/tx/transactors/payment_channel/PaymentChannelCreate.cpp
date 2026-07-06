@@ -144,8 +144,8 @@ PaymentChannelCreate::doApply()
         // validates the sponsor's reserve + remaining credit. When
         // unsponsored this hits the source branch and validates the
         // source's pre-lock balance against base + (currentOC+1)*increment.
-        if (auto const ret = checkInsufficientReserve(
-                applyViewContext, sle, preFeeBalance_, {.ownerCountDelta = 1}, j_);
+        if (auto const ret =
+                checkReserve(applyViewContext, sle, preFeeBalance_, {.ownerCountDelta = 1}, j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -154,7 +154,7 @@ PaymentChannelCreate::doApply()
         // source's own balance against the source's own reserve — the
         // sponsor's reserve was already validated above, and a sponsor
         // never covers the locked funds. We compare directly (rather than
-        // via checkInsufficientReserve) because that helper diverts to the
+        // via checkReserve) because that helper diverts to the
         // sponsor's balance when a sponsor is present and would ignore the
         // source's post-lock balance entirely. ownerCountDelta differs by
         // case:

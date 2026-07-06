@@ -691,9 +691,8 @@ Payment::doApply()
     // reserve.
     auto const reserve = accountReserve(view(), sleSrc, j_);
 
-    // In a delegated payment, the fee payer is the delegated account,
-    // not the source account (accountID_).
-    bool const accountIsPayer = (ctx_.tx.getInitiator() == accountID_);
+    // In a delegated / fee sponsored payment, the fee payer is not the source account (accountID_).
+    bool const accountIsPayer = ctx_.tx.getFeePayerID() == accountID_;
 
     // preFeeBalance_ is the balance on the source account (accountID_) BEFORE the fees
     // were charged. If source account is the fee payer, it must also cover the fee.

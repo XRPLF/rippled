@@ -163,7 +163,7 @@ DepositPreauth::doApply()
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
-        if (auto const ret = checkInsufficientReserve(
+        if (auto const ret = checkReserve(
                 applyViewContext, sleOwner, preFeeBalance_, {.ownerCountDelta = 1}, j_);
             !isTesSuccess(ret))
             return ret;
@@ -209,7 +209,7 @@ DepositPreauth::doApply()
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
-        if (auto const ret = checkInsufficientReserve(
+        if (auto const ret = checkReserve(
                 applyViewContext, sleOwner, preFeeBalance_, {.ownerCountDelta = 1}, j_);
             !isTesSuccess(ret))
             return ret;

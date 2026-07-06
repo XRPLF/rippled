@@ -100,7 +100,7 @@ DelegateSet::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
     auto const applyViewContext = ctx_.getApplyViewContext();
     auto const sponsorSle = applyViewContext.txReserveContext.sponsorSle;
-    if (auto const ret = checkInsufficientReserve(
+    if (auto const ret = checkReserve(
             ctx_.getApplyViewContext(),
             sleOwner,
             preFeeBalance_,
