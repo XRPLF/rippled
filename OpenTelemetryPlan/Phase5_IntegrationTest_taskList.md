@@ -107,13 +107,13 @@ Tempo/Prometheus.
   - `consensus.validation.send` (Adaptor::validate)
 - Verify attributes:
   - `xrpl.consensus.mode` on `consensus.ledger_close`
-  - `xrpl.consensus.proposers` on `consensus.accept`
+  - `proposers` on `consensus.accept`
   - `xrpl.consensus.ledger.seq` on `consensus.validation.send`
 
 **Verification**:
 
 - [ ] Tempo shows `consensus.ledger_close` traces with `xrpl.consensus.mode`
-- [ ] Tempo shows `consensus.accept` traces with `xrpl.consensus.proposers`
+- [ ] Tempo shows `consensus.accept` traces with `proposers`
 - [ ] Tempo shows `consensus.proposal.send` traces
 - [ ] Tempo shows `consensus.validation.send` traces
 
@@ -147,7 +147,7 @@ Tempo/Prometheus.
   - Prerequisites section
   - Single-node standalone test (quick verification)
   - 6-node consensus test (full verification)
-  - Expected span catalog (all 12 span names with attributes)
+  - Expected span catalog (all 11 span names with attributes)
   - Verification queries (Tempo API, Prometheus API)
   - Troubleshooting guide
 
@@ -156,7 +156,7 @@ Tempo/Prometheus.
 **Verification**:
 
 - [ ] Document covers both single-node and multi-node testing
-- [ ] All 12 span names documented with source file and attributes
+- [ ] All 11 span names documented with source file and attributes
 - [ ] Troubleshooting section covers common failure modes
 
 ---

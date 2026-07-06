@@ -30,7 +30,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate{exported_instance=~\"$node\"}(rippled_rpc_requests_total[5m])",
+          "expr": "rate(rippled_rpc_requests_total{exported_instance=~\"$node\"}[5m])",
           "legendFormat": "Requests / Sec"
         }
       ],
@@ -306,7 +306,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate{exported_instance=~\"$node\"}(rippled_warn_total[5m])",
+          "expr": "rate(rippled_warn_total{exported_instance=~\"$node\"}[5m])",
           "legendFormat": "Warnings / Sec"
         }
       ],
@@ -354,7 +354,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate{exported_instance=~\"$node\"}(rippled_drop_total[5m])",
+          "expr": "rate(rippled_drop_total{exported_instance=~\"$node\"}[5m])",
           "legendFormat": "Drops / Sec"
         }
       ],

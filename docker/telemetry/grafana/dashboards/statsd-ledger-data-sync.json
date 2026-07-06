@@ -463,7 +463,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk{exported_instance=~\"$node\"}(20, {__name__=~\"rippled_.*_Bytes_In\", __name__!~\"rippled_total_.*\"})",
+          "expr": "topk(20, {__name__=~\"rippled_.*_Bytes_In\", __name__!~\"rippled_total_.*\", exported_instance=~\"$node\"})",
           "legendFormat": "{{__name__}}"
         }
       ],

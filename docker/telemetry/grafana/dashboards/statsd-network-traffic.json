@@ -115,14 +115,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate{exported_instance=~\"$node\"}(rippled_total_Bytes_In[5m])",
+          "expr": "rate(rippled_total_Bytes_In{exported_instance=~\"$node\"}[5m])",
           "legendFormat": "Bytes In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate{exported_instance=~\"$node\"}(rippled_total_Bytes_Out[5m])",
+          "expr": "rate(rippled_total_Bytes_Out{exported_instance=~\"$node\"}[5m])",
           "legendFormat": "Bytes Out"
         }
       ],
@@ -161,14 +161,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_total_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "rate(rippled_total_Messages_In{exported_instance=~\"$node\"}[5m])",
           "legendFormat": "Messages In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_total_Messages_Out{exported_instance=~\"$node\"}",
+          "expr": "rate(rippled_total_Messages_Out{exported_instance=~\"$node\"}[5m])",
           "legendFormat": "Messages Out"
         }
       ],
@@ -380,7 +380,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk{exported_instance=~\"$node\"}(10, {__name__=~\"rippled_.*_Bytes_In\", __name__!~\"rippled_total_.*\"})",
+          "expr": "topk(10, {__name__=~\"rippled_.*_Bytes_In\", __name__!~\"rippled_total_.*\", exported_instance=~\"$node\"})",
           "legendFormat": "{{__name__}}"
         }
       ],
@@ -677,42 +677,42 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate{exported_instance=~\"$node\"}(rippled_transactions_duplicate_Bytes_In[5m])",
+          "expr": "rate(rippled_transactions_duplicate_Bytes_In{exported_instance=~\"$node\"}[5m])",
           "legendFormat": "TX Duplicate In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate{exported_instance=~\"$node\"}(rippled_transactions_duplicate_Bytes_Out[5m])",
+          "expr": "rate(rippled_transactions_duplicate_Bytes_Out{exported_instance=~\"$node\"}[5m])",
           "legendFormat": "TX Duplicate Out"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate{exported_instance=~\"$node\"}(rippled_proposals_duplicate_Bytes_In[5m])",
+          "expr": "rate(rippled_proposals_duplicate_Bytes_In{exported_instance=~\"$node\"}[5m])",
           "legendFormat": "Proposals Duplicate In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate{exported_instance=~\"$node\"}(rippled_proposals_duplicate_Bytes_Out[5m])",
+          "expr": "rate(rippled_proposals_duplicate_Bytes_Out{exported_instance=~\"$node\"}[5m])",
           "legendFormat": "Proposals Duplicate Out"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate{exported_instance=~\"$node\"}(rippled_validations_duplicate_Bytes_In[5m])",
+          "expr": "rate(rippled_validations_duplicate_Bytes_In{exported_instance=~\"$node\"}[5m])",
           "legendFormat": "Validations Duplicate In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate{exported_instance=~\"$node\"}(rippled_validations_duplicate_Bytes_Out[5m])",
+          "expr": "rate(rippled_validations_duplicate_Bytes_Out{exported_instance=~\"$node\"}[5m])",
           "legendFormat": "Validations Duplicate Out"
         }
       ],
@@ -751,7 +751,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk{exported_instance=~\"$node\"}(15, rate({__name__=~\"rippled_.*_Bytes_In\", __name__!~\"rippled_total_.*\"}[5m]))",
+          "expr": "topk(15, rate({__name__=~\"rippled_.*_Bytes_In\", __name__!~\"rippled_total_.*\", exported_instance=~\"$node\"}[5m]))",
           "legendFormat": "{{__name__}}"
         }
       ],

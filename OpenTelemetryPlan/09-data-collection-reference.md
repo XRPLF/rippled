@@ -239,36 +239,36 @@ Every span can carry key-value attributes that provide context for filtering and
 
 #### Transaction Attributes
 
-| Attribute           | Type    | Set On                                         | Description                                                           |
-| ------------------- | ------- | ---------------------------------------------- | --------------------------------------------------------------------- |
-| `xrpl.tx.hash`      | string  | `tx.process`, `tx.receive`                     | Transaction hash (hex-encoded)                                        |
-| `local`             | boolean | `tx.process`                                   | `true` if locally submitted, `false` if peer-relayed                  |
-| `path`              | string  | `tx.process`                                   | Submission path: `"sync"` or `"async"`                                |
-| `suppressed`        | boolean | `tx.receive`                                   | `true` if transaction was suppressed (duplicate)                      |
-| `tx_status`         | string  | `tx.receive`                                   | Transaction status (e.g., `"known_bad"`)                              |
-| `xrpl.peer.id`      | int64   | `tx.receive`                                   | Peer identifier (also set on peer spans)                              |
-| `xrpl.peer.version` | string  | `tx.receive`                                   | Peer protocol version string                                          |
-| `stage`             | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor` | Apply-pipeline stage: `preflight`, `preclaim`, or `apply`             |
-| `tx_type`           | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor` | Transaction type name (e.g., `Payment`)                               |
-| `ter_result`        | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor` | Engine result token for that stage (e.g., `tesSUCCESS`, `terPRE_SEQ`) |
-| `applied`           | boolean | `tx.transactor`                                | `true` if the transaction was applied to the ledger                   |
+| Attribute      | Type    | Set On                                         | Description                                                           |
+| -------------- | ------- | ---------------------------------------------- | --------------------------------------------------------------------- |
+| `tx_hash`      | string  | `tx.process`, `tx.receive`                     | Transaction hash (hex-encoded)                                        |
+| `local`        | boolean | `tx.process`                                   | `true` if locally submitted, `false` if peer-relayed                  |
+| `path`         | string  | `tx.process`                                   | Submission path: `"sync"` or `"async"`                                |
+| `suppressed`   | boolean | `tx.receive`                                   | `true` if transaction was suppressed (duplicate)                      |
+| `tx_status`    | string  | `tx.receive`                                   | Transaction status (e.g., `"known_bad"`)                              |
+| `peer_id`      | int64   | `tx.receive`                                   | Peer identifier (also set on peer spans)                              |
+| `peer_version` | string  | `tx.receive`                                   | Peer protocol version string                                          |
+| `stage`        | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor` | Apply-pipeline stage: `preflight`, `preclaim`, or `apply`             |
+| `tx_type`      | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor` | Transaction type name (e.g., `Payment`)                               |
+| `ter_result`   | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor` | Engine result token for that stage (e.g., `tesSUCCESS`, `terPRE_SEQ`) |
+| `applied`      | boolean | `tx.transactor`                                | `true` if the transaction was applied to the ledger                   |
 
-**Tempo query**: `{span.xrpl.tx.hash="<hash>"}` to trace a specific transaction across nodes.
+**Tempo query**: `{span.tx_hash="<hash>"}` to trace a specific transaction across nodes.
 
 **Prometheus label**: `xrpl_tx_local` (used as SpanMetrics dimension).
 
 #### PathFind Attributes
 
-| Attribute                    | Type    | Set On                | Description                                     |
-| ---------------------------- | ------- | --------------------- | ----------------------------------------------- |
-| `source_account`             | string  | `pathfind.request`    | Source account address                          |
-| `dest_account`               | string  | `pathfind.request`    | Destination account address                     |
-| `fast`                       | boolean | `pathfind.compute`    | Whether this is a fast (non-full) pathfind      |
-| `search_level`               | int64   | `pathfind.compute`    | Search depth level                              |
-| `num_complete_paths`         | int64   | `pathfind.compute`    | Number of complete paths found                  |
-| `num_paths`                  | int64   | `pathfind.compute`    | Total number of paths explored                  |
-| `num_requests`               | int64   | `pathfind.update_all` | Number of active path requests being recomputed |
-| `xrpl.pathfind.ledger_index` | int64   | `pathfind.update_all` | Ledger index used for recomputation             |
+| Attribute               | Type    | Set On                | Description                                     |
+| ----------------------- | ------- | --------------------- | ----------------------------------------------- |
+| `source_account`        | string  | `pathfind.request`    | Source account address                          |
+| `dest_account`          | string  | `pathfind.request`    | Destination account address                     |
+| `fast`                  | boolean | `pathfind.compute`    | Whether this is a fast (non-full) pathfind      |
+| `search_level`          | int64   | `pathfind.compute`    | Search depth level                              |
+| `num_complete_paths`    | int64   | `pathfind.compute`    | Number of complete paths found                  |
+| `num_paths`             | int64   | `pathfind.compute`    | Total number of paths explored                  |
+| `num_requests`          | int64   | `pathfind.update_all` | Number of active path requests being recomputed |
+| `pathfind_ledger_index` | int64   | `pathfind.update_all` | Ledger index used for recomputation             |
 
 **Tempo query**: `{span.source_account="rHb9..."}` to find pathfind requests from a specific account.
 
@@ -276,13 +276,13 @@ Every span can carry key-value attributes that provide context for filtering and
 
 | Attribute            | Type    | Set On                         | Description                                                |
 | -------------------- | ------- | ------------------------------ | ---------------------------------------------------------- |
-| `xrpl.tx.hash`       | string  | `txq.enqueue`, `txq.accept.tx` | Transaction hash in the queue                              |
+| `tx_hash`            | string  | `txq.enqueue`, `txq.accept.tx` | Transaction hash in the queue                              |
 | `txq_status`         | string  | `txq.enqueue`                  | Queue result: `"queued"`, `"applied_direct"`, `"rejected"` |
 | `fee_level_paid`     | int64   | `txq.enqueue`                  | Fee level paid by the transaction                          |
 | `required_fee_level` | int64   | `txq.enqueue`                  | Minimum fee level required for queue admission             |
 | `queue_size`         | int64   | `txq.accept`                   | Queue depth at start of accept                             |
 | `ledger_changed`     | boolean | `txq.accept`                   | Whether the open ledger changed since last accept          |
-| `xrpl.ledger.seq`    | int64   | `txq.cleanup`                  | Ledger sequence for cleanup                                |
+| `ledger_seq`         | int64   | `txq.cleanup`                  | Ledger sequence for cleanup                                |
 | `expired_count`      | int64   | `txq.cleanup`                  | Number of expired transactions removed                     |
 | `ter_code`           | string  | `txq.accept.tx`                | Transaction engine result code                             |
 | `retries_remaining`  | int64   | `txq.accept.tx`                | Remaining retry attempts for this transaction              |
@@ -304,10 +304,10 @@ Every span can carry key-value attributes that provide context for filtering and
 
 | Attribute                   | Type    | Set On                                                                                                                 | Description                                                           |
 | --------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `xrpl.consensus.ledger_id`  | string  | `consensus.round`                                                                                                      | Previous ledger hash (used for deterministic trace ID)                |
-| `xrpl.ledger.seq`           | int64   | `consensus.round`, `consensus.ledger_close`, `consensus.accept`, `consensus.validation.send`, `consensus.accept.apply` | Ledger sequence number                                                |
-| `xrpl.consensus.mode`       | string  | `consensus.round`, `consensus.proposal.send`, `consensus.ledger_close`                                                 | Node mode via `toDisplayString()`: `"Proposing"`, `"Observing"`, etc. |
-| `xrpl.consensus.round`      | int64   | `consensus.proposal.send`                                                                                              | Consensus round number                                                |
+| `consensus_ledger_id`       | string  | `consensus.round`                                                                                                      | Previous ledger hash (used for deterministic trace ID)                |
+| `ledger_seq`                | int64   | `consensus.round`, `consensus.ledger_close`, `consensus.accept`, `consensus.validation.send`, `consensus.accept.apply` | Ledger sequence number                                                |
+| `consensus_mode`            | string  | `consensus.round`, `consensus.proposal.send`, `consensus.ledger_close`                                                 | Node mode via `toDisplayString()`: `"Proposing"`, `"Observing"`, etc. |
+| `consensus_round`           | int64   | `consensus.proposal.send`                                                                                              | Consensus round number                                                |
 | `proposers`                 | int64   | `consensus.proposal.send`, `consensus.accept`                                                                          | Number of proposers in the round                                      |
 | `round_time_ms`             | int64   | `consensus.accept`, `consensus.accept.apply`                                                                           | Total consensus round duration in milliseconds                        |
 | `proposing`                 | boolean | `consensus.validation.send`                                                                                            | Whether this node was a proposer                                      |
@@ -332,15 +332,15 @@ Every span can carry key-value attributes that provide context for filtering and
 | `quorum`                    | int64   | `consensus.check`                                                                                                      | Required quorum for validation                                        |
 | `validation_count`          | int64   | `consensus.check`                                                                                                      | Number of validations received                                        |
 | `trace_strategy`            | string  | `consensus.round`                                                                                                      | Trace sampling strategy used for this round                           |
-| `xrpl.consensus.round_id`   | string  | `consensus.round`                                                                                                      | Deterministic round identifier                                        |
-| `xrpl.consensus.mode.old`   | string  | `consensus.mode_change`                                                                                                | Previous consensus mode                                               |
-| `xrpl.consensus.mode.new`   | string  | `consensus.mode_change`                                                                                                | New consensus mode                                                    |
-| `xrpl.tx.id`                | string  | `consensus.update_positions`                                                                                           | Disputed transaction ID                                               |
+| `consensus_round_id`        | string  | `consensus.round`                                                                                                      | Deterministic round identifier                                        |
+| `mode_old`                  | string  | `consensus.mode_change`                                                                                                | Previous consensus mode                                               |
+| `mode_new`                  | string  | `consensus.mode_change`                                                                                                | New consensus mode                                                    |
+| `tx_id`                     | string  | `consensus.update_positions`                                                                                           | Disputed transaction ID                                               |
 | `dispute_our_vote`          | boolean | `consensus.update_positions`                                                                                           | Our vote on the disputed transaction                                  |
 | `dispute_yays`              | int64   | `consensus.update_positions`                                                                                           | Number of proposers voting to include                                 |
 | `dispute_nays`              | int64   | `consensus.update_positions`                                                                                           | Number of proposers voting to exclude                                 |
 
-**Tempo query**: `{span.xrpl.consensus.mode="Proposing"}` to find rounds where node was proposing.
+**Tempo query**: `{span.consensus_mode="Proposing"}` to find rounds where node was proposing.
 
 **Prometheus label**: `xrpl_consensus_mode` (used as SpanMetrics dimension).
 
@@ -348,7 +348,7 @@ Every span can carry key-value attributes that provide context for filtering and
 
 | Attribute             | Type    | Set On                                                        | Description                                      |
 | --------------------- | ------- | ------------------------------------------------------------- | ------------------------------------------------ |
-| `xrpl.ledger.seq`     | int64   | `ledger.build`, `ledger.validate`, `ledger.store`, `tx.apply` | Ledger sequence number                           |
+| `ledger_seq`          | int64   | `ledger.build`, `ledger.validate`, `ledger.store`, `tx.apply` | Ledger sequence number                           |
 | `close_time`          | int64   | `ledger.build`                                                | Ledger close time (epoch seconds)                |
 | `close_time_correct`  | boolean | `ledger.build`                                                | Whether close time was agreed upon by validators |
 | `close_resolution_ms` | int64   | `ledger.build`                                                | Close time rounding granularity in milliseconds  |
@@ -356,15 +356,15 @@ Every span can carry key-value attributes that provide context for filtering and
 | `tx_failed`           | int64   | `ledger.build`, `tx.apply`                                    | Failed transactions in the ledger                |
 | `validations`         | int64   | `ledger.validate`                                             | Number of validations received for this ledger   |
 
-**Tempo query**: `{span.xrpl.ledger.seq=12345}` to find all spans for a specific ledger.
+**Tempo query**: `{span.ledger_seq=12345}` to find all spans for a specific ledger.
 
 #### Peer Attributes
 
 | Attribute            | Type    | Set On                                                           | Description                                          |
 | -------------------- | ------- | ---------------------------------------------------------------- | ---------------------------------------------------- |
-| `xrpl.peer.id`       | int64   | `tx.receive`, `peer.proposal.receive`, `peer.validation.receive` | Peer identifier                                      |
+| `peer_id`            | int64   | `tx.receive`, `peer.proposal.receive`, `peer.validation.receive` | Peer identifier                                      |
 | `proposal_trusted`   | boolean | `peer.proposal.receive`                                          | Whether the proposal came from a trusted validator   |
-| `xrpl.ledger.hash`   | string  | `peer.validation.receive`                                        | Ledger hash the validation refers to                 |
+| `ledger_hash`        | string  | `peer.validation.receive`                                        | Ledger hash the validation refers to                 |
 | `validation_full`    | boolean | `peer.validation.receive`                                        | Whether this is a full (not partial) validation      |
 | `validation_trusted` | boolean | `peer.validation.receive`                                        | Whether the validation came from a trusted validator |
 
@@ -389,15 +389,15 @@ The OTel Collector's SpanMetrics connector automatically generates RED (Rate, Er
 
 **Additional dimension labels** (configured in `otel-collector-config.yaml`):
 
-| Span Attribute        | Prometheus Label               | Applies To                                     |
-| --------------------- | ------------------------------ | ---------------------------------------------- |
-| `command`             | `xrpl_rpc_command`             | `rpc.command.*`                                |
-| `rpc_status`          | `xrpl_rpc_status`              | `rpc.command.*`                                |
-| `xrpl.consensus.mode` | `xrpl_consensus_mode`          | `consensus.ledger_close`                       |
-| `local`               | `xrpl_tx_local`                | `tx.process`                                   |
-| `proposal_trusted`    | `xrpl_peer_proposal_trusted`   | `peer.proposal.receive`                        |
-| `validation_trusted`  | `xrpl_peer_validation_trusted` | `peer.validation.receive`                      |
-| `stage`               | `stage`                        | `tx.preflight`, `tx.preclaim`, `tx.transactor` |
+| Span Attribute       | Prometheus Label               | Applies To                                     |
+| -------------------- | ------------------------------ | ---------------------------------------------- |
+| `command`            | `xrpl_rpc_command`             | `rpc.command.*`                                |
+| `rpc_status`         | `xrpl_rpc_status`              | `rpc.command.*`                                |
+| `consensus_mode`     | `xrpl_consensus_mode`          | `consensus.ledger_close`                       |
+| `local`              | `xrpl_tx_local`                | `tx.process`                                   |
+| `proposal_trusted`   | `xrpl_peer_proposal_trusted`   | `peer.proposal.receive`                        |
+| `validation_trusted` | `xrpl_peer_validation_trusted` | `peer.validation.receive`                      |
+| `stage`              | `stage`                        | `tx.preflight`, `tx.preclaim`, `tx.transactor` |
 
 The `stage` dimension (3 values: `preflight`, `preclaim`, `apply`) turns the
 apply-pipeline spans into per-stage RED metrics with no native instruments — the
@@ -614,11 +614,11 @@ Prometheus label. See [telemetry-runbook.md](../docs/telemetry-runbook.md)
 | Specific RPC command     | `{resource.service.name="xrpld" && name="rpc.command.server_info"}`            |
 | Slow RPC calls           | `{resource.service.name="xrpld" && name=~"rpc.command.*"} \| duration > 100ms` |
 | Failed RPC calls         | `{span.rpc_status="error"}`                                                    |
-| Specific transaction     | `{span.xrpl.tx.hash="<hex_hash>"}`                                             |
+| Specific transaction     | `{span.tx_hash="<hex_hash>"}`                                                  |
 | Local transactions only  | `{span.local=true}`                                                            |
 | Consensus rounds         | `{resource.service.name="xrpld" && name="consensus.accept"}`                   |
-| Rounds by mode           | `{span.xrpl.consensus.mode="proposing"}`                                       |
-| Specific ledger          | `{span.xrpl.ledger.seq=12345}`                                                 |
+| Rounds by mode           | `{span.consensus_mode="proposing"}`                                            |
+| Specific ledger          | `{span.ledger_seq=12345}`                                                      |
 | Peer proposals (trusted) | `{span.proposal_trusted=true}`                                                 |
 
 ### Trace Structure
