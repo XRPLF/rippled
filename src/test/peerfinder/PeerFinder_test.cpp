@@ -65,6 +65,7 @@ public:
         void
         asyncConnect(beast::IP::Endpoint const& ep, Handler&& handler)
         {
+            // NOLINTNEXTLINE(misc-const-correctness)
             boost::system::error_code ec;
             handler(ec);
         }
