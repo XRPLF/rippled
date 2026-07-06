@@ -14,6 +14,7 @@
 
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 
 namespace xrpl {
@@ -38,8 +39,8 @@ public:
     float
     getCacheHitRate()
     {
-        auto lock = ledger_maps_.lock();
-        return lock->by_hash->getHitRate();
+        auto lock = ledgerMaps_.lock();
+        return lock->byHash->getHitRate();
     }
 
     /** Get a ledger given its sequence number */
@@ -63,10 +64,10 @@ public:
     sweep()
     {
         {
-            auto lock = ledger_maps_.lock();
-            lock->by_hash->sweep();
+            auto lock = ledgerMaps_.lock();
+            lock->byHash->sweep();
         }
-        m_consensus_validated.sweep();
+        mConsensusValidated_.sweep();
     }
 
     /** Report that we have locally built a particular ledger */
@@ -111,21 +112,21 @@ private:
 
     Application& app_;
     beast::insight::Collector::ptr collector_;
-    beast::insight::Counter mismatch_counter_;
+    beast::insight::Counter mismatchCounter_;
 
     struct LedgerMaps
     {
         using LedgersByHash = TaggedCache<LedgerHash, Ledger const>;
 
-        std::unique_ptr<LedgersByHash> by_hash;
-        std::map<LedgerIndex, LedgerHash> by_index;  // validated ledgers
+        std::unique_ptr<LedgersByHash> byHash;
+        std::map<LedgerIndex, LedgerHash> byIndex;  // validated ledgers
     };
 
-    xrpl::Mutex<LedgerMaps, std::recursive_mutex> ledger_maps_;
+    xrpl::Mutex<LedgerMaps, std::recursive_mutex> ledgerMaps_;
 
     // Maps ledger indexes to the corresponding hashes
     // For debug and logging purposes
-    struct cv_entry
+    struct CvEntry
     {
         // Hash of locally built ledger
         std::optional<LedgerHash> built;
@@ -138,8 +139,8 @@ private:
         // Consensus metadata of built ledger
         std::optional<json::Value> consensus;
     };
-    using ConsensusValidated = TaggedCache<LedgerIndex, cv_entry>;
-    ConsensusValidated m_consensus_validated;
+    using ConsensusValidated = TaggedCache<LedgerIndex, CvEntry>;
+    ConsensusValidated mConsensusValidated_;
 
     beast::Journal j_;
 };

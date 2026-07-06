@@ -10,6 +10,7 @@
 #include <xrpl/protocol/Protocol.h>
 
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace xrpl {
