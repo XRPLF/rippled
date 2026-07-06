@@ -13,6 +13,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Protocol.h>
@@ -34,7 +35,7 @@ LedgerHistory::LedgerHistory(beast::insight::Collector::ptr const& collector, Ap
     : app_(app)
     , collector_(collector)
     , mismatchCounter_(collector->makeCounter("ledger.history", "mismatch"))
-    , mConsensusValidated_(
+    , consensusValidated_(
           "ConsensusValidated",
           64,
           std::chrono::minutes{5},
@@ -197,7 +198,7 @@ logMetadataDifference(
     auto builtMetaData = getMeta(builtLedger, tx);
 
     XRPL_ASSERT(
-        validMetaData || builtMetaData, "xrpl::log_metadata_difference : some metadata present");
+        validMetaData || builtMetaData, "xrpl::logMetadataDifference : some metadata present");
 
     if (validMetaData && builtMetaData)
     {
@@ -274,7 +275,7 @@ logMetadataDifference(
                                 << " Index: " << validMetaData->getIndex() << " Nodes:\n"
                                 << validNodes.getJson(JsonOptions::Values::None);
             }
-            else  // nodes_diff
+            else  // nodesDiff
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx << ": Different nodes!";
                 JLOG(j.debug()) << " Built:"
@@ -444,7 +445,7 @@ LedgerHistory::builtLedger(
     };
     std::optional<MismatchInputs> mismatch;
 
-    mConsensusValidated_.fetchAndModify(index, [&](CvEntry& entry) {
+    consensusValidated_.fetchAndModify(index, [&](CvEntry& entry) {
         if (entry.validated && !entry.built)
         {
             if (entry.validated.value() != hash)
@@ -496,7 +497,7 @@ LedgerHistory::validatedLedger(
     };
     std::optional<MismatchInputs> mismatch;
 
-    mConsensusValidated_.fetchAndModify(index, [&](CvEntry& entry) {
+    consensusValidated_.fetchAndModify(index, [&](CvEntry& entry) {
         if (entry.built && !entry.validated)
         {
             if (entry.built.value() != hash)
@@ -530,7 +531,7 @@ LedgerHistory::validatedLedger(
     }
 }
 
-/** Ensure m_ledgers_by_hash doesn't have the wrong hash for a particular index
+/** Ensure byHash doesn't have the wrong hash for a particular index
  */
 bool
 LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)

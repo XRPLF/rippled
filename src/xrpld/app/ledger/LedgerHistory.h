@@ -3,6 +3,7 @@
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/Mutex.hpp>
+#include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Counter.h>
@@ -33,7 +34,7 @@ public:
     bool
     insert(std::shared_ptr<Ledger const> const& ledger, bool validated);
 
-    /** Get the ledgers_by_hash cache hit rate
+    /** Get the byHash cache hit rate
         @return the hit rate
     */
     float
@@ -67,7 +68,7 @@ public:
             auto lock = ledgerMaps_.lock();
             lock->byHash->sweep();
         }
-        mConsensusValidated_.sweep();
+        consensusValidated_.sweep();
     }
 
     /** Report that we have locally built a particular ledger */
@@ -140,7 +141,7 @@ private:
         std::optional<json::Value> consensus;
     };
     using ConsensusValidated = TaggedCache<LedgerIndex, CvEntry>;
-    ConsensusValidated mConsensusValidated_;
+    ConsensusValidated consensusValidated_;
 
     beast::Journal j_;
 };
