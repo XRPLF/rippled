@@ -102,8 +102,8 @@ TEST_F(BufferTest, buffer)
 
     // Check move constructor & move assignments:
     {
-        static_assert(std::is_nothrow_move_constructible_v<Buffer>, "");
-        static_assert(std::is_nothrow_move_assignable_v<Buffer>, "");
+        static_assert(std::is_nothrow_move_constructible_v<Buffer>);
+        static_assert(std::is_nothrow_move_assignable_v<Buffer>);
 
         {  // Move-construct from empty buf
             Buffer x;
