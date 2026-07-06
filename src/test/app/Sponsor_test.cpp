@@ -4452,6 +4452,90 @@ public:
         BEAST_EXPECT(env.balance(sponsor) == preSponsor - baseFee);
     }
 
+    void
+    testFeeSponsoredVaultInvariant()
+    {
+        // Antithesis repro (CRITICAL): fee-sponsored VaultDeposit/VaultWithdraw on
+        // an XRP vault trips the ValidVault invariant on every node.
+        //
+        // Root cause: ValidVault::deltaAssetsTxAccount() (VaultInvariant.cpp)
+        // unconditionally adds the tx Fee back onto tx[sfAccount]'s balance delta
+        // for native-asset vaults -- it carves out the Delegate case but not the
+        // fee-sponsored case. When spfSponsorFee makes the sponsor the fee payer
+        // (Transactor::getFeePayer / payFee()), the depositor's real XRP balance
+        // only moves by the deposit/withdraw Amount, not Amount+Fee. Adding the
+        // Fee back skews the computed delta away from the true on-ledger change,
+        // so the "vault and depositor/destination balance change by equal
+        // amount" checks fail. Expected after fix: tesSUCCESS.
+        testcase("Fee-sponsored VaultDeposit/VaultWithdraw trip ValidVault invariant");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        env.fund(XRP(10000), alice, sponsor);
+        env.close();
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = xrpAsset});
+        env(vaultTx);
+        env.close();
+
+        // Control: the very same deposit shape, unsponsored, succeeds -- proving
+        // the invariant only breaks once fee sponsorship is involved.
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(100)}),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Bug: fee-sponsored (co-signed) deposit -> tecINVARIANT_FAILED.
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(100)}),
+            Fee(XRP(1)),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tecINVARIANT_FAILED));
+        env.close();
+
+        // Same helper (deltaAssetsTxAccount) is reused by the withdraw path, so a
+        // fee-sponsored withdrawal back to the depositor's own account hits the
+        // identical bug on the destination side.
+        env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(50)}),
+            Fee(XRP(1)),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tecINVARIANT_FAILED));
+        env.close();
+    }
+
+    void
+    testSponsorshipTransferTecInternal()
+    {
+        // Antithesis repro: a live SponsorshipTransfer produced engine_result
+        // tecINTERNAL for ordinary, user-reachable input.
+        //
+        // Root cause: SponsorshipTransfer::preclaim (SponsorHelpers-refactored
+        // code, SponsorshipTransfer.cpp) resolves the target account as
+        // sfSponsee.value_or(sfAccount) and returns a raw tecINTERNAL if that
+        // account is missing from the ledger. For tfSponsorshipEnd, sfSponsor is
+        // required to be absent, so Transactor::checkSponsor (which only
+        // validates sfSponsor) never runs and never catches a bogus sfSponsee.
+        // A user can trivially name a nonexistent account in sfSponsee.
+        // Expected after fix: a real user error such as tecNO_TARGET or
+        // terNO_ACCOUNT, not tecINTERNAL.
+        testcase("SponsorshipTransfer tecINTERNAL on nonexistent Sponsee");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const alice("alice");
+        Account const noFunded("noFunded");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        env(sponsor::transfer(alice, tfSponsorshipEnd),
+            sponsor::SponseeAcc(noFunded),
+            Ter(tecINTERNAL));
+    }
+
 protected:
     void
     testSponsor()
@@ -4488,6 +4572,9 @@ protected:
         testReserveSponsorGate();
 
         testZeroBalanceSponsoredPaymentFeePayerCheck();
+
+        testFeeSponsoredVaultInvariant();
+        testSponsorshipTransferTecInternal();
     }
 
     void
