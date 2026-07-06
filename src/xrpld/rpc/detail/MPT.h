@@ -1,5 +1,7 @@
 #pragma once
 
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/UintTypes.h>
 
 namespace xrpl {

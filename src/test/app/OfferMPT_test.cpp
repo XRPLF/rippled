@@ -5061,7 +5061,7 @@ public:
 
             musd.pay(issuer, maker, 100);
 
-            auto const issuance = env.le(keylet::mptIssuance(usd.mpt()));
+            auto const issuance = env.le(keylet::mptokenIssuance(usd.mpt()));
             if (!BEAST_EXPECT(issuance))
                 return;
             BEAST_EXPECT(issuance->getFieldU64(sfOutstandingAmount) == 100);

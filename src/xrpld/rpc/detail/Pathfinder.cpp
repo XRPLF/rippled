@@ -815,7 +815,7 @@ Pathfinder::getPathsOut(
                 {
                     for (auto const& mpt : *mpts)
                     {
-                        if (pathAsset.get<MPTID>() != mpt.getMptID() || mpt.canSend() ||
+                        if (pathAsset.get<MPTID>() != mpt.getMptID() || mpt.canSend(account) ||
                             bAuthRequired)
                             continue;
                         if (isDstAsset && dstAccount == getMPTIssuer(mpt))
