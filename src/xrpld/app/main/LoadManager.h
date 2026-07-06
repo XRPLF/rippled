@@ -2,7 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
-#include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <memory>
 #include <mutex>

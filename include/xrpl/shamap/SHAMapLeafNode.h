@@ -1,9 +1,12 @@
 #pragma once
 
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <cstdint>
+#include <string>
 
 namespace xrpl {
 

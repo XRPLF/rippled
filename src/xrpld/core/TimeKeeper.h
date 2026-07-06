@@ -4,6 +4,7 @@
 #include <xrpl/beast/clock/abstract_clock.h>
 
 #include <atomic>
+#include <chrono>
 
 namespace xrpl {
 

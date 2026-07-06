@@ -2,9 +2,20 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <boost/utility/base_from_member.hpp>
+
+#include <compare>
+#include <cstddef>
+#include <functional>
+#include <optional>
+#include <ostream>
+#include <string>
 
 namespace xrpl {
 

@@ -1,6 +1,12 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+
+#include <xrpl/json/json_value.h>
+
+#include <source_location>
+#include <utility>
 
 namespace xrpl::test::jtx {
 

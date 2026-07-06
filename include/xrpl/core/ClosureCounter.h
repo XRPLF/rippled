@@ -1,11 +1,14 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <optional>
+#include <type_traits>
 
 namespace xrpl {
 

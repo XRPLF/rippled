@@ -7,13 +7,27 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/container/aged_map.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/utility/maybe_const.h>
 
 #include <boost/intrusive/list.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
 #include <algorithm>
+#include <array>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <memory>
+#include <sstream>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl::PeerFinder {
 

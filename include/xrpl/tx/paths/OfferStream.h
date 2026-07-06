@@ -1,14 +1,19 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/tx/paths/BookTip.h>
 #include <xrpl/tx/paths/Offer.h>
 
 #include <boost/container/flat_set.hpp>
+
+#include <cstdint>
+#include <optional>
 
 namespace xrpl {
 

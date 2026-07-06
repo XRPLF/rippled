@@ -6,6 +6,7 @@
 #include <boost/operators.hpp>
 
 #include <cstdint>
+#include <ostream>
 #include <string>
 
 namespace xrpl {
