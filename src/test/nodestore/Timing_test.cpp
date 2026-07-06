@@ -1,7 +1,6 @@
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
@@ -12,6 +11,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
@@ -56,7 +57,7 @@ template <class Generator>
 static void
 rngcpy(void* buffer, std::size_t bytes, Generator& g)
 {
-    using result_type = typename Generator::result_type;
+    using result_type = Generator::result_type;
     while (bytes >= sizeof(result_type))
     {
         auto const v = g();
@@ -563,10 +564,10 @@ public:
                     char p[2];
                     p[0] = rand_(gen_) < 50 ? 0 : 1;
                     p[1] = 1 - p[0];
-                    for (int q = 0; q < 2; ++q)
+                    for (char const op : p)
                     {
                         // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
-                        switch (p[q])
+                        switch (op)
                         {
                             case 0: {
                                 // fetch recent
@@ -661,9 +662,10 @@ public:
             {
                 beast::TempDir const tempDir;
                 Section config = parse(configString);
-                config.set("path", tempDir.path());
+                config.set(Keys::kPath, tempDir.path());
                 std::stringstream ss;
-                ss << std::left << setw(10) << get(config, "type", std::string()) << std::right;
+                ss << std::left << setw(10) << get(config, Keys::kType, std::string())
+                   << std::right;
                 for (auto const& test : tests)
                 {
                     ss << " " << setw(w) << toString(doTest(test.second, config, params, journal));

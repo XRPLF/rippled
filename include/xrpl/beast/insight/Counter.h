@@ -3,6 +3,7 @@
 #include <xrpl/beast/insight/CounterImpl.h>
 
 #include <memory>
+#include <utility>
 
 namespace beast::insight {
 
@@ -29,7 +30,7 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Counter(std::shared_ptr<CounterImpl> const& impl) : impl_(impl)
+    explicit Counter(std::shared_ptr<CounterImpl> impl) : impl_(std::move(impl))
     {
     }
 

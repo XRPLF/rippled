@@ -1,6 +1,5 @@
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
@@ -25,6 +24,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <string_view>
 #include <utility>
 
@@ -514,7 +514,7 @@ doPayment(
  * The function preserves accumulated rounding errors across the re-amortization
  * to ensure the loan state remains consistent with its payment history.
  */
-Expected<std::pair<LoanPaymentParts, LoanProperties>, TER>
+std::expected<std::pair<LoanPaymentParts, LoanProperties>, TER>
 tryOverpayment(
     Rules const& rules,
     Asset const& asset,
@@ -643,7 +643,7 @@ tryOverpayment(
         JLOG(j.warn()) << "Principal overpayment would cause the loan to be in "
                           "an invalid state. Ignore the overpayment";
 
-        return Unexpected(tesSUCCESS);
+        return std::unexpected(tesSUCCESS);
     }
 
     // Validate that all computed properties are reasonable. These checks should
@@ -660,7 +660,7 @@ tryOverpayment(
                        << ", PeriodicPayment : " << newLoanProperties.periodicPayment
                        << ", ManagementFeeOwedToBroker: "
                        << newLoanProperties.loanState.managementFeeDue;
-        return Unexpected(tesSUCCESS);
+        return std::unexpected(tesSUCCESS);
         // LCOV_EXCL_STOP
     }
 
@@ -685,7 +685,7 @@ tryOverpayment(
     {
         JLOG(j.warn()) << "Principal overpayment would increase the value of "
                           "the loan. Ignore the overpayment";
-        return Unexpected(tesSUCCESS);
+        return std::unexpected(tesSUCCESS);
     }
 
     return std::make_pair(
@@ -718,7 +718,7 @@ tryOverpayment(
  * gracefully without corrupting the ledger data.
  */
 template <class NumberProxy>
-Expected<LoanPaymentParts, TER>
+std::expected<LoanPaymentParts, TER>
 doOverpayment(
     Rules const& rules,
     Asset const& asset,
@@ -760,7 +760,7 @@ doOverpayment(
         managementFeeRate,
         j);
     if (!ret)
-        return Unexpected(ret.error());
+        return std::unexpected(ret.error());
 
     auto const& [loanPaymentParts, newLoanProperties] = *ret;
     auto const newRoundedLoanState = newLoanProperties.loanState;
@@ -774,7 +774,7 @@ doOverpayment(
         JLOG(j.warn()) << "Overpayment not allowed: principal "
                        << "outstanding did not decrease. Before: " << *principalOutstandingProxy
                        << ". After: " << newRoundedLoanState.principalOutstanding;
-        return Unexpected(tesSUCCESS);
+        return std::unexpected(tesSUCCESS);
         // LCOV_EXCL_STOP
     }
 
@@ -798,44 +798,44 @@ doOverpayment(
     // (P * factor) / factor round-trip can leave the new principal one
     // scale-unit high, so these equalities do not hold on the pre-amendment
     // code path and must be gated to match the fix they verify.
-    if (rules.enabled(fixCleanup3_2_0))
-    {
-        // The valueChange returned by tryOverpayment satisfies
-        //   valueChange = (newInterestDue - oldInterestDue) + untrackedInterest.
-        // Using the loan-state identity v = p + i + m and the adjacent
-        // `principal change agrees` assertion (dp = oldP - newP), this
-        // rearranges into three independently-computable terms:
-        //
-        //   1. TVO change beyond what principal repayment alone explains:
-        //        newTVO - (oldTVO - dp)
-        //   2. Management fee released by re-amortization (positive when
-        //      mfee decreased; zero when managementFeeRate == 0):
-        //        oldMfee - newMfee
-        //   3. The overpayment's penalty interest part (= untrackedInterest
-        //      for the overpayment path; see computeOverpaymentComponents):
-        //        trackedInterestPart()
-        [[maybe_unused]] Number const tvoChange = newRoundedLoanState.valueOutstanding -
-            (totalValueOutstandingProxy - overpaymentComponents.trackedPrincipalDelta);
-        [[maybe_unused]] Number const managementFeeReleased =
-            managementFeeOutstandingProxy - newRoundedLoanState.managementFeeDue;
-        [[maybe_unused]] Number const interestPart = overpaymentComponents.trackedInterestPart();
+    //
+    // The valueChange returned by tryOverpayment satisfies
+    //   valueChange = (newInterestDue - oldInterestDue) + untrackedInterest.
+    // Using the loan-state identity v = p + i + m and the adjacent
+    // `principal change agrees` assertion (dp = oldP - newP), this
+    // rearranges into three independently-computable terms:
+    //
+    //   1. TVO change beyond what principal repayment alone explains:
+    //        newTVO - (oldTVO - dp)
+    //   2. Management fee released by re-amortization (positive when
+    //      mfee decreased; zero when managementFeeRate == 0):
+    //        oldMfee - newMfee
+    //   3. The overpayment's penalty interest part (= untrackedInterest
+    //      for the overpayment path; see computeOverpaymentComponents):
+    //        trackedInterestPart()
+    [[maybe_unused]] bool const fix320Enabled = rules.enabled(fixCleanup3_2_0);
+    XRPL_ASSERT_IF(
+        fix320Enabled,
+        overpaymentComponents.trackedPrincipalDelta ==
+            principalOutstandingProxy - newRoundedLoanState.principalOutstanding,
+        "xrpl::detail::doOverpayment : principal change agrees");
 
-        XRPL_ASSERT_PARTS(
-            overpaymentComponents.trackedPrincipalDelta ==
-                principalOutstandingProxy - newRoundedLoanState.principalOutstanding,
-            "xrpl::detail::doOverpayment",
-            "principal change agrees");
+    XRPL_ASSERT_IF(
+        fix320Enabled,
+        [&] {
+            Number const tvoChange = newRoundedLoanState.valueOutstanding -
+                (totalValueOutstandingProxy - overpaymentComponents.trackedPrincipalDelta);
+            Number const managementFeeReleased =
+                managementFeeOutstandingProxy - newRoundedLoanState.managementFeeDue;
+            Number const interestPart = overpaymentComponents.trackedInterestPart();
+            return loanPaymentParts.valueChange == tvoChange + managementFeeReleased + interestPart;
+        }(),
+        "xrpl::detail::doOverpayment : interest paid agrees");
 
-        XRPL_ASSERT_PARTS(
-            loanPaymentParts.valueChange == tvoChange + managementFeeReleased + interestPart,
-            "xrpl::detail::doOverpayment",
-            "interest paid agrees");
-
-        XRPL_ASSERT_PARTS(
-            overpaymentComponents.trackedPrincipalDelta == loanPaymentParts.principalPaid,
-            "xrpl::detail::doOverpayment",
-            "principal payment matches");
-    }
+    XRPL_ASSERT_IF(
+        fix320Enabled,
+        overpaymentComponents.trackedPrincipalDelta == loanPaymentParts.principalPaid,
+        "xrpl::detail::doOverpayment : principal payment matches");
 
     // All validations passed, so update the proxy objects (which will
     // modify the actual Loan ledger object)
@@ -860,7 +860,7 @@ doOverpayment(
  *
  * Implements equation (15) from XLS-66 spec, Section A-2 Equation Glossary
  */
-Expected<ExtendedPaymentComponents, TER>
+std::expected<ExtendedPaymentComponents, TER>
 computeLatePayment(
     Asset const& asset,
     ApplyView const& view,
@@ -877,7 +877,7 @@ computeLatePayment(
     // Check if the due date has passed. If not, reject the payment as
     // being too soon
     if (!hasExpired(view, nextDueDate))
-        return Unexpected(tecTOO_SOON);
+        return std::unexpected(tecTOO_SOON);
 
     // Calculate the penalty interest based on how long the payment is overdue.
     auto const latePaymentInterest = loanLatePaymentInterest(
@@ -929,7 +929,7 @@ computeLatePayment(
     {
         JLOG(j.warn()) << "Late loan payment amount is insufficient. Due: " << late.totalDue
                        << ", paid: " << amount;
-        return Unexpected(tecINSUFFICIENT_PAYMENT);
+        return std::unexpected(tecINSUFFICIENT_PAYMENT);
     }
 
     return late;
@@ -954,7 +954,7 @@ computeLatePayment(
  *
  * Implements equation (26) from XLS-66 spec, Section A-2 Equation Glossary
  */
-Expected<ExtendedPaymentComponents, TER>
+std::expected<ExtendedPaymentComponents, TER>
 computeFullPayment(
     Asset const& asset,
     ApplyView& view,
@@ -979,7 +979,7 @@ computeFullPayment(
     {
         // If this is the last payment, it has to be a regular payment
         JLOG(j.warn()) << "Last payment cannot be a full payment.";
-        return Unexpected(tecKILLED);
+        return std::unexpected(tecKILLED);
     }
 
     // Calculate the theoretical principal based on the payment schedule.
@@ -1059,7 +1059,7 @@ computeFullPayment(
     {
         // If the payment is less than the full payment amount, it's not
         // sufficient to be a full payment.
-        return Unexpected(tecINSUFFICIENT_PAYMENT);
+        return std::unexpected(tecINSUFFICIENT_PAYMENT);
     }
 
     return full;
@@ -1326,13 +1326,11 @@ computeOverpaymentComponents(
     TenthBips32 const overpaymentFeeRate,
     TenthBips16 const managementFeeRate)
 {
-    if (rules.enabled(fixCleanup3_2_0))
-    {
-        XRPL_ASSERT(
-            overpayment > 0 && isRounded(asset, overpayment, loanScale),
-            "xrpl::detail::computeOverpaymentComponents : valid overpayment "
-            "amount");
-    }
+    XRPL_ASSERT_IF(
+        rules.enabled(fixCleanup3_2_0),
+        overpayment > 0 && isRounded(asset, overpayment, loanScale),
+        "xrpl::detail::computeOverpaymentComponents : valid overpayment "
+        "amount");
 
     // First, deduct the fixed overpayment fee from the total amount.
     // This reduces the effective payment that will be applied to the loan.
@@ -1782,7 +1780,7 @@ computeLoanProperties(
  * It is an implementation of the make_payment function from the XLS-66
  * spec. Section 3.2.4.4
  */
-Expected<LoanPaymentParts, TER>
+std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
     ApplyView& view,
@@ -1802,7 +1800,7 @@ loanMakePayment(
         // Loan complete this is already checked in LoanPay::preclaim()
         // LCOV_EXCL_START
         JLOG(j.warn()) << "Loan is already paid off.";
-        return Unexpected(tecKILLED);
+        return std::unexpected(tecKILLED);
         // LCOV_EXCL_STOP
     }
 
@@ -1814,7 +1812,7 @@ loanMakePayment(
     if (*nextDueDateProxy == 0)
     {
         JLOG(j.warn()) << "Loan next payment due date is not set.";
-        return Unexpected(tecINTERNAL);
+        return std::unexpected(tecINTERNAL);
     }
 
     std::int32_t const loanScale = loan->at(sfLoanScale);
@@ -1852,7 +1850,7 @@ loanMakePayment(
                        << startDate << ", prev payment due date is " << prevPaymentDateProxy
                        << ", next payment due date is " << nextDueDateProxy << ", ledger time is "
                        << view.parentCloseTime().time_since_epoch().count();
-        return Unexpected(tecEXPIRED);
+        return std::unexpected(tecEXPIRED);
     }
 
     // -------------------------------------------------------------
@@ -1902,13 +1900,13 @@ loanMakePayment(
             // error() will be the TER returned if a payment is not made. It
             // will only evaluate to true if it's unsuccessful. Otherwise,
             // tesSUCCESS means nothing was done, so continue.
-            return Unexpected(fullPaymentComponents.error());
+            return std::unexpected(fullPaymentComponents.error());
         }
 
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::loanMakePayment : invalid full payment result");
         JLOG(j.error()) << "Full payment computation failed unexpectedly.";
-        return Unexpected(tecINTERNAL);
+        return std::unexpected(tecINTERNAL);
         // LCOV_EXCL_STOP
     }
 
@@ -1970,13 +1968,13 @@ loanMakePayment(
         {
             // error() will be the TER returned if a payment is not made. It
             // will only evaluate to true if it's unsuccessful.
-            return Unexpected(latePaymentComponents.error());
+            return std::unexpected(latePaymentComponents.error());
         }
 
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::loanMakePayment : invalid late payment result");
         JLOG(j.error()) << "Late payment computation failed unexpectedly.";
-        return Unexpected(tecINTERNAL);
+        return std::unexpected(tecINTERNAL);
         // LCOV_EXCL_STOP
     }
 
@@ -2043,7 +2041,7 @@ loanMakePayment(
     {
         JLOG(j.warn()) << "Regular loan payment amount is insufficient. Due: " << periodic.totalDue
                        << ", paid: " << amount;
-        return Unexpected(tecINSUFFICIENT_PAYMENT);
+        return std::unexpected(tecINSUFFICIENT_PAYMENT);
     }
 
     XRPL_ASSERT_PARTS(
@@ -2129,7 +2127,7 @@ loanMakePayment(
                     // made. It will only evaluate to true if it's unsuccessful.
                     // Otherwise, tesSUCCESS means nothing was done, so
                     // continue.
-                    return Unexpected(overResult.error());
+                    return std::unexpected(overResult.error());
                 }
             }
         }

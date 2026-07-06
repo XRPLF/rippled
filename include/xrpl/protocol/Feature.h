@@ -1,10 +1,12 @@
 #pragma once
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/container/flat_map.hpp>
 
 #include <bitset>
+#include <cstddef>
 #include <map>
 #include <optional>
 #include <string>

@@ -1,11 +1,11 @@
 #pragma once
 
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/AcceptedLedgerTx.h>
-#include <xrpl/ledger/BookListeners.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
-#include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <memory>
@@ -77,34 +77,24 @@ public:
     */
     virtual bool
     isBookToXRP(Asset const& asset, std::optional<Domain> const& domain = std::nullopt) = 0;
-
-    /**
-     * Process a transaction for order book tracking.
-     * @param ledger The ledger the transaction was applied to
-     * @param alTx The transaction to process
-     * @param jvObj The JSON object of the transaction
-     */
-    virtual void
-    processTxn(
-        std::shared_ptr<ReadView const> const& ledger,
-        AcceptedLedgerTx const& alTx,
-        MultiApiJson const& jvObj) = 0;
-
-    /**
-     * Get the book listeners for a book.
-     * @param book The book to get the listeners for
-     * @return The book listeners for the book
-     */
-    virtual BookListeners::pointer
-    getBookListeners(Book const&) = 0;
-
-    /**
-     * Create a new book listeners for a book.
-     * @param book The book to create the listeners for
-     * @return The new book listeners for the book
-     */
-    virtual BookListeners::pointer
-    makeBookListeners(Book const&) = 0;
 };
+
+/** Extract the set of books affected by a transaction.
+ *
+ *  Walks the transaction's metadata nodes and collects every order book
+ *  whose offers were created, modified, or deleted. Used by NetworkOPs to
+ *  fan transaction notifications out to book subscribers.
+ *
+ *  @param alTx The accepted ledger transaction to inspect.
+ *  @param j Journal used to log per-node parsing failures. Inspecting an
+ *           offer node can throw if a required field is missing; in that
+ *           case the bad node is skipped and a warn-level message is
+ *           emitted via @p j. Other affected books in the same transaction
+ *           are still returned.
+ *  @return The set of books whose offers were created, modified, or
+ *          deleted. May be empty for non-offer transactions.
+ */
+hash_set<Book>
+affectedBooks(AcceptedLedgerTx const& alTx, beast::Journal const& j);
 
 }  // namespace xrpl

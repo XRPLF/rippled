@@ -1,6 +1,11 @@
 #pragma once
 
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/tags.h>
+
+#include <xrpl/protocol/SField.h>
 
 #include <optional>
 
