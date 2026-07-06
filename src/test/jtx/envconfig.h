@@ -2,12 +2,12 @@
 
 #include <xrpld/core/Config.h>
 
-namespace xrpl::test {
+#include <atomic>
+#include <map>
+#include <memory>
+#include <string>
 
-// frequently used macros defined here for convenience.
-#define PORT_WS "port_ws"
-#define PORT_RPC "port_rpc"
-#define PORT_PEER "port_peer"
+namespace xrpl::test {
 
 extern std::atomic<bool> gEnvUseIPv4;
 

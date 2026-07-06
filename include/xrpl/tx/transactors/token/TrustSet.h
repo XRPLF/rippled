@@ -1,7 +1,17 @@
 #pragma once
 
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -21,7 +31,10 @@ public:
     preflight(PreflightContext const& ctx);
 
     static NotTEC
-    checkPermission(ReadView const& view, STTx const& tx);
+    checkGranularSemantics(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType> const& heldGranularPermissions);
 
     static TER
     preclaim(PreclaimContext const& ctx);

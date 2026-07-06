@@ -423,8 +423,9 @@ SQLiteDatabase::oldestAccountTxPage(AccountTxPageOptions const& options)
         return {};
 
     static std::uint32_t const kPageLength(200);
-    auto onUnsavedLedger =
-        std::bind(saveLedgerAsync, std::ref(registry_.get().getApp()), std::placeholders::_1);
+    auto onUnsavedLedger = [&app = registry_.get().getApp()](std::uint32_t seq) {
+        saveLedgerAsync(app, seq);
+    };
     AccountTxs ret;
     auto onTransaction = [&ret, &app = registry_.get().getApp()](
                              std::uint32_t ledgerIndex,
@@ -453,8 +454,9 @@ SQLiteDatabase::newestAccountTxPage(AccountTxPageOptions const& options)
         return {};
 
     static std::uint32_t const kPageLength(200);
-    auto onUnsavedLedger =
-        std::bind(saveLedgerAsync, std::ref(registry_.get().getApp()), std::placeholders::_1);
+    auto onUnsavedLedger = [&app = registry_.get().getApp()](std::uint32_t seq) {
+        saveLedgerAsync(app, seq);
+    };
     AccountTxs ret;
     auto onTransaction = [&ret, &app = registry_.get().getApp()](
                              std::uint32_t ledgerIndex,
@@ -483,8 +485,9 @@ SQLiteDatabase::oldestAccountTxPageB(AccountTxPageOptions const& options)
         return {};
 
     static std::uint32_t const kPageLength(500);
-    auto onUnsavedLedger =
-        std::bind(saveLedgerAsync, std::ref(registry_.get().getApp()), std::placeholders::_1);
+    auto onUnsavedLedger = [&app = registry_.get().getApp()](std::uint32_t seq) {
+        saveLedgerAsync(app, seq);
+    };
     MetaTxsList ret;
     auto onTransaction =
         [&ret](
@@ -511,8 +514,9 @@ SQLiteDatabase::newestAccountTxPageB(AccountTxPageOptions const& options)
         return {};
 
     static std::uint32_t const kPageLength(500);
-    auto onUnsavedLedger =
-        std::bind(saveLedgerAsync, std::ref(registry_.get().getApp()), std::placeholders::_1);
+    auto onUnsavedLedger = [&app = registry_.get().getApp()](std::uint32_t seq) {
+        saveLedgerAsync(app, seq);
+    };
     MetaTxsList ret;
     auto onTransaction =
         [&ret](

@@ -462,7 +462,7 @@ public:
 
         {
             ScopedLockType const sl(lock_);
-            MapType::iterator it(ledgers_.begin());
+            auto it = ledgers_.begin();
             total = ledgers_.size();
 
             stuffToSweep.reserve(total);

@@ -2,7 +2,11 @@
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
+#include <xrpl/beast/utility/Journal.h>
+
 #include <boost/system/error_code.hpp>
+
+#include <string>
 
 namespace xrpl::PeerFinder {
 

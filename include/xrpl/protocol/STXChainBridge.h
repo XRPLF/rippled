@@ -1,9 +1,19 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <tuple>
 
 namespace xrpl {
 

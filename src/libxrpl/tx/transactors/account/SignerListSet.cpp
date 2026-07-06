@@ -232,7 +232,7 @@ SignerListSet::removeFromLedger(
 {
     auto const accountKeylet = keylet::account(account);
     auto const ownerDirKeylet = keylet::ownerDir(account);
-    auto const signerListKeylet = keylet::signers(account);
+    auto const signerListKeylet = keylet::signerList(account);
 
     return removeSignersFromLedger(
         registry, view, accountKeylet, ownerDirKeylet, signerListKeylet, j);
@@ -302,7 +302,7 @@ SignerListSet::replaceSignerList()
 {
     auto const accountKeylet = keylet::account(accountID_);
     auto const ownerDirKeylet = keylet::ownerDir(accountID_);
-    auto const signerListKeylet = keylet::signers(accountID_);
+    auto const signerListKeylet = keylet::signerList(accountID_);
 
     // This may be either a create or a replace.  Preemptively remove any
     // old signer list.  May reduce the reserve, so this is done before
@@ -367,7 +367,7 @@ SignerListSet::destroySignerList()
         return tecNO_ALTERNATIVE_KEY;
 
     auto const ownerDirKeylet = keylet::ownerDir(accountID_);
-    auto const signerListKeylet = keylet::signers(accountID_);
+    auto const signerListKeylet = keylet::signerList(accountID_);
     return removeSignersFromLedger(
         ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_);
 }

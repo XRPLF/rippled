@@ -89,9 +89,11 @@ public:
         Charge const fee(kDropThreshold + 1);
         beast::IP::Endpoint const addr(beast::IP::Endpoint::fromString("192.0.2.2"));
 
-        std::function<Consumer(beast::IP::Endpoint)> const ep = limited
-            ? std::bind(&TestLogic::newInboundEndpoint, &logic, std::placeholders::_1)
-            : std::bind(&TestLogic::newUnlimitedEndpoint, &logic, std::placeholders::_1);
+        std::function<Consumer(beast::IP::Endpoint)> const ep =
+            [&logic, limited](beast::IP::Endpoint const& address) {
+                return limited ? logic.newInboundEndpoint(address)
+                               : logic.newUnlimitedEndpoint(address);
+            };
 
         {
             Consumer c(ep(addr));

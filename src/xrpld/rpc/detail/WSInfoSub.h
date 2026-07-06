@@ -7,8 +7,11 @@
 #include <xrpl/server/InfoSub.h>
 #include <xrpl/server/WSSession.h>
 
+#include <cstddef>
 #include <memory>
 #include <string>
+#include <string_view>
+#include <utility>
 
 namespace xrpl {
 

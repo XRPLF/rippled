@@ -17,7 +17,6 @@
 #include <xrpld/rpc/handlers/admin/status/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/basics/Slice.h>
@@ -37,6 +36,8 @@
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/BuildInfo.h>
@@ -97,7 +98,7 @@ static constexpr auto kDisabled = 0;
 static constexpr auto kOverlay = (1 << 0);
 static constexpr auto kServerInfo = (1 << 1);
 static constexpr auto kServerCounts = (1 << 2);
-static constexpr auto kUNL = (1 << 3);
+static constexpr auto kUnl = (1 << 3);
 }  // namespace CrawlOptions
 
 bool
@@ -141,7 +142,7 @@ OverlayImpl::Timer::asyncWait()
     timer.async_wait(
         boost::asio::bind_executor(
             overlay_.strand_,
-            std::bind(&Timer::onTimer, shared_from_this(), std::placeholders::_1)));
+            [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
 }
 
 void
@@ -198,7 +199,7 @@ OverlayImpl::OverlayImpl(
     , nextId_(1)
     , slots_(app, *this, app.config())
     , stats_(
-          std::bind(&OverlayImpl::collectMetrics, this),
+          [this] { collectMetrics(); },
           collector,
           [counts = traffic_.getCounts(), collector]() {
               std::unordered_map<TrafficCount::Category, TrafficGauges> ret;
@@ -416,7 +417,7 @@ OverlayImpl::makeErrorResponse(
     std::shared_ptr<PeerFinder::Slot> const& slot,
     http_request_type const& request,
     address_type remoteAddress,
-    std::string text)
+    std::string const& text)
 {
     boost::beast::http::response<boost::beast::http::empty_body> msg;
     msg.version(request.version());
@@ -601,7 +602,7 @@ OverlayImpl::start()
 void
 OverlayImpl::stop()
 {
-    boost::asio::dispatch(strand_, std::bind(&OverlayImpl::stopChildren, this));
+    boost::asio::dispatch(strand_, [this] { stopChildren(); });
     {
         std::unique_lock<decltype(mutex_)> lock(mutex_);
         cond_.wait(lock, [this] { return list_.empty(); });
@@ -894,7 +895,7 @@ OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
     {
         msg.body()["counts"] = getServerCounts();
     }
-    if ((setup_.crawlOptions & CrawlOptions::kUNL) != 0u)
+    if ((setup_.crawlOptions & CrawlOptions::kUnl) != 0u)
     {
         msg.body()["unl"] = getUnlInfo();
     }
@@ -1166,14 +1167,14 @@ OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
 }
 
 void
-OverlayImpl::broadcast(protocol::TMProposeSet& m)
+OverlayImpl::broadcast(protocol::TMProposeSet const& m)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
     forEach([&](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
 std::set<Peer::id_t>
-OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator)
+OverlayImpl::relay(protocol::TMProposeSet const& m, uint256 const& uid, PublicKey const& validator)
 {
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
@@ -1188,14 +1189,14 @@ OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey cons
 }
 
 void
-OverlayImpl::broadcast(protocol::TMValidation& m)
+OverlayImpl::broadcast(protocol::TMValidation const& m)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
     forEach([sm](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
 std::set<Peer::id_t>
-OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator)
+OverlayImpl::relay(protocol::TMValidation const& m, uint256 const& uid, PublicKey const& validator)
 {
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
@@ -1498,7 +1499,7 @@ OverlayImpl::deletePeer(Peer::id_t id)
 {
     if (!strand_.running_in_this_thread())
     {
-        post(strand_, std::bind(&OverlayImpl::deletePeer, this, id));
+        post(strand_, [this, id] { deletePeer(id); });
         return;
     }
 
@@ -1510,7 +1511,7 @@ OverlayImpl::deleteIdlePeers()
 {
     if (!strand_.running_in_this_thread())
     {
-        post(strand_, std::bind(&OverlayImpl::deleteIdlePeers, this));
+        post(strand_, [this] { deleteIdlePeers(); });
         return;
     }
 
@@ -1525,7 +1526,7 @@ setupOverlay(BasicConfig const& config, beast::Journal j)
     Overlay::Setup setup;
 
     {
-        auto const& section = config.section("overlay");
+        auto const& section = config.section(Sections::kOverlay);
         setup.context = makeSslContext("");
 
         set(setup.ipLimit, "ip_limit", section);
@@ -1552,7 +1553,7 @@ setupOverlay(BasicConfig const& config, beast::Journal j)
     }
 
     {
-        auto const& section = config.section("crawl");
+        auto const& section = config.section(Sections::kCrawl);
         auto const& values = section.values();
 
         if (values.size() > 1)
@@ -1578,33 +1579,33 @@ setupOverlay(BasicConfig const& config, beast::Journal j)
 
         if (crawlEnabled)
         {
-            if (get<bool>(section, "overlay", true))
+            if (get<bool>(section, Keys::kOverlay, true))
             {
                 setup.crawlOptions |= CrawlOptions::kOverlay;
             }
-            if (get<bool>(section, "server", true))
+            if (get<bool>(section, Keys::kServer, true))
             {
                 setup.crawlOptions |= CrawlOptions::kServerInfo;
             }
-            if (get<bool>(section, "counts", false))
+            if (get<bool>(section, Keys::kCounts, false))
             {
                 setup.crawlOptions |= CrawlOptions::kServerCounts;
             }
-            if (get<bool>(section, "unl", true))
+            if (get<bool>(section, Keys::kUnl, true))
             {
-                setup.crawlOptions |= CrawlOptions::kUNL;
+                setup.crawlOptions |= CrawlOptions::kUnl;
             }
         }
     }
     {
-        auto const& section = config.section("vl");
+        auto const& section = config.section(Sections::kVl);
 
         set(setup.vlEnabled, "enabled", section);
     }
 
     try
     {
-        auto id = config.legacy("network_id");
+        auto id = config.legacy(Sections::kNetworkId);
 
         if (!id.empty())
         {

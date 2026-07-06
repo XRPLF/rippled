@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/net/IPEndpoint.h>
 
+#include <cstddef>
 #include <functional>
 #include <vector>
 

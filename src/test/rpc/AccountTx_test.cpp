@@ -42,7 +42,6 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <initializer_list>
 #include <iterator>
 #include <memory>
@@ -599,7 +598,7 @@ class AccountTx_test : public beast::unit_test::Suite
             env(payChanCreate, Sig(alie));
             env.close();
 
-            std::string const payChanIndex{strHex(keylet::payChan(alice, gw, payChanSeq).key)};
+            std::string const payChanIndex{strHex(keylet::payChannel(alice, gw, payChanSeq).key)};
 
             {
                 json::Value payChanFund;

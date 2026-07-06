@@ -2,6 +2,8 @@
 
 #include <xrpld/rpc/handlers/ledger/Ledger.h>
 
+#include <xrpl/json/json_value.h>
+
 namespace xrpl {
 
 json::Value
