@@ -1,6 +1,6 @@
 {
   "platform": "macos/arm64",
-  "runner": ["self-hosted", "macOS", "ARM64", "mac-runner-m1"],
+  "runner": ["self-hosted", "macOS", "ARM64", "macos-26-apple-clang-21"],
   "configs": [
     {
       "build_type": "Release",

@@ -1,8 +1,14 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/shamap/SHAMap.h>
+
+#include <memory>
+#include <vector>
 
 namespace xrpl {
 

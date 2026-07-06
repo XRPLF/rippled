@@ -2,8 +2,10 @@
 
 #include <boost/utility/string_ref.hpp>
 
-namespace xrpl {
-namespace RPC {
+#include <functional>
+#include <string>
+
+namespace xrpl::RPC {
 
 using Output = std::function<void(boost::string_ref const&)>;
 
@@ -13,5 +15,4 @@ stringOutput(std::string& s)
     return [&](boost::string_ref const& b) { s.append(b.data(), b.size()); };
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC
