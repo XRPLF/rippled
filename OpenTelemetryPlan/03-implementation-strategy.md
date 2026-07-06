@@ -184,14 +184,14 @@ pie showData
 | TracerProvider singleton             | ~64 KB      | At startup |
 | BatchSpanProcessor (circular buffer) | ~16 KB      | At startup |
 | BatchSpanProcessor (worker thread)   | ~8 MB       | At startup |
-| OTLP exporter (gRPC channel init)    | ~256 KB     | At startup |
+| OTLP/HTTP exporter (client init)     | ~64 KB      | At startup |
 | Propagator registry                  | ~8 KB       | At startup |
-| **Total static**                     | **~8.3 MB** |            |
+| **Total static**                     | **~8.1 MB** |            |
 
 > **Why higher than earlier estimate**: The BatchSpanProcessor's circular buffer itself is only ~16 KB
 > (2049 x 8-byte `AtomicUniquePtr` entries), but it spawns a dedicated worker thread whose default
-> stack size on Linux is ~8 MB. The OTLP gRPC exporter allocates memory for channel stubs and TLS
-> initialization. The worker thread stack dominates the static footprint.
+> stack size on Linux is ~8 MB. The OTLP/HTTP exporter allocates a small client and TLS
+> initialization buffer. The worker thread stack dominates the static footprint.
 
 ### 3.5.2 Dynamic Memory
 

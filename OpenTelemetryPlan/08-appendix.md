@@ -182,12 +182,6 @@ flowchart TB
 | [07-observability-backends.md](./07-observability-backends.md)   | Backend selection and architecture           |
 | [08-appendix.md](./08-appendix.md)                               | Glossary, references, version history        |
 
-### Task Lists
-
-| Document                             | Description                                         |
-| ------------------------------------ | --------------------------------------------------- |
-| [presentation.md](./presentation.md) | Presentation slides for OpenTelemetry plan overview |
-
 ---
 
 _Previous: [Observability Backends](./07-observability-backends.md)_ | _Back to: [Overview](./OpenTelemetryPlan.md)_
