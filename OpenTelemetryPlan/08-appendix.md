@@ -182,17 +182,15 @@ flowchart TB
 | [07-observability-backends.md](./07-observability-backends.md)   | Backend selection and architecture                 |
 | [08-appendix.md](./08-appendix.md)                               | Glossary, references, version history              |
 | [secure-OTel.md](./secure-OTel.md)                               | Threat model and hardening (mTLS, peer validation) |
-| [presentation.md](./presentation.md)                             | Slide deck for OTel plan overview                  |
 
 ### Task Lists
 
-| Document                                   | Description                                         |
-| ------------------------------------------ | --------------------------------------------------- |
-| [Phase2_taskList.md](./Phase2_taskList.md) | RPC layer trace instrumentation                     |
-| [Phase3_taskList.md](./Phase3_taskList.md) | Peer overlay & consensus tracing                    |
-| [Phase4_taskList.md](./Phase4_taskList.md) | Transaction lifecycle tracing                       |
-| [Phase5_taskList.md](./Phase5_taskList.md) | Ledger processing & advanced tracing                |
-| [presentation.md](./presentation.md)       | Presentation slides for OpenTelemetry plan overview |
+| Document                                   | Description                          |
+| ------------------------------------------ | ------------------------------------ |
+| [Phase2_taskList.md](./Phase2_taskList.md) | RPC layer trace instrumentation      |
+| [Phase3_taskList.md](./Phase3_taskList.md) | Peer overlay & consensus tracing     |
+| [Phase4_taskList.md](./Phase4_taskList.md) | Transaction lifecycle tracing        |
+| [Phase5_taskList.md](./Phase5_taskList.md) | Ledger processing & advanced tracing |
 
 ---
 
