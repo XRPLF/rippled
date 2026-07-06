@@ -754,7 +754,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | `peer.proposal.receive`        | `{span_name="peer.proposal.receive"}`        | Peer Network (Rate, Trusted/Untrusted)        |
 | `peer.validation.receive`      | `{span_name="peer.validation.receive"}`      | Peer Network (Rate, Trusted/Untrusted)        |
 
-## Log-Trace Correlation (Phase 8)
+## Log-Trace Correlation
 
 When xrpld is built with `telemetry=ON`, log lines emitted within an active OpenTelemetry span automatically include `trace_id` and `span_id` fields:
 
