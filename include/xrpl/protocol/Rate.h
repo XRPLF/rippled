@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/STAmount.h>
 
 #include <boost/operators.hpp>

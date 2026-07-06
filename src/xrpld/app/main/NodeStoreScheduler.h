@@ -2,6 +2,7 @@
 
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Task.h>
 
 namespace xrpl {
 

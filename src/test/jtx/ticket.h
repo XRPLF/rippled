@@ -2,7 +2,11 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/owners.h>
+
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/LedgerFormats.h>
 
 #include <cstdint>
 

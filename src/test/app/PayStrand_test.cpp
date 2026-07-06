@@ -8,6 +8,7 @@
 #include <test/jtx/jtx_json.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/ter.h>
@@ -111,7 +112,7 @@ class ElementComboIter
         };
 
     std::uint16_t state_ = 0;
-    static_assert(safeCast<size_t>(SB::Last) <= sizeof(decltype(state_)) * 8, "");
+    static_assert(safeCast<size_t>(SB::Last) <= sizeof(decltype(state_)) * 8);
     STPathElement const* prev_ = nullptr;
     // disallow iss and cur to be specified with acc is specified (simplifies
     // some tests)

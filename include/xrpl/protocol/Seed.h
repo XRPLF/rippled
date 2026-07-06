@@ -5,7 +5,10 @@
 #include <xrpl/protocol/tokens.h>
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <optional>
+#include <string>
 
 namespace xrpl {
 

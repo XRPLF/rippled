@@ -1,14 +1,22 @@
 #pragma once
 
 #include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/SignerUtils.h>
-#include <test/jtx/amount.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/tags.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 
 #include <concepts>
 #include <cstdint>
 #include <optional>
+#include <utility>
+#include <vector>
 
 namespace xrpl::test::jtx {
 
