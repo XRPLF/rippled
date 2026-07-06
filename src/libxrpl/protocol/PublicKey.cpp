@@ -87,7 +87,7 @@ sliceToHex(Slice const& slice)
         s.reserve(2 * (slice.size() + 1));
         s = "0x";
     }
-    for (unsigned char const byte : slice)
+    for (std::uint8_t const byte : slice)
     {
         static constexpr char kHex[] = "0123456789ABCDEF";
         s += kHex[((byte & 0xf0) >> 4)];

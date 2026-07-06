@@ -266,14 +266,14 @@ decodeBase58(std::string const& s)
 
     // Allocate enough space in big-endian base256 representation.
     // log(58) / log(256), rounded up.
-    std::vector<unsigned char> b256((remain * 733 / 1000) + 1);
+    std::vector<std::uint8_t> b256((remain * 733 / 1000) + 1);
     while (remain > 0)
     {
         auto carry = kAlphabetReverse[*psz];
         if (carry == -1)
             return {};
         // Apply "b256 = b256 * 58 + carry".
-        for (unsigned char& byte : std::views::reverse(b256))
+        for (std::uint8_t& byte : std::views::reverse(b256))
         {
             carry += 58 * byte;
             byte = carry % 256;
@@ -284,7 +284,7 @@ decodeBase58(std::string const& s)
         --remain;
     }
     // Skip leading zeroes in b256.
-    auto iter = std::ranges::find_if(b256, [](unsigned char c) { return c != 0; });
+    auto iter = std::ranges::find_if(b256, [](std::uint8_t c) { return c != 0; });
     std::string result;
     result.reserve(zeroes + (b256.end() - iter));
     result.assign(zeroes, 0x00);
