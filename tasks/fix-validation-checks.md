@@ -138,13 +138,14 @@ individual checks), but the parent-child relationship isn't established.
 but `expected_metrics.json` still references the old names.
 
 **Actual UIDs in `docker/telemetry/grafana/dashboards/`:**
-| Expected (in expected_metrics.json) | Actual (in dashboard JSON) |
-|-------------------------------------|-------------------------------|
-| `xrpld-statsd-node-health` | `xrpld-system-node-health` |
-| `xrpld-statsd-network` | `xrpld-system-network` |
-| `xrpld-statsd-rpc` | `xrpld-system-rpc` |
-| `xrpld-statsd-overlay-detail` | `xrpld-system-overlay-detail` |
-| `xrpld-statsd-ledger-sync` | `xrpld-system-ledger-sync` |
+
+| Expected (in expected_metrics.json) | Actual (in dashboard JSON)    |
+| ----------------------------------- | ----------------------------- |
+| `xrpld-statsd-node-health`          | `xrpld-system-node-health`    |
+| `xrpld-statsd-network`              | `xrpld-system-network`        |
+| `xrpld-statsd-rpc`                  | `xrpld-system-rpc`            |
+| `xrpld-statsd-overlay-detail`       | `xrpld-system-overlay-detail` |
+| `xrpld-statsd-ledger-sync`          | `xrpld-system-ledger-sync`    |
 
 **Fix:** Update the 5 UIDs in `expected_metrics.json` → `grafana_dashboards.uids[]`.
 
