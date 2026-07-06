@@ -598,18 +598,28 @@ InboundLedger::done()
 
     if (complete_ && !failed_ && ledger_)
     {
-        XRPL_ASSERT(
-            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
-            "xrpl::InboundLedger::done : valid ledger fees");
-        ledger_->setImmutable();
-        switch (reason_)
+        auto const baseLedger = findBestFullyWiredBase(app_, ledger_, journal_);
+        if (!primeInboundLedgerForUse(ledger_, baseLedger, journal_, "InboundLedger::done"))
         {
-            case Reason::HISTORY:
-                app_.getInboundLedgers().onLedgerFetched(shared_from_this());
-                break;
-            default:
-                app_.getLedgerMaster().storeLedger(ledger_);
-                break;
+            complete_ = false;
+            failed_ = true;
+        }
+
+        if (complete_ && !failed_)
+        {
+            XRPL_ASSERT(
+                ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
+                "xrpl::InboundLedger::done : valid ledger fees");
+            ledger_->setImmutable();
+            switch (reason_)
+            {
+                case Reason::HISTORY:
+                    app_.getInboundLedgers().onLedgerFetched(shared_from_this());
+                    break;
+                default:
+                    app_.getLedgerMaster().storeLedger(ledger_);
+                    break;
+            }
         }
     }
 
