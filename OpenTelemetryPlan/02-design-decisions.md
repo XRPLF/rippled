@@ -185,7 +185,7 @@ agree with the code. A CI check enforces this end to end.
 3. **Collision qualifier** → `<domain>_<field>`, only when a bare name would
    collide with a DIFFERENT concept in the shared spanmetrics label space or with
    the OTel-reserved `status` key (e.g. `rpc_status`, `grpc_status`,
-   `consensus_state`, `consensus_round`, `consensus_mode`). This disambiguates
+   `consensus_phase`, `consensus_round`, `consensus_mode`). This disambiguates
    distinct concepts that share a word; it is NOT used to tag the same concept
    with its emitting workflow — that is rule 2 (one shared name).
 4. **Resource attribute** → dotted `xrpl.<subsystem>.<field>`, reserved ONLY
@@ -245,6 +245,8 @@ keys (the dotted form is reserved for resource scope per §2.3.3).
 | `tx_fee`       | int64  | Fee in drops                          |
 | `tx_result`    | string | `"tesSUCCESS"`, `"tecPATH_DRY"`, etc. |
 | `ledger_index` | int64  | Ledger containing transaction         |
+| `relay_count`  | int64  | Peers the transaction was relayed to  |
+| `suppressed`   | bool   | `true` when HashRouter dropped a dup  |
 
 #### Consensus Attributes
 
@@ -261,12 +263,14 @@ keys (the dotted form is reserved for resource scope per §2.3.3).
 
 #### RPC Attributes
 
-| Key        | Type   | Description                                           |
-| ---------- | ------ | ----------------------------------------------------- |
-| `command`  | string | Command name (per-span unique on `rpc.command`)       |
-| `version`  | int64  | API version                                           |
-| `rpc_role` | string | `"admin"` or `"user"` (qualified — `role` is generic) |
-| `params`   | string | Sanitized parameters (optional)                       |
+| Key           | Type    | Description                                                                   |
+| ------------- | ------- | ----------------------------------------------------------------------------- |
+| `command`     | string  | Command name (per-span unique on `rpc.command`)                               |
+| `version`     | int64   | API version                                                                   |
+| `rpc_role`    | string  | `"admin"` or `"user"` (qualified — `role` is generic)                         |
+| `params`      | string  | Sanitized parameters (optional)                                               |
+| `rpc_status`  | string  | Response status: `success` \| `error` (qualified — `status` is OTel-reserved) |
+| `duration_ms` | float64 | Request duration in milliseconds                                              |
 
 #### Peer & Message Attributes
 
@@ -381,6 +385,8 @@ The following data is explicitly **excluded** from telemetry collection:
 | Mechanism                     | Description                                                                                                                                                                                            |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Account Hashing**           | Account addresses are hashed both SDK-side (`pathfind_source_account`, `pathfind_dest_account` — always hashed before emission) and again at the collector level, so raw addresses never reach storage |
+| **Configurable Redaction**    | Sensitive fields can be excluded via `[telemetry]` config section                                                                                                                                      |
+| **Collector Tail Sampling**   | xrpld head sampling is fixed at 1.0 (every span emitted); the collector retains ~10% of non-error traces, reducing stored data exposure                                                                |
 | **Sampling**                  | Only 10% of traces recorded by default, reducing data exposure                                                                                                                                         |
 | **Local Control**             | Node operators have full control over what gets exported                                                                                                                                               |
 | **No Raw Payloads**           | Transaction content is never recorded, only metadata (hash, type, result)                                                                                                                              |
@@ -560,7 +566,7 @@ flowchart TB
 - **xrpld Process (dark gray)**: The single xrpld node running all three observability frameworks side by side. Each framework operates independently with no interference.
 - **PerfLog to perf.log**: PerfLog writes JSON-formatted event logs to a local file. Grafana can ingest these via Loki or a file-based datasource.
 - **Beast Insight to StatsD Server**: Insight sends aggregated metrics (counters, gauges) over UDP to a StatsD server. Grafana reads from StatsD-compatible backends like Graphite or Prometheus (via StatsD exporter).
-- **OpenTelemetry to OTLP Collector**: OTel exports spans over OTLP/gRPC to a Collector, which then forwards to a trace backend (Tempo).
+- **OpenTelemetry to OTLP Collector**: OTel exports spans over OTLP/HTTP to a Collector, which then forwards to a trace backend (Tempo). (OTLP/gRPC is future work — §2.2.2.)
 - **Grafana (red, unified UI)**: All three data streams converge in Grafana, enabling operators to correlate logs, metrics, and traces in a single dashboard.
 
 ### 2.6.5 Correlation with PerfLog
