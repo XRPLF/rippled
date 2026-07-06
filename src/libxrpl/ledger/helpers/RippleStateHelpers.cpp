@@ -798,7 +798,7 @@ deleteAMMTrustLine(
     if (ammAccountID && (low != *ammAccountID && high != *ammAccountID))
         return terNO_AMM;
 
-    auto const sponsorSle =
+    auto const& sponsorSle =
         getLedgerEntryReserveSponsor(view, sleState, !ammLow ? sfLowSponsor : sfHighSponsor);
 
     if (auto const ter = trustDelete(view, sleState, low, high, j); !isTesSuccess(ter))

@@ -196,7 +196,7 @@ CheckCreate::doApply()
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
     auto const applyViewContext = ctx_.getApplyViewContext();
-    auto const sponsorSle = applyViewContext.txReserveContext.sponsorSle;
+    auto const& sponsorSle = applyViewContext.txReserveContext.sponsorSle;
     if (auto const ret = checkReserve(
             ctx_.getApplyViewContext(), sle, preFeeBalance_, {.ownerCountDelta = 1}, ctx_.journal);
         !isTesSuccess(ret))

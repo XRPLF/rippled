@@ -153,7 +153,7 @@ TER
 DepositPreauth::doApply()
 {
     auto applyViewContext = ctx_.getApplyViewContext();
-    auto const sponsorSle = applyViewContext.txReserveContext.sponsorSle;
+    auto const& sponsorSle = applyViewContext.txReserveContext.sponsorSle;
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
         auto const sleOwner = view().peek(keylet::account(accountID_));

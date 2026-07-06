@@ -135,7 +135,7 @@ PaymentChannelCreate::doApply()
     }
 
     auto const applyViewContext = ctx_.getApplyViewContext();
-    auto const sponsorSle = applyViewContext.txReserveContext.sponsorSle;
+    auto const& sponsorSle = applyViewContext.txReserveContext.sponsorSle;
 
     if (ctx_.view().rules().enabled(featureSponsor))
     {

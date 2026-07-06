@@ -468,7 +468,7 @@ doWithdraw(
         // LCOV_EXCL_STOP
     }
 
-    auto const sponsorSle = ctx.txReserveContext.sponsorSle;
+    auto const& sponsorSle = ctx.txReserveContext.sponsorSle;
 
     // Move the funds directly from the broker's pseudo-account to the
     // dstAcct

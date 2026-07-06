@@ -3876,7 +3876,7 @@ public:
             if (aliceSle)
                 BEAST_EXPECT(aliceSle->getAccountID(sfSponsor) == sponsor.id());
 
-            auto const sponsorSle = env.le(keylet::account(sponsor));
+            auto const& sponsorSle = env.le(keylet::account(sponsor));
             BEAST_EXPECT(sponsorSle->getFieldU32(sfSponsoringAccountCount) == 1);
 
             incLgrSeqForAccDel(env, alice);
@@ -3884,7 +3884,7 @@ public:
             // AccountDelete: destination = sponsor
             env(acctdelete(alice, sponsor), Fee(requiredFee), Ter(tesSUCCESS));
 
-            auto const sponsorSle2 = env.le(keylet::account(sponsor));
+            auto const& sponsorSle2 = env.le(keylet::account(sponsor));
             BEAST_EXPECT(!sponsorSle2->isFieldPresent(sfSponsoringAccountCount));
         }
 
@@ -3917,7 +3917,7 @@ public:
             env.close();
 
             // Verify sfSponsoringOwnerCount is set on sponsor
-            auto const sponsorSle = env.le(keylet::account(sponsor));
+            auto const& sponsorSle = env.le(keylet::account(sponsor));
             BEAST_EXPECT(sponsorSle->isFieldPresent(sfSponsoringOwnerCount));
             auto const sponsoringOwnerCount = sponsorSle->getFieldU32(sfSponsoringOwnerCount);
             BEAST_EXPECT(sponsoringOwnerCount >= 1);
@@ -3928,7 +3928,7 @@ public:
             auto const requiredFee = drops(env.current()->fees().increment);
             env(acctdelete(sponsor, bob), Fee(requiredFee), Ter(tecHAS_OBLIGATIONS));
             // The failed delete must not decrement the outstanding sponsored-object count.
-            auto const sponsorSleAfter = env.le(keylet::account(sponsor));
+            auto const& sponsorSleAfter = env.le(keylet::account(sponsor));
             BEAST_EXPECT(sponsorSleAfter->isFieldPresent(sfSponsoringOwnerCount));
             BEAST_EXPECT(
                 sponsorSleAfter->getFieldU32(sfSponsoringOwnerCount) == sponsoringOwnerCount);
@@ -3946,7 +3946,7 @@ public:
             env.close();
 
             // Verify sfSponsoringAccountCount is set on sponsor
-            auto const sponsorSle = env.le(keylet::account(sponsor));
+            auto const& sponsorSle = env.le(keylet::account(sponsor));
             BEAST_EXPECT(sponsorSle->isFieldPresent(sfSponsoringAccountCount));
             auto const sponsoringAccountCount = sponsorSle->getFieldU32(sfSponsoringAccountCount);
             BEAST_EXPECT(sponsoringAccountCount == 1);
@@ -3957,7 +3957,7 @@ public:
             auto const requiredFee = drops(env.current()->fees().increment);
             env(acctdelete(sponsor, bob), Fee(requiredFee), Ter(tecHAS_OBLIGATIONS));
             // The failed delete must not decrement the outstanding sponsored-account count.
-            auto const sponsorSleAfter = env.le(keylet::account(sponsor));
+            auto const& sponsorSleAfter = env.le(keylet::account(sponsor));
             BEAST_EXPECT(sponsorSleAfter->isFieldPresent(sfSponsoringAccountCount));
             BEAST_EXPECT(
                 sponsorSleAfter->getFieldU32(sfSponsoringAccountCount) == sponsoringAccountCount);

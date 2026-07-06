@@ -448,7 +448,7 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
     if (tx.isFieldPresent(sfDelegate) && isReserveSponsored(tx))
         return terNO_SPONSORSHIP;
 
-    if (auto const sponsorSle = getTxReserveSponsor(view, tx); !sponsorSle)
+    if (auto const& sponsorSle = getTxReserveSponsor(view, tx); !sponsorSle)
         return terNO_ACCOUNT;
 
     auto const hasSponsorSignature = tx.isFieldPresent(sfSponsorSignature);

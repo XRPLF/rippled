@@ -328,11 +328,7 @@ TrustSet::doApply()
     // well. A person with no intention of using the gateway
     // could use the extra XRP for their own purposes.
     auto const applyViewContext = ctx_.getApplyViewContext();
-    auto const sponsorSle = applyViewContext.txReserveContext.sponsorSle;
-
-    auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
+    auto const& sponsorSle = applyViewContext.txReserveContext.sponsorSle;
 
     auto getSponsor = [&sponsorSle, this](AccountID const& account) {
         return (sponsorSle && account == accountID_) ? sponsorSle : SLE::pointer();

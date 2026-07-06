@@ -99,7 +99,7 @@ DelegateSet::doApply()
     if (permissions.empty())
         return tecINTERNAL;  // LCOV_EXCL_LINE
     auto const applyViewContext = ctx_.getApplyViewContext();
-    auto const sponsorSle = applyViewContext.txReserveContext.sponsorSle;
+    auto const& sponsorSle = applyViewContext.txReserveContext.sponsorSle;
     if (auto const ret = checkReserve(
             ctx_.getApplyViewContext(),
             sleOwner,

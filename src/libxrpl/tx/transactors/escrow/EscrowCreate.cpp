@@ -437,7 +437,7 @@ EscrowCreate::doApply()
 
     auto const balance = sle->getFieldAmount(sfBalance).xrp();
     auto const applyViewContext = ctx_.getApplyViewContext();
-    auto const sponsorSle = applyViewContext.txReserveContext.sponsorSle;
+    auto const& sponsorSle = applyViewContext.txReserveContext.sponsorSle;
     // First check: whoever is on the hook for the new owner increment
     // can cover it. When sponsored this hits the sponsor branch and
     // validates the sponsor's reserve + remaining credit. When

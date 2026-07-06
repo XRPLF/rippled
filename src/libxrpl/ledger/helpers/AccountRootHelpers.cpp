@@ -360,7 +360,7 @@ checkReserve(
     // owned by the tx.Account. For any other account (e.g. a pseudo-account or
     // a counterparty), the sponsor does not apply and the account must cover
     // its own reserve.
-    auto const sponsorSle = accSle->getAccountID(sfAccount) == ctx.txReserveContext.accountID()
+    auto const& sponsorSle = accSle->getAccountID(sfAccount) == ctx.txReserveContext.accountID()
         ? ctx.txReserveContext.sponsorSle
         : nullptr;
     if (sponsorSle)
