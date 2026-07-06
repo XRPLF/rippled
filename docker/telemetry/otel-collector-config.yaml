@@ -36,7 +36,7 @@ receivers:
   # trace_id, span_id, message) via regex. The trace_id and span_id are
   # optional — only present when the log was emitted within an active span.
   filelog:
-    # Tails both user-run xrpld logs (/home/pratik/xrpld-logs/...)
+    # Tails both user-run xrpld logs (/var/log/xrpld/...)
     # and integration-test logs (/tmp/xrpld-integration/...).
     include:
       - /var/log/rippled/*/debug.log
