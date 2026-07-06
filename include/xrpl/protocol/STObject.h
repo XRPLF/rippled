@@ -555,7 +555,11 @@ public:
     ValueProxy&
     operator=(ValueProxy const&) = delete;
 
+    // Write-through proxy: assignment sets the referenced field to the given
+    // value, so it intentionally takes the assigned value rather than a
+    // ValueProxy.
     template <class U>
+    // NOLINTNEXTLINE(misc-unconventional-assign-operator)
     ValueProxy&
     operator=(U&& u)
         requires(std::is_assignable_v<T, U>);
@@ -800,6 +804,7 @@ STObject::Proxy<T>::assign(U&& u)
 
 template <class T>
 template <class U>
+// NOLINTNEXTLINE(misc-unconventional-assign-operator)
 STObject::ValueProxy<T>&
 STObject::ValueProxy<T>::operator=(U&& u)
     requires(std::is_assignable_v<T, U>)
