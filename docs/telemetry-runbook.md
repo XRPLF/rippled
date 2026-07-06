@@ -151,7 +151,7 @@ RED metrics on the _Transaction Overview_ dashboard.
 {name="consensus.update_positions"} >> {event:name="dispute.resolve"}
 ```
 
-### Ledger Spans (Phase 6)
+### Ledger Spans
 
 | Span Name         | Source File          | Attributes                            | Description                   |
 | ----------------- | -------------------- | ------------------------------------- | ----------------------------- |
@@ -159,7 +159,7 @@ RED metrics on the _Transaction Overview_ dashboard.
 | `ledger.validate` | LedgerMaster.cpp:915 | `ledger_seq`, `validations`           | Ledger promoted to validated  |
 | `ledger.store`    | LedgerMaster.cpp:409 | `ledger_seq`                          | Ledger stored in history      |
 
-### Peer Spans (Phase 6)
+### Peer Spans
 
 | Span Name                 | Source File      | Attributes                      | Description                   |
 | ------------------------- | ---------------- | ------------------------------- | ----------------------------- |
