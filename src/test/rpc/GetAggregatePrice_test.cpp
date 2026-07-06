@@ -7,6 +7,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -16,7 +17,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-#include <cstdlib>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -173,7 +174,7 @@ public:
                 Oracle const oracle(
                     env,
                     {.owner = owner,
-                     .documentID = rand(),
+                     .documentID = randInt<std::uint32_t>(),
                      .series = {{"XRP", "USD", 740 + i, 1}, {"XRP", "EUR", 740, 1}},
                      .fee = baseFee});
                 oracles.emplace_back(owner, oracle.documentID());
