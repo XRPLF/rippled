@@ -144,12 +144,12 @@ datasources:
             tag: close_time_correct
             operator: "="
             scope: span
-            type: dynamic
+            type: static
           - id: consensus-state
             tag: consensus_state
             operator: "="
             scope: span
-            type: dynamic
+            type: static
           - id: consensus-close-resolution
             tag: close_resolution_ms
             operator: "="
