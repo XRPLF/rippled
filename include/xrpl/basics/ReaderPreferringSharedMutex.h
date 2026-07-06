@@ -56,7 +56,9 @@ public:
     void
     lock()
     {
-        pthread_rwlock_wrlock(&rwlock_);
+        int rc = pthread_rwlock_wrlock(&rwlock_);
+        if (rc != 0)
+            throw std::system_error(rc, std::system_category(), "pthread_rwlock_wrlock");
     }
 
     bool
@@ -75,7 +77,9 @@ public:
     void
     lock_shared()
     {
-        pthread_rwlock_rdlock(&rwlock_);
+        int rc = pthread_rwlock_rdlock(&rwlock_);
+        if (rc != 0)
+            throw std::system_error(rc, std::system_category(), "pthread_rwlock_rdlock");
     }
 
     bool

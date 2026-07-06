@@ -90,8 +90,11 @@ public:
     static bool
     nullMode()
     {
-        char const* e = std::getenv("XRPL_RWDB_NULL");
-        return e && *e && std::string_view{e} != "0";
+        static bool const kV = [] {
+            char const* e = std::getenv("XRPL_RWDB_NULL");
+            return e && *e && std::string_view{e} != "0";
+        }();
+        return kV;
     }
 
     Status
