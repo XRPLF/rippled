@@ -321,7 +321,7 @@ other layer must match them. A CI check enforces this end to end.
 3. Collision qualifier: `<domain>_<field>` — only when a bare name would collide
    with a DIFFERENT concept in the shared spanmetrics label space, or with the
    OTel-reserved `status` key (e.g. `rpc_status`, `grpc_status`,
-   `consensus_state`, `consensus_round`). This disambiguates distinct concepts
+   `consensus_phase`, `consensus_round`). This disambiguates distinct concepts
    that share a word; it is NOT used to tag the same concept with the workflow
    that emitted it — that is rule 2 (one shared name).
 4. Resource attribute: dotted `xrpl.<subsystem>.<field>` — reserved ONLY for

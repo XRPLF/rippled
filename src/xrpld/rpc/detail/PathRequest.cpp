@@ -742,7 +742,6 @@ PathRequest::doUpdate(
     auto span = SpanGuard::span(
         TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::compute);
     span.setAttribute(pathfind_span::attr::fast, fast);
-    span.setAttribute(pathfind_span::attr::destAmount, saDstAmount_.getFullText().c_str());
     span.setAttribute(pathfind_span::attr::destCurrency, to_string(saDstAmount_.asset()).c_str());
 
     JLOG(journal_.debug()) << iIdentifier_ << " update " << (fast ? "fast" : "normal");
