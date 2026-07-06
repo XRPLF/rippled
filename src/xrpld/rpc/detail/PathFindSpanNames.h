@@ -84,8 +84,6 @@ inline constexpr auto numPaths = makeStr("pathfind_num_paths");
 inline constexpr auto numRequests = makeStr("pathfind_num_requests");
 /// "pathfind_ledger_index" — pathfind target ledger index.
 inline constexpr auto ledgerIndex = makeStr("pathfind_ledger_index");
-/// "pathfind_dest_amount" — requested destination amount as string.
-inline constexpr auto destAmount = makeStr("pathfind_dest_amount");
 /// "pathfind_dest_currency" — destination currency code.
 inline constexpr auto destCurrency = makeStr("pathfind_dest_currency");
 /// "pathfind_num_source_assets" — candidate source assets count.
