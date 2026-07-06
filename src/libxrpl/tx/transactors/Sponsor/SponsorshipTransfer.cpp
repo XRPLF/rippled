@@ -112,12 +112,18 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         }
 
-        // sfSponsorFlags should not be present if it is ending sponsorship
+        // sfSponsorFlags should not be present if it is ending sponsorship.
         if (ctx.tx.isFieldPresent(sfSponsorFlags))
         {
-            JLOG(ctx.j.debug())
-                << "preflight: sfSponsorFlags should not be present when ending sponsorship";
+            // Unreachable: reaching here means sfSponsor is absent, which is already checked above,
+            // and preflight1Sponsor already rejects sfSponsorFlags present without sfSponsor with
+            // temINVALID_FLAG. Keep this as a defensive check.
+            // LCOV_EXCL_START
+            UNREACHABLE(
+                "xrpl::SponsorshipTransfer::preflight : sfSponsorFlags present without sfSponsor "
+                "when ending sponsorship");
             return temINVALID_FLAG;
+            // LCOV_EXCL_STOP
         }
 
         if (ctx.tx.isFieldPresent(sfSponsee) &&
@@ -149,102 +155,79 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
 TER
 SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 {
-    auto const index = ctx.tx[~sfObjectID];
+    auto const objectID = ctx.tx[~sfObjectID];
     auto const newSponsorSleExpected = getTxReserveSponsor(ctx.view, ctx.tx);
     if (!newSponsorSleExpected)
         return newSponsorSleExpected.error();  // LCOV_EXCL_LINE
     auto const newSponsorSle = *newSponsorSleExpected;
 
-    bool const isObjectSponsor = !!index;
-
     auto const account = ctx.tx[sfAccount];
     auto const sponseeID = ctx.tx[~sfSponsee].value_or(account);
     auto const sponseeSle = ctx.view.read(keylet::account(sponseeID));
     if (!sponseeSle)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    if (isObjectSponsor)
     {
-        auto const sle = ctx.view.read(keylet::unchecked(*index));
-        if (!sle)
+        // If it is ending sponsorship, sfSponsee is user input, return terNO_ACCOUNT if it does not
+        // exist.
+        if (ctx.tx.isFieldPresent(sfSponsee))
+            return terNO_ACCOUNT;
+
+        // If it is creating or reassigning sponsorship, sfSponsee is the account itself, which is
+        // always present by the time preclaim runs. Return tecINTERNAL if it does not exist.
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
+
+    // Default setup with an account sponsorship transfer. If it is an object transfer, they will be
+    // overridden to the object SLE and its type-specific sponsor field:
+    // sfHighSponsor/sfLowSponsor for a RippleState, sfSponsor for other object types.
+    SLE::const_pointer targetSle = sponseeSle;
+    auto const* sponsorField = &sfSponsor;
+
+    if (objectID.has_value())
+    {
+        auto const objectSle = ctx.view.read(keylet::unchecked(*objectID));
+        if (!objectSle)
             return tecNO_ENTRY;
 
-        if (!isLedgerEntrySupportedBySponsorship(sle))
+        if (!isLedgerEntrySupportedBySponsorship(objectSle))
             return tecNO_PERMISSION;
 
-        auto const owner = getLedgerEntryOwner(ctx.view, sle, sponseeID);
+        auto const owner = getLedgerEntryOwner(ctx.view, objectSle, sponseeID);
         if (!owner.has_value() || owner.value() != sponseeID)
             return tecNO_PERMISSION;
 
-        auto const& sponsorField = getLedgerEntrySponsorField(sle, owner.value());
-
-        if (ctx.tx.isFlag(tfSponsorshipCreate))
-        {
-            if (!newSponsorSle)
-                return tecNO_PERMISSION;
-
-            // check that the object is not sponsored yet
-            if (sle->isFieldPresent(sponsorField))
-                return tecNO_PERMISSION;
-        }
-        else if (ctx.tx.isFlag(tfSponsorshipReassign))
-        {
-            if (!newSponsorSle)
-                return tecNO_PERMISSION;
-
-            // check object is already ctx.sponsored
-            if (!sle->isFieldPresent(sponsorField))
-                return tecNO_PERMISSION;
-        }
-        else if (ctx.tx.isFlag(tfSponsorshipEnd))
-        {
-            if (newSponsorSle)
-                return tecNO_PERMISSION;
-
-            // check object is sponsored
-            if (!sle->isFieldPresent(sponsorField))
-                return tecNO_PERMISSION;
-
-            // only the sponsor or sponsee can end sponsorship
-            auto const sponsor = sle->getAccountID(sponsorField);
-            if (account != sponsor && account != sponseeID)
-                return tecNO_PERMISSION;
-        }
+        // Object transfer: the target is the object, and its sponsor field
+        // depends on the object type, a RippleState stores the sponsor in
+        // sfHighSponsor/sfLowSponsor, while other object type uses sfSponsor.
+        targetSle = objectSle;
+        sponsorField = &getLedgerEntrySponsorField(objectSle, owner.value());
     }
-    else
+
+    bool const isSponsored = targetSle->isFieldPresent(*sponsorField);
+
+    if (ctx.tx.isFlag(tfSponsorshipCreate))
     {
-        if (ctx.tx.isFlag(tfSponsorshipCreate))
-        {
-            if (!newSponsorSle)
-                return tecNO_PERMISSION;
+        // Creating a new sponsorship: needs a new reserve sponsor, and the
+        // target must not already be sponsored
+        if (!newSponsorSle || isSponsored)
+            return tecNO_PERMISSION;
+    }
+    else if (ctx.tx.isFlag(tfSponsorshipReassign))
+    {
+        // Reassigning sponsorship: needs a new reserve sponsor, and the target must already
+        // be sponsored
+        if (!newSponsorSle || !isSponsored)
+            return tecNO_PERMISSION;
+    }
+    else if (ctx.tx.isFlag(tfSponsorshipEnd))
+    {
+        // Ending sponsorship: no new reserve sponsor, the target must be sponsored.
+        if (newSponsorSle || !isSponsored)
+            return tecNO_PERMISSION;
 
-            // check account is not sponsored yet
-            if (sponseeSle->isFieldPresent(sfSponsor))
-                return tecNO_PERMISSION;
-        }
-        else if (ctx.tx.isFlag(tfSponsorshipReassign))
-        {
-            if (!newSponsorSle)
-                return tecNO_PERMISSION;
-
-            // check account is already sponsored
-            if (!sponseeSle->isFieldPresent(sfSponsor))
-                return tecNO_PERMISSION;
-        }
-        else if (ctx.tx.isFlag(tfSponsorshipEnd))
-        {
-            if (newSponsorSle)
-                return tecNO_PERMISSION;
-
-            // check account is sponsored
-            if (!sponseeSle->isFieldPresent(sfSponsor))
-                return tecNO_PERMISSION;
-
-            // only the sponsor or sponsee can end sponsorship
-            auto const sponsor = sponseeSle->getAccountID(sfSponsor);
-            if (account != sponsor && account != sponseeID)
-                return tecNO_PERMISSION;
-        }
+        // Only the sponsor or sponsee can end sponsorship.
+        auto const sponsor = targetSle->getAccountID(*sponsorField);
+        if (account != sponsor && account != sponseeID)
+            return tecNO_PERMISSION;
     }
 
     return tesSUCCESS;
