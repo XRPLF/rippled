@@ -251,7 +251,7 @@
       {
         "name": "service_name",
         "label": "Service",
-        "description": "Filter by service.name (e.g. xrpld, pratik-xrpld)",
+        "description": "Filter by service.name (e.g. xrpld, xrpld-validator)",
         "type": "query",
         "query": "label_values(service_name)",
         "datasource": {
