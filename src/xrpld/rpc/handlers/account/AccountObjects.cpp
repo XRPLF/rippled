@@ -104,7 +104,7 @@ getAccountObjects(
             std::optional<AccountID> const nftSponsor = currentPage->isFieldPresent(sfSponsor)
                 ? currentPage->getAccountID(sfSponsor)
                 : std::optional<AccountID>(std::nullopt);
-            bool canAppendNFT = sponsoredMatchesFilter(nftSponsor);
+            bool const canAppendNFT = sponsoredMatchesFilter(nftSponsor);
             if (canAppendNFT)
                 jvObjects.append(currentPage->getJson(JsonOptions::Values::None));
             auto const npm = (*currentPage)[~sfNextPageMin];
