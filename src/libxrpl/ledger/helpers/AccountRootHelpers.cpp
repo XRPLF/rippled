@@ -215,46 +215,52 @@ adjustOwnerCountImpl(
 static void
 adjustOwnerCountSigned(
     ApplyView& view,
-    SLE::ref accountSle,
-    SLE::ref sponsorSle,
+    ReserveContext const& reserveCtx,
     std::int32_t adjustment,
     beast::Journal j)
 {
-    XRPL_ASSERT(accountSle, "xrpl::adjustOwnerCountSigned : valid account sle");
-    if (!accountSle)
+    XRPL_ASSERT(reserveCtx.accountSle, "xrpl::adjustOwnerCountSigned : valid account sle");
+    if (!reserveCtx.accountSle)
         return;  // LCOV_EXCL_LINE
 
-    bool const validType = accountSle->getType() == ltACCOUNT_ROOT;
+    bool const validType = reserveCtx.accountSle->getType() == ltACCOUNT_ROOT;
     XRPL_ASSERT(validType, "xrpl::adjustOwnerCountSigned : valid account sle type");
     if (!validType)
         return;  // LCOV_EXCL_LINE
 
     XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
 
-    auto const accountID = accountSle->getAccountID(sfAccount);
-    if (sponsorSle)
+    auto const accountID = reserveCtx.accountID();
+    if (reserveCtx.isSponsored())
     {
-        bool const validSponsorType = sponsorSle->getType() == ltACCOUNT_ROOT;
+        bool const validSponsorType = reserveCtx.sponsorSle->getType() == ltACCOUNT_ROOT;
         XRPL_ASSERT(validSponsorType, "xrpl::adjustOwnerCountSigned : valid sponsor sle type");
         if (!validSponsorType)
             return;  // LCOV_EXCL_LINE
-        auto const sponsorID = sponsorSle->getAccountID(sfAccount);
+        auto const sponsorID = reserveCtx.sponsorID().value();
 
-        adjustOwnerCountImpl(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
-        adjustOwnerCountImpl(view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
+        adjustOwnerCountImpl(
+            view, reserveCtx.accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
+        adjustOwnerCountImpl(
+            view, reserveCtx.sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
 
-        auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
-        if (sponsorshipSle && adjustment > 0)
+        if (reserveCtx.hasSponsorshipObj() && adjustment > 0)
         {
             // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new objects.
             // Removing/reassigning ownership of the object doesn't increase RemainingOwnerCount
             // back. Don't call hook because this counter is not something that requires reserve
             // (like other sf...OwnerCounts do).
             adjustOwnerCountImpl(
-                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j, false);
+                view,
+                reserveCtx.sponsorshipSle,
+                sfRemainingOwnerCount,
+                sponsorID,
+                -adjustment,
+                j,
+                false);
         }
     }
-    adjustOwnerCountImpl(view, accountSle, sfOwnerCount, accountID, adjustment, j);
+    adjustOwnerCountImpl(view, reserveCtx.accountSle, sfOwnerCount, accountID, adjustment, j);
 }
 
 void
@@ -270,8 +276,7 @@ increaseOwnerCount(
     if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
         return;  // LCOV_EXCL_LINE
 
-    adjustOwnerCountSigned(
-        view, reserveCtx.accountSle, reserveCtx.sponsorSle, static_cast<std::int32_t>(count), j);
+    adjustOwnerCountSigned(view, reserveCtx, static_cast<std::int32_t>(count), j);
 }
 
 void
@@ -287,8 +292,7 @@ decreaseOwnerCount(
     if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
         return;  // LCOV_EXCL_LINE
 
-    adjustOwnerCountSigned(
-        view, reserveCtx.accountSle, reserveCtx.sponsorSle, -static_cast<std::int32_t>(count), j);
+    adjustOwnerCountSigned(view, reserveCtx, -static_cast<std::int32_t>(count), j);
 }
 
 void
