@@ -1,11 +1,14 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/IntrusivePointer.h>
-#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/Family.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
 #include <xrpl/shamap/SHAMapInnerNode.h>
@@ -14,8 +17,20 @@
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <condition_variable>
+#include <cstddef>
+#include <cstdint>
+#include <deque>
+#include <functional>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <optional>
 #include <set>
 #include <stack>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 namespace xrpl {

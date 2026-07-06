@@ -3,6 +3,8 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/protocol/PublicKey.h>
 
+#include <cstdint>
+#include <memory>
 #include <optional>
 
 namespace xrpl::PeerFinder {

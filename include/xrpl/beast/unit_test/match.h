@@ -7,6 +7,7 @@
 #include <xrpl/beast/unit_test/suite_info.h>
 
 #include <string>
+#include <utility>
 
 namespace beast::unit_test {
 

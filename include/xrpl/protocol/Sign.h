@@ -1,9 +1,13 @@
 #pragma once
 
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
 
 namespace xrpl {
 

@@ -1,5 +1,6 @@
 #include <xrpld/rpc/RPCHandler.h>
 
+#include <xrpld/app/ledger/LedgerMaster.h>  // IWYU pragma: keep
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/Context.h>

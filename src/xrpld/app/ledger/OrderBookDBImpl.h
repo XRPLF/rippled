@@ -1,11 +1,22 @@
 #pragma once
 
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/OrderBookDB.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <atomic>
+#include <cstdint>
+#include <functional>
+#include <memory>
 #include <mutex>
 #include <optional>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 

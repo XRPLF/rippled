@@ -1,20 +1,51 @@
 #pragma once
 
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/amount.h>
 
 #include <xrpld/app/misc/TxQ.h>
 
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/PathAsset.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <algorithm>
+#include <array>
+#include <chrono>
+#include <condition_variable>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <mutex>
+#include <optional>
 #include <source_location>
+#include <string>
+#include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -370,8 +401,9 @@ void
 stpathAppendOne(STPath& st, Account const& account);
 
 template <class T>
-std::enable_if_t<std::is_constructible_v<Account, T>>
+void
 stpathAppendOne(STPath& st, T const& t)
+    requires(std::is_constructible_v<Account, T>)
 {
     stpathAppendOne(st, Account{t});
 }
@@ -731,8 +763,8 @@ create(jtx::Account const& account, jtx::Account const& dest, STAmount const& se
 
 }  // namespace check
 
-static constexpr FeeLevel64 kBaseFeeLevel{TxQ::kBaseLevel};
-static constexpr FeeLevel64 kMinEscalationFeeLevel = kBaseFeeLevel * 500;
+inline constexpr FeeLevel64 kBaseFeeLevel{TxQ::kBaseLevel};
+inline constexpr FeeLevel64 kMinEscalationFeeLevel = kBaseFeeLevel * 500;
 
 inline uint256
 getCheckIndex(AccountID const& account, std::uint32_t uSequence)
