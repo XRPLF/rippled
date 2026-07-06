@@ -3071,7 +3071,7 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
             BEAST_EXPECT(
-                env.le(keylet::line(bob, gw, usd.currency))->getAccountID(sfHighSponsor) ==
+                env.le(keylet::trustLine(bob, gw, usd.currency))->getAccountID(sfHighSponsor) ==
                 sponsor.id());
         }
         {
@@ -4720,6 +4720,92 @@ public:
         BEAST_EXPECT(issuerSponsoredAfter == issuerSponsoredBefore);
     }
 
+    void
+    testSelfEscrowFinishReserveGate()
+    {
+        testcase("Self-escrow finish reserve order gated by amendment");
+        using namespace test::jtx;
+        using namespace std::chrono_literals;
+
+        // Finishing a self-escrow (source == destination) whose trust line
+        // was deleted while the escrow was outstanding auto-creates the line,
+        // and the outcome of that reserve check depends on whether the escrow
+        // reserve is released before delivery (Sponsor) or after (legacy).
+        // With the source's balance in the one-increment window
+        // [reserve(1), reserve(2)), the legacy order requires reserve(2) and
+        // fails, while the Sponsor order requires reserve(1) and succeeds.
+        auto runTest = [&](FeatureBitset features, TER expected) {
+            Account const alice("alice");
+            Account const gw("gw");
+            auto const usd = gw["usd"];
+
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+
+            env.fund(XRP(10000), alice, gw);
+            env.close();
+
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+
+            env.trust(usd(1000), alice);
+            env.close();
+            env(pay(gw, alice, usd(100)));
+            env.close();
+
+            // Escrow alice's entire USD balance to herself. The escrowed
+            // IOUs return to the issuer, zeroing the line balance.
+            auto const seq = env.seq(alice);
+            env(escrow::create(alice, alice, usd(100)),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kCancelTime(env.now() + 100s));
+            env.close();
+
+            // Delete the now-empty trust line. Both accounts have
+            // DefaultRipple set (jtx fund does that), so a plain limit-0
+            // TrustSet returns the line to its default state.
+            env(trust(alice, usd(0)));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::trustLine(alice, gw, usd.currency)));
+            BEAST_EXPECT(ownerCount(env, alice) == 1);  // just the escrow
+
+            // Put alice's balance in the window. Pay the excess away
+            // directly: adjustAccountXRPBalance needs the Sponsor amendment.
+            STAmount const target = reserve(env, 1) + XRP(1);
+            env(pay(alice, env.master, env.balance(alice) - target - baseFee), Fee(baseFee));
+            env.close();
+            BEAST_EXPECT(env.balance(alice) == target);
+
+            env(escrow::finish(alice, alice, seq),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFulfillment(escrow::kFb1),
+                Fee(baseFee * 150),
+                Ter(expected));
+            env.close();
+
+            if (expected == tesSUCCESS)
+            {
+                BEAST_EXPECT(!env.le(keylet::escrow(alice, seq)));
+                BEAST_EXPECT(env.le(keylet::trustLine(alice, gw, usd.currency)));
+                BEAST_EXPECT(env.balance(alice, usd) == usd(100));
+                BEAST_EXPECT(ownerCount(env, alice) == 1);  // the new line
+            }
+            else
+            {
+                BEAST_EXPECT(env.le(keylet::escrow(alice, seq)));
+                BEAST_EXPECT(!env.le(keylet::trustLine(alice, gw, usd.currency)));
+                BEAST_EXPECT(ownerCount(env, alice) == 1);  // still the escrow
+            }
+        };
+
+        // Pre-amendment: legacy order — the escrow still counts against the
+        // reserve while the auto-created line is checked.
+        runTest(testableAmendments() - featureSponsor, tecNO_LINE_INSUF_RESERVE);
+
+        // Post-amendment: the escrow reserve is recycled into the new line.
+        runTest(testableAmendments(), tesSUCCESS);
+    }
+
 protected:
     void
     testSponsor()
@@ -4757,6 +4843,7 @@ protected:
 
         testZeroBalanceSponsoredPaymentFeePayerCheck();
         testTrustSetCounterpartySponsorMisroute();
+        testSelfEscrowFinishReserveGate();
     }
 
     void
