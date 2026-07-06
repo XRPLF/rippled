@@ -5,6 +5,7 @@
 #include <lz4.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <vector>

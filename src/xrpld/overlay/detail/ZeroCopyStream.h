@@ -6,6 +6,9 @@
 
 #include <google/protobuf/io/zero_copy_stream.h>
 
+#include <cstddef>
+#include <cstdint>
+
 namespace xrpl {
 
 /** Implements ZeroCopyInputStream around a buffer sequence.
@@ -20,7 +23,7 @@ private:
     using iterator = Buffers::const_iterator;
     using const_buffer = boost::asio::const_buffer;
 
-    google::protobuf::int64 count_ = 0;
+    std::int64_t count_ = 0;
     iterator last_;
     iterator first_;    // Where pos_ comes from
     const_buffer pos_;  // What Next() will return
@@ -37,7 +40,7 @@ public:
     bool
     Skip(int count) override;
 
-    [[nodiscard]] google::protobuf::int64
+    [[nodiscard]] std::int64_t
     ByteCount() const override
     {
         return count_;
@@ -116,7 +119,7 @@ private:
 
     Streambuf& streambuf_;
     std::size_t blockSize_;
-    google::protobuf::int64 count_ = 0;
+    std::int64_t count_ = 0;
     std::size_t commit_ = 0;
     buffers_type buffers_;
     iterator pos_;
@@ -132,7 +135,7 @@ public:
     void
     BackUp(int count) override;
 
-    [[nodiscard]] google::protobuf::int64
+    [[nodiscard]] std::int64_t
     ByteCount() const override
     {
         return count_;

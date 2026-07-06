@@ -7,7 +7,11 @@
 #include <xrpl/conditions/detail/error.h>
 #include <xrpl/protocol/digest.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <system_error>
+#include <utility>
 
 namespace xrpl::cryptoconditions {
 

@@ -6,6 +6,9 @@
 
 #include <boost/asio/io_context.hpp>
 
+#include <memory>
+#include <string>
+
 namespace xrpl {
 
 /** Subscription object for JSON RPC. */
