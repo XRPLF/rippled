@@ -32,7 +32,6 @@
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -1006,7 +1005,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        forAllApiVersions(std::bind_front(&Transaction_test::testBinaryRequest, this));
+        forAllApiVersions([this](unsigned apiVersion) { testBinaryRequest(apiVersion); });
 
         FeatureBitset const all{testableAmendments()};
         testWithFeats(all);
@@ -1021,7 +1020,8 @@ public:
         testRangeCTIDRequest(features);
         testCTIDValidation(features);
         testRPCsForCTID(features);
-        forAllApiVersions(std::bind_front(&Transaction_test::testRequest, this, features));
+        forAllApiVersions(
+            [this, features](unsigned apiVersion) { testRequest(features, apiVersion); });
     }
 };
 

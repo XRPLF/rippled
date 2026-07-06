@@ -444,7 +444,7 @@ template <class T>
 T
 SerialIter::getRawHelper(int size)
 {
-    static_assert(std::is_same_v<T, Blob> || std::is_same_v<T, Buffer>, "");
+    static_assert(std::is_same_v<T, Blob> || std::is_same_v<T, Buffer>);
     if (remain_ < size)
         Throw<std::runtime_error>("invalid SerialIter getRaw");
     T result(size);

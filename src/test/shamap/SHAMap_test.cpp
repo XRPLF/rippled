@@ -26,57 +26,57 @@
 namespace xrpl::tests {
 
 #ifndef __INTELLISENSE__
-static_assert(std::is_nothrow_destructible<SHAMap>{}, "");
-static_assert(!std::is_default_constructible<SHAMap>{}, "");
-static_assert(!std::is_copy_constructible<SHAMap>{}, "");
-static_assert(!std::is_copy_assignable<SHAMap>{}, "");
-static_assert(!std::is_move_constructible<SHAMap>{}, "");
-static_assert(!std::is_move_assignable<SHAMap>{}, "");
+static_assert(std::is_nothrow_destructible<SHAMap>{});
+static_assert(!std::is_default_constructible<SHAMap>{});
+static_assert(!std::is_copy_constructible<SHAMap>{});
+static_assert(!std::is_copy_assignable<SHAMap>{});
+static_assert(!std::is_move_constructible<SHAMap>{});
+static_assert(!std::is_move_assignable<SHAMap>{});
 
-static_assert(std::is_nothrow_destructible<SHAMap::ConstIterator>{}, "");
-static_assert(std::is_copy_constructible<SHAMap::ConstIterator>{}, "");
-static_assert(std::is_copy_assignable<SHAMap::ConstIterator>{}, "");
-static_assert(std::is_move_constructible<SHAMap::ConstIterator>{}, "");
-static_assert(std::is_move_assignable<SHAMap::ConstIterator>{}, "");
+static_assert(std::is_nothrow_destructible<SHAMap::ConstIterator>{});
+static_assert(std::is_copy_constructible<SHAMap::ConstIterator>{});
+static_assert(std::is_copy_assignable<SHAMap::ConstIterator>{});
+static_assert(std::is_move_constructible<SHAMap::ConstIterator>{});
+static_assert(std::is_move_assignable<SHAMap::ConstIterator>{});
 
-static_assert(std::is_nothrow_destructible<SHAMapItem>{}, "");
-static_assert(!std::is_default_constructible<SHAMapItem>{}, "");
-static_assert(!std::is_copy_constructible<SHAMapItem>{}, "");
+static_assert(std::is_nothrow_destructible<SHAMapItem>{});
+static_assert(!std::is_default_constructible<SHAMapItem>{});
+static_assert(!std::is_copy_constructible<SHAMapItem>{});
 
-static_assert(std::is_nothrow_destructible<SHAMapNodeID>{}, "");
-static_assert(std::is_default_constructible<SHAMapNodeID>{}, "");
-static_assert(std::is_copy_constructible<SHAMapNodeID>{}, "");
-static_assert(std::is_copy_assignable<SHAMapNodeID>{}, "");
-static_assert(std::is_move_constructible<SHAMapNodeID>{}, "");
-static_assert(std::is_move_assignable<SHAMapNodeID>{}, "");
+static_assert(std::is_nothrow_destructible<SHAMapNodeID>{});
+static_assert(std::is_default_constructible<SHAMapNodeID>{});
+static_assert(std::is_copy_constructible<SHAMapNodeID>{});
+static_assert(std::is_copy_assignable<SHAMapNodeID>{});
+static_assert(std::is_move_constructible<SHAMapNodeID>{});
+static_assert(std::is_move_assignable<SHAMapNodeID>{});
 
-static_assert(std::is_nothrow_destructible<SHAMapHash>{}, "");
-static_assert(std::is_default_constructible<SHAMapHash>{}, "");
-static_assert(std::is_copy_constructible<SHAMapHash>{}, "");
-static_assert(std::is_copy_assignable<SHAMapHash>{}, "");
-static_assert(std::is_move_constructible<SHAMapHash>{}, "");
-static_assert(std::is_move_assignable<SHAMapHash>{}, "");
+static_assert(std::is_nothrow_destructible<SHAMapHash>{});
+static_assert(std::is_default_constructible<SHAMapHash>{});
+static_assert(std::is_copy_constructible<SHAMapHash>{});
+static_assert(std::is_copy_assignable<SHAMapHash>{});
+static_assert(std::is_move_constructible<SHAMapHash>{});
+static_assert(std::is_move_assignable<SHAMapHash>{});
 
-static_assert(std::is_nothrow_destructible<SHAMapTreeNode>{}, "");
-static_assert(!std::is_default_constructible<SHAMapTreeNode>{}, "");
-static_assert(!std::is_copy_constructible<SHAMapTreeNode>{}, "");
-static_assert(!std::is_copy_assignable<SHAMapTreeNode>{}, "");
-static_assert(!std::is_move_constructible<SHAMapTreeNode>{}, "");
-static_assert(!std::is_move_assignable<SHAMapTreeNode>{}, "");
+static_assert(std::is_nothrow_destructible<SHAMapTreeNode>{});
+static_assert(!std::is_default_constructible<SHAMapTreeNode>{});
+static_assert(!std::is_copy_constructible<SHAMapTreeNode>{});
+static_assert(!std::is_copy_assignable<SHAMapTreeNode>{});
+static_assert(!std::is_move_constructible<SHAMapTreeNode>{});
+static_assert(!std::is_move_assignable<SHAMapTreeNode>{});
 
-static_assert(std::is_nothrow_destructible<SHAMapInnerNode>{}, "");
-static_assert(!std::is_default_constructible<SHAMapInnerNode>{}, "");
-static_assert(!std::is_copy_constructible<SHAMapInnerNode>{}, "");
-static_assert(!std::is_copy_assignable<SHAMapInnerNode>{}, "");
-static_assert(!std::is_move_constructible<SHAMapInnerNode>{}, "");
-static_assert(!std::is_move_assignable<SHAMapInnerNode>{}, "");
+static_assert(std::is_nothrow_destructible<SHAMapInnerNode>{});
+static_assert(!std::is_default_constructible<SHAMapInnerNode>{});
+static_assert(!std::is_copy_constructible<SHAMapInnerNode>{});
+static_assert(!std::is_copy_assignable<SHAMapInnerNode>{});
+static_assert(!std::is_move_constructible<SHAMapInnerNode>{});
+static_assert(!std::is_move_assignable<SHAMapInnerNode>{});
 
-static_assert(std::is_nothrow_destructible<SHAMapLeafNode>{}, "");
-static_assert(!std::is_default_constructible<SHAMapLeafNode>{}, "");
-static_assert(!std::is_copy_constructible<SHAMapLeafNode>{}, "");
-static_assert(!std::is_copy_assignable<SHAMapLeafNode>{}, "");
-static_assert(!std::is_move_constructible<SHAMapLeafNode>{}, "");
-static_assert(!std::is_move_assignable<SHAMapLeafNode>{}, "");
+static_assert(std::is_nothrow_destructible<SHAMapLeafNode>{});
+static_assert(!std::is_default_constructible<SHAMapLeafNode>{});
+static_assert(!std::is_copy_constructible<SHAMapLeafNode>{});
+static_assert(!std::is_copy_assignable<SHAMapLeafNode>{});
+static_assert(!std::is_move_constructible<SHAMapLeafNode>{});
+static_assert(!std::is_move_assignable<SHAMapLeafNode>{});
 #endif
 
 inline bool
