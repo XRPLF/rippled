@@ -1,7 +1,14 @@
 #pragma once
 
+#include <test/csf/Proposal.h>
 #include <test/csf/SimTime.h>
+#include <test/csf/Tx.h>
+#include <test/csf/Validation.h>
 #include <test/csf/events.h>
+#include <test/csf/ledgers.h>
+
+#include <memory>
+#include <vector>
 
 namespace xrpl::test::csf {
 

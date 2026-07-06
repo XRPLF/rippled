@@ -1,16 +1,20 @@
 #pragma once
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/SystemParameters.h>  // VFALCO Breaks levelization
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
 #include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
 
+#include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>

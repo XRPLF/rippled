@@ -36,9 +36,7 @@ overrides:
       - /'[^']*'/g # single-quoted strings
       - /`[^`]*`/g # backtick strings
 suggestWords:
-  - xprl->xrpl
-  - xprld->xrpld # cspell: disable-line not sure what this problem is....
-  - unsynched->unsynced # cspell: disable-line not sure what this problem is....
+  - unsynched->unsynced
   - synched->synced
   - synch->sync
 words:
@@ -60,6 +58,7 @@ words:
   - autobridging
   - bimap
   - bindir
+  - blindings
   - bookdir
   - Bougalis
   - Britto
@@ -96,6 +95,7 @@ words:
   - daria
   - dcmake
   - dearmor
+  - decryptor
   - dedented
   - Dedup
   - dedup
@@ -109,6 +109,7 @@ words:
   - distro
   - doxyfile
   - dxrpl
+  - elgamal
   - enabled
   - enablerepo
   - endmacro
@@ -124,6 +125,7 @@ words:
   - fmtdur
   - fsanitize
   - funclets
+  - Gamal
   - gantt
   - Gantt
   - gcov
@@ -228,6 +230,7 @@ words:
   - partitioner
   - paychan
   - paychans
+  - Pedersen
   - permdex
   - perminute
   - permissioned
@@ -257,6 +260,10 @@ words:
   - reparent
   - replayer
   - reqps
+  - rerandomize
+  - rerandomization
+  - rerandomized
+  - rerandomizes
   - rerere
   - retriable
   - RIPD
@@ -273,6 +280,7 @@ words:
   - sahyadri
   - Satoshi
   - scons
+  - Schnorr
   - secp
   - sendq
   - seqit
@@ -303,6 +311,7 @@ words:
   - stvar
   - stvector
   - stxchainattestations
+  - summands
   - superpeer
   - superpeers
   - takergets

@@ -2,7 +2,9 @@
 
 #include <test/csf/BasicNetwork.h>
 #include <test/csf/CollectorRef.h>
+#include <test/csf/Proposal.h>
 #include <test/csf/Scheduler.h>
+#include <test/csf/SimTime.h>
 #include <test/csf/TrustGraph.h>
 #include <test/csf/Tx.h>
 #include <test/csf/Validation.h>
@@ -10,20 +12,36 @@
 #include <test/csf/ledgers.h>
 
 #include <xrpld/consensus/Consensus.h>
+#include <xrpld/consensus/ConsensusParms.h>
+#include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/consensus/Validations.h>
 
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <xrpl/telemetry/Telemetry.h>
 #endif
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/tagged_integer.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
-#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
 
 #include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <limits>
+#include <optional>
+#include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 namespace xrpl::test::csf {
 

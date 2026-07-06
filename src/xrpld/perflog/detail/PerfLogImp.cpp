@@ -1,5 +1,6 @@
 #include <xrpld/perflog/detail/PerfLogImp.h>
 
+#include <xrpld/app/main/Application.h>
 #include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/Log.h>
@@ -15,6 +16,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/filesystem/operations.hpp>

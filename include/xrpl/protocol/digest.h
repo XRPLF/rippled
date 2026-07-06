@@ -6,6 +6,9 @@
 #include <boost/endian/conversion.hpp>
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
+#include <type_traits>
 
 namespace xrpl {
 

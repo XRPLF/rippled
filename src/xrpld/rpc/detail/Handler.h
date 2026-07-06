@@ -1,12 +1,20 @@
 #pragma once
 
-#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
+
+#include <functional>
+#include <set>
+#include <string>
 
 namespace json {
 class Object;

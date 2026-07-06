@@ -37,7 +37,15 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfMutableFlags) && !ctx.rules.enabled(featureDynamicMPT))
         return false;
 
-    return true;
+    if (ctx.tx.isFlag(tfMPTCanHoldConfidentialBalance) &&
+        !ctx.rules.enabled(featureConfidentialTransfer))
+        return false;
+
+    // can not set tmfMPTCannotEnableCanHoldConfidentialBalance without featureConfidentialTransfer
+    auto const mutableFlags = ctx.tx[~sfMutableFlags];
+    return !mutableFlags ||
+        ((*mutableFlags & tmfMPTCannotEnableCanHoldConfidentialBalance) == 0u) ||
+        ctx.rules.enabled(featureConfidentialTransfer);
 }
 
 std::uint32_t
@@ -70,6 +78,10 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         // must also be set.
         if (fee > 0u && !ctx.tx.isFlag(tfMPTCanTransfer))
             return temMALFORMED;
+
+        // Confidential amounts are encrypted so transfer rate is disallowed.
+        if (fee > 0u && ctx.tx.isFlag(tfMPTCanHoldConfidentialBalance))
+            return temBAD_TRANSFER_FEE;
     }
 
     if (auto const domain = ctx.tx[~sfDomainID])

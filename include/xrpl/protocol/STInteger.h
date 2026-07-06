@@ -1,7 +1,15 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <string>
 
 namespace xrpl {
 
@@ -107,7 +115,7 @@ template <typename Integer>
 inline bool
 STInteger<Integer>::isEquivalent(STBase const& t) const
 {
-    STInteger const* v = dynamic_cast<STInteger const*>(&t);
+    auto const* v = dynamic_cast<STInteger const*>(&t);
     return v && (value_ == v->value_);
 }
 
