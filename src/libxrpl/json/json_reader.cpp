@@ -611,7 +611,14 @@ Reader::decodeDouble(Token& token)
     // result_out_of_range with value set to +/-inf or 0.  The previous
     // sscanf("%lf") accepted those, so treat them as success too; only a
     // genuine parse failure is an error.
-    if (ec != std::errc{} && ec != std::errc::result_out_of_range)
+    //
+    // readNumber() is permissive about which characters it collects into a
+    // token (it will, for example, keep a '+' or '-' that appears mid-token),
+    // so also require that from_chars consumed the *entire* token.  Otherwise a
+    // token like "1+2" would stop after "1" with no error and silently decode
+    // as 1.  A valid but out-of-range token still matches the full float
+    // pattern, so ptr == token.end holds there as well.
+    if ((ec != std::errc{} && ec != std::errc::result_out_of_range) || ptr != token.end)
         return addError("'" + std::string(token.start, token.end) + "' is not a number.", token);
     currentValue() = value;
     return true;

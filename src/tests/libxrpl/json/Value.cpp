@@ -8,11 +8,13 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <exception>
 #include <limits>
 #include <numbers>
+#include <optional>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -590,6 +592,52 @@ TEST(json_value, bad_json)
     json::Reader r;
 
     EXPECT_TRUE(r.parse(s, j));
+}
+
+TEST(json_value, parse_double)
+{
+    auto parseValue = [](std::string const& doc) -> std::optional<json::Value> {
+        json::Value j;
+        json::Reader r;
+        if (!r.parse("{\"v\":" + doc + "}", j))
+            return std::nullopt;
+        return j["v"];
+    };
+
+    // Well-formed doubles decode to the expected value.
+    for (auto const& [text, expected] :
+         {std::pair{"2.5", 2.5},
+          std::pair{"-3.25e2", -325.0},
+          std::pair{"0.0", 0.0},
+          std::pair{"1E3", 1000.0},
+          std::pair{"-0.5e-1", -0.05}})
+    {
+        auto const v = parseValue(text);
+        ASSERT_TRUE(v.has_value()) << text;
+        EXPECT_TRUE(v->isDouble()) << text;
+        EXPECT_EQ(v->asDouble(), expected) << text;
+    }
+
+    // A magnitude too large to represent parses successfully as +/-infinity,
+    // matching the historical sscanf("%lf") behavior.
+    {
+        auto const v = parseValue("1e400");
+        ASSERT_TRUE(v.has_value());
+        EXPECT_TRUE(std::isinf(v->asDouble()));
+        EXPECT_GT(v->asDouble(), 0.0);
+
+        auto const vNeg = parseValue("-1e400");
+        ASSERT_TRUE(vNeg.has_value());
+        EXPECT_TRUE(std::isinf(vNeg->asDouble()));
+        EXPECT_LT(vNeg->asDouble(), 0.0);
+    }
+
+    // readNumber() collects any run of digits and '.eE+-' into a single Double
+    // token, so these malformed tokens reach decodeDouble.  Each has a valid
+    // leading prefix that from_chars would accept on its own; requiring the
+    // entire token be consumed rejects them instead of silently truncating.
+    for (char const* bad : {"1+2", "1-2", "1.2.3", "1e5e6", "1..2", "++5", "1e", "1e+", ".", "-"})
+        EXPECT_FALSE(parseValue(bad).has_value()) << bad;
 }
 
 TEST(json_value, edge_cases)
