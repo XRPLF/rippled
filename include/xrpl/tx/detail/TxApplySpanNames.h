@@ -51,9 +51,11 @@
  *  @endcode
  *
  *  @code
- *      // Transactor::operator() uses span() with prefix + suffix:
- *      auto span = SpanGuard::span(
- *          TraceCategory::Transactions, seg::tx, tx_apply_span::op::transactor);
+ *      // Transactor::operator() also uses hashSpan on the same txID so it
+ *      // co-traces with preflight and preclaim under one trace_id:
+ *      auto span = SpanGuard::hashSpan(
+ *          TraceCategory::Transactions, tx_apply_span::transactor,
+ *          txID.data(), txID.kBytes);
  *      span.setAttribute(tx_apply_span::attr::stage, tx_apply_span::val::apply);
  *  @endcode
  */
@@ -79,6 +81,9 @@ inline constexpr auto transactor = makeStr("transactor");
 inline constexpr auto preflight = join(seg::tx, op::preflight);
 /// "tx.preclaim" — full name for hashSpan() at the preclaim stage.
 inline constexpr auto preclaim = join(seg::tx, op::preclaim);
+/// "tx.transactor" — full name for hashSpan() at the apply stage. Shares the
+/// txID-derived trace_id so it co-traces with tx.preflight and tx.preclaim.
+inline constexpr auto transactor = join(seg::tx, op::transactor);
 
 // ===== Attribute keys ======================================================
 

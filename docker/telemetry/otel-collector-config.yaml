@@ -48,6 +48,15 @@ processors:
         action: delete
       - key: telemetry.sdk.version
         action: delete
+  # Defense-in-depth: hash path-finding account attributes. The xrpld SDK
+  # already hashes these before export, but a node that emitted raw values
+  # is caught here so raw addresses never reach the backend.
+  attributes/hash:
+    actions:
+      - key: pathfind_source_account
+        action: hash
+      - key: pathfind_dest_account
+        action: hash
 
 exporters:
   debug:
@@ -66,5 +75,5 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [resource/tier, resource/stripsdk, batch]
+      processors: [resource/tier, resource/stripsdk, attributes/hash, batch]
       exporters: [debug, otlp/tempo]
