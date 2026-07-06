@@ -1,0 +1,28 @@
+# Grafana contact-point provisioning for rippled OTel alerts.
+#
+# Phase 9: Internal metric gap fill — alerting on health-critical metrics.
+#
+# A contact point is where a firing alert is delivered. This stack ships a
+# single webhook receiver as a working default for local development. To route
+# alerts to a real destination, replace the webhook `url` below, or add a
+# `slack` / `email` receiver to the same contact point (see ALERTING.md).
+#
+# The default anonymous-admin Grafana in docker-compose.yml picks this file up
+# from /etc/grafana/provisioning/alerting/ on startup.
+
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: xrpld-default
+    receivers:
+      # Local-dev webhook sink. Points at a placeholder host; alerts are
+      # emitted but silently dropped unless a receiver listens there.
+      # Swap the url for a real endpoint (PagerDuty/Opsgenie/custom) or
+      # replace the whole receiver block with a slack/email type.
+      - uid: xrpld-default-webhook
+        type: webhook
+        settings:
+          url: http://localhost:9999/xrpld-alerts
+          httpMethod: POST
+        disableResolveMessage: false
