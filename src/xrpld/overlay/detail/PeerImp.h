@@ -2,28 +2,59 @@
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Compression.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/Slot.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/UptimeClock.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/core/LoadEvent.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/Handoff.h>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
 #include <atomic>
+#include <chrono>
+#include <cstddef>
 #include <cstdint>
+#include <iterator>
+#include <memory>
+#include <mutex>
 #include <optional>
 #include <queue>
+#include <shared_mutex>
+#include <string>
+#include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -147,6 +178,12 @@ private:
     protocol::TMStatusChange lastStatus_;
     Resource::Consumer usage_;
     ChargeWithContext fee_;
+
+    // One-shot guard so concurrent JobQueue workers cannot double-count
+    // the per-connection peer-disconnect-by-charge metric (and cannot
+    // post duplicate fail() calls) when several queued requests cross
+    // kDropThreshold before the first fail() lands on the strand.
+    std::atomic<bool> chargeDisconnectFired_{false};
     std::shared_ptr<PeerFinder::Slot> const slot_;
     boost::beast::multi_buffer readBuffer_;
     http_request_type request_;
@@ -285,12 +322,11 @@ public:
     removeTxQueue(uint256 const& hash) override;
 
     /** Send a set of PeerFinder endpoints as a protocol message. */
-    template <
-        class FwdIt,
-        class = typename std::enable_if_t<
-            std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>>>
+    template <class FwdIt>
     void
-    sendEndpoints(FwdIt first, FwdIt last);
+    sendEndpoints(FwdIt first, FwdIt last)
+        requires(
+            std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>);
 
     beast::IP::Endpoint
     getRemoteAddress() const override
@@ -624,6 +660,67 @@ private:
 
     void
     processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m);
+
+protected:
+    // Kept `protected` so test subclasses (see
+    // TMGetObjectByHash_test) can drive the
+    // synchronous processor and the differential-pricing helper without
+    // routing through the JobQueue or going through `friend` plumbing.
+    // Production callers reach these members only via
+    // `onMessage(TMGetObjectByHash)` → JobQueue → `processGetObjectByHash`.
+
+    /** Process a generic-query TMGetObjectByHash message.
+
+        Dispatched from `onMessage(TMGetObjectByHash)` to the JobQueue
+        (`JtLedgerReq`) so synchronous NodeStore lookups do not block the
+        peer's I/O strand. Caps iteration at `Tuning::kHardMaxReplyNodes`
+        regardless of hit/miss outcome and applies differential pricing
+        via `computeGetObjectByHashFee()` after the fetch loop completes.
+
+        @param m The protocol message containing requested object hashes.
+     */
+    void
+    processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> const& m);
+
+    /** Compute the per-message resource charge for a TMGetObjectByHash
+        request based on how much work was actually performed.
+
+        The charge has three components on top of the base
+        `Resource::kFeeModerateBurdenPeer`:
+          - per-hit lookup cost (cheap; usually served from cache)
+          - per-miss lookup cost (expensive node store seeks)
+          - request-size band surcharge (escalates abusive batch sizes)
+
+        The first `Tuning::kFreeObjectsPerRequest` objects are free so
+        that legitimate `InboundLedger::getNeededHashes()` traffic
+        (at most 8 objects) is unaffected.
+
+        @param requested Number of objects requested by the message. This
+                          value is used for request-size pricing and may
+                          exceed `Tuning::kHardMaxReplyNodes` when this
+                          helper is called directly, even though processing
+                          caps the iterations to `Tuning::kHardMaxReplyNodes`.
+        @param found     Number of objects successfully returned in the
+                         reply.
+        @return A `Resource::Charge` whose cost reflects the work performed.
+     */
+    static Resource::Charge
+    computeGetObjectByHashFee(int const requested, int const found);
+
+    /** Read-only accessor for the accumulated peer-message charge.
+
+        Exposed at `protected` scope so test subclasses can verify the
+        oversized-request rejection path (Layer 1) without invoking the
+        full JobQueue handler. Production callers should never read this back —
+        the value is consumed by `charge()`/`disconnect()` internally.
+
+        @return The current `Resource::Charge` accumulated on `fee_`.
+     */
+    Resource::Charge
+    currentFeeCharge() const
+    {
+        return fee_.fee;
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -689,9 +786,10 @@ PeerImp::PeerImp(
         << id_;
 }
 
-template <class FwdIt, class>
+template <class FwdIt>
 void
 PeerImp::sendEndpoints(FwdIt first, FwdIt last)
+    requires(std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>)
 {
     protocol::TMEndpoints tm;
 

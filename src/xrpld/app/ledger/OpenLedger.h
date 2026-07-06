@@ -3,15 +3,24 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/PerfLog.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/CachedSLEs.h>
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/shamap/SHAMap.h>
 
+#include <exception>
+#include <functional>
+#include <memory>
 #include <mutex>
+#include <string>
+#include <string_view>
 
 namespace xrpl {
 
@@ -149,7 +158,7 @@ public:
         bool retriesFirst,
         OrderedTxs& retries,
         ApplyFlags flags,
-        std::string const& suffix = "",
+        std::string_view suffix = "",
         modify_type const& f = {});
 
 private:

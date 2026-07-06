@@ -1,14 +1,29 @@
 #pragma once
 
-#include <xrpl/basics/BasicConfig.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/TaggedCache.ipp>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
-#include <xrpl/protocol/SystemParameters.h>
 
+#include <atomic>
 #include <condition_variable>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace xrpl {
+class Section;
+}  // namespace xrpl
 
 namespace xrpl::NodeStore {
 

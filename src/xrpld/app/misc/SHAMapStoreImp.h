@@ -1,17 +1,33 @@
 #pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DatabaseRotating.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/State.h>
 #include <xrpl/shamap/FullBelowCache.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/shamap/TreeNodeCache.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <string>
 #include <thread>
 
 namespace xrpl {

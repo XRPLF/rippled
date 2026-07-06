@@ -16,7 +16,7 @@
 #include <cstdint>
 #include <iterator>
 #include <string>
-#include <system_error>
+#include <system_error>  // IWYU pragma: keep
 
 namespace xrpl {
 

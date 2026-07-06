@@ -1,6 +1,11 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace xrpl::test {
 
@@ -24,7 +29,7 @@ class CheckMessageLogs : public Logs
         void
         write(beast::Severity level, std::string const& text) override
         {
-            if (text.find(owner_.msg_) != std::string::npos)
+            if (text.contains(owner_.msg_))
                 *owner_.pFound_ = true;
         }
 

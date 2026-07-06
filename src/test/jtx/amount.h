@@ -3,14 +3,26 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/tags.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <cmath>
+#include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <ostream>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -81,19 +93,16 @@ public:
 
     /** drops */
     template <class T>
-    PrettyAmount(
-        T v,
-        std::enable_if_t<
-            sizeof(T) >= sizeof(int) && std::is_integral_v<T> && std::is_signed_v<T>>* = nullptr)
+    PrettyAmount(T v)
+        requires(sizeof(T) >= sizeof(int) && std::is_integral_v<T> && std::is_signed_v<T>)
         : amount_((v > 0) ? v : -v, v < 0)
     {
     }
 
     /** drops */
     template <class T>
-    PrettyAmount(
-        T v,
-        std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_unsigned_v<T>>* = nullptr)
+    PrettyAmount(T v)
+        requires(sizeof(T) >= sizeof(int) && std::is_unsigned_v<T>)
         : amount_(v)
     {
     }
@@ -270,9 +279,10 @@ struct XrpT
         @param v The number of XRP (not drops)
     */
     /** @{ */
-    template <class T, class = std::enable_if_t<std::is_integral_v<T>>>
+    template <class T>
     PrettyAmount
     operator()(T v) const
+        requires(std::is_integral_v<T>)
     {
         using TOut = std::conditional_t<std::is_signed_v<T>, std::int64_t, std::uint64_t>;
         return {TOut{v} * kJtxDropsPerXrp};
@@ -338,9 +348,10 @@ extern XrpT const XRP;  // NOLINT(readability-identifier-naming)
     Example:
         drops(10)   Returns PrettyAmount of 10 drops
 */
-template <class Integer, class = std::enable_if_t<std::is_integral_v<Integer>>>
+template <class Integer>
 PrettyAmount
 drops(Integer i)
+    requires(std::is_integral_v<Integer>)
 {
     return {i};
 }
@@ -424,11 +435,10 @@ public:
         return asset();
     }
 
-    template <
-        class T,
-        class = std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_arithmetic_v<T>>>
+    template <class T>
     PrettyAmount
     operator()(T v) const
+        requires(sizeof(T) >= sizeof(int) && std::is_arithmetic_v<T>)
     {
         // VFALCO NOTE Should throw if the
         //             representation of v is not exact.

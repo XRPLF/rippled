@@ -1,6 +1,11 @@
 #pragma once
 
+#include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
+
+#include <algorithm>
+#include <chrono>
+#include <cstddef>
 
 namespace xrpl::PeerFinder {
 

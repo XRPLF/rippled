@@ -1,16 +1,20 @@
 #pragma once
 
-#include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/Ledger.h>
-#include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
 #include <xrpl/protocol/LedgerShortcut.h>
 #include <xrpl/server/NetworkOPs.h>
 
-#include <optional>
+#include <org/xrpl/rpc/v1/ledger.pb.h>
+
+#include <cstdint>
+#include <expected>
+#include <memory>
 
 namespace xrpl {
 
@@ -163,11 +167,11 @@ ledgerFromSpecifier(
  *
  * @param context The RPC JsonContext containing request parameters and
  * environment.
- * @return Expected<std::shared_ptr<Ledger const>, json::Value>
+ * @return std::expected<std::shared_ptr<Ledger const>, json::Value>
  *         On success, contains a shared pointer to the requested Ledger.
  *         On failure, contains a json::Value describing the error.
  */
-Expected<std::shared_ptr<Ledger const>, json::Value>
+std::expected<std::shared_ptr<Ledger const>, json::Value>
 getOrAcquireLedger(RPC::JsonContext const& context);
 
 }  // namespace RPC
