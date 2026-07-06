@@ -18,7 +18,6 @@
 #include <shamap/common.h>
 
 #include <chrono>
-#include <cstddef>
 #include <cstdint>
 #include <list>
 #include <utility>
