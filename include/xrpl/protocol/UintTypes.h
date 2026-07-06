@@ -1,9 +1,11 @@
 #pragma once
 
-#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
-#include <xrpl/protocol/AccountID.h>
+
+#include <functional>
+#include <ostream>
+#include <string>
 
 namespace xrpl {
 namespace detail {

@@ -2,7 +2,8 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/Output.h>
-#include <xrpl/json/json_value.h>
+
+#include <string>
 
 namespace xrpl {
 

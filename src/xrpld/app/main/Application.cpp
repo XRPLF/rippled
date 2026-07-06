@@ -74,6 +74,7 @@
 #include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
+#include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
@@ -2270,7 +2271,7 @@ fixConfigPorts(Config& config, Endpoints const& endpoints)
         auto const optPort = section.get(Keys::kPort);
         if (optPort)
         {
-            std::uint16_t const port = beast::lexicalCast<std::uint16_t>(*optPort);
+            auto const port = beast::lexicalCast<std::uint16_t>(*optPort);
             if (port == 0u)
                 section.set(Keys::kPort, std::to_string(ep.port()));
         }
