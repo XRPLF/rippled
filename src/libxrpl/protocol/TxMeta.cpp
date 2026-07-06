@@ -27,13 +27,12 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
     , ledgerSeq_(ledger)
     , index_(obj.getFieldU32(sfTransactionIndex))
     , result_(obj.getFieldU8(sfTransactionResult))
-    , nodes_(obj.getFieldArray(sfAffectedNodes))
+    , nodes_([&obj] {
+        auto const affectedNodes = dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
+        XRPL_ASSERT(affectedNodes, "xrpl::TxMeta::TxMeta(STObject) : type cast succeeded");
+        return affectedNodes != nullptr ? *affectedNodes : obj.getFieldArray(sfAffectedNodes);
+    }())
 {
-    auto affectedNodes = dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
-    XRPL_ASSERT(affectedNodes, "xrpl::TxMeta::TxMeta(STObject) : type cast succeeded");
-    if (affectedNodes != nullptr)
-        nodes_ = *affectedNodes;
-
     setAdditionalFields(obj);
 }
 
