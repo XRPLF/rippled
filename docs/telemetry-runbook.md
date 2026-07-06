@@ -579,7 +579,7 @@ The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTe
 | `xrpld_{category}_Bytes_In/Out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
 | `xrpld_{category}_Messages_In/Out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
 
-#### OTel MetricsRegistry Gauges (Phase 9)
+#### OTel MetricsRegistry Gauges
 
 These gauges are exported via the OTel Metrics SDK `PeriodicMetricReader` (10s interval), NOT through beast::insight.
 
@@ -871,6 +871,32 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | `ledger.store`                 | `{span_name="ledger.store"}`                 | Ledger Ops (Store Rate)                       |
 | `peer.proposal.receive`        | `{span_name="peer.proposal.receive"}`        | Peer Network (Rate, Trusted/Untrusted)        |
 | `peer.validation.receive`      | `{span_name="peer.validation.receive"}`      | Peer Network (Rate, Trusted/Untrusted)        |
+
+## Alerting
+
+Grafana ships six provisioned alert rules on the health-critical metrics, so a
+stock stack alerts out of the box with no UI setup. Rules are loaded from
+`docker/telemetry/grafana/provisioning/alerting/` on startup and appear under
+**Alerting → Alert rules**, folder **xrpld**.
+
+Each rule runs every minute against the Prometheus datasource over a 5-minute
+window and groups by `exported_instance`, so every node alerts independently.
+An alert fires only after its condition holds for the `for` dwell time.
+
+| Alert                   | Severity | Fires when                                      | For |
+| ----------------------- | -------- | ----------------------------------------------- | --- |
+| `LedgerHistoryMismatch` | critical | `rate(xrpld_ledger_history_mismatch_total)` > 0 | 5m  |
+| `LedgerCloseStalled`    | critical | `rate(xrpld_ledgers_closed_total)` ≈ 0          | 3m  |
+| `ValidationsMissed`     | warning  | `rate(xrpld_validation_missed_total)` > 0       | 5m  |
+| `ValidationsNotChecked` | warning  | `rate(xrpld_validations_checked_total)` ≈ 0     | 5m  |
+| `JobQueueTxOverflow`    | warning  | `rate(xrpld_jq_trans_overflow_total)` > 0       | 5m  |
+| `JobQueueLatencyHigh`   | warning  | p99 `xrpld_job_queued_duration_us` > 1s         | 5m  |
+
+Alerts route through the `xrpld-default` contact point, which ships as a
+local-dev webhook to a placeholder URL — alerts fire but go nowhere until it is
+pointed at a real receiver. See
+[ALERTING.md](../docker/telemetry/ALERTING.md) for per-alert causes, threshold
+tuning, and how to wire alerts to Slack/email/PagerDuty.
 
 ## Log-Trace Correlation
 

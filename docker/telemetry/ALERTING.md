@@ -1,8 +1,8 @@
 # rippled OpenTelemetry Alerting Runbook
 
-Phase 9 exports rippled's internal metrics and provisions Grafana alert rules
-on the health-critical ones. This document explains each alert, its likely
-cause, and how to point alerts at a real receiver.
+rippled exports its internal metrics and provisions Grafana alert rules on the
+health-critical ones. This document explains each alert, its likely cause, and
+how to point alerts at a real receiver.
 
 The rules are provisioned from
 `grafana/provisioning/alerting/` and load automatically when the Grafana
