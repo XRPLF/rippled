@@ -4565,6 +4565,56 @@ public:
         BEAST_EXPECT(issuerSponsoredAfter == issuerSponsoredBefore);
     }
 
+    void
+    testFeeSponsoredVaultInvariant()
+    {
+        // The ValidVault invariant checks that the vault's balance and the
+        // depositor's balance change by equal amounts. For XRP vaults it adds the
+        // fee back into the depositor's balance change: normally the depositor
+        // pays the fee, so their balance drops by (deposit amount + fee), and
+        // adding the fee back leaves just the deposit amount to compare against
+        // the vault. But when a fee sponsor pays, the depositor's balance drops
+        // by only the deposit amount, so the fee must NOT be added back or the
+        // equal-amount check fails.
+        testcase("Fee-sponsored VaultDeposit/VaultWithdraw pass ValidVault invariant");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        env.fund(XRP(10000), alice, sponsor);
+        env.close();
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = xrpAsset});
+        env(vaultTx);
+        env.close();
+
+        // Control: the same deposit shape, unsponsored, succeeds.
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(100)}),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Fee-sponsored (co-signed) deposit succeeds.
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(100)}),
+            Fee(XRP(1)),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // The same helper (deltaAssetsTxAccount) drives the withdraw path, so a
+        // fee-sponsored withdrawal back to the depositor's own account also
+        // passes on the destination side.
+        env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(50)}),
+            Fee(XRP(1)),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tesSUCCESS));
+        env.close();
+    }
+
 protected:
     void
     testSponsor()
@@ -4602,6 +4652,8 @@ protected:
 
         testZeroBalanceSponsoredPaymentFeePayerCheck();
         testTrustSetCounterpartySponsorMisroute();
+
+        testFeeSponsoredVaultInvariant();
     }
 
     void
