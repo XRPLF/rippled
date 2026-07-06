@@ -134,7 +134,7 @@ boost::multiprecision::checked_uint512_t
 toBoostMP(std::span<std::uint64_t> in)
 {
     boost::multiprecision::checked_uint512_t mbp = 0;
-    for (unsigned long& i : std::views::reverse(in))
+    for (auto& i : std::views::reverse(in))
     {
         mbp <<= 64;
         mbp += i;
