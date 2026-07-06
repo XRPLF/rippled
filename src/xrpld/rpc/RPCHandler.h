@@ -1,7 +1,12 @@
 #pragma once
 
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
+
+#include <xrpl/json/json_value.h>
+
+#include <string>
 
 namespace xrpl::RPC {
 

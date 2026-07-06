@@ -4,7 +4,12 @@
 #include <xrpld/peerfinder/Slot.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
-#include <xrpl/basics/random.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/beast/utility/instrumentation.h>
+
+#include <cstddef>
+#include <sstream>
+#include <string>
 
 namespace xrpl::PeerFinder {
 

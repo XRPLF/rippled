@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 
 #include <boost/asio/ssl/context.hpp>
 

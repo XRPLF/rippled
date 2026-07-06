@@ -4,6 +4,10 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+
 // VFALCO NOTE Intentionally not in the NodeStore namespace
 
 namespace xrpl {

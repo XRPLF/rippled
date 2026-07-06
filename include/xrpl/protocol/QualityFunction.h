@@ -1,8 +1,14 @@
 #pragma once
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Quality.h>
+
+#include <cstdint>
+#include <optional>
+#include <stdexcept>
 
 namespace xrpl {
 

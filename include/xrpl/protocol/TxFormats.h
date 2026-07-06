@@ -1,7 +1,9 @@
 #pragma once
 
 #include <xrpl/protocol/KnownFormats.h>
+#include <xrpl/protocol/SOTemplate.h>
 
+#include <cstdint>
 #include <vector>
 
 namespace xrpl {

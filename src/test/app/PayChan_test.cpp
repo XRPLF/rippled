@@ -19,7 +19,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/Zero.h>  // IWYU pragma: keep
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -1323,10 +1323,10 @@ struct PayChan_test : public beast::unit_test::Suite
         auto sliceToHex = [](Slice const& slice) {
             std::string s;
             s.reserve(2 * slice.size());
-            for (int i = 0; i < slice.size(); ++i)
+            for (std::uint8_t const byte : slice)
             {
-                s += "0123456789ABCDEF"[((slice[i] & 0xf0) >> 4)];
-                s += "0123456789ABCDEF"[((slice[i] & 0x0f) >> 0)];
+                s += "0123456789ABCDEF"[((byte & 0xf0) >> 4)];
+                s += "0123456789ABCDEF"[((byte & 0x0f) >> 0)];
             }
             return s;
         };

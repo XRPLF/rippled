@@ -1,11 +1,15 @@
 #pragma once
 
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFlags.h>
 
+#include <cstdint>
+#include <stdexcept>
 #include <utility>
 
 namespace xrpl {

@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <tuple>
@@ -132,10 +133,10 @@ boost::multiprecision::checked_uint512_t
 toBoostMP(std::span<std::uint64_t> in)
 {
     boost::multiprecision::checked_uint512_t mbp = 0;
-    for (auto i = in.rbegin(); i != in.rend(); ++i)
+    for (auto& word : std::views::reverse(in))
     {
         mbp <<= 64;
-        mbp += *i;
+        mbp += word;
     }
     return mbp;
 }
