@@ -8,7 +8,6 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
-#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <exception>
@@ -604,13 +603,15 @@ TEST(json_value, parse_double)
         return j["v"];
     };
 
-    // Well-formed doubles decode to the expected value.
+    // Well-formed doubles decode to the expected value.  1e300 is large but
+    // still representable, so it parses (unlike the out-of-range cases below).
     for (auto const& [text, expected] :
          {std::pair{"2.5", 2.5},
           std::pair{"-3.25e2", -325.0},
           std::pair{"0.0", 0.0},
           std::pair{"1E3", 1000.0},
-          std::pair{"-0.5e-1", -0.05}})
+          std::pair{"-0.5e-1", -0.05},
+          std::pair{"1e300", 1e300}})
     {
         auto const v = parseValue(text);
         ASSERT_TRUE(v.has_value()) << text;
@@ -618,19 +619,12 @@ TEST(json_value, parse_double)
         EXPECT_EQ(v->asDouble(), expected) << text;
     }
 
-    // A magnitude too large to represent parses successfully as +/-infinity,
-    // matching the historical sscanf("%lf") behavior.
-    {
-        auto const v = parseValue("1e400");
-        ASSERT_TRUE(v.has_value());
-        EXPECT_TRUE(std::isinf(v->asDouble()));
-        EXPECT_GT(v->asDouble(), 0.0);
-
-        auto const vNeg = parseValue("-1e400");
-        ASSERT_TRUE(vNeg.has_value());
-        EXPECT_TRUE(std::isinf(vNeg->asDouble()));
-        EXPECT_LT(vNeg->asDouble(), 0.0);
-    }
+    // Magnitudes with no finite double representation are rejected.  The
+    // previous sscanf("%lf") accepted these as +/-infinity, but that value
+    // cannot be re-serialized as valid JSON, so decodeDouble now treats an
+    // out-of-range token as a parse error.
+    for (char const* oor : {"1e400", "-1e400", "0.001e500", "1e-400", "-1e-400", "123e-500"})
+        EXPECT_FALSE(parseValue(oor).has_value()) << oor;
 
     // readNumber() collects any run of digits and '.eE+-' into a single Double
     // token, so these malformed tokens reach decodeDouble.  Each has a valid

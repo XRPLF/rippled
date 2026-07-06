@@ -607,19 +607,20 @@ Reader::decodeDouble(Token& token)
 {
     double value = 0;
     auto const [ptr, ec] = std::from_chars(token.start, token.end, value);
-    // A magnitude too large/small to represent (e.g. 1e400) yields
-    // result_out_of_range with value set to +/-inf or 0.  The previous
-    // sscanf("%lf") accepted those, so treat them as success too; only a
-    // genuine parse failure is an error.
-    //
-    // readNumber() is permissive about which characters it collects into a
-    // token (it will, for example, keep a '+' or '-' that appears mid-token),
-    // so also require that from_chars consumed the *entire* token.  Otherwise a
-    // token like "1+2" would stop after "1" with no error and silently decode
-    // as 1.  A valid but out-of-range token still matches the full float
-    // pattern, so ptr == token.end holds there as well.
-    if ((ec != std::errc{} && ec != std::errc::result_out_of_range) || ptr != token.end)
+
+    // Reject anything from_chars could not turn into a finite double:
+    //   - ec != std::errc{}: no valid conversion, or an out-of-range magnitude
+    //     (e.g. 1e400) that has no double representation.  The previous
+    //     sscanf("%lf") accepted the latter but produced a +/-infinity that
+    //     cannot be re-serialized as valid JSON, so rejecting is both simpler
+    //     and more correct.
+    //   - ptr != token.end: only a prefix parsed.  readNumber() is permissive
+    //     about which characters it collects into a token (it will, for
+    //     example, keep a '+' or '-' that appears mid-token), so a token like
+    //     "1+2" would otherwise stop after "1" and silently decode as 1.
+    if (ec != std::errc{} || ptr != token.end)
         return addError("'" + std::string(token.start, token.end) + "' is not a number.", token);
+
     currentValue() = value;
     return true;
 }
