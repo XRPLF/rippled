@@ -3968,19 +3968,24 @@ public:
                 sponsor::As(sponsor, spfSponsorReserve),
                 Sig(sfSponsorSignature, sponsor));
 
-            auto const sponsorSle = env.le(keylet::account(sponsor));
-            auto const aliceSle = env.le(keylet::account(alice));
-            BEAST_EXPECT(sponsorSle->at(sfSponsoringOwnerCount) == 1);
-            BEAST_EXPECT(aliceSle->at(sfOwnerCount) == 1);
-            BEAST_EXPECT(aliceSle->at(sfSponsoredOwnerCount) == 1);
+            {
+                auto const sponsorSle = env.le(keylet::account(sponsor));
+                auto const aliceSle = env.le(keylet::account(alice));
+                BEAST_EXPECT(sponsorSle->at(sfSponsoringOwnerCount) == 1);
+                BEAST_EXPECT(aliceSle->at(sfOwnerCount) == 1);
+                BEAST_EXPECT(aliceSle->at(sfSponsoredOwnerCount) == 1);
+            }
 
             incLgrSeqForAccDel(env, alice);
 
             // AccountDelete should succeed
-            auto const requiredFee = drops(env.current()->fees().increment);
-            env(acctdelete(alice, bob), Fee(requiredFee), Ter(tesSUCCESS));
-            BEAST_EXPECT(!env.le(keylet::account(alice)));
-            BEAST_EXPECT(sponsorSle->at(sfSponsoringOwnerCount) == 0)
+            {
+                auto const requiredFee = drops(env.current()->fees().increment);
+                env(acctdelete(alice, bob), Fee(requiredFee), Ter(tesSUCCESS));
+                BEAST_EXPECT(!env.le(keylet::account(alice)));
+                auto const sponsorSle = env.le(keylet::account(sponsor));
+                BEAST_EXPECT(sponsorSle->at(sfSponsoringOwnerCount) == 0);
+            }
         }
     }
 
