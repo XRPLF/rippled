@@ -53,8 +53,12 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.exists(keylet::account(ctx.tx[sfAccount])))
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
-    if (!ctx.view.exists(keylet::account(ctx.tx[sfAuthorize])))
+    auto const sleAuthorize = ctx.view.read(keylet::account(ctx.tx[sfAuthorize]));
+    if (!sleAuthorize)
         return tecNO_TARGET;
+
+    if (isPseudoAccount(sleAuthorize))
+        return tecNO_PERMISSION;
 
     // Deleting the delegate object is invalid if it doesn’t exist.
     if (ctx.tx.getFieldArray(sfPermissions).empty() &&
@@ -95,11 +99,16 @@ DelegateSet::doApply()
     if (permissions.empty())
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+    auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
-    if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sleOwner, preFeeBalance_, *sponsorSle, 1, 0, ctx_.journal);
+    if (auto const ret = checkReserve(
+            ctx_.getApplyViewContext(),
+            sleOwner,
+            preFeeBalance_,
+            *sponsorSle,
+            {.ownerCountDelta = 1},
+            ctx_.journal);
         !isTesSuccess(ret))
         return ret;
 
@@ -129,7 +138,7 @@ DelegateSet::doApply()
     (*sle)[sfDestinationNode] = *destPage;
 
     ctx_.view().insert(sle);
-    adjustOwnerCount(ctx_.view(), sleOwner, *sponsorSle, 1, ctx_.journal);
+    increaseOwnerCount(ctx_.view(), sleOwner, *sponsorSle, 1, ctx_.journal);
     addSponsorToLedgerEntry(sle, *sponsorSle);
 
     return tesSUCCESS;
@@ -170,7 +179,7 @@ DelegateSet::deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j)
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCountObj(view, sleOwner, sle, -1, j);
+    decreaseOwnerCountForObject(view, sleOwner, sle, 1, j);
 
     view.erase(sle);
 

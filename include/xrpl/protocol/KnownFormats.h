@@ -7,7 +7,11 @@
 #include <boost/container/flat_map.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <forward_list>
+#include <stdexcept>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -118,13 +122,13 @@ public:
     }
 
     // begin() and end() are provided for testing purposes.
-    [[nodiscard]] typename std::forward_list<Item>::const_iterator
+    [[nodiscard]] std::forward_list<Item>::const_iterator
     begin() const
     {
         return formats_.begin();
     }
 
-    [[nodiscard]] typename std::forward_list<Item>::const_iterator
+    [[nodiscard]] std::forward_list<Item>::const_iterator
     end() const
     {
         return formats_.end();

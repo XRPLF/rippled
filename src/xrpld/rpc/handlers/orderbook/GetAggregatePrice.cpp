@@ -17,6 +17,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/jss.h>

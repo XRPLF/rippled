@@ -2,8 +2,14 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/SignerUtils.h>
+#include <test/jtx/JTx.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/STAmount.h>
+
+#include <cstdint>
+#include <optional>
 #include <utility>
 
 namespace xrpl::test::jtx::sponsor {
@@ -82,5 +88,8 @@ public:
 
 json::Value
 ledgerEntry(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee);
+
+STAmount
+sponsorFeeBalance(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee);
 
 }  // namespace xrpl::test::jtx::sponsor

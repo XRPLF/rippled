@@ -90,16 +90,16 @@ PaymentChannelFund::doApply()
     {
         // Check reserve and funds availability
         auto const balance = (*sle)[sfBalance];
-        auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+        auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
         if (auto const ret =
-                checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, *sponsorSle, 0, 0, j_);
+                checkReserve(ctx_.getApplyViewContext(), sle, balance, *sponsorSle, {}, j_);
             !isTesSuccess(ret))
             return ret;
 
-        if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sle, balance - ctx_.tx[sfAmount], {}, 0, 0, j_);
+        if (auto const ret = checkReserve(
+                ctx_.getApplyViewContext(), sle, balance - ctx_.tx[sfAmount], {}, {}, j_);
             !isTesSuccess(ret))
             return tecUNFUNDED;
     }

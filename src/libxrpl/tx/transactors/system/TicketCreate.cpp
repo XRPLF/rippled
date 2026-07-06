@@ -75,7 +75,11 @@ TicketCreate::doApply()
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
     std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
-    if (preFeeBalance_ < accountReserve(view(), sleAccountRoot, j_, ticketCount))
+    if (preFeeBalance_ < accountReserve(
+                             view(),
+                             sleAccountRoot,
+                             j_,
+                             {.ownerCountDelta = static_cast<std::int32_t>(ticketCount)}))
         return tecINSUFFICIENT_RESERVE;
 
     beast::Journal const viewJ{ctx_.registry.get().getJournal("View")};
@@ -95,7 +99,7 @@ TicketCreate::doApply()
     for (std::uint32_t i = 0; i < ticketCount; ++i)
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
-        Keylet const ticketKeylet = keylet::kTicket(accountID_, curTicketSeq);
+        Keylet const ticketKeylet = keylet::ticket(accountID_, curTicketSeq);
         SLE::pointer const sleTicket = std::make_shared<SLE>(ticketKeylet);
 
         sleTicket->setAccountID(sfAccount, accountID_);
@@ -116,12 +120,12 @@ TicketCreate::doApply()
     }
 
     // Update the record of the number of Tickets this account owns.
-    std::uint32_t const oldTicketCount = (*(sleAccountRoot))[~sfTicketCount].valueOr(0u);
+    std::uint32_t const oldTicketCount = (*sleAccountRoot)[~sfTicketCount].valueOr(0u);
 
     sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 
     // Every added Ticket counts against the creator's reserve.
-    adjustOwnerCount(view(), accountID_, {}, ticketCount, viewJ);
+    increaseOwnerCount(view(), accountID_, {}, ticketCount, viewJ);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.

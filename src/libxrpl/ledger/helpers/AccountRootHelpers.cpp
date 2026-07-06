@@ -165,7 +165,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
     // Pseudo-accounts have no reserve requirement
     auto const reserve = isPseudoAccount(sle)
         ? XRPAmount{0}
-        : baseAccountReserve(view, currentOwnerCount, currentAccountCount);
+        : view.fees().accountReserve(currentOwnerCount, currentAccountCount);
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
@@ -212,134 +212,160 @@ adjustOwnerCountImpl(
     view.update(sle);
 }
 
-void
-adjustOwnerCount(
+static void
+adjustOwnerCountSigned(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref sponsorSle,
-    std::int32_t ownerCountAdj,
+    std::int32_t adjustment,
     beast::Journal j)
 {
+    XRPL_ASSERT(accountSle, "xrpl::adjustOwnerCountSigned : valid account sle");
     if (!accountSle)
-        Throw<std::runtime_error>("xrpl::adjustOwnerCount : valid account sle");
+        return;  // LCOV_EXCL_LINE
 
     auto const sleType = accountSle->getType();
     bool const validType = sponsorSle ? sleType == ltACCOUNT_ROOT
                                       : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
+    XRPL_ASSERT(validType, "xrpl::adjustOwnerCountSigned : valid account sle type");
     if (!validType)
-        Throw<std::logic_error>("xrpl::adjustOwnerCount : valid account sle type");
+        return;  // LCOV_EXCL_LINE
 
-    XRPL_ASSERT(ownerCountAdj, "xrpl::adjustOwnerCount : nonzero ownerCountAdj input");
-    if (ownerCountAdj == 0)
-        return;
+    XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
 
     auto const accountID = accountSle->getAccountID(sfAccount);
     if (sponsorSle)
     {
-        if (sponsorSle->getType() != ltACCOUNT_ROOT)
-            Throw<std::logic_error>("xrpl::adjustOwnerCount : valid sponsor sle type");
+        bool const validSponsorType = sponsorSle->getType() == ltACCOUNT_ROOT;
+        XRPL_ASSERT(validSponsorType, "xrpl::adjustOwnerCountSigned : valid sponsor sle type");
+        if (!validSponsorType)
+            return;  // LCOV_EXCL_LINE
         auto const sponsorID = sponsorSle->getAccountID(sfAccount);
 
-        adjustOwnerCountImpl(view, accountSle, sfSponsoredOwnerCount, accountID, ownerCountAdj, j);
-        adjustOwnerCountImpl(view, sponsorSle, sfSponsoringOwnerCount, sponsorID, ownerCountAdj, j);
+        adjustOwnerCountImpl(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
+        adjustOwnerCountImpl(view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
 
         auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
-        if (sponsorshipSle && ownerCountAdj > 0)
+        if (sponsorshipSle && adjustment > 0)
         {
             // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new objects.
             // Removing/reassigning ownership of the object doesn't increase RemainingOwnerCount
-            // back. Don't call hook because this counter is not something that require reserve
+            // back. Don't call hook because this counter is not something that requires reserve
             // (like other sf...OwnerCounts do).
             adjustOwnerCountImpl(
-                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -ownerCountAdj, j, false);
+                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j, false);
         }
     }
-    adjustOwnerCountImpl(view, accountSle, sfOwnerCount, accountID, ownerCountAdj, j);
+    adjustOwnerCountImpl(view, accountSle, sfOwnerCount, accountID, adjustment, j);
 }
 
 void
-adjustOwnerCountObj(
+increaseOwnerCount(
+    ApplyView& view,
+    SLE::ref accountSle,
+    SLE::ref sponsorSle,
+    std::uint32_t count,
+    beast::Journal j)
+{
+    XRPL_ASSERT(
+        count != 0 && count <= std::numeric_limits<std::int32_t>::max(),
+        "xrpl::increaseOwnerCount : count in signed delta range");
+    if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
+        return;  // LCOV_EXCL_LINE
+
+    adjustOwnerCountSigned(view, accountSle, sponsorSle, static_cast<std::int32_t>(count), j);
+}
+
+void
+decreaseOwnerCount(
+    ApplyView& view,
+    SLE::ref accountSle,
+    SLE::ref sponsorSle,
+    std::uint32_t count,
+    beast::Journal j)
+{
+    XRPL_ASSERT(
+        count != 0 && count <= std::numeric_limits<std::int32_t>::max(),
+        "xrpl::decreaseOwnerCount : count in signed delta range");
+    if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
+        return;  // LCOV_EXCL_LINE
+
+    adjustOwnerCountSigned(view, accountSle, sponsorSle, -static_cast<std::int32_t>(count), j);
+}
+
+void
+decreaseOwnerCountForObject(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref objectSle,
-    std::int32_t accountCountAdj,
+    std::uint32_t count,
     beast::Journal j)
 {
+    XRPL_ASSERT(objectSle, "xrpl::decreaseOwnerCountForObject : valid object sle");
     if (!objectSle)
-        Throw<std::runtime_error>("xrpl::adjustOwnerCount : valid object sle");
-    if (objectSle->getType() == ltACCOUNT_ROOT)
-        Throw<std::logic_error>("xrpl::adjustOwnerCount : valid object sle type");
+        return;  // LCOV_EXCL_LINE
+
+    bool const validObjectType = objectSle->getType() != ltACCOUNT_ROOT;
+    XRPL_ASSERT(validObjectType, "xrpl::decreaseOwnerCountForObject : valid object sle type");
+    if (!validObjectType)
+        return;  // LCOV_EXCL_LINE
 
     SLE::ref sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
-    adjustOwnerCount(view, accountSle, sponsorSle, accountCountAdj, j);
+    decreaseOwnerCount(view, accountSle, sponsorSle, count, j);
 }
 
 XRPAmount
-accountReserve(
-    ReadView const& view,
-    SLE::const_ref sle,
-    beast::Journal j,
-    std::int32_t ownerCountAdj,
-    std::int32_t accountCountAdj)
+accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjustment adj)
 {
     if (!sle)
         Throw<std::runtime_error>("xrpl::accountReserve : valid sle");
     if (sle->getType() != ltACCOUNT_ROOT)
         Throw<std::logic_error>("xrpl::accountReserve : valid sle type");
 
-    std::uint32_t const currentOwnerCount = ownerCount(sle, j, ownerCountAdj);
-    std::uint32_t const currentAccountCount = accountCountImpl(sle, accountCountAdj, j);
+    std::uint32_t const currentOwnerCount = ownerCount(sle, j, adj.ownerCountDelta);
+    std::uint32_t const currentAccountCount = accountCountImpl(sle, adj.accountCountDelta, j);
 
-    return baseAccountReserve(view, currentOwnerCount, currentAccountCount);
-}
-
-XRPAmount
-baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t accountCount)
-{
-    auto const& fees = view.fees();
-    return (fees.reserve * accountCount) + (fees.increment * ownerCount);
+    return view.fees().accountReserve(currentOwnerCount, currentAccountCount);
 }
 
 TER
-checkInsufficientReserve(
-    ReadView const& view,
-    STTx const& tx,
+checkReserve(
+    ApplyViewContext ctx,
     SLE::const_ref accSle,
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,
-    std::int32_t ownerCountAdj,
-    std::int32_t accountCountAdj,
+    Adjustment adj,
     beast::Journal j)
 {
     if (sponsorSle)
     {
-        auto const sle = view.read(
+        auto const sle = ctx.view.read(
             keylet::sponsorship(
                 sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
 
         // A reserve-sponsored tx must carry a sponsor signature
         // (cosigning path) and/or have a pre-existing sponsorship SLE
         // (prefunded path). Absence of both is an internal invariant break.
-        if (isReserveSponsored(tx) && !sle && !tx.isFieldPresent(sfSponsorSignature))
+        if (isReserveSponsored(ctx.tx) && !sle && !ctx.tx.isFieldPresent(sfSponsorSignature))
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (sle)
         {
             auto const ownerCountAllowed = sle->getFieldU32(sfRemainingOwnerCount);
-            if (ownerCountAllowed < ownerCountAdj)
+            if (adj.ownerCountDelta > 0 &&
+                ownerCountAllowed < static_cast<std::uint32_t>(adj.ownerCountDelta))
                 return tecINSUFFICIENT_RESERVE;
         }
 
         auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance);
-        STAmount const sponsorReserve =
-            accountReserve(view, sponsorSle, j, ownerCountAdj, accountCountAdj);
+        STAmount const sponsorReserve = accountReserve(ctx.view, sponsorSle, j, adj);
 
         if (sponsorBalance < sponsorReserve)
             return tecINSUFFICIENT_RESERVE;
     }
     else
     {
-        STAmount const reserve = accountReserve(view, accSle, j, ownerCountAdj, accountCountAdj);
+        STAmount const reserve = accountReserve(ctx.view, accSle, j, adj);
         if (accBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }

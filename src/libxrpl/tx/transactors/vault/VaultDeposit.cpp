@@ -64,6 +64,9 @@ VaultDeposit::preflight(PreflightContext const& ctx)
 TER
 VaultDeposit::preclaim(PreclaimContext const& ctx)
 {
+    auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
+    auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
+
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecNO_ENTRY;
@@ -91,7 +94,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -108,13 +111,21 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    // Cannot deposit inside Vault an Asset frozen for the depositor
-    if (isFrozen(ctx.view, account, vaultAsset))
-        return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
+    if (fix330Enabled)
+    {
+        if (auto const ret = checkDepositFreeze(ctx.view, account, vaultAccount, vaultAsset))
+            return ret;
+    }
+    else
+    {
+        // Cannot deposit inside Vault an Asset frozen for the depositor
+        if (isFrozen(ctx.view, account, vaultAsset))
+            return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
 
-    // Cannot deposit if the shares of the vault are frozen
-    if (isFrozen(ctx.view, account, vaultShare))
-        return tecLOCKED;
+        // Cannot deposit if the shares of the vault are frozen
+        if (isFrozen(ctx.view, account, vaultShare))
+            return tecLOCKED;
+    }
 
     if (vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner))
     {
@@ -142,7 +153,6 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, account); !isTesSuccess(ter))
         return ter;
 
-    bool const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     auto const roundedAmount = fix320Enabled ? roundToVaultScale(amount, vault) : amount;
 
     if (fix320Enabled && roundedAmount == beast::kZero)
@@ -187,6 +197,7 @@ VaultDeposit::doApply()
 {
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     auto const vaultAsset = vault->at(sfAsset);
@@ -207,7 +218,7 @@ VaultDeposit::doApply()
 
     // Make sure the depositor can hold shares.
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -221,7 +232,7 @@ VaultDeposit::doApply()
     if (vault->isFlag(lsfVaultPrivate) && accountID_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
-                ctx_.view(), ctx_.tx, mptIssuanceID, accountID_, preFeeBalance_, j_);
+                applyViewContext, mptIssuanceID, accountID_, preFeeBalance_, j_);
             !isTesSuccess(err))
             return err;
     }
@@ -231,8 +242,7 @@ VaultDeposit::doApply()
         if (!view().exists(keylet::mptoken(mptIssuanceID, accountID_)))
         {
             if (auto const err = authorizeMPToken(
-                    view(),
-                    ctx_.tx,
+                    applyViewContext,
                     preFeeBalance_,
                     mptIssuanceID->value(),
                     accountID_,
@@ -248,8 +258,7 @@ VaultDeposit::doApply()
             XRPL_ASSERT(
                 accountID_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
-                    view(),
-                    ctx_.tx,
+                    applyViewContext,
                     preFeeBalance_,             // priorBalance
                     mptIssuanceID->value(),     // mptIssuanceID
                     sleIssuance->at(sfIssuer),  // account

@@ -22,7 +22,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -142,7 +141,7 @@ struct SEnv
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return baseAccountReserve(*env.current(), count);
+        return env.current()->fees().accountReserve(count, 1);
     }
 
     XRPAmount
@@ -307,9 +306,8 @@ struct BalanceTransfer
     [[nodiscard]] bool
     payeesReceived(STAmount const& reward) const
     {
-        return std::all_of(rewardAccounts.begin(), rewardAccounts.end(), [&](balance const& b) {
-            return b.diff() == reward;
-        });
+        return std::ranges::all_of(
+            rewardAccounts, [&](balance const& b) { return b.diff() == reward; });
     }
 
     bool
@@ -372,7 +370,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return baseAccountReserve(*XEnv(*this).env.current(), count);
+        return XEnv(*this).env.current()->fees().accountReserve(count, 1);
     }
 
     XRPAmount
@@ -2165,14 +2163,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                     scAttester, jvb, mcAlice, amt, payees[i], true, claimID, dst, signers[i]);
 
                 TER const expectedTER = i < quorum ? tesSUCCESS : TER{tecXCHAIN_NO_CLAIM_ID};
-                if (i + 1 == quorum)
-                {
-                    scEnv.tx(att, Ter(expectedTER)).close();
-                }
-                else
-                {
-                    scEnv.tx(att, Ter(expectedTER)).close();
-                }
+                scEnv.tx(att, Ter(expectedTER)).close();
 
                 if (i + 1 < quorum)
                 {
@@ -4376,6 +4367,7 @@ public:
     {
         using namespace jtx;
         uint64_t time = 0;
+        // NOLINTNEXTLINE(bugprone-random-generator-seed): fixed seed for reproducible test
         std::mt19937 gen(27);  // Standard mersenne_twister_engine
         std::uniform_int_distribution<uint32_t> distrib(0, 9);
 

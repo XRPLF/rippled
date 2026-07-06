@@ -173,7 +173,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
         return tesSUCCESS;
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
+    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -349,7 +349,7 @@ EscrowFinish::doApply()
     // Release the escrow reserve before delivery. Token delivery can
     // auto-create a destination holding, and the same sponsor may cover both
     // the escrow being removed and the holding being created.
-    adjustOwnerCountObj(ctx_.view(), account, slep, -1, ctx_.journal);
+    decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);
 
     STAmount const amount = slep->getFieldAmount(sfAmount);
     // Transfer amount to destination
@@ -370,8 +370,7 @@ EscrowFinish::doApply()
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
-                        ctx_.view(),
-                        ctx_.tx,
+                        ctx_.getApplyViewContext(),
                         lockedRate,
                         sled,
                         preFeeBalance_,

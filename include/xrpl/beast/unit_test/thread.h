@@ -6,7 +6,9 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 
+#include <exception>
 #include <functional>
+#include <string>
 #include <thread>
 #include <utility>
 

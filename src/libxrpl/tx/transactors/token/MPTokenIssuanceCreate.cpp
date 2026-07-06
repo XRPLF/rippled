@@ -39,7 +39,15 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfMutableFlags) && !ctx.rules.enabled(featureDynamicMPT))
         return false;
 
-    return true;
+    if (ctx.tx.isFlag(tfMPTCanHoldConfidentialBalance) &&
+        !ctx.rules.enabled(featureConfidentialTransfer))
+        return false;
+
+    // can not set tmfMPTCannotEnableCanHoldConfidentialBalance without featureConfidentialTransfer
+    auto const mutableFlags = ctx.tx[~sfMutableFlags];
+    return !mutableFlags ||
+        ((*mutableFlags & tmfMPTCannotEnableCanHoldConfidentialBalance) == 0u) ||
+        ctx.rules.enabled(featureConfidentialTransfer);
 }
 
 std::uint32_t
@@ -72,6 +80,10 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         // must also be set.
         if (fee > 0u && !ctx.tx.isFlag(tfMPTCanTransfer))
             return temMALFORMED;
+
+        // Confidential amounts are encrypted so transfer rate is disallowed.
+        if (fee > 0u && ctx.tx.isFlag(tfMPTCanHoldConfidentialBalance))
+            return temBAD_TRANSFER_FEE;
     }
 
     if (auto const domain = ctx.tx[~sfDomainID])
@@ -104,19 +116,18 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
 std::expected<MPTID, TER>
 MPTokenIssuanceCreate::create(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext ctx,
     beast::Journal journal,
     MPTCreateArgs const& args)
 {
-    auto const acct = view.peek(keylet::account(args.account));
+    auto const acct = ctx.view.peek(keylet::account(args.account));
     if (!acct)
         return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
     SLE::pointer sponsorSle;
     if (!isPseudoAccount(acct))
     {
-        auto sle = getTxReserveSponsor(view, tx);
+        auto sle = getTxReserveSponsor(ctx);
         if (!sle)
             return std::unexpected(sle.error());
         sponsorSle = std::move(*sle);
@@ -124,18 +135,18 @@ MPTokenIssuanceCreate::create(
 
     if (args.priorBalance)
     {
-        if (auto const ret = checkInsufficientReserve(
-                view, tx, acct, *(args.priorBalance), sponsorSle, 1, 0, journal);
+        if (auto const ret = checkReserve(
+                ctx, acct, *(args.priorBalance), sponsorSle, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
             return std::unexpected(ret);  // tecINSUFFICIENT_RESERVE
     }
 
     auto const mptId = makeMptID(args.sequence, args.account);
-    auto const mptIssuanceKeylet = keylet::mptIssuance(mptId);
+    auto const mptIssuanceKeylet = keylet::mptokenIssuance(mptId);
 
     // create the MPTokenIssuance
     {
-        auto const ownerNode = view.dirInsert(
+        auto const ownerNode = ctx.view.dirInsert(
             keylet::ownerDir(args.account), mptIssuanceKeylet, describeOwnerDir(args.account));
 
         if (!ownerNode)
@@ -173,7 +184,7 @@ MPTokenIssuanceCreate::create(
             // populate this after the pseudo-account's MPToken /
             // RippleState has been installed. A missing holding here
             // would dangle the pointer and is a programmer error.
-            auto const sleHolding = view.read(keylet::unchecked(*args.referenceHolding));
+            auto const sleHolding = ctx.view.read(keylet::unchecked(*args.referenceHolding));
             if (!sleHolding)
                 return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const type = sleHolding->getType();
@@ -184,11 +195,11 @@ MPTokenIssuanceCreate::create(
 
         addSponsorToLedgerEntry(mptIssuance, sponsorSle);
 
-        view.insert(mptIssuance);
+        ctx.view.insert(mptIssuance);
     }
 
     // Update owner count.
-    adjustOwnerCount(view, acct, sponsorSle, 1, journal);
+    increaseOwnerCount(ctx.view, acct, sponsorSle, 1, journal);
 
     return mptId;
 }
@@ -198,8 +209,7 @@ MPTokenIssuanceCreate::doApply()
 {
     auto const& tx = ctx_.tx;
     auto const result = create(
-        view(),
-        tx,
+        ctx_.getApplyViewContext(),
         j_,
         {
             .priorBalance = preFeeBalance_,

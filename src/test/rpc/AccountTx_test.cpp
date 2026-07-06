@@ -28,7 +28,6 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
@@ -591,7 +590,7 @@ class AccountTx_test : public beast::unit_test::Suite
             env(payChanCreate, Sig(alie));
             env.close();
 
-            std::string const payChanIndex{strHex(keylet::payChan(alice, gw, payChanSeq).key)};
+            std::string const payChanIndex{strHex(keylet::payChannel(alice, gw, payChanSeq).key)};
 
             {
                 json::Value payChanFund;
@@ -776,7 +775,7 @@ class AccountTx_test : public beast::unit_test::Suite
 
         // All it takes is a large enough XRP payment to resurrect
         // becky's account.  Try too small a payment.
-        env(pay(alice, becky, drops(baseAccountReserve(*env.current(), 0)) - drops(1)),
+        env(pay(alice, becky, drops(env.current()->fees().accountReserve(0, 1)) - drops(1)),
             Ter(tecNO_DST_INSUF_XRP));
         env.close();
 

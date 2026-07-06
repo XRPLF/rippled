@@ -152,6 +152,7 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
 TER
 DepositPreauth::doApply()
 {
+    auto applyViewContext = ctx_.getApplyViewContext();
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
         auto const sleOwner = view().peek(keylet::account(accountID_));
@@ -161,11 +162,16 @@ DepositPreauth::doApply()
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
-        auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+        auto const sponsorSle = getTxReserveSponsor(applyViewContext);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
-        if (auto const ret = checkInsufficientReserve(
-                view(), ctx_.tx, sleOwner, preFeeBalance_, *sponsorSle, 1, 0, j_);
+        if (auto const ret = checkReserve(
+                applyViewContext,
+                sleOwner,
+                preFeeBalance_,
+                *sponsorSle,
+                {.ownerCountDelta = 1},
+                j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -191,7 +197,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), sleOwner, *sponsorSle, 1, j_);
+        increaseOwnerCount(view(), sleOwner, *sponsorSle, 1, j_);
         addSponsorToLedgerEntry(slePreauth, *sponsorSle);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorize))
@@ -209,11 +215,16 @@ DepositPreauth::doApply()
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
-        auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+        auto const sponsorSle = getTxReserveSponsor(applyViewContext);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
-        if (auto const ret = checkInsufficientReserve(
-                view(), ctx_.tx, sleOwner, preFeeBalance_, *sponsorSle, 1, 0, j_);
+        if (auto const ret = checkReserve(
+                applyViewContext,
+                sleOwner,
+                preFeeBalance_,
+                *sponsorSle,
+                {.ownerCountDelta = 1},
+                j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -253,7 +264,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), sleOwner, *sponsorSle, 1, j_);
+        increaseOwnerCount(view(), sleOwner, *sponsorSle, 1, j_);
         addSponsorToLedgerEntry(slePreauth, *sponsorSle);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorizeCredentials))
@@ -292,7 +303,7 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
     if (!sleOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCountObj(view, sleOwner, slePreauth, -1, j);
+    decreaseOwnerCountForObject(view, sleOwner, slePreauth, 1, j);
     // Remove DepositPreauth from ledger.
     view.erase(slePreauth);
 
