@@ -347,7 +347,7 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
         doInvariantCheck(
-            {{"account deletion left behind a sponsorship field"}},
+            {{"account deletion has no sponsorship fields"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleA1 = ac.view().peek(keylet::account(a1.id()));
                 if (!sleA1)
@@ -363,7 +363,7 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
         doInvariantCheck(
-            {{"account deletion left behind a sponsorship field"}},
+            {{"account deletion has no sponsorship fields"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleA1 = ac.view().peek(keylet::account(a1.id()));
                 if (!sleA1)
@@ -379,7 +379,7 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
         doInvariantCheck(
-            {{"account deletion left behind a sponsorship field"}},
+            {{"account deletion has no sponsorship fields"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const a1Id = a1.id();
                 auto const sleA1 = ac.view().peek(keylet::account(a1Id));
@@ -396,7 +396,7 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
         doInvariantCheck(
-            {{"account deletion left behind a sponsorship field"}},
+            {{"account deletion has no sponsorship fields"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleA1 = ac.view().peek(keylet::account(a1.id()));
                 if (!sleA1)
