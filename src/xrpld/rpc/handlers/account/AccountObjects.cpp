@@ -58,6 +58,8 @@ getAccountObjects(
     };
 
     auto sponsoredMatchesFilter = [&sponsoredFilter](std::optional<AccountID> const& sponsor) {
+        if (!sponsoredFilter.has_value())
+            return true;
         return sponsor.has_value() == *sponsoredFilter;
     };
 
@@ -99,15 +101,10 @@ getAccountObjects(
 
         while (currentPage)
         {
-            bool canAppendNFT = true;
-            if (sponsoredFilter.has_value())
-            {
-                std::optional<AccountID> const nftSponsor = currentPage->isFieldPresent(sfSponsor)
-                    ? currentPage->getAccountID(sfSponsor)
-                    : std::optional<AccountID>(std::nullopt);
-                if (!sponsoredMatchesFilter(nftSponsor))
-                    canAppendNFT = false;
-            }
+            std::optional<AccountID> const nftSponsor = currentPage->isFieldPresent(sfSponsor)
+                ? currentPage->getAccountID(sfSponsor)
+                : std::optional<AccountID>(std::nullopt);
+            bool canAppendNFT = sponsoredMatchesFilter(nftSponsor);
             if (canAppendNFT)
                 jvObjects.append(currentPage->getJson(JsonOptions::Values::None));
             auto const npm = (*currentPage)[~sfNextPageMin];
@@ -213,12 +210,7 @@ getAccountObjects(
                         sleNode->isFieldPresent(sfLowSponsor))
                         return sleNode->getAccountID(sfLowSponsor);
 
-                    // LCOV_EXCL_START
-                    UNREACHABLE(
-                        "xrpl::getAccountObjects : neither lsfHighReserve or lsfLowReserve on "
-                        "trustline");
                     return std::nullopt;
-                    // LCOV_EXCL_STOP
                 }
 
                 if (sleNode->getType() == ltSPONSORSHIP &&
@@ -232,7 +224,7 @@ getAccountObjects(
             };
             std::optional<AccountID> const sponsor = getSponsor();
 
-            if (sponsoredFilter.has_value() && !sponsoredMatchesFilter(sponsor))
+            if (!sponsoredMatchesFilter(sponsor))
                 canAppend = false;
 
             if (canAppend)
