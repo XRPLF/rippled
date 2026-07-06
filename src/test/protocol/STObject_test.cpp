@@ -4,6 +4,7 @@
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
@@ -355,8 +356,7 @@ public:
         {
             STObject st(sfGeneric);
             auto const v = ~st[~sf1Outer];
-            static_assert(
-                std::is_same_v<std::decay_t<decltype(v)>, std::optional<std::uint32_t>>, "");
+            static_assert(std::is_same_v<std::decay_t<decltype(v)>, std::optional<std::uint32_t>>);
         }
 
         // UDT scalar fields
@@ -430,8 +430,7 @@ public:
             BEAST_EXPECT(cst[~sf]->size() == 2);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(cst[sf][0] == 1);
             BEAST_EXPECT(cst[sf][1] == 2);
-            static_assert(
-                std::is_same_v<decltype(cst[sfIndexes]), std::vector<uint256> const&>, "");
+            static_assert(std::is_same_v<decltype(cst[sfIndexes]), std::vector<uint256> const&>);
         }
 
         // Default by reference field

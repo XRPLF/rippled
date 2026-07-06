@@ -1,27 +1,39 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/Slice.h>
-#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/detail/STVar.h>
 
 #include <boost/iterator/transform_iterator.hpp>
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -216,6 +228,11 @@ public:
     getFieldI32(SField const& field) const;
     [[nodiscard]] AccountID
     getAccountID(SField const& field) const;
+
+    /** The account responsible for the fee and authorization: the delegate when
+        sfDelegate is present, otherwise the account. */
+    [[nodiscard]] AccountID
+    getFeePayer() const;
 
     [[nodiscard]] Blob
     getFieldVL(SField const& field) const;
@@ -539,8 +556,9 @@ public:
     operator=(ValueProxy const&) = delete;
 
     template <class U>
-    std::enable_if_t<std::is_assignable_v<T, U>, ValueProxy&>
-    operator=(U&& u);
+    ValueProxy&
+    operator=(U&& u)
+        requires(std::is_assignable_v<T, U>);
 
     // Convenience operators for value types supporting
     // arithmetic operations
@@ -674,8 +692,9 @@ public:
     operator=(optional_type const& v);
 
     template <class U>
-    std::enable_if_t<std::is_assignable_v<T, U>, OptionalProxy&>
-    operator=(U&& u);
+    OptionalProxy&
+    operator=(U&& u)
+        requires(std::is_assignable_v<T, U>);
 
 private:
     friend class STObject;
@@ -781,8 +800,9 @@ STObject::Proxy<T>::assign(U&& u)
 
 template <class T>
 template <class U>
-std::enable_if_t<std::is_assignable_v<T, U>, STObject::ValueProxy<T>&>
+STObject::ValueProxy<T>&
 STObject::ValueProxy<T>::operator=(U&& u)
+    requires(std::is_assignable_v<T, U>)
 {
     this->assign(std::forward<U>(u));
     return *this;
@@ -885,8 +905,9 @@ STObject::OptionalProxy<T>::operator=(optional_type const& v) -> OptionalProxy&
 
 template <class T>
 template <class U>
-std::enable_if_t<std::is_assignable_v<T, U>, STObject::OptionalProxy<T>&>
+STObject::OptionalProxy<T>&
 STObject::OptionalProxy<T>::operator=(U&& u)
+    requires(std::is_assignable_v<T, U>)
 {
     this->assign(std::forward<U>(u));
     return *this;
@@ -1224,7 +1245,7 @@ template <typename T, typename V>
 void
 STObject::setFieldUsingSetValue(SField const& field, V value)
 {
-    static_assert(!std::is_lvalue_reference_v<V>, "");
+    static_assert(!std::is_lvalue_reference_v<V>);
 
     STBase* rf = getPField(field, true);
 

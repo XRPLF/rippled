@@ -5,6 +5,8 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <cstdint>
+#include <optional>
 #include <string>
 
 namespace xrpl {

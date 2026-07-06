@@ -1,10 +1,16 @@
 #pragma once
 
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 
 #include <boost/asio.hpp>
+
+#include <optional>
+#include <string>
 
 namespace xrpl {
 
