@@ -546,7 +546,7 @@ TrustSet::doApply()
                     preFeeBalance_,
                     {.ownerCountDelta = 1},
                     j_);
-                sponsorSle && !isTesSuccess(ret))
+                lowSponsor && !isTesSuccess(ret))
                 return tecINSUF_RESERVE_LINE;
 
             // Set reserve for low account.
