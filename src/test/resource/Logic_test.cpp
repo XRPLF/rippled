@@ -211,8 +211,8 @@ public:
 
         Gossip g[5];
 
-        for (int i = 0; i < 5; ++i)
-            createGossip(g[i]);
+        for (auto& gossip : g)
+            createGossip(gossip);
 
         for (int i = 0; i < 5; ++i)
             logic.importConsumers(std::to_string(i), g[i]);
