@@ -237,7 +237,7 @@ A Tempo-backed dashboard (uid `xrpld-consensus-health`) with four panels, all dr
 - **Proposers per Round** (stat): average of the `span.proposers` attribute on `consensus.round` spans.
 - **Recent Slow Rounds (>5s)** (table): `consensus.round` spans filtered to `duration > 5s`.
 
-The underlying TraceQL queries are listed in section 7.7.3 and used throughout this doc.
+Each panel's TraceQL query is described inline in its bullet above.
 
 ### 7.6.2 Node Overview Dashboard
 
@@ -261,9 +261,9 @@ Grafana provisions three TraceQL-based alert rules (group `xrpld-tracing-alerts`
 - **RPC Error Rate Spike** (critical, `for: 2m`): fires when the error rate across `rpc.command.*` spans exceeds 5%. Error _rate_ is a ratio, so it must divide the error-span rate by the total-span rate — a single TraceQL `rate()` returns spans/second, not a percentage, and would fire on traffic volume alone. This uses span metrics emitted by the collector's `spanmetrics` connector (Prometheus datasource), not a TraceQL query:
 
   ```
-  sum(rate(calls_total{service_name="xrpld", span_name=~"rpc.command.*", status_code="STATUS_CODE_ERROR"}[5m]))
+  sum(rate(traces_spanmetrics_calls_total{service_name="xrpld", span_name=~"rpc.command.*", status_code="STATUS_CODE_ERROR"}[5m]))
   /
-  sum(rate(calls_total{service_name="xrpld", span_name=~"rpc.command.*"}[5m]))
+  sum(rate(traces_spanmetrics_calls_total{service_name="xrpld", span_name=~"rpc.command.*"}[5m]))
   > 0.05
   ```
 

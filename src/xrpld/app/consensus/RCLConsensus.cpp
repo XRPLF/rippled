@@ -1274,8 +1274,25 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
     telemetry::SpanContext const* const link =
         prevRoundSpanContext_.isValid() ? &prevRoundSpanContext_ : nullptr;
 
-    if (strategy == "deterministic")
+    if (strategy == "attribute")
     {
+        // Non-deterministic strategy: each node gets a random trace_id,
+        // correlated via the consensus_ledger_id attribute rather than a
+        // shared trace_id. Still attach a follows-from link to the prior
+        // round so consecutive rounds stay navigable. linkedSpan is not
+        // TraceCategory-aware, so gate it explicitly to match the gating
+        // of the hashSpan/span factories used below.
+        if (link != nullptr && app_.getTelemetry().shouldTraceConsensus())
+            roundSpan_.emplace(telemetry::SpanGuard::linkedSpan(cs::round, *link));
+        else
+            roundSpan_.emplace(
+                telemetry::SpanGuard::span(
+                    telemetry::TraceCategory::Consensus, telemetry::seg::consensus, cs::op::round));
+    }
+    else
+    {
+        // "deterministic" (the default): derive the trace_id from the previous
+        // ledger hash so all validators tracing the same round share one trace.
         roundSpan_.emplace(
             telemetry::SpanGuard::hashSpan(
                 telemetry::TraceCategory::Consensus,
@@ -1283,12 +1300,6 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
                 prevLgr.id().data(),
                 prevLgr.id().kBytes,
                 link));
-    }
-    else
-    {
-        roundSpan_.emplace(
-            telemetry::SpanGuard::span(
-                telemetry::TraceCategory::Consensus, telemetry::seg::consensus, cs::op::round));
     }
 
     if (!*roundSpan_)

@@ -1294,10 +1294,15 @@ Transactor::checkInvariants(TER result, XRPAmount fee)
 ApplyResult
 Transactor::operator()()
 {
-    auto span = telemetry::SpanGuard::span(
+    // Derive the trace_id from the transaction id so this apply-stage span
+    // shares one trace with the preflight and preclaim spans (which also use
+    // hashSpan on the same id).
+    auto const txID = ctx_.tx.getTransactionID();
+    auto span = telemetry::SpanGuard::hashSpan(
         telemetry::TraceCategory::Transactions,
-        telemetry::seg::tx,
-        telemetry::tx_apply_span::op::transactor);
+        telemetry::tx_apply_span::transactor,
+        txID.data(),
+        txID.kBytes);
     // "apply" — the third apply-pipeline stage, after preflight and preclaim.
     span.setAttribute(telemetry::tx_apply_span::attr::stage, telemetry::tx_apply_span::val::apply);
     if (auto const* fmt = TxFormats::getInstance().findByType(ctx_.tx.getTxnType()))
@@ -1428,6 +1433,11 @@ Transactor::operator()()
 
     span.setAttribute(telemetry::tx_apply_span::attr::terResult, transToken(result).c_str());
     span.setAttribute(telemetry::tx_apply_span::attr::applied, applied);
+    // Mark the span as errored when the transaction was not applied or the
+    // engine result is not a success, so failed applies surface in span-status
+    // error counts alongside preflight and preclaim.
+    if (!applied || !isTesSuccess(result))
+        span.setError(transToken(result));
 
     return {result, applied, metadata};
 }

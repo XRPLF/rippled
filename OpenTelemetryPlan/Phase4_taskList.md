@@ -95,10 +95,16 @@
   - Creates `consensus.proposal.receive` span
   - Sets `trusted` attribute (bool)
 
-**Not implemented** (deferred to Phase 4b — cross-node propagation):
+**Done here** (cross-node propagation, send + receive):
 
-- `consensus.proposal.relay` span in `share(RCLCxPeerPos)` — requires trace context injection
-- Trace context injection/extraction for `TMProposeSet::trace_context`
+- Trace context injection for `TMProposeSet::trace_context` in `propose()`
+- Receive-side extraction in `PeerImp::onMessage(TMProposeSet)` via
+  `telemetry::proposalReceiveSpan()` (parents the receive span on the
+  sender's context when a valid `trace_context` is present)
+
+**Not implemented** (deferred to Phase 4b):
+
+- `consensus.proposal.relay` span in `share(RCLCxPeerPos)`
 
 **Key modified files**:
 

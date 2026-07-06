@@ -211,7 +211,6 @@ flowchart TB
 | [Phase9_taskList.md](./Phase9_taskList.md)                                 | Internal metric instrumentation gap fill (future)   |
 | [Phase10_taskList.md](./Phase10_taskList.md)                               | Synthetic workload generation & validation (future) |
 | [Phase11_taskList.md](./Phase11_taskList.md)                               | Third-party data collection pipelines (future)      |
-| [presentation.md](./presentation.md)                                       | Presentation slides for OpenTelemetry plan overview |
 
 > **Note**: Phases 1 and 6 do not have separate task list files. Phase 1 tasks are documented in [06-implementation-phases.md §6.2](./06-implementation-phases.md). Phase 6 tasks are documented in [06-implementation-phases.md §6.7](./06-implementation-phases.md).
 
