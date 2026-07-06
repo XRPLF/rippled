@@ -232,7 +232,7 @@ FastWriter::writeValue(Value const& value)
             Value::Members members(value.getMemberNames());
             document_ += "{";
 
-            for (Value::Members::iterator it = members.begin(); it != members.end(); ++it)
+            for (auto it = members.begin(); it != members.end(); ++it)
             {
                 std::string const& name = *it;
 
@@ -310,7 +310,7 @@ StyledWriter::writeValue(Value const& value)
             {
                 writeWithIndent("{");
                 indent();
-                Value::Members::iterator it = members.begin();
+                auto it = members.begin();
 
                 while (true)
                 {
@@ -545,7 +545,7 @@ StyledStreamWriter::writeValue(Value const& value)
             {
                 writeWithIndent("{");
                 indent();
-                Value::Members::iterator it = members.begin();
+                auto it = members.begin();
 
                 while (true)
                 {

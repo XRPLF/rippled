@@ -1,11 +1,20 @@
 #pragma once
 
-#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerReplayTask.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/PeerSet.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/shamap/SHAMapItem.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <memory>
 #include <mutex>
 #include <vector>
 

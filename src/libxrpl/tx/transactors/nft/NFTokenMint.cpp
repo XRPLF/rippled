@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/nft/NFTokenMint.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
@@ -26,6 +25,7 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <expected>
 #include <iterator>  // IWYU pragma: keep
 #include <utility>
 
@@ -223,12 +223,12 @@ NFTokenMint::doApply()
 {
     auto const issuer = ctx_.tx[~sfIssuer].value_or(accountID_);
 
-    auto const tokenSeq = [this, &issuer]() -> Expected<std::uint32_t, TER> {
+    auto const tokenSeq = [this, &issuer]() -> std::expected<std::uint32_t, TER> {
         auto const root = view().peek(keylet::account(issuer));
         if (root == nullptr)
         {
             // Should not happen.  Checked in preclaim.
-            return Unexpected(tecNO_ISSUER);
+            return std::unexpected(tecNO_ISSUER);
         }
 
         // If the issuer hasn't minted an NFToken before we must add a
@@ -259,7 +259,7 @@ NFTokenMint::doApply()
 
         (*root)[sfMintedNFTokens] = mintedNftCnt + 1u;
         if ((*root)[sfMintedNFTokens] == 0u)
-            return Unexpected(tecMAX_SEQUENCE_REACHED);
+            return std::unexpected(tecMAX_SEQUENCE_REACHED);
 
         // Get the unique sequence number of this token by
         // sfFirstNFTokenSequence + sfMintedNFTokens
@@ -268,7 +268,7 @@ NFTokenMint::doApply()
 
         // Check for more overflow cases
         if (tokenSeq + 1u == 0u || tokenSeq < offset)
-            return Unexpected(tecMAX_SEQUENCE_REACHED);
+            return std::unexpected(tecMAX_SEQUENCE_REACHED);
 
         ctx_.view().update(root);
         return tokenSeq;

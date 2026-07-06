@@ -14,6 +14,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheck.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <exception>
@@ -114,7 +115,7 @@ ApplyContext::checkInvariantsHelper(
             tx, result, fee, *view_, journal)...}};  // NOLINT(bugprone-unchecked-optional-access)
 
         // call each check's finalizer to see that it passes
-        if (!std::all_of(finalizers.cbegin(), finalizers.cend(), [](auto const& b) { return b; }))
+        if (!std::ranges::all_of(finalizers, [](auto const& b) { return b; }))
         {
             JLOG(journal.fatal()) << "Transaction has failed one or more global invariants: "
                                   << to_string(tx.getJson(JsonOptions::Values::None));

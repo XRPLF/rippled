@@ -2,6 +2,7 @@
 
 #include <boost/asio/ssl/context.hpp>
 
+#include <memory>
 #include <string>
 
 namespace xrpl {

@@ -6,6 +6,7 @@
 #include <boost/icl/closed_interval.hpp>
 #include <boost/icl/interval_set.hpp>
 
+#include <functional>
 #include <optional>
 #include <string>
 #include <vector>

@@ -76,7 +76,7 @@ class Version_test : public beast::unit_test::Suite
                 "}");
         BEAST_EXPECT(badVersion(re));
 
-        re = env.rpc("json", "version", "{\"api_version\": \"a\"}");
+        re = env.rpc("json", "version", R"({"api_version": "a"})");
         BEAST_EXPECT(badVersion(re));
     }
 

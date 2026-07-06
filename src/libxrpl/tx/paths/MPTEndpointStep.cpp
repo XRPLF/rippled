@@ -434,7 +434,7 @@ MPTEndpointStep<TDerived>::maxPaymentFlow(ReadView const& sb) const
         return {toAmount<MPTAmount>(maxFlow), DebtDirection::Redeems};
 
     // From an issuer to a holder
-    if (auto const sle = sb.read(keylet::mptIssuance(mptIssue_)))
+    if (auto const sle = sb.read(keylet::mptokenIssuance(mptIssue_)))
     {
         // If issuer is the source account, and it is direct payment then
         // MPTEndpointStep is the only step. Provide available maxFlow.

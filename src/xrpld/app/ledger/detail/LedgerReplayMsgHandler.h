@@ -1,7 +1,10 @@
 #pragma once
 
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/protocol/messages.h>
+
+#include <xrpl.pb.h>
+
+#include <memory>
 
 namespace xrpl {
 class Application;
