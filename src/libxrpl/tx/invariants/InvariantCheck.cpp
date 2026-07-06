@@ -778,7 +778,7 @@ clawbackTrustLineBalanceInHolderTerms(
         return STAmount{Issue{currency, issuer}};
 
     if (sle->getType() != ltRIPPLE_STATE ||
-        sle->key() != keylet::line(holder, issuer, currency).key)
+        sle->key() != keylet::trustLine(holder, issuer, currency).key)
     {
         return std::nullopt;
     }

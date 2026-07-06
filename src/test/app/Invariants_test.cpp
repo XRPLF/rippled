@@ -4376,7 +4376,8 @@ class Invariants_test : public beast::unit_test::Suite
                 other,
                 {{"Invariant failed: trustline clawback balance change is invalid"}},
                 [issuer, usd](Account const& holder, Account const&, ApplyContext& ac) {
-                    auto sle = ac.view().peek(keylet::line(holder.id(), issuer.id(), usd.currency));
+                    auto sle =
+                        ac.view().peek(keylet::trustLine(holder.id(), issuer.id(), usd.currency));
                     if (!sle)
                         return false;
 
@@ -4416,7 +4417,7 @@ class Invariants_test : public beast::unit_test::Suite
                 {},
                 [issuer, usd](Account const& holder, Account const&, ApplyContext& ac) {
                     auto const sle =
-                        ac.view().peek(keylet::line(holder.id(), issuer.id(), usd.currency));
+                        ac.view().peek(keylet::trustLine(holder.id(), issuer.id(), usd.currency));
                     if (!sle)
                         return false;
 
@@ -4451,7 +4452,8 @@ class Invariants_test : public beast::unit_test::Suite
                 other,
                 {{"Invariant failed: trustline clawback balance change is invalid"}},
                 [issuer, usd](Account const& holder, Account const&, ApplyContext& ac) {
-                    auto sle = ac.view().peek(keylet::line(holder.id(), issuer.id(), usd.currency));
+                    auto sle =
+                        ac.view().peek(keylet::trustLine(holder.id(), issuer.id(), usd.currency));
                     if (!sle)
                         return false;
 
@@ -4490,7 +4492,7 @@ class Invariants_test : public beast::unit_test::Suite
                 {{"Invariant failed: MPT clawback balance change is invalid"}},
                 [id](Account const& holder, Account const&, ApplyContext& ac) {
                     auto const sleToken = ac.view().peek(keylet::mptoken(id, holder));
-                    auto const sleIssuance = ac.view().peek(keylet::mptIssuance(id));
+                    auto const sleIssuance = ac.view().peek(keylet::mptokenIssuance(id));
                     if (!sleToken || !sleIssuance)
                         return false;
 
@@ -4532,9 +4534,9 @@ class Invariants_test : public beast::unit_test::Suite
                 {{"Invariant failed: trustline and MPToken both changed"}},
                 [issuer, usd, id](Account const& holder, Account const&, ApplyContext& ac) {
                     auto const sleLine =
-                        ac.view().peek(keylet::line(holder.id(), issuer.id(), usd.currency));
+                        ac.view().peek(keylet::trustLine(holder.id(), issuer.id(), usd.currency));
                     auto const sleToken = ac.view().peek(keylet::mptoken(id, holder.id()));
-                    auto const sleIssuance = ac.view().peek(keylet::mptIssuance(id));
+                    auto const sleIssuance = ac.view().peek(keylet::mptokenIssuance(id));
                     if (!sleLine || !sleToken || !sleIssuance)
                         return false;
 
