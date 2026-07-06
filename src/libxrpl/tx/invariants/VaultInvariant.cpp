@@ -1045,8 +1045,6 @@ ValidVault::finalize(
             case ttLOAN_SET:
             case ttLOAN_MANAGE:
             case ttLOAN_PAY:
-            case ttSPONSORSHIP_TRANSFER:
-                // TBD for loans; SponsorshipTransfer may update a vault's sfSponsor
                 return true;
 
             default:
