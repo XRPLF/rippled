@@ -142,9 +142,23 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
         auto const inner = intr_ptr::staticPointerCast<SHAMapInnerNode>(inNode);
         auto const branch = selectBranch(nodeID, id);
         if (inner->isEmptyBranch(branch))
+        {
+            // An empty branch during a walk means "key not present".
             return nullptr;
+        }
 
-        inNode = descendThrow(*inner, branch);
+        inNode.adopt(descend(inner.get(), branch));
+        if (!inNode)
+        {
+            JLOG(journal_.warn()) << "xrpl::SHAMap::walkTowardsKey: missing child node "
+                                  << inner->getChildHash(branch);
+            // Clear the stack so callers that use stack.empty() as a missing-node sentinel reliably
+            // detect this error condition, rather than proceeding with a partially-populated stack
+            // whose top is an inner node instead of the expected leaf.
+            if (stack != nullptr)
+                *stack = {};
+            return nullptr;
+        }
         nodeID = nodeID.getChildNodeID(branch);
     }
 
@@ -322,9 +336,6 @@ SHAMap::descend(SHAMapInnerNode& parent, int branch) const
         return node;
 
     node = fetchNode(parent.getChildHash(branch));
-    if (!node)
-        return {};
-
     node = parent.canonicalizeChild(branch, std::move(node));
     return node;
 }
@@ -336,7 +347,7 @@ SHAMap::descendNoStore(SHAMapInnerNode& parent, int branch) const
 {
     SHAMapTreeNodePtr ret = parent.getChild(branch);
     if (!ret && backed_)
-        ret = fetchNode(parent.getChildHash(branch));
+        ret = fetchNodeNT(parent.getChildHash(branch));
     return ret;
 }
 

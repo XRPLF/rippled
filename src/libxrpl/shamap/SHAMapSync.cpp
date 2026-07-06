@@ -67,6 +67,15 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
             if (!node->isEmptyBranch(pos))
             {
                 SHAMapTreeNodePtr const child = descendNoStore(*node, pos);
+                if (!child)
+                {
+                    // Child node couldn't be fetched, which can be for a variety of reasons (e.g.
+                    // partial sync, node evicted after database rotation), so skip this subtree.
+                    JLOG(journal_.info())
+                        << "visitNodes: missing child node " << node->getChildHash(pos);
+                    ++pos;
+                    continue;
+                }
                 if (!function(*child))
                     return;
 
