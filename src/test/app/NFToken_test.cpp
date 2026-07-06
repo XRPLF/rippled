@@ -7124,6 +7124,94 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testCreateOfferInvalidAmount(FeatureBitset features)
+    {
+        testcase("Invalid NFT offer create amount");
+
+        using namespace test::jtx;
+
+        // Before fixCleanup3_4_0, a malformed offer amount is not rejected in
+        // preflight. With the amendment enabled, preflight rejects it directly.
+        for (bool const withFix : {false, true})
+        {
+            Env env{*this, withFix ? features | fixCleanup3_4_0 : features - fixCleanup3_4_0};
+
+            Account const alice{"alice"};
+            Account const gw{"gw"};
+
+            env.fund(XRP(1000), alice, gw);
+            env.close();
+
+            uint256 const nftID = token::getNextID(env, alice, 0, tfTransferable);
+            env(token::mint(alice, 0u), Txflags(tfTransferable));
+            env.close();
+
+            // Fake XRP (an IOU using the "XRP" currency code) sell offer
+            // amount.
+            auto const bad = IOU(gw, badCurrency());
+            env(token::createOffer(alice, nftID, bad(1)),
+                Txflags(tfSellNFToken),
+                Ter(withFix ? TER{temBAD_CURRENCY} : TER{tesSUCCESS}));
+            env.close();
+
+            // Malformed native sell offer amount.
+            env(token::createOffer(alice, nftID, STAmount{STAmount::kMaxNativeN + 1}),
+                Txflags(tfSellNFToken),
+                Ter(withFix ? TER{temBAD_AMOUNT} : TER{tesSUCCESS}));
+            env.close();
+        }
+    }
+
+    void
+    testAcceptOfferInvalidBrokerFee(FeatureBitset features)
+    {
+        testcase("Invalid NFT offer accept broker fee");
+
+        using namespace test::jtx;
+
+        // Before fixCleanup3_4_0, a malformed broker fee is not rejected in
+        // preflight and reaches later offer validation instead. With the
+        // amendment enabled, preflight rejects it directly.
+        for (bool const withFix : {false, true})
+        {
+            Env env{*this, withFix ? features | fixCleanup3_4_0 : features - fixCleanup3_4_0};
+
+            Account const alice{"alice"};
+            Account const buyer{"buyer"};
+            Account const broker{"broker"};
+            Account const gw{"gw"};
+
+            env.fund(XRP(1000), alice, buyer, broker, gw);
+            env.close();
+
+            uint256 const nftID = token::getNextID(env, alice, 0, tfTransferable);
+            env(token::mint(alice, 0u), Txflags(tfTransferable));
+            env.close();
+
+            uint256 const sellOfferIndex = keylet::nftokenOffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftID, XRP(10)), Txflags(tfSellNFToken));
+            env.close();
+
+            uint256 const buyOfferIndex = keylet::nftokenOffer(buyer, env.seq(buyer)).key;
+            env(token::createOffer(buyer, nftID, XRP(40)), token::Owner(alice));
+            env.close();
+
+            // Fake XRP (an IOU using the "XRP" currency code) broker fee.
+            auto const bad = IOU(gw, badCurrency());
+            env(token::brokerOffers(broker, buyOfferIndex, sellOfferIndex),
+                token::BrokerFee(bad(1)),
+                Ter(withFix ? TER{temBAD_CURRENCY} : TER{tecNFTOKEN_BUY_SELL_MISMATCH}));
+            env.close();
+
+            // Malformed native broker fee.
+            env(token::brokerOffers(broker, buyOfferIndex, sellOfferIndex),
+                token::BrokerFee(STAmount{STAmount::kMaxNativeN + 1}),
+                Ter(withFix ? TER{temBAD_AMOUNT} : TER{tecINSUFFICIENT_PAYMENT}));
+            env.close();
+        }
+    }
+
 protected:
     FeatureBitset const allFeatures_{test::jtx::testableAmendments()};
 
@@ -7165,6 +7253,8 @@ protected:
         testUnaskedForAutoTrustline(features);
         testNFTIssuerIsIOUIssuer(features);
         testNFTokenModify(features);
+        testCreateOfferInvalidAmount(features);
+        testAcceptOfferInvalidBrokerFee(features);
     }
 
 public:

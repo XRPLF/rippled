@@ -13,6 +13,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -45,6 +46,17 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 
         if (*bf <= beast::kZero)
             return temMALFORMED;
+
+        if (ctx.rules.enabled(fixCleanup3_4_0))
+        {
+            // Reject malformed native amounts.
+            if (!isLegalNet(*bf))
+                return temBAD_AMOUNT;
+
+            // We don't allow a non-native currency to use the currency code XRP.
+            if (badAsset() == bf->asset())
+                return temBAD_CURRENCY;
+        }
     }
 
     return tesSUCCESS;
