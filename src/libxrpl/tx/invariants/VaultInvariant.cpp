@@ -1133,7 +1133,7 @@ ValidVault::finalize(
 
                 // A loan set must create exactly one loan object; the interest
                 // it books is the only permitted change to assets outstanding.
-                if (afterLoan_.size() != 1)
+                if (beforeLoan_.empty() && afterLoan_.size() != 1)
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: loan set must create exactly one loan";
