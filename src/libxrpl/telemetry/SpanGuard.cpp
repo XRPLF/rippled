@@ -238,6 +238,7 @@ SpanGuard::linkedSpan(std::string_view name) const
     return SpanGuard(
         std::make_unique<Impl>(tracer->StartSpan(
             std::string(name), {}, {{spanCtx, {{kLinkTypeKey, kLinkTypeFollowsFrom}}}}, opts)));
+    // LCOV_EXCL_STOP
 }
 
 SpanGuard

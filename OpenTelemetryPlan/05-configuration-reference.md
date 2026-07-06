@@ -21,8 +21,8 @@ The authoritative `[telemetry]` example lives in `cfg/xrpld-example.cfg`. Teleme
 | `endpoint`                 | string | `http://localhost:4318/v1/traces` | OTLP/HTTP collector endpoint                                                                               |
 | `use_tls`                  | bool   | `false`                           | Enable TLS for exporter connection                                                                         |
 | `tls_ca_cert`              | string | `""`                              | Path to CA certificate file                                                                                |
-| `tls_client_cert`          | string | `""`                              | Path to node's client certificate (PEM) for mutual TLS; empty = one-way TLS                                |
-| `tls_client_key`           | string | `""`                              | Path to private key (PEM) for `tls_client_cert`; required when it is set                                   |
+| `tls_client_cert`          | string | `""`                              | Path to node's client certificate (PEM) for mutual TLS; requires `use_tls=1`; empty = one-way TLS          |
+| `tls_client_key`           | string | `""`                              | Path to private key (PEM) for `tls_client_cert`; requires `use_tls=1`; required when the cert is set       |
 | `batch_size`               | uint   | `512`                             | Spans per export batch                                                                                     |
 | `batch_delay_ms`           | uint   | `5000`                            | Max delay before sending batch (ms)                                                                        |
 | `max_queue_size`           | uint   | `2048`                            | Maximum queued spans                                                                                       |
@@ -168,10 +168,10 @@ flowchart TB
 
 **Reading the diagram:**
 
-- **Configuration Sources**: `xrpld.cfg` provides runtime settings (endpoint, sampling) while the CMake flag controls whether telemetry is compiled in at all.
+- **Configuration Sources**: `xrpld.cfg` provides runtime settings (endpoint, per-component trace toggles) while the CMake flag controls whether telemetry is compiled in at all. Head sampling is fixed at 1.0 and is not a config option; volume reduction happens via tail sampling in the collector.
 - **Initialization**: `setupTelemetry()` parses config values, then `makeTelemetry()` constructs the provider, processor, and exporter objects.
 - **Runtime Components**: The `TracerProvider` creates spans, the `BatchProcessor` buffers them, and the `OTLP Exporter` serializes and sends them over the wire.
-- **OTLP arrow to Collector**: Trace data leaves the xrpld process via OTLP (gRPC or HTTP) and enters the external Collector pipeline.
+- **OTLP arrow to Collector**: Trace data leaves the xrpld process via OTLP/HTTP and enters the external Collector pipeline. (OTLP/gRPC is future work — see design decisions §2.2.2.)
 - **Collector Pipeline**: `Receivers` ingest OTLP data, `Processors` apply sampling/filtering/enrichment, and `Exporters` forward traces to storage backends (Tempo, etc.).
 
 ---

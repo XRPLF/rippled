@@ -104,6 +104,15 @@ RED metrics on the _Transaction Overview_ dashboard.
 | `txq.accept_tx`    | TxQ.cpp     | `tx_hash`, `retries_remaining`, `ter_code`, `txq_status` | Per-transaction apply during accept                |
 | `txq.cleanup`      | TxQ.cpp     | `ledger_seq`                                             | Post-close cleanup of expired queue entries        |
 
+### PathFinding Spans
+
+| Span Name             | Source File                       | Attributes                                         | Description                                             |
+| --------------------- | --------------------------------- | -------------------------------------------------- | ------------------------------------------------------- |
+| `pathfind.request`    | PathFind.cpp / RipplePathFind.cpp | `pathfind_source_account`, `pathfind_dest_account` | Path-find RPC entry (accounts hashed; set when present) |
+| `pathfind.compute`    | PathRequest.cpp                   | `pathfind_fast`, `pathfind_dest_currency`          | Path computation for one request (`doUpdate`)           |
+| `pathfind.discover`   | PathRequest.cpp                   | `pathfind_search_level`, `pathfind_num_paths`      | Graph exploration (one per RPC call in `findPaths`)     |
+| `pathfind.update_all` | PathRequestManager.cpp            | `pathfind_ledger_index`, `pathfind_num_requests`   | Async recomputation of active requests on ledger close  |
+
 ### Consensus Spans
 
 | Span Name                      | Source File      | Attributes                                                                                                                                                                                                                   | Description                                                                                                                           |
@@ -114,7 +123,7 @@ RED metrics on the _Transaction Overview_ dashboard.
 | `consensus.ledger_close`       | RCLConsensus.cpp | `ledger_seq`, `consensus_mode`                                                                                                                                                                                               | Ledger close event                                                                                                                    |
 | `consensus.establish`          | Consensus.h      | `converge_percent`, `establish_count`, `proposers`                                                                                                                                                                           | Establish phase duration (child of round)                                                                                             |
 | `consensus.update_positions`   | Consensus.h      | `converge_percent`, `proposers`, `disputes_count`                                                                                                                                                                            | Position update and dispute resolution (see Events below)                                                                             |
-| `consensus.check`              | Consensus.h      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `consensus_result`                                                                                                    | Consensus threshold check                                                                                                             |
+| `consensus.check`              | Consensus.h      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `proposers_finished`, `consensus_stalled`, `establish_count`, `consensus_result`                                      | Consensus threshold check                                                                                                             |
 | `consensus.accept`             | RCLConsensus.cpp | `proposers`, `round_time_ms`, `quorum`, `disputes_count`, `consensus_state`                                                                                                                                                  | Ledger accepted by consensus                                                                                                          |
 | `consensus.accept.apply`       | RCLConsensus.cpp | `ledger_seq`, `close_time`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction`, `tx_count` | Ledger application with close time details (see Events below)                                                                         |
 | `consensus.validation.send`    | RCLConsensus.cpp | `ledger_seq`, `proposing`, `ledger_hash`, `full_validation`, `validation_sign_time`                                                                                                                                          | Validation sent after accept (follows-from link)                                                                                      |
@@ -402,7 +411,7 @@ all its normal attributes, it just lacks a cross-node parent link.
 {name="tx.receive"} && status != error
 
 # Find proposals received with cross-node parent context
-{name="consensus.proposal.receive"} && nestedSetParent > 0
+{} >> {name="consensus.proposal.receive"}
 
 # Trace a transaction across the network by its hash
 {name=~"tx\\..*"} | tx_hash = "<hash>"
@@ -438,7 +447,12 @@ Every metric carries these standard labels:
 | `service_name` | Resource attribute | `xrpld`                                  |
 | `span_kind`    | Span kind          | `SPAN_KIND_INTERNAL`                     |
 
-Additionally, span attributes configured as dimensions in the collector become metric labels. The collector dimensions use the bare attribute keys emitted by the code, so the label name equals the attribute name:
+Additionally, span attributes configured as dimensions in the collector
+become metric labels. The span attribute keys are already underscore form
+(the naming convention forbids dots), so the label name matches the attribute
+name verbatim. Prometheus' dots → underscores sanitization only fires for
+dotted attribute names (e.g. resource attributes like `service.name`), which
+does not apply to these dimensions.
 
 | Span Attribute       | Metric Label         | Applies To                      |
 | -------------------- | -------------------- | ------------------------------- |
