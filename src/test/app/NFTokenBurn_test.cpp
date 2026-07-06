@@ -198,6 +198,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
         // Use a default initialized mersenne_twister because we want the
         // effect of random numbers, but we want the test to run the same
         // way each time.
+        // NOLINTNEXTLINE(bugprone-random-generator-seed): fixed seed for reproducible test
         std::mt19937 engine;
         std::uniform_int_distribution<std::size_t> feeDist(
             decltype(kMaxTransferFee){}, kMaxTransferFee);

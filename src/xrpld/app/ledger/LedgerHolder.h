@@ -2,8 +2,11 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/ledger/Ledger.h>
 
+#include <memory>
 #include <mutex>
+#include <utility>
 
 namespace xrpl {
 

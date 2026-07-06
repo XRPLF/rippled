@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <cstddef>
 #include <iterator>
 #include <type_traits>
 
@@ -58,7 +59,7 @@ public:
         return result;
     }
 
-    NodePtr
+    [[nodiscard]] NodePtr
     node() const
     {
         return node_;

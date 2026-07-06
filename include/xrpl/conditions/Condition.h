@@ -4,8 +4,12 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/conditions/detail/utils.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <set>
+#include <system_error>
+#include <utility>
 
 namespace xrpl::cryptoconditions {
 

@@ -14,10 +14,11 @@
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/nodestore/NodeObject.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/tx/apply.h>
@@ -254,7 +255,15 @@ buildLedger(
         j,
         [&](OpenView& accum, std::shared_ptr<Ledger> const& built) {
             for (auto& tx : replayData.orderedTxns())
+            {
+                // Inner batch transactions are applied as part of their outer
+                // Batch transaction, never on their own. Skip them here so they
+                // are not re-applied a second time outside of the batch during
+                // replay.
+                if (tx.second->isFlag(tfInnerBatchTxn))
+                    continue;
                 applyTransaction(app, accum, *tx.second, false, applyFlags, j);
+            }
         });
 }
 

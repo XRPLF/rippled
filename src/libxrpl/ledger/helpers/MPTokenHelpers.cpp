@@ -290,6 +290,15 @@ removeEmptyHolding(
         (view.rules().enabled(fixCleanup3_1_3) && (*mptoken)[~sfLockedAmount].valueOr(0) != 0))
         return tecHAS_OBLIGATIONS;
 
+    // Don't delete if the token still has confidential balances
+    if (mptoken->isFieldPresent(sfConfidentialBalanceInbox) ||
+        mptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
+        mptoken->isFieldPresent(sfIssuerEncryptedBalance) ||
+        mptoken->isFieldPresent(sfAuditorEncryptedBalance))
+    {
+        return tecHAS_OBLIGATIONS;
+    }
+
     return authorizeMPToken(
         view,
         {},  // priorBalance
@@ -308,6 +317,18 @@ requireAuth(
     AuthType authType,
     std::uint8_t depth)
 {
+    bool const fix330Enabled = view.rules().enabled(fixCleanup3_3_0);
+    bool const featureSAVEnabled = view.rules().enabled(featureSingleAssetVault);
+    bool const featureMPTV2Enabled = view.rules().enabled(featureMPTokensV2);
+
+    // Pseudo-accounts (Vault, LoanBroker, AMM) hold assets on behalf of their participants.
+    // They are implicitly authorized for any MPT they hold, including vault shares whose
+    // underlying asset would otherwise require auth.
+    auto const isPseudoAccountExempt = [&] {
+        return (featureSAVEnabled || featureMPTV2Enabled) &&
+            isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID, &sfAMMID});
+    };
+
     auto const mptID = keylet::mptokenIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
     if (!sleIssuance)
@@ -319,7 +340,9 @@ requireAuth(
     if (mptIssuer == account)  // Issuer won't have MPToken
         return tesSUCCESS;
 
-    bool const featureSAVEnabled = view.rules().enabled(featureSingleAssetVault);
+    // Post-fix330: exempt before the recursive underlying-asset auth check.
+    if (fix330Enabled && isPseudoAccountExempt())
+        return tesSUCCESS;
 
     if (featureSAVEnabled)
     {
@@ -382,13 +405,9 @@ requireAuth(
         // belong to someone who is explicitly authorized e.g. a vault owner.
     }
 
-    bool const featureMPTV2Enabled = view.rules().enabled(featureMPTokensV2);
-    if (featureSAVEnabled || featureMPTV2Enabled)
-    {
-        // Implicitly authorize Vault, LoanBroker, and AMM pseudo-accounts
-        if (isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
-            return tesSUCCESS;
-    }
+    // Pre-fix330: exempt after domain/sleToken checks, preserving prior behavior.
+    if (!fix330Enabled && isPseudoAccountExempt())
+        return tesSUCCESS;
 
     // mptoken must be authorized if issuance enabled requireAuth
     if (sleIssuance->isFlag(lsfMPTRequireAuth) &&

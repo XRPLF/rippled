@@ -3,7 +3,10 @@
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <cstddef>
 #include <functional>
+#include <iterator>
+#include <memory>
 #include <optional>
 #include <string>
 #include <thread>

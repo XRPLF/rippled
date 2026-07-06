@@ -1,12 +1,16 @@
 #pragma once
 
-#include <test/jtx/TestSuite.h>
-
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <boost/filesystem.hpp>
 
+#include <exception>
 #include <fstream>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace xrpl::detail {
 
