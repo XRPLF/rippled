@@ -1093,6 +1093,7 @@ public:
         XRPAmount const xrp0{0};
         Number const n0 = xrp0;
         BEAST_EXPECT(n0 == Number{0});
+        // NOLINTNEXTLINE(misc-confusable-identifiers)
         XRPAmount const xrp1{n0};
         BEAST_EXPECT(xrp1 == xrp0);
     }
