@@ -222,7 +222,10 @@ ValidVault::deltaAssetsTxAccount(STTx const& tx, XRPAmount fee) const
     if (!ret.has_value() || !vaultAsset.native())
         return ret;
 
-    if (auto const delegate = tx[~sfDelegate]; delegate.has_value() && *delegate != tx[sfAccount])
+    // Only add the fee back if tx[sfAccount] actually paid it. When the fee is
+    // paid by someone else (a delegate or a fee sponsor), the
+    // account's XRP balance moved only by the vault amount.
+    if (tx.getFeePayerID() != tx[sfAccount])
         return ret;
 
     ret->delta += fee.drops();
@@ -1045,8 +1048,6 @@ ValidVault::finalize(
             case ttLOAN_SET:
             case ttLOAN_MANAGE:
             case ttLOAN_PAY:
-            case ttSPONSORSHIP_TRANSFER:
-                // TBD for loans; SponsorshipTransfer may update a vault's sfSponsor
                 return true;
 
             default:
