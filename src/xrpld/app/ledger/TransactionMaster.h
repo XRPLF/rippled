@@ -68,7 +68,7 @@ public:
     canonicalize(std::shared_ptr<Transaction>* pTransaction);
 
     void
-    sweep(void);
+    sweep();
 
     TaggedCache<uint256, Transaction>&
     getCache();
