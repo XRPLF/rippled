@@ -68,7 +68,7 @@ cmake --build --preset default
 
 All spans instrumented in xrpld, grouped by subsystem:
 
-### RPC Spans (Phase 2)
+### RPC Spans
 
 | Span Name            | Source File       | Attributes                                                  | Description                                           |
 | -------------------- | ----------------- | ----------------------------------------------------------- | ----------------------------------------------------- |
@@ -78,7 +78,7 @@ All spans instrumented in xrpld, grouped by subsystem:
 | `rpc.process`        | ServerHandler.cpp | `is_batch`, `batch_size`                                    | RPC processing (child of rpc.http_request/ws_message) |
 | `rpc.command.<name>` | RPCHandler.cpp    | `command`, `version`, `rpc_role`, `rpc_status`, `load_type` | Per-command span (e.g., `rpc.command.server_info`)    |
 
-### Transaction Spans (Phase 3)
+### Transaction Spans
 
 | Span Name       | Source File     | Attributes                                                                        | Description                           |
 | --------------- | --------------- | --------------------------------------------------------------------------------- | ------------------------------------- |
@@ -95,7 +95,7 @@ trace per transaction. The `stage` attribute (`preflight` / `preclaim` /
 `apply`) drives the collector spanmetrics `stage` dimension, giving per-stage
 RED metrics on the _Transaction Overview_ dashboard.
 
-### Transaction Queue Spans (Phase 3)
+### Transaction Queue Spans
 
 | Span Name          | Source File | Attributes                                               | Description                                        |
 | ------------------ | ----------- | -------------------------------------------------------- | -------------------------------------------------- |
@@ -106,7 +106,7 @@ RED metrics on the _Transaction Overview_ dashboard.
 | `txq.accept_tx`    | TxQ.cpp     | `tx_hash`, `retries_remaining`, `ter_code`, `txq_status` | Per-transaction apply during accept                |
 | `txq.cleanup`      | TxQ.cpp     | `ledger_seq`                                             | Post-close cleanup of expired queue entries        |
 
-### Consensus Spans (Phase 4)
+### Consensus Spans
 
 | Span Name                      | Source File      | Attributes                                                                                                                                                                                                                   | Description                                                                                                                           |
 | ------------------------------ | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -153,7 +153,7 @@ RED metrics on the _Transaction Overview_ dashboard.
 {name="consensus.update_positions"} >> {event:name="dispute.resolve"}
 ```
 
-### Ledger Spans (Phase 6)
+### Ledger Spans
 
 | Span Name         | Source File          | Attributes                            | Description                   |
 | ----------------- | -------------------- | ------------------------------------- | ----------------------------- |
@@ -161,7 +161,7 @@ RED metrics on the _Transaction Overview_ dashboard.
 | `ledger.validate` | LedgerMaster.cpp:915 | `ledger_seq`, `validations`           | Ledger promoted to validated  |
 | `ledger.store`    | LedgerMaster.cpp:409 | `ledger_seq`                          | Ledger stored in history      |
 
-### Peer Spans (Phase 6)
+### Peer Spans
 
 | Span Name                 | Source File      | Attributes                      | Description                   |
 | ------------------------- | ---------------- | ------------------------------- | ----------------------------- |
@@ -524,7 +524,7 @@ one dashboard set serves every deployment:
 | Dimension   | Attribute                | Set by     | Example values                 |
 | ----------- | ------------------------ | ---------- | ------------------------------ |
 | Node        | `service.instance.id`    | xrpld cfg  | `alice-laptop`, `ci-runner-7`  |
-| Service     | `service.name`           | xrpld cfg  | `xrpld`, `pratik-xrpld`        |
+| Service     | `service.name`           | xrpld cfg  | `xrpld`, `xrpld-validator`     |
 | Network     | `xrpl.network.type`      | xrpld node | `mainnet`, `testnet`, `devnet` |
 | Environment | `deployment.environment` | collector  | `local`, `test`, `ci`, `prod`  |
 
