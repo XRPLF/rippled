@@ -94,6 +94,15 @@ All spans instrumented in xrpld, grouped by subsystem:
 | `txq.accept_tx`    | TxQ.cpp     | `tx_hash`, `retries_remaining`, `ter_code`, `txq_status` | Per-transaction apply during accept                |
 | `txq.cleanup`      | TxQ.cpp     | `ledger_seq`                                             | Post-close cleanup of expired queue entries        |
 
+### PathFinding Spans
+
+| Span Name             | Source File                       | Attributes                                         | Description                                             |
+| --------------------- | --------------------------------- | -------------------------------------------------- | ------------------------------------------------------- |
+| `pathfind.request`    | PathFind.cpp / RipplePathFind.cpp | `pathfind_source_account`, `pathfind_dest_account` | Path-find RPC entry (accounts hashed; set when present) |
+| `pathfind.compute`    | PathRequest.cpp                   | `pathfind_fast`, `pathfind_dest_currency`          | Path computation for one request (`doUpdate`)           |
+| `pathfind.discover`   | PathRequest.cpp                   | `pathfind_search_level`, `pathfind_num_paths`      | Graph exploration (one per RPC call in `findPaths`)     |
+| `pathfind.update_all` | PathRequestManager.cpp            | `pathfind_ledger_index`, `pathfind_num_requests`   | Async recomputation of active requests on ledger close  |
+
 ### Consensus Spans
 
 | Span Name                      | Source File      | Attributes                                                                                                                                                                                                                   | Description                                                                                                                           |
@@ -104,7 +113,7 @@ All spans instrumented in xrpld, grouped by subsystem:
 | `consensus.ledger_close`       | RCLConsensus.cpp | `ledger_seq`, `consensus_mode`                                                                                                                                                                                               | Ledger close event                                                                                                                    |
 | `consensus.establish`          | Consensus.h      | `converge_percent`, `establish_count`, `proposers`                                                                                                                                                                           | Establish phase duration (child of round)                                                                                             |
 | `consensus.update_positions`   | Consensus.h      | `converge_percent`, `proposers`, `disputes_count`                                                                                                                                                                            | Position update and dispute resolution (see Events below)                                                                             |
-| `consensus.check`              | Consensus.h      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `consensus_result`                                                                                                    | Consensus threshold check                                                                                                             |
+| `consensus.check`              | Consensus.h      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `proposers_finished`, `consensus_stalled`, `establish_count`, `consensus_result`                                      | Consensus threshold check                                                                                                             |
 | `consensus.accept`             | RCLConsensus.cpp | `proposers`, `round_time_ms`, `quorum`, `disputes_count`, `consensus_state`                                                                                                                                                  | Ledger accepted by consensus                                                                                                          |
 | `consensus.accept.apply`       | RCLConsensus.cpp | `ledger_seq`, `close_time`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction`, `tx_count` | Ledger application with close time details (see Events below)                                                                         |
 | `consensus.validation.send`    | RCLConsensus.cpp | `ledger_seq`, `proposing`, `ledger_hash`, `full_validation`, `validation_sign_time`                                                                                                                                          | Validation sent after accept (follows-from link)                                                                                      |
@@ -338,7 +347,7 @@ all its normal attributes, it just lacks a cross-node parent link.
 {name="tx.receive"} && status != error
 
 # Find proposals received with cross-node parent context
-{name="consensus.proposal.receive"} && nestedSetParent > 0
+{} >> {name="consensus.proposal.receive"}
 
 # Trace a transaction across the network by its hash
 {name=~"tx\\..*"} | tx_hash = "<hash>"
@@ -374,14 +383,19 @@ Every metric carries these standard labels:
 | `service_name` | Resource attribute | `xrpld`                                  |
 | `span_kind`    | Span kind          | `SPAN_KIND_INTERNAL`                     |
 
-Additionally, span attributes configured as dimensions in the collector become metric labels (dots → underscores):
+Additionally, span attributes configured as dimensions in the collector
+become metric labels. The span attribute keys are already underscore form
+(the naming convention forbids dots), so the label name matches the attribute
+name verbatim. Prometheus' dots → underscores sanitization only fires for
+dotted attribute names (e.g. resource attributes like `service.name`), which
+does not apply to these dimensions.
 
-| Span Attribute   | Metric Label          | Applies To                     |
-| ---------------- | --------------------- | ------------------------------ |
-| `command`        | `xrpl_rpc_command`    | `rpc.command.*` spans          |
-| `rpc_status`     | `xrpl_rpc_status`     | `rpc.command.*` spans          |
-| `consensus_mode` | `xrpl_consensus_mode` | `consensus.ledger_close` spans |
-| `local`          | `xrpl_tx_local`       | `tx.process` spans             |
+| Span Attribute   | Metric Label     | Applies To                     |
+| ---------------- | ---------------- | ------------------------------ |
+| `command`        | `command`        | `rpc.command.*` spans          |
+| `rpc_status`     | `rpc_status`     | `rpc.command.*` spans          |
+| `consensus_mode` | `consensus_mode` | `consensus.ledger_close` spans |
+| `local`          | `local`          | `tx.process` spans             |
 
 ### Histogram Buckets
 
@@ -481,21 +495,21 @@ Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ### RPC Performance (`rpc-performance`)
 
-| Panel                       | Type       | PromQL                                                                                                                                             | Labels Used                       |
-| --------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| RPC Request Rate by Command | timeseries | `sum by (xrpl_rpc_command) (rate(traces_span_metrics_calls_total{span_name=~"rpc.command.*"}[5m]))`                                                | `xrpl_rpc_command`                |
-| RPC Latency p95 by Command  | timeseries | `histogram_quantile(0.95, sum by (le, xrpl_rpc_command) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))` | `xrpl_rpc_command`                |
-| RPC Error Rate              | bargauge   | Error spans / total spans × 100, grouped by `xrpl_rpc_command`                                                                                     | `xrpl_rpc_command`, `status_code` |
-| RPC Latency Heatmap         | heatmap    | `sum(increase(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])) by (le)`                                          | `le` (bucket boundaries)          |
+| Panel                       | Type       | PromQL                                                                                                                                    | Labels Used              |
+| --------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| RPC Request Rate by Command | timeseries | `sum by (command) (rate(traces_span_metrics_calls_total{span_name=~"rpc.command.*"}[5m]))`                                                | `command`                |
+| RPC Latency p95 by Command  | timeseries | `histogram_quantile(0.95, sum by (le, command) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))` | `command`                |
+| RPC Error Rate              | bargauge   | Error spans / total spans × 100, grouped by `command`                                                                                     | `command`, `status_code` |
+| RPC Latency Heatmap         | heatmap    | `sum(increase(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])) by (le)`                                 | `le` (bucket boundaries) |
 
 ### Transaction Overview (`transaction-overview`)
 
-| Panel                             | Type       | PromQL                                                                                       | Labels Used     |
-| --------------------------------- | ---------- | -------------------------------------------------------------------------------------------- | --------------- |
-| Transaction Processing Rate       | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m])` and `tx.receive`         | `span_name`     |
-| Transaction Processing Latency    | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                              | —               |
-| Transaction Path Distribution     | piechart   | `sum by (xrpl_tx_local) (rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))` | `xrpl_tx_local` |
-| Transaction Receive vs Suppressed | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.receive"}[5m])`                          | —               |
+| Panel                             | Type       | PromQL                                                                               | Labels Used |
+| --------------------------------- | ---------- | ------------------------------------------------------------------------------------ | ----------- |
+| Transaction Processing Rate       | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m])` and `tx.receive` | `span_name` |
+| Transaction Processing Latency    | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                      | —           |
+| Transaction Path Distribution     | piechart   | `sum by (local) (rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))` | `local`     |
+| Transaction Receive vs Suppressed | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.receive"}[5m])`                  | —           |
 
 ### Consensus Health (`consensus-health`)
 

@@ -114,6 +114,16 @@ makeTelemetrySetup(
             "(set both for mutual TLS, or neither for one-way TLS).");
     }
 
+    // Mutual TLS only takes effect when TLS is on. Certificate paths set with
+    // use_tls=0 would be silently ignored and the exporter would connect in
+    // plaintext, so reject that contradiction instead of failing open.
+    if (!setup.tlsClientCertPath.empty() && !setup.useTls)
+    {
+        Throw<std::runtime_error>(
+            "[telemetry] tls_client_cert/tls_client_key require use_tls=1 "
+            "(set use_tls=1 to enable mutual TLS, or remove the cert paths).");
+    }
+
     // Head sampling is intentionally fixed at 1.0 (sample everything) and is
     // not read from config. A per-node ratio would let nodes make divergent
     // keep/drop decisions for the same distributed trace, producing broken

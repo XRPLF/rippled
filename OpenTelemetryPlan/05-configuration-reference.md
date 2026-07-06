@@ -21,8 +21,8 @@ The authoritative `[telemetry]` example lives in `cfg/xrpld-example.cfg`. Teleme
 | `endpoint`                 | string | `http://localhost:4318/v1/traces` | OTLP/HTTP collector endpoint                                                                               |
 | `use_tls`                  | bool   | `false`                           | Enable TLS for exporter connection                                                                         |
 | `tls_ca_cert`              | string | `""`                              | Path to CA certificate file                                                                                |
-| `tls_client_cert`          | string | `""`                              | Path to node's client certificate (PEM) for mutual TLS; empty = one-way TLS                                |
-| `tls_client_key`           | string | `""`                              | Path to private key (PEM) for `tls_client_cert`; required when it is set                                   |
+| `tls_client_cert`          | string | `""`                              | Path to node's client certificate (PEM) for mutual TLS; requires `use_tls=1`; empty = one-way TLS          |
+| `tls_client_key`           | string | `""`                              | Path to private key (PEM) for `tls_client_cert`; requires `use_tls=1`; required when the cert is set       |
 | `batch_size`               | uint   | `512`                             | Spans per export batch                                                                                     |
 | `batch_delay_ms`           | uint   | `5000`                            | Max delay before sending batch (ms)                                                                        |
 | `max_queue_size`           | uint   | `2048`                            | Maximum queued spans                                                                                       |
