@@ -5,12 +5,13 @@
 
 #include <algorithm>
 #include <cctype>
+#include <charconv>
 #include <cstdint>
 #include <cstdio>
-#include <cstring>
 #include <istream>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 
 namespace json {
 // Implementation of class Reader
@@ -605,33 +606,12 @@ bool
 Reader::decodeDouble(Token& token)
 {
     double value = 0;
-    int const bufferSize = 32;
-    int count = 0;
-    int const length = int(token.end - token.start);
-    // Sanity check to avoid buffer overflow exploits.
-    if (length < 0)
-    {
-        return addError("Unable to parse token length", token);
-    }
-    // Avoid using a string constant for the format control string given to
-    // sscanf, as this can cause hard to debug crashes on OS X. See here for
-    // more info:
-    //
-    // http://developer.apple.com/library/mac/#DOCUMENTATION/DeveloperTools/gcc-4.0.1/gcc/Incompatibilities.html
-    char format[] = "%lf";
-    if (length <= bufferSize)
-    {
-        Char buffer[bufferSize + 1];
-        memcpy(buffer, token.start, length);
-        buffer[length] = 0;
-        count = sscanf(buffer, format, &value);
-    }
-    else
-    {
-        std::string const buffer(token.start, token.end);
-        count = sscanf(buffer.c_str(), format, &value);
-    }
-    if (count != 1)
+    auto const [ptr, ec] = std::from_chars(token.start, token.end, value);
+    // A magnitude too large/small to represent (e.g. 1e400) yields
+    // result_out_of_range with value set to +/-inf or 0.  The previous
+    // sscanf("%lf") accepted those, so treat them as success too; only a
+    // genuine parse failure is an error.
+    if (ec != std::errc{} && ec != std::errc::result_out_of_range)
         return addError("'" + std::string(token.start, token.end) + "' is not a number.", token);
     currentValue() = value;
     return true;
