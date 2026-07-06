@@ -528,7 +528,8 @@ AccountRootsDeletedClean::finalize(
             after->isFieldPresent(sfSponsoringOwnerCount) ||
             after->isFieldPresent(sfSponsoringAccountCount) || after->isFieldPresent(sfSponsor))
         {
-            JLOG(j.fatal()) << "Invariant failed: account deletion has no sponsorship fields";
+            JLOG(j.fatal()) << "Invariant failed: account deletion left "
+                               "behind a sponsorship field";
             XRPL_ASSERT(
                 enforce,
                 "xrpl::AccountRootsDeletedClean::finalize : "
