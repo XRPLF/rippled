@@ -37,10 +37,10 @@ services:
       # Mount collector pipeline config (receivers → processors → exporters)
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
       # Phase 8: Mount rippled log directories for filelog receiver.
-      # User-run xrpld writes to /home/pratik/xrpld-logs/<network>/debug.log.
+      # User-run xrpld writes to /var/log/xrpld/<network>/debug.log.
       # Integration test still writes to /tmp/xrpld-integration/.
       # Both are mounted read-only so the collector can tail debug.log files.
-      - /home/pratik/xrpld-logs:/var/log/rippled:ro
+      - /var/log/xrpld:/var/log/rippled:ro
       - /tmp/xrpld-integration:/var/log/rippled-integration:ro
     depends_on:
       - tempo
