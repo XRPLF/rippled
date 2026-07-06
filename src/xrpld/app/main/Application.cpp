@@ -73,16 +73,17 @@
 #include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
+#include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/resource/Charge.h>
@@ -1681,7 +1682,7 @@ ApplicationImp::startGenesisLedger()
     auto const next = std::make_shared<Ledger>(*genesis, getTimeKeeper().closeTime());
     next->updateSkipList();
     XRPL_ASSERT(
-        next->header().seq < kXrpLedgerEarliestFees || next->read(keylet::fees()),
+        next->header().seq < kXrpLedgerEarliestFees || next->read(keylet::feeSettings()),
         "xrpl::ApplicationImp::startGenesisLedger : valid ledger fees");
     next->setImmutable();
     openLedger_.emplace(next, cachedSLEs_, logs_->journal("OpenLedger"));
@@ -1703,7 +1704,7 @@ ApplicationImp::getLastFullLedger()
             return ledger;
 
         XRPL_ASSERT(
-            ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::fees()),
+            ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::feeSettings()),
             "xrpl::ApplicationImp::getLastFullLedger : valid ledger fees");
         ledger->setImmutable();
 
@@ -1854,7 +1855,8 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
         loadLedger->stateMap().flushDirty(NodeObjectType::AccountNode);
 
         XRPL_ASSERT(
-            loadLedger->header().seq < kXrpLedgerEarliestFees || loadLedger->read(keylet::fees()),
+            loadLedger->header().seq < kXrpLedgerEarliestFees ||
+                loadLedger->read(keylet::feeSettings()),
             "xrpl::ApplicationImp::loadLedgerFromFile : valid ledger fees");
         loadLedger->setAccepted(closeTime, closeTimeResolution, !closeTimeEstimated);
 
@@ -2176,7 +2178,7 @@ fixConfigPorts(Config& config, Endpoints const& endpoints)
         auto const optPort = section.get(Keys::kPort);
         if (optPort)
         {
-            std::uint16_t const port = beast::lexicalCast<std::uint16_t>(*optPort);
+            auto const port = beast::lexicalCast<std::uint16_t>(*optPort);
             if (port == 0u)
                 section.set(Keys::kPort, std::to_string(ep.port()));
         }

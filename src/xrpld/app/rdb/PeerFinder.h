@@ -1,9 +1,14 @@
 #pragma once
 
-#include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/detail/Store.h>
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/rdb/DatabaseCon.h>
+
+#include <functional>
+#include <string>
+#include <vector>
 
 namespace xrpl {
 

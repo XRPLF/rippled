@@ -57,7 +57,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
     static uint64_t
     issuerMPTEscrowed(jtx::Env const& env, jtx::MPT const& mpt)
     {
-        auto const sle = env.le(keylet::mptIssuance(mpt.mpt()));
+        auto const sle = env.le(keylet::mptokenIssuance(mpt.mpt()));
         if (sle && sle->isFieldPresent(sfLockedAmount))
             return (*sle)[sfLockedAmount];
         return 0;
@@ -929,7 +929,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env(trust(alice, usd(0)));
             env.close();
 
-            auto const trustLineKey = keylet::line(alice.id(), gw.id(), usd.currency);
+            auto const trustLineKey = keylet::trustLine(alice.id(), gw.id(), usd.currency);
             BEAST_EXPECT(!env.current()->exists(trustLineKey));
 
             env.close();
@@ -3177,7 +3177,8 @@ struct EscrowToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(mptEscrowed(env, bob, mpt) == 0);
             BEAST_EXPECT(env.balance(gw, mpt) == outstandingMPT);
             BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 0);
-            BEAST_EXPECT(!env.le(keylet::mptIssuance(mpt.mpt()))->isFieldPresent(sfLockedAmount));
+            BEAST_EXPECT(
+                !env.le(keylet::mptokenIssuance(mpt.mpt()))->isFieldPresent(sfLockedAmount));
         }
 
         // Max MPT Amount Issued (Escrow Max MPT)

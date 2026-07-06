@@ -111,7 +111,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     }
 
     auto const loanBrokerID = loanSle->at(sfLoanBrokerID);
-    auto const loanBrokerSle = ctx.view.read(keylet::loanbroker(loanBrokerID));
+    auto const loanBrokerSle = ctx.view.read(keylet::loanBroker(loanBrokerID));
     if (!loanBrokerSle)
     {
         // should be impossible
@@ -398,7 +398,7 @@ LoanManage::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     auto const brokerID = loanSle->at(sfLoanBrokerID);
-    auto const brokerSle = view.peek(keylet::loanbroker(brokerID));
+    auto const brokerSle = view.peek(keylet::loanBroker(brokerID));
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 

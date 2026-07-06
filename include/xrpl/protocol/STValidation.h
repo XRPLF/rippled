@@ -1,15 +1,30 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/tokens.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
+#include <string>
 
 namespace xrpl {
 
@@ -72,35 +87,35 @@ public:
         F&& f);
 
     // Hash of the validated ledger
-    uint256
+    [[nodiscard]] uint256
     getLedgerHash() const;
 
     // Hash of consensus transaction set used to generate ledger
-    uint256
+    [[nodiscard]] uint256
     getConsensusHash() const;
 
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     getSignTime() const;
 
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     getSeenTime() const noexcept;
 
-    PublicKey const&
+    [[nodiscard]] PublicKey const&
     getSignerPublic() const noexcept;
 
-    NodeID const&
+    [[nodiscard]] NodeID const&
     getNodeID() const noexcept;
 
-    bool
+    [[nodiscard]] bool
     isValid() const noexcept;
 
-    bool
+    [[nodiscard]] bool
     isFull() const noexcept;
 
-    bool
+    [[nodiscard]] bool
     isTrusted() const noexcept;
 
-    uint256
+    [[nodiscard]] uint256
     getSigningHash() const;
 
     void
@@ -112,13 +127,13 @@ public:
     void
     setSeen(NetClock::time_point s);
 
-    Blob
+    [[nodiscard]] Blob
     getSerialized() const;
 
-    Blob
+    [[nodiscard]] Blob
     getSignature() const;
 
-    std::string
+    [[nodiscard]] std::string
     render() const
     {
         std::stringstream ss;

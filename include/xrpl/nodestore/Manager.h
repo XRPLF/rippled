@@ -1,7 +1,14 @@
 #pragma once
 
-#include <xrpl/nodestore/DatabaseRotating.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/Factory.h>
+#include <xrpl/nodestore/Scheduler.h>
+
+#include <cstddef>
+#include <memory>
+#include <string>
 
 namespace xrpl::NodeStore {
 

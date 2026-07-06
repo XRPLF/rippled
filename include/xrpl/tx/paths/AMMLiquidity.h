@@ -1,12 +1,16 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
+
+#include <cstdint>
+#include <optional>
 
 namespace xrpl {
 

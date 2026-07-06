@@ -1,7 +1,11 @@
 #pragma once
 
 #include <xrpl/basics/random.h>
+#include <xrpl/beast/net/IPAddressV4.h>
+#include <xrpl/beast/net/IPAddressV6.h>
 #include <xrpl/beast/net/IPEndpoint.h>
+
+#include <cstdint>
 
 namespace beast::IP {
 

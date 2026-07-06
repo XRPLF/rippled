@@ -1,17 +1,22 @@
 #pragma once
 
-#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Types.h>
 
 #include <boost/algorithm/string.hpp>
 
-#include <iomanip>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <utility>
 
 namespace xrpl::NodeStore {
 
@@ -73,9 +78,7 @@ public:
                     case 2:
                         return NodeObjectType::TransactionNode;
                     case 3:
-                        return NodeObjectType::Unknown;
                     default:
-                        // will never happen, but make static analysis tool happy.
                         return NodeObjectType::Unknown;
                 }
             }();
@@ -121,9 +124,9 @@ public:
     static void
     storeBatch(Backend& backend, Batch const& batch)
     {
-        for (int i = 0; i < batch.size(); ++i)
+        for (auto const& object : batch)
         {
-            backend.store(batch[i]);
+            backend.store(object);
         }
     }
 
@@ -134,11 +137,11 @@ public:
         pCopy->clear();
         pCopy->reserve(batch.size());
 
-        for (int i = 0; i < batch.size(); ++i)
+        for (auto const& expected : batch)
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status = backend.fetch(batch[i]->getHash(), &object);
+            Status const status = backend.fetch(expected->getHash(), &object);
 
             BEAST_EXPECT(status == Status::Ok);
 
@@ -154,11 +157,11 @@ public:
     void
     fetchMissing(Backend& backend, Batch const& batch)
     {
-        for (int i = 0; i < batch.size(); ++i)
+        for (auto const& expected : batch)
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status = backend.fetch(batch[i]->getHash(), &object);
+            Status const status = backend.fetch(expected->getHash(), &object);
 
             BEAST_EXPECT(status == Status::NotFound);
         }
@@ -168,10 +171,8 @@ public:
     static void
     storeBatch(Database& db, Batch const& batch)
     {
-        for (int i = 0; i < batch.size(); ++i)
+        for (auto const& object : batch)
         {
-            std::shared_ptr<NodeObject> const object(batch[i]);
-
             Blob data(object->getData());
 
             db.store(object->getType(), std::move(data), object->getHash(), db.earliestLedgerSeq());
@@ -185,9 +186,9 @@ public:
         pCopy->clear();
         pCopy->reserve(batch.size());
 
-        for (int i = 0; i < batch.size(); ++i)
+        for (auto const& expected : batch)
         {
-            std::shared_ptr<NodeObject> const object = db.fetchNodeObject(batch[i]->getHash(), 0);
+            std::shared_ptr<NodeObject> const object = db.fetchNodeObject(expected->getHash(), 0);
 
             if (object != nullptr)
                 pCopy->push_back(object);
