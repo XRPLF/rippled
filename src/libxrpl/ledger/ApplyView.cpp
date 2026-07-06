@@ -442,7 +442,8 @@ ReserveContext::makeFromAccount(ApplyView& view, SLE::pointer accountSle, SLE::p
         sponsorSle == nullptr || sponsorSle->getType() == ltACCOUNT_ROOT,
         "ReserveContext::makeFromAccount : valid sponsor sle");
 
-    ReserveContext ctx{.accountSle = accountSle, .sponsorSle = sponsorSle};
+    ReserveContext ctx{
+        .accountSle = accountSle, .sponsorSle = sponsorSle, .sponsorshipSle = nullptr};
     if (auto const sponsorID = ctx.sponsorID(); sponsorID.has_value())
         ctx.sponsorshipSle = view.peek(keylet::sponsorship(*sponsorID, ctx.accountID()));
     return ctx;
@@ -457,7 +458,9 @@ ReserveContext::makeFromObject(ApplyView& view, SLE::ref objectSle, SLE::pointer
     XRPL_ASSERT(objectSle != nullptr, "ReserveContext::makeFromObject : valid object sle");
 
     ReserveContext ctx{
-        .accountSle = ownerSle, .sponsorSle = getLedgerEntryReserveSponsor(view, objectSle)};
+        .accountSle = ownerSle,
+        .sponsorSle = getLedgerEntryReserveSponsor(view, objectSle),
+        .sponsorshipSle = nullptr};
     if (auto const sponsorID = ctx.sponsorID(); sponsorID.has_value())
         ctx.sponsorshipSle = view.peek(keylet::sponsorship(*sponsorID, ctx.accountID()));
     return ctx;
