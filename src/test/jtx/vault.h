@@ -1,13 +1,13 @@
 #pragma once
 
 #include <test/jtx/Account.h>
-#include <test/jtx/amount.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Keylet.h>
 
+#include <cstdint>
 #include <optional>
 #include <tuple>
 

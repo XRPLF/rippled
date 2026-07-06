@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 
 namespace xrpl {

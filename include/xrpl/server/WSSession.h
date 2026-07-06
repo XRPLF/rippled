@@ -2,7 +2,6 @@
 
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Port.h>
-#include <xrpl/server/Writer.h>
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -11,7 +10,9 @@
 #include <boost/logic/tribool.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <functional>
+#include <iterator>
 #include <memory>
 #include <utility>
 #include <vector>

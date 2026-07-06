@@ -2,14 +2,24 @@
 
 #include <test/csf/Histogram.h>
 #include <test/csf/SimTime.h>
+#include <test/csf/Tx.h>
+#include <test/csf/Validation.h>
 #include <test/csf/events.h>
 
 #include <xrpl/basics/UnorderedContainers.h>
 
+#include <algorithm>
+#include <cassert>
 #include <chrono>
+#include <cstddef>
+#include <iomanip>
+#include <ios>
+#include <map>
 #include <optional>
 #include <ostream>
 #include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl::test::csf {
 

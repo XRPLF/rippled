@@ -1,8 +1,17 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Types.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace xrpl::NodeStore {
 

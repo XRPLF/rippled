@@ -2,14 +2,18 @@
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/tokens.h>
 
 #include <array>
+#include <cstdint>
 #include <cstring>
+#include <optional>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
