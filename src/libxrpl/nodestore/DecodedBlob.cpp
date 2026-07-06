@@ -33,7 +33,7 @@ DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
 
     if (valueBytes > 8)
     {
-        unsigned char const* byte = static_cast<unsigned char const*>(value);
+        auto const* byte = static_cast<unsigned char const*>(value);
         objectType_ = safeCast<NodeObjectType>(byte[8]);
     }
 

@@ -1,8 +1,19 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DatabaseRotating.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
 
+#include <cstdint>
+#include <functional>
+#include <memory>
 #include <mutex>
+#include <string>
 
 namespace xrpl::NodeStore {
 

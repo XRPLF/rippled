@@ -6,6 +6,11 @@
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/message.hpp>
 
+#include <cstddef>
+#include <string>
+#include <type_traits>
+#include <utility>
+
 namespace xrpl {
 
 /// Body that holds JSON
@@ -22,7 +27,7 @@ struct JsonBody
         dynamic_buffer_type buffer_;
 
     public:
-        using const_buffers_type = typename dynamic_buffer_type::const_buffers_type;
+        using const_buffers_type = dynamic_buffer_type::const_buffers_type;
 
         using is_deferred = std::false_type;
 

@@ -3,14 +3,17 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <cstddef>
 #include <optional>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 

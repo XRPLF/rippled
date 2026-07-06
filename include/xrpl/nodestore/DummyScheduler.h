@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Task.h>
 
 namespace xrpl::NodeStore {
 

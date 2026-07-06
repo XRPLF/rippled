@@ -11,6 +11,7 @@
 
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
+#include <soci/boost-optional.h>  // IWYU pragma: keep
 #include <soci/into.h>
 #include <soci/session.h>
 #include <soci/statement.h>
@@ -146,10 +147,10 @@ updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Jour
             s.reserve(list.size());
             valence.reserve(list.size());
 
-            for (auto iter(list.cbegin()); iter != list.cend(); ++iter)
+            for (auto const& entry : list)
             {
-                s.emplace_back(to_string(iter->endpoint));
-                valence.emplace_back(iter->valence);
+                s.emplace_back(to_string(entry.endpoint));
+                valence.emplace_back(entry.valence);
             }
 
             session << "INSERT INTO PeerFinder_BootstrapCache_Next ( "

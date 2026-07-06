@@ -3,10 +3,14 @@
 #include <xrpld/consensus/ConsensusProposal.h>
 #include <xrpld/consensus/DisputedTx.h>
 
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <chrono>
+#include <cstddef>
 #include <map>
+#include <string>
 
 namespace xrpl {
 
@@ -183,11 +187,11 @@ enum class ConsensusState {
 template <class Traits>
 struct ConsensusResult
 {
-    using Ledger_t = typename Traits::Ledger_t;
-    using TxSet_t = typename Traits::TxSet_t;
-    using NodeID_t = typename Traits::NodeID_t;
+    using Ledger_t = Traits::Ledger_t;
+    using TxSet_t = Traits::TxSet_t;
+    using NodeID_t = Traits::NodeID_t;
 
-    using Tx_t = typename TxSet_t::Tx;
+    using Tx_t = TxSet_t::Tx;
     using Proposal_t = ConsensusProposal<NodeID_t, typename Ledger_t::ID, typename TxSet_t::ID>;
     using Dispute_t = DisputedTx<Tx_t, NodeID_t>;
 
