@@ -237,6 +237,7 @@ adjustOwnerCountSigned(
         XRPL_ASSERT(validSponsorType, "xrpl::adjustOwnerCountSigned : valid sponsor sle type");
         if (!validSponsorType)
             return;  // LCOV_EXCL_LINE
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) - checked above
         auto const sponsorID = reserveCtx.sponsorID().value();
 
         adjustOwnerCountImpl(

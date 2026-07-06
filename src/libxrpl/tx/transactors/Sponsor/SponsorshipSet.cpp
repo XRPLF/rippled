@@ -266,9 +266,9 @@ SponsorshipSet::doApply()
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*newSle)[sfSponseeNode] = *sponseePage;
 
-        // NOLINTNEXTLINE(readability-suspicious-call-argument)
         increaseOwnerCount(
             view(),
+            // NOLINTNEXTLINE(readability-suspicious-call-argument)
             ReserveContext::makeFromAccount(view(), sponsorAccSle, reserveSponsorAccSle),
             1,
             ctx_.journal);
