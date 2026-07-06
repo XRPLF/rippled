@@ -190,6 +190,10 @@ invokePreflight(PreflightContext const& ctx)
         {
             span.setAttribute(
                 telemetry::tx_apply_span::attr::terResult, transToken(result.first).c_str());
+            // Mark the span as errored when preflight rejects the transaction so
+            // failed stages surface in span-status error counts.
+            if (!isTesSuccess(result.first))
+                span.setError(transToken(result.first));
         }
         return result;
     }

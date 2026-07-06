@@ -1,4 +1,4 @@
-# [OpenTelemetry](00-tracing-fundamentals.md) Distributed Tracing Implementation Plan for xrpld (xrpld)
+# [OpenTelemetry](00-tracing-fundamentals.md) Distributed Tracing Implementation Plan for xrpld
 
 ## Executive Summary
 
@@ -130,7 +130,7 @@ Key trace points span across transaction submission via RPC, peer-to-peer messag
 
 > **OTLP** = OpenTelemetry Protocol | **CNCF** = Cloud Native Computing Foundation
 
-The OpenTelemetry C++ SDK is selected for its CNCF backing, active development, and native performance characteristics. Traces are exported via OTLP/gRPC (primary) or OTLP/HTTP (fallback) to an OpenTelemetry Collector, which provides flexible routing and sampling.
+The OpenTelemetry C++ SDK is selected for its CNCF backing, active development, and native performance characteristics. Traces are exported via OTLP/HTTP to an OpenTelemetry Collector, which provides flexible routing and sampling. OTLP/gRPC is planned future work (see design decisions §2.2.2).
 
 Span naming follows a hierarchical `<component>.<operation>` convention (e.g., `rpc.submit`, `tx.relay`, `consensus.round`). Context propagation uses W3C Trace Context headers for HTTP and embedded Protocol Buffer fields for P2P messages. The implementation coexists with existing PerfLog and Insight observability systems through correlation IDs.
 
@@ -154,7 +154,7 @@ Performance optimization strategies include head sampling fixed at 100% (intenti
 
 > **OTLP** = OpenTelemetry Protocol | **APM** = Application Performance Monitoring
 
-Configuration is handled through the `[telemetry]` section in `xrpld.cfg` with options for enabling/disabling, exporter selection, endpoint configuration, sampling ratios, and component-level filtering. CMake integration includes a `XRPL_ENABLE_TELEMETRY` option for compile-time control.
+Configuration is handled through the `[telemetry]` section in `xrpld.cfg` with options for enabling/disabling, exporter selection, endpoint configuration, and component-level filtering. Head sampling is fixed at 1.0 (not operator-configurable); volume reduction is done by tail sampling in the collector. CMake integration includes a `XRPL_ENABLE_TELEMETRY` option for compile-time control.
 
 OpenTelemetry Collector configurations are provided for development and production (with tail-based sampling, Tempo, and Elastic APM). Docker Compose examples enable quick local development environment setup.
 

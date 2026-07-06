@@ -73,15 +73,16 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
         cache = getAssetCache(inLedger, true);
     }
 
-    // updateAll runs on every ledger close; skip span emission entirely when
-    // there are no active path subscriptions to avoid a steady stream of empty
-    // spans at mainnet close cadence.
-    if (requests.empty())
-        return;
-
     using namespace telemetry;
-    auto span = SpanGuard::span(
-        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::updateAll);
+    // updateAll runs on every ledger close. Skip span emission when there are
+    // no active path subscriptions, to avoid a steady stream of empty spans at
+    // mainnet close cadence. A null guard is used in that case; all other work
+    // still runs unchanged (notably the isNewPathRequest() flag reset below),
+    // so behaviour matches the pre-span code path.
+    auto span = requests.empty()
+        ? SpanGuard{}
+        : SpanGuard::span(
+              TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::updateAll);
     span.setAttribute(pathfind_span::attr::ledgerIndex, static_cast<int64_t>(inLedger->seq()));
     span.setAttribute(pathfind_span::attr::numRequests, static_cast<int64_t>(requests.size()));
 

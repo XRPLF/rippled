@@ -20,7 +20,7 @@ The most effective way to prevent spoofing from external sources is to treat you
 server {
     listen 80;
 
-    location {
+    location / {
         # Clear out untrusted incoming trace headers
         proxy_set_header traceparent "";
         proxy_set_header tracestate "";
@@ -92,10 +92,11 @@ receivers:
       grpc:
         endpoint: 0.0.0.0:4317
         tls:
+          # Setting client_ca_file makes the collector require and verify a
+          # client cert, rejecting connections without a trusted one.
           client_ca_file: /certs/client_ca.pem # CA that signs trusted client certs
           cert_file: /certs/collector.pem
           key_file: /certs/collector.key
-          auth_type: require_and_verify_client_cert # Rejects unauthorized clients
 ```
 
 ### **Approach C: Application Layer Authentication (Basic Auth Extension)**
@@ -175,7 +176,7 @@ xrpld has **two distinct attack surfaces**, not one. The original guide conflate
                 │                                                            │ OTLP/gRPC
                 │                                                            │ + mTLS
                 │                                                            ▼
-                └─────────────────────────────────────────  [require_and_verify_client_cert]
+                └─────────────────────────────────────────  [client_ca_file: verify client cert]
                                                                   OTel Collector
                                                               (in private subnet, NetPol)
 ```
@@ -196,15 +197,15 @@ The guide's NGINX header stripping and OTTL stale-span filtering target HTTP gat
 
 Evaluated for the across-network deployment shape:
 
-| Approach                        | Across-network fit                                                                                                                                                                                                                                                                            | Cost                                                                 | Verdict                            |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------- |
-| **A. NetworkPolicy / firewall** | Necessary baseline (don't expose `4317`/`4318` to the internet), but insufficient on its own when traffic genuinely crosses networks — you cannot NetworkPolicy the public internet.                                                                                                          | Cheap.                                                               | **Defense-in-depth, not primary.** |
-| **B. mTLS**                     | Strongest fit. Every xrpld node holds a client cert; collector verifies with `require_and_verify_client_cert`. Encrypts in transit (raw OTLP over the internet leaks transaction patterns and validator identity). Compromised node = revoke one cert, no shared secret to rotate everywhere. | Cert issuance + rotation pipeline.                                   | **Primary.**                       |
-| **C. Basic Auth**               | Worst shape for this topology. Single shared password across all xrpld nodes — one leaked node config compromises the whole fleet. Doesn't encrypt; you'd need TLS underneath anyway, at which point you're 80% of the way to mTLS.                                                           | Cheap to set up, expensive to operate (rotation across N operators). | **Skip.**                          |
+| Approach                        | Across-network fit                                                                                                                                                                                                                                                                                                | Cost                                                                 | Verdict                            |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------- |
+| **A. NetworkPolicy / firewall** | Necessary baseline (don't expose `4317`/`4318` to the internet), but insufficient on its own when traffic genuinely crosses networks — you cannot NetworkPolicy the public internet.                                                                                                                              | Cheap.                                                               | **Defense-in-depth, not primary.** |
+| **B. mTLS**                     | Strongest fit. Every xrpld node holds a client cert; the collector verifies it via `client_ca_file` in the receiver's `tls` block. Encrypts in transit (raw OTLP over the internet leaks transaction patterns and validator identity). Compromised node = revoke one cert, no shared secret to rotate everywhere. | Cert issuance + rotation pipeline.                                   | **Primary.**                       |
+| **C. Basic Auth**               | Worst shape for this topology. Single shared password across all xrpld nodes — one leaked node config compromises the whole fleet. Doesn't encrypt; you'd need TLS underneath anyway, at which point you're 80% of the way to mTLS.                                                                               | Cheap to set up, expensive to operate (rotation across N operators). | **Skip.**                          |
 
 ## Decision
 
-**Primary defense:** mTLS (Approach B) on the collector's OTLP receivers, with `auth_type: require_and_verify_client_cert`.
+**Primary defense:** mTLS (Approach B) on the collector's OTLP receivers. The collector requires and verifies each client certificate when `client_ca_file` is set in the receiver's `tls` block (there is no `auth_type` field — setting `client_ca_file` is what enforces client-cert verification).
 
 **Defense-in-depth:** NetworkPolicy / firewall rules (Approach A) so `4317`/`4318` are never reachable from outside the expected operator subnets even if mTLS were misconfigured.
 

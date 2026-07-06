@@ -166,7 +166,8 @@
 
 ## Task 3.6: Context Propagation in Transaction Relay
 
-**Status**: COMPLETE
+**Status**: COMPLETE (transaction relay). Consensus proposal/validation
+propagation is deferred to Phase 4 — see "Planned (Phase 4)" below.
 
 **Objective**: Ensure trace context flows correctly when transactions are relayed between peers, creating linked spans across nodes.
 
@@ -177,17 +178,6 @@
   `telemetry::injectSpanContext()`. The receiving node's `txReceiveSpan()` (already
   wired in PeerImp) extracts the parent span_id and creates the tx.receive span
   as a child of the sender's tx.process span.
-
-- **Proposal send/receive**: `RCLConsensus::Adaptor::propose()` injects the
-  current thread's active span context into the `TMProposeSet` protobuf via
-  `telemetry::injectToProtobuf()`. PeerImp creates a
-  `consensus.proposal.receive` span that extracts the sender's trace context
-  as parent (via `ConsensusReceiveTracing.h`).
-
-- **Validation send/receive**: `RCLConsensus::Adaptor::validate()` injects
-  the current thread's active span context into the `TMValidation` protobuf.
-  PeerImp creates a `consensus.validation.receive` span that extracts the
-  sender's trace context as parent.
 
 - **Edge cases**: Missing trace context (older peers) degrades gracefully to
   standalone spans. Invalid/corrupted context is treated as absent. Trace
@@ -200,20 +190,36 @@
 - `PropagationHelpers.h` — `injectSpanContext(SpanGuard&, proto)` bridge
   between SpanGuard and protobuf TraceContext.
 - `TraceContextPropagator.h` — `injectToProtobuf(ctx, proto)` for
-  same-thread injection via OTel RuntimeContext (used in propose/validate).
-- `ConsensusReceiveTracing.h` — `proposalReceiveSpan()` and
-  `validationReceiveSpan()` helper functions that create receive spans with
-  optional parent context extraction from incoming protobuf messages.
+  same-thread injection via OTel RuntimeContext.
 
 **Key modified files**:
 
 - `src/xrpld/app/misc/NetworkOPs.cpp` — tx relay injection
-- `src/xrpld/app/consensus/RCLConsensus.cpp` — proposal/validation send injection
-- `src/xrpld/overlay/detail/PeerImp.cpp` — proposal/validation receive spans
 - `include/xrpl/telemetry/SpanGuard.h` — `TraceBytes` struct, `getTraceBytes()`
 - `src/libxrpl/telemetry/SpanGuard.cpp` — `getTraceBytes()` implementation
 - `src/xrpld/telemetry/PropagationHelpers.h` — inject helpers (new file)
-- `src/xrpld/telemetry/ConsensusReceiveTracing.h` — receive span helpers (new file)
+
+**Planned (Phase 4 — not in this PR)**:
+
+The consensus proposal/validation propagation below is Phase 4 scope and is
+not implemented on this branch. It is listed here only to record the intended
+design.
+
+- **Proposal send/receive**: `RCLConsensus::Adaptor::propose()` injects the
+  current thread's active span context into the `TMProposeSet` protobuf via
+  `telemetry::injectToProtobuf()`. PeerImp creates a
+  `consensus.proposal.receive` span that extracts the sender's trace context
+  as parent (via `ConsensusReceiveTracing.h`).
+
+- **Validation send/receive**: `RCLConsensus::Adaptor::validate()` injects
+  the current thread's active span context into the `TMValidation` protobuf.
+  PeerImp creates a `consensus.validation.receive` span that extracts the
+  sender's trace context as parent.
+
+- Planned files: `src/xrpld/app/consensus/RCLConsensus.cpp` (send injection),
+  `src/xrpld/overlay/detail/PeerImp.cpp` (receive spans),
+  `src/xrpld/telemetry/ConsensusReceiveTracing.h` (receive span helpers,
+  new file).
 
 **Reference**:
 
@@ -396,7 +402,7 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 
 - `src/xrpld/overlay/detail/PeerImp.cpp` — restructured span creation
 - `src/xrpld/app/misc/NetworkOPs.cpp` — deterministic context for tx.process
-- `src/xrpld/app/misc/TxSpanNames.h` — new `traceStrategy` attribute constant
+- `src/xrpld/telemetry/TxSpanNames.h` — new `traceStrategy` attribute constant
 - New or shared utility for `createDeterministicTxContext()` (location TBD: could be
   a shared header like `include/xrpl/telemetry/DeterministicContext.h`, or file-local
   if only used in two places)
@@ -431,7 +437,7 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
   - `txSpan(category, group, name, txHash, parentCtx)` — child span (deterministic
     trace_id combined with protobuf-extracted parent span_id for relay ordering).
 
-- **`TxTracing.h` helper functions** (`src/xrpld/overlay/detail/TxTracing.h`):
+- **`TxTracing.h` helper functions** (`src/xrpld/telemetry/TxTracing.h`):
   File-local helpers that wrap `SpanGuard::txSpan()` for the two main PeerImp call
   sites:
   - `txReceiveSpan(txHash, parentCtx)` — creates `tx.receive` span with
@@ -495,7 +501,7 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 
 **Modified files**:
 
-- `src/xrpld/app/misc/TxSpanNames.h`
+- `src/xrpld/telemetry/TxSpanNames.h`
 - `src/xrpld/app/misc/detail/TxQSpanNames.h`
 - `src/xrpld/app/misc/NetworkOPs.cpp`
 - `src/xrpld/overlay/detail/PeerImp.cpp`
