@@ -417,6 +417,14 @@ LedgerHistory::builtLedger(
     LedgerHash hash = ledger->header().hash;
     XRPL_ASSERT(!hash.isZero(), "xrpl::LedgerHistory::builtLedger : nonzero hash");
 
+    struct MismatchInputs
+    {
+        LedgerHash valid;
+        std::optional<uint256> validatedConsensusHash;
+        json::Value consensus;
+    };
+    std::optional<MismatchInputs> mismatch;
+
     m_consensus_validated.fetchAndModify(index, [&](cv_entry& entry) {
         if (entry.validated && !entry.built)
         {
@@ -424,12 +432,8 @@ LedgerHistory::builtLedger(
             {
                 JLOG(j_.error()) << "MISMATCH: seq=" << index
                                  << " validated:" << entry.validated.value() << " then:" << hash;
-                handleMismatch(
-                    hash,
-                    entry.validated.value(),
-                    consensusHash,
-                    entry.validatedConsensusHash,
-                    consensus);
+                mismatch = MismatchInputs{
+                    entry.validated.value(), entry.validatedConsensusHash, consensus};
             }
             else
             {
@@ -442,6 +446,14 @@ LedgerHistory::builtLedger(
         entry.builtConsensusHash.emplace(consensusHash);
         entry.consensus.emplace(std::move(consensus));
     });
+
+    if (mismatch)
+        handleMismatch(
+            hash,
+            mismatch->valid,
+            consensusHash,
+            mismatch->validatedConsensusHash,
+            mismatch->consensus);
 }
 
 void
@@ -453,6 +465,14 @@ LedgerHistory::validatedLedger(
     LedgerHash hash = ledger->header().hash;
     XRPL_ASSERT(!hash.isZero(), "xrpl::LedgerHistory::validatedLedger : nonzero hash");
 
+    struct MismatchInputs
+    {
+        LedgerHash built;
+        std::optional<uint256> builtConsensusHash;
+        json::Value consensus;
+    };
+    std::optional<MismatchInputs> mismatch;
+
     m_consensus_validated.fetchAndModify(index, [&](cv_entry& entry) {
         if (entry.built && !entry.validated)
         {
@@ -460,12 +480,8 @@ LedgerHistory::validatedLedger(
             {
                 JLOG(j_.error()) << "MISMATCH: seq=" << index << " built:" << entry.built.value()
                                  << " then:" << hash;
-                handleMismatch(
-                    entry.built.value(),
-                    hash,
-                    entry.builtConsensusHash,
-                    consensusHash,
-                    entry.consensus.value());
+                mismatch = MismatchInputs{
+                    entry.built.value(), entry.builtConsensusHash, entry.consensus.value()};
             }
             else
             {
@@ -477,6 +493,14 @@ LedgerHistory::validatedLedger(
         entry.validated.emplace(hash);
         entry.validatedConsensusHash = consensusHash;
     });
+
+    if (mismatch)
+        handleMismatch(
+            mismatch->built,
+            hash,
+            mismatch->builtConsensusHash,
+            consensusHash,
+            mismatch->consensus);
 }
 
 /** Ensure m_ledgers_by_hash doesn't have the wrong hash for a particular index
