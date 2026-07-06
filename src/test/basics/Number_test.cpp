@@ -17,6 +17,7 @@
 #include <iomanip>
 #include <limits>
 #include <map>
+#include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -36,11 +37,11 @@ class Number_test : public beast::unit_test::Suite
         auto s = to_string(value);
         std::string out;
         int count = 0;
-        for (auto it = s.rbegin(); it != s.rend(); ++it)
+        for (char const& ch : std::views::reverse(s))
         {
-            if (count != 0 && count % 3 == 0 && (isdigit(*it) != 0))
+            if (count != 0 && count % 3 == 0 && (isdigit(ch) != 0))
                 out.insert(out.begin(), '_');
-            out.insert(out.begin(), *it);
+            out.insert(out.begin(), ch);
             ++count;
         }
         return out;

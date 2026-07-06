@@ -299,13 +299,13 @@ public:
 
             OraclesData oracles;
             prep(env, oracles);
-            for (int i = 0; i < oracles.size(); ++i)
+            for (auto& oracleData : oracles)
             {
                 Oracle oracle(
                     env,
-                    {.owner = oracles[i].first,
+                    {.owner = oracleData.first,
                      // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                     .documentID = asUInt(*oracles[i].second),
+                     .documentID = asUInt(*oracleData.second),
                      .fee = baseFee},
                     false);
                 // push XRP/USD by two ledgers, so this price
