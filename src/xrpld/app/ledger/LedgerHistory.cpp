@@ -2,26 +2,25 @@
 
 #include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/shamap/SHAMapItem.h>
 
-#include <algorithm>
-#include "xrpl/basics/base_uint.h"
-#include "xrpl/beast/insight/Collector.h"
-#include "xrpl/beast/utility/Journal.h"
-#include "xrpl/beast/utility/instrumentation.h"
-#include "xrpl/json/json_value.h"
-#include "xrpl/ledger/Ledger.h"
-#include "xrpl/ledger/ReadView.h"
-#include "xrpl/protocol/Protocol.h"
-#include "xrpl/protocol/RippleLedgerHash.h"
-#include "xrpl/protocol/Rules.h"
-#include "xrpl/protocol/TxMeta.h"
-#include "xrpl/shamap/SHAMapItem.h"
-#include "xrpld/app/main/Application.h"
-#include "xrpld/core/Config.h"
 #include <algorithm>
 #include <cstddef>
 #include <memory>
@@ -312,9 +311,8 @@ leaves(SHAMap const& sm)
     std::vector<SHAMapItem const*> v;
     for (auto const& item : sm)
         v.push_back(&item);
-    std::ranges::sort(v, [](SHAMapItem const* lhs, SHAMapItem const* rhs) {
-        return lhs->key() < rhs->key();
-    });
+    std::ranges::sort(
+        v, [](SHAMapItem const* lhs, SHAMapItem const* rhs) { return lhs->key() < rhs->key(); });
     return v;
 }
 
@@ -454,7 +452,9 @@ LedgerHistory::builtLedger(
                 JLOG(j_.error()) << "MISMATCH: seq=" << index
                                  << " validated:" << entry.validated.value() << " then:" << hash;
                 mismatch = MismatchInputs{
-                    .valid=entry.validated.value(), .validatedConsensusHash=entry.validatedConsensusHash, .consensus=consensus};
+                    .valid = entry.validated.value(),
+                    .validatedConsensusHash = entry.validatedConsensusHash,
+                    .consensus = consensus};
             }
             else
             {
@@ -468,14 +468,15 @@ LedgerHistory::builtLedger(
         entry.consensus.emplace(std::move(consensus));
     });
 
-    if (mismatch) {
+    if (mismatch)
+    {
         handleMismatch(
             hash,
             mismatch->valid,
             consensusHash,
             mismatch->validatedConsensusHash,
             mismatch->consensus);
-}
+    }
 }
 
 void
@@ -503,7 +504,9 @@ LedgerHistory::validatedLedger(
                 JLOG(j_.error()) << "MISMATCH: seq=" << index << " built:" << entry.built.value()
                                  << " then:" << hash;
                 mismatch = MismatchInputs{
-                    .built=entry.built.value(), .builtConsensusHash=entry.builtConsensusHash, .consensus=entry.consensus.value()};
+                    .built = entry.built.value(),
+                    .builtConsensusHash = entry.builtConsensusHash,
+                    .consensus = entry.consensus.value()};
             }
             else
             {
@@ -516,14 +519,15 @@ LedgerHistory::validatedLedger(
         entry.validatedConsensusHash = consensusHash;
     });
 
-    if (mismatch) {
+    if (mismatch)
+    {
         handleMismatch(
             mismatch->built,
             hash,
             mismatch->builtConsensusHash,
             consensusHash,
             mismatch->consensus);
-}
+    }
 }
 
 /** Ensure m_ledgers_by_hash doesn't have the wrong hash for a particular index
