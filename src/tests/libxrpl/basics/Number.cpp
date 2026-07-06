@@ -1109,7 +1109,7 @@ TEST(NumberTest, conversions)
         XRPAmount const xrp0{0};
         Number const n0 = xrp0;
         EXPECT_EQ(n0, Number{0});
-        XRPAmount const xrp1{n0};
+        XRPAmount const xrp1{n0};  // NOLINT misc-confusable-identifiers
         EXPECT_EQ(xrp1, xrp0);
     }
 }
