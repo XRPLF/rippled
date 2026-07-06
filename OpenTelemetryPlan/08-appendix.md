@@ -183,12 +183,6 @@ flowchart TB
 | [08-appendix.md](./08-appendix.md)                               | Glossary, references, version history        |
 | [presentation.md](./presentation.md)                             | Slide deck for OTel plan overview            |
 
-### Task Lists
-
-| Document                             | Description                                         |
-| ------------------------------------ | --------------------------------------------------- |
-| [presentation.md](./presentation.md) | Presentation slides for OpenTelemetry plan overview |
-
 ---
 
 _Previous: [Observability Backends](./07-observability-backends.md)_ | _Back to: [Overview](./OpenTelemetryPlan.md)_
