@@ -2429,11 +2429,11 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
 
-        if (auto const extensionComputeLimit = ~val->at(~sfGasLimit); extensionComputeLimit)
-            jvObj[jss::extension_compute] = *extensionComputeLimit;
+        if (auto const gasLimit = ~val->at(~sfGasLimit); gasLimit)
+            jvObj[jss::gas_limit] = *gasLimit;
 
-        if (auto const extensionSizeLimit = ~val->at(~sfBytecodeSizeLimit); extensionSizeLimit)
-            jvObj[jss::extension_size] = *extensionSizeLimit;
+        if (auto const bytecodeSizeLimit = ~val->at(~sfBytecodeSizeLimit); bytecodeSizeLimit)
+            jvObj[jss::bytecode_size_limit] = *bytecodeSizeLimit;
 
         if (auto const gasPrice = ~val->at(~sfGasPrice); gasPrice)
             jvObj[jss::gas_price] = *gasPrice;
@@ -2894,8 +2894,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             l[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
             if (smartEscrowEnabled)
             {
-                l[jss::extension_compute] = lpClosed->fees().extensionComputeLimit;
-                l[jss::extension_size] = lpClosed->fees().extensionSizeLimit;
+                l[jss::gas_limit] = lpClosed->fees().gasLimit;
+                l[jss::bytecode_size_limit] = lpClosed->fees().bytecodeSizeLimit;
                 l[jss::gas_price] = lpClosed->fees().gasPrice;
             }
             l[jss::close_time] =
@@ -2908,8 +2908,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             l[jss::reserve_inc_xrp] = lpClosed->fees().increment.decimalXRP();
             if (smartEscrowEnabled)
             {
-                l[jss::extension_compute] = lpClosed->fees().extensionComputeLimit;
-                l[jss::extension_size] = lpClosed->fees().extensionSizeLimit;
+                l[jss::gas_limit] = lpClosed->fees().gasLimit;
+                l[jss::bytecode_size_limit] = lpClosed->fees().bytecodeSizeLimit;
                 l[jss::gas_price] = lpClosed->fees().gasPrice;
             }
 
@@ -3109,8 +3109,8 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             jvObj[jss::reserve_inc] = lpAccepted->fees().increment.jsonClipped();
             if (lpAccepted->rules().enabled(featureSmartEscrow))
             {
-                jvObj[jss::extension_compute] = lpAccepted->fees().extensionComputeLimit;
-                jvObj[jss::extension_size] = lpAccepted->fees().extensionSizeLimit;
+                jvObj[jss::gas_limit] = lpAccepted->fees().gasLimit;
+                jvObj[jss::bytecode_size_limit] = lpAccepted->fees().bytecodeSizeLimit;
                 jvObj[jss::gas_price] = lpAccepted->fees().gasPrice;
             }
 
@@ -4095,8 +4095,8 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, json::Value& jvResult)
         jvResult[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
         if (lpClosed->rules().enabled(featureSmartEscrow))
         {
-            jvResult[jss::extension_compute] = lpClosed->fees().extensionComputeLimit;
-            jvResult[jss::extension_size] = lpClosed->fees().extensionSizeLimit;
+            jvResult[jss::gas_limit] = lpClosed->fees().gasLimit;
+            jvResult[jss::bytecode_size_limit] = lpClosed->fees().bytecodeSizeLimit;
             jvResult[jss::gas_price] = lpClosed->fees().gasPrice;
         }
     }
