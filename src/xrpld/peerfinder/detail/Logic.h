@@ -802,12 +802,10 @@ public:
                     //
                     checker.asyncConnect(
                         ep.address,
-                        std::bind(
-                            &Logic::checkComplete,
-                            this,
-                            slot->remoteEndpoint(),
-                            ep.address,
-                            std::placeholders::_1));
+                        [this, remoteAddress = slot->remoteEndpoint(), checkedAddress = ep.address](
+                            boost::system::error_code const& ec) {
+                            checkComplete(remoteAddress, checkedAddress, ec);
+                        });
 
                     // Note that we simply discard the first Endpoint
                     // that the neighbor sends when we perform the

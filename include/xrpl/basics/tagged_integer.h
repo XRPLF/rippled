@@ -43,10 +43,10 @@ public:
 
     TaggedInteger() = default;
 
-    template <
-        class OtherInt,
-        class = std::enable_if_t<std::is_integral_v<OtherInt> && sizeof(OtherInt) <= sizeof(Int)>>
-    explicit constexpr TaggedInteger(OtherInt value) noexcept : value_(value)
+    template <class OtherInt>
+    explicit constexpr TaggedInteger(OtherInt value) noexcept
+        requires(std::is_integral_v<OtherInt> && sizeof(OtherInt) <= sizeof(Int))
+        : value_(value)
     {
         static_assert(sizeof(TaggedInteger) == sizeof(Int), "tagged_integer is adding padding");
     }

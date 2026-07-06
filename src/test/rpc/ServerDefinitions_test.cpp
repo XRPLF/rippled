@@ -433,7 +433,7 @@ public:
                 Env env(*this);
                 auto const firstResult = env.rpc("server_definitions");
                 auto const hash = firstResult[jss::result][jss::hash].asString();
-                auto const hashParam = std::string("{ ") + "\"hash\": \"" + hash + "\"}";
+                auto const hashParam = std::string("{ ") + R"("hash": ")" + hash + "\"}";
 
                 auto const result = env.rpc("json", "server_definitions", hashParam);
                 BEAST_EXPECT(!result[jss::result].isMember(jss::error));
@@ -456,7 +456,7 @@ public:
                 std::string const hash =
                     "54296160385A27154BFA70A239DD8E8FD4CC2DB7BA32D970BA3A5B132CF749"
                     "D1";
-                auto const hashParam = std::string("{ ") + "\"hash\": \"" + hash + "\"}";
+                auto const hashParam = std::string("{ ") + R"("hash": ")" + hash + "\"}";
 
                 auto const result = env.rpc("json", "server_definitions", hashParam);
                 BEAST_EXPECT(!result[jss::result].isMember(jss::error));
