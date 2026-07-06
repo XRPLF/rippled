@@ -5,6 +5,9 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STAmount.h>
 
+#include <cstdint>
+#include <optional>
+
 namespace xrpl::test::jtx {
 
 /** Modify a trust line. */

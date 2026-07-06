@@ -4,6 +4,15 @@
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
 
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <set>
+
 namespace xrpl {
 
 /** Supports data retrieval by managing a set of peers.

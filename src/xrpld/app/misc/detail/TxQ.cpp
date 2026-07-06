@@ -231,11 +231,11 @@ static_assert(sumOfFirstSquares(1).second == 1);
 static_assert(sumOfFirstSquares(2).first);
 static_assert(sumOfFirstSquares(2).second == 5);
 
-static_assert(sumOfFirstSquares(0x1FFFFF).first, "");
-static_assert(sumOfFirstSquares(0x1FFFFF).second == 0x2AAAA8AAAAB00000ul, "");
+static_assert(sumOfFirstSquares(0x1FFFFF).first);
+static_assert(sumOfFirstSquares(0x1FFFFF).second == 0x2AAAA8AAAAB00000ul);
 
-static_assert(!sumOfFirstSquares(0x200000).first, "");
-static_assert(sumOfFirstSquares(0x200000).second == std::numeric_limits<std::uint64_t>::max(), "");
+static_assert(!sumOfFirstSquares(0x200000).first);
+static_assert(sumOfFirstSquares(0x200000).second == std::numeric_limits<std::uint64_t>::max());
 
 }  // namespace detail
 
@@ -394,12 +394,22 @@ TxQ::canBeHeld(
     std::optional<TxQAccount::TxMap::iterator> const& replacementIter,
     std::scoped_lock<std::mutex> const& lock)
 {
+    // A Batch is never queued: its inner transactions can change the sequence
+    // numbers of multiple accounts, which the TxQ's per-account model cannot
+    // forecast. It must apply straight to the open ledger or not at all.
+    if (tx.getTxnType() == ttBATCH)
+        return telCAN_NOT_QUEUE;
+
     // PreviousTxnID is deprecated and should never be used.
     // AccountTxnID is not supported by the transaction
     // queue yet, but should be added in the future.
     // TapFailHard transactions are never held
     if (tx.isFieldPresent(sfPreviousTxnID) || tx.isFieldPresent(sfAccountTxnID) ||
         ((flags & TapFailHard) != 0u))
+        return telCAN_NOT_QUEUE;
+
+    // Disallow delegated transactions from being queued.
+    if (tx.isFieldPresent(sfDelegate))
         return telCAN_NOT_QUEUE;
 
     {
@@ -799,7 +809,7 @@ TxQ::apply(
     std::scoped_lock const lock(mutex_);
 
     // accountIter is not const because it may be updated further down.
-    AccountMap::iterator accountIter = byAccount_.find(account);
+    auto accountIter = byAccount_.find(account);
     bool const accountIsInQueue = accountIter != byAccount_.end();
 
     // _If_ the account is in the queue, then ignore any sequence-based
@@ -828,7 +838,7 @@ TxQ::apply(
 
         // Find the first transaction in the queue that we might apply.
         TxQAccount::TxMap& acctTxs = accountIter->second.transactions;
-        TxQAccount::TxMap::iterator const firstIter = acctTxs.lower_bound(acctSeqProx);
+        auto const firstIter = acctTxs.lower_bound(acctSeqProx);
 
         if (firstIter == acctTxs.end())
         {
@@ -1011,7 +1021,7 @@ TxQ::apply(
 
             // Find the entry in the queue that precedes the new
             // transaction, if one does.
-            TxQAccount::TxMap::const_iterator const prevIter = txQAcct.getPrevTx(txSeqProx);
+            auto const prevIter = txQAcct.getPrevTx(txSeqProx);
 
             // Does the new transaction go to the front of the queue?
             // This can happen if:
@@ -1657,7 +1667,7 @@ TxQ::nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex>
     // Ignore any sequence-based queued transactions that slipped into the
     // ledger while we were not watching.  This does actually happen in the
     // wild, but it's uncommon.
-    TxQAccount::TxMap::const_iterator txIter = acctTxs.lower_bound(acctSeqProx);
+    auto txIter = acctTxs.lower_bound(acctSeqProx);
 
     if (txIter == acctTxs.end() || !txIter->first.isSeq() || txIter->first != acctSeqProx)
     {
@@ -1746,7 +1756,7 @@ TxQ::tryDirectApply(
             // queue then remove the replaced transaction.
             std::scoped_lock const lock(mutex_);
 
-            AccountMap::iterator const accountIter = byAccount_.find(account);
+            auto const accountIter = byAccount_.find(account);
             if (accountIter != byAccount_.end())
             {
                 TxQAccount& txQAcct = accountIter->second;

@@ -4,9 +4,14 @@
 #include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/beast/container/aged_unordered_map.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/protocol/PublicKey.h>
 
 #include <atomic>
+#include <cstdint>
+#include <memory>
 #include <optional>
+#include <string>
 
 namespace xrpl::PeerFinder {
 

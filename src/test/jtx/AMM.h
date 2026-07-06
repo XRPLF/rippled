@@ -6,13 +6,32 @@
 #include <test/jtx/seq.h>
 #include <test/jtx/ter.h>
 
-#include <xrpld/rpc/GRPCHandlers.h>
-
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>  // IWYU pragma: keep
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
 #include <nudb/detail/stream.hpp>
+
+#include <cstdint>
+#include <iostream>
+#include <optional>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <variant>
+#include <vector>
 
 namespace xrpl::test::jtx {
 

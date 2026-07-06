@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -181,7 +182,7 @@ Checker<Protocol>::asyncConnect(beast::IP::Endpoint const& endpoint, Handler&& h
     }
     op->socket.async_connect(
         beast::IPAddressConversion::toAsioEndpoint(endpoint),
-        std::bind(&BasicAsyncOp::operator(), op, std::placeholders::_1));
+        [op](error_code const& ec) { (*op)(ec); });
 }
 
 template <class Protocol>
