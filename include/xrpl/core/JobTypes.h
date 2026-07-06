@@ -118,7 +118,7 @@ public:
     [[nodiscard]] JobTypeInfo const&
     get(JobType jt) const
     {
-        Map::const_iterator const iter(map.find(jt));
+        auto const iter = map.find(jt);
         XRPL_ASSERT(iter != map.end(), "xrpl::JobTypes::get : valid input");
 
         if (iter != map.end())
