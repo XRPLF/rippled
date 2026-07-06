@@ -59,7 +59,7 @@ public network with all tracing and native metrics enabled:
 Both set `[insight] server=otel` (native metrics → collector → Prometheus, which
 drives the dashboards) and `service_instance_id`, exposed by Prometheus as the
 `exported_instance` label that the `$node` dashboard variable filters on. The
-mainnet config logs to `/home/pratik/xrpld-logs/mainnet/debug.log` — the path
+mainnet config logs to `/var/log/xrpld/mainnet/debug.log` — the path
 the collector's filelog receiver tails for log-trace correlation.
 
 Metrics begin flowing as soon as the node connects to peers (`server_state`
