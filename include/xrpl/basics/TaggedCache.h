@@ -1,21 +1,45 @@
 #pragma once
 
-#include <xrpl/basics/IntrusivePointer.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/SharedWeakCachePointer.ipp>
+#include <xrpl/basics/SharedWeakCachePointer.h>
+#include <xrpl/basics/SharedWeakCachePointer.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/clock/abstract_clock.h>
-#include <xrpl/beast/insight/Insight.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Gauge.h>
+#include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/insight/NullCollector.h>
+#include <xrpl/beast/utility/Journal.h>
 
 #include <atomic>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <memory>
 #include <mutex>
+#include <string>
 #include <thread>
 #include <type_traits>
 #include <vector>
 
 namespace xrpl {
+
+namespace detail {
+
+// Replace-policy tags selecting how TaggedCache::canonicalizeImpl resolves a
+// collision when the key already exists (defined in TaggedCache.ipp):
+//   - ReplaceCached: always replace the cached value with `data`. `data` is
+//     never written back and may be const.
+//   - ReplaceClient: keep the cached value and write it back into `data` (the
+//     client's pointer), which must therefore be writable.
+//   - ReplaceDynamically: call the supplied callback to decide per call; `data`
+//     is written back when the cached value is kept, so it must be writable.
+struct ReplaceCached;
+struct ReplaceClient;
+struct ReplaceDynamically;
+
+}  // namespace detail
 
 /** Map/cache combination.
     This class implements a cache and a map. The cache keeps objects alive
@@ -96,6 +120,32 @@ public:
     bool
     del(key_type const& key, bool valid);
 
+private:
+    // Selects the `data` parameter type of canonicalizeImpl from the replace
+    // policy: const for detail::ReplaceCached (never written back), otherwise
+    // writable.
+    template <typename Policy>
+    using CanonicalizeClientPointerType = std::conditional_t<
+        std::is_same_v<detail::ReplaceCached, Policy>,
+        SharedPointerType const&,
+        SharedPointerType&>;
+
+    /** Shared implementation of the canonicalize family.
+
+        `policy` selects how a collision is resolved when `key` already exists:
+        detail::ReplaceCached, detail::ReplaceClient or
+        detail::ReplaceDynamically. For ReplaceDynamically `replaceCallback` is
+        invoked with the existing strong pointer and returns whether to replace
+        the cached value with `data`; for the tag policies it is unused.
+    */
+    template <class Policy, class Callback = std::nullptr_t>
+    bool
+    canonicalizeImpl(
+        key_type const& key,
+        CanonicalizeClientPointerType<Policy> data,
+        Policy policy,
+        Callback&& replaceCallback = nullptr);
+
 public:
     /** Replace aliased objects with originals.
 
@@ -104,19 +154,52 @@ public:
         This routine eliminates the duplicate and performs a replacement
         on the callers shared pointer if needed.
 
+        `replaceCallback` is a callable taking the existing strong pointer and
+        returning whether to replace the cached value with `data` (true) or to
+        keep the cached value and write it back into `data` (false). Because the
+        write-back case mutates `data`, `data` must be writable.
+
         @param key The key corresponding to the object
         @param data A shared pointer to the data corresponding to the object.
-        @param replace Function that decides if cache should be replaced
+        @param replaceCallback A callable (existing strong pointer -> bool).
 
-        @return `true` If the key already existed.
-    */
-    template <class R>
+        @return `true` if an existing live entry was found and used; `false` if a new entry was
+                inserted or an expired tracked entry was re-cached.
+    **/
+    template <class Callback>
     bool
-    canonicalize(key_type const& key, SharedPointerType& data, R&& replaceCallback);
+    canonicalize(key_type const& key, SharedPointerType& data, Callback&& replaceCallback);
 
+    /** Insert/update the canonical entry for `key`, always replacing the
+        cached value with `data`.
+
+        If an entry already exists for `key`, the cached value is unconditionally
+        replaced with `data`; otherwise `data` is inserted. `data` is never
+        written back, so it may be const.
+
+        @param key The key corresponding to the object.
+        @param data A shared pointer to the data corresponding to the object.
+
+        @return `true` if an existing live entry was found and used; `false` if a new entry was
+                inserted or an expired tracked entry was re-cached.
+    **/
     bool
     canonicalizeReplaceCache(key_type const& key, SharedPointerType const& data);
 
+    /** Insert the canonical entry for `key`, keeping any existing cached value.
+
+        If an entry already exists for `key`, the cached value is kept and
+        written back into `data` so the caller ends up with the canonical
+        object; otherwise `data` is inserted. Because `data` may be overwritten
+        it must be writable.
+
+        @param key The key corresponding to the object.
+        @param data A shared pointer to the data corresponding to the object;
+                    updated to the canonical value when one already exists.
+
+        @return `true` if an existing live entry was found and used; `false` if a new entry was
+                inserted or an expired tracked entry was re-cached.
+    **/
     bool
     canonicalizeReplaceClient(key_type const& key, SharedPointerType& data);
 
@@ -129,11 +212,13 @@ public:
     */
     template <class ReturnType = bool>
     auto
-    insert(key_type const& key, T const& value) -> std::enable_if_t<!IsKeyCache, ReturnType>;
+    insert(key_type const& key, T const& value) -> ReturnType
+        requires(!IsKeyCache);
 
     template <class ReturnType = bool>
     auto
-    insert(key_type const& key) -> std::enable_if_t<IsKeyCache, ReturnType>;
+    insert(key_type const& key) -> ReturnType
+        requires IsKeyCache;
 
     // VFALCO NOTE It looks like this returns a copy of the data in
     //             the output parameter 'data'. This could be expensive.
@@ -262,7 +347,7 @@ private:
     sweepHelper(
         clock_type::time_point const& whenExpire,
         [[maybe_unused]] clock_type::time_point const& now,
-        typename KeyValueCacheType::map_type& partition,
+        KeyValueCacheType::map_type& partition,
         SweptPointersVector& stuffToSweep,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&);
@@ -271,7 +356,7 @@ private:
     sweepHelper(
         clock_type::time_point const& whenExpire,
         clock_type::time_point const& now,
-        typename KeyOnlyCacheType::map_type& partition,
+        KeyOnlyCacheType::map_type& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&);

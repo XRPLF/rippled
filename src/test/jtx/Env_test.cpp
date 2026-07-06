@@ -35,6 +35,7 @@
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -109,10 +110,10 @@ public:
         PrettyAmount(0u);  // NOLINT(bugprone-unused-raii)
         PrettyAmount(1u);  // NOLINT(bugprone-unused-raii)
         PrettyAmount(-1);  // NOLINT(bugprone-unused-raii)
-        static_assert(!std::is_trivially_constructible_v<PrettyAmount, char>, "");
-        static_assert(!std::is_trivially_constructible_v<PrettyAmount, unsigned char>, "");
-        static_assert(!std::is_trivially_constructible_v<PrettyAmount, short>, "");
-        static_assert(!std::is_trivially_constructible_v<PrettyAmount, unsigned short>, "");
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, char>);
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, unsigned char>);
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, short>);
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, unsigned short>);
 
         try
         {
@@ -863,7 +864,7 @@ public:
             jtx::Env const env{
                 *this,
                 jtx::envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg).deprecatedClearSection("port_rpc");
+                    (*cfg).deprecatedClearSection(Sections::kPortRpc);
                     return cfg;
                 }),
                 nullptr,

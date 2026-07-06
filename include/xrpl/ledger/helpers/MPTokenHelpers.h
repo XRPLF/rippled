@@ -4,11 +4,17 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <cstdint>
 #include <initializer_list>
 #include <optional>
 
@@ -23,6 +29,15 @@ namespace xrpl {
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 
+/** Returns true if @p account's MPToken for @p mptIssue carries the
+ *  individual-lock flag (lsfMPTLocked).
+ *
+ *  @warning This checks only the raw per-holder lock bit.  It does **not**
+ *  perform the transitive vault pseudo-account check: if @p mptIssue is a
+ *  vault share whose underlying asset is frozen, this function returns false.
+ *  Call @ref isFrozen instead when determining whether an account may send or
+ *  receive tokens — it combines isIndividualFrozen, isGlobalFrozen, and
+ *  isVaultPseudoAccountFrozen into a single complete check. */
 [[nodiscard]] bool
 isGlobalFrozen(SLE const& issuanceSle);
 

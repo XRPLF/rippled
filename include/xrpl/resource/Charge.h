@@ -1,5 +1,7 @@
 #pragma once
 
+#include <compare>
+#include <ostream>
 #include <string>
 
 namespace xrpl::Resource {
