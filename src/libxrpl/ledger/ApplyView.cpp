@@ -442,15 +442,10 @@ ReserveContext::makeFromAccount(ApplyView& view, SLE::pointer accountSle, SLE::p
         sponsorSle == nullptr || sponsorSle->getType() == ltACCOUNT_ROOT,
         "ReserveContext::makeFromAccount : valid sponsor sle");
 
-    auto const accountID = accountSle->getAccountID(sfAccount);
-    std::optional<AccountID> const sponsorID =
-        sponsorSle ? std::optional<AccountID>{sponsorSle->getAccountID(sfAccount)} : std::nullopt;
-    return {
-        .accountSle = accountSle,
-        .sponsorSle = sponsorSle,
-        .sponsorshipSle =
-            sponsorID ? view.peek(keylet::sponsorship(*sponsorID, accountID)) : nullptr,
-    };
+    ReserveContext ctx{.accountSle = accountSle, .sponsorSle = sponsorSle};
+    if (auto const sponsorID = ctx.sponsorID(); sponsorID.has_value())
+        ctx.sponsorshipSle = view.peek(keylet::sponsorship(*sponsorID, ctx.accountID()));
+    return ctx;
 }
 
 ReserveContext
@@ -460,16 +455,12 @@ ReserveContext::makeFromObject(ApplyView& view, SLE::ref objectSle, SLE::pointer
         ownerSle != nullptr && ownerSle->getType() == ltACCOUNT_ROOT,
         "ReserveContext::makeFromObject : valid owner sle");
     XRPL_ASSERT(objectSle != nullptr, "ReserveContext::makeFromObject : valid object sle");
-    auto const accountID = ownerSle->getAccountID(sfAccount);
-    SLE::ref sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
-    std::optional<AccountID> const sponsorID =
-        sponsorSle ? std::optional<AccountID>{sponsorSle->getAccountID(sfAccount)} : std::nullopt;
-    return {
-        .accountSle = ownerSle,
-        .sponsorSle = sponsorSle,
-        .sponsorshipSle =
-            sponsorID ? view.peek(keylet::sponsorship(*sponsorID, accountID)) : nullptr,
-    };
+
+    ReserveContext ctx{
+        .accountSle = ownerSle, .sponsorSle = getLedgerEntryReserveSponsor(view, objectSle)};
+    if (auto const sponsorID = ctx.sponsorID(); sponsorID.has_value())
+        ctx.sponsorshipSle = view.peek(keylet::sponsorship(*sponsorID, ctx.accountID()));
+    return ctx;
 }
 
 }  // namespace xrpl
