@@ -1,4 +1,3 @@
-#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
