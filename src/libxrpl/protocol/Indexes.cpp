@@ -153,12 +153,11 @@ getQuality(uint256 const& uBase)
 {
     // VFALCO [base_uint] This assumes a certain storage format
     //
-    // Read the final 8 bytes via memcpy: uBase.end() is an unsigned char*, so
-    // reinterpret_casting it to a std::uint64_t* would violate alignment and
-    // strict-aliasing rules (undefined behavior on some platforms).
-    std::uint64_t quality = 0;
-    std::memcpy(&quality, uBase.end() - sizeof(quality), sizeof(quality));
-    return boost::endian::big_to_native(quality);
+    // Load the final 8 bytes as a big-endian integer.  load_big_u64 reads
+    // through unaligned byte storage (via memcpy) and applies the endian
+    // conversion, avoiding the alignment/strict-aliasing UB of casting the
+    // unsigned char* returned by end() to a std::uint64_t*.
+    return boost::endian::load_big_u64(uBase.end() - 8);
 }
 
 uint256
@@ -284,13 +283,11 @@ quality(Keylet const& k, std::uint64_t q) noexcept
     // for indexes.
     uint256 x = k.key;
 
-    // FIXME This is ugly and we can and should do better...
-    //
-    // Write the final 8 bytes via memcpy: x.end() is an unsigned char*, so
-    // reinterpret_casting it to a std::uint64_t* would violate alignment and
-    // strict-aliasing rules (undefined behavior on some platforms).
-    std::uint64_t const quality = boost::endian::native_to_big(q);
-    std::memcpy(x.end() - sizeof(quality), &quality, sizeof(quality));
+    // Store the quality as a big-endian integer in the final 8 bytes.
+    // store_big_u64 writes through unaligned byte storage (via memcpy) and
+    // applies the endian conversion, avoiding the alignment/strict-aliasing UB
+    // of casting the unsigned char* returned by end() to a std::uint64_t*.
+    boost::endian::store_big_u64(x.end() - 8, q);
 
     return {ltDIR_NODE, x};
 }
