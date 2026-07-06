@@ -169,7 +169,7 @@ public:
     // Connect to an address
     template <class Socket>
     bool
-    connect(Socket& s, typename Socket::endpoint_type const& ep)
+    connect(Socket& s, Socket::endpoint_type const& ep)
     {
         try
         {

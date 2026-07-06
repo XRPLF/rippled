@@ -3,7 +3,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/xor_shift_engine.h>
 
-#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <mutex>
@@ -29,6 +28,7 @@ static_assert(
 namespace detail {
 
 // Determines if a type can be called like an Engine
+// NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
 template <class Engine, class Result = typename Engine::result_type>
 using is_engine = std::is_invocable_r<Result, Engine>;
 }  // namespace detail

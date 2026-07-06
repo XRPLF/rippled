@@ -1,11 +1,11 @@
 #pragma once
 
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/PropertyStream.h>
-#include <xrpl/server/Port.h>
 #include <xrpl/server/detail/ServerImpl.h>
 
 #include <boost/asio/io_context.hpp>
+
+#include <memory>
 
 namespace xrpl {
 

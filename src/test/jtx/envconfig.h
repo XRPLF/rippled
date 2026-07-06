@@ -2,6 +2,12 @@
 
 #include <xrpld/core/Config.h>
 
+#include <atomic>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <string>
+
 namespace xrpl::test {
 
 extern std::atomic<bool> gEnvUseIPv4;

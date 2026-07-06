@@ -1,27 +1,39 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/Slice.h>
-#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/detail/STVar.h>
 
 #include <boost/iterator/transform_iterator.hpp>
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -217,6 +229,11 @@ public:
     [[nodiscard]] AccountID
     getAccountID(SField const& field) const;
 
+    /** The account responsible for the fee and authorization: the delegate when
+        sfDelegate is present, otherwise the account. */
+    [[nodiscard]] AccountID
+    getFeePayer() const;
+
     [[nodiscard]] Blob
     getFieldVL(SField const& field) const;
     [[nodiscard]] STAmount const&
@@ -243,7 +260,7 @@ public:
         @throws STObject::FieldErr if the field is not present.
     */
     template <class T>
-    typename T::value_type
+    T::value_type
     operator[](TypedField<T> const& f) const;
 
     /** Get the value of a field as a std::optional
@@ -290,7 +307,7 @@ public:
         @throws STObject::FieldErr if the field is not present.
     */
     template <class T>
-    [[nodiscard]] typename T::value_type
+    [[nodiscard]] T::value_type
     at(TypedField<T> const& f) const;
 
     /** Get the value of a field as std::optional
@@ -478,7 +495,7 @@ template <class T>
 class STObject::Proxy
 {
 public:
-    using value_type = typename T::value_type;
+    using value_type = T::value_type;
 
     [[nodiscard]] value_type
     value() const;
@@ -513,13 +530,10 @@ protected:
 template <typename U>
 concept IsArithmeticNumber =
     std::is_arithmetic_v<U> || std::is_same_v<U, Number> || std::is_same_v<U, STAmount>;
-template <
-    typename U,
-    typename Value = typename U::value_type,
-    typename Unit = typename U::unit_type>
+template <typename U, typename Value = U::value_type, typename Unit = U::unit_type>
 concept IsArithmeticValueUnit = std::is_same_v<U, unit::ValueUnit<Unit, Value>> &&
     IsArithmeticNumber<Value> && std::is_class_v<Unit>;
-template <typename U, typename Value = typename U::value_type>
+template <typename U, typename Value = U::value_type>
 concept IsArithmeticST = !IsArithmeticValueUnit<U> && IsArithmeticNumber<Value>;
 template <typename U>
 concept IsArithmetic = IsArithmeticNumber<U> || IsArithmeticST<U> || IsArithmeticValueUnit<U>;
@@ -534,7 +548,7 @@ template <class T>
 class STObject::ValueProxy : public Proxy<T>
 {
 private:
-    using value_type = typename T::value_type;
+    using value_type = T::value_type;
 
 public:
     ValueProxy(ValueProxy const&) = default;
@@ -576,7 +590,7 @@ template <class T>
 class STObject::OptionalProxy : public Proxy<T>
 {
 private:
-    using value_type = typename T::value_type;
+    using value_type = T::value_type;
 
     using optional_type = std::optional<std::decay_t<value_type>>;
 
@@ -840,7 +854,7 @@ operator typename STObject::OptionalProxy<T>::optional_type() const
 }
 
 template <class T>
-typename STObject::OptionalProxy<T>::optional_type
+STObject::OptionalProxy<T>::optional_type
 STObject::OptionalProxy<T>::operator~() const
 {
     return optionalValue();
@@ -933,7 +947,7 @@ STObject::OptionalProxy<T>::optionalValue() const -> optional_type
 }
 
 template <class T>
-typename STObject::OptionalProxy<T>::value_type
+STObject::OptionalProxy<T>::value_type
 STObject::OptionalProxy<T>::valueOr(value_type val) const
 {
     return engaged() ? this->value() : val;
@@ -1040,7 +1054,7 @@ STObject::getPIndex(int offset)
 }
 
 template <class T>
-typename T::value_type
+T::value_type
 STObject::operator[](TypedField<T> const& f) const
 {
     return at(f);
@@ -1068,7 +1082,7 @@ STObject::operator[](OptionaledField<T> const& of) -> OptionalProxy<T>
 }
 
 template <class T>
-[[nodiscard]] typename T::value_type
+[[nodiscard]] T::value_type
 STObject::at(TypedField<T> const& f) const
 {
     auto const b = peekAtPField(f);
@@ -1227,7 +1241,7 @@ template <typename T, typename V>
 void
 STObject::setFieldUsingSetValue(SField const& field, V value)
 {
-    static_assert(!std::is_lvalue_reference_v<V>, "");
+    static_assert(!std::is_lvalue_reference_v<V>);
 
     STBase* rf = getPField(field, true);
 

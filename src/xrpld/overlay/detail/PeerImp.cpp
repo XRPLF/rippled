@@ -1309,7 +1309,7 @@ PeerImp::handleTransaction(
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START
         /*
-           There is no need to check whether the featureBatch amendment is
+           There is no need to check whether the featureBatchV1_1 amendment is
            enabled.
 
            * If the `tfInnerBatchTxn` flag is set, and the amendment is
@@ -2134,6 +2134,7 @@ PeerImp::onValidatorListMessage(
             publisherListSequences_[pubKey] = applyResult.sequence;
         }
         break;
+        // NOLINTNEXTLINE(bugprone-branch-clone): identical to the next branch only in Release
         case ListDisposition::SameSequence:
         case ListDisposition::KnownSequence:
 #ifndef NDEBUG
@@ -2873,7 +2874,7 @@ PeerImp::checkTransaction(
         // charge strongly for relaying batch txns
         // LCOV_EXCL_START
         /*
-           There is no need to check whether the featureBatch amendment is
+           There is no need to check whether the featureBatchV1_1 amendment is
            enabled.
 
            * If the `tfInnerBatchTxn` flag is set, and the amendment is

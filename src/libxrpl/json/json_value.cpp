@@ -1,9 +1,11 @@
 #include <xrpl/json/json_value.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>  // IWYU pragma: keep
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/detail/json_assert.h>
+#include <xrpl/json/json_errors.h>  // IWYU pragma: keep
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_writer.h>
 
@@ -800,7 +802,7 @@ Value::size() const
         case ValueType::Array:  // size of the array is highest index + 1
             if (!value_.mapVal->empty())
             {
-                ObjectValues::const_iterator itLast = value_.mapVal->end();
+                auto itLast = value_.mapVal->end();
                 --itLast;
                 return (*itLast).first.index() + 1;
             }
@@ -864,7 +866,7 @@ Value::operator[](UInt index)
         *this = Value(ValueType::Array);
 
     CZString const key(index);
-    ObjectValues::iterator it = value_.mapVal->lower_bound(key);
+    auto it = value_.mapVal->lower_bound(key);
 
     if (it != value_.mapVal->end() && (*it).first == key)
         return (*it).second;
@@ -885,7 +887,7 @@ Value::operator[](UInt index) const
         return kNull;
 
     CZString const key(index);
-    ObjectValues::const_iterator const it = value_.mapVal->find(key);
+    auto const it = value_.mapVal->find(key);
 
     if (it == value_.mapVal->end())
         return kNull;
@@ -913,7 +915,7 @@ Value::resolveReference(char const* key, bool isStatic)
         key,
         isStatic ? CZString::DuplicationPolicy::NoDuplication
                  : CZString::DuplicationPolicy::DuplicateOnCopy);
-    ObjectValues::iterator it = value_.mapVal->lower_bound(actualKey);
+    auto it = value_.mapVal->lower_bound(actualKey);
 
     if (it != value_.mapVal->end() && (*it).first == actualKey)
         return (*it).second;
@@ -948,7 +950,7 @@ Value::operator[](char const* key) const
         return kNull;
 
     CZString const actualKey(key, CZString::DuplicationPolicy::NoDuplication);
-    ObjectValues::const_iterator const it = value_.mapVal->find(actualKey);
+    auto const it = value_.mapVal->find(actualKey);
 
     if (it == value_.mapVal->end())
         return kNull;
@@ -1016,7 +1018,7 @@ Value::removeMember(char const* key)
         return kNull;
 
     CZString const actualKey(key, CZString::DuplicationPolicy::NoDuplication);
-    ObjectValues::iterator const it = value_.mapVal->find(actualKey);
+    auto const it = value_.mapVal->find(actualKey);
 
     if (it == value_.mapVal->end())
         return kNull;
@@ -1066,8 +1068,8 @@ Value::getMemberNames() const
 
     Members members;
     members.reserve(value_.mapVal->size());
-    ObjectValues::const_iterator it = value_.mapVal->begin();
-    ObjectValues::const_iterator const itEnd = value_.mapVal->end();
+    auto it = value_.mapVal->begin();
+    auto const itEnd = value_.mapVal->end();
 
     for (; it != itEnd; ++it)
         members.emplace_back((*it).first.cStr());

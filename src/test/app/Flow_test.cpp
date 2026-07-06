@@ -57,7 +57,7 @@ getNoRippleFlag(
     jtx::Account const& dst,
     Currency const& cur)
 {
-    if (auto sle = env.le(keylet::line(src, dst, cur)))
+    if (auto sle = env.le(keylet::trustLine(src, dst, cur)))
     {
         auto const flag = (src.id() > dst.id()) ? lsfHighNoRipple : lsfLowNoRipple;
         return sle->isFlag(flag);

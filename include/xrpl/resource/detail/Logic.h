@@ -4,16 +4,25 @@
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/clock/abstract_clock.h>
-#include <xrpl/beast/insight/Insight.h>
+#include <xrpl/beast/core/List.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/Disposition.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/Gossip.h>
 #include <xrpl/resource/detail/Import.h>
 
 #include <mutex>
+#include <string>
+#include <tuple>
+#include <utility>
 
 namespace xrpl::Resource {
 

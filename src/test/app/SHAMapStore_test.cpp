@@ -18,6 +18,7 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -684,6 +685,9 @@ public:
                     {
                         std::this_thread::sleep_for(100ms);
                     }
+                    // Even the slowest machines should be able to finalize deleteSeq within 4
+                    // loops (400ms). If this test ever actually fails feel free to lower this
+                    // cutoff.
                     BEAST_EXPECTS(iterations > 25, to_string(iterations));
                 }
                 lm.clearLedger(deleteSeq);
@@ -713,8 +717,9 @@ public:
                 // rotation will be stuck until the missing ledger is filled in.
                 env.close();
                 storeHash();
-                // DO NOT CALL rendezvous() without a timeout parameter! You'll end up with a
-                // deadlock.
+                // Do not call rendezvous() here without a timeout; it will block until the missing
+                // ledger is backfilled. That will not happen automatically. It's a manual step that
+                // is done later in this test.
                 ++maxSeq;
 
                 // Nothing has changed

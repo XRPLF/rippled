@@ -2,6 +2,8 @@
 
 #include <xrpl/json/json_value.h>
 
+#include <string>
+
 namespace xrpl::test {
 
 /* Abstract XRPL client interface.

@@ -5,14 +5,21 @@
 #include <xrpld/overlay/detail/ZeroCopyStream.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/messages.h>
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
 
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <optional>
+#include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace xrpl {

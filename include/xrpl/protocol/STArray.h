@@ -1,7 +1,18 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstddef>
+#include <iterator>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
