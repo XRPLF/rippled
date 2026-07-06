@@ -1157,6 +1157,7 @@ toClaim(STTx const& tx)
 
     try
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-slicing)
         STObject o{tx};
         o.setAccountID(sfAccount, o[sfOtherChainSource]);
         return TAttestation(o);

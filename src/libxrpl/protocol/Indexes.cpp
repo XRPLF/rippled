@@ -152,7 +152,7 @@ std::uint64_t
 getQuality(uint256 const& uBase)
 {
     // VFALCO [base_uint] This assumes a certain storage format
-    return boost::endian::big_to_native(((std::uint64_t*)uBase.end())[-1]);
+    return boost::endian::big_to_native(reinterpret_cast<std::uint64_t const*>(uBase.end())[-1]);
 }
 
 uint256
@@ -279,7 +279,7 @@ quality(Keylet const& k, std::uint64_t q) noexcept
     uint256 x = k.key;
 
     // FIXME This is ugly and we can and should do better...
-    ((std::uint64_t*)x.end())[-1] = boost::endian::native_to_big(q);
+    reinterpret_cast<std::uint64_t*>(x.end())[-1] = boost::endian::native_to_big(q);
 
     return {ltDIR_NODE, x};
 }
