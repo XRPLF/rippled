@@ -15,9 +15,11 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/server/State.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
@@ -252,8 +254,23 @@ bool
 SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
-    dbRotating_->fetchNodeObject(
+    auto obj = dbRotating_->fetchNodeObject(
         node.getHash().asUInt256(), 0, NodeStore::FetchType::Synchronous, true);
+    if (!obj)
+    {
+        // Reachable from the validated state map in memory, but present in
+        // neither backend: its only on-disk copy lived in a backend removed by
+        // an earlier rotation, and it was never rewritten because it is clean
+        // (cowid == 0, so flushDirty skips it). Persist the in-memory body
+        // directly into the writable backend so it survives this rotation
+        // instead of later surfacing as an unresolvable SHAMapMissingNode.
+        auto const hash = node.getHash().asUInt256();
+        Serializer s;
+        node.serializeWithPrefix(s);
+        dbRotating_->store(NodeObjectType::AccountNode, std::move(s.modData()), hash, 0);
+        JLOG(journal_.warn()) << "copyNode: re-stored node missing from both backends, hash="
+                              << hash << " type=" << static_cast<int>(node.getType());
+    }
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {
         if (healthWait() == HealthResult::Stopping)
