@@ -396,9 +396,6 @@ AccountDelete::doApply()
     if (!isTesSuccess(ter))
         return ter;
 
-    if (src->isFieldPresent(sfSponsoredOwnerCount))
-        return tefINTERNAL;  // LCOV_EXCL_LINE
-
     // Transfer any XRP remaining after the fee is paid to the destination:
     auto const remainingBalance = src->getFieldAmount(sfBalance).xrp();
     (*dst)[sfBalance] = (*dst)[sfBalance] + remainingBalance;
@@ -410,8 +407,12 @@ AccountDelete::doApply()
         auto const sponsorID = src->getAccountID(sfSponsor);
         auto sponsorSle = view().peek(keylet::account(sponsorID));
 
-        if (!sponsorSle || !sponsorSle->isFieldPresent(sfSponsoringAccountCount))
+        if (!sponsorSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        XRPL_ASSERT(
+            sponsorSle->isFieldPresent(sfSponsoringAccountCount),
+            "xrpl::AccountDelete::doApply : sponsoring account count is present");
 
         auto const sponsoringAccountCount = sponsorSle->getFieldU32(sfSponsoringAccountCount);
 
