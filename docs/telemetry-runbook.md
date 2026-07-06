@@ -59,7 +59,7 @@ public network with all tracing and native metrics enabled:
 Both set `[insight] server=otel` (native metrics → collector → Prometheus, which
 drives the dashboards) and `service_instance_id`, exposed by Prometheus as the
 `exported_instance` label that the `$node` dashboard variable filters on. The
-mainnet config logs to `/home/pratik/xrpld-logs/mainnet/debug.log` — the path
+mainnet config logs to `/var/log/xrpld/mainnet/debug.log` — the path
 the collector's filelog receiver tails for log-trace correlation.
 
 Metrics begin flowing as soon as the node connects to peers (`server_state`
@@ -191,7 +191,7 @@ To import:
 
 All spans instrumented in xrpld, grouped by subsystem:
 
-### RPC Spans (Phase 2)
+### RPC Spans
 
 | Span Name            | Source File       | Attributes                                                  | Description                                           |
 | -------------------- | ----------------- | ----------------------------------------------------------- | ----------------------------------------------------- |
@@ -201,7 +201,7 @@ All spans instrumented in xrpld, grouped by subsystem:
 | `rpc.process`        | ServerHandler.cpp | `is_batch`, `batch_size`                                    | RPC processing (child of rpc.http_request/ws_message) |
 | `rpc.command.<name>` | RPCHandler.cpp    | `command`, `version`, `rpc_role`, `rpc_status`, `load_type` | Per-command span (e.g., `rpc.command.server_info`)    |
 
-### Transaction Spans (Phase 3)
+### Transaction Spans
 
 | Span Name       | Source File     | Attributes                                                                        | Description                           |
 | --------------- | --------------- | --------------------------------------------------------------------------------- | ------------------------------------- |
@@ -218,7 +218,7 @@ trace per transaction. The `stage` attribute (`preflight` / `preclaim` /
 `apply`) drives the collector spanmetrics `stage` dimension, giving per-stage
 RED metrics on the _Transaction Overview_ dashboard.
 
-### Transaction Queue Spans (Phase 3)
+### Transaction Queue Spans
 
 | Span Name          | Source File | Attributes                                               | Description                                        |
 | ------------------ | ----------- | -------------------------------------------------------- | -------------------------------------------------- |
@@ -229,7 +229,7 @@ RED metrics on the _Transaction Overview_ dashboard.
 | `txq.accept_tx`    | TxQ.cpp     | `tx_hash`, `retries_remaining`, `ter_code`, `txq_status` | Per-transaction apply during accept                |
 | `txq.cleanup`      | TxQ.cpp     | `ledger_seq`                                             | Post-close cleanup of expired queue entries        |
 
-### Consensus Spans (Phase 4)
+### Consensus Spans
 
 | Span Name                      | Source File      | Attributes                                                                                                                                                                                                                   | Description                                                                                                                           |
 | ------------------------------ | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -278,7 +278,7 @@ Span attributes are filtered with `span.<attr>` inside `{}`. Combine conditions 
 {name="consensus.update_positions"} >> {event:name="dispute.resolve"}
 ```
 
-### Ledger Spans (Phase 6)
+### Ledger Spans
 
 | Span Name         | Source File          | Attributes                            | Description                   |
 | ----------------- | -------------------- | ------------------------------------- | ----------------------------- |
@@ -286,7 +286,7 @@ Span attributes are filtered with `span.<attr>` inside `{}`. Combine conditions 
 | `ledger.validate` | LedgerMaster.cpp:915 | `ledger_seq`, `validations`           | Ledger promoted to validated  |
 | `ledger.store`    | LedgerMaster.cpp:409 | `ledger_seq`                          | Ledger stored in history      |
 
-### Peer Spans (Phase 6)
+### Peer Spans
 
 | Span Name                 | Source File      | Attributes                      | Description                   |
 | ------------------------- | ---------------- | ------------------------------- | ----------------------------- |
@@ -702,7 +702,7 @@ The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTe
 | `xrpld_{category}_Bytes_In/Out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
 | `xrpld_{category}_Messages_In/Out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
 
-#### OTel MetricsRegistry Gauges (Phase 9)
+#### OTel MetricsRegistry Gauges
 
 These gauges are exported via the OTel Metrics SDK `PeriodicMetricReader` (10s interval), NOT through beast::insight.
 
@@ -757,7 +757,7 @@ one dashboard set serves every deployment:
 | Dimension   | Attribute                | Set by     | Example values                 |
 | ----------- | ------------------------ | ---------- | ------------------------------ |
 | Node        | `service.instance.id`    | xrpld cfg  | `alice-laptop`, `ci-runner-7`  |
-| Service     | `service.name`           | xrpld cfg  | `xrpld`, `pratik-xrpld`        |
+| Service     | `service.name`           | xrpld cfg  | `xrpld`, `xrpld-validator`     |
 | Network     | `xrpl.network.type`      | xrpld node | `mainnet`, `testnet`, `devnet` |
 | Environment | `deployment.environment` | collector  | `local`, `test`, `ci`, `prod`  |
 
@@ -995,7 +995,33 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | `peer.proposal.receive`        | `{span_name="peer.proposal.receive"}`        | Peer Network (Rate, Trusted/Untrusted)        |
 | `peer.validation.receive`      | `{span_name="peer.validation.receive"}`      | Peer Network (Rate, Trusted/Untrusted)        |
 
-## Log-Trace Correlation (Phase 8)
+## Alerting
+
+Grafana ships six provisioned alert rules on the health-critical metrics, so a
+stock stack alerts out of the box with no UI setup. Rules are loaded from
+`docker/telemetry/grafana/provisioning/alerting/` on startup and appear under
+**Alerting → Alert rules**, folder **xrpld**.
+
+Each rule runs every minute against the Prometheus datasource over a 5-minute
+window and groups by `exported_instance`, so every node alerts independently.
+An alert fires only after its condition holds for the `for` dwell time.
+
+| Alert                   | Severity | Fires when                                      | For |
+| ----------------------- | -------- | ----------------------------------------------- | --- |
+| `LedgerHistoryMismatch` | critical | `rate(xrpld_ledger_history_mismatch_total)` > 0 | 5m  |
+| `LedgerCloseStalled`    | critical | `rate(xrpld_ledgers_closed_total)` ≈ 0          | 3m  |
+| `ValidationsMissed`     | warning  | `rate(xrpld_validation_missed_total)` > 0       | 5m  |
+| `ValidationsNotChecked` | warning  | `rate(xrpld_validations_checked_total)` ≈ 0     | 5m  |
+| `JobQueueTxOverflow`    | warning  | `rate(xrpld_jq_trans_overflow_total)` > 0       | 5m  |
+| `JobQueueLatencyHigh`   | warning  | p99 `xrpld_job_queued_duration_us` > 1s         | 5m  |
+
+Alerts route through the `xrpld-default` contact point, which ships as a
+local-dev webhook to a placeholder URL — alerts fire but go nowhere until it is
+pointed at a real receiver. See
+[ALERTING.md](../docker/telemetry/ALERTING.md) for per-alert causes, threshold
+tuning, and how to wire alerts to Slack/email/PagerDuty.
+
+## Log-Trace Correlation
 
 When xrpld is built with `telemetry=ON`, log lines emitted within an active OpenTelemetry span automatically include `trace_id` and `span_id` fields:
 

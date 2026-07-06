@@ -308,13 +308,20 @@ These metrics serve multiple external consumer categories identified during rese
   - Add Prometheus query examples for new metrics
 
 - Update `docs/telemetry-runbook.md`:
-  - Add alerting rules for new metrics (NodeStore write_load, TxQ capacity, cache hit rate degradation)
+  - Add an Alerting section covering the provisioned rules and how to wire a receiver
   - Add troubleshooting entries for new metric categories
+
+- Provision Grafana alert rules (`docker/telemetry/grafana/provisioning/alerting/`):
+  - 6 rules in 3 groups — consensus/ledger (`LedgerHistoryMismatch`, `LedgerCloseStalled`), validator (`ValidationsMissed`, `ValidationsNotChecked`), job queue (`JobQueueTxOverflow`, `JobQueueLatencyHigh`)
+  - `xrpld-default` webhook contact point + flat notification policy; auto-loaded via the existing `provisioning/` mount (no docker-compose change)
+  - `docker/telemetry/ALERTING.md` operator runbook (per-alert meaning, tuning, receiver wiring)
 
 **Key modified files**:
 
 - `OpenTelemetryPlan/09-data-collection-reference.md`
 - `docs/telemetry-runbook.md`
+- `docker/telemetry/grafana/provisioning/alerting/{rules,contactpoints,policies}.yaml` (new)
+- `docker/telemetry/ALERTING.md` (new)
 
 ---
 
