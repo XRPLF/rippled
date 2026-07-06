@@ -234,7 +234,7 @@ public:
         withSigners[jss::account] = alice.human();
         withSigners[jss::signer_lists] = true;
 
-        auto const withSignersAsString = std::string("{ ") + "\"api_version\": 2, \"account\": \"" +
+        auto const withSignersAsString = std::string("{ ") + R"("api_version": 2, "account": ")" +
             alice.human() + "\", " + "\"signer_lists\": asdfggh }";
 
         // Alice has no SignerList yet.

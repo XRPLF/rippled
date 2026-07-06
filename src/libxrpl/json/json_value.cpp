@@ -90,7 +90,7 @@ static struct DummyValueAllocatorInitializer
 // Notes: index_ indicates if the string was allocated when
 // a string is stored.
 
-Value::CZString::CZString(int index) : cstr_(0), index_(index)
+Value::CZString::CZString(int index) : cstr_(nullptr), index_(index)
 {
 }
 
@@ -103,7 +103,8 @@ Value::CZString::CZString(char const* cstr, DuplicationPolicy allocate)
 
 Value::CZString::CZString(CZString const& other)
     : cstr_(
-          other.index_ != static_cast<int>(DuplicationPolicy::NoDuplication) && other.cstr_ != 0
+          other.index_ != static_cast<int>(DuplicationPolicy::NoDuplication) &&
+                  other.cstr_ != nullptr
               ? valueAllocator()->makeMemberName(other.cstr_)
               : other.cstr_)
     , index_([&]() -> int {
@@ -187,7 +188,7 @@ Value::Value(ValueType type) : type_(type)
             break;
 
         case ValueType::String:
-            value_.stringVal = 0;
+            value_.stringVal = nullptr;
             break;
 
         case ValueType::Array:
@@ -268,7 +269,7 @@ Value::Value(Value const& other) : type_(other.type_)
             }
             else
             {
-                value_.stringVal = 0;
+                value_.stringVal = nullptr;
             }
 
             break;
@@ -405,7 +406,7 @@ operator<(Value const& x, Value const& y)
             return static_cast<int>(x.value_.boolVal) < static_cast<int>(y.value_.boolVal);
 
         case ValueType::String:
-            return (x.value_.stringVal == 0 && (y.value_.stringVal != nullptr)) ||
+            return (x.value_.stringVal == nullptr && (y.value_.stringVal != nullptr)) ||
                 ((y.value_.stringVal != nullptr) && (x.value_.stringVal != nullptr) &&
                  strcmp(x.value_.stringVal, y.value_.stringVal) < 0);
 
