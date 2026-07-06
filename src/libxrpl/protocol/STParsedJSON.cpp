@@ -36,6 +36,7 @@
 #include <charconv>
 #include <cstdint>
 #include <exception>
+#include <format>
 #include <iostream>
 #include <limits>
 #include <optional>
@@ -1036,8 +1037,12 @@ parseObject(
 
                     try
                     {
-                        auto ret =
-                            parseObject(jsonName + "." + fieldName, value, field, depth + 1, error);
+                        auto ret = parseObject(
+                            std::format("{}.{}", jsonName, fieldName),
+                            value,
+                            field,
+                            depth + 1,
+                            error);
                         if (!ret)
                             return std::nullopt;
                         data.emplaceBack(std::move(*ret));
@@ -1054,8 +1059,12 @@ parseObject(
                 case STI_ARRAY:
                     try
                     {
-                        auto array =
-                            parseArray(jsonName + "." + fieldName, value, field, depth + 1, error);
+                        auto array = parseArray(
+                            std::format("{}.{}", jsonName, fieldName),
+                            value,
+                            field,
+                            depth + 1,
+                            error);
                         if (!array.has_value())
                             return std::nullopt;
                         data.emplaceBack(std::move(*array));

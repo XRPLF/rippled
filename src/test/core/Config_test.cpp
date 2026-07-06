@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
+#include <format>
 #include <fstream>
 #include <optional>
 #include <ostream>
@@ -1475,7 +1476,7 @@ r.ripple.com:51235
             std::string toLoad(R"xrpldConfig(
 [amendment_majority_time]
 )xrpldConfig");
-            toLoad += std::to_string(val) + space + unit;
+            toLoad += std::format("{}{}{}", val, space, unit);
             space = space.empty() ? " " : "";
 
             try
