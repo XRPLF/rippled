@@ -4,14 +4,21 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/detail/Work.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 
 #include <boost/asio.hpp>
 
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <cstddef>
+#include <memory>
 #include <mutex>
 #include <optional>
+#include <string>
+#include <vector>
 
 namespace xrpl {
 

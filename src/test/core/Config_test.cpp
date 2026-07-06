@@ -1136,7 +1136,7 @@ trust-these-validators.gov
     testZeroPort()
     {
         auto const contents = std::regex_replace(
-            detail::configContents("", ""), std::regex("port\\s*=\\s*\\d+"), "port = 0");
+            detail::configContents("", ""), std::regex(R"(port\s*=\s*\d+)"), "port = 0");
 
         try
         {

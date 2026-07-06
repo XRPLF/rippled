@@ -3,6 +3,11 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/AcceptedLedgerTx.h>
+#include <xrpl/ledger/ReadView.h>
+
+#include <cstddef>
+#include <memory>
+#include <vector>
 
 namespace xrpl {
 

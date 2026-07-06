@@ -9,6 +9,7 @@
 #include <boost/asio/ip/address.hpp>
 #include <boost/functional/hash.hpp>
 
+#include <cstddef>
 #include <string>
 
 //------------------------------------------------------------------------------

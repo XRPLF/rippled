@@ -4,7 +4,17 @@
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/PathRequest.h>
 
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/server/InfoSub.h>
+
 #include <atomic>
+#include <chrono>
+#include <functional>
+#include <memory>
 #include <mutex>
 #include <vector>
 

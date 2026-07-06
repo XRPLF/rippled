@@ -21,11 +21,11 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
@@ -127,9 +127,8 @@ std::size_t
 InboundLedger::getPeerCount() const
 {
     auto const& peerIds = peerSet_->getPeerIds();
-    return std::count_if(peerIds.begin(), peerIds.end(), [this](auto id) {
-        return (app_.getOverlay().findPeerByShortID(id) != nullptr);
-    });
+    return std::ranges::count_if(
+        peerIds, [this](auto id) { return (app_.getOverlay().findPeerByShortID(id) != nullptr); });
 }
 
 void

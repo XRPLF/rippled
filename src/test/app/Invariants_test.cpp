@@ -64,6 +64,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -2828,7 +2829,8 @@ class Invariants_test : public beast::unit_test::Suite
             });
 
         doInvariantCheck(
-            {"vault updated by a wrong transaction type"},
+            {"vault updated by a wrong transaction type",
+             "deleted Vault without deleting its pseudo-account"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
@@ -2839,7 +2841,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPAYMENT, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -2876,6 +2878,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto const vaultPage = ac.view().dirInsert(
                     keylet::ownerDir(a1.id()), sleVault->key(), describeOwnerDir(a1.id()));
                 sleVault->setFieldU64(sfOwnerNode, *vaultPage);
+                sleVault->setAccountID(sfAccount, a1.id());
                 ac.view().insert(sleVault);
                 return true;
             },
@@ -2884,7 +2887,8 @@ class Invariants_test : public beast::unit_test::Suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
         doInvariantCheck(
-            {"vault deleted by a wrong transaction type"},
+            {"vault deleted by a wrong transaction type",
+             "deleted Vault without deleting its pseudo-account"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
@@ -2895,7 +2899,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -2904,7 +2908,8 @@ class Invariants_test : public beast::unit_test::Suite
             });
 
         doInvariantCheck(
-            {"vault operation updated more than single vault"},
+            {"vault operation updated more than single vault",
+             "deleted Vault without deleting its pseudo-account"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 {
                     auto const keylet = keylet::vault(a1.id(), ac.view().seq());
@@ -2924,7 +2929,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DELETE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 {
@@ -2948,6 +2953,7 @@ class Invariants_test : public beast::unit_test::Suite
                     auto const vaultPage = ac.view().dirInsert(
                         keylet::ownerDir(a.id()), sleVault->key(), describeOwnerDir(a.id()));
                     sleVault->setFieldU64(sfOwnerNode, *vaultPage);
+                    sleVault->setAccountID(sfAccount, a.id());
                     ac.view().insert(sleVault);
                 };
                 insertVault(a1);
@@ -2959,7 +2965,8 @@ class Invariants_test : public beast::unit_test::Suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
         doInvariantCheck(
-            {"deleted vault must also delete shares"},
+            {"deleted vault must also delete shares",
+             "deleted Vault without deleting its pseudo-account"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
@@ -2970,7 +2977,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DELETE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -4598,6 +4605,93 @@ class Invariants_test : public beast::unit_test::Suite
                 }
             }
         }
+
+        // Vault-share freeze invariant: isVaultPseudoAccountFrozen descends
+        // through sfReferenceHolding to test the vault's underlying asset for
+        // each changed holder.
+        {
+            Account const gw{"gw"};
+            MPTID shareID{};
+
+            // Vault setup: a1 and a2 both deposit IOU and hold vault shares.
+            auto const setupVault = [&](Account const& a1,
+                                        Account const& a2,
+                                        Env& env) -> std::tuple<MPTID, AccountID> {
+                env.fund(XRP(1'000), gw);
+                env.trust(gw["IOU"](10'000), a1);
+                env.trust(gw["IOU"](10'000), a2);
+                env.close();
+                env(pay(gw, a1, gw["IOU"](500)));
+                env(pay(gw, a2, gw["IOU"](500)));
+                env.close();
+
+                Vault const vault{env};
+                auto [createTx, vaultKeylet] = vault.create({.owner = a1, .asset = gw["IOU"]});
+                env(createTx);
+                env.close();
+                env(vault.deposit(
+                    {.depositor = a1, .id = vaultKeylet.key, .amount = gw["IOU"](100)}));
+                env(vault.deposit(
+                    {.depositor = a2, .id = vaultKeylet.key, .amount = gw["IOU"](100)}));
+                env.close();
+
+                return {env.le(vaultKeylet)->at(sfShareMPTID), env.le(vaultKeylet)->at(sfAccount)};
+            };
+
+            // Simulate a vault-share transfer: a1 sends 10 shares to a2.
+            auto const precheck =
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) -> bool {
+                auto sle1 = ac.view().peek(keylet::mptoken(shareID, a1.id()));
+                auto sle2 = ac.view().peek(keylet::mptoken(shareID, a2.id()));
+                if (!sle1 || !sle2)
+                    return false;
+                (*sle1)[sfMPTAmount] -= 10;
+                (*sle2)[sfMPTAmount] += 10;
+                ac.view().update(sle1);
+                ac.view().update(sle2);
+                return true;
+            };
+
+            // Case: vault pseudo-account's IOU trustline is frozen.
+            {
+                auto const preclose = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+                    auto [sid, vid] = setupVault(a1, a2, env);
+                    shareID = sid;
+                    env(trust(gw, gw["IOU"](0), Account{"vaultPseudo", vid}, tfSetFreeze));
+                    env.close();
+                    return true;
+                };
+
+                doInvariantCheck(
+                    Env{*this, defaultAmendments()},
+                    {{"invalid MPToken transfer between holders"}},
+                    precheck,
+                    XRPAmount{},
+                    STTx{ttPAYMENT, [](STObject&) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    preclose);
+            }
+
+            // Case: receiver's (a2's) IOU trustline is frozen.
+            {
+                auto const preclose = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+                    auto [sid, vid] = setupVault(a1, a2, env);
+                    shareID = sid;
+                    env(trust(gw, gw["IOU"](0), a2, tfSetFreeze));
+                    env.close();
+                    return true;
+                };
+
+                doInvariantCheck(
+                    Env{*this, defaultAmendments()},
+                    {{"invalid MPToken transfer between holders"}},
+                    precheck,
+                    XRPAmount{},
+                    STTx{ttPAYMENT, [](STObject&) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    preclose);
+            }
+        }
     }
 
     void
@@ -4971,6 +5065,373 @@ class Invariants_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testObjectHasPseudoAccount()
+    {
+        testcase << "object has pseudo-account";
+        using namespace jtx;
+
+        auto const amendments = defaultAmendments() | fixCleanup3_3_0;
+
+        // Vault: object deleted without its pseudo-account
+        {
+            Keylet vaultKeylet = keylet::amendments();
+            doInvariantCheck(
+                Env{*this, amendments},
+                {{"deleted Vault without deleting its pseudo-account"}},
+                [&vaultKeylet](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(vaultKeylet);
+                    if (!sle)
+                        return false;
+                    ac.view().erase(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttVAULT_DELETE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&vaultKeylet](Account const& a1, Account const&, Env& env) {
+                    Vault const vault{env};
+                    auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+                    env(tx);
+                    vaultKeylet = keylet;
+                    return true;
+                });
+        }
+
+        // AMM: object deleted without its pseudo-account
+        {
+            uint256 ammID{};
+            Account const gw{"gw"};
+            doInvariantCheck(
+                Env{*this, amendments},
+                {{"deleted AMM without deleting its pseudo-account"}},
+                [&ammID](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(keylet::amm(ammID));
+                    if (!sle)
+                        return false;
+                    ac.view().erase(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttAMM_DELETE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&ammID, &gw](Account const&, Account const&, Env& env) {
+                    env.fund(XRP(1'000), gw);
+                    AMM const amm(env, gw, XRP(100), gw["USD"](100));
+                    ammID = amm.ammID();
+                    return true;
+                });
+        }
+
+        // LoanBroker: object deleted without its pseudo-account
+        {
+            Keylet loanBrokerKeylet = keylet::amendments();
+            doInvariantCheck(
+                Env{*this, amendments},
+                {{"deleted LoanBroker without deleting its pseudo-account"}},
+                [&loanBrokerKeylet](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(loanBrokerKeylet);
+                    if (!sle)
+                        return false;
+                    ac.view().erase(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_DELETE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&loanBrokerKeylet, this](Account const& a1, Account const&, Env& env) {
+                    PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+                    loanBrokerKeylet = this->createLoanBroker(a1, env, xrpAsset);
+                    return BEAST_EXPECT(env.le(loanBrokerKeylet));
+                });
+        }
+
+        // Deleted object missing sfAccount field (defensive check).
+        // Manually construct the view to place a vault SLE without
+        // sfAccount into the base ledger, then erase it.
+        {
+            Env env{*this, amendments};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            env.close();
+
+            OpenView ov{*env.current()};
+
+            auto const vaultKeylet = keylet::vault(a1.id(), ov.seq());
+            auto sleVault = std::make_shared<SLE>(vaultKeylet);
+            sleVault->makeFieldAbsent(sfAccount);
+            ov.rawInsert(sleVault);
+
+            STTx const tx{ttVAULT_DELETE, [](STObject&) {}};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            auto sle = ac.view().peek(vaultKeylet);
+            if (!BEAST_EXPECT(sle))
+                return;
+            ac.view().erase(sle);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            TER const result = transactor->checkInvariants(tesSUCCESS, XRPAmount{});
+            BEAST_EXPECT(result == tecINVARIANT_FAILED);
+            BEAST_EXPECT(sink.messages().str().contains("is missing pseudo-account field"));
+        }
+    }
+
+    void
+    testConfidentialMPTTransfer()
+    {
+        using namespace test::jtx;
+        testcase << "ValidConfidentialMPToken";
+
+        MPTID mptID;
+
+        // Generate an MPT with privacy, issue 100 tokens to A2.
+        // Perform a confidential conversion to populate encrypted state.
+        auto const precloseConfidential =
+            [&mptID](Account const& a1, Account const& a2, Env& env) -> bool {
+            MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
+            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance});
+            mptID = mpt.issuanceID();
+
+            mpt.authorize({.account = a2});
+            mpt.pay(a1, a2, 100);
+
+            mpt.generateKeyPair(a1);
+            mpt.set({.account = a1, .issuerPubKey = mpt.getPubKey(a1)});
+
+            mpt.generateKeyPair(a2);
+            mpt.convert({
+                .account = a2,
+                .amt = 100,
+                .holderPubKey = mpt.getPubKey(a2),
+            });
+            return true;
+        };
+
+        // badDelete
+        doInvariantCheck(
+            {"MPToken deleted with encrypted fields while COA > 0"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                // Force an erase of the object while the COA remains 100
+                ac.view().erase(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseConfidential);
+
+        // badConsistency
+        doInvariantCheck(
+            {"MPToken encrypted field existence inconsistency"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                // Remove one of the required encrypted fields to create a mismatch
+                sleToken->makeFieldAbsent(sfIssuerEncryptedBalance);
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        doInvariantCheck(
+            {"MPToken encrypted field existence inconsistency"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                sleToken->makeFieldAbsent(sfIssuerEncryptedBalance);
+                sleToken->makeFieldAbsent(sfConfidentialBalanceInbox);
+                sleToken->makeFieldAbsent(sfConfidentialBalanceSpending);
+                sleToken->setFieldVL(sfAuditorEncryptedBalance, Blob{0x00});
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // requiresPrivacyFlag
+        auto const precloseNoPrivacy = [&mptID](
+                                           Account const& a1, Account const& a2, Env& env) -> bool {
+            MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
+            // completely omitted the tfMPTCanHoldConfidentialBalance flag here.
+            mpt.create({.flags = tfMPTCanTransfer});
+            mptID = mpt.issuanceID();
+            mpt.authorize({.account = a2});
+            mpt.pay(a1, a2, 100);
+            return true;
+        };
+
+        doInvariantCheck(
+            {"MPToken has encrypted fields but Issuance does not have "
+             "lsfMPTCanHoldConfidentialBalance "
+             "set"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                // Inject all three encrypted fields consistently (inbox+spending+issuer must be
+                // in sync or badConsistency fires first and masks requiresPrivacyFlag).
+                sleToken->setFieldVL(sfConfidentialBalanceInbox, Blob{0x00});
+                sleToken->setFieldVL(sfConfidentialBalanceSpending, Blob{0x00});
+                sleToken->setFieldVL(sfIssuerEncryptedBalance, Blob{0x00});
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseNoPrivacy);
+
+        // badCOA
+        doInvariantCheck(
+            {"Confidential outstanding amount exceeds total outstanding amount"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                if (!sleIssuance)
+                    return false;
+                // Total outstanding is natively 100; bloat the COA over 100
+                sleIssuance->setFieldU64(sfConfidentialOutstandingAmount, 200);
+                ac.view().update(sleIssuance);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_ISSUANCE_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // Conservation Violation
+        doInvariantCheck(
+            {"Token conservation violation for MPT"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                if (!sleIssuance)
+                    return false;
+
+                sleIssuance->setFieldU64(
+                    sfConfidentialOutstandingAmount,
+                    sleIssuance->getFieldU64(sfConfidentialOutstandingAmount) - 10);
+                ac.view().update(sleIssuance);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // Send/MergeInbox must not change OutstandingAmount (coaDelta == 0)
+        doInvariantCheck(
+            {"Invariant failed: OutstandingAmount changed "
+             "by confidential transaction that should not "
+             "modify it for MPT"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                if (!sleIssuance)
+                    return false;
+                sleIssuance->setFieldU64(
+                    sfOutstandingAmount, sleIssuance->getFieldU64(sfOutstandingAmount) + 1);
+                ac.view().update(sleIssuance);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttCONFIDENTIAL_MPT_SEND, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // Send/MergeInbox and zero-COA-delta confidential transactions must not
+        // change public holder MPTAmount.
+        doInvariantCheck(
+            {"Invariant failed: MPTAmount changed by confidential "
+             "transaction that should not modify this field."},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                sleToken->setFieldU64(sfMPTAmount, sleToken->getFieldU64(sfMPTAmount) + 1);
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttCONFIDENTIAL_MPT_SEND, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // badVersion
+        doInvariantCheck(
+            {"MPToken sfConfidentialBalanceVersion not updated when sfConfidentialBalanceSpending "
+             "changed"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                Blob const kChangedConfidentialSpending = {0xBA, 0xDD};
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                sleToken->setFieldVL(sfConfidentialBalanceSpending, kChangedConfidentialSpending);
+
+                // DO NOT update sfConfidentialBalanceVersion
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // Skipping Deleted MPTs (Issuance deleted)
+        auto const precloseOrphan = [&mptID](
+                                        Account const& a1, Account const& a2, Env& env) -> bool {
+            MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
+            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance});
+            mptID = mpt.issuanceID();
+            mpt.authorize({.account = a2});
+
+            // Generate privacy keys and convert 0 amount so Bob has the encrypted fields
+            mpt.generateKeyPair(a1);
+            mpt.set({.account = a1, .issuerPubKey = mpt.getPubKey(a1)});
+            mpt.generateKeyPair(a2);
+            mpt.convert({
+                .account = a2,
+                .amt = 0,
+                .holderPubKey = mpt.getPubKey(a2),
+            });
+
+            // Immediately destroy the issuance. A2's empty, encrypted token object lives on.
+            mpt.destroy();
+            return true;
+        };
+
+        doInvariantCheck(
+            {},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                // Safely able to erase the deleted token.
+                ac.view().erase(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tesSUCCESS, tesSUCCESS},
+            precloseOrphan);
+    }
+
 public:
     void
     run() override
@@ -4999,11 +5460,13 @@ public:
         testValidPseudoAccounts();
         testValidLoanBroker();
         testVault();
+        testConfidentialMPTTransfer();
         testMPT();
         testInvariantOverwrite(defaultAmendments());
         testInvariantOverwrite(defaultAmendments() - fixCleanup3_1_3);
         testVaultComputeCoarsestScale();
         testAMM();
+        testObjectHasPseudoAccount();
     }
 };
 
