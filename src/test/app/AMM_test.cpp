@@ -7187,6 +7187,96 @@ private:
     }
 
     void
+    testDepositIntegralOverflow()
+    {
+        testcase("Deposit integral overflow");
+
+        using namespace jtx;
+        auto const all = testableAmendments();
+
+        // Found by Antithesis: two-asset deposit with a huge Amount against a
+        // tiny pool leg makes frac = Amount/amountBalance enormous, so the
+        // computed XRP-side deposit exceeds Number's int64 range and
+        // Number::operator rep() throws out of doApply.
+        //
+        // Without featureMPTokensV2 the exception escapes and is converted to
+        // tefEXCEPTION by applySteps. With the amendment, equalDepositLimit
+        // guards the overflow and fails cleanly with a tec.
+        auto const test = [this](FeatureBitset features, TER expected) {
+            // These deposits intentionally trigger the overflow, which logs at
+            // error (guarded) or fatal (legacy tefEXCEPTION). Disable the log
+            // threshold to keep the test output clean.
+            Env env(*this, envconfig(), features, nullptr, beast::Severity::Disabled);
+            env.fund(XRP(30'000), gw_, alice_);
+            env(trust(alice_, STAmount{USD, 1, 20}));
+            env(pay(gw_, alice_, STAmount{USD, 1, 18}));
+            env.close();
+
+            AMM amm(env, gw_, XRP(10), USD(1));
+            amm.deposit(
+                DepositArg{
+                    .account = alice_,
+                    .asset1In = STAmount{USD, 1, 15},
+                    .asset2In = XRP(1),
+                    .err = Ter(expected)});
+        };
+
+        // Legacy behavior: overflow escapes as tefEXCEPTION.
+        test(all - featureMPTokensV2, tefEXCEPTION);
+        // Fixed behavior: overflow is guarded and returns a tec.
+        test(all, tecAMM_INVALID_TOKENS);
+    }
+
+    void
+    testWithdrawIntegralNoOverflow()
+    {
+        testcase("Withdraw integral no overflow");
+
+        using namespace jtx;
+        auto const all = testableAmendments();
+
+        // Regression guard for the sibling of testDepositIntegralOverflow.
+        // AMMWithdraw::equalWithdrawLimit has the same
+        // getRoundedAsset(integralBalance, frac) structure as the deposit
+        // path and is likewise not wrapped in a try/catch. It is safe only
+        // because withdraw preclaim (checkAmount) rejects a requested Amount
+        // greater than the pool balance with tecAMM_BALANCE *before* the math
+        // runs, so frac = Amount / balance stays <= 1 and the Number ->
+        // integral STAmount conversion cannot overflow. Deposit has no such
+        // bound (depositing more than the pool holds is legal), which is why
+        // only the deposit path was exposed.
+        //
+        // This asserts the withdrawal analog of the deposit repro fails cleanly
+        // with a tec. If the preclaim bound is ever weakened, equalWithdrawLimit
+        // would be reached with a huge frac and Number::operator rep() would
+        // escape as tefEXCEPTION, failing this test.
+        auto const test = [this](FeatureBitset features) {
+            Env env(*this, features);
+            env.fund(XRP(30'000), gw_, alice_);
+            env(trust(alice_, STAmount{USD, 1, 20}));
+            env(pay(gw_, alice_, STAmount{USD, 1, 18}));
+            env.close();
+
+            // gw holds all LPTokens of a tiny XRP/USD pool.
+            AMM amm(env, gw_, XRP(10), USD(1));
+
+            // Two-asset limit withdraw (tfTwoAsset) requesting far more of the
+            // tiny USD leg than the pool holds - the mirror of the deposit
+            // repro. Rejected upstream, so no overflow is possible.
+            amm.withdraw(
+                WithdrawArg{
+                    .account = gw_,
+                    .asset1Out = STAmount{USD, 1, 15},
+                    .asset2Out = XRP(1),
+                    .err = Ter(tecAMM_BALANCE)});
+        };
+
+        // Bound holds regardless of the deposit-side fix amendment.
+        test(all - featureMPTokensV2);
+        test(all);
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{testableAmendments()};
@@ -7258,6 +7348,8 @@ private:
         testFailedPseudoAccount();
         testStaleAuthAccountsAfterReinit(all);
         testStaleAuthAccountsAfterReinit(all - fixCleanup3_2_0);
+        testDepositIntegralOverflow();
+        testWithdrawIntegralNoOverflow();
     }
 };
 

@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <exception>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 
 namespace xrpl {
@@ -730,65 +731,86 @@ AMMDeposit::equalDepositLimit(
     std::optional<STAmount> const& lpTokensDepositMin,
     std::uint16_t tfee)
 {
-    auto frac = Number{amount} / amountBalance;
-    auto tokensAdj = getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::Yes);
-    if (tokensAdj == beast::kZero)
+    try
     {
-        if (!view.rules().enabled(fixAMMv1_3))
+        auto frac = Number{amount} / amountBalance;
+        auto tokensAdj = getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::Yes);
+        if (tokensAdj == beast::kZero)
         {
-            return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
-        }
+            if (!view.rules().enabled(fixAMMv1_3))
+            {
+                return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
+            }
 
+            return {tecAMM_INVALID_TOKENS, STAmount{}};
+        }
+        // factor in the adjusted tokens
+        frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
+        auto const amount2Deposit =
+            getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::Yes);
+        if (amount2Deposit <= amount2)
+        {
+            return deposit(
+                view,
+                ammAccount,
+                amountBalance,
+                amount,
+                amount2Deposit,
+                lptAMMBalance,
+                tokensAdj,
+                std::nullopt,
+                std::nullopt,
+                lpTokensDepositMin,
+                tfee);
+        }
+        frac = Number{amount2} / amount2Balance;
+        tokensAdj = getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::Yes);
+        if (tokensAdj == beast::kZero)
+        {
+            if (!view.rules().enabled(fixAMMv1_3))
+            {
+                return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
+            }
+
+            return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
+        }
+        // factor in the adjusted tokens
+        frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
+        auto const amountDeposit =
+            getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::Yes);
+        if (amountDeposit <= amount)
+        {
+            return deposit(
+                view,
+                ammAccount,
+                amountBalance,
+                amountDeposit,
+                amount2,
+                lptAMMBalance,
+                tokensAdj,
+                std::nullopt,
+                std::nullopt,
+                lpTokensDepositMin,
+                tfee);
+        }
+        return {tecAMM_FAILED, STAmount{}};
+    }
+    catch (std::overflow_error const& e)
+    {
+        // A huge Amount against a tiny integral (XRP/MPT) pool leg makes
+        // frac = Amount / balance enormous, so the computed pool-side deposit
+        // exceeds Number's int64 range and the conversion to an integral
+        // STAmount throws. Guard it and fail cleanly with a tec instead of
+        // letting the exception escape doApply as tefEXCEPTION.
+        //
+        // Gated by featureMPTokensV2: without the amendment we must preserve
+        // the pre-existing (tefEXCEPTION) behavior so that upgraded and
+        // non-upgraded nodes agree on the transaction result.
+        if (!view.rules().enabled(featureMPTokensV2))
+            throw;  // LCOV_EXCL_LINE - preserve legacy tefEXCEPTION
+        JLOG(j_.error()) << "AMMDeposit::equalDepositLimit overflow " << e.what();
         return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
-    // factor in the adjusted tokens
-    frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
-    auto const amount2Deposit = getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::Yes);
-    if (amount2Deposit <= amount2)
-    {
-        return deposit(
-            view,
-            ammAccount,
-            amountBalance,
-            amount,
-            amount2Deposit,
-            lptAMMBalance,
-            tokensAdj,
-            std::nullopt,
-            std::nullopt,
-            lpTokensDepositMin,
-            tfee);
-    }
-    frac = Number{amount2} / amount2Balance;
-    tokensAdj = getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::Yes);
-    if (tokensAdj == beast::kZero)
-    {
-        if (!view.rules().enabled(fixAMMv1_3))
-        {
-            return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
-        }
-
-        return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
-    }
-    // factor in the adjusted tokens
-    frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
-    auto const amountDeposit = getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::Yes);
-    if (amountDeposit <= amount)
-    {
-        return deposit(
-            view,
-            ammAccount,
-            amountBalance,
-            amountDeposit,
-            amount2,
-            lptAMMBalance,
-            tokensAdj,
-            std::nullopt,
-            std::nullopt,
-            lpTokensDepositMin,
-            tfee);
-    }
-    return {tecAMM_FAILED, STAmount{}};
 }
 
 /** Single asset deposit of the amount of asset specified by Asset1In.
