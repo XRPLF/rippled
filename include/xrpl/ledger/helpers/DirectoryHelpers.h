@@ -19,11 +19,7 @@ namespace xrpl {
 
 namespace detail {
 
-template <
-    class V,
-    class N,
-    class = std::enable_if_t<
-        std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>>>
+template <class V, class N>
 bool
 internalDirNext(
     V& view,
@@ -31,6 +27,7 @@ internalDirNext(
     std::shared_ptr<N>& page,
     unsigned int& index,
     uint256& entry)
+    requires(std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>)
 {
     auto const& svIndexes = page->getFieldV256(sfIndexes);
     XRPL_ASSERT(index <= svIndexes.size(), "xrpl::detail::internalDirNext : index inside range");
@@ -68,11 +65,7 @@ internalDirNext(
     return true;
 }
 
-template <
-    class V,
-    class N,
-    class = std::enable_if_t<
-        std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>>>
+template <class V, class N>
 bool
 internalDirFirst(
     V& view,
@@ -80,6 +73,7 @@ internalDirFirst(
     std::shared_ptr<N>& page,
     unsigned int& index,
     uint256& entry)
+    requires(std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>)
 {
     if constexpr (std::is_const_v<N>)
     {
