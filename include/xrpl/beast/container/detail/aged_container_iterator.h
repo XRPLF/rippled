@@ -30,20 +30,19 @@ public:
 
     // Disable constructing a const_iterator from a non-const_iterator.
     // Converting between reverse and non-reverse iterators should be explicit.
-    template <
-        bool OtherIsConst,
-        class OtherIterator,
-        class = std::enable_if_t<
-            (!OtherIsConst || IsConst) &&
-            !static_cast<bool>(std::is_same_v<Iterator, OtherIterator>)>>
+    template <bool OtherIsConst, class OtherIterator>
     explicit AgedContainerIterator(AgedContainerIterator<OtherIsConst, OtherIterator> const& other)
+        requires(
+            (!OtherIsConst || IsConst) &&
+            !static_cast<bool>(std::is_same_v<Iterator, OtherIterator>))
         : iter_(other.iter_)
     {
     }
 
     // Disable constructing a const_iterator from a non-const_iterator.
-    template <bool OtherIsConst, class = std::enable_if_t<!OtherIsConst || IsConst>>
+    template <bool OtherIsConst>
     AgedContainerIterator(AgedContainerIterator<OtherIsConst, Iterator> const& other)
+        requires(!OtherIsConst || IsConst)
         : iter_(other.iter_)
     {
     }
@@ -52,7 +51,8 @@ public:
     template <bool OtherIsConst, class OtherIterator>
     auto
     operator=(AgedContainerIterator<OtherIsConst, OtherIterator> const& other)
-        -> std::enable_if_t<!OtherIsConst || IsConst, AgedContainerIterator&>
+        -> AgedContainerIterator&
+        requires(!OtherIsConst || IsConst)
     {
         iter_ = other.iter_;
         return *this;

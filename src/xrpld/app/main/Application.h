@@ -2,17 +2,25 @@
 
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/PropertyStream.h>
-#include <xrpl/core/PeerReservationTable.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/shamap/TreeNodeCache.h>
 
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
 
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <mutex>
+#include <optional>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 

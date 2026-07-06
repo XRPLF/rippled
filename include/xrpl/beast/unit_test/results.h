@@ -6,6 +6,7 @@
 
 #include <xrpl/beast/unit_test/detail/const_container.h>
 
+#include <cstddef>
 #include <string>
 #include <utility>
 #include <vector>
