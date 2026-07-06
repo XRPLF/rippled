@@ -1,5 +1,9 @@
 #pragma once
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Port.h>
+#include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/BaseHTTPPeer.h>
 #include <xrpl/server/detail/SSLWSPeer.h>
 
@@ -10,6 +14,7 @@
 #include <boost/beast/ssl/ssl_stream.hpp>
 
 #include <memory>
+#include <utility>
 
 namespace xrpl {
 
@@ -26,7 +31,7 @@ private:
     using yield_context = boost::asio::yield_context;
     using error_code = boost::system::error_code;
 
-    std::unique_ptr<stream_type> stream_ptr_;
+    std::unique_ptr<stream_type> streamPtr_;
     stream_type& stream_;
     socket_type& socket_;
 
@@ -80,8 +85,8 @@ SSLHTTPPeer<Handler>::SSLHTTPPeer(
           journal,
           remoteAddress,
           buffers)
-    , stream_ptr_(std::make_unique<stream_type>(middle_type(std::move(stream)), *port.context))
-    , stream_(*stream_ptr_)
+    , streamPtr_(std::make_unique<stream_type>(middle_type(std::move(stream)), *port.context))
+    , stream_(*streamPtr_)
     , socket_(stream_.next_layer().socket())
 {
 }
@@ -91,16 +96,17 @@ template <class Handler>
 void
 SSLHTTPPeer<Handler>::run()
 {
-    if (!this->handler_.onAccept(this->session(), this->remote_address_))
+    if (!this->handler_.onAccept(this->session(), this->remoteAddress_))
     {
-        util::spawn(this->strand_, std::bind(&SSLHTTPPeer::doClose, this->shared_from_this()));
+        util::spawn(
+            this->strand_, [self = this->shared_from_this()](yield_context) { self->doClose(); });
         return;
     }
     if (!socket_.is_open())
         return;
-    util::spawn(
-        this->strand_,
-        std::bind(&SSLHTTPPeer::doHandshake, this->shared_from_this(), std::placeholders::_1));
+    util::spawn(this->strand_, [self = this->shared_from_this()](yield_context doYield) {
+        self->doHandshake(doYield);
+    });
 }
 
 template <class Handler>
@@ -110,9 +116,9 @@ SSLHTTPPeer<Handler>::websocketUpgrade()
     auto ws = this->ios().template emplace<SSLWSPeer<Handler>>(
         this->port_,
         this->handler_,
-        this->remote_address_,
+        this->remoteAddress_,
         std::move(this->message_),
-        std::move(this->stream_ptr_),
+        std::move(this->streamPtr_),
         this->journal_);
     return ws;
 }
@@ -124,8 +130,8 @@ SSLHTTPPeer<Handler>::doHandshake(yield_context doYield)
     boost::system::error_code ec;
     stream_.set_verify_mode(boost::asio::ssl::verify_none);
     this->startTimer();
-    this->read_buf_.consume(
-        stream_.async_handshake(stream_type::server, this->read_buf_.data(), doYield[ec]));
+    this->readBuf_.consume(
+        stream_.async_handshake(stream_type::server, this->readBuf_.data(), doYield[ec]));
     this->cancelTimer();
     if (ec == boost::beast::error::timeout)
         return this->onTimer();
@@ -136,9 +142,9 @@ SSLHTTPPeer<Handler>::doHandshake(yield_context doYield)
         this->port().protocol.count("https") > 0;
     if (http)
     {
-        util::spawn(
-            this->strand_,
-            std::bind(&SSLHTTPPeer::doRead, this->shared_from_this(), std::placeholders::_1));
+        util::spawn(this->strand_, [self = this->shared_from_this()](yield_context doYield) {
+            self->doRead(doYield);
+        });
         return;
     }
     // `this` will be destroyed
@@ -148,13 +154,13 @@ template <class Handler>
 void
 SSLHTTPPeer<Handler>::doRequest()
 {
-    ++this->request_count_;
+    ++this->requestCount_;
     auto const what = this->handler_.onHandoff(
-        this->session(), std::move(stream_ptr_), std::move(this->message_), this->remote_address_);
+        this->session(), std::move(streamPtr_), std::move(this->message_), this->remoteAddress_);
     if (what.moved)
         return;
     if (what.response)
-        return this->write(what.response, what.keep_alive);
+        return this->write(what.response, what.keepAlive);
     // legacy
     this->handler_.onRequest(this->session());
 }
@@ -166,7 +172,7 @@ SSLHTTPPeer<Handler>::doClose()
     this->startTimer();
     stream_.async_shutdown(bind_executor(
         this->strand_,
-        std::bind(&SSLHTTPPeer::onShutdown, this->shared_from_this(), std::placeholders::_1)));
+        [self = this->shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
 }
 
 template <class Handler>

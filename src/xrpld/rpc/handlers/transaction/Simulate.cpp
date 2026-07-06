@@ -7,7 +7,6 @@
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/Slice.h>
@@ -27,12 +26,14 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
 #include <cstdint>
 #include <exception>
+#include <expected>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -42,7 +43,7 @@
 
 namespace xrpl {
 
-static Expected<std::uint32_t, json::Value>
+static std::expected<std::uint32_t, json::Value>
 getAutofillSequence(json::Value const& txJson, RPC::JsonContext& context)
 {
     // autofill Sequence
@@ -52,16 +53,16 @@ getAutofillSequence(json::Value const& txJson, RPC::JsonContext& context)
     {
         // sanity check, should fail earlier
         // LCOV_EXCL_START
-        return Unexpected(RPC::invalidFieldError("tx.Account"));
+        return std::unexpected(RPC::invalidFieldError("tx.Account"));
         // LCOV_EXCL_STOP
     }
     auto const srcAddressID = parseBase58<AccountID>(accountStr.asString());
     if (!srcAddressID.has_value())
     {
-        return Unexpected(
+        return std::unexpected(
             RPC::makeError(RpcSrcActMalformed, RPC::invalidFieldMessage("tx.Account")));
     }
-    std::shared_ptr<SLE const> const sle =
+    SLE::const_pointer const sle =
         context.app.getOpenLedger().current()->read(keylet::account(*srcAddressID));
     if (!hasTicketSeq && !sle)
     {
@@ -69,7 +70,7 @@ getAutofillSequence(json::Value const& txJson, RPC::JsonContext& context)
             << "Failed to find source account "
             << "in current ledger: " << toBase58(*srcAddressID);
 
-        return Unexpected(rpcError(RpcSrcActNotFound));
+        return std::unexpected(rpcError(RpcSrcActNotFound));
     }
 
     return hasTicketSeq ? 0 : context.app.getTxQ().nextQueuableSeq(sle).value();
@@ -194,7 +195,7 @@ getTxJsonFromParams(json::Value const& params)
         try
         {
             SerialIter sitTrans(makeSlice(*unHexed));
-            txJson = STObject(std::ref(sitTrans), kSfGeneric).getJson(JsonOptions::Values::None);
+            txJson = STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::Values::None);
         }
         catch (std::runtime_error const&)
         {
@@ -353,6 +354,13 @@ doSimulate(RPC::JsonContext& context)
     if (stTx->getTxnType() == ttBATCH)
     {
         return RPC::makeError(RpcNotImpl);
+    }
+
+    // Reject transactions with the tfInnerBatchTxn flag.
+    if (stTx->isFlag(tfInnerBatchTxn))
+    {
+        return RPC::makeError(
+            RpcInvalidParams, "tfInnerBatchTxn flag is not allowed on top-level transactions.");
     }
 
     std::string reason;

@@ -1,10 +1,14 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <string>
 #include <utility>
 
 namespace xrpl {

@@ -1,25 +1,42 @@
 #pragma once
 
 #include <xrpld/app/ledger/AbstractFetchPackContainer.h>
-#include <xrpld/app/ledger/InboundLedgers.h>
+#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerHistory.h>
 #include <xrpld/app/ledger/LedgerHolder.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/TimeKeeper.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/UptimeClock.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Gauge.h>
+#include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
-#include <xrpl/protocol/messages.h>
+#include <xrpl/protocol/Rules.h>
 
+#include <xrpl.pb.h>
+
+#include <atomic>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <mutex>
 #include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -347,20 +364,20 @@ private:
     bool const standalone_;
 
     // How many ledgers before the current ledger do we allow peers to request?
-    std::uint32_t const fetch_depth_;
+    std::uint32_t const fetchDepth_;
 
     // How much history do we want to keep
-    std::uint32_t const ledger_history_;
+    std::uint32_t const ledgerHistorySize_;
 
-    std::uint32_t const ledger_fetch_size_;
+    std::uint32_t const ledgerFetchSize_;
 
-    TaggedCache<uint256, Blob> fetch_packs_;
+    TaggedCache<uint256, Blob> fetchPacks_;
 
-    std::uint32_t fetch_seq_{0};
+    std::uint32_t fetchSeq_{0};
 
     // Try to keep a validator from switching from test to live network
     // without first wiping the database.
-    LedgerIndex const max_ledger_difference_{1000000};
+    LedgerIndex const maxLedgerDifference_{1000000};
 
     // Time that the previous upgrade warning was issued.
     TimeKeeper::time_point upgradeWarningPrevTime_;

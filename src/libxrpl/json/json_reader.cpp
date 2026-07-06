@@ -908,7 +908,7 @@ Reader::getFormattedErrorMessages() const
 {
     std::string formattedMessage;
 
-    for (Errors::const_iterator itError = errors_.begin(); itError != errors_.end(); ++itError)
+    for (auto itError = errors_.begin(); itError != errors_.end(); ++itError)
     {
         ErrorInfo const& error = *itError;
         formattedMessage += "* " + getLocationLineAndColumn(error.token.start) + "\n";

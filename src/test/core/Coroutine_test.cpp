@@ -58,7 +58,7 @@ public:
         testcase("correct order");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = true;
+            cfg->forceMultiThread = true;
             return cfg;
         }));
 
@@ -85,7 +85,7 @@ public:
         testcase("incorrect order");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = true;
+            cfg->forceMultiThread = true;
             return cfg;
         }));
 

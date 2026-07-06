@@ -1,13 +1,25 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/nft.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <optional>
 #include <utility>
 
 namespace xrpl::nft {
@@ -28,10 +40,9 @@ findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID
 struct TokenAndPage
 {
     STObject token;
-    std::shared_ptr<SLE> page;
+    SLE::pointer page;
 
-    TokenAndPage(STObject token, std::shared_ptr<SLE> page)
-        : token(std::move(token)), page(std::move(page))
+    TokenAndPage(STObject token, SLE::pointer page) : token(std::move(token)), page(std::move(page))
     {
     }
 };
@@ -47,11 +58,7 @@ TER
 removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID);
 
 TER
-removeToken(
-    ApplyView& view,
-    AccountID const& owner,
-    uint256 const& nftokenID,
-    std::shared_ptr<SLE> const& page);
+removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, SLE::ref page);
 
 /** Deletes the given token offer.
 
@@ -63,7 +70,7 @@ removeToken(
     The offer also consumes one incremental reserve.
  */
 bool
-deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer);
+deleteTokenOffer(ApplyView& view, SLE::ref offer);
 
 /** Repairs the links in an NFTokenPage directory.
 
