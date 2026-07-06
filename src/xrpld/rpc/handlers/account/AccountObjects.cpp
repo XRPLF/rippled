@@ -218,7 +218,12 @@ getAccountObjects(
                         sleNode->isFieldPresent(sfLowSponsor))
                         return sleNode->getAccountID(sfLowSponsor);
 
+                    // LCOV_EXCL_START
+                    UNREACHABLE(
+                        "xrpl::getAccountObjects : neither lsfHighReserve or lsfLowReserve on "
+                        "trustline");
                     return std::nullopt;
+                    // LCOV_EXCL_STOP
                 }
 
                 if (sleNode->getType() == ltSPONSORSHIP &&
