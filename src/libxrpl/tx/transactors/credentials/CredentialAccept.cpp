@@ -115,13 +115,19 @@ CredentialAccept::doApply()
     }
 
     sleCred->setFieldU32(sfFlags, lsfAccepted);
-    view().update(sleCred);
 
     auto txSponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
     if (!txSponsorSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    // Release the original creation sponsor from the credential (it covered
+    // the issuer's reserve), then assign the accept tx's sponsor (if any) so
+    // the credential reflects whoever is now covering the subject's reserve.
     decreaseOwnerCountForObject(view(), sleIssuer, sleCred, 1, j_);
+    removeSponsorFromLedgerEntry(sleCred);
+    addSponsorToLedgerEntry(sleCred, *txSponsorSle);
     increaseOwnerCount(view(), sleSubject, *txSponsorSle, 1, j_);
+    view().update(sleCred);
 
     return tesSUCCESS;
 }

@@ -2882,15 +2882,15 @@ public:
             BEAST_EXPECT(ownerCount(env, bob) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
 
-            // Bob accepts: ownership and sponsorship transfer to bob
+            // Bob accepts: issuer's sponsorship ends, bob becomes unsponsored owner
             env(credentials::accept(bob, alice, credType));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);  // still sponsoring, but now bob
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);  // original sponsorship ended
             BEAST_EXPECT(ownerCount(env, bob) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);  // bob owns it without a sponsor
 
             // CredentialDelete by subject
             env(credentials::deleteCred(bob, bob, alice, credType));
