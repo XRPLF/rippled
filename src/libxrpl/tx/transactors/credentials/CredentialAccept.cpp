@@ -4,6 +4,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -116,8 +117,11 @@ CredentialAccept::doApply()
     sleCred->setFieldU32(sfFlags, lsfAccepted);
     view().update(sleCred);
 
-    decreaseOwnerCount(view(), sleIssuer, {}, 1, j_);
-    increaseOwnerCount(view(), sleSubject, {}, 1, j_);
+    auto txSponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
+    if (!txSponsorSle)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+    decreaseOwnerCountForObject(view(), sleIssuer, sleCred, 1, j_);
+    increaseOwnerCount(view(), sleSubject, *txSponsorSle, 1, j_);
 
     return tesSUCCESS;
 }
