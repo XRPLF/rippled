@@ -180,7 +180,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
     // overridden to the object SLE and its type-specific sponsor field:
     // sfHighSponsor/sfLowSponsor for a RippleState, sfSponsor for other object types.
     SLE::const_pointer targetSle = sponseeSle;
-    auto sponsorField = &sfSponsor;
+    auto const* sponsorField = &sfSponsor;
 
     if (objectID.has_value())
     {
