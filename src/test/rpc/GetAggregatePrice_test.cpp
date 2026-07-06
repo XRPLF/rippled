@@ -18,7 +18,6 @@
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
-#include <cstdlib>
 #include <memory>
 #include <optional>
 #include <string>
