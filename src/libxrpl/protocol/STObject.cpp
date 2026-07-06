@@ -502,7 +502,7 @@ STObject::isFlag(std::uint32_t f) const
 }
 
 std::uint32_t
-STObject::getFlags(void) const
+STObject::getFlags() const
 {
     auto const* t = dynamic_cast<STUInt32 const*>(peekAtPField(sfFlags));
 
