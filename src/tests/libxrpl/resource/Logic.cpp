@@ -212,8 +212,8 @@ TEST_F(ResourceManagerTest, imports)
 
     Gossip g[5];
 
-    for (int i = 0; i < 5; ++i)
-        populateGossip(g[i]);
+    for (auto& i : g)
+        populateGossip(i);
 
     for (int i = 0; i < 5; ++i)
         logic.importConsumers(std::to_string(i), g[i]);

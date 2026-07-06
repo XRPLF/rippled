@@ -151,12 +151,12 @@ TEST_F(SHAMapSyncTest, sync)
         if (b.empty())
             FAIL() << "No nodes returned";
 
-        for (std::size_t i = 0; i < b.size(); ++i)
+        for (auto const& i : b)
         {
             // Keep failures fatal here because this loop is data-dependent.
             // non-deterministic number of times and the number of tests run
             // should be deterministic
-            if (!destination.addKnownNode(b[i].first, makeSlice(b[i].second), nullptr).isUseful())
+            if (!destination.addKnownNode(i.first, makeSlice(i.second), nullptr).isUseful())
                 FAIL() << "Known node was not useful";
         }
     } while (true);
