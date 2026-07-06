@@ -765,7 +765,7 @@ isBatchRawTransactionOkay(STObject const& st, std::string& reason)
     {
         try
         {
-            TxType const tt = safeCast<TxType>(raw.getFieldU16(sfTransactionType));
+            auto const tt = safeCast<TxType>(raw.getFieldU16(sfTransactionType));
             if (tt == ttBATCH)
             {
                 reason = "Raw Transactions may not contain batch transactions.";

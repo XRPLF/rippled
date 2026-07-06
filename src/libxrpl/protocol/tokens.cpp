@@ -143,9 +143,10 @@ digest(void const* data, std::size_t size) noexcept
     return static_cast<Hasher::result_type>(h);
 }
 
-template <class Hasher, class T, std::size_t N, class = std::enable_if_t<sizeof(T) == 1>>
+template <class Hasher, class T, std::size_t N>
 static Hasher::result_type
 digest(std::array<T, N> const& v)
+    requires(sizeof(T) == 1)
 {
     return digest<Hasher>(v.data(), v.size());
 }
