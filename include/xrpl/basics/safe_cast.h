@@ -1,5 +1,7 @@
 #pragma once
 
+#include <xrpl/beast/utility/instrumentation.h>  // IWYU pragma: keep
+
 #include <type_traits>
 
 namespace xrpl {
