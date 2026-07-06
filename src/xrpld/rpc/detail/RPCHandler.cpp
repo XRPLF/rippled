@@ -220,6 +220,31 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
     }
 }
 
+// Resolve the span suffix / command attribute for a request that failed in
+// fillHandler. Returns the canonical handler name for a recognized command
+// (a finite, bounded set) or the literal "unknown" for a request that omits
+// both fields or names an unregistered command. The raw request value is
+// deliberately NOT used: the command attribute is promoted to a Prometheus
+// label by the spanmetrics connector, so an attacker-controlled string would
+// let arbitrary request input drive unbounded span-name / label cardinality.
+// Resolving against the registry keeps per-command error attribution for real
+// commands (e.g. a submit rejected with rpcTOO_BUSY stays rpc.command.submit)
+// while collapsing garbage input to a single series.
+std::string_view
+resolveCommandSpanName(JsonContext const& context)
+{
+    if (!context.params.isMember(jss::command) && !context.params.isMember(jss::method))
+        return rpc_span::val::unknownCommand;
+
+    std::string const cmd = context.params.isMember(jss::command)
+        ? context.params[jss::command].asString()
+        : context.params[jss::method].asString();
+
+    auto const* handler = getHandler(context.apiVersion, context.app.config().betaRpcApi, cmd);
+    return (handler != nullptr) ? std::string_view{handler->name}
+                                : std::string_view{rpc_span::val::unknownCommand};
+}
+
 }  // namespace
 
 Status
@@ -228,25 +253,12 @@ doCommand(RPC::JsonContext& context, json::Value& result)
     Handler const* handler = nullptr;
     if (auto error = fillHandler(context, handler))
     {
-        std::string cmdName;
-        if (context.params.isMember(jss::command))
-        {
-            cmdName = context.params[jss::command].asString();
-        }
-        else if (context.params.isMember(jss::method))
-        {
-            cmdName = context.params[jss::method].asString();
-        }
-        else
-        {
-            cmdName = "unknown";  // LCOV_EXCL_LINE
-        }
-        // Use the resolved command name as the span suffix so dashboards
-        // can break out per-command error rates (e.g. rpc.command.submit
-        // for a submit that hit rpcTOO_BUSY). Falling back to a single
-        // "unknown" name only when the request truly omits both fields.
+        // Bound the span name and command attribute to the finite set of
+        // registered handler names (plus "unknown") — see the helper for why
+        // raw request input must not reach the telemetry pipeline.
+        auto const cmdName = resolveCommandSpanName(context);
         auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
-        span.setAttribute(rpc_span::attr::command, cmdName.c_str());
+        span.setAttribute(rpc_span::attr::command, cmdName);
         span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
         span.setError(getErrorInfo(error).token.cStr());
 
