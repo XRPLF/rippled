@@ -1,12 +1,16 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/TER.h>
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <type_traits>
@@ -15,11 +19,7 @@ namespace xrpl {
 
 namespace detail {
 
-template <
-    class V,
-    class N,
-    class = std::enable_if_t<
-        std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>>>
+template <class V, class N>
 bool
 internalDirNext(
     V& view,
@@ -27,6 +27,7 @@ internalDirNext(
     std::shared_ptr<N>& page,
     unsigned int& index,
     uint256& entry)
+    requires(std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>)
 {
     auto const& svIndexes = page->getFieldV256(sfIndexes);
     XRPL_ASSERT(index <= svIndexes.size(), "xrpl::detail::internalDirNext : index inside range");
@@ -64,11 +65,7 @@ internalDirNext(
     return true;
 }
 
-template <
-    class V,
-    class N,
-    class = std::enable_if_t<
-        std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>>>
+template <class V, class N>
 bool
 internalDirFirst(
     V& view,
@@ -76,6 +73,7 @@ internalDirFirst(
     std::shared_ptr<N>& page,
     unsigned int& index,
     uint256& entry)
+    requires(std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>)
 {
     if constexpr (std::is_const_v<N>)
     {

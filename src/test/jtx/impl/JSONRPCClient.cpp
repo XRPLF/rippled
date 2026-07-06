@@ -4,8 +4,9 @@
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -40,8 +41,8 @@ class JSONRPCClient : public AbstractClient
     {
         auto& log = std::cerr;
         ParsedPort common;
-        parsePort(common, cfg["server"], log);
-        for (auto const& name : cfg.section("server").values())
+        parsePort(common, cfg[Sections::kServer], log);
+        for (auto const& name : cfg.section(Sections::kServer).values())
         {
             if (!cfg.exists(name))
                 continue;

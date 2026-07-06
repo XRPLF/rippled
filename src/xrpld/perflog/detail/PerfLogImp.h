@@ -3,17 +3,23 @@
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobTypes.h>
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/json/json_value.h>
 
 #include <boost/asio/ip/host_name.hpp>
 
 #include <condition_variable>
 #include <cstdint>
 #include <fstream>
-#include <memory>
+#include <functional>
+#include <mutex>
+#include <set>
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace xrpl::perf {

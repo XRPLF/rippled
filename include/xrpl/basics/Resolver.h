@@ -3,6 +3,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 
 #include <functional>
+#include <string>
 #include <vector>
 
 namespace xrpl {

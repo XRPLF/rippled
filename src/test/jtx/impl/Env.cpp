@@ -213,7 +213,7 @@ Env::balance(Account const& account, Asset const& asset) const
         [&](Issue const& issue) -> PrettyAmount {
             if (isXRP(issue.currency))
                 return balance(account);
-            auto const sle = le(keylet::line(account.id(), issue));
+            auto const sle = le(keylet::trustLine(account.id(), issue));
             if (!sle)
                 return {STAmount(issue, 0), account.name()};
             auto amount = sle->getFieldAmount(sfBalance);
@@ -231,7 +231,7 @@ Env::balance(Account const& account, Asset const& asset) const
             if (account.id() == issuer)
             {
                 // Issuer balance
-                auto const sle = le(keylet::mptIssuance(id));
+                auto const sle = le(keylet::mptokenIssuance(id));
                 if (!sle)
                     return {STAmount(mptIssue, 0), account.name()};
 
@@ -253,7 +253,7 @@ Env::balance(Account const& account, Asset const& asset) const
 PrettyAmount
 Env::limit(Account const& account, Issue const& issue) const
 {
-    auto const sle = le(keylet::line(account.id(), issue));
+    auto const sle = le(keylet::trustLine(account.id(), issue));
     if (!sle)
         return {STAmount(issue, 0), account.name()};
     auto const aHigh = account.id() > issue.account;

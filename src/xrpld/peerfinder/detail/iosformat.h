@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstddef>
+#include <ios>
+#include <memory>
 #include <ostream>
 #include <sstream>
 #include <string>

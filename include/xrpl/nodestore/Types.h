@@ -2,6 +2,7 @@
 
 #include <xrpl/nodestore/NodeObject.h>
 
+#include <memory>
 #include <vector>
 
 namespace xrpl::NodeStore {
