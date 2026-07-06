@@ -1,5 +1,7 @@
 #pragma once
 
+#include <xrpl/beast/utility/instrumentation.h>
+
 #include <type_traits>
 
 namespace xrpl {
