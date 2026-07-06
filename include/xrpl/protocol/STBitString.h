@@ -148,7 +148,7 @@ template <int Bits>
 bool
 STBitString<Bits>::isEquivalent(STBase const& t) const
 {
-    STBitString const* v = dynamic_cast<STBitString const*>(&t);
+    auto const* v = dynamic_cast<STBitString const*>(&t);
     return v && (value_ == v->value_);
 }
 

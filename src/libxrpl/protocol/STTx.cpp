@@ -596,6 +596,7 @@ STTx::getBatchTransactionIDs() const
     XRPL_ASSERT(
         batchTxnIds_->size() == getFieldArray(sfRawTransactions).size(),
         "STTx::getBatchTransactionIDs : batch transaction IDs size mismatch");
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): guarded by assert above
     return *batchTxnIds_;
 }
 
@@ -764,7 +765,7 @@ isBatchRawTransactionOkay(STObject const& st, std::string& reason)
     {
         try
         {
-            TxType const tt = safeCast<TxType>(raw.getFieldU16(sfTransactionType));
+            auto const tt = safeCast<TxType>(raw.getFieldU16(sfTransactionType));
             if (tt == ttBATCH)
             {
                 reason = "Raw Transactions may not contain batch transactions.";
