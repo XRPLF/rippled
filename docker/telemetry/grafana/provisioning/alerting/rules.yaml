@@ -1,0 +1,409 @@
+# Grafana alert-rule provisioning for rippled OTel metrics.
+#
+# Phase 9: Internal metric gap fill — alerting on health-critical metrics.
+#
+# Six rules across three node-fatal subsystems: consensus/ledger health,
+# validator health, and the job queue. Every metric referenced here is
+# introduced by phase 9's MetricsRegistry.
+#
+# Rule shape (Grafana server-side evaluation):
+#   A  Prometheus query  — a 5-minute rate / histogram_quantile, aggregated
+#                          `by (exported_instance)` so each node evaluates
+#                          independently. Alert rules run headless and cannot
+#                          use the dashboards' `$node` template variable.
+#   B  reduce (last)      — collapse A's series to its most recent value.
+#   C  threshold          — the firing condition; `condition: C`.
+#
+# Thresholds are documented in ALERTING.md and are intended to be tuned.
+
+apiVersion: 1
+
+groups:
+  # ------------------------------------------------------------------ #
+  # Consensus / ledger health                                          #
+  # ------------------------------------------------------------------ #
+  - orgId: 1
+    name: xrpld-consensus
+    folder: xrpld
+    interval: 1m
+    rules:
+      # A closed ledger that later fails validation against the network —
+      # any sustained nonzero rate means this node built history the rest
+      # of the network rejects.
+      - uid: xrpld-ledger-history-mismatch
+        title: LedgerHistoryMismatch
+        condition: C
+        for: 5m
+        noDataState: NoData
+        execErrState: Error
+        labels:
+          severity: critical
+          category: consensus
+        annotations:
+          summary: "Ledger history mismatch on {{ $labels.exported_instance }}"
+          description: >-
+            Node {{ $labels.exported_instance }} is recording ledger history
+            mismatches ({{ $values.B.Value }}/s over 5m). The node's built ledger
+            diverges from the validated network chain.
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: sum by (exported_instance) (rate(xrpld_ledger_history_mismatch_total[5m]))
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              reducer: last
+              expression: A
+              datasource:
+                type: __expr__
+                uid: __expr__
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+              datasource:
+                type: __expr__
+                uid: __expr__
+
+      # Healthy nodes close a ledger every ~3-5s. Zero closes for 3 minutes
+      # means consensus/ledger advancement is stuck. NoData (metric absent)
+      # also fires — a vanished series here means the node is down.
+      - uid: xrpld-ledger-close-stalled
+        title: LedgerCloseStalled
+        condition: C
+        for: 3m
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          severity: critical
+          category: consensus
+        annotations:
+          summary: "Ledger closing stalled on {{ $labels.exported_instance }}"
+          description: >-
+            Node {{ $labels.exported_instance }} has closed no ledgers for
+            several minutes (5m rate has decayed to zero). Consensus or ledger
+            advancement is stuck.
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: sum by (exported_instance) (rate(xrpld_ledgers_closed_total[5m]))
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              reducer: last
+              expression: A
+              datasource:
+                type: __expr__
+                uid: __expr__
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: lt
+                    params: [0.001]
+              datasource:
+                type: __expr__
+                uid: __expr__
+
+  # ------------------------------------------------------------------ #
+  # Validator health                                                   #
+  # ------------------------------------------------------------------ #
+  - orgId: 1
+    name: xrpld-validator
+    folder: xrpld
+    interval: 1m
+    rules:
+      # This validator's own validations are not reaching / agreeing with
+      # the network. A sustained nonzero miss rate risks the validator being
+      # dropped from UNLs.
+      - uid: xrpld-validations-missed
+        title: ValidationsMissed
+        condition: C
+        for: 5m
+        noDataState: NoData
+        execErrState: Error
+        labels:
+          severity: warning
+          category: validator
+        annotations:
+          summary: "Validations missed on {{ $labels.exported_instance }}"
+          description: >-
+            Node {{ $labels.exported_instance }} is missing validations
+            ({{ $values.B.Value }}/s over 5m). Its validations are not agreeing with
+            the validated ledger.
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: sum by (exported_instance) (rate(xrpld_validation_missed_total[5m]))
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              reducer: last
+              expression: A
+              datasource:
+                type: __expr__
+                uid: __expr__
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+              datasource:
+                type: __expr__
+                uid: __expr__
+
+      # The node has stopped checking incoming validations. Zero checked
+      # validations means it is no longer processing the validation stream
+      # from peers.
+      - uid: xrpld-validations-not-checked
+        title: ValidationsNotChecked
+        condition: C
+        for: 5m
+        noDataState: Alerting
+        execErrState: Error
+        labels:
+          severity: warning
+          category: validator
+        annotations:
+          summary: "No validations checked on {{ $labels.exported_instance }}"
+          description: >-
+            Node {{ $labels.exported_instance }} has checked no incoming
+            validations for several minutes (5m rate has decayed to zero). The
+            validation stream from peers may have stopped.
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: sum by (exported_instance) (rate(xrpld_validations_checked_total[5m]))
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              reducer: last
+              expression: A
+              datasource:
+                type: __expr__
+                uid: __expr__
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: lt
+                    params: [0.001]
+              datasource:
+                type: __expr__
+                uid: __expr__
+
+  # ------------------------------------------------------------------ #
+  # Job queue / resource health                                        #
+  # ------------------------------------------------------------------ #
+  - orgId: 1
+    name: xrpld-jobqueue
+    folder: xrpld
+    interval: 1m
+    rules:
+      # Transactions are being dropped because the job queue is full — the
+      # node is shedding load it cannot process.
+      - uid: xrpld-jobqueue-tx-overflow
+        title: JobQueueTxOverflow
+        condition: C
+        for: 5m
+        noDataState: NoData
+        execErrState: Error
+        labels:
+          severity: warning
+          category: jobqueue
+        annotations:
+          summary: "Job queue transaction overflow on {{ $labels.exported_instance }}"
+          description: >-
+            Node {{ $labels.exported_instance }} is overflowing its transaction
+            job queue ({{ $values.B.Value }}/s over 5m). Transactions are being
+            dropped under load.
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: sum by (exported_instance) (rate(xrpld_jq_trans_overflow_total[5m]))
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              reducer: last
+              expression: A
+              datasource:
+                type: __expr__
+                uid: __expr__
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+              datasource:
+                type: __expr__
+                uid: __expr__
+
+      # p99 time a job waits in the queue before running. A sustained p99
+      # above 1s means the node is saturated and work is backing up. Tune the
+      # threshold (in microseconds) to the deployment.
+      - uid: xrpld-jobqueue-latency-high
+        title: JobQueueLatencyHigh
+        condition: C
+        for: 5m
+        noDataState: NoData
+        execErrState: Error
+        labels:
+          severity: warning
+          category: jobqueue
+        annotations:
+          summary: "Job queue latency high on {{ $labels.exported_instance }}"
+          description: >-
+            Node {{ $labels.exported_instance }} has a p99 job-queue wait of
+            {{ $values.B.Value }}µs (>1s) over 5m. The node is saturated and jobs are
+            backing up.
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              refId: A
+              expr: histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket[5m])))
+              instant: true
+              range: false
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              reducer: last
+              expression: A
+              datasource:
+                type: __expr__
+                uid: __expr__
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [1000000]
+              datasource:
+                type: __expr__
+                uid: __expr__

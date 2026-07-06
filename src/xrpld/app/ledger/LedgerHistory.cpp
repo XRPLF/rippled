@@ -371,6 +371,12 @@ LedgerHistory::handleMismatch(
         return;
     }
 
+    // Tracks whether the mismatch reason has already been recorded. The
+    // consensus tx-set hash disagreement is the root cause, so it is counted
+    // once here; the tx-level comparison below still logs its diagnostics but
+    // must not record a second reason for the same mismatch event.
+    bool reasonRecorded = false;
+
     if (builtConsensusHash && validatedConsensusHash)
     {
         if (builtConsensusHash != validatedConsensusHash)
@@ -378,11 +384,8 @@ LedgerHistory::handleMismatch(
             JLOG(j_.error()) << "MISMATCH on consensus transaction set "
                              << " built: " << to_string(*builtConsensusHash)
                              << " validated: " << to_string(*validatedConsensusHash);
-            // The consensus tx-set hashes disagree — this is the root cause,
-            // so record it as the single reason and stop. The tx-level
-            // comparison below would otherwise double-count the same mismatch.
             recordReason("consensus_txset");
-            return;
+            reasonRecorded = true;
         }
         else
         {
@@ -398,13 +401,15 @@ LedgerHistory::handleMismatch(
     if (builtTx == validTx)
     {
         JLOG(j_.error()) << "MISMATCH with same " << builtTx.size() << " transactions";
-        recordReason("same_txset_diff_result");
+        if (!reasonRecorded)
+            recordReason("same_txset_diff_result");
     }
     else
     {
         JLOG(j_.error()) << "MISMATCH with " << builtTx.size() << " built and " << validTx.size()
                          << " valid transactions.";
-        recordReason("different_txset");
+        if (!reasonRecorded)
+            recordReason("different_txset");
     }
 
     JLOG(j_.error()) << "built\n" << getJson({*builtLedger, {}});
