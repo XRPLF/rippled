@@ -1157,6 +1157,11 @@ toClaim(STTx const& tx)
 
     try
     {
+        // Intentional slice: we only want the field bag from the transaction,
+        // stripped of any STTx-specific state, so it can be reinterpreted as a
+        // cross-chain attestation below (sfAccount is replaced with
+        // sfOtherChainSource). STTx is final, so no further-derived state can be
+        // lost here.
         // NOLINTNEXTLINE(cppcoreguidelines-slicing)
         STObject o{tx};
         o.setAccountID(sfAccount, o[sfOtherChainSource]);
