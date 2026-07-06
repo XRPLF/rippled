@@ -15,6 +15,7 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/Protocol.h>
@@ -330,11 +331,9 @@ SHAMapStoreImp::run()
             try
             {
                 validatedLedger->stateMap().snapShot(false)->visitNodes(
-                    std::bind(
-                        &SHAMapStoreImp::copyNode,
-                        this,
-                        std::ref(nodeCount),
-                        std::placeholders::_1));
+                    [this, &nodeCount](SHAMapTreeNode const& node) {
+                        return copyNode(nodeCount, node);
+                    });
             }
             catch (SHAMapMissingNode const& e)
             {
@@ -387,8 +386,12 @@ void
 SHAMapStoreImp::dbPaths()
 {
     Section const section{app_.config().section(Sections::kNodeDatabase)};
-    boost::filesystem::path dbPath = get(section, Keys::kPath);
 
+    // Skip creating the directory when an in-memory database is used.
+    if (boost::iequals(get(section, Keys::kType), "memory"))
+        return;
+
+    boost::filesystem::path dbPath = get(section, Keys::kPath);
     if (boost::filesystem::exists(dbPath))
     {
         if (!boost::filesystem::is_directory(dbPath))

@@ -49,6 +49,11 @@ public:
             impl_->set(value);
     }
 
+    // This is a write-through handle: assignment sets the value of the
+    // referenced metric.  It is const-qualified and returns Gauge const&
+    // (a non-const Gauge& would require a const_cast), so it does not follow
+    // the conventional assignment-operator signature.
+    // NOLINTNEXTLINE(misc-unconventional-assign-operator)
     Gauge const&
     operator=(value_type value) const
     {

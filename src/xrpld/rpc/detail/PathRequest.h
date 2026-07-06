@@ -1,19 +1,31 @@
 #pragma once
 
+#include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
 
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/PathAsset.h>
-#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
 
+#include <chrono>
+#include <functional>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <set>
+#include <utility>
 
 namespace xrpl {
 

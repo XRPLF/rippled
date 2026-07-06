@@ -199,7 +199,7 @@ ValidVault::deltaAssets(AccountID const& id) const
             {
                 if (isXRP(issue))
                     return lookup(keylet::account(id).key);
-                auto result = lookup(keylet::line(id, issue).key);
+                auto result = lookup(keylet::trustLine(id, issue).key);
                 // Trust-line balance is stored from the low-account's perspective;
                 // negate if id is the high account so the delta is in id's terms.
                 if (result && id > issue.getIssuer())
@@ -238,7 +238,7 @@ ValidVault::deltaShares(AccountID const& id) const
     auto const& afterVault = afterVault_[0];
     auto const it = [&]() {
         if (id == afterVault.pseudoId)
-            return deltas_.find(keylet::mptIssuance(afterVault.shareMPTID).key);
+            return deltas_.find(keylet::mptokenIssuance(afterVault.shareMPTID).key);
         return deltas_.find(keylet::mptoken(afterVault.shareMPTID, id).key);
     }();
 
@@ -411,7 +411,7 @@ ValidVault::finalize(
                 return e;
         }
 
-        auto const sleShares = view.read(keylet::mptIssuance(afterVault.shareMPTID));
+        auto const sleShares = view.read(keylet::mptokenIssuance(afterVault.shareMPTID));
 
         return sleShares ? std::optional<Shares>(Shares::make(*sleShares)) : std::nullopt;
     }();

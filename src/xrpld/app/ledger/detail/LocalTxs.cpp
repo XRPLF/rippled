@@ -163,7 +163,7 @@ public:
 
             // Ticket should have been created by now.  Remove if ticket
             // does not exist.
-            return !view.exists(keylet::kTicket(acctID, seqProx));
+            return !view.exists(keylet::ticket(acctID, seqProx));
         });
     }
 

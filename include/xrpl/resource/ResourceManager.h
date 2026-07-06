@@ -10,6 +10,10 @@
 
 #include <boost/utility/string_view.hpp>
 
+#include <memory>
+#include <string>
+#include <string_view>
+
 namespace xrpl::Resource {
 
 /** Tracks load and resource consumption. */

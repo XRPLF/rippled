@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cstddef>
+#include <iterator>
 #include <memory>
 #include <optional>
+#include <type_traits>
 
 namespace xrpl {
 
@@ -106,8 +108,8 @@ public:
         std::optional<value_type> mutable cache_;
     };
 
-    static_assert(std::is_nothrow_move_constructible<Iterator>{}, "");
-    static_assert(std::is_nothrow_move_assignable<Iterator>{}, "");
+    static_assert(std::is_nothrow_move_constructible<Iterator>{});
+    static_assert(std::is_nothrow_move_assignable<Iterator>{});
 
     using const_iterator = Iterator;
 

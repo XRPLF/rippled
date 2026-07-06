@@ -1,6 +1,6 @@
 {
   "platform": "macos/arm64",
-  "runner": ["self-hosted", "macOS", "ARM64", "mac-runner-m1"],
+  "runner": ["self-hosted", "macOS", "ARM64", "macos-26-apple-clang-21"],
   "configs": [
     {
       "build_type": "Release",
@@ -9,7 +9,8 @@
     {
       "build_type": "Debug",
       "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
-      "build_only": true
+      "build_only": true,
+      "exclude_event_types": ["pull_request"]
     }
   ]
 }

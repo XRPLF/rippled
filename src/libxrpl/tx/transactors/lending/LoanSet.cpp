@@ -57,7 +57,7 @@ LoanSet::preflight(PreflightContext const& ctx)
     auto const& tx = ctx.tx;
 
     // Special case for Batch inner transactions
-    if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch) &&
+    if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatchV1_1) &&
         !tx.isFieldPresent(sfCounterparty))
     {
         auto const parentBatchId = ctx.parentBatchId.value_or(uint256{0});
@@ -150,7 +150,7 @@ LoanSet::checkSign(PreclaimContext const& ctx)
         if (auto const c = ctx.tx.at(~sfCounterparty))
             return c;
 
-        if (auto const broker = ctx.view.read(keylet::loanbroker(ctx.tx[sfLoanBrokerID])))
+        if (auto const broker = ctx.view.read(keylet::loanBroker(ctx.tx[sfLoanBrokerID])))
             return broker->at(sfOwner);
         return std::nullopt;
     }();
@@ -268,7 +268,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     auto const account = tx[sfAccount];
     auto const brokerID = tx[sfLoanBrokerID];
 
-    auto const brokerSle = ctx.view.read(keylet::loanbroker(brokerID));
+    auto const brokerSle = ctx.view.read(keylet::loanBroker(brokerID));
     if (!brokerSle)
     {
         // This can only be hit if there's a counterparty specified, otherwise
@@ -373,7 +373,7 @@ LoanSet::doApply()
 
     auto const brokerID = tx[sfLoanBrokerID];
 
-    auto const brokerSle = view.peek(keylet::loanbroker(brokerID));
+    auto const brokerSle = view.peek(keylet::loanBroker(brokerID));
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const brokerOwner = brokerSle->at(sfOwner);

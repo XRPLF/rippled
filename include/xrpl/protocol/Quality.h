@@ -1,11 +1,13 @@
 #pragma once
 
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AmountConversions.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
+#include <cmath>
+#include <concepts>
 #include <cstdint>
 #include <ostream>
 #include <utility>
@@ -280,7 +282,7 @@ public:
         auto const maxVMantissa = mantissa(maxV);
         auto const expDiff = exponent(maxV) - exponent(minV);
 
-        double const minVD = static_cast<double>(minVMantissa);
+        auto const minVD = static_cast<double>(minVMantissa);
         double const maxVD =
             (expDiff != 0) ? maxVMantissa * pow(10, expDiff) : static_cast<double>(maxVMantissa);
 

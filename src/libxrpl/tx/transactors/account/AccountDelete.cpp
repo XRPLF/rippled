@@ -260,8 +260,8 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
         return tecHAS_OBLIGATIONS;
 
     // If the account owns any NFTs it cannot be deleted.
-    Keylet const first = keylet::nftpageMin(account);
-    Keylet const last = keylet::nftpageMax(account);
+    Keylet const first = keylet::nftokenPageMin(account);
+    Keylet const last = keylet::nftokenPageMax(account);
 
     auto const cp = ctx.view.read(
         Keylet(ltNFTOKEN_PAGE, ctx.view.succ(first.key, last.key.next()).value_or(last.key)));

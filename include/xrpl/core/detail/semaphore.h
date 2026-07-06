@@ -29,6 +29,7 @@
 #pragma once
 
 #include <condition_variable>
+#include <cstddef>
 #include <mutex>
 
 namespace xrpl {

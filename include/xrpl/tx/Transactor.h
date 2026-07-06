@@ -1,12 +1,30 @@
 #pragma once
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <optional>
+#include <tuple>
+#include <unordered_set>
 #include <utility>
 
 namespace xrpl {
@@ -178,12 +196,13 @@ public:
     static NotTEC
     checkSign(PreclaimContext const& ctx);
 
-    static NotTEC
-    checkBatchSign(PreclaimContext const& ctx);
-
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
+
+    // Returns the base fee plus extra base fee units, not scaled for load.
+    static XRPAmount
+    calculateBaseFee(ReadView const& view, STTx const& tx, std::uint32_t extraBaseFeeMultiplier);
 
     /* Do NOT define an invokePreflight function in a derived class.
        Instead, define:
@@ -222,8 +241,63 @@ public:
         return tesSUCCESS;
     }
 
+    /**
+     * This function can be overridden to introduce additional semantic constraints beyond the
+     * granular template validation for granular permissions. It is called by the base
+     * invokeCheckPermission method only after the transaction has successfully passed
+     * checkGranularSandbox.
+     */
     static NotTEC
-    checkPermission(ReadView const& view, STTx const& tx);
+    checkGranularSemantics(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
+    {
+        return tesSUCCESS;
+    }
+
+    /**
+     * Checks whether the transaction is authorized to be executed by the delegated account.
+     * This function enforces the strict permission check hierarchy. It is explicitly
+     * designed NOT to be overridden. Derived transactors must instead implement
+     * checkGranularSemantics to add custom validation logic for granular permissions.
+     *
+     * The evaluation proceeds as follows:
+     * - If transaction-level permission is granted, the function immediately returns tesSUCCESS.
+     * - If transaction-level permission is not granted, the function checks whether the transaction
+     * matches the granular permission template defined in permissions.macro. If it does, it then
+     * calls checkGranularSemantics to perform any additional, fine-grained validation.
+     *
+     */
+    template <class T>
+    static NotTEC
+    invokeCheckPermission(ReadView const& view, STTx const& tx)
+    {
+        // heldGranularPermissions is passed by reference into checkPermission.
+        // It is populated with the sender’s granular permissions only when the sender
+        // lacks tx-level permission but has granular permissions that satisfy the
+        // granular permission template.
+        //
+        // - result is terNO_DELEGATE_PERMISSION: return immediately.
+        // - result is tesSUCCESS and heldGranularPermissions is empty: tx-level permission was
+        // granted, so we returned success before populating it.
+        // - result is tesSUCCESS and heldGranularPermissions is not empty: tx-level permission was
+        // not granted, but the held granular permissions passed checkGranularSandbox, so we proceed
+        // to checkGranularSemantics.
+        //
+        // WARNING: Do not simplify checkPermission to return only
+        // heldGranularPermissions or the ter code. Both the result and the
+        // populated set are required to enforce the strict permission hierarchy
+        // described above.
+        std::unordered_set<GranularPermissionType> heldGranularPermissions;
+        if (NotTEC const result = checkPermission(view, tx, heldGranularPermissions);
+            !isTesSuccess(result) || heldGranularPermissions.empty())
+        {
+            return result;
+        }
+
+        return T::checkGranularSemantics(view, tx, heldGranularPermissions);
+    }
     /////////////////////////////////////////////////////
 
     // Interface used by AccountDelete
@@ -312,7 +386,12 @@ protected:
         std::optional<uint256 const> const& parentBatchId,
         AccountID const& idAccount,
         STObject const& sigObject,
-        beast::Journal const j);
+        beast::Journal const j,
+        // A batch may carry an inner from an account that an earlier inner
+        // creates, so the signer account need not exist yet; when it does not,
+        // only its own master key may authorize it. Normal transactions require
+        // the account to already exist.
+        bool permitUncreatedAccount = false);
 
     // Base class always returns true
     static bool
@@ -352,14 +431,8 @@ protected:
         std::optional<T> value,
         unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
-private:
-    std::pair<TER, XRPAmount>
-    reset(XRPAmount fee);
-
-    TER
-    consumeSeqProxy(SLE::pointer const& sleAccount);
-    TER
-    payFee();
+    // Signature-authorization helpers. protected so the Batch transactor can
+    // reuse them when validating each BatchSigner in Batch::checkBatchSign.
     static NotTEC
     checkSingleSign(
         ReadView const& view,
@@ -367,6 +440,7 @@ private:
         AccountID const& idAccount,
         SLE::const_pointer sleAccount,
         beast::Journal const j);
+
     static NotTEC
     checkMultiSign(
         ReadView const& view,
@@ -374,6 +448,24 @@ private:
         AccountID const& id,
         STObject const& sigObject,
         beast::Journal const j);
+
+private:
+    static NotTEC
+    checkPermission(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType>& heldGranularPermissions);
+
+    std::pair<TER, XRPAmount>
+    reset(XRPAmount fee);
+
+    TER
+    consumeSeqProxy(SLE::pointer const& sleAccount);
+    TER
+    payFee();
+
+    std::tuple<TER, XRPAmount, bool>
+    processPersistentChanges(TER result, XRPAmount fee);
 
     void trapTransaction(uint256) const;
 

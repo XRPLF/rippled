@@ -1,9 +1,12 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Disposition.h>
+
+#include <ostream>
+#include <string>
 
 namespace xrpl::Resource {
 
