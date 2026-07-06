@@ -1,11 +1,22 @@
 #pragma once
 
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/shamap/Family.h>
+#include <xrpl/shamap/FullBelowCache.h>
+#include <xrpl/shamap/TreeNodeCache.h>
 
+#include <cstdint>
 #include <memory>
+#include <stdexcept>
 
 namespace xrpl::test {
 
@@ -37,8 +48,8 @@ public:
         , j_(j)
     {
         Section config;
-        config.set("type", "memory");
-        config.set("path", "TestFamily");
+        config.set(Keys::kType, "memory");
+        config.set(Keys::kPath, "TestFamily");
         db_ = NodeStore::Manager::instance().makeDatabase(megabytes(4), scheduler_, 1, config, j);
     }
 

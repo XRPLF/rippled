@@ -2,8 +2,15 @@
 
 #include <xrpld/app/main/Application.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <cstdint>
+#include <optional>
 
 namespace xrpl {
 

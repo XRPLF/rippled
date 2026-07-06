@@ -6,6 +6,8 @@
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/json/json_value.h>
 
+#include <memory>
+
 namespace xrpl {
 
 /** Check the ledger/transaction databases to make sure they have continuity */

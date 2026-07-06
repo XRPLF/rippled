@@ -4,10 +4,14 @@
 #include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/hardened_hash.h>
-#include <xrpl/ledger/Ledger.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 
 #include <cstddef>
+#include <memory>
 #include <mutex>
 #include <vector>
 
@@ -17,7 +21,7 @@ namespace xrpl {
 class AssetCache final : public CountedObject<AssetCache>
 {
 public:
-    explicit AssetCache(std::shared_ptr<ReadView const> const& l, beast::Journal j);
+    explicit AssetCache(std::shared_ptr<ReadView const> l, beast::Journal j);
     ~AssetCache();
 
     [[nodiscard]] std::shared_ptr<ReadView const> const&

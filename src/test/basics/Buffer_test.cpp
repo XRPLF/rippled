@@ -103,8 +103,8 @@ struct Buffer_test : beast::unit_test::Suite
         {
             testcase("Move Construction / Assignment");
 
-            static_assert(std::is_nothrow_move_constructible_v<Buffer>, "");
-            static_assert(std::is_nothrow_move_assignable_v<Buffer>, "");
+            static_assert(std::is_nothrow_move_constructible_v<Buffer>);
+            static_assert(std::is_nothrow_move_assignable_v<Buffer>);
 
             {  // Move-construct from empty buf
                 Buffer x;

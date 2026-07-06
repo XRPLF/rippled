@@ -5,6 +5,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/offer.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>

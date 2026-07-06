@@ -1,11 +1,18 @@
 #pragma once
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Scheduler.h>
 
-#include <nudb/store.hpp>
+#include <nudb/context.hpp>
+
+#include <cstddef>
+#include <memory>
+#include <string>
+
+namespace xrpl {
+class Section;
+}  // namespace xrpl
 
 namespace xrpl::NodeStore {
 
