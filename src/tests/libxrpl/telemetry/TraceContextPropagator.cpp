@@ -83,10 +83,8 @@ TEST(TraceContextPropagator, extract_empty_protobuf)
     protocol::TraceContext const proto;
     auto ctx = xrpl::telemetry::extractFromProtobuf(proto);
     auto span = trace::GetSpan(ctx);
-    if (span)
-    {
-        EXPECT_FALSE(span->GetContext().IsValid());
-    }
+    ASSERT_NE(span, nullptr);
+    EXPECT_FALSE(span->GetContext().IsValid());
 }
 
 TEST(TraceContextPropagator, extract_wrong_size_trace_id)
@@ -97,10 +95,8 @@ TEST(TraceContextPropagator, extract_wrong_size_trace_id)
 
     auto ctx = xrpl::telemetry::extractFromProtobuf(proto);
     auto span = trace::GetSpan(ctx);
-    if (span)
-    {
-        EXPECT_FALSE(span->GetContext().IsValid());
-    }
+    ASSERT_NE(span, nullptr);
+    EXPECT_FALSE(span->GetContext().IsValid());
 }
 
 TEST(TraceContextPropagator, extract_wrong_size_span_id)
@@ -111,10 +107,8 @@ TEST(TraceContextPropagator, extract_wrong_size_span_id)
 
     auto ctx = xrpl::telemetry::extractFromProtobuf(proto);
     auto span = trace::GetSpan(ctx);
-    if (span)
-    {
-        EXPECT_FALSE(span->GetContext().IsValid());
-    }
+    ASSERT_NE(span, nullptr);
+    EXPECT_FALSE(span->GetContext().IsValid());
 }
 
 TEST(TraceContextPropagator, inject_invalid_span)

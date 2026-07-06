@@ -14,6 +14,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/telemetry/Redaction.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
 #include <memory>
@@ -28,10 +29,11 @@ doRipplePathFind(RPC::JsonContext& context)
     using namespace telemetry;
     auto span = SpanGuard::span(
         TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::request);
+    // Addresses are hashed before emission for privacy.
     if (auto const& src = context.params[jss::source_account]; src.isString())
-        span.setAttribute(pathfind_span::attr::sourceAccount, src.asString());
+        span.setAttribute(pathfind_span::attr::sourceAccount, redactAccount(src.asString()));
     if (auto const& dst = context.params[jss::destination_account]; dst.isString())
-        span.setAttribute(pathfind_span::attr::destAccount, dst.asString());
+        span.setAttribute(pathfind_span::attr::destAccount, redactAccount(dst.asString()));
 
     if (context.app.config().pathSearchMax == 0)
         return rpcError(RpcNotSupported);

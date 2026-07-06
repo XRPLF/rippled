@@ -10,7 +10,7 @@
  *  no-op SpanGuard instances (zero overhead, zero dependencies).
  */
 
-#include <xrpld/app/misc/TxSpanNames.h>
+#include <xrpld/telemetry/TxSpanNames.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/proto/xrpl.pb.h>

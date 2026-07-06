@@ -1459,9 +1459,6 @@ bool
 TxQ::accept(Application& app, OpenView& view)
 {
     using namespace telemetry;
-    auto span =
-        SpanGuard::span(TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::accept);
-    span.setAttribute(txq_span::attr::queueSize, static_cast<int64_t>(byFee_.size()));
 
     /* Move transactions from the queue from largest fee level to smallest.
        As we add more transactions, the required fee level will increase.
@@ -1472,6 +1469,12 @@ TxQ::accept(Application& app, OpenView& view)
     auto ledgerChanged = false;
 
     std::scoped_lock const lock(mutex_);
+
+    // Create the span and read byFee_.size() only after taking the lock, since
+    // byFee_ is guarded by mutex_.
+    auto span =
+        SpanGuard::span(TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::accept);
+    span.setAttribute(txq_span::attr::queueSize, static_cast<int64_t>(byFee_.size()));
 
     auto const metricsSnapshot = feeMetrics_.getSnapshot();
 
