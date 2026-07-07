@@ -73,7 +73,7 @@ static TER
 decrementPrefundedReserveCount(ApplyView& view, SLE::ref sponsorshipSle, std::uint32_t const delta)
 {
     if (delta == 0)
-        return tesSUCCESS;
+        return tesSUCCESS;  // LCOV_EXCL_LINE
 
     auto const currentReserveCount = sponsorshipSle->getFieldU32(sfRemainingOwnerCount);
     if (currentReserveCount < delta)
