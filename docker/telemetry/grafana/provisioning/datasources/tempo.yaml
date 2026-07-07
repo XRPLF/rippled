@@ -5,7 +5,7 @@
 #
 # Search filters provide pre-configured dropdowns in the Explore UI.
 # Each phase adds filters for the span attributes it introduces.
-# Phase 1b (infra): Base filters — node identity, service, span name, status.
+# Base filters — node identity, service, span name, status.
 # RPC command, status, role filters.
 
 apiVersion: 1
