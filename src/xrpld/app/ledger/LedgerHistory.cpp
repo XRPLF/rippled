@@ -504,6 +504,9 @@ LedgerHistory::validatedLedger(
     consensusValidated_.fetchAndModify(index, [&](CvEntry& entry) {
         if (entry.built && !entry.validated)
         {
+            XRPL_ASSERT(
+                entry.consensus.has_value(),
+                "xrpl::LedgerHistory::validatedLedger : consensus set when built set");
             if (entry.built.value() != hash)
             {
                 JLOG(j_.error()) << "MISMATCH: seq=" << index << " built:" << entry.built.value()
@@ -597,6 +600,10 @@ LedgerHistory::clearLedgerCachePrior(LedgerIndex seq)
             }
         }
         indexSize = lock->byIndex.size();
+
+        XRPL_ASSERT(
+            lock->byIndex.empty() || lock->byIndex.begin()->first >= seq,
+            "xrpl::LedgerHistory::clearLedgerCachePrior : byIndex pruned to seq");
     }
 
     JLOG(j_.debug()) << "LedgersByHash: cleared " << hashesCleared << " entries before seq " << seq

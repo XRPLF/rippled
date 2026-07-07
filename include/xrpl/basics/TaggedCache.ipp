@@ -3,6 +3,7 @@
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/Log.h>  // IWYU pragma: keep
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 namespace xrpl {
 
@@ -672,6 +673,10 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
     auto entry = std::make_shared<T>();
     canonicalize(key, entry, [](SharedPointerType const&) { return false; });
+
+    XRPL_ASSERT(
+        entry != nullptr,
+        "xrpl::TaggedCache::fetchAndModify : entry present after canonicalize");
 
     callback(*entry);
 }
