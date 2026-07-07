@@ -94,12 +94,6 @@ CredentialAccept::doApply()
     if (!sleSubject || !sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    {
-        STAmount const reserve{accountReserve(view(), sleSubject, j_, {.ownerCountDelta = 1})};
-        if (preFeeBalance_ < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
-
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const credentialKey = keylet::credential(accountID_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
