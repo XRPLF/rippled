@@ -7,13 +7,20 @@
 #   xrpld-critical  — Slack + email; receives critical-severity alerts.
 # The severity split is wired in policies.yaml.
 #
-# Secrets and personal addresses are NOT hard-coded. Grafana expands
-# ${ENV_VAR} references in provisioning files at load time, so the real
-# Slack webhook and alert-email addresses come from environment variables
-# supplied via docker/telemetry/.env.alerting (gitignored). See
-# .env.alerting.example for the variable list and the Alerting section of
+# Secrets and personal addresses are NOT hard-coded. To enable delivery,
+# replace the disabled placeholder values below with a real Slack webhook
+# and alert email — e.g. by copying docker/telemetry/.env.alerting.example
+# to .env.alerting (gitignored) and swapping the placeholder lines to
+# ${SLACK_WEBHOOK_URL} / ${ALERT_EMAIL_TO}. See the Alerting section of
 # docs/telemetry-runbook.md for setup.
-# If a variable is unset, that receiver has no live destination.
+#
+# The defaults are deliberately non-empty, invalid-but-valid-shaped
+# placeholders (an unroutable webhook host and a .invalid email). Grafana's
+# alerting provisioning validator REQUIRES a non-empty Slack url and email
+# addresses, and it does NOT support ${VAR:-default} expansion — an unset
+# ${VAR} expands to empty and crashes Grafana on startup. The placeholders
+# keep the whole stack booting with zero configuration; alerts simply route
+# nowhere until a real destination is supplied.
 #
 # Email delivery additionally requires SMTP configured on the Grafana
 # service (GF_SMTP_* in docker-compose.yml).
@@ -28,10 +35,11 @@ contactPoints:
       - uid: xrpld-slack-default
         type: slack
         settings:
-          # Incoming-webhook delivery: the channel is fixed by the webhook, so
-          # `recipient` is only here to satisfy Grafana's Slack validator.
-          url: ${SLACK_WEBHOOK_URL}
-          recipient: ${SLACK_CHANNEL}
+          # Disabled placeholder: an unroutable webhook host. A non-empty url
+          # selects Slack webhook mode (no recipient/token required) and keeps
+          # provisioning valid. Replace with a real ${SLACK_WEBHOOK_URL} to
+          # enable delivery.
+          url: https://hooks.slack.invalid/disabled
           title: "{{ .CommonLabels.alertname }} on {{ .CommonLabels.exported_instance }}"
         disableResolveMessage: false
 
@@ -42,13 +50,16 @@ contactPoints:
       - uid: xrpld-slack-critical
         type: slack
         settings:
-          url: ${SLACK_WEBHOOK_URL}
-          recipient: ${SLACK_CHANNEL}
+          # Disabled placeholder — see xrpld-slack-default above.
+          url: https://hooks.slack.invalid/disabled
           title: "[CRITICAL] {{ .CommonLabels.alertname }} on {{ .CommonLabels.exported_instance }}"
         disableResolveMessage: false
       - uid: xrpld-email-critical
         type: email
         settings:
-          addresses: ${ALERT_EMAIL_TO}
+          # Disabled placeholder: a .invalid address keeps the required
+          # `addresses` field non-empty so provisioning validates. Replace
+          # with a real ${ALERT_EMAIL_TO} (and enable SMTP) to deliver.
+          addresses: alerts-disabled@xrpld.invalid
           singleEmail: true
         disableResolveMessage: false

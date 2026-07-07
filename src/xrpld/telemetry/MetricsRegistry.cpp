@@ -182,7 +182,11 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
     // Configure resource attributes so Prometheus exported_instance labels
     // distinguish metrics from different nodes (matches OTelCollector setup).
     resource::ResourceAttributes attrs;
-    attrs[opentelemetry::semconv::service::kServiceName] = "xrpld";
+    // Use std::string, not a string literal: ResourceAttributes stores an
+    // OTel AttributeValue variant whose char-const* overload binds to bool,
+    // so "xrpld" would be recorded as the boolean true. std::string selects
+    // the string alternative and the value round-trips as service.name=xrpld.
+    attrs[opentelemetry::semconv::service::kServiceName] = std::string("xrpld");
     if (!instanceId.empty())
         attrs[opentelemetry::semconv::service::kServiceInstanceId] = instanceId;
     auto resourceAttrs = resource::Resource::Create(attrs);
