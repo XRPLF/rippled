@@ -45,6 +45,7 @@ ValidVault::Vault::make(SLE const& from)
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
     self.lossUnrealized = from.at(sfLossUnrealized);
+    self.assetsReserved = from.at(sfAssetsReserved);
     self.withdrawalPolicy = from.at(sfWithdrawalPolicy);
     self.scale = from.at(sfScale);
     return self;
@@ -469,6 +470,21 @@ ValidVault::finalize(
         {
             JLOG(j.fatal()) << "Invariant failed: violation of vault immutable data";
             result = false;
+        }
+
+        // AssetsReserved (principal held back for pending loans) may only be
+        // changed by LoanDelete, LoanAccept, or a LoanSet that creates a
+        // pending loan (Borrower present, CounterpartySignature absent).
+        if (afterVault.assetsReserved != beforeVault.assetsReserved)
+        {
+            bool const pendingLoanSet = txnType == ttLOAN_SET && tx.isFieldPresent(sfBorrower) &&
+                !tx.isFieldPresent(sfCounterpartySignature);
+            if (txnType != ttLOAN_DELETE && txnType != ttLOAN_ACCEPT && !pendingLoanSet)
+            {
+                JLOG(j.fatal()) << "Invariant failed: vault AssetsReserved changed "
+                                   "by an unauthorized transaction";
+                result = false;
+            }
         }
     }
 
