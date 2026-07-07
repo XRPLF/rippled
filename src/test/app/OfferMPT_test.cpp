@@ -4890,7 +4890,7 @@ public:
         // Smallest-magnitude IOU: mantissa kMinValue, exponent kMinOffset
         // (= 1e-81). divide(tinyUsd, XRP(1000)) underflows below kMinOffset
         // and canonicalizes to 0, so getRate() returns 0.
-        auto const tinyUsd = STAmount{usd, 1'000'000'000'000'000LL, -96};
+        auto const tinyUsd = STAmount{usd, UINT64_C(1'000'000'000'000'000), -96};
 
         auto setup = [&](Env& env) {
             env.fund(XRP(100'000), gw, alice, bob);

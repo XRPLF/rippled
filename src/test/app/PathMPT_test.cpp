@@ -27,6 +27,8 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/PathAsset.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/UintTypes.h>
