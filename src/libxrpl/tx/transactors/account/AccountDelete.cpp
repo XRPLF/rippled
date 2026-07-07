@@ -413,7 +413,7 @@ AccountDelete::doApply()
         auto const sponsoringAccountCount = sponsorSle->getFieldU32(sfSponsoringAccountCount);
 
         XRPL_ASSERT(
-            sponsorSle->at(sfSponsoringAccountCount) != 0,
+            sponsoringAccountCount != 0,
             "xrpl::AccountDelete::doApply : sponsoring account count is present");
         if (sponsoringAccountCount == 0)
         {
