@@ -26,14 +26,14 @@ datasources:
       # Prometheus service is added to docker-compose.yml.
       serviceMap:
         datasourceUid: prometheus
-      # Phase 8: Trace-to-log correlation — enables one-click navigation
+      # Trace-to-log correlation — enables one-click navigation
       # from a Tempo trace to the corresponding Loki log lines. Filters
       # by trace_id so only logs from the same trace are shown.
       tracesToLogs:
         datasourceUid: loki
         filterByTraceID: true
         filterBySpanID: false
-        tags: ["partition", "severity"]
+        tags: []
       tracesToMetrics:
         datasourceUid: prometheus
         spanStartTimeShift: "-1h"
@@ -137,7 +137,7 @@ datasources:
             tag: tx_type
             operator: "="
             scope: span
-            type: static
+            type: dynamic
           # Phase 4: Consensus tracing filters
           - id: consensus-mode
             tag: consensus_mode
