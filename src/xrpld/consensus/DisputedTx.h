@@ -65,20 +65,6 @@ public:
         return ourVote_;
     }
 
-    //! Number of peers voting to include the transaction.
-    [[nodiscard]] int
-    getYays() const
-    {
-        return yays_;
-    }
-
-    //! Number of peers voting to exclude the transaction.
-    [[nodiscard]] int
-    getNays() const
-    {
-        return nays_;
-    }
-
     //! Are we and our peers "stalled" where we probably won't change
     //! our vote?
     [[nodiscard]] bool
@@ -194,6 +180,20 @@ public:
     //! JSON representation of dispute, used for debugging
     [[nodiscard]] json::Value
     getJson() const;
+
+    //! Number of peers voting yes.
+    [[nodiscard]] int
+    getYays() const
+    {
+        return yays_;
+    }
+
+    //! Number of peers voting no.
+    [[nodiscard]] int
+    getNays() const
+    {
+        return nays_;
+    }
 
 private:
     int yays_{0};   //< Number of yes votes
