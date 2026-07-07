@@ -179,7 +179,9 @@ mkdir -p "$WORKDIR" "$REPORT_DIR"
 # Step 1: Start observability stack
 # ---------------------------------------------------------------------------
 log "Step 1: Starting observability stack..."
-docker compose -f "$COMPOSE_FILE" up -d
+# Point the collector's log mount at this run's workdir so the filelog
+# receiver tails the per-node debug.log files generated below.
+XRPLD_LOG_DIR="$WORKDIR" docker compose -f "$COMPOSE_FILE" up -d
 
 log "Waiting for OTel Collector..."
 for attempt in $(seq 1 30); do

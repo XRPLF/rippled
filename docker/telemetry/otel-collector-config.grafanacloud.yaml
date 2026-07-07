@@ -40,8 +40,7 @@ receivers:
         endpoint: 0.0.0.0:4318
   filelog:
     include:
-      - /var/log/rippled/*/debug.log
-      - /var/log/rippled-integration/*/debug.log
+      - /var/log/xrpld/*/debug.log
     operators:
       - type: regex_parser
         regex: '^(?P<timestamp>\S+\s+\S+)\s+\S+\s+(?:(?P<partition>\S+):)?(?P<severity>\S+)\s+(?:trace_id=(?P<trace_id>[a-f0-9]+)\s+span_id=(?P<span_id>[a-f0-9]+)\s+)?(?P<message>.*)$'
