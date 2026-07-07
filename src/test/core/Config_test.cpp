@@ -1475,9 +1475,8 @@ r.ripple.com:51235
             std::string toLoad(R"xrpldConfig(
 [amendment_majority_time]
 )xrpldConfig");
-            toLoad += std::to_string(val);
-            toLoad += space;
-            toLoad += unit;
+            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
+            toLoad += std::to_string(val) + space + unit;
             space = space.empty() ? " " : "";
 
             try
