@@ -86,6 +86,7 @@ valueToString(double value)
                                                        // to avoid warning.
     sprintf_s(buffer, sizeof(buffer), "%.16g", value);
 #else
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
     snprintf(buffer, sizeof(buffer), "%.16g", value);
 #endif
     return buffer;
