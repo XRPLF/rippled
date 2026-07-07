@@ -43,7 +43,9 @@ namespace xrpl {
  * - loan manage never removes assets from the vault: assets available may only
  *   grow (and the vault balance grows with it, by the returned first-loss
  *   capital on a default), assets outstanding may only shrink (realized loss),
- *   loss unrealized stays non-negative, and shares do not change
+ *   loss unrealized stays non-negative, and shares do not change; a loan
+ *   manage with none of the sub-operation flags (impair, unimpair, default)
+ *   is a no-op and must not modify the vault
  * - loan pay adds the paid principal and interest to the vault: assets
  *   available (and the vault balance) increase by the same amount, which is at
  *   most the amount paid, loss unrealized stays non-negative, and shares do not

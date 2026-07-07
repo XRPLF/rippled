@@ -17,12 +17,20 @@ namespace xrpl {
  *
  * 1. If `Loan.PaymentRemaining = 0` then `Loan.PrincipalOutstanding = 0`
  *
+ * A loan may only be deleted once it is fully paid off (no payments
+ * remaining):
+ *
+ * 2. A loan may only be deleted by a `LoanDelete` transaction.
+ * 3. A loan that is not fully paid off must not be deleted.
+ *
  */
 class ValidLoan
 {
     // Pair is <before, after>. After is used for most of the checks, except
     // those that check changed values.
     std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> loans_;
+    // Loans removed from the ledger (final state captured at deletion).
+    std::vector<SLE::const_pointer> deletedLoans_;
 
 public:
     void

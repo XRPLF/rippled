@@ -1277,6 +1277,16 @@ ValidVault::finalize(
                         result = false;
                     }
                 }
+                else
+                {
+                    // A loan manage with none of the sub-operation flags
+                    // (impair, unimpair, default) is a no-op and must not
+                    // modify the vault.
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan manage without a sub-operation "
+                        "must not modify the vault";
+                    result = false;
+                }
 
                 return result;
             }

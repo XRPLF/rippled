@@ -3396,6 +3396,34 @@ class Invariants_test : public beast::unit_test::Suite
 
         testcase << "Vault loan operations";
 
+        // ttLOAN_MANAGE (impair): assets outstanding must not change. Only
+        // assets outstanding is bumped, so the common checks (vault balance,
+        // assets available, shares) all pass and only the impair/unimpair
+        // sub-check fires.
+        doInvariantCheck(
+            {"loan impair/unimpair must not change assets outstanding"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, Adjustments{.assetsTotal = 100});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject& tx) { tx.setFieldU32(sfFlags, tfLoanImpair); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_MANAGE with none of the sub-operation flags (impair,
+        // unimpair, default) is a no-op and must not modify the vault.
+        doInvariantCheck(
+            {"loan manage without a sub-operation must not modify the vault"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, Adjustments{.assetsTotal = 100});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
         // ttLOAN_SET: the vault (pseudo-account) balance must change
         doInvariantCheck(
             {"loan set must change vault balance"},
