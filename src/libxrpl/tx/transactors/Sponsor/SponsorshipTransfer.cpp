@@ -20,22 +20,47 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
-#include <optional>
 
 namespace xrpl {
 
-// Safely apply a signed delta to a uint32 count field and returns the new value,
-// or nullopt if it would overflow or underflow the uint32 range.
-static std::optional<std::uint32_t>
-applyCountDelta(std::uint32_t current, std::int32_t delta)
+// Increment an uint32 sponsor count field and update the SLE.
+static TER
+incrementSponsorCount(
+    ApplyView& view,
+    SLE::ref sle,
+    SF_UINT32 const& field,
+    std::uint32_t const delta)
 {
-    // current (uint32) + delta (int32) cannot overflow int64, so the range check
-    // on the result is sufficient.
-    std::int64_t const next = static_cast<std::int64_t>(current) + delta;
-    if (next < 0 || next > std::numeric_limits<std::uint32_t>::max())
-        return std::nullopt;
+    auto const currentValue = sle->getFieldU32(field);
+    if (std::numeric_limits<std::uint32_t>::max() - currentValue < delta)
+    {
+        UNREACHABLE("xrpl::incrementSponsorCount : sponsor field overflow");
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
-    return static_cast<std::uint32_t>(next);
+    sle->at(field) = currentValue + delta;
+    view.update(sle);
+    return tesSUCCESS;
+}
+
+// Decrement an uint32 sponsor count field and update the SLE.
+static TER
+decrementSponsorCount(
+    ApplyView& view,
+    SLE::ref sle,
+    SF_UINT32 const& field,
+    std::uint32_t const delta)
+{
+    auto const currentValue = sle->getFieldU32(field);
+    if (currentValue < delta)
+    {
+        UNREACHABLE("xrpl::decrementSponsorCount : sponsor field underflow");
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
+
+    sle->at(field) = currentValue - delta;
+    view.update(sle);
+    return tesSUCCESS;
 }
 
 // Consume the sponsor's pre-funded reserve budget and lowers the Sponsorship
@@ -45,7 +70,7 @@ decrementPrefundedReserveCount(
     ApplyView& view,
     AccountID const& account,
     AccountID const& sponsor,
-    std::uint32_t delta)
+    std::uint32_t const delta)
 {
     if (delta == 0)
         return tesSUCCESS;
@@ -277,21 +302,6 @@ SponsorshipTransfer::doApply()
     if (!sponseeSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    // Adjust an uint32 sponsor count field and update the SLE.
-    auto const adjustSponsorCount =
-        [this] [[nodiscard]] (SLE::ref sle, SF_UINT32 const& field, std::int32_t delta) -> TER {
-        auto const newValue = applyCountDelta(sle->getFieldU32(field), delta);
-        if (!newValue)
-        {
-            UNREACHABLE("xrpl::SponsorshipTransfer::doApply : Invalid sponsor field value");
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
-
-        sle->at(field) = *newValue;
-        view().update(sle);
-        return tesSUCCESS;
-    };
-
     auto const balanceBeforeFee = [&](SLE::const_ref sle) -> STAmount {
         if (sle->getAccountID(sfAccount) == accountID_)
             return STAmount{preFeeBalance_};
@@ -343,13 +353,13 @@ SponsorshipTransfer::doApply()
 
             // Update owner's sponsored count
             if (auto const ter =
-                    adjustSponsorCount(ownerSle, sfSponsoredOwnerCount, ownerCountDelta);
+                    incrementSponsorCount(view(), ownerSle, sfSponsoredOwnerCount, ownerCountDelta);
                 !isTesSuccess(ter))
                 return ter;
 
             // Increment new sponsor's sponsoring count
-            if (auto const ter =
-                    adjustSponsorCount(newSponsorSle, sfSponsoringOwnerCount, ownerCountDelta);
+            if (auto const ter = incrementSponsorCount(
+                    view(), newSponsorSle, sfSponsoringOwnerCount, ownerCountDelta);
                 !isTesSuccess(ter))
                 return ter;
 
@@ -397,14 +407,14 @@ SponsorshipTransfer::doApply()
                 return ter;
 
             // Decrement old sponsor's sponsoring count
-            if (auto const ter =
-                    adjustSponsorCount(oldSponsorSle, sfSponsoringOwnerCount, -ownerCountDelta);
+            if (auto const ter = decrementSponsorCount(
+                    view(), oldSponsorSle, sfSponsoringOwnerCount, ownerCountDelta);
                 !isTesSuccess(ter))
                 return ter;
 
             // Increment new sponsor's sponsoring count
-            if (auto const ter =
-                    adjustSponsorCount(newSponsorSle, sfSponsoringOwnerCount, ownerCountDelta);
+            if (auto const ter = incrementSponsorCount(
+                    view(), newSponsorSle, sfSponsoringOwnerCount, ownerCountDelta);
                 !isTesSuccess(ter))
                 return ter;
 
@@ -444,14 +454,14 @@ SponsorshipTransfer::doApply()
                 return ter;
 
             // Decrement sponsored count
-            if (auto const ter =
-                    adjustSponsorCount(sponseeSle, sfSponsoredOwnerCount, -ownerCountDelta);
+            if (auto const ter = decrementSponsorCount(
+                    view(), sponseeSle, sfSponsoredOwnerCount, ownerCountDelta);
                 !isTesSuccess(ter))
                 return ter;
 
             // Decrement old sponsoring count
-            if (auto const ter =
-                    adjustSponsorCount(oldSponsorSle, sfSponsoringOwnerCount, -ownerCountDelta);
+            if (auto const ter = decrementSponsorCount(
+                    view(), oldSponsorSle, sfSponsoringOwnerCount, ownerCountDelta);
                 !isTesSuccess(ter))
                 return ter;
 
@@ -486,7 +496,8 @@ SponsorshipTransfer::doApply()
                 return ter;
 
             // Increment new sponsoring count
-            if (auto const ter = adjustSponsorCount(newSponsorSle, sfSponsoringAccountCount, 1);
+            if (auto const ter =
+                    incrementSponsorCount(view(), newSponsorSle, sfSponsoringAccountCount, 1);
                 !isTesSuccess(ter))
                 return ter;
 
@@ -516,7 +527,8 @@ SponsorshipTransfer::doApply()
                 return ter;
 
             // Increment new sponsoring count
-            if (auto const ter = adjustSponsorCount(newSponsorSle, sfSponsoringAccountCount, 1);
+            if (auto const ter =
+                    incrementSponsorCount(view(), newSponsorSle, sfSponsoringAccountCount, 1);
                 !isTesSuccess(ter))
                 return ter;
 
@@ -527,7 +539,8 @@ SponsorshipTransfer::doApply()
             auto const oldSponsorSle = view().peek(keylet::account(oldSponsorID));
             if (!oldSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
-            if (auto const ter = adjustSponsorCount(oldSponsorSle, sfSponsoringAccountCount, -1);
+            if (auto const ter =
+                    decrementSponsorCount(view(), oldSponsorSle, sfSponsoringAccountCount, 1);
                 !isTesSuccess(ter))
                 return ter;
 
@@ -561,7 +574,8 @@ SponsorshipTransfer::doApply()
             view().update(sponseeSle);
 
             // Decrement account sponsoring count
-            if (auto const ter = adjustSponsorCount(oldSponsorSle, sfSponsoringAccountCount, -1);
+            if (auto const ter =
+                    decrementSponsorCount(view(), oldSponsorSle, sfSponsoringAccountCount, 1);
                 !isTesSuccess(ter))
                 return ter;
         }
