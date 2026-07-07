@@ -1011,14 +1011,17 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 ## Alerting
 
-Grafana ships six provisioned alert rules on the health-critical metrics, so a
-stock stack alerts out of the box with no UI setup. Rules are loaded from
-`docker/telemetry/grafana/provisioning/alerting/` on startup and appear under
-**Alerting → Alert rules**, folder **xrpld**.
+rippled provisions six Grafana alert rules on the health-critical metrics, so a
+stock stack alerts out of the box with no UI setup. Rules are provisioned from
+`docker/telemetry/grafana/provisioning/alerting/` and load automatically when
+the Grafana container starts. They appear under **Alerting → Alert rules**,
+folder **xrpld**.
 
-Each rule runs every minute against the Prometheus datasource over a 5-minute
-window and groups by `exported_instance`, so every node alerts independently.
-An alert fires only after its condition holds for the `for` dwell time.
+### Alert catalogue
+
+All rules evaluate every minute against the Prometheus datasource, over a
+5-minute window, and group by `exported_instance` so each node alerts on its
+own. Alerts fire only after the condition holds for the `for` dwell time.
 
 | Alert                   | Severity | Fires when                                      | For |
 | ----------------------- | -------- | ----------------------------------------------- | --- |
@@ -1029,11 +1032,113 @@ An alert fires only after its condition holds for the `for` dwell time.
 | `JobQueueTxOverflow`    | warning  | `rate(xrpld_jq_trans_overflow_total)` > 0       | 5m  |
 | `JobQueueLatencyHigh`   | warning  | p99 `xrpld_job_queued_duration_us` > 1s         | 5m  |
 
-Alerts route through the `xrpld-default` contact point, which ships as a
-local-dev webhook to a placeholder URL — alerts fire but go nowhere until it is
-pointed at a real receiver. See
-[ALERTING.md](../docker/telemetry/ALERTING.md) for per-alert causes, threshold
-tuning, and how to wire alerts to Slack/email/PagerDuty.
+#### Consensus / ledger health
+
+**LedgerHistoryMismatch** — The node closed a ledger whose history diverges
+from the validated network chain. Likely causes: corrupted local state, a bug,
+or a node that fell out of sync and rebuilt incorrectly. Investigate the node's
+ledger acquisition logs; a healthy node never mismatches.
+
+**LedgerCloseStalled** — No ledgers closed for 3 minutes. A healthy node closes
+one every ~3-5s. Likely causes: lost peer connectivity, consensus stall, or the
+process is hung. This rule also fires on _NoData_ — if the series disappears the
+node is likely down. Check peer count and process health first.
+
+#### Validator health
+
+**ValidationsMissed** — This validator's validations are not agreeing with the
+validated ledger. Sustained misses risk removal from UNLs. Check clock sync,
+peer connectivity, and whether the node is keeping up with ledger close.
+
+**ValidationsNotChecked** — The node has stopped checking incoming validations
+from peers. Likely causes: overlay/peer disconnection or a stalled validation
+pipeline. Fires on NoData as well.
+
+#### Job queue / resource health
+
+**JobQueueTxOverflow** — The transaction job queue is full and transactions are
+being dropped. The node is shedding load it cannot process. Check CPU, the
+`JobQueueLatencyHigh` alert, and offered load.
+
+**JobQueueLatencyHigh** — p99 queue wait exceeds 1 second, i.e. jobs back up
+before running. The node is saturated. Correlate with CPU and the Job Queue
+dashboard.
+
+### Tuning thresholds
+
+Thresholds live in
+`docker/telemetry/grafana/provisioning/alerting/rules.yaml` as the `params`
+array of each rule's `C` (threshold) node. Common tunables:
+
+- **`JobQueueLatencyHigh`** — `params: [1000000]` is 1 000 000 µs (1s). Lower
+  it for latency-sensitive deployments.
+- **`LedgerCloseStalled` / `ValidationsNotChecked`** — use `lt` with a tiny
+  epsilon (`0.001`) rather than `0`, so floating-point rate noise near zero
+  does not suppress the alert.
+
+Edit the file and restart the Grafana container to reload:
+
+```bash
+docker compose -f docker/telemetry/docker-compose.yml restart grafana
+```
+
+### Sending alerts somewhere real
+
+Two contact points are provisioned in
+`docker/telemetry/grafana/provisioning/alerting/contactpoints.yaml`:
+
+| Contact point    | Receivers     | Gets                     |
+| ---------------- | ------------- | ------------------------ |
+| `xrpld-default`  | Slack         | warning-severity alerts  |
+| `xrpld-critical` | Slack + email | critical-severity alerts |
+
+The severity split lives in
+`docker/telemetry/grafana/provisioning/alerting/policies.yaml`: the root route
+sends everything to `xrpld-default`, and a child route matching
+`severity = critical` overrides to `xrpld-critical`. So a critical alert goes
+to Slack **and** email; a warning goes to Slack only. Both group by
+`alertname` + `exported_instance`; critical alerts re-page hourly vs the 4h default.
+
+#### Configure delivery (no secrets in git)
+
+The Slack webhook and email address are **not** hard-coded — the YAML
+references `${SLACK_WEBHOOK_URL}` and `${ALERT_EMAIL_TO}`, which Grafana
+expands from the environment at startup. Supply them through a gitignored
+env file:
+
+```bash
+cp docker/telemetry/.env.alerting.example docker/telemetry/.env.alerting
+# edit .env.alerting — this file is gitignored, never commit the webhook/address
+docker compose -f docker/telemetry/docker-compose.yml up -d grafana
+```
+
+- **Slack** — set `SLACK_WEBHOOK_URL` to an incoming-webhook URL. Drives both
+  tiers.
+- **Email** — set `ALERT_EMAIL_TO` (comma-separated) **and** point the
+  `GF_SMTP_*` vars at a real relay with `GF_SMTP_ENABLED=true`. Grafana can
+  only send mail once SMTP is configured.
+
+Any variable left blank disables that path; the stack still runs. To add a
+third destination (PagerDuty, Opsgenie, a custom webhook), add a receiver to
+the relevant contact point.
+
+### Verifying alert provisioning loaded
+
+After the stack is up:
+
+```bash
+# All six rules present?
+curl -s http://localhost:3000/api/v1/provisioning/alert-rules | jq '.[].title'
+
+# Contact points present?
+curl -s http://localhost:3000/api/v1/provisioning/contact-points | jq '.[].name'
+```
+
+Grafana logs a provisioning error and skips the file if the YAML is malformed:
+
+```bash
+docker compose -f docker/telemetry/docker-compose.yml logs grafana | grep -i alerting
+```
 
 ## Log-Trace Correlation
 

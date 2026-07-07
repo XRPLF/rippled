@@ -14,7 +14,8 @@
 #   B  reduce (last)      — collapse A's series to its most recent value.
 #   C  threshold          — the firing condition; `condition: C`.
 #
-# Thresholds are documented in ALERTING.md and are intended to be tuned.
+# Thresholds are documented in docs/telemetry-runbook.md (Alerting section)
+# and are intended to be tuned.
 
 apiVersion: 1
 
