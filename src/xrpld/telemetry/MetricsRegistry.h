@@ -540,6 +540,23 @@ private:
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
         validationMissedObservable_;
 
+    /** Build the OTLP/HTTP exporter, periodic reader, resource attributes and
+        histogram views, then create the MeterProvider and meter. Extracted
+        from start() to keep each function under the 80-line limit.
+
+        @param endpoint OTLP/HTTP metrics endpoint URL.
+        @param instanceId service.instance.id resource attribute (may be empty).
+    */
+    void
+    initExporterAndProvider(std::string const& endpoint, std::string const& instanceId);
+
+    /** Create the synchronous instruments (RPC and job-queue counters and
+        histograms, plus the external dashboard parity counters). Extracted
+        from start() to keep each function under the 80-line limit.
+    */
+    void
+    initSyncInstruments();
+
     /** Register all observable gauge callbacks with the OTel SDK.
         Dispatches to one helper per metric domain so that each helper
         stays well under the 80-line-per-function limit.

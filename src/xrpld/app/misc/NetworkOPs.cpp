@@ -276,6 +276,21 @@ class NetworkOPsImp final : public NetworkOPs
                 .start = start_,
                 .initialSyncUs = initialSyncUs_};
         }
+
+        /**
+         * Time spent in the current operating mode so far. This is the same
+         * quantity reported as `server_state_duration_us` in json(): the
+         * elapsed time since the last state transition. Thread-safe.
+         *
+         * @return Duration since entering the current state, in microseconds.
+         */
+        std::chrono::microseconds
+        currentStateDurationUs() const
+        {
+            std::scoped_lock const lock(mutex_);
+            return std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now() - start_);
+        }
     };
 
     //! Server fees published on `server` subscription
@@ -357,6 +372,9 @@ public:
 public:
     OperatingMode
     getOperatingMode() const override;
+
+    std::chrono::microseconds
+    getServerStateDurationUs() const override;
 
     std::string
     strOperatingMode(OperatingMode const mode, bool const admin) const override;
@@ -979,6 +997,12 @@ inline OperatingMode
 NetworkOPsImp::getOperatingMode() const
 {
     return mode_;
+}
+
+std::chrono::microseconds
+NetworkOPsImp::getServerStateDurationUs() const
+{
+    return accounting_.currentStateDurationUs();
 }
 
 inline std::string

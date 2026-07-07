@@ -167,6 +167,22 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
     JLOG(journal_.info()) << "MetricsRegistry: starting, endpoint=" << endpoint
                           << ", instanceId=" << instanceId;
 
+    initExporterAndProvider(endpoint, instanceId);
+    initSyncInstruments();
+    registerAsyncGauges();
+
+    JLOG(journal_.info()) << "MetricsRegistry: started successfully";
+#else
+    (void)endpoint;
+    (void)instanceId;
+    (void)enabled_;
+#endif  // XRPL_ENABLE_TELEMETRY
+}
+
+#ifdef XRPL_ENABLE_TELEMETRY
+void
+MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::string const& instanceId)
+{
     // Configure OTLP/HTTP metric exporter.
     otlp_http::OtlpHttpMetricExporterOptions exporterOpts;
     exporterOpts.url = endpoint;
@@ -205,9 +221,11 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
 
     // Get a meter for all xrpld instruments.
     meter_ = provider_->GetMeter("xrpld", "1.0.0");
+}
 
-    // --- Create synchronous instruments ---
-
+void
+MetricsRegistry::initSyncInstruments()
+{
     // RPC per-method counters and histogram.
     rpcStartedCounter_ = meter_->CreateUInt64Counter(
         "xrpld_rpc_method_started_total", "Total RPC method calls started");
@@ -251,17 +269,8 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
     // Note: xrpld_validation_agreements_total / xrpld_validation_missed_total
     // are monotonic ObservableCounters created in registerValidationTotalsCounters()
     // (below), observed from ValidationTracker's gross lifetime tallies.
-
-    // Register all observable (async) gauges.
-    registerAsyncGauges();
-
-    JLOG(journal_.info()) << "MetricsRegistry: started successfully";
-#else
-    (void)endpoint;
-    (void)instanceId;
-    (void)enabled_;
-#endif  // XRPL_ENABLE_TELEMETRY
 }
+#endif  // XRPL_ENABLE_TELEMETRY
 
 void
 MetricsRegistry::detachCallbacks() noexcept
@@ -288,9 +297,12 @@ MetricsRegistry::stop()
     // to detach first.
     callbacksDetached_.store(true, std::memory_order_release);
 
-    // Force-flush any pending metrics, then destroy the provider.
-    // This stops the PeriodicExportingMetricReader, which in turn
-    // stops invoking observable gauge callbacks.
+    // SDK teardown order: Shutdown() stops the PeriodicExportingMetricReader
+    // thread (so no further gauge callbacks fire) and performs the final
+    // collect-and-export drain itself. The trailing ForceFlush() is a
+    // redundant safety net (a no-op once the reader is shut down), then
+    // reset() destroys the provider.
+    provider_->Shutdown();
     provider_->ForceFlush();
     provider_.reset();
 
@@ -1018,7 +1030,20 @@ MetricsRegistry::registerPeerQualityGauge()
                 int higherVersionCount = 0;
                 int totalPeers = 0;
                 int divergedCount = 0;
-                auto const ownVersion = std::string(BuildInfo::getVersionString());
+
+                // Encode a version string into BuildInfo's comparable numeric
+                // form. Peers report the full "rippled-3.3.0-b0" string while
+                // our baseline is the bare "3.3.0-b0", and SemanticVersion
+                // requires a leading digit, so strip any non-digit prefix
+                // first. Numeric encoding avoids the lexicographic bug where
+                // "2.3.0" > "2.10.0" and "rippled-..." > "3...".
+                auto const encodeVersion = [](std::string_view v) -> std::uint64_t {
+                    auto const firstDigit = v.find_first_of("0123456789");
+                    if (firstDigit == std::string_view::npos)
+                        return 0;
+                    return BuildInfo::encodeSoftwareVersion(v.substr(firstDigit));
+                };
+                auto const ownEncoded = encodeVersion(BuildInfo::getVersionString());
 
                 app.getOverlay().foreach([&](std::shared_ptr<Peer> const& peer) {
                     ++totalPeers;
@@ -1029,8 +1054,10 @@ MetricsRegistry::registerPeerQualityGauge()
                     }
                     if (pj.isMember(jss::version))
                     {
+                        // Unparseable peer versions encode below ownEncoded, so
+                        // the comparison correctly leaves them uncounted.
                         auto const pv = pj[jss::version].asString();
-                        if (!pv.empty() && pv > ownVersion)
+                        if (encodeVersion(pv) > ownEncoded)
                             ++higherVersionCount;
                     }
                     // PeerImp::json() sets "track" to "diverged" when the peer's
@@ -1232,9 +1259,11 @@ MetricsRegistry::registerStateTrackingGauge()
                 }
                 observe("state_value", stateValue);
 
-                // TODO: Wire time_in_current_state_seconds to StateAccounting
-                // once a public accessor is available on NetworkOPs.
-                observe("time_in_current_state_seconds", 0.0);
+                // Time spent in the current operating mode, sourced from
+                // NetworkOPs' StateAccounting via a lightweight accessor.
+                auto const stateDurUs = app.getOPs().getServerStateDurationUs();
+                observe(
+                    "time_in_current_state_seconds", static_cast<double>(stateDurUs.count()) / 1e6);
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
