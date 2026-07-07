@@ -12,10 +12,12 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 
 #include <cstdint>
 #include <expected>
 #include <optional>
+#include <unordered_set>
 
 namespace xrpl {
 
