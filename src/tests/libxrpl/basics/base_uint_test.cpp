@@ -124,7 +124,7 @@ struct BaseUintTest : public ::testing::Test
 
 using BaseUintDeathTest = BaseUintTest;
 
-TEST_F(BaseUintDeathTest, from_raw_size_mismatch)
+TEST_F(BaseUintDeathTest, fromRaw_size_mismatch)
 {
     EXPECT_DEBUG_DEATH(
         ({
@@ -136,7 +136,7 @@ TEST_F(BaseUintDeathTest, from_raw_size_mismatch)
             auto const resultText = to_string(result);
             EXPECT_EQ(resultText, "010203040506070800000000") << resultText;
         }),
-        "Assertion failed");
+        "xrpl::BaseUInt::fromRaw(Container auto) : input size match");
 
     EXPECT_DEBUG_DEATH(
         ({
@@ -148,7 +148,7 @@ TEST_F(BaseUintDeathTest, from_raw_size_mismatch)
             auto const resultText = to_string(result);
             EXPECT_EQ(resultText, "0102030405060708090A0B0C") << resultText;
         }),
-        "Assertion failed");
+        "xrpl::BaseUInt::fromRaw(Container auto) : input size match");
 }
 
 TEST_F(BaseUintTest, base_uint)
