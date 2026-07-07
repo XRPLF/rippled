@@ -69,6 +69,17 @@ toUnsigned(U2 value)
     return static_cast<U1>(value);
 }
 
+static std::string
+joinName(std::string const& jsonName, std::string const& fieldName)
+{
+    std::string result;
+    result.reserve(jsonName.size() + 1 + fieldName.size());
+    result += jsonName;
+    result += '.';
+    result += fieldName;
+    return result;
+}
+
 // LCOV_EXCL_START
 static inline std::string
 makeName(std::string const& object, std::string const& field)
@@ -76,7 +87,7 @@ makeName(std::string const& object, std::string const& field)
     if (field.empty())
         return object;
 
-    return object + "." + field;
+    return joinName(object, field);
 }
 
 static inline json::Value
@@ -985,20 +996,6 @@ parseArray(
     SField const& inName,
     int depth,
     json::Value& error);
-
-// Build "<jsonName>.<fieldName>" in a single allocation. A reserved += sequence
-// is faster than an operator+ chain (and than std::format) and avoids the
-// performance-inefficient-string-concatenation warning.
-static std::string
-joinName(std::string const& jsonName, std::string const& fieldName)
-{
-    std::string result;
-    result.reserve(jsonName.size() + 1 + fieldName.size());
-    result += jsonName;
-    result += '.';
-    result += fieldName;
-    return result;
-}
 
 static std::optional<STObject>
 parseObject(
