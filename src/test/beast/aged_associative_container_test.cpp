@@ -145,7 +145,7 @@ public:
         }
 
         T*
-        allocate(std::size_t n, T const* = 0)
+        allocate(std::size_t n, T const* = nullptr)
         {
             return static_cast<T*>(::operator new(n * sizeof(T)));
         }
