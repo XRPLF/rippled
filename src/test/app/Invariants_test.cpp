@@ -3814,6 +3814,123 @@ class Invariants_test : public beast::unit_test::Suite
                 "the change in the loan claim"));
         }
 
+        // LoanAccept restrictions: LoanAccept may only modify a loan that is
+        // pending acceptance, and the OwnerNode of an existing loan may only
+        // be added (never removed or changed), and only by LoanAccept. These
+        // need a loan that already exists in the base ledger, hence the same
+        // bespoke view construction as above.
+        {
+            auto const testLoanUpdate = [&, this](
+                                            STTx const& tx,
+                                            std::uint32_t baseFlags,
+                                            std::optional<std::uint64_t> baseNode,
+                                            auto&& mutate,
+                                            std::optional<std::string> const& expected) {
+                Env env{*this, defaultAmendments() | featureLendingProtocolV1_1};
+                Account const a1{"A1"};
+                Account const a2{"A2"};
+                env.fund(XRP(1000), a1, a2);
+                BEAST_EXPECT(precloseXrp(a1, a2, env));
+                env.close();
+
+                OpenView ov{*env.current()};
+                auto const vaultKeylet = keylet::vault(a1.id(), ov.seq());
+                auto const loanKeylet = keylet::loan(vaultKeylet.key, 1);
+                {
+                    auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                    sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                    sleLoan->at(sfTotalValueOutstanding) = Number(150);
+                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                    sleLoan->at(sfPeriodicPayment) = Number(1);
+                    sleLoan->setFieldU32(sfPaymentRemaining, 2);
+                    if (baseFlags != 0)
+                        sleLoan->setFieldU32(sfFlags, baseFlags);
+                    if (baseNode)
+                        sleLoan->setFieldU64(sfOwnerNode, *baseNode);
+                    ov.rawInsert(sleLoan);
+                }
+
+                test::StreamSink sink{beast::Severity::Warning};
+                beast::Journal const jlog{sink};
+                ApplyContext ac{
+                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+                auto sleLoan = ac.view().peek(loanKeylet);
+                if (!BEAST_EXPECT(sleLoan))
+                    return;
+                mutate(sleLoan);
+                ac.view().update(sleLoan);
+
+                auto transactor = makeTransactor(ac);
+                if (!BEAST_EXPECT(transactor))
+                    return;
+                TER const result = transactor->checkInvariants(tesSUCCESS, XRPAmount{});
+                if (expected)
+                {
+                    BEAST_EXPECT(result == tecINVARIANT_FAILED);
+                    BEAST_EXPECTS(sink.messages().str().contains(*expected), *expected);
+                }
+                else
+                {
+                    BEAST_EXPECTS(result == tesSUCCESS, sink.messages().str());
+                }
+            };
+
+            STTx const acceptTx{ttLOAN_ACCEPT, [](STObject&) {}};
+
+            // ttLOAN_ACCEPT: modifying an active (non-pending) loan fails,
+            // even if the modification is otherwise harmless.
+            testLoanUpdate(
+                acceptTx,
+                0,
+                0,
+                [](SLE::pointer const& sle) { sle->setFieldU32(sfPaymentRemaining, 1); },
+                "LoanAccept modified a Loan that was not pending");
+
+            // ttLOAN_ACCEPT: removing the OwnerNode while accepting fails.
+            testLoanUpdate(
+                acceptTx,
+                lsfLoanPending,
+                0,
+                [](SLE::pointer const& sle) {
+                    sle->clearFlag(lsfLoanPending);
+                    sle->makeFieldAbsent(sfOwnerNode);
+                },
+                "Loan OwnerNode removed or changed");
+
+            // ttLOAN_ACCEPT: changing the OwnerNode while accepting fails.
+            testLoanUpdate(
+                acceptTx,
+                lsfLoanPending,
+                0,
+                [](SLE::pointer const& sle) {
+                    sle->clearFlag(lsfLoanPending);
+                    sle->setFieldU64(sfOwnerNode, 1);
+                },
+                "Loan OwnerNode removed or changed");
+
+            // Only LoanAccept may add the OwnerNode to an existing loan.
+            testLoanUpdate(
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                0,
+                std::nullopt,
+                [](SLE::pointer const& sle) { sle->setFieldU64(sfOwnerNode, 0); },
+                "Loan OwnerNode added by an unauthorized transaction");
+
+            // ttLOAN_ACCEPT: the legitimate transition passes: clear the
+            // pending flag and link the loan into the borrower's directory.
+            testLoanUpdate(
+                acceptTx,
+                lsfLoanPending,
+                std::nullopt,
+                [](SLE::pointer const& sle) {
+                    sle->clearFlag(lsfLoanPending);
+                    sle->setFieldU64(sfOwnerNode, 0);
+                },
+                std::nullopt);
+        }
+
         // Loan interest due (total value less principal and management fee)
         // must never be negative. A neutral transaction type is used so the
         // vault invariants short-circuit and only the loan check fires. The

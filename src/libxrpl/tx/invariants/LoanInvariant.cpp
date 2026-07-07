@@ -97,17 +97,30 @@ ValidLoan::finalize(
                 return false;
             }
 
-            // The OwnerNode may only be added, removed, or changed on an
-            // existing loan by LoanAccept (which links the loan into the
-            // borrower's directory once accepted).
+            // LoanAccept may only process a loan that was pending.
+            if (txType == ttLOAN_ACCEPT && !wasPending)
+            {
+                JLOG(j.fatal()) << "Invariant failed: LoanAccept modified a "
+                                   "Loan that was not pending";
+                return false;
+            }
+
+            // The OwnerNode may only be added to an existing loan, and only by
+            // LoanAccept (which links the loan into the borrower's directory
+            // once accepted). It must never be removed or changed.
             bool const beforeHasNode = before->isFieldPresent(sfOwnerNode);
             bool const afterHasNode = after->isFieldPresent(sfOwnerNode);
-            bool const nodeChanged = beforeHasNode != afterHasNode ||
-                (beforeHasNode &&
-                 before->getFieldU64(sfOwnerNode) != after->getFieldU64(sfOwnerNode));
-            if (nodeChanged && (!lendingV11Enabled || txType != ttLOAN_ACCEPT))
+            if (beforeHasNode &&
+                (!afterHasNode ||
+                 before->getFieldU64(sfOwnerNode) != after->getFieldU64(sfOwnerNode)))
             {
-                JLOG(j.fatal()) << "Invariant failed: Loan OwnerNode changed "
+                JLOG(j.fatal()) << "Invariant failed: Loan OwnerNode removed "
+                                   "or changed";
+                return false;
+            }
+            if (!beforeHasNode && afterHasNode && (!lendingV11Enabled || txType != ttLOAN_ACCEPT))
+            {
+                JLOG(j.fatal()) << "Invariant failed: Loan OwnerNode added "
                                    "by an unauthorized transaction";
                 return false;
             }
