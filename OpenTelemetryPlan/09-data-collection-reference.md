@@ -1086,7 +1086,7 @@ xrpld_load_factor_metrics{metric="load_factor"} > 5
 
 ### Phase 7+: External Dashboard Parity Metrics
 
-> **Source**: [External Dashboard Parity Spec](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md) — metrics inspired by the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
+> **Source**: [External Dashboard Parity Spec](./06-implementation-phases.md#appendix-external-dashboard-parity) — metrics inspired by the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
 >
 > **Task breakdown**: Phase 7 Tasks 7.9-7.16 (implementation), Phase 9 Tasks 9.11-9.13 (dashboards)
 
