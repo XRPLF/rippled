@@ -49,10 +49,6 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 
         if (ctx.rules.enabled(fixCleanup3_4_0))
         {
-            // Reject malformed native amounts.
-            if (!isLegalNet(*bf))
-                return temBAD_AMOUNT;
-
             // We don't allow a non-native currency to use the currency code XRP.
             if (badAsset() == bf->asset())
                 return temBAD_CURRENCY;

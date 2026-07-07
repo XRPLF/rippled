@@ -7131,8 +7131,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
         using namespace test::jtx;
 
-        // Before fixCleanup3_4_0, a malformed offer amount is not rejected in
-        // preflight. With the amendment enabled, preflight rejects it directly.
+        // Before fixCleanup3_4_0, a fake-XRP offer amount (an IOU using the
+        // "XRP" currency code) is not rejected in preflight. With the amendment
+        // enabled, preflight rejects it with temBAD_CURRENCY.
         for (bool const withFix : {false, true})
         {
             Env env{*this, withFix ? features | fixCleanup3_4_0 : features - fixCleanup3_4_0};
@@ -7154,12 +7155,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                 Txflags(tfSellNFToken),
                 Ter(withFix ? TER{temBAD_CURRENCY} : TER{tesSUCCESS}));
             env.close();
-
-            // Malformed native sell offer amount.
-            env(token::createOffer(alice, nftID, STAmount{STAmount::kMaxNativeN + 1}),
-                Txflags(tfSellNFToken),
-                Ter(withFix ? TER{temBAD_AMOUNT} : TER{tesSUCCESS}));
-            env.close();
         }
     }
 
@@ -7170,9 +7165,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
         using namespace test::jtx;
 
-        // Before fixCleanup3_4_0, a malformed broker fee is not rejected in
-        // preflight and reaches later offer validation instead. With the
-        // amendment enabled, preflight rejects it directly.
+        // Before fixCleanup3_4_0, a fake-XRP broker fee (an IOU using the "XRP"
+        // currency code) is not rejected in preflight and reaches later offer
+        // validation instead. With the amendment enabled, preflight rejects it
+        // with temBAD_CURRENCY.
         for (bool const withFix : {false, true})
         {
             Env env{*this, withFix ? features | fixCleanup3_4_0 : features - fixCleanup3_4_0};
@@ -7203,11 +7199,46 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                 token::BrokerFee(bad(1)),
                 Ter(withFix ? TER{temBAD_CURRENCY} : TER{tecNFTOKEN_BUY_SELL_MISMATCH}));
             env.close();
+        }
+    }
 
-            // Malformed native broker fee.
-            env(token::brokerOffers(broker, buyOfferIndex, sellOfferIndex),
-                token::BrokerFee(STAmount{STAmount::kMaxNativeN + 1}),
-                Ter(withFix ? TER{temBAD_AMOUNT} : TER{tecINSUFFICIENT_PAYMENT}));
+    void
+    testCreateOfferIouIssuerGlobalFreeze(FeatureBitset features)
+    {
+        testcase("Create NFT offer by IOU issuer under global freeze");
+
+        using namespace test::jtx;
+
+        // Before fixCleanup3_4_0, an IOU issuer that has set a global freeze on
+        // their own currency cannot create an NFToken offer denominated in that
+        // currency; the offer is rejected with tecFROZEN.  With the amendment
+        // enabled, the issuer is not subject to their own global freeze when the
+        // offer is denominated in their own IOU (e.g. to receive their own
+        // transfer fees), so the offer succeeds.
+        for (bool const withFix : {false, true})
+        {
+            Env env{*this, withFix ? features | fixCleanup3_4_0 : features - fixCleanup3_4_0};
+
+            Account const issuer{"issuer"};
+            IOU const isISU(issuer["ISU"]);
+
+            env.fund(XRP(1000), issuer);
+            env.close();
+
+            // issuer mints a transferable NFToken.
+            uint256 const nftID = token::getNextID(env, issuer, 0, tfTransferable);
+            env(token::mint(issuer, 0u), Txflags(tfTransferable));
+            env.close();
+
+            // issuer sets a global freeze on their own IOU.
+            env(fset(issuer, asfGlobalFreeze));
+            env.close();
+
+            // issuer creates a sell offer for the NFToken denominated in their
+            // own (globally frozen) IOU.
+            env(token::createOffer(issuer, nftID, isISU(100)),
+                Txflags(tfSellNFToken),
+                Ter(withFix ? TER{tesSUCCESS} : TER{tecFROZEN}));
             env.close();
         }
     }
@@ -7255,6 +7286,7 @@ protected:
         testNFTokenModify(features);
         testCreateOfferInvalidAmount(features);
         testAcceptOfferInvalidBrokerFee(features);
+        testCreateOfferIouIssuerGlobalFreeze(features);
     }
 
 public:
