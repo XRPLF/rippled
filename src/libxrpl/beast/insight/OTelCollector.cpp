@@ -613,6 +613,11 @@ OTelGaugeImpl::gaugeCallback(opentelemetry::metrics::ObserverResult result, void
 
 OTelGaugeImpl::~OTelGaugeImpl()
 {
+    // RemoveCallback must run before this object is destroyed so the SDK
+    // collection thread cannot invoke gaugeCallback on a dangling `this`.
+    // The SDK's ObservableRegistry guards its callback list and the Observe()
+    // pass with the same mutex, so RemoveCallback cannot return while a
+    // callback for this instrument is in flight — removal is synchronous.
     gauge_->RemoveCallback(gaugeCallback, this);
     collector_->removeGauge(this);
 }
@@ -781,8 +786,16 @@ OTelCollectorImp::callHooks()
     if (!lastHookCallMs_.compare_exchange_strong(last, now, std::memory_order_acq_rel))
         return;  // Another thread won the race.
 
-    std::scoped_lock const lock(mutex_);
-    for (auto* hook : hooks_)
+    // Copy the hook list under the lock, then invoke handlers outside it.
+    // A handler may drop the last reference to an OTelHookImpl, whose
+    // destructor calls removeHook() and re-acquires mutex_; invoking
+    // handlers while holding the (non-recursive) lock would deadlock.
+    std::vector<OTelHookImpl*> hooks;
+    {
+        std::scoped_lock const lock(mutex_);
+        hooks = hooks_;
+    }
+    for (auto* hook : hooks)
         hook->callHandler();
 }
 
