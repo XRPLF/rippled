@@ -2,27 +2,53 @@
 #
 # Phase 9: Internal metric gap fill — alerting on health-critical metrics.
 #
-# A contact point is where a firing alert is delivered. This stack ships a
-# single webhook receiver as a working default for local development. To route
-# alerts to a real destination, replace the webhook `url` below, or add a
-# `slack` / `email` receiver to the same contact point (see ALERTING.md).
+# A contact point is where a firing alert is delivered. Two are defined:
+#   xrpld-default   — Slack only; receives warning-severity alerts.
+#   xrpld-critical  — Slack + email; receives critical-severity alerts.
+# The severity split is wired in policies.yaml.
 #
-# The default anonymous-admin Grafana in docker-compose.yml picks this file up
-# from /etc/grafana/provisioning/alerting/ on startup.
+# Secrets and personal addresses are NOT hard-coded. Grafana expands
+# ${ENV_VAR} references in provisioning files at load time, so the real
+# Slack webhook and alert-email addresses come from environment variables
+# supplied via docker/telemetry/.env.alerting (gitignored). See
+# .env.alerting.example for the variable list and the Alerting section of
+# docs/telemetry-runbook.md for setup.
+# If a variable is unset, that receiver has no live destination.
+#
+# Email delivery additionally requires SMTP configured on the Grafana
+# service (GF_SMTP_* in docker-compose.yml).
 
 apiVersion: 1
 
 contactPoints:
+  # --- Warning tier: Slack only ---
   - orgId: 1
     name: xrpld-default
     receivers:
-      # Local-dev webhook sink. Points at a placeholder host; alerts are
-      # emitted but silently dropped unless a receiver listens there.
-      # Swap the url for a real endpoint (PagerDuty/Opsgenie/custom) or
-      # replace the whole receiver block with a slack/email type.
-      - uid: xrpld-default-webhook
-        type: webhook
+      - uid: xrpld-slack-default
+        type: slack
         settings:
-          url: http://localhost:9999/xrpld-alerts
-          httpMethod: POST
+          # Incoming-webhook delivery: the channel is fixed by the webhook, so
+          # `recipient` is only here to satisfy Grafana's Slack validator.
+          url: ${SLACK_WEBHOOK_URL}
+          recipient: ${SLACK_CHANNEL}
+          title: "{{ .CommonLabels.alertname }} on {{ .CommonLabels.exported_instance }}"
+        disableResolveMessage: false
+
+  # --- Critical tier: Slack + email ---
+  - orgId: 1
+    name: xrpld-critical
+    receivers:
+      - uid: xrpld-slack-critical
+        type: slack
+        settings:
+          url: ${SLACK_WEBHOOK_URL}
+          recipient: ${SLACK_CHANNEL}
+          title: "[CRITICAL] {{ .CommonLabels.alertname }} on {{ .CommonLabels.exported_instance }}"
+        disableResolveMessage: false
+      - uid: xrpld-email-critical
+        type: email
+        settings:
+          addresses: ${ALERT_EMAIL_TO}
+          singleEmail: true
         disableResolveMessage: false
