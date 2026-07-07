@@ -3617,6 +3617,26 @@ class Invariants_test : public beast::unit_test::Suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
+        // ttLOAN_PAY: assets available must track the real vault balance. The
+        // vault balance (pseudo-account) grows by 50 but assets available is
+        // bumped by 60, so the two no longer add up.
+        doInvariantCheck(
+            {"loan pay vault balance and assets available must add up"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsAvailable = 60,
+                        .vaultAssets = 50,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -50}});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(100)); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
         // ttLOAN_PAY: assets available must increase
         doInvariantCheck(
             {"loan pay must increase assets available"},
@@ -3669,6 +3689,27 @@ class Invariants_test : public beast::unit_test::Suite
                         .vaultAssets = 100,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = -100},
                         .accountShares = AccountAmount{.account = a2.id(), .amount = 10}});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(200)); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_PAY: loss unrealized driven negative. The cash inflow is
+        // valid, but loss unrealized is set below zero.
+        doInvariantCheck(
+            {"loan pay must not make loss unrealized negative"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsTotal = 100,
+                        .assetsAvailable = 100,
+                        .lossUnrealized = -1,
+                        .vaultAssets = 100,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -100}});
             },
             XRPAmount{},
             STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(200)); }},
