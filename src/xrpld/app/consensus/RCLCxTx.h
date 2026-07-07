@@ -1,6 +1,14 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <map>
+#include <memory>
+#include <utility>
 
 namespace xrpl {
 

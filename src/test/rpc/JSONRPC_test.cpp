@@ -2238,7 +2238,7 @@ public:
 
         {
             json::Value req;
-            json::Reader().parse("{ \"fee_mult_max\" : 1, \"tx_json\" : { } } ", req);
+            json::Reader().parse(R"({ "fee_mult_max" : 1, "tx_json" : { } } )", req);
             json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
@@ -2275,7 +2275,7 @@ public:
 
         {
             json::Value req;
-            json::Reader().parse("{ \"fee_mult_max\" : 0, \"tx_json\" : { } } ", req);
+            json::Reader().parse(R"({ "fee_mult_max" : 0, "tx_json" : { } } )", req);
             json::Value const result = checkFee(
                 req,
                 Role::ADMIN,

@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Determine changed files
         # This step checks whether any files have changed that should
         # cause the next jobs to run. We do it this way rather than
@@ -70,6 +70,7 @@ jobs:
             .github/workflows/reusable-upload-recipe.yml
             .clang-tidy
             .codecov.yml
+            bin/check-tools.sh
             cfg/**
             cmake/**
             conan/**
@@ -121,7 +122,6 @@ jobs:
       issues: write
       contents: read
     with:
-      check_only_changed: true
       create_issue_on_failure: false
 
   build-test:
@@ -153,8 +153,8 @@ jobs:
     if: ${{ github.repository == 'XRPLF/rippled' && needs.should-run.outputs.go == 'true' && github.event_name == 'pull_request' && startsWith(github.event.pull_request.base.ref, 'release') }}
     uses: ./.github/workflows/reusable-upload-recipe.yml
     secrets:
-      remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+      remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
+      remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
 
   notify-clio:
     needs: upload-recipe

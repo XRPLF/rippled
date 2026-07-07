@@ -4,10 +4,15 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 
 #include <boost/container/flat_map.hpp>
 
+#include <cstddef>
+#include <memory>
+#include <sstream>
+#include <string>
 #include <utility>
 
 namespace xrpl {
@@ -29,7 +34,7 @@ namespace xrpl {
 template <class Tx, class NodeId>
 class DisputedTx
 {
-    using TxID_t = typename Tx::ID;
+    using TxID_t = Tx::ID;
     using Map_t = boost::container::flat_map<NodeId, bool>;
 
 public:
