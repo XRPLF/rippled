@@ -351,7 +351,7 @@ These metrics serve multiple external consumer categories identified during rese
 
 ## Task 9.11: Validator Health Dashboard (External Dashboard Parity)
 
-> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md) — dashboards for Phase 7 metrics inspired by the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
+> **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity) — dashboards for Phase 7 metrics inspired by the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
 >
 > **Upstream**: Phase 7 Tasks 7.9-7.16 (metrics must be emitting).
 > **Downstream**: Phase 10 (dashboard load checks), Phase 11 (alert rules reference these panels).
@@ -390,7 +390,7 @@ These metrics serve multiple external consumer categories identified during rese
 
 ## Task 9.12: Peer Quality Dashboard (External Dashboard Parity)
 
-> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+> **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity)
 
 **Objective**: Create a Grafana dashboard for peer health aggregates.
 
@@ -417,7 +417,7 @@ These metrics serve multiple external consumer categories identified during rese
 
 ## Task 9.13: Ledger Economy Dashboard Panels (External Dashboard Parity)
 
-> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+> **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity)
 
 **Objective**: Add "Ledger Economy" row to the existing `node-health.json` dashboard.
 
