@@ -664,8 +664,11 @@ Expected: > 0 results.
 1. Verify the log file mount in docker-compose.yml:
    ```yaml
    volumes:
-     - /tmp/xrpld-integration:/var/log/rippled:ro
+     - ${XRPLD_LOG_DIR:-./data/logs}:/var/log/xrpld:ro
    ```
+   The mount source defaults to the repo-relative `docker/telemetry/data/logs`
+   (where the telemetry configs write). Override `XRPLD_LOG_DIR` to tail logs
+   from another root.
 2. Check OTel Collector logs for filelog receiver errors:
    ```bash
    docker compose -f docker/telemetry/docker-compose.yml logs otel-collector | grep -i "filelog\|loki\|error"
@@ -675,7 +678,7 @@ Expected: > 0 results.
    curl -s http://localhost:3100/ready
    ```
 4. Verify the filelog receiver glob pattern matches your log files:
-   The default pattern is `/var/log/rippled/*/debug.log`
+   The default pattern is `/var/log/xrpld/*/debug.log`
 
 ### Grafana trace-log links not working (Phase 8)
 

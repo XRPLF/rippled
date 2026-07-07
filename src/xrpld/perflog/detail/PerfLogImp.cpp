@@ -362,6 +362,10 @@ PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, boo
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::perf::PerfLogImp::rpcEnd : valid requestId input");
+            // Without an entry, startTime stays default-initialized; returning
+            // avoids recording a bogus (now - epoch) duration to the counters
+            // and OTel histogram below. UNREACHABLE does not halt release builds.
+            return;
             // LCOV_EXCL_STOP
         }
     }
