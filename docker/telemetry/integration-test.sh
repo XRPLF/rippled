@@ -645,11 +645,15 @@ check_otel_metric "rippled_total_Bytes_In"
 # Verify StatsD receiver is NOT required (no statsd receiver in pipeline)
 log ""
 log "--- Verify StatsD receiver is not required ---"
-statsd_port_check=$(curl -sf "http://localhost:8125" 2>&1 || echo "refused")
-if echo "$statsd_port_check" | grep -qi "refused\|error\|connection"; then
-    ok "StatsD port 8125 is not listening (not required)"
+# StatsD listens on UDP 8125, so probe with a UDP-aware tool, not curl (TCP).
+if command -v ss >/dev/null 2>&1; then
+    if ss -ulnp 2>/dev/null | grep -q ":8125"; then
+        fail "StatsD port 8125 appears to be listening (should not be needed)"
+    else
+        ok "StatsD port 8125 is not listening (not required)"
+    fi
 else
-    fail "StatsD port 8125 appears to be listening (should not be needed)"
+    log "ss not found -- skipping StatsD UDP port check"
 fi
 
 # ---------------------------------------------------------------------------
