@@ -593,16 +593,22 @@ TEST(json_value, bad_json)
     EXPECT_TRUE(r.parse(s, j));
 }
 
-TEST(json_value, parse_double)
-{
-    auto parseValue = [](std::string const& doc) -> std::optional<json::Value> {
-        json::Value j;
-        json::Reader r;
-        if (!r.parse("{\"v\":" + doc + "}", j))
-            return std::nullopt;
-        return j["v"];
-    };
+namespace {
 
+std::optional<json::Value>
+parseValue(std::string const& doc)
+{
+    json::Value j;
+    json::Reader r;
+    if (!r.parse("{\"v\":" + doc + "}", j))
+        return std::nullopt;
+    return j["v"];
+}
+
+}  // namespace
+
+TEST(json_value, parse_double_valid)
+{
     // Well-formed doubles decode to the expected value.  1e300 is large but
     // still representable, so it parses (unlike the out-of-range cases below).
     for (auto const& [text, expected] :
@@ -620,14 +626,20 @@ TEST(json_value, parse_double)
         EXPECT_EQ(v->asDouble(), expected) << text;
         // NOLINTEND(bugprone-unchecked-optional-access)
     }
+}
 
+TEST(json_value, parse_double_out_of_range)
+{
     // Magnitudes with no finite double representation are rejected.  The
     // previous sscanf("%lf") accepted these as +/-infinity, but that value
     // cannot be re-serialized as valid JSON, so decodeDouble now treats an
     // out-of-range token as a parse error.
     for (char const* oor : {"1e400", "-1e400", "0.001e500", "1e-400", "-1e-400", "123e-500"})
         EXPECT_FALSE(parseValue(oor).has_value()) << oor;
+}
 
+TEST(json_value, parse_double_malformed)
+{
     // readNumber() collects any run of digits and '.eE+-' into a single Double
     // token, so these malformed tokens reach decodeDouble.  Each has a valid
     // leading prefix that from_chars would accept on its own; requiring the
