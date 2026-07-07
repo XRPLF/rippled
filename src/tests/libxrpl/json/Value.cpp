@@ -609,8 +609,7 @@ parseValue(std::string const& doc)
 
 TEST(json_value, parse_double_valid)
 {
-    // Well-formed doubles decode to the expected value.  1e300 is large but
-    // still representable, so it parses (unlike the out-of-range cases below).
+    // 1e300 is large but still representable, so it parses (unlike the out-of-range cases below).
     for (auto const& [text, expected] :
          {std::pair{"2.5", 2.5},
           std::pair{"-3.25e2", -325.0},
@@ -630,10 +629,7 @@ TEST(json_value, parse_double_valid)
 
 TEST(json_value, parse_double_out_of_range)
 {
-    // Magnitudes with no finite double representation are rejected.  The
-    // previous sscanf("%lf") accepted these as +/-infinity, but that value
-    // cannot be re-serialized as valid JSON, so decodeDouble now treats an
-    // out-of-range token as a parse error.
+    // Magnitudes with no finite double representation are rejected.
     for (char const* oor : {"1e400", "-1e400", "0.001e500", "1e-400", "-1e-400", "123e-500"})
         EXPECT_FALSE(parseValue(oor).has_value()) << oor;
 }
@@ -641,7 +637,7 @@ TEST(json_value, parse_double_out_of_range)
 TEST(json_value, parse_double_malformed)
 {
     // readNumber() collects any run of digits and '.eE+-' into a single Double
-    // token, so these malformed tokens reach decodeDouble.  Each has a valid
+    // token, so these malformed tokens reach decodeDouble. Each has a valid
     // leading prefix that from_chars would accept on its own; requiring the
     // entire token be consumed rejects them instead of silently truncating.
     for (char const* bad : {"1+2", "1-2", "1.2.3", "1e5e6", "1..2", "++5", "1e", "1e+", ".", "-"})
