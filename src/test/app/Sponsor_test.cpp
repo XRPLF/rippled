@@ -2997,6 +2997,80 @@ public:
                 sponsor2.id());
         }
         {
+            // IOU Escrow cancel re-creates the owner's trust line, and the
+            // cancel transaction's sponsor can cover that new line's reserve.
+            // Creating an IOU escrow moves the sender's balance to the issuer,
+            // so the sender can delete their now-zero trust line while the
+            // escrow is pending. Cancelling returns the funds, re-creating the
+            // line.
+            Env env{*this, testableAmendments()};
+
+            env.fund(XRP(1000000), alice, bob, gw, sponsor, sponsor2);
+            env.close();
+
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+
+            env.trust(usd(1000000), alice);
+            env.close();
+            env(pay(gw, alice, usd(10000)));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+            // alice escrows her entire balance so the trust line can be removed
+            auto const cancelAfter = env.now() + 100s;
+            auto const seq = env.seq(alice);
+            env(escrow::create(alice, bob, usd(10000)),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kCancelTime(cancelAfter));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 2);  // trust line + escrow
+
+            // alice deletes her now-zero trust line while the escrow is pending
+            env(trust(alice, usd(0)));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::trustLine(alice, gw, usd.currency)));
+            BEAST_EXPECT(ownerCount(env, alice) == 1);  // just the escrow
+
+            // advance the ledger past the cancel time
+            for (; env.now() < cancelAfter; env.close())
+            {
+            }
+
+            // EscrowCancel by alice re-creates her trust line; the sponsor
+            // covers the new line's reserve. On the insufficient-reserve
+            // attempt the whole transaction rolls back, leaving the escrow
+            // intact to be cancelled on the success attempt.
+            bool const aliceLow = alice.id() < gw.id();
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecNO_LINE_INSUF_RESERVE,
+                [&](Env& env, auto const& submit) { submit(escrow::cancel(alice, alice, seq)); },
+                [&]() {
+                    BEAST_EXPECT(!env.le(keylet::escrow(alice, seq)));
+                    auto const trustSle = env.le(keylet::trustLine(alice, gw, usd.currency));
+                    BEAST_EXPECT(trustSle);
+                    if (trustSle)
+                    {
+                        BEAST_EXPECT(
+                            trustSle->getAccountID(aliceLow ? sfLowSponsor : sfHighSponsor) ==
+                            sponsor.id());
+                        BEAST_EXPECT(
+                            !trustSle->isFieldPresent(aliceLow ? sfHighSponsor : sfLowSponsor));
+                    }
+                    BEAST_EXPECT(ownerCount(env, alice) == 1);  // re-created trust line
+                    BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+                    BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+                });
+        }
+        {
             // MPT Escrow
             Env env{*this, testableAmendments()};
             env.fund(XRP(1000000), bob, sponsor);
