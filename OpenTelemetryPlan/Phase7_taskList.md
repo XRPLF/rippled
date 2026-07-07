@@ -230,7 +230,7 @@
 
 ## Task 7.9: ValidationTracker — Validation Agreement Computation
 
-> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md) — the most valuable metric from the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
+> **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity) — the most valuable metric from the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
 >
 > **Upstream**: Phase 4 Task 4.8 (validation span attributes provide ledger hash context).
 > **Downstream**: Phase 9 (Validator Health dashboard), Phase 10 (validation checks), Phase 11 (agreement alert rules).
@@ -311,7 +311,7 @@ struct WindowEvent {
 
 ## Task 7.10: Validator Health Observable Gauges
 
-> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+> **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity)
 
 **Objective**: Export amendment blocked, UNL health, and quorum data as a native OTel observable gauge.
 
@@ -396,7 +396,7 @@ validatorParticipationGauge_ = meter_->CreateInt64ObservableGauge(
 
 ## Task 7.11: Peer Quality Observable Gauges
 
-> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+> **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity)
 
 **Objective**: Export peer health aggregates (latency P90, insane peers, version awareness) as a native OTel observable gauge.
 
@@ -430,7 +430,7 @@ validatorParticipationGauge_ = meter_->CreateInt64ObservableGauge(
 
 ## Task 7.12: Ledger Economy Observable Gauges
 
-> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+> **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity)
 
 **Objective**: Export fee, reserve, ledger age, and transaction rate as a native OTel observable gauge.
 
@@ -456,7 +456,7 @@ validatorParticipationGauge_ = meter_->CreateInt64ObservableGauge(
 
 ## Task 7.13: State Tracking Observable Gauges
 
-> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+> **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity)
 
 **Objective**: Export extended state value (0-6 encoding combining OperatingMode + ConsensusMode) and time-in-current-state.
 
@@ -480,7 +480,7 @@ validatorParticipationGauge_ = meter_->CreateInt64ObservableGauge(
 
 ## Task 7.14: Storage Detail and Sync Info Gauges
 
-> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+> **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity)
 
 **Objective**: Export NuDB-specific storage size and initial sync duration.
 
@@ -502,7 +502,7 @@ validatorParticipationGauge_ = meter_->CreateInt64ObservableGauge(
 
 ## Task 7.15: New Synchronous Counters
 
-> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+> **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity)
 
 **Objective**: Add 7 new event counters incremented at their respective instrumentation sites.
 
@@ -527,7 +527,7 @@ validatorParticipationGauge_ = meter_->CreateInt64ObservableGauge(
 
 ## Task 7.16: Validation Agreement Observable Gauge
 
-> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+> **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity)
 
 **Objective**: Export rolling window agreement stats from `ValidationTracker` (Task 7.9).
 
