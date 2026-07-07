@@ -77,19 +77,14 @@ valueToString(UInt value)
 std::string
 valueToString(double value)
 {
-    // Format with 16 significant digits, matching the previous "%.16g" output
-    // (std::chars_format::general with an explicit precision is defined to
-    // behave like printf's %g).  We need not request the alternative
-    // representation that always has a decimal point because JSON doesn't
-    // distinguish the concepts of reals and integers.  A double never needs
-    // more than 32 characters in this form, so to_chars cannot actually run
-    // out of room here.
+    // Format with 16 significant digits
+    // We need not request the alternative representation that always has a
+    // decimal point because JSON doesn't distinguish the concepts of reals and integers.
+    // A double never needs more than 32 characters in this form,
+    // so to_chars cannot actually run out of room here.
     char buffer[32];
     auto const [ptr, ec] =
         std::to_chars(buffer, buffer + sizeof(buffer), value, std::chars_format::general, 16);
-    // Only read [buffer, ptr) on success: on failure ptr is unspecified and the
-    // tail of buffer past the written prefix is uninitialized.  The buffer is
-    // provably large enough, so failure is unreachable in practice.
     XRPL_ASSERT(ec == std::errc{}, "json::valueToString(double) : conversion fits buffer");
     if (ec != std::errc{})
         return {};

@@ -610,14 +610,10 @@ Reader::decodeDouble(Token& token)
 
     // Reject anything from_chars could not turn into a finite double:
     //   - ec != std::errc{}: no valid conversion, or an out-of-range magnitude
-    //     (e.g. 1e400) that has no double representation.  The previous
-    //     sscanf("%lf") accepted the latter but produced a +/-infinity that
-    //     cannot be re-serialized as valid JSON, so rejecting is both simpler
-    //     and more correct.
-    //   - ptr != token.end: only a prefix parsed.  readNumber() is permissive
-    //     about which characters it collects into a token (it will, for
-    //     example, keep a '+' or '-' that appears mid-token), so a token like
-    //     "1+2" would otherwise stop after "1" and silently decode as 1.
+    //     (e.g. 1e400).
+    //   - ptr != token.end: readNumber() is permissive about which characters
+    //     it collects into a token (it will, for example, keep a '+' mid-token),
+    //     but from_chars() will stop at the first character it cannot parse.
     if (ec != std::errc{} || ptr != token.end)
         return addError("'" + std::string(token.start, token.end) + "' is not a number.", token);
 
