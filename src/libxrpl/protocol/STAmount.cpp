@@ -1527,8 +1527,7 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
 
     bool const resultNegative = v1.negative() != v2.negative();
 
-    if (asset.holds<MPTIssue>() && isFeatureEnabled(featureMPTokensV2, false) &&
-        getSTNumberSwitchover())
+    if (asset.holds<MPTIssue>() && isFeatureEnabled(featureMPTokensV2, false))
     {
         // MPT DEX can combine 63-bit MPT amounts with IOU-shaped transfer
         // rates. Use Number arithmetic under MPTokensV2 so the rounded
@@ -1630,8 +1629,7 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
 
     bool const resultNegative = (num.negative() != den.negative());
 
-    if (asset.holds<MPTIssue>() && isFeatureEnabled(featureMPTokensV2, false) &&
-        getSTNumberSwitchover())
+    if (asset.holds<MPTIssue>() && isFeatureEnabled(featureMPTokensV2, false))
     {
         // Match the multiply path above: Number performs the rounded
         // operation, then STAmount materializes the final MPT amount using the

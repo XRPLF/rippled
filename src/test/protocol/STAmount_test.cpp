@@ -1060,7 +1060,7 @@ public:
             return Rules{mptV2 ? kMptV2Features : kNoFeatures};
         };
 
-        auto throwsOverflow = [&](auto&& f) {
+        auto throwsOverflow = [&](auto&& f, bool expected = true) {
             bool threw = false;
             try
             {
@@ -1070,12 +1070,11 @@ public:
             {
                 threw = true;
             }
-            BEAST_EXPECT(threw);
+            BEAST_EXPECT(threw == expected);
         };
 
         {
             CurrentTransactionRulesGuard const rg(rules(false));
-            NumberSO const numberSO{true};
 
             throwsOverflow([&] { (void)multiplyRound(largeAmount, transferRate, asset, true); });
             throwsOverflow([&] { (void)divideRound(scaledAmount, transferRate, asset, true); });
@@ -1083,15 +1082,15 @@ public:
 
         {
             CurrentTransactionRulesGuard const rg(rules(true));
-            NumberSO const numberSO{false};
 
-            throwsOverflow([&] { (void)multiplyRound(largeAmount, transferRate, asset, true); });
-            throwsOverflow([&] { (void)divideRound(scaledAmount, transferRate, asset, true); });
+            throwsOverflow(
+                [&] { (void)multiplyRound(largeAmount, transferRate, asset, true); }, false);
+            throwsOverflow(
+                [&] { (void)divideRound(scaledAmount, transferRate, asset, true); }, false);
         }
 
         {
             CurrentTransactionRulesGuard const rg(rules(true));
-            NumberSO const numberSO{true};
             STAmount const one{asset, 1};
             STAmount const two{asset, 2};
 
