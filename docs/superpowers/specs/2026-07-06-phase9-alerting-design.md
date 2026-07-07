@@ -39,8 +39,9 @@ New files under `docker/telemetry/grafana/provisioning/alerting/`:
 | `policies.yaml`      | Default notification policy: route all alerts → `xrpld-default`, grouped by `alertname` + `exported_instance`.      |
 | `rules.yaml`         | 6 alert rules across 3 groups (below).                                                                              |
 
-Plus `docker/telemetry/ALERTING.md` — operator runbook: what each alert means,
-likely causes, and how to point the contact point at a real receiver.
+Plus the Alerting section of `docs/telemetry-runbook.md` — operator runbook:
+what each alert means, likely causes, and how to point the contact point at a
+real receiver.
 
 ## Alert rules
 

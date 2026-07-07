@@ -314,14 +314,14 @@ These metrics serve multiple external consumer categories identified during rese
 - Provision Grafana alert rules (`docker/telemetry/grafana/provisioning/alerting/`):
   - 6 rules in 3 groups — consensus/ledger (`LedgerHistoryMismatch`, `LedgerCloseStalled`), validator (`ValidationsMissed`, `ValidationsNotChecked`), job queue (`JobQueueTxOverflow`, `JobQueueLatencyHigh`)
   - `xrpld-default` webhook contact point + flat notification policy; auto-loaded via the existing `provisioning/` mount (no docker-compose change)
-  - `docker/telemetry/ALERTING.md` operator runbook (per-alert meaning, tuning, receiver wiring)
+  - Alerting operator docs (per-alert meaning, tuning, receiver wiring) now live in the Alerting section of `docs/telemetry-runbook.md`
 
 **Key modified files**:
 
 - `OpenTelemetryPlan/09-data-collection-reference.md`
 - `docs/telemetry-runbook.md`
 - `docker/telemetry/grafana/provisioning/alerting/{rules,contactpoints,policies}.yaml` (new)
-- `docker/telemetry/ALERTING.md` (new)
+- `docs/telemetry-runbook.md` (Alerting section added)
 
 ---
 
