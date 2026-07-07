@@ -107,7 +107,7 @@
     ```yaml
     receivers:
       filelog:
-        include: [/var/log/rippled/debug.log]
+        include: [/var/log/xrpld/*/debug.log]
         operators:
           - type: regex_parser
             regex: '^(?P<timestamp>\S+)\s+(?P<partition>\S+):(?P<severity>\S+)\s+(?:trace_id=(?P<trace_id>[a-f0-9]+)\s+span_id=(?P<span_id>[a-f0-9]+)\s+)?(?P<message>.*)$'

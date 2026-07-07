@@ -785,6 +785,8 @@ This enables bidirectional navigation between logs and traces in Grafana:
 
 Log files are ingested by the OTel Collector's `filelog` receiver, which tails `debug.log` files and parses them with a regex that extracts `timestamp`, `partition`, `severity`, `trace_id`, `span_id`, and `message` fields. Parsed entries are exported to Grafana Loki.
 
+The receiver tails `/var/log/xrpld/*/debug.log` inside the collector container. docker-compose bind-mounts the host log root there; the source defaults to the repo-relative `docker/telemetry/data/logs`, which the telemetry configs write to (`data/logs/<network>/debug.log`) and which needs no root. To tail logs from elsewhere, set `XRPLD_LOG_DIR` before `docker compose up` (the integration test does this to point at its own workdir). The single trailing `*` matches one per-network or per-node subdirectory.
+
 ### LogQL Query Examples
 
 ```logql
@@ -853,10 +855,10 @@ count_over_time({job="xrpld"} |= "trace_id=" [5m])
 
 ### No logs in Loki
 
-- Verify the log file mount in docker-compose.yml points to the correct xrpld log directory
+- Verify the log file mount in docker-compose.yml points to the correct xrpld log directory (default source `docker/telemetry/data/logs`, or the `XRPLD_LOG_DIR` override) and that xrpld actually writes `debug.log` there
 - Check OTel Collector logs for filelog receiver errors: `docker compose logs otel-collector`
 - Verify Loki is running: `curl http://localhost:3100/ready`
-- Check the filelog receiver glob pattern matches your log file paths
+- Check the filelog receiver glob `/var/log/xrpld/*/debug.log` matches your log layout — the log file must sit one subdirectory below the mount root
 
 ## Performance Tuning
 
