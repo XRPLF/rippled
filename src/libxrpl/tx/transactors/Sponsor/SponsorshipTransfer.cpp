@@ -39,34 +39,30 @@ applyCountDelta(std::uint32_t current, std::int32_t delta)
 }
 
 // Consume the sponsor's pre-funded reserve budget and lowers the Sponsorship
-// object's RemainingOwnerCount. Note: delta must be <= 0. The count is updated
-// as (current + delta), so it's an addition of a negative delta, not a subtraction.
+// object's RemainingOwnerCount.
 static TER
-reducePrefundedReserveCount(
+decrementPrefundedReserveCount(
     ApplyView& view,
     AccountID const& account,
     AccountID const& sponsor,
-    std::int32_t delta)
+    std::uint32_t delta)
 {
     if (delta == 0)
         return tesSUCCESS;
-    if (delta > 0)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sponsorSle = view.peek(keylet::sponsorship(sponsor, account));
     if (!sponsorSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const afterReserveCount =
-        applyCountDelta(sponsorSle->getFieldU32(sfRemainingOwnerCount), delta);
-    if (!afterReserveCount)
+    auto const currentReserveCount = sponsorSle->getFieldU32(sfRemainingOwnerCount);
+    if (currentReserveCount < delta)
     {
         // Already verified by checkReserve (sufficient RemainingOwnerCount)
-        UNREACHABLE("xrpl::reducePrefundedReserveCount : invalid reserve count");
+        UNREACHABLE("xrpl::decrementPrefundedReserveCount : invalid reserve count");
         return tefINTERNAL;  // LCOV_EXCL_LINE
     }
 
-    sponsorSle->at(sfRemainingOwnerCount) = *afterReserveCount;
+    sponsorSle->at(sfRemainingOwnerCount) = currentReserveCount - delta;
     view.update(sponsorSle);
     return tesSUCCESS;
 }
@@ -364,8 +360,8 @@ SponsorshipTransfer::doApply()
             if (!hasSignature)
             {
                 // Use ReserveCount for pre-funded sponsoring
-                if (auto const ter = reducePrefundedReserveCount(
-                        view(), sponseeID, newSponsorID, -ownerCountDelta);
+                if (auto const ter = decrementPrefundedReserveCount(
+                        view(), sponseeID, newSponsorID, ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }
@@ -419,8 +415,8 @@ SponsorshipTransfer::doApply()
             if (!hasSignature)
             {
                 // use ReserveCount for pre-funded sponsoring
-                if (auto const ter = reducePrefundedReserveCount(
-                        view(), sponseeID, newSponsorID, -ownerCountDelta);
+                if (auto const ter = decrementPrefundedReserveCount(
+                        view(), sponseeID, newSponsorID, ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }
