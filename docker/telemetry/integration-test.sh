@@ -184,7 +184,10 @@ mkdir -p "$WORKDIR"
 # Step 2: Start observability stack
 # ---------------------------------------------------------------------------
 log "Starting observability stack..."
-docker compose -f "$COMPOSE_FILE" up -d
+# Point the collector's log mount at this test's workdir so it tails the
+# per-node debug.log files this script generates. The compose default
+# (./data/logs) is for user-run xrpld; the test owns its own log root.
+XRPLD_LOG_DIR="$WORKDIR" docker compose -f "$COMPOSE_FILE" up -d
 
 log "Waiting for otel-collector to be ready..."
 for attempt in $(seq 1 30); do
