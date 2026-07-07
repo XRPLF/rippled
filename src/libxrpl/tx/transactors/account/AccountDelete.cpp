@@ -410,12 +410,11 @@ AccountDelete::doApply()
         if (!sponsorSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        XRPL_ASSERT(
-            sponsorSle->isFieldPresent(sfSponsoringAccountCount),
-            "xrpl::AccountDelete::doApply : sponsoring account count is present");
-
         auto const sponsoringAccountCount = sponsorSle->getFieldU32(sfSponsoringAccountCount);
 
+        XRPL_ASSERT(
+            sponsorSle->at(sfSponsoringAccountCount) != 0,
+            "xrpl::AccountDelete::doApply : sponsoring account count is present");
         if (sponsoringAccountCount == 0)
         {
             // sanity check
