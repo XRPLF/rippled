@@ -4734,24 +4734,13 @@ public:
             BEAST_EXPECT(env.balance(alice) == XRP(999));
             BEAST_EXPECT(env.balance(sponsor) == XRP(1000));
         }
-    }
 
-    void
-    testBatchInnerSponsorFeeRejection()
-    {
-        testcase("Batch inner tx with sponsor fee must be rejected");
-        using namespace test::jtx;
-
-        Account const alice("alice");
-        Account const bob("bob");
-        Account const sponsor("sponsor");
-
-        Env env{*this, testableAmendments()};
-        env.fund(XRP(10000), alice, bob, sponsor);
-        env.close();
-
-        // Test 1: Inner tx with sfSponsor + spfSponsorFee (pre-funded) is rejected
+        // Inner tx with sfSponsor + spfSponsorFee (pre-funded) is rejected
         {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000), alice, bob, sponsor);
+            env.close();
+
             // Create pre-funded sponsorship
             env(sponsor::set(sponsor, 0, 0, XRP(1)), sponsor::SponseeAcc(alice), Fee(XRP(1)));
             env.close();
@@ -4768,12 +4757,16 @@ public:
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::Inner(innerPay, seq + 1),
                 batch::Inner(noop(alice), seq + 2),
-                Ter(temBAD_FEE));
+                Ter(temINVALID_FLAG));
             env.close();
         }
 
-        // Test 2: Inner tx with sfSponsor + spfSponsorFee (co-signed) is rejected
+        // Inner tx with sfSponsor + spfSponsorFee (co-signed) is rejected
         {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000), alice, bob, sponsor);
+            env.close();
+
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
 
@@ -4786,12 +4779,16 @@ public:
                 batch::Inner(innerPay, seq + 1),
                 batch::Inner(noop(alice), seq + 2),
                 batch::Sig(sponsor),
-                Ter(temBAD_FEE));
+                Ter(temINVALID_FLAG));
             env.close();
         }
 
-        // Test 3: Inner tx with spfSponsorFee + spfSponsorReserve is rejected
+        //  Inner tx with spfSponsorFee + spfSponsorReserve is rejected
         {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000), alice, bob, sponsor);
+            env.close();
+
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
@@ -4804,13 +4801,17 @@ public:
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::Inner(innerTx, seq + 1),
                 batch::Inner(noop(alice), seq + 2),
-                Ter(temBAD_FEE));
+                Ter(temINVALID_FLAG));
             env.close();
         }
 
-        // Test 4: Inner tx with only sfSponsor but no spfSponsorFee is allowed
+        // Inner tx with only sfSponsor but no spfSponsorFee is allowed
         // (This tests that we only reject when spfSponsorFee is set)
         {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000), alice, bob, sponsor);
+            env.close();
+
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
@@ -4827,8 +4828,12 @@ public:
             env.close();
         }
 
-        // Test 5: Outer batch tx with sponsor fee is allowed
+        // Outer batch tx with sponsor fee is allowed
         {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000), alice, bob, sponsor);
+            env.close();
+
             auto const seq = env.seq(bob);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
@@ -4842,7 +4847,7 @@ public:
             env.close();
 
             // Sponsor paid the fee
-            BEAST_EXPECT(env.balance(bob) == XRP(10000));
+            BEAST_EXPECT(env.balance(bob) == XRP(1000));
         }
     }
 
@@ -5194,7 +5199,6 @@ protected:
         testDelegateSponsorFeePayer();
 
         testBatch();
-        testBatchInnerSponsorFeeRejection();
 
         testSponsoredTrustLineNoFreeReserve();
         testCoSignReserveBoundedBySponsorshipBudget();

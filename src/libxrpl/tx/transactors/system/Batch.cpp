@@ -362,7 +362,7 @@ Batch::preflight(PreflightContext const& ctx)
 
         // Disallow fee sponsorship on Batch inner txs
         if (stx.isFieldPresent(sfSponsor) && isFeeSponsored(stx))
-            return temBAD_FEE;
+            return temINVALID_FLAG;
 
         auto const innerAccount = stx.getAccountID(sfAccount);
         if (auto const preflightResult =
