@@ -624,11 +624,13 @@ Reader::decodeDouble(Token& token)
         Char buffer[bufferSize + 1];
         memcpy(buffer, token.start, length);
         buffer[length] = 0;
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
         count = sscanf(buffer, format, &value);
     }
     else
     {
         std::string const buffer(token.start, token.end);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
         count = sscanf(buffer.c_str(), format, &value);
     }
     if (count != 1)
