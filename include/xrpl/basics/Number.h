@@ -643,19 +643,26 @@ public:
     std::pair<T, int>
     normalizeToRange() const;
 
+    class Access
+    {
+        /** May use ranges that don't fit the restrictions of the "real"
+         * normalizeToRange().
+         *
+         */
+        template <Integral64 T>
+        [[nodiscard]]
+        static std::pair<T, int>
+        normalizeToRangeImpl(
+            Number const& n,
+            T minMantissa,
+            T maxMantissa,
+            MantissaRange::CuspRoundingFix fix);
+
+        friend class Number;
+        friend class NumberTest;
+    };
+
 private:
-    /** May use ranges that don't fit the restrictions of the "real"
-     * normalizeToRange().
-     *
-     */
-    template <Integral64 T>
-    [[nodiscard]]
-    std::pair<T, int>
-    normalizeToRangeImpl(T minMantissa, T maxMantissa, MantissaRange::CuspRoundingFix fix) const;
-
-    // Number_test needs to use normalizeToRangeImpl
-    friend class Number_test;
-
     static thread_local RoundingMode mode;
     // The available ranges for mantissa
 
@@ -956,7 +963,8 @@ Number::normalizeToRange() const
 
     // Don't need to worry about the cuspRounding fix because rounding up will never take the
     // mantissa over maxMantissa with a ones digit value other than 0. 0 can safely be truncated.
-    return normalizeToRangeImpl(kMIN, kMAX, MantissaRange::CuspRoundingFix::Disabled);
+    return Access::normalizeToRangeImpl(
+        *this, kMIN, kMAX, MantissaRange::CuspRoundingFix::Disabled);
 }
 
 /** Only intended to be used in tests
@@ -968,11 +976,15 @@ Number::normalizeToRange() const
 template <Integral64 T>
 [[nodiscard]]
 std::pair<T, int>
-Number::normalizeToRangeImpl(T minMantissa, T maxMantissa, MantissaRange::CuspRoundingFix fix) const
+Number::Access::normalizeToRangeImpl(
+    Number const& n,
+    T minMantissa,
+    T maxMantissa,
+    MantissaRange::CuspRoundingFix fix)
 {
-    bool negative = mantissa_ < 0;
-    internalrep mantissa = externalToInternal(mantissa_);
-    int exponent = exponent_;
+    bool negative = n.mantissa_ < 0;
+    internalrep mantissa = externalToInternal(n.mantissa_);
+    int exponent = n.exponent_;
 
     if constexpr (std::is_unsigned_v<T>)
     {
