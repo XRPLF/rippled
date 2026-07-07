@@ -3814,6 +3814,27 @@ class Invariants_test : public beast::unit_test::Suite
                 "the change in the loan claim"));
         }
 
+        // Loan interest due (total value less principal and management fee)
+        // must never be negative. A neutral transaction type is used so the
+        // vault invariants short-circuit and only the loan check fires. The
+        // loan object is created directly with principal 100, total value 90
+        // and management fee 0, so interest due = 90 - 100 - 0 = -10 (< 0)
+        // while every individual field stays non-negative.
+        doInvariantCheck(
+            {"Loan interest due is negative"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const vaultKeylet = keylet::vault(a1.id(), ac.view().seq());
+                auto const loanKeylet = keylet::loan(vaultKeylet.key, 1);
+                auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                sleLoan->at(sfTotalValueOutstanding) = Number(90);
+                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                sleLoan->at(sfPeriodicPayment) = Number(1);
+                sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                ac.view().insert(sleLoan);
+                return true;
+            });
+
         // ttVAULT_SET: owner is immutable
         doInvariantCheck(
             {"violation of vault immutable data"},

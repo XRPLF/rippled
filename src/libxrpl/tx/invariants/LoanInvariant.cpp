@@ -86,6 +86,15 @@ ValidLoan::finalize(
                 return false;
             }
         }
+        // Interest due (the total value owed less principal and management fee)
+        // must never be negative.
+        if (after->at(sfTotalValueOutstanding) - after->at(sfPrincipalOutstanding) -
+                after->at(sfManagementFeeOutstanding) <
+            beast::kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
+            return false;
+        }
         // Must be positive - STNumber
         for (auto const field : {
                  &sfPeriodicPayment,
@@ -112,7 +121,10 @@ ValidLoan::finalize(
             return false;
         }
 
-        if (loan->at(sfPaymentRemaining) != 0)
+        if (loan->at(sfPaymentRemaining) != 0 ||
+            loan->at(sfTotalValueOutstanding) != beast::kZero ||
+            loan->at(sfPrincipalOutstanding) != beast::kZero ||
+            loan->at(sfManagementFeeOutstanding) != beast::kZero)
         {
             JLOG(j.fatal()) << "Invariant failed: Loan deleted while not fully "
                                "paid off";
