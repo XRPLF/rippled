@@ -4982,6 +4982,79 @@ public:
         env.close();
     }
 
+    void
+    testSponsoredObjectDeletionRefund()
+    {
+        // Deleting a co-signed reserve-sponsored object must
+        // refund the sponsor's SponsoringOwnerCount back to zero.
+        testcase("Sponsored object deletion refunds sponsor owner count");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const sponsor("sponsor");
+        env.fund(XRP(100000), sponsor);
+        env.close();
+
+        // Sponsored Check deletion - verify decreaseOwnerCountForObject
+        // (used by CheckCancel) reads the object's sfSponsor field and refunds
+        // the sponsor's owner count.
+        {
+            testcase("  — Check deletion");
+
+            Account const checkOwner("check_owner");
+            Account const dest("check_dest");
+            env.fund(XRP(100000), checkOwner, dest);
+            env.close();
+
+            // Create a check with co-signed reserve sponsorship. This bumps the
+            // sponsor's sfSponsoringOwnerCount rather than the check owner's.
+            auto const checkSeq = env.seq(checkOwner);
+            env(check::create(checkOwner, dest, XRP(1)),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            auto sponsorCountBefore = sponsoringOwnerCount(env, sponsor);
+            BEAST_EXPECT(sponsorCountBefore == 1);  // check costs 1 owner count
+
+            // Cancel (delete) the check.
+            env(check::cancel(checkOwner, keylet::check(checkOwner, checkSeq).key));
+            env.close();
+
+            auto sponsorCountAfter = sponsoringOwnerCount(env, sponsor);
+            BEAST_EXPECT(sponsorCountAfter == 0);  // fully refunded
+        }
+
+        // Sponsored TrustSet (trust line) deletion - verify the sponsor
+        // refund works when a sponsored trust line is deleted
+        {
+            testcase("  — TrustLine deletion");
+
+            Account const issuer("issuer");
+            Account const holder("holder");
+            env.fund(XRP(100000), issuer, holder);
+            env.close();
+
+            auto const usd = issuer["USD"];
+
+            // Create trust line with sponsorship on the holder side
+            env(trust(holder, usd(1000)),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            auto sponsorCountBefore = sponsoringOwnerCount(env, sponsor);
+            BEAST_EXPECT(sponsorCountBefore == 1);  // trust line costs 1
+
+            // Delete the trust line by clearing it to default
+            env(trust(holder, usd(0)));
+            env.close();
+
+            auto sponsorCountAfter = sponsoringOwnerCount(env, sponsor);
+            BEAST_EXPECT(sponsorCountAfter == 0);  // fully refunded
+        }
+    }
+
 protected:
     void
     testSponsor()
@@ -5021,6 +5094,7 @@ protected:
         testTrustSetCounterpartySponsorMisroute();
 
         testFeeSponsoredVaultInvariant();
+        testSponsoredObjectDeletionRefund();
     }
 
     void
