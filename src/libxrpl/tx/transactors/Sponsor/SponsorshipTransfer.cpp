@@ -34,8 +34,10 @@ incrementSponsorCount(
     auto const currentValue = sle->getFieldU32(field);
     if (std::numeric_limits<std::uint32_t>::max() - currentValue < delta)
     {
+        // LCOV_EXCL_START
         UNREACHABLE("xrpl::incrementSponsorCount : sponsor field overflow");
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     sle->at(field) = currentValue + delta;
@@ -54,8 +56,10 @@ decrementSponsorCount(
     auto const currentValue = sle->getFieldU32(field);
     if (currentValue < delta)
     {
+        // LCOV_EXCL_START
         UNREACHABLE("xrpl::decrementSponsorCount : sponsor field underflow");
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     sle->at(field) = currentValue - delta;
@@ -66,29 +70,23 @@ decrementSponsorCount(
 // Consume the sponsor's pre-funded reserve budget and lowers the Sponsorship
 // object's RemainingOwnerCount.
 static TER
-decrementPrefundedReserveCount(
-    ApplyView& view,
-    AccountID const& account,
-    AccountID const& sponsor,
-    std::uint32_t const delta)
+decrementPrefundedReserveCount(ApplyView& view, SLE::ref sponsorshipSle, std::uint32_t const delta)
 {
     if (delta == 0)
         return tesSUCCESS;
 
-    auto const sponsorSle = view.peek(keylet::sponsorship(sponsor, account));
-    if (!sponsorSle)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const currentReserveCount = sponsorSle->getFieldU32(sfRemainingOwnerCount);
+    auto const currentReserveCount = sponsorshipSle->getFieldU32(sfRemainingOwnerCount);
     if (currentReserveCount < delta)
     {
+        // LCOV_EXCL_START
         // Already verified by checkReserve (sufficient RemainingOwnerCount)
         UNREACHABLE("xrpl::decrementPrefundedReserveCount : invalid reserve count");
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
-    sponsorSle->at(sfRemainingOwnerCount) = currentReserveCount - delta;
-    view.update(sponsorSle);
+    sponsorshipSle->at(sfRemainingOwnerCount) = currentReserveCount - delta;
+    view.update(sponsorshipSle);
     return tesSUCCESS;
 }
 
@@ -311,8 +309,6 @@ SponsorshipTransfer::doApply()
     if (objectID.has_value())
     {
         // Transfer object sponsor
-        auto const hasSignature = ctx_.tx.isFieldPresent(sfSponsorSignature);
-
         auto const objectSle = view().peek(keylet::unchecked(*objectID));
         if (!objectSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -370,11 +366,12 @@ SponsorshipTransfer::doApply()
             objectSle->setAccountID(sponsorField, newSponsorID);
             view().update(objectSle);
 
-            if (!hasSignature)
+            auto const sponsorshipSle = view().peek(keylet::sponsorship(newSponsorID, sponseeID));
+            if (sponsorshipSle)
             {
-                // Use ReserveCount for pre-funded sponsoring
-                if (auto const ter = decrementPrefundedReserveCount(
-                        view(), sponseeID, newSponsorID, ownerCountDelta);
+                // Update ReserveCount for sponsorship object if it exists
+                if (auto const ter =
+                        decrementPrefundedReserveCount(view(), sponsorshipSle, ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }
@@ -429,11 +426,12 @@ SponsorshipTransfer::doApply()
             objectSle->setAccountID(sponsorField, newSponsorID);
             view().update(objectSle);
 
-            if (!hasSignature)
+            auto const sponsorshipSle = view().peek(keylet::sponsorship(newSponsorID, sponseeID));
+            if (sponsorshipSle)
             {
-                // use ReserveCount for pre-funded sponsoring
-                if (auto const ter = decrementPrefundedReserveCount(
-                        view(), sponseeID, newSponsorID, ownerCountDelta);
+                // Update ReserveCount for sponsorship object if it exists
+                if (auto const ter =
+                        decrementPrefundedReserveCount(view(), sponsorshipSle, ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }
