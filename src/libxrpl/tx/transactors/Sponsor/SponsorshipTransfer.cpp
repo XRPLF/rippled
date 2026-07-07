@@ -332,6 +332,9 @@ SponsorshipTransfer::doApply()
         {
             // Create object sponsor
             auto const newSponsor = ctx_.tx[~sfSponsor];
+            XRPL_ASSERT(
+                newSponsor.has_value(),
+                "xrpl::SponsorshipTransfer::doApply : sfSponsor present for object sponsor create");
             if (!newSponsor)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
             auto const newSponsorID = *newSponsor;
@@ -380,6 +383,10 @@ SponsorshipTransfer::doApply()
         {
             // Reassign object sponsor
             auto const newSponsor = ctx_.tx[~sfSponsor];
+            XRPL_ASSERT(
+                newSponsor.has_value(),
+                "xrpl::SponsorshipTransfer::doApply : sfSponsor present for object sponsor "
+                "reassign");
             if (!newSponsor)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
             auto const newSponsorID = *newSponsor;
@@ -478,6 +485,10 @@ SponsorshipTransfer::doApply()
         {
             // Create account sponsor
             auto const newSponsor = ctx_.tx[~sfSponsor];
+            XRPL_ASSERT(
+                newSponsor.has_value(),
+                "xrpl::SponsorshipTransfer::doApply : sfSponsor present for account sponsor "
+                "create");
             if (!newSponsor)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
             auto const newSponsorID = *newSponsor;
@@ -509,6 +520,10 @@ SponsorshipTransfer::doApply()
         {
             // Reassign account sponsor
             auto const newSponsor = ctx_.tx[~sfSponsor];
+            XRPL_ASSERT(
+                newSponsor.has_value(),
+                "xrpl::SponsorshipTransfer::doApply : sfSponsor present for account sponsor "
+                "reassign");
             if (!newSponsor)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
             auto const newSponsorID = *newSponsor;
