@@ -71,7 +71,7 @@ OracleDelete::deleteOracle(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     std::uint32_t const count = sle->getFieldArray(sfPriceDataSeries).size() > 5 ? 2 : 1;
-    decreaseOwnerCount(view, sleOwner, {}, count, j);
+    decreaseOwnerCountForObject(view, sleOwner, sle, count, j);
     view.erase(sle);
 
     return tesSUCCESS;
