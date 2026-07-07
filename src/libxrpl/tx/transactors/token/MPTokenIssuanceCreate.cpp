@@ -24,7 +24,6 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
-#include <utility>
 
 namespace xrpl {
 
