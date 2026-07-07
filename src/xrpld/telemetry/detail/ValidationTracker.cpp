@@ -141,25 +141,11 @@ ValidationTracker::evictOldPending(TimePoint now)
         }
     }
 
-    // Hard trim if still over limit -- remove reconciled entries that are
-    // past the late-repair window first, then any reconciled entry as a
-    // last resort.
+    // Hard trim if still over limit. The loop above already removed every
+    // reconciled entry older than the late-repair window, so here we drop
+    // any remaining reconciled entry as a last resort.
     if (pending_.size() > kMaxPendingEvents)
     {
-        // Pass 1: only entries past late-repair window.
-        for (auto it = pending_.begin();
-             it != pending_.end() && pending_.size() > kMaxPendingEvents;)
-        {
-            if (it->second.reconciled && it->second.recordTime < cutoff)
-            {
-                it = pending_.erase(it);
-            }
-            else
-            {
-                ++it;
-            }
-        }
-        // Pass 2: any reconciled entry if still over limit.
         for (auto it = pending_.begin();
              it != pending_.end() && pending_.size() > kMaxPendingEvents;)
         {

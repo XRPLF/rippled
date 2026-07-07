@@ -97,6 +97,7 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/context/context.h>
+#include <opentelemetry/metrics/meter.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/trace/span.h>
 #include <opentelemetry/trace/tracer.h>
@@ -109,6 +110,13 @@ namespace xrpl::telemetry {
     source of spans; distinct from the `service.name` resource attribute
     (Setup::serviceName), which is config-overridable. */
 inline constexpr std::string_view kTracerName{"xrpld"};
+
+/** OTel instrumentation scope (meter) name. Identifies this library as the
+    source of metrics; symmetric with kTracerName for the tracing side. */
+inline constexpr std::string_view kMeterName{"xrpld"};
+
+/** OTel instrumentation scope version reported for the meter. */
+inline constexpr std::string_view kMeterVersion{"1.0.0"};
 #endif
 
 class Telemetry
@@ -299,6 +307,20 @@ public:
     */
     virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
     getTracer(std::string_view name = kTracerName) = 0;
+
+    /** Get or create a named meter instance.
+
+        Returns the raw OTel Meter, giving developers direct access to the
+        full metrics API. From the returned Meter any instrument type can be
+        created: Counter, UpDownCounter, Gauge, and Histogram (synchronous),
+        plus their observable/async variants (ObservableCounter,
+        ObservableUpDownCounter, ObservableGauge).
+
+        @param name  Meter name used to identify the instrumentation scope.
+        @return A shared pointer to the Meter.
+    */
+    virtual opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
+    getMeter(std::string_view name = kMeterName) = 0;
 
     /** Start a new span on the current thread's context.
 

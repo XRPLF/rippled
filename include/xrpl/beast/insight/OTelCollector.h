@@ -54,6 +54,40 @@ namespace beast::insight {
  *   - Meter    -> OTel Counter<uint64_t> (monotonic, unsigned)
  *   - Hook     -> Called by PeriodicMetricReader at collection time
  *
+ * Example — primary use (create the collector and record a metric):
+ * @code
+ *   auto collector = beast::insight::OTelCollector::New(
+ *       "http://localhost:4318/v1/metrics",  // OTLP/HTTP endpoint
+ *       "xrpld",                              // metric name prefix
+ *       "node-1",                             // service.instance.id
+ *       "xrpld",                              // service.name
+ *       "mainnet",                            // xrpl.network.type
+ *       journal);
+ *
+ *   auto counter = collector->makeCounter("ledgers", "closed");
+ *   ++counter;  // exported on the next PeriodicMetricReader tick
+ * @endcode
+ *
+ * Example — edge case (telemetry disabled at compile time): New()
+ * returns a NullCollector, so callers need no #ifdef guard. The same
+ * instruments compile and run, but recording is a no-op.
+ * @code
+ *   auto collector = beast::insight::OTelCollector::New(
+ *       endpoint, prefix, instanceId, serviceName, networkType, journal);
+ *   auto gauge = collector->makeGauge("peers", "count");
+ *   gauge = 42;  // silently discarded when XRPL_ENABLE_TELEMETRY is off
+ * @endcode
+ *
+ * @note Thread safety: instrument recording (Counter::Add,
+ *       Histogram::Record, and atomic gauge writes) is thread-safe and
+ *       may be called concurrently. Instrument *creation* (make_counter,
+ *       make_gauge, etc.) is serialized by an internal mutex. Hook and
+ *       observable-gauge callbacks run on the SDK's collection thread, so
+ *       any state they read must itself be thread-safe.
+ * @note Limitations: metrics export over OTLP/HTTP only (no gRPC); the
+ *       PeriodicMetricReader interval is fixed at 1s; and gauge values
+ *       are stored as int64_t, so fractional gauges are truncated.
+ *
  * @see StatsDCollector for the StatsD-based alternative.
  * @see NullCollector for the no-op fallback.
  */
