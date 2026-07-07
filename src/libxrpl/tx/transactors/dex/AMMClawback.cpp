@@ -227,6 +227,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 sb,
                 *ammSle,
                 holder,
+                issuer,
                 ammAccount,
                 amountBalance,
                 amount2Balance,
@@ -311,6 +312,11 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     STAmount const& holdLPtokens,
     STAmount const& amount)
 {
+    // The clawback issuer signs for its own asset only. Threaded into the
+    // withdrawal so a recreated MPToken is auto-authorized only for the
+    // clawback issuer's asset, never for a paired asset from another issuer.
+    AccountID const issuer = ctx_.tx[sfAccount];
+
     auto frac = Number{amount} / amountBalance;
     auto amount2Withdraw = amount2Balance * frac;
 
@@ -324,6 +330,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             sb,
             ammSle,
             holder,
+            issuer,
             ammAccount,
             amountBalance,
             amount2Balance,
@@ -357,6 +364,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             sb,
             ammSle,
             ammAccount,
+            issuer,
             holder,
             amountBalance,
             amountRounded,
@@ -377,6 +385,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         sb,
         ammSle,
         ammAccount,
+        issuer,
         holder,
         amountBalance,
         amount,

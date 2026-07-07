@@ -493,6 +493,7 @@ AMMWithdraw::withdraw(
         view,
         ammSle,
         ammAccount,
+        std::nullopt,
         accountID_,
         amountBalance,
         amountWithdraw,
@@ -513,6 +514,7 @@ AMMWithdraw::withdraw(
     Sandbox& view,
     SLE const& ammSle,
     AccountID const& ammAccount,
+    std::optional<AccountID> const& clawbackIssuer,
     AccountID const& account,
     STAmount const& amountBalance,
     STAmount const& amountWithdraw,
@@ -689,9 +691,18 @@ AMMWithdraw::withdraw(
 
                 // AMMClawback ignores authorization so the issuer can recover
                 // MPT locked in the pool even if the holder deleted their
-                // MPToken. Recreate that MPToken as authorized for the
-                // clawback withdrawal path only.
-                createFlags = lsfMPTAuthorized;
+                // MPToken. Only auto-authorize the recreated MPToken for the
+                // clawback issuer's own asset: authorization is granted by an
+                // asset's issuer, and the clawback transaction is signed by
+                // that issuer only for its own asset. For a paired asset issued
+                // by a different account, recreate the MPToken *unauthorized* so
+                // the clawback does not grant authorization on behalf of that
+                // issuer (which would bypass its lsfMPTRequireAuth). The holder
+                // still receives the paired asset (accountSend only requires the
+                // MPToken to exist, not to be authorized); the balance remains
+                // gated by its issuer until that issuer authorizes it.
+                if (clawbackIssuer && asset.getIssuer() == *clawbackIssuer)
+                    createFlags = lsfMPTAuthorized;
             }
 
             if (auto const err = checkCreateMPT(view, mptIssue, account, createFlags, journal);
@@ -790,6 +801,7 @@ AMMWithdraw::equalWithdrawTokens(
         view,
         ammSle,
         accountID_,
+        std::nullopt,
         ammAccount,
         amountBalance,
         amount2Balance,
@@ -841,6 +853,7 @@ AMMWithdraw::equalWithdrawTokens(
     Sandbox& view,
     SLE const& ammSle,
     AccountID const account,
+    std::optional<AccountID> const& clawbackIssuer,
     AccountID const& ammAccount,
     STAmount const& amountBalance,
     STAmount const& amount2Balance,
@@ -863,6 +876,7 @@ AMMWithdraw::equalWithdrawTokens(
                 view,
                 ammSle,
                 ammAccount,
+                clawbackIssuer,
                 account,
                 amountBalance,
                 amountBalance,
@@ -898,6 +912,7 @@ AMMWithdraw::equalWithdrawTokens(
             view,
             ammSle,
             ammAccount,
+            clawbackIssuer,
             account,
             amountBalance,
             amountWithdraw,
