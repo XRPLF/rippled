@@ -5,10 +5,10 @@
 #
 # Search filters provide pre-configured dropdowns in the Explore UI.
 # Each phase adds filters for the span attributes it introduces.
-# Phase 1b (infra): Base filters — node identity, service, span name, status.
-# Phase 2 (RPC):    RPC command, status, role filters.
-# Phase 3 (TX):     Transaction hash, local/peer origin, status.
-# Phase 4 (Cons):   Consensus mode, round, ledger sequence, close time.
+# Base filters — node identity, service, span name, status.
+# RPC command, status, role filters.
+# Transaction hash, local/peer origin, status.
+# Consensus mode, round, ledger sequence, close time.
 
 apiVersion: 1
 
@@ -26,14 +26,14 @@ datasources:
       # Prometheus service is added to docker-compose.yml.
       serviceMap:
         datasourceUid: prometheus
-      # Phase 8: Trace-to-log correlation — enables one-click navigation
+      # Trace-to-log correlation — enables one-click navigation
       # from a Tempo trace to the corresponding Loki log lines. Filters
       # by trace_id so only logs from the same trace are shown.
       tracesToLogs:
         datasourceUid: loki
         filterByTraceID: true
         filterBySpanID: false
-        tags: ["partition", "severity"]
+        tags: []
       tracesToMetrics:
         datasourceUid: prometheus
         spanStartTimeShift: "-1h"
@@ -100,7 +100,7 @@ datasources:
             operator: ">"
             scope: intrinsic
             type: dynamic
-          # Phase 2: RPC tracing filters
+          # RPC tracing filters
           - id: rpc-command
             tag: command
             operator: "="
@@ -116,7 +116,7 @@ datasources:
             operator: "="
             scope: span
             type: dynamic
-          # Phase 3: Transaction tracing filters
+          # Transaction tracing filters
           - id: tx-hash
             tag: tx_hash
             operator: "="
@@ -137,8 +137,8 @@ datasources:
             tag: tx_type
             operator: "="
             scope: span
-            type: static
-          # Phase 4: Consensus tracing filters
+            type: dynamic
+          # Consensus tracing filters
           - id: consensus-mode
             tag: consensus_mode
             operator: "="
@@ -200,7 +200,7 @@ datasources:
             operator: "="
             scope: span
             type: static
-          # Phase 3/4: Additional transaction and queue filters
+          # Additional transaction and queue filters
           - id: tx-path
             tag: path
             operator: "="

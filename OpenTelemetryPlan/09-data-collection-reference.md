@@ -747,7 +747,7 @@ Phase 8 injects OTel trace context into xrpld's `Logs::format()` output, enablin
 Example:
 
 ```
-2024-01-15T10:30:45.123Z LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
+2024-Jan-15 10:30:45.123456 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
 ```
 
 - **`trace_id=<hex32>`** — 32-character lowercase hex trace identifier. Links to the distributed trace in Tempo/Jaeger.
@@ -784,7 +784,7 @@ Bidirectional linking between logs and traces is configured via Grafana datasour
 
 ### Loki Backend
 
-Grafana Loki (v2.9.0) serves as the log storage backend. It receives log entries from the OTel Collector's `loki` exporter via the push API at `http://loki:3100/loki/api/v1/push`.
+Grafana Loki (v3.4.2) serves as the log storage backend. It receives log entries from the OTel Collector's `otlphttp/loki` exporter via the native OTLP endpoint at `http://loki:3100/otlp`.
 
 ### LogQL Query Examples
 
