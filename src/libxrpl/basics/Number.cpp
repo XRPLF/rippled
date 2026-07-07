@@ -68,7 +68,7 @@ to_string(Number::RoundingMode const& round)
     }
 }
 
-MantissaRange const&
+constexpr MantissaRange const&
 MantissaRange::Access::mantissaRange(MantissaScale scale)
 {
     static constexpr MantissaRange kSmall{MantissaScale::Small};
