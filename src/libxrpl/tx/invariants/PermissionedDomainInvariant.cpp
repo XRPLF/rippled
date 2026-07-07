@@ -151,18 +151,6 @@ ValidPermissionedDomain::finalize(
                 }
                 return true;
             }
-            case ttSPONSORSHIP_TRANSFER: {
-                if (sleStatus_.empty())
-                    return true;
-
-                if (sleStatus_[0].isDelete)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: domain object "
-                                       "deleted by SponsorshipTransfer";
-                    return false;
-                }
-                return check(sleStatus_[0], j);
-            }
             default: {
                 if (!sleStatus_.empty())
                 {
