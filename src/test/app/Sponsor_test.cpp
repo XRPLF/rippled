@@ -4609,21 +4609,9 @@ public:
             env.close();
 
             {
-                auto jt = env.jtnofill(noop(alice), sponsor::As(sponsor, spfSponsorFee));
-                jt.jv.removeMember(sfTxnSignature.jsonName);
-
-                auto const seq = env.seq(alice);
-                // should fail because Inner transaction cannot include SponsorFlags.SponsorFee
-                env(batch::outer(alice, seq, XRP(1), tfAllOrNothing),
-                    batch::Inner(jt.jv, seq + 1),
-                    batch::Inner(ticket::create(alice, 1), seq + 2),
-                    Ter(temINVALID_FLAG));
-            }
-
-            {
                 auto jt = env.jtnofill(
                     noop(alice),
-                    sponsor::As(sponsor, spfSponsorReserve),
+                    sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee),
                     Sig(sfSponsorSignature, sponsor));
                 jt.jv.removeMember(sfTxnSignature.jsonName);
 
@@ -4640,7 +4628,7 @@ public:
             {
                 auto jt = env.jtnofill(
                     noop(alice),
-                    sponsor::As(sponsor, spfSponsorReserve),
+                    sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee),
                     Msig(sfSponsorSignature, sponsor, signerAccount));
                 jt.jv.removeMember(sfTxnSignature.jsonName);
 
@@ -4657,7 +4645,7 @@ public:
             {
                 auto jt = env.jtnofill(
                     noop(alice),
-                    sponsor::As(sponsor, spfSponsorReserve),
+                    sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee),
                     Sig(sfSponsorSignature, sponsor));
                 jt.jv.removeMember(sfTxnSignature.jsonName);
                 jt.jv[sfSponsorSignature.jsonName].removeMember(sfTxnSignature.jsonName);
@@ -4687,7 +4675,8 @@ public:
             BEAST_EXPECT(env.balance(sponsor) == XRP(900));
 
             auto jt = env.jtnofill(
-                check::create(alice, bob, XRP(1)), sponsor::As(sponsor, spfSponsorReserve));
+                check::create(alice, bob, XRP(1)),
+                sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee));
             // remove txn signature since it is filled by env.jtnofill()
             jt.jv.removeMember(jss::TxnSignature);
 
@@ -4722,7 +4711,7 @@ public:
 
             auto jt = env.jtnofill(
                 check::create(alice, bob, XRP(1)),
-                sponsor::As(sponsor, spfSponsorReserve),
+                sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee),
                 Sig(sfSponsorSignature, sponsor));
             // remove txn signature since it is filled by env.jtnofill()
             jt.jv.removeMember(sfTxnSignature.jsonName);

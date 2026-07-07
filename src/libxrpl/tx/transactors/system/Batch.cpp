@@ -350,16 +350,6 @@ Batch::preflight(PreflightContext const& ctx)
                 return ret;
             }
         }
-        if (stx.isFieldPresent(sfSponsorFlags))
-        {
-            if (isFeeSponsored(stx))
-            {
-                JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                    << "spfSponsorFee is not allowed on inner Batch. "
-                                    << "txID: " << hash;
-                return temINVALID_FLAG;
-            }
-        }
 
         // Check that the Fee is native asset (XRP) and zero
         if (auto const fee = stx.getFieldAmount(sfFee); !fee.native() || fee.xrp() != beast::kZero)
