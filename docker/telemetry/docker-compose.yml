@@ -36,7 +36,7 @@ services:
     volumes:
       # Mount collector pipeline config (receivers → processors → exporters)
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
-      # Phase 8: Mount rippled log directories for filelog receiver.
+      # Mount rippled log directories for filelog receiver.
       # User-run xrpld writes to /var/log/xrpld/<network>/debug.log.
       # Integration test still writes to /tmp/xrpld-integration/.
       # Both are mounted read-only so the collector can tail debug.log files.
@@ -63,7 +63,7 @@ services:
     networks:
       - xrpld-telemetry
 
-  # Phase 8: Grafana Loki for centralized log ingestion and log-trace
+  # Grafana Loki for centralized log ingestion and log-trace
   # correlation. Loki 3.x supports native OTLP ingestion, so the OTel
   # Collector exports via otlphttp to Loki's /otlp endpoint.
   # Query logs via Grafana Explore -> Loki at http://localhost:3000.
