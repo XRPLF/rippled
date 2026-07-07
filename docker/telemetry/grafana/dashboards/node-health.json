@@ -834,8 +834,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, __name__) (rate({__name__=~\"xrpld_(makeFetchPack|publishAcqLedger|untrustedValidation|manifest|localTransaction|ledgerReplayRequest|ledgerRequest|untrustedProposal|ledgerReplayTask|ledgerData|clientCommand|clientSubscribe|clientFeeChange|clientConsensus|clientAccountHistory|clientRPC|clientWebsocket|RPC|updatePaths|transaction|batch|advanceLedger|publishNewLedger|fetchTxnData|writeAhead|trustedValidation|writeObjects|acceptLedger|trustedProposal|sweep|clusterReport|heartbeat|administration|handleHaveTransactions|doTransactions)_milliseconds_bucket\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "legendFormat": "{{__name__}}"
+          "expr": "histogram_quantile($quantile, sum by (le, job_type) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "legendFormat": "{{job_type}}"
         }
       ],
       "fieldConfig": {
@@ -873,8 +873,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, __name__) (rate({__name__=~\"xrpld_(makeFetchPack_q|publishAcqLedger_q|untrustedValidation_q|manifest_q|localTransaction_q|ledgerReplayRequest_q|ledgerRequest_q|untrustedProposal_q|ledgerReplayTask_q|ledgerData_q|clientCommand_q|clientSubscribe_q|clientFeeChange_q|clientConsensus_q|clientAccountHistory_q|clientRPC_q|clientWebsocket_q|RPC_q|updatePaths_q|transaction_q|batch_q|advanceLedger_q|publishNewLedger_q|fetchTxnData_q|writeAhead_q|trustedValidation_q|writeObjects_q|acceptLedger_q|trustedProposal_q|sweep_q|clusterReport_q|heartbeat_q|administration_q|handleHaveTransactions_q|doTransactions_q)_milliseconds_bucket\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
-          "legendFormat": "{{__name__}}"
+          "expr": "histogram_quantile($quantile, sum by (le, job_type) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "legendFormat": "{{job_type}}"
         }
       ],
       "fieldConfig": {
