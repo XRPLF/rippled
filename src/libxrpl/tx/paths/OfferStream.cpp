@@ -253,9 +253,7 @@ TOfferStreamBase<TIn, TOut>::step()
 
         // Post-fixCleanup3_4_0 defensive check: an offer indexed in a domain
         // book must claim that same domain. This can only happen if the book
-        // directory is corrupt (i.e. a separate book indexing bug). Rather
-        // than consume an offer from the wrong book, fail the strand with an
-        // internal error.
+        // directory is corrupt (i.e. a separate book indexing bug).
         if (view_.rules().enabled(fixCleanup3_4_0) && book_.domain.has_value() &&
             entry->isFieldPresent(sfDomainID) && entry->getFieldH256(sfDomainID) != *book_.domain)
         {
