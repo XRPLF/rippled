@@ -1159,10 +1159,8 @@ NoModifiedUnmodifiableFields::finalize(
                 bad = kFieldChanged(before, after, sfLedgerEntryType) ||
                     kFieldChanged(before, after, sfLedgerIndex) ||
                     kFieldChanged(before, after, sfSequence) ||
-                    kFieldChanged(before, after, sfOwnerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerID) ||
-                    kFieldChanged(before, after, sfBorrower) ||
                     kFieldChanged(before, after, sfLoanOriginationFee) ||
                     kFieldChanged(before, after, sfLoanServiceFee) ||
                     kFieldChanged(before, after, sfLatePaymentFee) ||
@@ -1176,6 +1174,11 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfPaymentInterval) ||
                     kFieldChanged(before, after, sfGracePeriod) ||
                     kFieldChanged(before, after, sfLoanScale);
+                if (!view.rules().enabled(featureLendingProtocolV1_1))
+                {
+                    bad = bad || kFieldChanged(before, after, sfBorrower) ||
+                        kFieldChanged(before, after, sfOwnerNode);
+                }
                 break;
             default:
                 /*

@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Protocol.h>
@@ -18,11 +19,13 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
 #include <expected>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -557,5 +560,117 @@ loanMakePayment(
     STAmount const& amount,
     LoanPaymentType const paymentType,
     beast::Journal j);
+
+//------------------------------------------------------------------------------
+//
+// Loan application helpers (shared by LoanSet and LoanAccept)
+//
+//------------------------------------------------------------------------------
+
+/**
+ * Verify the loan asset can be held and that none of the accounts involved in
+ * disbursing the loan are frozen in a way that would block the fund flows.
+ *
+ * Checks, in order: that a holding for the asset can be created, that the vault
+ * pseudo-account (the sender) is not frozen, that the broker pseudo-account (a
+ * fallback fee recipient) is not deep frozen, that the borrower (a future payer
+ * and fund recipient) is not frozen, and that the broker owner (a fee
+ * recipient) is not deep frozen.
+ */
+[[nodiscard]] TER
+checkLoanFreeze(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& vaultPseudo,
+    AccountID const& brokerPseudo,
+    AccountID const& borrower,
+    AccountID const& brokerOwner,
+    beast::Journal j);
+
+/**
+ * Validate a loan against the vault and broker limits.
+ *
+ * Checks the vault maximum, precision loss, loan guards, the computed loan
+ * properties, the broker debt maximum, and the broker's first-loss cover.
+ */
+[[nodiscard]] TER
+checkLoanLimits(
+    ApplyView& view,
+    STTx const& tx,
+    SLE::ref brokerSle,
+    SLE::ref vaultSle,
+    Asset const& vaultAsset,
+    Number const& principalRequested,
+    TenthBips32 interestRate,
+    std::uint32_t paymentTotal,
+    LoanProperties const& properties,
+    LoanState const& state,
+    std::vector<OptionaledField<STNumber>> const& valueFields,
+    beast::Journal j);
+
+/**
+ * Increment the borrower's owner count for the new loan object and verify the
+ * borrower still meets its reserve requirement.
+ */
+[[nodiscard]] TER
+reserveLoanOwner(
+    ApplyView& view,
+    AccountID const& borrower,
+    SLE::ref borrowerSle,
+    AccountID const& signingAccount,
+    XRPAmount preFeeBalance,
+    beast::Journal j);
+
+/**
+ * Transfer the loan principal to the borrower and the origination fee, if any,
+ * to the LoanBroker owner. Creates holdings as necessary.
+ */
+[[nodiscard]] TER
+disburseLoan(
+    ApplyViewContext& viewContext,
+    AccountID const& borrower,
+    SLE::ref borrowerSle,
+    AccountID const& brokerOwner,
+    SLE::ref brokerOwnerSle,
+    AccountID const& vaultPseudo,
+    Asset const& vaultAsset,
+    Number const& loanAssetsToBorrower,
+    Number const& originationFee,
+    AccountID const& signingAccount,
+    AccountID const& counterparty,
+    beast::Journal j);
+
+/**
+ * Update the LoanBroker ledger entry for a newly created loan.
+ *
+ * Adjusts the broker's outstanding debt total and owner count, advances the
+ * broker's loan sequence, and persists the entry.
+ */
+[[nodiscard]] TER
+updateLoanBroker(
+    ApplyView& view,
+    SLE::ref brokerSle,
+    Number const& newDebtDelta,
+    Asset const& vaultAsset,
+    int vaultScale,
+    beast::Journal j);
+
+/**
+ * Link the loan into the broker pseudo-account's directory.
+ *
+ * Done for both flows when the loan is created by LoanSet.
+ */
+[[nodiscard]] TER
+linkLoanBroker(ApplyView& view, AccountID const& brokerPseudo, SLE::pointer& loan);
+
+/**
+ * Make the borrower the owner of the loan by linking it into the borrower's
+ * directory.
+ *
+ * Done by LoanSet for the immediate flow, and deferred to LoanAccept for the
+ * two-step (pending) flow.
+ */
+[[nodiscard]] TER
+linkLoanBorrower(ApplyView& view, AccountID const& borrower, SLE::pointer& loan);
 
 }  // namespace xrpl

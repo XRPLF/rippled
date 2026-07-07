@@ -3,6 +3,9 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STTx.h>
@@ -18,6 +21,18 @@ namespace xrpl {
 
 class LoanSet : public Transactor
 {
+private:
+    static std::uint32_t
+    getStartDate(ReadView const& view, STTx const& tx);
+    static bool
+    isTwoStepFlowEnabled(Rules const& rules);
+    /* Returns true if the transaction is using the two-step flow. */
+    static bool
+    isTwoStepFlow(STTx const& tx);
+    /* Returns true if the transaction is using the one-step flow. */
+    static bool
+    isOneStepFlow(STTx const& tx);
+
 public:
     static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 

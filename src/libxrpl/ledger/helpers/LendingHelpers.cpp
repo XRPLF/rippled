@@ -9,6 +9,9 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -20,13 +23,16 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <memory>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -2138,5 +2144,280 @@ loanMakePayment(
     UNREACHABLE("xrpl::loanMakePayment : invalid payment type");
     return std::unexpected(tecINTERNAL);
     // LCOV_EXCL_STOP
+}
+
+TER
+checkLoanFreeze(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& vaultPseudo,
+    AccountID const& brokerPseudo,
+    AccountID const& borrower,
+    AccountID const& brokerOwner,
+    beast::Journal j)
+{
+    if (auto const ter = canAddHolding(view, asset))
+        return ter;
+
+    // vaultPseudo is going to send funds, so it can't be frozen.
+    if (auto const ret = checkFrozen(view, vaultPseudo, asset))
+    {
+        JLOG(j.warn()) << "Vault pseudo-account is frozen.";
+        return ret;
+    }
+
+    // brokerPseudo is the fallback account to receive LoanPay fees, even if the
+    // broker owner is unable to accept them. Don't create the loan if it is
+    // deep frozen.
+    if (auto const ret = checkDeepFrozen(view, brokerPseudo, asset))
+    {
+        JLOG(j.warn()) << "Broker pseudo-account is frozen.";
+        return ret;
+    }
+
+    // borrower is eventually going to have to pay back the loan, so it can't be
+    // frozen now. It is also going to receive funds, so it can't be deep
+    // frozen, but being frozen is a prerequisite for being deep frozen, so
+    // checking the one is sufficient.
+    if (auto const ret = checkFrozen(view, borrower, asset))
+    {
+        JLOG(j.warn()) << "Borrower account is frozen.";
+        return ret;
+    }
+    // brokerOwner is going to receive funds if there's an origination fee, so
+    // it can't be deep frozen
+    if (auto const ret = checkDeepFrozen(view, brokerOwner, asset))
+    {
+        JLOG(j.warn()) << "Broker owner account is frozen.";
+        return ret;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+checkLoanLimits(
+    ApplyView& view,
+    STTx const& tx,
+    SLE::ref brokerSle,
+    SLE::ref vaultSle,
+    Asset const& vaultAsset,
+    Number const& principalRequested,
+    TenthBips32 interestRate,
+    std::uint32_t paymentTotal,
+    LoanProperties const& properties,
+    LoanState const& state,
+    std::vector<OptionaledField<STNumber>> const& valueFields,
+    beast::Journal j)
+{
+    auto const vaultTotalProxy = vaultSle->at(sfAssetsTotal);
+    auto const vaultMaximum = *vaultSle->at(sfAssetsMaximum);
+    XRPL_ASSERT_PARTS(
+        vaultMaximum == 0 || vaultMaximum > *vaultTotalProxy,
+        "xrpl::checkLoanLimits",
+        "Vault is below maximum limit");
+    if (vaultMaximum != 0 && state.interestDue > vaultMaximum - vaultTotalProxy)
+    {
+        JLOG(j.warn()) << "Loan would exceed the maximum assets of the vault";
+        return tecLIMIT_EXCEEDED;
+    }
+    // Check that relevant values won't lose precision. This is mostly only
+    // relevant for IOU assets.
+    for (auto const& field : valueFields)
+    {
+        if (auto const value = tx[field];
+            value && !isRounded(vaultAsset, *value, properties.loanScale))
+        {
+            JLOG(j.warn()) << field.f->getName() << " (" << *value
+                           << ") has too much precision. Total loan value is "
+                           << properties.loanState.valueOutstanding << " with a scale of "
+                           << properties.loanScale;
+            return tecPRECISION_LOSS;
+        }
+    }
+
+    if (auto const ret = checkLoanGuards(
+            vaultAsset,
+            principalRequested,
+            interestRate != beast::kZero,
+            paymentTotal,
+            properties,
+            j))
+        return ret;
+
+    // Check that the other computed values are valid
+    if (properties.loanState.managementFeeDue < 0 || properties.loanState.valueOutstanding <= 0 ||
+        properties.periodicPayment <= 0)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.warn()) << "Computed loan properties are invalid. Does not compute."
+                       << " Management fee: " << properties.loanState.managementFeeDue
+                       << ". Total Value: " << properties.loanState.valueOutstanding
+                       << ". PeriodicPayment: " << properties.periodicPayment;
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
+
+    auto const newDebtTotal = brokerSle->at(sfDebtTotal) + principalRequested + state.interestDue;
+    if (auto const debtMaximum = brokerSle->at(sfDebtMaximum);
+        debtMaximum != 0 && debtMaximum < newDebtTotal)
+    {
+        JLOG(j.warn()) << "Loan would exceed the maximum debt limit of the LoanBroker.";
+        return tecLIMIT_EXCEEDED;
+    }
+    TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
+    {
+        auto const minCover = [&]() {
+            if (view.rules().enabled(fixCleanup3_2_0))
+            {
+                return minimumBrokerCover(newDebtTotal, coverRateMinimum, vaultSle);
+            }
+
+            // Round the minimum required cover up to be conservative. This ensures
+            // CoverAvailable never drops below the theoretical minimum, protecting
+            // the broker's solvency.
+            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+            return tenthBipsOfValue(newDebtTotal, coverRateMinimum);
+        }();
+        if (brokerSle->at(sfCoverAvailable) < minCover)
+        {
+            JLOG(j.warn()) << "Insufficient first-loss capital to cover the loan.";
+            return tecINSUFFICIENT_FUNDS;
+        }
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+reserveLoanOwner(
+    ApplyView& view,
+    AccountID const& borrower,
+    SLE::ref borrowerSle,
+    AccountID const& signingAccount,
+    XRPAmount preFeeBalance,
+    beast::Journal j)
+{
+    increaseOwnerCount(view, borrowerSle, {}, 1, j);
+    auto const balance =
+        signingAccount == borrower ? preFeeBalance : borrowerSle->at(sfBalance).value().xrp();
+    if (balance < accountReserve(view, borrowerSle, j))
+        return tecINSUFFICIENT_RESERVE;
+    return tesSUCCESS;
+}
+
+TER
+disburseLoan(
+    ApplyViewContext& viewContext,
+    AccountID const& borrower,
+    SLE::ref borrowerSle,
+    AccountID const& brokerOwner,
+    SLE::ref brokerOwnerSle,
+    AccountID const& vaultPseudo,
+    Asset const& vaultAsset,
+    Number const& loanAssetsToBorrower,
+    Number const& originationFee,
+    AccountID const& signingAccount,
+    AccountID const& counterparty,
+    beast::Journal j)
+{
+    // Account for the origination fee using two payments
+    //
+    // 1. Transfer loanAssetsAvailable (principalRequested - originationFee)
+    // from vault pseudo-account to the borrower.
+    // Create a holding for the borrower if one does not already exist.
+
+    XRPL_ASSERT_PARTS(
+        borrower == signingAccount || borrower == counterparty,
+        "xrpl::disburseLoan",
+        "borrower signed transaction");
+    if (auto const ter = addEmptyHolding(
+            viewContext, borrower, borrowerSle->at(sfBalance).value().xrp(), vaultAsset, j);
+        ter && ter != tecDUPLICATE)
+    {
+        // ignore tecDUPLICATE. That means the holding already exists, and
+        // is fine here
+        return ter;
+    }
+
+    if (auto const ter = requireAuth(viewContext.view, vaultAsset, borrower, AuthType::StrongAuth))
+        return ter;
+
+    // 2. Transfer originationFee, if any, from vault pseudo-account to
+    // LoanBroker owner.
+    if (originationFee != beast::kZero)
+    {
+        // Create the holding if it doesn't already exist (necessary for MPTs).
+        // The owner may have deleted their MPT / line at some point.
+        XRPL_ASSERT_PARTS(
+            brokerOwner == signingAccount || brokerOwner == counterparty,
+            "xrpl::disburseLoan",
+            "broker owner signed transaction");
+
+        if (auto const ter = addEmptyHolding(
+                viewContext,
+                brokerOwner,
+                brokerOwnerSle->at(sfBalance).value().xrp(),
+                vaultAsset,
+                j);
+            ter && ter != tecDUPLICATE)
+        {
+            // ignore tecDUPLICATE. That means the holding already exists,
+            // and is fine here
+            return ter;
+        }
+    }
+
+    if (auto const ter =
+            requireAuth(viewContext.view, vaultAsset, brokerOwner, AuthType::StrongAuth))
+        return ter;
+
+    if (auto const ter = accountSendMulti(
+            viewContext.view,
+            vaultPseudo,
+            vaultAsset,
+            {{borrower, loanAssetsToBorrower}, {brokerOwner, originationFee}},
+            j,
+            WaiveTransferFee::Yes))
+        return ter;
+
+    return tesSUCCESS;
+}
+
+TER
+updateLoanBroker(
+    ApplyView& view,
+    SLE::ref brokerSle,
+    Number const& newDebtDelta,
+    Asset const& vaultAsset,
+    int vaultScale,
+    beast::Journal j)
+{
+    // Update the balances in the loan broker
+    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), newDebtDelta, vaultAsset, vaultScale);
+    adjustLoanBrokerOwnerCount(view, brokerSle, 1, j);
+    auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
+    loanSequenceProxy += 1;
+    // The sequence should be extremely unlikely to roll over, but fail if it
+    // does
+    if (loanSequenceProxy == 0)
+        return tecMAX_SEQUENCE_REACHED;
+    view.update(brokerSle);
+
+    return tesSUCCESS;
+}
+
+TER
+linkLoanBroker(ApplyView& view, AccountID const& brokerPseudo, SLE::pointer& loan)
+{
+    // Put the loan into the pseudo-account's directory
+    return dirLink(view, brokerPseudo, loan, sfLoanBrokerNode);
+}
+
+TER
+linkLoanBorrower(ApplyView& view, AccountID const& borrower, SLE::pointer& loan)
+{
+    // Borrower is the owner of the loan
+    return dirLink(view, borrower, loan, sfOwnerNode);
 }
 }  // namespace xrpl
