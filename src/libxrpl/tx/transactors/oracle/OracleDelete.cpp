@@ -73,7 +73,7 @@ OracleDelete::deleteOracle(
 
     std::uint32_t const count =
         calculateOracleReserve(sle->getFieldArray(sfPriceDataSeries).size());
-    decreaseOwnerCount(view, sleOwner, {}, count, j);
+    decreaseOwnerCountForObject(view, sleOwner, sle, count, j);
     view.erase(sle);
 
     return tesSUCCESS;

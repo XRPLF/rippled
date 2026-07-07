@@ -186,8 +186,6 @@ LoanBrokerDelete::doApply()
 
     view().erase(brokerPseudoSLE);
 
-    view().erase(broker);
-
     {
         auto owner = view().peek(keylet::account(accountID_));
         if (!owner)
@@ -195,8 +193,10 @@ LoanBrokerDelete::doApply()
 
         // Decreases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        decreaseOwnerCount(view(), owner, {}, 2, j_);
+        decreaseOwnerCountForObject(view(), owner, broker, 2, j_);
     }
+
+    view().erase(broker);
 
     associateAsset(*broker, vaultAsset);
 

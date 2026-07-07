@@ -159,7 +159,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 
     // Return balance minus reserve
     std::uint32_t const currentOwnerCount =
-        confineOwnerCount(view.ownerCountHook(id, ownerCount(sle, j)), ownerCountAdj);
+        confineOwnerCount(view.ownerCountHook(id, OwnerCounts(*sle)).count(), ownerCountAdj);
     std::uint32_t const currentAccountCount = accountCountImpl(sle, 0, j);
 
     // Pseudo-accounts have no reserve requirement
@@ -193,23 +193,21 @@ transferRate(ReadView const& view, AccountID const& issuer)
     return kParityRate;
 }
 
-static void
+static std::uint32_t
 adjustOwnerCountImpl(
     ApplyView& view,
     SLE::ref sle,
     SF_UINT32 const& sfield,
     AccountID const& accID,
     std::int32_t ownerCountAdj,
-    beast::Journal j,
-    bool callHook = true)
+    beast::Journal j)
 {
     std::uint32_t const currentOwnerCount = sle->at(sfield);
     std::uint32_t const totalOwnerCount =
         confineOwnerCount(currentOwnerCount, ownerCountAdj, accID, j);
-    if (callHook)
-        view.adjustOwnerCountHook(accID, currentOwnerCount, totalOwnerCount);
     sle->at(sfield) = totalOwnerCount;
     view.update(sle);
+    return totalOwnerCount;
 }
 
 static void
@@ -234,6 +232,10 @@ adjustOwnerCountSigned(
 
     XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
 
+    OwnerCounts const currentOwnerCount(
+        sleType == ltACCOUNT_ROOT ? OwnerCounts(*accountSle) : OwnerCounts());
+    OwnerCounts totalOwnerCount(currentOwnerCount);
+
     if (sponsorSle)
     {
         bool const validSponsorType = sponsorSle->getType() == ltACCOUNT_ROOT;
@@ -242,8 +244,16 @@ adjustOwnerCountSigned(
             return;  // LCOV_EXCL_LINE
         auto const sponsorID = sponsorSle->getAccountID(sfAccount);
 
-        adjustOwnerCountImpl(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
-        adjustOwnerCountImpl(view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
+        totalOwnerCount.sponsored =
+            adjustOwnerCountImpl(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
+
+        {
+            OwnerCounts const sponsorCurrent(*sponsorSle);
+            OwnerCounts sponsorAdjustment(sponsorCurrent);
+            sponsorAdjustment.sponsoring = adjustOwnerCountImpl(
+                view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
+            view.adjustOwnerCountHook(sponsorID, sponsorCurrent, sponsorAdjustment);
+        }
 
         auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
         if (sponsorshipSle && adjustment > 0)
@@ -253,10 +263,14 @@ adjustOwnerCountSigned(
             // back. Don't call hook because this counter is not something that requires reserve
             // (like other sf...OwnerCounts do).
             adjustOwnerCountImpl(
-                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j, false);
+                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j);
         }
     }
-    adjustOwnerCountImpl(view, accountSle, sfOwnerCount, accountID, adjustment, j);
+
+    totalOwnerCount.owner =
+        adjustOwnerCountImpl(view, accountSle, sfOwnerCount, accountID, adjustment, j);
+    if (sleType == ltACCOUNT_ROOT)
+        view.adjustOwnerCountHook(accountID, currentOwnerCount, totalOwnerCount);
 }
 
 void
@@ -318,9 +332,14 @@ XRPAmount
 accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjustment adj)
 {
     if (!sle)
-        Throw<std::runtime_error>("xrpl::accountReserve : valid sle");
+    {
+        Throw<std::runtime_error>("xrpl::accountReserve : valid sle");  // LCOV_EXCL_LINE
+    }
+
     if (sle->getType() != ltACCOUNT_ROOT)
-        Throw<std::logic_error>("xrpl::accountReserve : valid sle type");
+    {
+        Throw<std::logic_error>("xrpl::accountReserve : valid sle type");  // LCOV_EXCL_LINE
+    }
 
     std::uint32_t const currentOwnerCount = ownerCount(sle, j, adj.ownerCountDelta);
     std::uint32_t const currentAccountCount = accountCountImpl(sle, adj.accountCountDelta, j);
