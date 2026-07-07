@@ -3,6 +3,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Units.h>
 
@@ -10,7 +11,11 @@
 #include <boost/operators.hpp>
 
 #include <cstdint>
+#include <istream>
+#include <limits>
 #include <optional>
+#include <ostream>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 

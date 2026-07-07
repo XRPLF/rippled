@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <cstddef>
 #include <iterator>
 #include <type_traits>
 
@@ -40,7 +41,7 @@ public:
     operator=(NodePtr node)
     {
         node_ = node;
-        return static_cast<LockFreeStackIterator&>(*this);
+        return *this;
     }
 
     LockFreeStackIterator&
@@ -58,7 +59,7 @@ public:
         return result;
     }
 
-    NodePtr
+    [[nodiscard]] NodePtr
     node() const
     {
         return node_;

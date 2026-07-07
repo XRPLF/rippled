@@ -43,7 +43,6 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <initializer_list>
 #include <iterator>
 #include <memory>
@@ -1257,7 +1256,7 @@ public:
     void
     run() override
     {
-        forAllApiVersions(std::bind_front(&AccountTx_test::testParameters, this));
+        forAllApiVersions([this](unsigned apiVersion) { testParameters(apiVersion); });
         testContents();
         testAccountDelete();
         testMPT();

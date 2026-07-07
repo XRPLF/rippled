@@ -1,7 +1,5 @@
 #pragma once
 
-#include <xrpl/beast/hash/hash_append.h>
-
 #include <boost/asio/ip/address_v4.hpp>
 
 namespace beast::IP {

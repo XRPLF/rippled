@@ -6920,7 +6920,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         auto& mptAlice = confEnv.mpt;
 
         uint64_t const sendAmount = 10;
-        uint64_t const negativeRemaining = static_cast<uint64_t>(-10);  // 0xFFFFFFFFFFFFFFF6
+        auto const negativeRemaining = static_cast<uint64_t>(-10);  // 0xFFFFFFFFFFFFFFF6
 
         ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, sendAmount);
 

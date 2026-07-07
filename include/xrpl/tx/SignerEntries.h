@@ -1,13 +1,15 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>  // beast::Journal
-#include <xrpl/protocol/TER.h>           // temMALFORMED
-#include <xrpl/protocol/UintTypes.h>     // AccountID
-#include <xrpl/tx/Transactor.h>          // NotTEC
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/TER.h>  // temMALFORMED
 
+#include <cstdint>
 #include <expected>
 #include <optional>
 #include <string_view>
+#include <vector>
 
 namespace xrpl {
 

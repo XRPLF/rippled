@@ -1,6 +1,8 @@
 #pragma once
 
 #include <xrpl/protocol/KnownFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
 
 namespace xrpl {
 

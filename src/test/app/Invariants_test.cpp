@@ -4,7 +4,6 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
-#include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
@@ -65,6 +64,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -2829,7 +2829,8 @@ class Invariants_test : public beast::unit_test::Suite
             });
 
         doInvariantCheck(
-            {"vault updated by a wrong transaction type"},
+            {"vault updated by a wrong transaction type",
+             "deleted Vault without deleting its pseudo-account"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
@@ -2840,7 +2841,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPAYMENT, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -2877,6 +2878,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto const vaultPage = ac.view().dirInsert(
                     keylet::ownerDir(a1.id()), sleVault->key(), describeOwnerDir(a1.id()));
                 sleVault->setFieldU64(sfOwnerNode, *vaultPage);
+                sleVault->setAccountID(sfAccount, a1.id());
                 ac.view().insert(sleVault);
                 return true;
             },
@@ -2885,7 +2887,8 @@ class Invariants_test : public beast::unit_test::Suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
         doInvariantCheck(
-            {"vault deleted by a wrong transaction type"},
+            {"vault deleted by a wrong transaction type",
+             "deleted Vault without deleting its pseudo-account"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
@@ -2896,7 +2899,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -2905,7 +2908,8 @@ class Invariants_test : public beast::unit_test::Suite
             });
 
         doInvariantCheck(
-            {"vault operation updated more than single vault"},
+            {"vault operation updated more than single vault",
+             "deleted Vault without deleting its pseudo-account"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 {
                     auto const keylet = keylet::vault(a1.id(), ac.view().seq());
@@ -2925,7 +2929,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DELETE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 {
@@ -2949,6 +2953,7 @@ class Invariants_test : public beast::unit_test::Suite
                     auto const vaultPage = ac.view().dirInsert(
                         keylet::ownerDir(a.id()), sleVault->key(), describeOwnerDir(a.id()));
                     sleVault->setFieldU64(sfOwnerNode, *vaultPage);
+                    sleVault->setAccountID(sfAccount, a.id());
                     ac.view().insert(sleVault);
                 };
                 insertVault(a1);
@@ -2960,7 +2965,8 @@ class Invariants_test : public beast::unit_test::Suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
         doInvariantCheck(
-            {"deleted vault must also delete shares"},
+            {"deleted vault must also delete shares",
+             "deleted Vault without deleting its pseudo-account"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
@@ -2971,7 +2977,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DELETE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -4600,15 +4606,17 @@ class Invariants_test : public beast::unit_test::Suite
             }
         }
 
-        // Vault-share transfer: ValidMPTTransfer gates isVaultPseudoAccountFrozen
-        // on fixCleanup3_3_0.  Pre-amendment, vault-share transfers are allowed
-        // even when the underlying asset is individually frozen for the sender;
-        // post-amendment they are blocked.
+        // Vault-share freeze invariant: isVaultPseudoAccountFrozen descends
+        // through sfReferenceHolding to test the vault's underlying asset for
+        // each changed holder.
         {
             Account const gw{"gw"};
             MPTID shareID{};
 
-            auto const preclose = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+            // Vault setup: a1 and a2 both deposit IOU and hold vault shares.
+            auto const setupVault = [&](Account const& a1,
+                                        Account const& a2,
+                                        Env& env) -> std::tuple<MPTID, AccountID> {
                 env.fund(XRP(1'000), gw);
                 env.trust(gw["IOU"](10'000), a1);
                 env.trust(gw["IOU"](10'000), a2);
@@ -4617,25 +4625,17 @@ class Invariants_test : public beast::unit_test::Suite
                 env(pay(gw, a2, gw["IOU"](500)));
                 env.close();
 
-                PrettyAsset const iou = gw["IOU"];
                 Vault const vault{env};
-                auto [createTx, vaultKeylet] = vault.create({.owner = a1, .asset = iou});
+                auto [createTx, vaultKeylet] = vault.create({.owner = a1, .asset = gw["IOU"]});
                 env(createTx);
                 env.close();
-                // Both a1 and a2 deposit IOU, each receiving vault shares.
-                env(vault.deposit({.depositor = a1, .id = vaultKeylet.key, .amount = iou(100)}));
-                env(vault.deposit({.depositor = a2, .id = vaultKeylet.key, .amount = iou(100)}));
+                env(vault.deposit(
+                    {.depositor = a1, .id = vaultKeylet.key, .amount = gw["IOU"](100)}));
+                env(vault.deposit(
+                    {.depositor = a2, .id = vaultKeylet.key, .amount = gw["IOU"](100)}));
                 env.close();
 
-                shareID = env.le(vaultKeylet)->at(sfShareMPTID);
-
-                // Freeze a2's IOU trustline from the issuer side.
-                // a2 is the receiver in the simulated AMM withdraw; the
-                // distinction under test is that pre-fix330 the invariant
-                // does not apply the transitive vault freeze to receivers.
-                env(trust(gw, gw["IOU"](0), a2, tfSetFreeze));
-                env.close();
-                return true;
+                return {env.le(vaultKeylet)->at(sfShareMPTID), env.le(vaultKeylet)->at(sfAccount)};
             };
 
             // Simulate a vault-share transfer: a1 sends 10 shares to a2.
@@ -4652,156 +4652,45 @@ class Invariants_test : public beast::unit_test::Suite
                 return true;
             };
 
-            // post-fixCleanup3_3_0: full isFrozen() applies to all holders;
-            // isVaultPseudoAccountFrozen finds a2's underlying IOU frozen →
-            // invalidTransfer → invariant fires.
-            doInvariantCheck(
-                Env{*this, defaultAmendments()},
-                {{"invalid MPToken transfer between holders"}},
-                precheck,
-                XRPAmount{},
-                STTx{ttAMM_WITHDRAW, [](STObject&) {}},
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-                preclose);
+            // Case: vault pseudo-account's IOU trustline is frozen.
+            {
+                auto const preclose = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+                    auto [sid, vid] = setupVault(a1, a2, env);
+                    shareID = sid;
+                    env(trust(gw, gw["IOU"](0), Account{"vaultPseudo", vid}, tfSetFreeze));
+                    env.close();
+                    return true;
+                };
 
-            // pre-fixCleanup3_3_0: legacy AMM withdraw only checked
-            // checkIndividualFrozen on the destination, not the transitive
-            // vault freeze; a2 as receiver is exempt → invariant passes.
-            doInvariantCheck(
-                Env{*this, defaultAmendments() - fixCleanup3_3_0},
-                {},
-                precheck,
-                XRPAmount{},
-                STTx{ttAMM_WITHDRAW, [](STObject&) {}},
-                {tesSUCCESS, tesSUCCESS},
-                preclose);
-        }
+                doInvariantCheck(
+                    Env{*this, defaultAmendments()},
+                    {{"invalid MPToken transfer between holders"}},
+                    precheck,
+                    XRPAmount{},
+                    STTx{ttPAYMENT, [](STObject&) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    preclose);
+            }
 
-        // Side-specific vault-share AMM_WITHDRAW invariant tests.
-        // Both cases use a real vault (IOU underlying) and a real AMM whose
-        // pool includes vault shares.  precheck simulates an AMM_WITHDRAW by
-        // transferring 10 vault shares from the AMM pseudo-account to a2.
-        {
-            MPTID shareID{};
-            AccountID ammAcctID{};
-            AccountID vaultPseudoID{};
-            Account const gw{"gw"};
+            // Case: receiver's (a2's) IOU trustline is frozen.
+            {
+                auto const preclose = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+                    auto [sid, vid] = setupVault(a1, a2, env);
+                    shareID = sid;
+                    env(trust(gw, gw["IOU"](0), a2, tfSetFreeze));
+                    env.close();
+                    return true;
+                };
 
-            // Simulate AMM_WITHDRAW: AMM pseudo-account sends 10 vault shares
-            // to a2.  The AMM pseudo is the sender (decreasing balance);
-            // a2 is the receiver (increasing balance).
-            auto const precheck2 =
-                [&](Account const& /*a1*/, Account const& a2, ApplyContext& ac) -> bool {
-                auto sleAMM = ac.view().peek(keylet::mptoken(shareID, ammAcctID));
-                auto sle2 = ac.view().peek(keylet::mptoken(shareID, a2.id()));
-                if (!sleAMM || !sle2)
-                    return false;
-                (*sleAMM)[sfMPTAmount] -= 10;
-                (*sle2)[sfMPTAmount] += 10;
-                ac.view().update(sleAMM);
-                ac.view().update(sle2);
-                return true;
-            };
-
-            // Shared vault + AMM setup: a1 deposits 500 IOU into a vault and
-            // creates an AMM with XRP + 100 vault shares, giving the AMM
-            // pseudo-account a vault-share MPToken balance.
-            auto const setupVaultAMM = [&](Account const& a1, Account const& a2, Env& env) -> bool {
-                env.fund(XRP(1'000), gw);
-                env(fset(gw, asfDefaultRipple));
-                env.close();
-
-                env.trust(gw["IOU"](10'000), a1);
-                env.trust(gw["IOU"](10'000), a2);
-                env.close();
-                env(pay(gw, a1, gw["IOU"](1'000)));
-                env(pay(gw, a2, gw["IOU"](500)));
-                env.close();
-
-                Vault const vault{env};
-                auto [createTx, vaultKeylet] = vault.create({.owner = a1, .asset = gw["IOU"]});
-                env(createTx);
-                env.close();
-
-                env(vault.deposit(
-                    {.depositor = a1, .id = vaultKeylet.key, .amount = gw["IOU"](500)}));
-                env(vault.deposit(
-                    {.depositor = a2, .id = vaultKeylet.key, .amount = gw["IOU"](200)}));
-                env.close();
-
-                shareID = env.le(vaultKeylet)->at(sfShareMPTID);
-                vaultPseudoID = env.le(vaultKeylet)->at(sfAccount);
-
-                // a1 creates AMM with XRP + 100 vault shares; the AMM
-                // pseudo-account receives an MPToken record for shareID.
-                AMM const amm(env, a1, XRP(100), STAmount{MPTIssue{shareID}, 100});
-                ammAcctID = amm.ammAccount();
-                return true;
-            };
-
-            // Case 1: freeze the vault pseudo-account's IOU trustline.
-            // isVaultPseudoAccountFrozen(ammAcct) calls isAnyFrozen({vaultPseudo,
-            // ammAcct}, IOU); since vaultPseudo is frozen it returns true.  The
-            // AMM sender has a decreasing balance (not a receiver) so it is
-            // never exempt from the check — invariant fires both pre- and
-            // post-fixCleanup3_3_0.
-            auto const preclose3 = [&](Account const& a1, Account const& a2, Env& env) -> bool {
-                if (!setupVaultAMM(a1, a2, env))
-                    return false;
-                env(trust(gw, gw["IOU"](0), Account{"vaultPseudo", vaultPseudoID}, tfSetFreeze));
-                env.close();
-                return true;
-            };
-
-            doInvariantCheck(
-                Env{*this, defaultAmendments()},
-                {{"invalid MPToken transfer between holders"}},
-                precheck2,
-                XRPAmount{},
-                STTx{ttAMM_WITHDRAW, [](STObject&) {}},
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-                preclose3);
-
-            doInvariantCheck(
-                Env{*this, defaultAmendments() - fixCleanup3_3_0},
-                {{"invalid MPToken transfer between holders"}},
-                precheck2,
-                XRPAmount{},
-                STTx{ttAMM_WITHDRAW, [](STObject&) {}},
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-                preclose3);
-
-            // Case 2: freeze a2's (receiver's) IOU trustline.
-            // isVaultPseudoAccountFrozen(a2) → isAnyFrozen({vaultPseudo, a2},
-            // IOU) → true.  The AMM sender's check passes (vaultPseudo and
-            // ammAcct are not frozen).  Pre-fix330: receiver is exempt from
-            // isVaultPseudoAccountFrozen in ttAMM_WITHDRAW → passes.
-            // Post-fix330: full isFrozen() applied to a2 → fires.
-            auto const preclose4 = [&](Account const& a1, Account const& a2, Env& env) -> bool {
-                if (!setupVaultAMM(a1, a2, env))
-                    return false;
-                env(trust(gw, gw["IOU"](0), a2, tfSetFreeze));
-                env.close();
-                return true;
-            };
-
-            doInvariantCheck(
-                Env{*this, defaultAmendments()},
-                {{"invalid MPToken transfer between holders"}},
-                precheck2,
-                XRPAmount{},
-                STTx{ttAMM_WITHDRAW, [](STObject&) {}},
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-                preclose4);
-
-            doInvariantCheck(
-                Env{*this, defaultAmendments() - fixCleanup3_3_0},
-                {},
-                precheck2,
-                XRPAmount{},
-                STTx{ttAMM_WITHDRAW, [](STObject&) {}},
-                {tesSUCCESS, tesSUCCESS},
-                preclose4);
+                doInvariantCheck(
+                    Env{*this, defaultAmendments()},
+                    {{"invalid MPToken transfer between holders"}},
+                    precheck,
+                    XRPAmount{},
+                    STTx{ttPAYMENT, [](STObject&) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    preclose);
+            }
         }
     }
 
@@ -5177,6 +5066,125 @@ class Invariants_test : public beast::unit_test::Suite
     }
 
     void
+    testObjectHasPseudoAccount()
+    {
+        testcase << "object has pseudo-account";
+        using namespace jtx;
+
+        auto const amendments = defaultAmendments() | fixCleanup3_3_0;
+
+        // Vault: object deleted without its pseudo-account
+        {
+            Keylet vaultKeylet = keylet::amendments();
+            doInvariantCheck(
+                Env{*this, amendments},
+                {{"deleted Vault without deleting its pseudo-account"}},
+                [&vaultKeylet](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(vaultKeylet);
+                    if (!sle)
+                        return false;
+                    ac.view().erase(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttVAULT_DELETE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&vaultKeylet](Account const& a1, Account const&, Env& env) {
+                    Vault const vault{env};
+                    auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+                    env(tx);
+                    vaultKeylet = keylet;
+                    return true;
+                });
+        }
+
+        // AMM: object deleted without its pseudo-account
+        {
+            uint256 ammID{};
+            Account const gw{"gw"};
+            doInvariantCheck(
+                Env{*this, amendments},
+                {{"deleted AMM without deleting its pseudo-account"}},
+                [&ammID](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(keylet::amm(ammID));
+                    if (!sle)
+                        return false;
+                    ac.view().erase(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttAMM_DELETE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&ammID, &gw](Account const&, Account const&, Env& env) {
+                    env.fund(XRP(1'000), gw);
+                    AMM const amm(env, gw, XRP(100), gw["USD"](100));
+                    ammID = amm.ammID();
+                    return true;
+                });
+        }
+
+        // LoanBroker: object deleted without its pseudo-account
+        {
+            Keylet loanBrokerKeylet = keylet::amendments();
+            doInvariantCheck(
+                Env{*this, amendments},
+                {{"deleted LoanBroker without deleting its pseudo-account"}},
+                [&loanBrokerKeylet](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(loanBrokerKeylet);
+                    if (!sle)
+                        return false;
+                    ac.view().erase(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_DELETE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&loanBrokerKeylet, this](Account const& a1, Account const&, Env& env) {
+                    PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+                    loanBrokerKeylet = this->createLoanBroker(a1, env, xrpAsset);
+                    return BEAST_EXPECT(env.le(loanBrokerKeylet));
+                });
+        }
+
+        // Deleted object missing sfAccount field (defensive check).
+        // Manually construct the view to place a vault SLE without
+        // sfAccount into the base ledger, then erase it.
+        {
+            Env env{*this, amendments};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            env.close();
+
+            OpenView ov{*env.current()};
+
+            auto const vaultKeylet = keylet::vault(a1.id(), ov.seq());
+            auto sleVault = std::make_shared<SLE>(vaultKeylet);
+            sleVault->makeFieldAbsent(sfAccount);
+            ov.rawInsert(sleVault);
+
+            STTx const tx{ttVAULT_DELETE, [](STObject&) {}};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            auto sle = ac.view().peek(vaultKeylet);
+            if (!BEAST_EXPECT(sle))
+                return;
+            ac.view().erase(sle);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            TER const result = transactor->checkInvariants(tesSUCCESS, XRPAmount{});
+            BEAST_EXPECT(result == tecINVARIANT_FAILED);
+            BEAST_EXPECT(sink.messages().str().contains("is missing pseudo-account field"));
+        }
+    }
+
+    void
     testConfidentialMPTTransfer()
     {
         using namespace test::jtx;
@@ -5458,6 +5466,7 @@ public:
         testInvariantOverwrite(defaultAmendments() - fixCleanup3_1_3);
         testVaultComputeCoarsestScale();
         testAMM();
+        testObjectHasPseudoAccount();
     }
 };
 

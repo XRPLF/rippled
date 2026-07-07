@@ -2,9 +2,14 @@
 
 #include <boost/regex.hpp>
 
+#include <cstdint>
+#include <iomanip>
+#include <ios>
 #include <optional>
-#include <regex>
 #include <sstream>
+#include <string>
+#include <string_view>
+#include <tuple>
 
 namespace xrpl::RPC {
 
@@ -99,9 +104,9 @@ decodeCTID(T const ctid) noexcept
     if ((ctidValue & kCtidPrefixMask) != kCtidPrefix)
         return std::nullopt;
 
-    uint32_t const ledgerSeq = static_cast<uint32_t>((ctidValue >> 32) & 0x0FFF'FFFF);
-    uint16_t const txnIndex = static_cast<uint16_t>((ctidValue >> 16) & 0xFFFF);
-    uint16_t const networkID = static_cast<uint16_t>(ctidValue & 0xFFFF);
+    auto const ledgerSeq = static_cast<uint32_t>((ctidValue >> 32) & 0x0FFF'FFFF);
+    auto const txnIndex = static_cast<uint16_t>((ctidValue >> 16) & 0xFFFF);
+    auto const networkID = static_cast<uint16_t>(ctidValue & 0xFFFF);
 
     return std::make_tuple(ledgerSeq, txnIndex, networkID);
 }

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Units.h>
 
 #include <mpt_protocol.h>
@@ -310,6 +312,9 @@ constexpr std::size_t kPermissionMaxSize = 10;
 
 /** The maximum number of transactions that can be in a batch. */
 constexpr std::size_t kMaxBatchTxCount = 8;
+
+/** The maximum number of batch signers. */
+constexpr std::size_t kMaxBatchSigners = kMaxBatchTxCount * 3;
 
 /** Length of a secp256k1 scalar in bytes. */
 constexpr std::size_t kEcScalarLength = kMPT_SCALAR_SIZE;

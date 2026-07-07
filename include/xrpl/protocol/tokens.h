@@ -1,14 +1,15 @@
 #pragma once
 
-#include <xrpl/basics/contract.h>
 #include <xrpl/protocol/detail/token_errors.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <optional>
 #include <span>
 #include <string>
 #include <string_view>
+#include <system_error>
 
 namespace xrpl {
 
