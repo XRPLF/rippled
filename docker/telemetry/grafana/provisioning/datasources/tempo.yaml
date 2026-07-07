@@ -7,7 +7,7 @@
 # Each phase adds filters for the span attributes it introduces.
 # Phase 1b (infra): Base filters — node identity, service, span name, status.
 # Phase 2 (RPC):    RPC command, status, role filters.
-# Phase 3 (TX):     Transaction hash, local/peer origin, status.
+# Transaction hash, local/peer origin, status.
 
 apiVersion: 1
 
@@ -107,7 +107,7 @@ datasources:
             operator: "="
             scope: span
             type: dynamic
-          # Phase 3: Transaction tracing filters
+          # Transaction tracing filters
           - id: tx-hash
             tag: tx_hash
             operator: "="
