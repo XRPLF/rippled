@@ -14,7 +14,39 @@ on:
 jobs:
   # Call the workflow in the XRPLF/actions repo that runs the pre-commit hooks.
   run-hooks:
-    uses: XRPLF/actions/.github/workflows/pre-commit.yml@1bde119a1ab71305ba5d3716e7a82cea1c7bdede
-    with:
-      runs_on: ubuntu-latest
-      container: '{ "image": "ghcr.io/xrplf/xrpld/nix-ubuntu:sha-e29b523" }'
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-e29b523
+
+    steps:
+      - name: Checkout Repo ⚡️
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Prepare runner 🚀
+        uses: XRPLF/actions/prepare-runner@64ec3cf3b152b4444638f470bbd6df7a7a30c81c
+        with:
+          enable_ccache: false
+
+      - name: Run pre-commit ✅
+        env:
+          MESSAGE: |
+            One or more files did not conform to the formatting.
+            Maybe you did not enable 'pre-commit' hooks in your local repository?
+
+            To install the `pre-commit` hooks, run: `pre-commit install`
+
+            To run `pre-commit` hooks on all files, run 'pre-commit run --all-files' in the repo.
+            Then commit and push the changes.
+        run: |
+          set +e
+          pre-commit run --all-files --show-diff-on-failure --color always --verbose
+          rc=$?
+          set -e
+
+          if [ $rc -ne 0 ]; then
+              # Print the files that changed to give the contributor a hint about
+              # what to expect when running `pre-commit` on their own machine.
+              git status
+              echo "${MESSAGE}"
+              exit 1
+          fi
