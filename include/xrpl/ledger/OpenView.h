@@ -1,15 +1,26 @@
 #pragma once
 
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/detail/RawStateTable.h>
-#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <boost/container/pmr/monotonic_buffer_resource.hpp>
 #include <boost/container/pmr/polymorphic_allocator.hpp>
 
+#include <cstddef>
 #include <functional>
+#include <map>
+#include <memory>
+#include <optional>
 #include <utility>
 
 namespace xrpl {
@@ -71,7 +82,7 @@ private:
     using txs_map = std::map<
         key_type,
         TxData,
-        std::less<key_type>,
+        std::less<>,
         boost::container::pmr::polymorphic_allocator<std::pair<key_type const, TxData>>>;
 
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be

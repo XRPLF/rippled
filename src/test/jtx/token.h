@@ -2,11 +2,17 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/owners.h>
+#include <test/jtx/JTx.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/STAmount.h>
 
+#include <cstdint>
 #include <initializer_list>
+#include <string>
+#include <vector>
 
 namespace xrpl::test::jtx::token {
 

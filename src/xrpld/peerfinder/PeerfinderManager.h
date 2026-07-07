@@ -5,11 +5,20 @@
 #include <xrpld/peerfinder/detail/Tuning.h>
 
 #include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/protocol/PublicKey.h>
 
 #include <boost/asio/ip/tcp.hpp>
 
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 namespace xrpl::PeerFinder {
 

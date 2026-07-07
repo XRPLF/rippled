@@ -4,10 +4,17 @@
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/messages.h>
 
-#include <algorithm>
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <vector>
 
 namespace xrpl {
 

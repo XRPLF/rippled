@@ -12,6 +12,7 @@
 
 #include <xrpld/app/ledger/BuildLedger.h>
 #include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/LedgerReplayTask.h>
@@ -27,6 +28,7 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/random.h>
 #include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -451,7 +453,7 @@ struct TestPeerSet : public PeerSet
             dropRate = 100;
         }
 
-        if (((rand() % 100) + 1) <= dropRate)
+        if (randInt(1, 100) <= dropRate)
             return;
 
         switch (type)
