@@ -855,7 +855,6 @@ directSendNoLimitMultiIOU(
     MultiplePaymentDestinations const& receivers,
     STAmount& actual,
     beast::Journal j,
-    SLE::ref sponsorSle,
     WaiveTransferFee waiveFee)
 {
     auto const& issuer = issue.getIssuer();
@@ -884,7 +883,7 @@ directSendNoLimitMultiIOU(
         {
             // Direct send: redeeming IOUs and/or sending own IOUs.
             if (auto const ter =
-                    directSendNoFeeIOU(view, senderID, receiverID, amount, false, sponsorSle, j);
+                    directSendNoFeeIOU(view, senderID, receiverID, amount, false, {}, j);
                 !isTesSuccess(ter))
                 return ter;
             actual += amount;
@@ -908,15 +907,14 @@ directSendNoLimitMultiIOU(
                         << to_string(receiverID) << " : deliver=" << amount.getFullText()
                         << " cost=" << actual.getFullText();
 
-        if (TER const terResult =
-                directSendNoFeeIOU(view, issuer, receiverID, amount, true, sponsorSle, j))
+        if (TER const terResult = directSendNoFeeIOU(view, issuer, receiverID, amount, true, {}, j))
             return terResult;
     }
 
     if (senderID != issuer && takeFromSender)
     {
         if (TER const terResult =
-                directSendNoFeeIOU(view, senderID, issuer, takeFromSender, true, sponsorSle, j))
+                directSendNoFeeIOU(view, senderID, issuer, takeFromSender, true, {}, j))
             return terResult;
     }
 
@@ -1049,7 +1047,6 @@ accountSendMultiIOU(
     Issue const& issue,
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
-    SLE::ref sponsorSle,
     WaiveTransferFee waiveFee)
 {
     XRPL_ASSERT_PARTS(
@@ -1061,8 +1058,7 @@ accountSendMultiIOU(
         JLOG(j.trace()) << "accountSendMultiIOU: " << to_string(senderID) << " sending "
                         << receivers.size() << " IOUs";
 
-        return directSendNoLimitMultiIOU(
-            view, senderID, issue, receivers, actual, j, sponsorSle, waiveFee);
+        return directSendNoLimitMultiIOU(view, senderID, issue, receivers, actual, j, waiveFee);
     }
 
     /* XRP send which does not check reserve and can do pure adjustment.
@@ -1530,14 +1526,13 @@ accountSendMulti(
     Asset const& asset,
     MultiplePaymentDestinations const& receivers,
     beast::Journal j,
-    SLE::ref sponsorSle,
     WaiveTransferFee waiveFee)
 {
     XRPL_ASSERT_PARTS(
         receivers.size() > 1, "xrpl::accountSendMulti", "multiple recipients provided");
     return asset.visit(
         [&](Issue const& issue) {
-            return accountSendMultiIOU(view, senderID, issue, receivers, j, sponsorSle, waiveFee);
+            return accountSendMultiIOU(view, senderID, issue, receivers, j, waiveFee);
         },
         [&](MPTIssue const& issue) {
             return accountSendMultiMPT(view, senderID, issue, receivers, j, waiveFee);
