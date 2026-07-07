@@ -1048,8 +1048,8 @@ public:
 
         MPTIssue const asset{makeMptID(1, AccountID(0x4985601))};
         Rate const transferRate{1'500'000'000};
-        STAmount const largeAmount{asset, 1'230'000'000'000'000'000LL};
-        STAmount const scaledAmount{asset, 1'845'000'000'000'000'000LL};
+        STAmount const largeAmount{asset, UINT64_C(1'230'000'000'000'000'000)};
+        STAmount const scaledAmount{asset, UINT64_C(1'845'000'000'000'000'000)};
 
         auto rules = [](bool const mptV2) {
             // Rules keeps a reference to the presets set, so use static
