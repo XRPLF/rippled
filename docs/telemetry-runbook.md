@@ -773,7 +773,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 When xrpld is built with `telemetry=ON`, log lines emitted within an active OpenTelemetry span automatically include `trace_id` and `span_id` fields:
 
 ```
-2024-01-15T10:30:45.123Z LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
+2024-Jan-15 10:30:45.123456 UTC LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
 ```
 
 This enables bidirectional navigation between logs and traces in Grafana:

@@ -491,7 +491,7 @@ Expected: log lines with `trace_id=<32hex> span_id=<16hex>` between the
 severity code and the message. Example:
 
 ```
-2024-01-15T10:30:45.123Z RPCHandler:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Calling server_info
+2024-Jan-15 10:30:45.123456 UTC RPCHandler:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Calling server_info
 ```
 
 Lines emitted outside of an active span (background tasks, startup) will

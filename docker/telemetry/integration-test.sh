@@ -73,7 +73,7 @@ check_span() {
     fi
 }
 
-# Phase 8: Verify trace_id injection in xrpld log output.
+# Verify trace_id injection in xrpld log output.
 # Greps all node debug.log files for the "trace_id=<hex> span_id=<hex>"
 # pattern that Logs::format() injects when an active OTel span exists.
 # Also cross-checks that a trace_id found in logs matches a trace in Tempo.
@@ -562,7 +562,7 @@ check_span "peer.validation.receive"
 # Step 9b: Verify log-trace correlation (Phase 8)
 # ---------------------------------------------------------------------------
 log ""
-log "--- Phase 8: Log-Trace Correlation ---"
+log "--- Log-Trace Correlation ---"
 check_log_correlation
 
 # ---------------------------------------------------------------------------
