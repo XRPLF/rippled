@@ -125,6 +125,20 @@ CredentialAccept::doApply()
     // the credential reflects whoever is now covering the subject's reserve.
     decreaseOwnerCountForObject(view(), sleIssuer, sleCred, 1, j_);
     removeSponsorFromLedgerEntry(sleCred);
+
+    if (view().rules().enabled(featureSponsor) || view().rules().enabled(fixCleanup3_3_0))
+    {
+        if (auto const ret = checkReserve(
+                ctx_.getApplyViewContext(),
+                sleSubject,
+                preFeeBalance_,
+                *txSponsorSle,
+                {.ownerCountDelta = 1},
+                j_);
+            !isTesSuccess(ret))
+            return ret;
+    }
+
     addSponsorToLedgerEntry(sleCred, *txSponsorSle);
     increaseOwnerCount(view(), sleSubject, *txSponsorSle, 1, j_);
     view().update(sleCred);

@@ -2902,6 +2902,50 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
         }
+
+        // Issuer creates for subject; accept tx itself is reserve-sponsored
+        // This exercises the checkReserve() call in CredentialAccept::doApply()
+        // that guards the sponsor's reserve when featureSponsor is enabled.
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            // alice (issuer) creates credential for bob (subject) without sponsor
+            env(credentials::create(bob, alice, credType));
+            env.close();
+
+            auto const credKeylet = credentials::keylet(bob, alice, credType);
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 0);
+
+            // Bob accepts with a sponsored reserve; the first attempt uses an
+            // undercapitalized sponsor and must fail with tecINSUFFICIENT_RESERVE;
+            // the second attempt uses a properly funded sponsor and must succeed.
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor,
+                bob,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
+                    submit(credentials::accept(bob, alice, credType));
+                });
+
+            // After successful accept: alice (issuer) no longer owns the credential,
+            // bob owns it and sponsor covers his reserve.
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            BEAST_EXPECT(env.le(credKeylet)->getAccountID(sfSponsor) == sponsor.id());
+
+            // Cleanup
+            env(credentials::deleteCred(bob, bob, alice, credType));
+            env.close();
+        }
     }
 
     void
