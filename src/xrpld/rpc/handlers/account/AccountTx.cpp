@@ -414,6 +414,9 @@ populateJsonResponse(
             response[jss::marker] = json::ValueType::Object;
             response[jss::marker][jss::ledger] = result.marker->ledgerSeq;
             response[jss::marker][jss::seq] = result.marker->txnSeq;
+
+            if (args.delegate)
+                response[jss::marker][jss::delegate] = true;
         }
     }
 
@@ -435,6 +438,12 @@ populateJsonResponse(
 //     counter_party: account        // optional
 //   }
 // }
+//
+// Pagination note for delegate-filtered queries: the `delegate` object (both
+// `delegate_filter` and `counter_party`) must be supplied unchanged on every
+// paginated request until the query completes. A marker returned by a
+// delegate-filtered query is only valid for a follow-up request that repeats
+// the same delegate filter;
 json::Value
 doAccountTx(RPC::JsonContext& context)
 {
@@ -511,6 +520,26 @@ doAccountTx(RPC::JsonContext& context)
         else
         {
             return filter.error();
+        }
+    }
+
+    // A marker produced by a delegate-filtered query uses a different
+    // pagination cursor than a normal query, so it is only valid when the same
+    // delegate filter is supplied again. Reject any mismatch so pagination
+    // cannot silently skip or duplicate results.
+    if (args.marker)
+    {
+        bool const markerFromDelegate = params[jss::marker].isMember(jss::delegate) &&
+            params[jss::marker][jss::delegate].isBool() &&
+            params[jss::marker][jss::delegate].asBool();
+        if (markerFromDelegate != args.delegate.has_value())
+        {
+            RPC::Status const status{
+                RpcInvalidParams,
+                "The delegate filter must be supplied unchanged across "
+                "paginated account_tx requests."};
+            status.inject(response);
+            return response;
         }
     }
 

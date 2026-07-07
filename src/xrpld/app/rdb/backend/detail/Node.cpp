@@ -1110,11 +1110,11 @@ accountTxPage(
           AND AccountTransactions.Account = '%s' WHERE
           )");
 
+    std::string sql;
+
     // SQL's BETWEEN uses a closed interval ([a,b])
 
     char const* const order = forward ? "ASC" : "DESC";
-
-    std::string sql;
 
     if (findLedger == 0)
     {

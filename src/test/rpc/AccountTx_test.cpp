@@ -1120,6 +1120,64 @@ class AccountTx_test : public beast::unit_test::Suite
             BEAST_EXPECT(countTxs(bob.id(), authorizerFilter) == 1);
             BEAST_EXPECT(countTxs(bob.id(), authorizerFilter, 1) == 1);
         }
+
+        // Pagination marker/delegate-filter consistency. A marker returned by a
+        // delegate-filtered query carries a `delegate` flag and is only valid
+        // for a follow-up request that repeats the filter; mixing the two
+        // marker conventions must be rejected with invalidParams.
+        {
+            json::Value actorFilter;
+            actorFilter[jss::delegate_filter] = "actor";
+
+            // Obtain a delegate-filtered marker (limit 1 forces pagination).
+            json::Value dp;
+            dp[jss::account] = alice.human();
+            dp[jss::ledger_index_min] = -1;
+            dp[jss::ledger_index_max] = -1;
+            dp[jss::delegate] = actorFilter;
+            dp[jss::limit] = 1;
+            auto const dRes = env.rpc("json", "account_tx", to_string(dp));
+            BEAST_EXPECT(dRes[jss::result].isMember(jss::marker));
+            json::Value const delegateMarker = dRes[jss::result][jss::marker];
+            BEAST_EXPECT(
+                delegateMarker.isMember(jss::delegate) && delegateMarker[jss::delegate].asBool());
+
+            // Reusing a delegate marker without the delegate filter is rejected.
+            {
+                json::Value p;
+                p[jss::account] = alice.human();
+                p[jss::ledger_index_min] = -1;
+                p[jss::ledger_index_max] = -1;
+                p[jss::limit] = 1;
+                p[jss::marker] = delegateMarker;
+                auto const r = env.rpc("json", "account_tx", to_string(p));
+                BEAST_EXPECT(r[jss::result][jss::error] == "invalidParams");
+            }
+
+            // Obtain a non-delegate marker; it must not carry the flag.
+            json::Value np;
+            np[jss::account] = alice.human();
+            np[jss::ledger_index_min] = -1;
+            np[jss::ledger_index_max] = -1;
+            np[jss::limit] = 1;
+            auto const nRes = env.rpc("json", "account_tx", to_string(np));
+            BEAST_EXPECT(nRes[jss::result].isMember(jss::marker));
+            json::Value const normalMarker = nRes[jss::result][jss::marker];
+            BEAST_EXPECT(!normalMarker.isMember(jss::delegate));
+
+            // Reusing a non-delegate marker with a delegate filter is rejected.
+            {
+                json::Value p;
+                p[jss::account] = alice.human();
+                p[jss::ledger_index_min] = -1;
+                p[jss::ledger_index_max] = -1;
+                p[jss::limit] = 1;
+                p[jss::delegate] = actorFilter;
+                p[jss::marker] = normalMarker;
+                auto const r = env.rpc("json", "account_tx", to_string(p));
+                BEAST_EXPECT(r[jss::result][jss::error] == "invalidParams");
+            }
+        }
     }
 
     void
