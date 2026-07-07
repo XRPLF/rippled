@@ -378,7 +378,7 @@ updateTrustLine(
         // VFALCO Where is the line being deleted?
         // Clear the reserve of the sender, possibly delete the line!
         auto const currentSponsor =
-            getLedgerEntryReserveSponsor(view, state, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
+            getLedgerEntryReserveSponsor(view, state, bSenderHigh ? sfHighSponsor : sfLowSponsor);
         decreaseOwnerCount(view, sle, currentSponsor, 1, j);
 
         // Clear reserve flag.
@@ -393,12 +393,14 @@ updateTrustLine(
     return false;
 }
 
+// Only used in tests
 TER
 issueIOU(
     ApplyView& view,
     AccountID const& account,
     STAmount const& amount,
     Issue const& issue,
+    SLE::ref sponsorSle,
     beast::Journal j)
 {
     XRPL_ASSERT(

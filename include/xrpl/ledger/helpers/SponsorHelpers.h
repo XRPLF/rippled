@@ -19,6 +19,35 @@
 
 namespace xrpl {
 
+inline std::unordered_set<TxType> const kReserveSponsorAllowed = {
+    // Explicitly allow-listed for v1.
+    ttDELEGATE_SET,
+    ttDEPOSIT_PREAUTH,
+    ttPAYMENT,
+    ttSIGNER_LIST_SET,
+    ttCHECK_CANCEL,
+    ttCHECK_CASH,
+    ttCHECK_CREATE,
+    ttESCROW_CANCEL,
+    ttESCROW_CREATE,
+    ttESCROW_FINISH,
+    ttPAYCHAN_CLAIM,
+    ttPAYCHAN_CREATE,
+    ttPAYCHAN_FUND,
+    ttCLAWBACK,
+    ttMPTOKEN_AUTHORIZE,
+    ttMPTOKEN_ISSUANCE_CREATE,
+    ttMPTOKEN_ISSUANCE_DESTROY,
+    ttMPTOKEN_ISSUANCE_SET,
+    ttTRUST_SET,
+    ttCREDENTIAL_ACCEPT,
+    ttCREDENTIAL_CREATE,
+    ttCREDENTIAL_DELETE,
+    ttACCOUNT_SET,
+    ttREGULAR_KEY_SET,
+    ttSPONSORSHIP_TRANSFER,
+};
+
 inline bool
 isFeeSponsored(STTx const& tx)
 {

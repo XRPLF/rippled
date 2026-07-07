@@ -4,6 +4,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -70,7 +71,9 @@ OracleDelete::deleteOracle(
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    std::uint32_t const count = sle->getFieldArray(sfPriceDataSeries).size() > 5 ? 2 : 1;
+    std::uint32_t const count =
+        calculateOracleReserve(sle->getFieldArray(sfPriceDataSeries).size());
+    ;
     decreaseOwnerCount(view, sleOwner, {}, count, j);
     view.erase(sle);
 

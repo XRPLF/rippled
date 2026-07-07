@@ -224,6 +224,7 @@ adjustOwnerCountSigned(
     if (!accountSle)
         return;  // LCOV_EXCL_LINE
 
+    auto const accountID = accountSle->getAccountID(sfAccount);
     auto const sleType = accountSle->getType();
     bool const validType = sponsorSle ? sleType == ltACCOUNT_ROOT
                                       : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
@@ -233,7 +234,6 @@ adjustOwnerCountSigned(
 
     XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
 
-    auto const accountID = accountSle->getAccountID(sfAccount);
     if (sponsorSle)
     {
         bool const validSponsorType = sponsorSle->getType() == ltACCOUNT_ROOT;
