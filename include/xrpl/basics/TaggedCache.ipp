@@ -663,6 +663,9 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 {
     static_assert(
         !IsKeyCache, "fetchAndModify is only supported for value caches, not key-only caches");
+    static_assert(
+        std::is_same_v<Mutex, std::recursive_mutex>,
+        "fetchAndModify requires a recursive mutex because canonicalize re-acquires mutex_ internally");
 
     std::scoped_lock const lock(mutex_);
 
