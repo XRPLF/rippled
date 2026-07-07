@@ -1,5 +1,7 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/beast/xor_shift_engine.h>
@@ -61,9 +63,7 @@ createPredictableBatch(std::size_t numObjects, std::uint64_t seed)
                 case 2:
                     return NodeObjectType::TransactionNode;
                 case 3:
-                    return NodeObjectType::Unknown;
                 default:
-                    // unreachable; satisfies static analysis
                     return NodeObjectType::Unknown;
             }
         }();
