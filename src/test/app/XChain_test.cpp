@@ -245,9 +245,9 @@ struct Balance
     T& env;
     STAmount startAmount;
 
-    Balance(T& env, jtx::Account const& account) : account(account), env(env)
+    Balance(T& env, jtx::Account const& account)
+        : account(account), env(env), startAmount(env.balance(account))
     {
-        startAmount = env.balance(account);
     }
 
     [[nodiscard]] STAmount

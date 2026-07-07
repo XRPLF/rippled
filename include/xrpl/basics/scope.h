@@ -46,11 +46,9 @@ public:
     operator=(ScopeExit&&) = delete;
 
     template <class EFP>
-    explicit ScopeExit(
-        EFP&& f,
-        std::enable_if_t<
-            !std::is_same_v<std::remove_cv_t<EFP>, ScopeExit> &&
-            std::is_constructible_v<EF, EFP>>* = 0) noexcept
+    explicit ScopeExit(EFP&& f) noexcept
+        requires(
+            !std::is_same_v<std::remove_cv_t<EFP>, ScopeExit> && std::is_constructible_v<EF, EFP>)
         : exitFunction_{std::forward<EFP>(f)}
     {
         static_assert(std::is_nothrow_constructible_v<EF, decltype(std::forward<EFP>(f))>);
@@ -93,11 +91,9 @@ public:
     operator=(ScopeFail&&) = delete;
 
     template <class EFP>
-    explicit ScopeFail(
-        EFP&& f,
-        std::enable_if_t<
-            !std::is_same_v<std::remove_cv_t<EFP>, ScopeFail> &&
-            std::is_constructible_v<EF, EFP>>* = 0) noexcept
+    explicit ScopeFail(EFP&& f) noexcept
+        requires(
+            !std::is_same_v<std::remove_cv_t<EFP>, ScopeFail> && std::is_constructible_v<EF, EFP>)
         : exitFunction_{std::forward<EFP>(f)}
     {
         static_assert(std::is_nothrow_constructible_v<EF, decltype(std::forward<EFP>(f))>);
@@ -140,12 +136,11 @@ public:
     operator=(ScopeSuccess&&) = delete;
 
     template <class EFP>
-    explicit ScopeSuccess(
-        EFP&& f,
-        std::enable_if_t<
+    explicit ScopeSuccess(EFP&& f) noexcept(
+        std::is_nothrow_constructible_v<EF, EFP> || std::is_nothrow_constructible_v<EF, EFP&>)
+        requires(
             !std::is_same_v<std::remove_cv_t<EFP>, ScopeSuccess> &&
-            std::is_constructible_v<EF, EFP>>* =
-            0) noexcept(std::is_nothrow_constructible_v<EF, EFP> || std::is_nothrow_constructible_v<EF, EFP&>)
+            std::is_constructible_v<EF, EFP>)
         : exitFunction_{std::forward<EFP>(f)}
     {
     }
