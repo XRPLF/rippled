@@ -225,6 +225,11 @@ target_link_libraries(
     PRIVATE xrpl.libxrpl.protocol
 )
 if(telemetry)
+    # Telemetry owns both the trace and (as of the direct-metrics API) the
+    # metrics pipeline. Link the umbrella target: it supplies the trace and
+    # metrics SDK components with the correct static-link ordering, which
+    # naming components individually does not (the package under-declares
+    # inter-component dependencies).
     target_link_libraries(
         xrpl.libxrpl.telemetry
         PUBLIC opentelemetry-cpp::opentelemetry-cpp

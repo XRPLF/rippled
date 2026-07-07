@@ -25,7 +25,23 @@
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_factory.h>
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_options.h>
+#include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
+#include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_options.h>
+#include <opentelemetry/metrics/meter.h>
+#include <opentelemetry/metrics/meter_provider.h>
+#include <opentelemetry/metrics/noop.h>
+#include <opentelemetry/metrics/provider.h>
 #include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/sdk/metrics/aggregation/aggregation_config.h>
+#include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_factory.h>
+#include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_options.h>
+#include <opentelemetry/sdk/metrics/instruments.h>
+#include <opentelemetry/sdk/metrics/meter_provider.h>
+#include <opentelemetry/sdk/metrics/meter_provider_factory.h>
+#include <opentelemetry/sdk/metrics/view/instrument_selector_factory.h>
+#include <opentelemetry/sdk/metrics/view/meter_selector_factory.h>
+#include <opentelemetry/sdk/metrics/view/view_factory.h>
+#include <opentelemetry/sdk/metrics/view/view_registry.h>
 #include <opentelemetry/sdk/resource/resource.h>
 #include <opentelemetry/sdk/trace/batch_span_processor_factory.h>
 #include <opentelemetry/sdk/trace/batch_span_processor_options.h>
@@ -50,6 +66,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace xrpl::telemetry {
 
@@ -57,6 +74,8 @@ namespace {
 
 namespace trace_api = opentelemetry::trace;
 namespace trace_sdk = opentelemetry::sdk::trace;
+namespace metrics_api = opentelemetry::metrics;
+namespace metrics_sdk = opentelemetry::sdk::metrics;
 namespace otlp_http = opentelemetry::exporter::otlp;
 namespace resource = opentelemetry::sdk::resource;
 
@@ -222,6 +241,16 @@ public:
         return noopTracer;
     }
 
+    opentelemetry::nostd::shared_ptr<metrics_api::Meter>
+    getMeter(std::string_view name) override
+    {
+        // Serve a meter from a process-wide noop provider, mirroring the
+        // noop tracer above. Instruments created from it are inert.
+        static auto noopProvider = opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(
+            new metrics_api::NoopMeterProvider());
+        return noopProvider->GetMeter(std::string(name), std::string(kMeterVersion));
+    }
+
     opentelemetry::nostd::shared_ptr<trace_api::Span>
     startSpan(std::string_view, trace_api::SpanKind) override
     {
@@ -258,6 +287,14 @@ class TelemetryImpl : public Telemetry
         Wrapped in a nostd::shared_ptr when registered as the global provider.
     */
     std::shared_ptr<trace_sdk::TracerProvider> sdkProvider_;
+
+    /** The SDK MeterProvider that owns the metric export pipeline.
+
+        Symmetric with sdkProvider_ on the tracing side. Held as
+        std::shared_ptr so we can ForceFlush() on shutdown; wrapped in a
+        nostd::shared_ptr when registered as the global meter provider.
+    */
+    std::shared_ptr<metrics_sdk::MeterProvider> meterProvider_;
 
 public:
     TelemetryImpl(Setup setup, beast::Journal journal) : setup_(std::move(setup)), journal_(journal)
@@ -331,6 +368,70 @@ public:
         trace_api::Provider::SetTracerProvider(
             opentelemetry::nostd::shared_ptr<trace_api::TracerProvider>(sdkProvider_));
 
+        // Build the metrics pipeline, parallel to the tracer above and
+        // reusing the same resourceAttrs so metrics and traces share one
+        // resource identity.
+
+        // Derive the metrics endpoint from the trace endpoint by swapping
+        // the trailing "/v1/traces" path for "/v1/metrics". Any other URL
+        // shape is used as-is.
+        std::string metricsEndpoint = setup_.exporterEndpoint;
+        constexpr std::string_view tracesPath{"/v1/traces"};
+        if (metricsEndpoint.ends_with(tracesPath))
+        {
+            metricsEndpoint.replace(
+                metricsEndpoint.size() - tracesPath.size(), tracesPath.size(), "/v1/metrics");
+        }
+
+        // Configure OTLP HTTP metric exporter, honoring the same TLS
+        // options as the trace exporter.
+        otlp_http::OtlpHttpMetricExporterOptions metricExporterOpts;
+        metricExporterOpts.url = metricsEndpoint;
+        if (setup_.useTls)
+        {
+            metricExporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;
+            metricExporterOpts.ssl_client_cert_path = setup_.tlsClientCertPath;
+            metricExporterOpts.ssl_client_key_path = setup_.tlsClientKeyPath;
+        }
+
+        auto metricExporter = otlp_http::OtlpHttpMetricExporterFactory::Create(metricExporterOpts);
+
+        // Configure periodic metric reader (1-second export interval,
+        // matching the beast OTelCollector path).
+        metrics_sdk::PeriodicExportingMetricReaderOptions readerOpts;
+        readerOpts.export_interval_millis = std::chrono::milliseconds(1000);
+        readerOpts.export_timeout_millis = std::chrono::milliseconds(500);
+
+        auto reader = metrics_sdk::PeriodicExportingMetricReaderFactory::Create(
+            std::move(metricExporter), readerOpts);
+
+        // Create MeterProvider with the shared resource, then attach reader.
+        meterProvider_ = metrics_sdk::MeterProviderFactory::Create(
+            std::make_unique<metrics_sdk::ViewRegistry>(), resourceAttrs);
+        meterProvider_->AddMetricReader(std::move(reader));
+
+        // Histogram view: SpanMetrics-compatible bucket boundaries (ms) so
+        // histogram instruments align with the collector's SpanMetrics.
+        auto histogramSelector = metrics_sdk::InstrumentSelectorFactory::Create(
+            metrics_sdk::InstrumentType::kHistogram, "*", "ms");
+        auto meterSelector = metrics_sdk::MeterSelectorFactory::Create("xrpld_metrics", "", "");
+        auto histogramConfig = std::make_shared<metrics_sdk::HistogramAggregationConfig>();
+        histogramConfig->boundaries_ =
+            std::vector<double>{1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1000.0, 5000.0};
+        auto histogramView = metrics_sdk::ViewFactory::Create(
+            "default_histogram",
+            "Default histogram view with SpanMetrics-compatible buckets",
+            metrics_sdk::AggregationType::kHistogram,
+            std::move(histogramConfig));
+
+        meterProvider_->AddView(
+            std::move(histogramSelector), std::move(meterSelector), std::move(histogramView));
+
+        // Publish as the global meter provider so developers (and the beast
+        // OTelCollector shim) reach the same pipeline.
+        metrics_api::Provider::SetMeterProvider(
+            opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(meterProvider_));
+
         // Register as the global Telemetry instance so SpanGuard factory
         // methods can access it without callers passing a reference.
         Telemetry::setInstance(this);
@@ -362,6 +463,18 @@ public:
             trace_api::Provider::SetTracerProvider(
                 opentelemetry::nostd::shared_ptr<trace_api::TracerProvider>(
                     new trace_api::NoopTracerProvider()));
+        }
+
+        if (meterProvider_)
+        {
+            // Mirror the tracer teardown: bounded flush, drop our provider,
+            // then restore a noop global provider. Same shutdown-order
+            // caveat as sdkProvider_ above applies to getMeter() callers.
+            meterProvider_->ForceFlush(std::chrono::milliseconds(5000));
+            meterProvider_.reset();
+            metrics_api::Provider::SetMeterProvider(
+                opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(
+                    new metrics_api::NoopMeterProvider()));
         }
         JLOG(journal_.info()) << "Telemetry stopped";
     }
@@ -414,6 +527,15 @@ public:
         if (!sdkProvider_)
             return trace_api::Provider::GetTracerProvider()->GetTracer(std::string(name));
         return sdkProvider_->GetTracer(std::string(name));
+    }
+
+    opentelemetry::nostd::shared_ptr<metrics_api::Meter>
+    getMeter(std::string_view name = kMeterName) override
+    {
+        if (!meterProvider_)
+            return metrics_api::Provider::GetMeterProvider()->GetMeter(
+                std::string(name), std::string(kMeterVersion));
+        return meterProvider_->GetMeter(std::string(name), std::string(kMeterVersion));
     }
 
     opentelemetry::nostd::shared_ptr<trace_api::Span>

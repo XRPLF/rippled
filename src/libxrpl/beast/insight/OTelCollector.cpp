@@ -4,7 +4,10 @@
  *
  * Compiled only when XRPL_ENABLE_TELEMETRY is defined (via CMake
  * telemetry=ON). Maps beast::insight instruments to OTel SDK instruments
- * and exports them via OTLP/HTTP using a PeriodicMetricReader.
+ * created on the GLOBAL Meter published by the telemetry module. This class
+ * is a legacy shim: it no longer owns an export pipeline. The MeterProvider,
+ * PeriodicExportingMetricReader, OTLP exporter and histogram view all live in
+ * xrpl::telemetry::Telemetry.
  *
  * When XRPL_ENABLE_TELEMETRY is not defined, OTelCollector::New() returns
  * a NullCollector so the build succeeds without OTel dependencies.
@@ -22,10 +25,10 @@
  *       +--------------------+----------------+--------------+
  *       |
  *       v
- *   PeriodicMetricReader (1s interval)
+ *   GLOBAL Meter (from metrics::Provider::GetMeterProvider())
  *       |
  *       v
- *   OtlpHttpMetricExporter -> OTel Collector -> Prometheus
+ *   telemetry-owned PeriodicMetricReader (1s) -> OTLP exporter -> Prometheus
  */
 
 #ifdef XRPL_ENABLE_TELEMETRY
@@ -41,28 +44,15 @@
 #include <xrpl/beast/insight/MeterImpl.h>
 #include <xrpl/beast/utility/Journal.h>
 
-#include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
-#include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_options.h>
 #include <opentelemetry/metrics/async_instruments.h>
 #include <opentelemetry/metrics/meter.h>
 #include <opentelemetry/metrics/meter_provider.h>
 #include <opentelemetry/metrics/observer_result.h>
+#include <opentelemetry/metrics/provider.h>
 #include <opentelemetry/metrics/sync_instruments.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/nostd/unique_ptr.h>
 #include <opentelemetry/nostd/variant.h>
-#include <opentelemetry/sdk/metrics/aggregation/aggregation_config.h>
-#include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_factory.h>
-#include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_options.h>
-#include <opentelemetry/sdk/metrics/instruments.h>
-#include <opentelemetry/sdk/metrics/meter_provider.h>
-#include <opentelemetry/sdk/metrics/meter_provider_factory.h>
-#include <opentelemetry/sdk/metrics/view/instrument_selector_factory.h>
-#include <opentelemetry/sdk/metrics/view/meter_selector_factory.h>
-#include <opentelemetry/sdk/metrics/view/view_factory.h>
-#include <opentelemetry/sdk/metrics/view/view_registry.h>
-#include <opentelemetry/sdk/resource/resource.h>
-#include <opentelemetry/semconv/incubating/service_attributes.h>
 
 #include <algorithm>
 #include <atomic>
@@ -79,9 +69,6 @@ namespace beast::insight {
 namespace detail {
 
 namespace metrics_api = opentelemetry::metrics;
-namespace metrics_sdk = opentelemetry::sdk::metrics;
-namespace otlp_http = opentelemetry::exporter::otlp;
-namespace resource = opentelemetry::sdk::resource;
 
 class OTelCollectorImp;
 
@@ -335,12 +322,16 @@ private:
 //------------------------------------------------------------------------------
 
 /**
- * @brief Main OTel Collector implementation.
+ * @brief Main OTel Collector implementation (legacy shim).
  *
- * Creates an OTel MeterProvider with a PeriodicMetricReader that
- * exports metrics via OTLP/HTTP at 1-second intervals. Implements
- * all Collector::make_*() factory methods to create OTel-backed
- * instrument wrappers.
+ * Obtains its Meter from the GLOBAL MeterProvider owned and published by the
+ * telemetry module (xrpl::telemetry::Telemetry), rather than building its own
+ * export pipeline. Implements all Collector::make_*() factory methods to
+ * create OTel-backed instrument wrappers on that shared Meter.
+ *
+ * The metrics pipeline (MeterProvider + PeriodicExportingMetricReader + OTLP
+ * HTTP exporter + histogram view) lives in the telemetry module. This class is
+ * a thin adapter kept for beast::insight callers during deprecation.
  *
  * Class diagram:
  *
@@ -353,19 +344,20 @@ private:
  *   | OTelCollectorImp |-------------+
  *   +------------------+
  *   | - journal_       |
- *   | - prefix_        |
- *   | - provider_      |     +---------------------+
- *   | - otelMeter_     |---->| OTel MeterProvider   |
- *   | - hooks_[]       |     | + PeriodicReader     |
- *   | - gauges_[]      |     | + OtlpHttpExporter   |
- *   +------------------+     +---------------------+
+ *   | - prefix_        |     +--------------------------+
+ *   | - otelMeter_     |---->| GLOBAL MeterProvider     |
+ *   | - hooks_[]       |     | (owned by Telemetry)     |
+ *   | - gauges_[]      |     | + PeriodicReader         |
+ *   +------------------+     | + OtlpHttpExporter       |
+ *                            +--------------------------+
  *
  * Lifecycle:
- *   1. Constructor creates MeterProvider + exporter pipeline.
- *   2. make_*() methods create instruments registered with the provider.
- *   3. PeriodicMetricReader collects every 1s, calling observable callbacks.
+ *   1. Constructor fetches the Meter from the global MeterProvider.
+ *   2. make_*() methods create instruments on that shared Meter.
+ *   3. The telemetry-owned PeriodicMetricReader collects every 1s, calling
+ *      observable callbacks.
  *   4. Observable callbacks invoke hooks, read gauge atomics.
- *   5. Destructor shuts down MeterProvider (flushes pending exports).
+ *   5. Destructor only logs; the telemetry module owns pipeline teardown.
  *
  * Caveats:
  *   - Observable gauge callbacks run on the SDK's internal thread. Hook
@@ -390,9 +382,12 @@ class OTelCollectorImp : public OTelCollector, public std::enable_shared_from_th
 {
 public:
     /**
-     * @brief Construct the OTel collector and initialize the export pipeline.
+     * @brief Construct the OTel collector over the global MeterProvider.
      *
-     * @param endpoint    OTLP/HTTP metrics endpoint URL.
+     * @param endpoint    OTLP/HTTP metrics endpoint URL. Informational only:
+     *                    the global telemetry pipeline is authoritative for
+     *                    the actual export endpoint. Retained for logging and
+     *                    back-compat with the New() signature.
      * @param prefix      Prefix for all metric names.
      * @param instanceId  Value for the service.instance.id resource attribute.
      *                    When empty, the attribute is omitted.
@@ -504,9 +499,6 @@ private:
 
     /** Prefix for all metric names (e.g., "xrpld"). */
     std::string prefix_;
-
-    /** OTel SDK MeterProvider owning the export pipeline. RAII lifecycle. */
-    std::shared_ptr<metrics_sdk::MeterProvider> provider_;
 
     /** OTel Meter used to create all instruments. */
     opentelemetry::nostd::shared_ptr<metrics_api::Meter> otelMeter_;
@@ -682,69 +674,33 @@ OTelCollectorImp::OTelCollectorImp(
     Journal journal)
     : journal_(journal), prefix_(std::move(prefix))
 {
+    // instanceId/serviceName/networkType are retained on the New() signature
+    // for back-compat but no longer used here: the telemetry module owns the
+    // resource attributes for the shared metrics pipeline.
+    (void)instanceId;
+    (void)serviceName;
+    (void)networkType;
+
     if (journal_.info())
     {
+        // endpoint is informational: the global telemetry pipeline owns the
+        // real exporter. It is logged here for back-compat and diagnostics.
         journal_.info() << "OTelCollector starting: endpoint=" << endpoint << " prefix=" << prefix_;
     }
 
-    // Configure OTLP HTTP metric exporter.
-    otlp_http::OtlpHttpMetricExporterOptions exporterOpts;
-    exporterOpts.url = endpoint;
-
-    auto exporter = otlp_http::OtlpHttpMetricExporterFactory::Create(exporterOpts);
-
-    // Configure periodic metric reader (1-second export interval).
-    metrics_sdk::PeriodicExportingMetricReaderOptions readerOpts;
-    readerOpts.export_interval_millis = std::chrono::milliseconds(1000);
-    readerOpts.export_timeout_millis = std::chrono::milliseconds(500);
-
-    auto reader =
-        metrics_sdk::PeriodicExportingMetricReaderFactory::Create(std::move(exporter), readerOpts);
-
-    // Configure resource attributes matching the trace exporter so metrics
-    // and traces share one identity. service.name defaults to "xrpld" when
-    // unset. service.instance.id and xrpl.network.type are added when
-    // provided so Prometheus labels distinguish node and network.
-    // "xrpl.network.type" is a string literal (not the telemetry SpanNames
-    // const) because beast/insight sits below the telemetry module and
-    // cannot include it; the value must match the trace exporter's key.
-    resource::ResourceAttributes attrs;
-    attrs[opentelemetry::semconv::service::kServiceName] =
-        serviceName.empty() ? "xrpld" : serviceName;
-    if (!instanceId.empty())
-    {
-        attrs[opentelemetry::semconv::service::kServiceInstanceId] = instanceId;
-    }
-    if (!networkType.empty())
-    {
-        attrs["xrpl.network.type"] = networkType;
-    }
-    auto resourceAttrs = resource::Resource::Create(attrs);
-
-    // Create MeterProvider with resource, then attach the metric reader.
-    provider_ = metrics_sdk::MeterProviderFactory::Create(
-        std::make_unique<metrics_sdk::ViewRegistry>(), resourceAttrs);
-    provider_->AddMetricReader(std::move(reader));
-
-    // Configure histogram bucket boundaries for Event instruments.
-    // These match the SpanMetrics connector buckets for consistency.
-    auto histogramSelector = metrics_sdk::InstrumentSelectorFactory::Create(
-        metrics_sdk::InstrumentType::kHistogram, "*", "ms");
-    auto meterSelector = metrics_sdk::MeterSelectorFactory::Create("xrpld_metrics", "", "");
-    auto histogramConfig = std::make_shared<metrics_sdk::HistogramAggregationConfig>();
-    histogramConfig->boundaries_ =
-        std::vector<double>{1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1000.0, 5000.0};
-    auto histogramView = metrics_sdk::ViewFactory::Create(
-        "default_histogram",
-        "Default histogram view with SpanMetrics-compatible buckets",
-        metrics_sdk::AggregationType::kHistogram,
-        std::move(histogramConfig));
-
-    provider_->AddView(
-        std::move(histogramSelector), std::move(meterSelector), std::move(histogramView));
-
-    // Create the OTel Meter for creating instruments.
-    otelMeter_ = provider_->GetMeter("xrpld_metrics", "1.0.0");
+    // Fetch the Meter from the GLOBAL MeterProvider. The telemetry module
+    // (xrpl::telemetry::Telemetry) builds the metrics pipeline (exporter,
+    // periodic reader, histogram view, resource attributes) and registers it
+    // via metrics::Provider::SetMeterProvider() during start(). beast metrics
+    // ride that shared pipeline, so both direct-API and beast-sourced metrics
+    // export under one resource identity.
+    //
+    // The name/version literals MUST match the telemetry module's kMeterName
+    // ("xrpld") and kMeterVersion ("1.0.0"). They are written as literals (not
+    // referenced from Telemetry.h) because beast/insight sits below the
+    // telemetry module in the layering and cannot include its header.
+    otelMeter_ = metrics_api::Provider::GetMeterProvider()->GetMeter(
+        std::string{"xrpld"}, std::string{"1.0.0"});
 
     if (journal_.info())
     {
@@ -758,11 +714,8 @@ OTelCollectorImp::~OTelCollectorImp()
     {
         journal_.info() << "OTelCollector shutting down";
     }
-    if (provider_)
-    {
-        provider_->ForceFlush(std::chrono::milliseconds(2000));
-        provider_->Shutdown();
-    }
+    // No pipeline teardown here: the telemetry module owns the global
+    // MeterProvider lifecycle (ForceFlush/Shutdown happen in Telemetry::stop()).
     if (journal_.info())
     {
         journal_.info() << "OTelCollector stopped";
