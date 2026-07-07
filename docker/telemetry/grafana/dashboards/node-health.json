@@ -1587,77 +1587,77 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_acceptLedger_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{job_type=\"acceptLedger\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Accept Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_advanceLedger_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{job_type=\"advanceLedger\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Advance Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_transaction_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{job_type=\"transaction\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Transaction [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_writeObjects_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{job_type=\"writeObjects\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Write Objects [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_heartbeat_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{job_type=\"heartbeat\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Heartbeat [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_sweep_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{job_type=\"sweep\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Sweep [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_trustedValidation_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{job_type=\"trustedValidation\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Trusted Validation [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_trustedProposal_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{job_type=\"trustedProposal\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Trusted Proposal [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_publishNewLedger_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{job_type=\"publishNewLedger\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Publish New Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_clientRPC_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{job_type=\"clientRPC\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Client RPC [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_ledgerData_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{job_type=\"ledgerData\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Ledger Data [{{quantile}}]"
         }
       ],
@@ -1696,77 +1696,77 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_acceptLedger_q_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"acceptLedger\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Accept Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_advanceLedger_q_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"advanceLedger\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Advance Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_transaction_q_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"transaction\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Transaction [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_writeObjects_q_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"writeObjects\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Write Objects [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_heartbeat_q_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"heartbeat\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Heartbeat [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_sweep_q_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"sweep\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Sweep [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_trustedValidation_q_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"trustedValidation\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Trusted Validation [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_trustedProposal_q_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"trustedProposal\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Trusted Proposal [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_publishNewLedger_q_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"publishNewLedger\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Publish New Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_clientRPC_q_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"clientRPC\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Client RPC [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_ledgerData_q_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"ledgerData\", exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Ledger Data [{{quantile}}]"
         }
       ],
