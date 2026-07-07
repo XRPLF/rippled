@@ -78,7 +78,13 @@ include(target_link_modules)
 # Level 01
 add_module(xrpl beast)
 target_link_libraries(xrpl.libxrpl.beast PUBLIC xrpl.imports.main)
-# OTelCollector in beast/insight uses OTel Metrics SDK when telemetry is enabled.
+# OTelCollector in beast/insight uses the OTel Metrics SDK when telemetry is
+# enabled. Link the Conan-provided umbrella target rather than individual
+# component targets: the OTel package's per-component dependency graph is
+# under-declared (e.g. the OTLP client references sdk::common symbols without
+# declaring the edge), so naming components directly reorders the static-link
+# line into an unresolvable state. The umbrella carries the full, internally
+# consistent graph the package authors validated.
 if(telemetry)
     target_link_libraries(
         xrpl.libxrpl.beast

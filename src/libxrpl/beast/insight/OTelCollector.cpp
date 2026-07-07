@@ -142,7 +142,9 @@ class OTelCounterImpl : public CounterImpl
 {
 public:
     /**
-     * @param name   Fully-qualified metric name (prefix.group.name).
+     * @param name   Export-ready metric name, already run through
+     *               formatName() by the collector: prefix prepended and
+     *               dots replaced with underscores (e.g. "xrpld_rpc_size").
      * @param meter  OTel Meter used to create the counter instrument.
      */
     OTelCounterImpl(
@@ -182,7 +184,9 @@ class OTelEventImpl : public EventImpl
 {
 public:
     /**
-     * @param name   Fully-qualified metric name (prefix.group.name).
+     * @param name   Export-ready metric name, already run through
+     *               formatName() by the collector: prefix prepended and
+     *               dots replaced with underscores (e.g. "xrpld_rpc_size").
      * @param meter  OTel Meter used to create the histogram instrument.
      */
     OTelEventImpl(
@@ -227,7 +231,9 @@ class OTelGaugeImpl : public GaugeImpl
 {
 public:
     /**
-     * @param name       Fully-qualified metric name (prefix.group.name).
+     * @param name       Export-ready metric name, already run through
+     *                   formatName() by the collector: prefix prepended
+     *                   and dots replaced with underscores.
      * @param meter      OTel Meter used to create the observable gauge.
      * @param collector  Owning collector, used to invoke hooks before reads.
      */
@@ -300,7 +306,9 @@ class OTelMeterImpl : public MeterImpl
 {
 public:
     /**
-     * @param name   Fully-qualified metric name (prefix.group.name).
+     * @param name   Export-ready metric name, already run through
+     *               formatName() by the collector: prefix prepended and
+     *               dots replaced with underscores (e.g. "xrpld_rpc_size").
      * @param meter  OTel Meter used to create the counter instrument.
      */
     OTelMeterImpl(
