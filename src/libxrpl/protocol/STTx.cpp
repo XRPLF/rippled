@@ -66,9 +66,9 @@ getTxFormat(TxType type)
     return format;
 }
 
-STTx::STTx(STObject&& object) : STObject(std::move(object))
+STTx::STTx(STObject&& object)
+    : STObject(std::move(object)), txType_(safeCast<TxType>(getFieldU16(sfTransactionType)))
 {
-    txType_ = safeCast<TxType>(getFieldU16(sfTransactionType));
     applyTemplate(getTxFormat(txType_)->getSOTemplate());  //  may throw
     tid_ = getHash(HashPrefix::TransactionId);
     buildBatchTxnIds();
@@ -100,6 +100,9 @@ STTx::STTx(TxType type, std::function<void(STObject&)> assembler) : STObject(sfT
 
     assembler(*this);
 
+    // txType_ must be read after the object is assembled, so this cannot be a
+    // member initializer.
+    // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
     txType_ = safeCast<TxType>(getFieldU16(sfTransactionType));
 
     if (txType_ != type)
@@ -765,7 +768,7 @@ isBatchRawTransactionOkay(STObject const& st, std::string& reason)
     {
         try
         {
-            TxType const tt = safeCast<TxType>(raw.getFieldU16(sfTransactionType));
+            auto const tt = safeCast<TxType>(raw.getFieldU16(sfTransactionType));
             if (tt == ttBATCH)
             {
                 reason = "Raw Transactions may not contain batch transactions.";

@@ -280,12 +280,11 @@ public:
     {
     }
 
-    template <
-        class Container,
-        class = std::enable_if_t<
-            detail::IsContiguousContainer<Container>::value &&
-            std::is_trivially_copyable_v<typename Container::value_type>>>
+    template <class Container>
     explicit BaseUInt(Container const& c)
+        requires(
+            detail::IsContiguousContainer<Container>::value &&
+            std::is_trivially_copyable_v<typename Container::value_type>)
     {
         // Use AlwaysFalseT so the static_assert condition is dependent
         // and only triggers when this constructor template is instantiated.
@@ -295,13 +294,12 @@ public:
             "Use base_uint::fromRaw instead.");
     }
 
-    template <
-        class Container,
-        class = std::enable_if_t<
-            detail::IsContiguousContainer<Container>::value &&
-            std::is_trivially_copyable_v<typename Container::value_type>>>
+    template <class Container>
     static BaseUInt
     fromRaw(Container const& c)
+        requires(
+            detail::IsContiguousContainer<Container>::value &&
+            std::is_trivially_copyable_v<typename Container::value_type>)
     {
         BaseUInt result;
         XRPL_ASSERT(
@@ -312,11 +310,11 @@ public:
     }
 
     template <class Container>
-    std::enable_if_t<
-        detail::IsContiguousContainer<Container>::value &&
-            std::is_trivially_copyable_v<typename Container::value_type>,
-        BaseUInt&>
+    BaseUInt&
     operator=(Container const& c)
+        requires(
+            detail::IsContiguousContainer<Container>::value &&
+            std::is_trivially_copyable_v<typename Container::value_type>)
     {
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
