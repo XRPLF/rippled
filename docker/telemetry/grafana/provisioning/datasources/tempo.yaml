@@ -180,7 +180,7 @@ datasources:
             operator: "="
             scope: span
             type: static
-          # Phase 3/4: Additional transaction and queue filters
+          # Additional transaction and queue filters
           - id: tx-path
             tag: path
             operator: "="
