@@ -16,6 +16,16 @@
 
 namespace xrpl {
 
+/*
+I guess you can put some items in, make sure they're still there. Let some
+time pass, make sure they're gone. Keep a strong pointer to one of them, make
+sure you can still find it even after time passes. Create two objects with
+the same key, canonicalize them both and make sure you get the same object.
+Put an object in but keep a strong pointer to it, advance the clock a lot,
+then canonicalize a new object with the same key, make sure you get the
+original object.
+*/
+
 TEST(TaggedCacheTest, tagged_cache)
 {
     using namespace std::chrono_literals;
