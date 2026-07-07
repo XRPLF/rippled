@@ -507,7 +507,7 @@ LedgerHistory::validatedLedger(
                 mismatch = MismatchInputs{
                     .built = entry.built.value(),
                     .builtConsensusHash = entry.builtConsensusHash,
-                    .consensus = entry.consensus.value()};
+                    .consensus = entry.consensus.value()};  // NOLINT(bugprone-unchecked-optional-access) consensus always emplaced with built
             }
             else
             {
