@@ -175,8 +175,8 @@ public:
         auto const result = env.rpc("json", "sign", to_string(req))[jss::result];
 
         BEAST_EXPECT(result[jss::error] == "invalidParams");
-        BEAST_EXPECT(
-            result[jss::error_message] == "Field 'tx_json.Asset' has invalid data.");
+        BEAST_EXPECT(result[jss::error_message] == "Field 'tx_json.Asset' has invalid data.");
+    }
 
     void
     testNoAccountIssuer()
@@ -248,8 +248,8 @@ public:
         auto const result = env.rpc("json", "sign", to_string(req))[jss::result];
 
         BEAST_EXPECT(result[jss::error] == "invalidParams");
-        BEAST_EXPECT(
-            result[jss::error_message] == "Field 'tx_json.Asset' has invalid data.");
+        BEAST_EXPECT(result[jss::error_message] == "Field 'tx_json.Asset' has invalid data.");
+    }
 
     void
     testXrpAccountIssuer()

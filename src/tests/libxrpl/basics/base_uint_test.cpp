@@ -136,7 +136,7 @@ TEST_F(BaseUintDeathTest, fromRaw_size_mismatch)
             auto const resultText = to_string(result);
             EXPECT_EQ(resultText, "010203040506070800000000") << resultText;
         }),
-        "xrpl::BaseUInt::fromRaw(Container auto) : input size match");
+        "input size match");
 
     EXPECT_DEBUG_DEATH(
         ({
@@ -148,7 +148,43 @@ TEST_F(BaseUintDeathTest, fromRaw_size_mismatch)
             auto const resultText = to_string(result);
             EXPECT_EQ(resultText, "0102030405060708090A0B0C") << resultText;
         }),
-        "xrpl::BaseUInt::fromRaw(Container auto) : input size match");
+        "input size match");
+
+    EXPECT_DEBUG_DEATH(
+        ({
+            // Container smaller than the base_uint (8 bytes vs 12 bytes for
+            // test96). Only the first 8 bytes are copied; the remaining 4 bytes
+            // stay zero.
+            Blob const tooSmall{1, 2, 3, 4, 5, 6, 7, 8};
+            BaseUInt96 result{};
+            --result;
+            {
+                auto const originalText = to_string(result);
+                EXPECT_EQ(originalText, "FFFFFFFFFFFFFFFFFFFFFFFF") << originalText;
+            }
+            result = tooSmall;
+            auto const resultText = to_string(result);
+            EXPECT_EQ(resultText, "010203040506070800000000") << resultText;
+        }),
+        "input size match");
+
+    EXPECT_DEBUG_DEATH(
+        ({
+            // Container larger than the base_uint (16 bytes vs 12 bytes for
+            // test96). Only the first 12 bytes are copied; the extra bytes are
+            // ignored.
+            Blob const tooBig{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+            BaseUInt96 result{};
+            --result;
+            {
+                auto const originalText = to_string(result);
+                EXPECT_EQ(originalText, "FFFFFFFFFFFFFFFFFFFFFFFF") << originalText;
+            }
+            result = tooBig;
+            auto const resultText = to_string(result);
+            EXPECT_EQ(resultText, "0102030405060708090A0B0C") << resultText;
+        }),
+        "input size match");
 }
 
 TEST_F(BaseUintTest, base_uint)

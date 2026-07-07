@@ -323,6 +323,8 @@ public:
             "xrpl::BaseUInt::operator=(Container auto) : input size match");
         std::size_t const canCopy =
             std::min(size(), c.size() * sizeof(typename Container::value_type));
+        if (canCopy < size())
+            *this = beast::kZero;
         std::memcpy(data_.data(), c.data(), canCopy);
         return *this;
     }
