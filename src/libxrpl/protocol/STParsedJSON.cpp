@@ -36,7 +36,6 @@
 #include <charconv>
 #include <cstdint>
 #include <exception>
-#include <format>
 #include <iostream>
 #include <limits>
 #include <optional>
@@ -987,6 +986,20 @@ parseArray(
     int depth,
     json::Value& error);
 
+// Build "<jsonName>.<fieldName>" in a single allocation. A reserved += sequence
+// is faster than an operator+ chain (and than std::format) and avoids the
+// performance-inefficient-string-concatenation warning.
+static std::string
+joinName(std::string const& jsonName, std::string const& fieldName)
+{
+    std::string result;
+    result.reserve(jsonName.size() + 1 + fieldName.size());
+    result += jsonName;
+    result += '.';
+    result += fieldName;
+    return result;
+}
+
 static std::optional<STObject>
 parseObject(
     std::string const& jsonName,
@@ -1038,11 +1051,7 @@ parseObject(
                     try
                     {
                         auto ret = parseObject(
-                            std::format("{}.{}", jsonName, fieldName),
-                            value,
-                            field,
-                            depth + 1,
-                            error);
+                            joinName(jsonName, fieldName), value, field, depth + 1, error);
                         if (!ret)
                             return std::nullopt;
                         data.emplaceBack(std::move(*ret));
@@ -1060,11 +1069,7 @@ parseObject(
                     try
                     {
                         auto array = parseArray(
-                            std::format("{}.{}", jsonName, fieldName),
-                            value,
-                            field,
-                            depth + 1,
-                            error);
+                            joinName(jsonName, fieldName), value, field, depth + 1, error);
                         if (!array.has_value())
                             return std::nullopt;
                         data.emplaceBack(std::move(*array));
