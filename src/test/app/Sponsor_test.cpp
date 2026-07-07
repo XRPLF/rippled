@@ -3897,12 +3897,6 @@ public:
 
             auto const usd = gw["usd"];
 
-            // Create sponsorship allowing reserve sponsoring
-            env(sponsor::set(sponsor, 0, 100, XRP(100)),
-                sponsor::SponseeAcc(alice),
-                Ter(tesSUCCESS));
-            env.close();
-
             // Create a trust line for alice
             env(trust(alice, usd(1000)));
             env.close();
@@ -3961,6 +3955,37 @@ public:
             BEAST_EXPECT(sponsorSleAfter->isFieldPresent(sfSponsoringAccountCount));
             BEAST_EXPECT(
                 sponsorSleAfter->getFieldU32(sfSponsoringAccountCount) == sponsoringAccountCount);
+        }
+
+        {
+            // Account with sponsored objects should be deletable
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            // Create sponsored delegate (a non-deletion-blocker)
+            env(deposit::auth(alice, bob),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor));
+
+            {
+                auto const sponsorSle = env.le(keylet::account(sponsor));
+                auto const aliceSle = env.le(keylet::account(alice));
+                BEAST_EXPECT(sponsorSle->at(sfSponsoringOwnerCount) == 1);
+                BEAST_EXPECT(aliceSle->at(sfOwnerCount) == 1);
+                BEAST_EXPECT(aliceSle->at(sfSponsoredOwnerCount) == 1);
+            }
+
+            incLgrSeqForAccDel(env, alice);
+
+            // AccountDelete should succeed
+            {
+                auto const requiredFee = drops(env.current()->fees().increment);
+                env(acctdelete(alice, bob), Fee(requiredFee), Ter(tesSUCCESS));
+                BEAST_EXPECT(!env.le(keylet::account(alice)));
+                auto const sponsorSle = env.le(keylet::account(sponsor));
+                BEAST_EXPECT(sponsorSle->at(sfSponsoringOwnerCount) == 0);
+            }
         }
     }
 
