@@ -1,22 +1,37 @@
 #pragma once
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <expected>
+#include <functional>
+#include <optional>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -35,6 +50,8 @@ reduceOffer(auto const& amount)
 }  // namespace detail
 
 enum class IsDeposit : bool { No = false, Yes = true };
+
+inline Number const kAMMInvariantRelativeTolerance{1, -11};
 
 /** Calculate LP Tokens given AMM pool reserves.
  * @param asset1 AMM one side of the pool reserve
@@ -737,11 +754,35 @@ ammPoolHolds(
     AuthHandling authHandling,
     beast::Journal const j);
 
+/** Check AMM pool product invariant after an AMM operation that changes LP tokens
+ * (deposit/withdraw/clawback) from an already calculated pool product mean.
+ * Returns tecPRECISION_LOSS if poolProductMean < newLPTokenBalance beyond the
+ * invariant tolerance,
+ * tesSUCCESS otherwise. Skips check when newLPTokenBalance is zero (last withdrawal).
+ */
+TER
+checkAMMPrecisionLoss(Number const& poolProductMean, STAmount const& newLPTokenBalance);
+
+/** Check AMM pool product invariant after an AMM operation that changes LP tokens
+ * (deposit/withdraw/clawback).
+ * Returns tecPRECISION_LOSS if sqrt(asset1 * asset2) < newLPTokenBalance beyond
+ * the invariant tolerance,
+ * tesSUCCESS otherwise. Skips check when newLPTokenBalance is zero (last withdrawal).
+ */
+TER
+checkAMMPrecisionLoss(
+    ReadView const& view,
+    AccountID const& ammAccountID,
+    Asset const& asset1,
+    Asset const& asset2,
+    STAmount const& newLPTokenBalance,
+    beast::Journal const j);
+
 /** Get AMM pool and LP token balances. If both optIssue are
  * provided then they are used as the AMM token pair issues.
  * Otherwise the missing issues are fetched from ammSle.
  */
-Expected<std::tuple<STAmount, STAmount, STAmount>, TER>
+std::expected<std::tuple<STAmount, STAmount, STAmount>, TER>
 ammHolds(
     ReadView const& view,
     SLE const& ammSle,
@@ -792,7 +833,7 @@ deleteAMMAccount(Sandbox& view, Asset const& asset, Asset const& asset2, beast::
 void
 initializeFeeAuctionVote(
     ApplyView& view,
-    std::shared_ptr<SLE>& ammSle,
+    SLE::pointer& ammSle,
     AccountID const& account,
     Asset const& lptAsset,
     std::uint16_t tfee);
@@ -801,18 +842,18 @@ initializeFeeAuctionVote(
  * otherwise. Return tecINTERNAL if encountered an unexpected condition,
  * for instance Liquidity Provider has more than one LPToken trustline.
  */
-Expected<bool, TER>
+std::expected<bool, TER>
 isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID const& lpAccount);
 
 /** Due to rounding, the LPTokenBalance of the last LP might
  * not match the LP's trustline balance. If it's within the tolerance,
  * update LPTokenBalance to match the LP's trustline balance.
  */
-Expected<bool, TER>
+std::expected<bool, TER>
 verifyAndAdjustLPTokenBalance(
     Sandbox& sb,
     STAmount const& lpTokens,
-    std::shared_ptr<SLE>& ammSle,
+    SLE::pointer& ammSle,
     AccountID const& account);
 
 }  // namespace xrpl

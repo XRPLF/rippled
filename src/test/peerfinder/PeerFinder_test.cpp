@@ -421,8 +421,8 @@ public:
 
             c.loadFromString(toLoad);
             BEAST_EXPECT(
-                (c.PEERS_MAX == max && c.PEERS_IN_MAX == 0 && c.PEERS_OUT_MAX == 0) ||
-                (c.PEERS_IN_MAX == *maxIn && c.PEERS_OUT_MAX == *maxOut));
+                (c.peersMax == max && c.peersInMax == 0 && c.peersOutMax == 0) ||
+                (c.peersInMax == *maxIn && c.peersOutMax == *maxOut));
 
             Config const config = Config::makeConfig(c, port, false, 0, true);
 

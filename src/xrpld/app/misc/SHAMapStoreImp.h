@@ -1,15 +1,33 @@
 #pragma once
 
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DatabaseRotating.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/State.h>
+#include <xrpl/shamap/FullBelowCache.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/shamap/TreeNodeCache.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <string>
 #include <thread>
 
 namespace xrpl {
@@ -66,7 +84,7 @@ private:
     NodeStore::Scheduler& scheduler_;
     beast::Journal const journal_;
     NodeStore::DatabaseRotating* dbRotating_ = nullptr;
-    SavedStateDB state_db_;
+    SavedStateDB stateDb_;
     std::thread thread_;
     bool stop_ = false;
     bool healthy_ = true;
@@ -93,6 +111,8 @@ private:
     // as of run() or before
     NetworkOPs* netOPs_ = nullptr;
     LedgerMaster* ledgerMaster_ = nullptr;
+    FullBelowCache* fullBelowCache_ = nullptr;
+    TreeNodeCache* treeNodeCache_ = nullptr;
 
     static constexpr auto kNodeStoreName = "NodeStore";
 
@@ -113,7 +133,7 @@ public:
     {
         if (advisoryDelete_)
             canDelete_ = seq;
-        return state_db_.setCanDelete(seq);
+        return stateDb_.setCanDelete(seq);
     }
 
     bool
@@ -127,7 +147,7 @@ public:
     LedgerIndex
     getLastRotated() override
     {
-        return state_db_.getState().lastRotated;
+        return stateDb_.getState().lastRotated;
     }
 
     // All ledgers before and including this are unprotected

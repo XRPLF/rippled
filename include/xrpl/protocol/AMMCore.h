@@ -3,8 +3,13 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
+
+#include <cstdint>
+#include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -65,7 +70,7 @@ invalidAMMAssetPair(
 std::optional<std::uint8_t>
 ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot);
 
-/** Return true if required AMM amendments are enabled
+/** Return true if required AMM amendment is enabled
  */
 bool
 ammEnabled(Rules const&);

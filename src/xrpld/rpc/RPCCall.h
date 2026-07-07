@@ -2,14 +2,17 @@
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 
 #include <boost/asio/io_context.hpp>
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace xrpl {

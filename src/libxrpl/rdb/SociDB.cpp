@@ -1,5 +1,6 @@
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -53,13 +54,13 @@ getSociSqliteInit(std::string const& name, std::string const& dir, std::string c
 std::string
 getSociInit(BasicConfig const& config, std::string const& dbName)
 {
-    auto const& section = config.section("sqdb");
-    auto const backendName = get(section, "backend", "sqlite");
+    auto const& section = config.section(Sections::kSqdb);
+    auto const backendName = get(section, Keys::kBackend, "sqlite");
 
     if (backendName != "sqlite")
         Throw<std::runtime_error>("Unsupported soci backend: " + backendName);
 
-    auto const path = config.legacy("database_path");
+    auto const path = config.legacy(Sections::kDatabasePath);
     auto const ext = dbName == "validators" || dbName == "peerfinder" ? ".sqlite" : ".db";
     return detail::getSociSqliteInit(dbName, path, ext);
 }
@@ -212,6 +213,12 @@ public:
         if (auto [conn, keepAlive] = getConnection(); conn)
         {
             (void)keepAlive;
+            // The checkpointer is identified to the C callback by an integer id
+            // (resolved via checkpointerFromId) rather than a raw `this`, so it
+            // cannot dangle if the checkpointer is destroyed. Passing the id
+            // through sqlite's void* user-data requires an integer-to-pointer
+            // cast.
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
             sqlite_api::sqlite3_wal_hook(conn, &sqliteWALHook, reinterpret_cast<void*>(id_));
         }
     }

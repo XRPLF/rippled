@@ -3,7 +3,6 @@
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/core/ClosureCounter.h>
 #include <xrpl/core/JobTypeData.h>
-#include <xrpl/core/JobTypes.h>
 #include <xrpl/core/detail/Workers.h>
 #include <xrpl/json/json_value.h>
 
@@ -12,10 +11,27 @@
 // `boost/context/pooled_fixedsize_stack.hpp`, whose `.malloc()` / `.free()`
 // member calls on `boost::pool` collide with MSVC's `_CRTDBG_MAP_ALLOC` macros
 // in Debug builds (see cmake/XrplCompiler.cmake).
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Gauge.h>
+#include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/LoadEvent.h>
+
 #include <boost/context/protected_fixedsize_stack.hpp>
 #include <boost/coroutine2/coroutine.hpp>
 
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <mutex>
 #include <set>
+#include <string>
+#include <type_traits>
 
 namespace xrpl {
 
@@ -52,7 +68,7 @@ public:
         std::string name_;
         bool running_{false};
         std::mutex mutex_;
-        std::mutex mutex_run_;
+        std::mutex mutexRun_;
         std::condition_variable cv_;
         boost::coroutines2::coroutine<void>::push_type* yield_{};
         boost::coroutines2::coroutine<void>::pull_type coro_;
@@ -112,7 +128,7 @@ public:
         resume();
 
         /** Returns true if the Coro is still runnable (has not returned). */
-        bool
+        [[nodiscard]] bool
         runnable() const;
 
         /** Once called, the Coro allows early exit without an assert. */
@@ -138,16 +154,14 @@ public:
 
         @param type The type of job.
         @param name Name of the job.
-        @param jobHandler Lambda with signature void (Job&).  Called when the
-       job is executed.
+        @param jobHandler Callable with signature void(). Called when the job is executed.
 
         @return true if jobHandler added to queue.
     */
-    template <
-        typename JobHandler,
-        typename = std::enable_if_t<std::is_same_v<decltype(std::declval<JobHandler&&>()()), void>>>
+    template <typename JobHandler>
     bool
     addJob(JobType type, std::string const& name, JobHandler&& jobHandler)
+        requires(std::is_void_v<std::invoke_result_t<JobHandler>>)
     {
         if (auto optionalCountedJob = jobCounter_.wrap(std::forward<JobHandler>(jobHandler)))
         {
@@ -246,7 +260,7 @@ private:
     // Statistics tracking
     perf::PerfLog& perfLog_;
     beast::insight::Collector::ptr collector_;
-    beast::insight::Gauge job_count_;
+    beast::insight::Gauge jobCount_;
     beast::insight::Hook hook_;
 
     std::condition_variable cv_;
@@ -384,7 +398,7 @@ private:
 
 }  // namespace xrpl
 
-#include <xrpl/core/Coro.ipp>
+#include <xrpl/core/Coro.ipp>  // IWYU pragma: keep
 
 namespace xrpl {
 

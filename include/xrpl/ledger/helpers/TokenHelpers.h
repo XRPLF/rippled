@@ -1,15 +1,22 @@
 #pragma once
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <cstdint>
 #include <initializer_list>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -34,6 +41,15 @@ enum class WaiveTransferFee : bool { No = false, Yes };
 /** Controls whether accountSend is allowed to overflow OutstandingAmount **/
 enum class AllowMPTOverflow : bool { No = false, Yes };
 
+/** Controls whether canTransfer enforces lsfMPTCanTransfer on MPTs.
+ *
+ *  Default is No (enforce). Use Yes at call sites that must remain available
+ *  even when an MPT issuer has cleared lsfMPTCanTransfer - for example,
+ *  unwinding existing positions in SAV or the Lending Protocol. Has no
+ *  effect on the IOU branch of canTransfer.
+ */
+enum class WaiveMPTCanTransfer : bool { No = false, Yes };
+
 /* Check if MPToken (for MPT) or trust line (for IOU) exists:
  * - StrongAuth - before checking if authorization is required
  * - WeakAuth
@@ -54,8 +70,14 @@ enum class AuthType { StrongAuth, WeakAuth, Legacy };
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, Asset const& asset);
 
+[[nodiscard]] TER
+checkGlobalFrozen(ReadView const& view, Asset const& asset);
+
 [[nodiscard]] bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
+
+[[nodiscard]] TER
+checkIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
 
 /**
  *   isFrozen check is recursive for MPT shares in a vault, descending to
@@ -63,7 +85,11 @@ isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& 
  *   purely defensive, as we currently do not allow such vaults to be created.
  */
 [[nodiscard]] bool
-isFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth = 0);
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    std::uint8_t depth = 0);
 
 [[nodiscard]] TER
 checkFrozen(ReadView const& view, AccountID const& account, Issue const& issue);
@@ -85,14 +111,14 @@ isAnyFrozen(
     ReadView const& view,
     std::initializer_list<AccountID> const& accounts,
     Asset const& asset,
-    int depth = 0);
+    std::uint8_t depth = 0);
 
 [[nodiscard]] bool
 isDeepFrozen(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptIssue,
-    int depth = 0);
+    std::uint8_t depth = 0);
 
 /**
  *   isFrozen check is recursive for MPT shares in a vault, descending to
@@ -100,13 +126,82 @@ isDeepFrozen(
  *   purely defensive, as we currently do not allow such vaults to be created.
  */
 [[nodiscard]] bool
-isDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth = 0);
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    std::uint8_t depth = 0);
 
 [[nodiscard]] TER
 checkDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
 
 [[nodiscard]] TER
 checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
+
+/**
+ * Checks freeze compliance for withdrawing an asset from a pseudo-account (e.g. Vault, AMM,
+ * LoanBroker) to a destination account.
+ *
+ * Asserts that sourceAcct is a pseudo-account and that submitterAcct and dstAcct are not.
+ *
+ * Issuer exemption: returns tesSUCCESS immediately when dstAcct is the asset issuer — the issuer
+ * can always receive their own token, even when the pool is frozen.  Callers that need to block
+ * withdrawals from a frozen pool even for the issuer (e.g. because the pool math cannot handle it)
+ * must check checkFrozen(sourceAcct, asset) separately before calling this function.
+ *
+ * Otherwise checks, in order:
+ *   1. If the asset is globally frozen the remaining checks are redundant.
+ *   2. The pseudo-account's trustline / MPToken must not be individually frozen for sending.
+ *   3. The submitter's trustline / MPToken must not be individually frozen. Skipped when
+ * submitter == dst (self-withdrawal) so a regular freeze does not prevent recovering one's own
+ * funds. (Enforced as defensive code; no current caller exercises a frozen submitter ≠ dst.)
+ *   4. The destination must not be deep-frozen.
+ *
+ * For IOUs a regular individual freeze on the submitter does NOT block self-withdrawal; only deep
+ * freeze does. For MPTs "locked" is equivalent to deep-frozen, so locked MPT holders are always
+ * blocked.
+ *
+ * @param view          Ledger view to read freeze state from.
+ * @param pseudoAcct       Pseudo-account the funds are withdrawn from (sender).
+ * @param submitterAcct Account that submitted the withdrawal transaction.
+ * @param dstAcct       Account receiving the withdrawn funds.
+ * @param asset         Asset being withdrawn.
+ * @return tesSUCCESS if the withdrawal is permitted, otherwise a freeze
+ *         result (tecFROZEN for IOUs, tecLOCKED for MPTs).
+ */
+[[nodiscard]] TER
+checkWithdrawFreeze(
+    ReadView const& view,
+    AccountID const& pseudoAcct,
+    AccountID const& submitterAcct,
+    AccountID const& dstAcct,
+    Asset const& asset);
+
+/**
+ * Checks freeze compliance for depositing an asset into a pseudo-account (e.g. Vault, AMM,
+ * LoanBroker).
+ *
+ * Checks, in order:
+ *   1. If the asset is globally frozen the remaining checks are redundant.
+ *   2. The depositor must not be individually frozen for the asset. Skipped when srcAcct is the
+ * asset issuer, since the issuer can always send its own asset.
+ *   3. The pseudo-account must not be individually frozen for the asset.  Unlike regular accounts,
+ * pseudo-accounts cannot receive deposits under a regular freeze because the deposited funds
+ * could not later be withdrawn.
+ *
+ * @param view    Ledger view to read freeze state from.
+ * @param srcAcct Depositor sending the funds.
+ * @param pseudoAcct Pseudo-account receiving the deposit.
+ * @param asset   Asset being deposited.
+ * @return tesSUCCESS if the deposit is permitted, otherwise a freeze result
+ *         (tecFROZEN for IOUs, tecLOCKED for MPTs).
+ */
+[[nodiscard]] TER
+checkDepositFreeze(
+    ReadView const& view,
+    AccountID const& srcAcct,
+    AccountID const& pseudoAcct,
+    Asset const& asset);
 
 //------------------------------------------------------------------------------
 //
@@ -234,7 +329,13 @@ requireAuth(
     AuthType authType = AuthType::Legacy);
 
 [[nodiscard]] TER
-canTransfer(ReadView const& view, Asset const& asset, AccountID const& from, AccountID const& to);
+canTransfer(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& from,
+    AccountID const& to,
+    WaiveMPTCanTransfer waive = WaiveMPTCanTransfer::No,
+    std::uint8_t depth = 0);
 
 //------------------------------------------------------------------------------
 //
