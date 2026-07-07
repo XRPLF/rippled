@@ -112,7 +112,7 @@ CredentialAccept::doApply()
 
     auto txSponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
     if (!txSponsorSle)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+        return txSponsorSle.error();  // LCOV_EXCL_LINE
 
     // Release the original creation sponsor from the credential (it covered
     // the issuer's reserve), then assign the accept tx's sponsor (if any) so
