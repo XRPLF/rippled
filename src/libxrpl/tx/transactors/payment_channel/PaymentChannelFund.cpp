@@ -90,17 +90,17 @@ PaymentChannelFund::doApply()
     {
         // Check reserve and funds availability
         auto const balance = (*sle)[sfBalance];
-        auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
-        if (!sponsorSle)
-            return sponsorSle.error();  // LCOV_EXCL_LINE
-        if (auto const ret =
-                checkReserve(ctx_.getApplyViewContext(), sle, balance, *sponsorSle, {}, j_);
+        if (auto const ret = checkReserve(ctx_.getApplyViewContext(), sle, balance, {}, j_);
             !isTesSuccess(ret))
             return ret;
 
-        if (auto const ret = checkReserve(
-                ctx_.getApplyViewContext(), sle, balance - ctx_.tx[sfAmount], {}, {}, j_);
-            !isTesSuccess(ret))
+        // After locking sfAmount in the channel, the source must still meet
+        // its own reserve floor. We compare directly (rather than via
+        // checkReserve) because that helper diverts to the sponsor's balance
+        // when a sponsor is present and would ignore the source's post-lock
+        // balance entirely. Funding an existing channel adds no owned object,
+        // so there is no owner-count delta.
+        if (balance - ctx_.tx[sfAmount] < accountReserve(ctx_.view(), sle, j_))
             return tecUNFUNDED;
     }
 

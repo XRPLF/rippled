@@ -191,14 +191,11 @@ authorizeMPToken(
         //      - add the new mptokenKey to the owner directory
         //      - create the MPToken object for the holder
 
-        SLE::pointer sponsorSle;
-        if (account == ctx.tx[sfAccount])
-        {
-            auto sle = getTxReserveSponsor(ctx);
-            if (!sle)
-                return sle.error();  // LCOV_EXCL_LINE
-            sponsorSle = std::move(*sle);
-        }
+        // A reserve sponsor only covers tx.Account's own objects.
+        auto const sponsorExp = txReserveSponsorFor(ctx, sleAcct);
+        if (!sponsorExp)
+            return sponsorExp.error();  // LCOV_EXCL_LINE
+        auto const sponsorSle = *sponsorExp;
 
         // The reserve that is required to create the MPToken. Note
         // that although the reserve increases with every item

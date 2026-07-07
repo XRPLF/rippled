@@ -110,10 +110,6 @@ CredentialAccept::doApply()
 
     sleCred->setFieldU32(sfFlags, lsfAccepted);
 
-    auto txSponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
-    if (!txSponsorSle)
-        return txSponsorSle.error();  // LCOV_EXCL_LINE
-
     // Release the original creation sponsor from the credential (it covered
     // the issuer's reserve), then assign the accept tx's sponsor (if any) so
     // the credential reflects whoever is now covering the subject's reserve.
@@ -123,18 +119,13 @@ CredentialAccept::doApply()
     if (view().rules().enabled(featureSponsor) || view().rules().enabled(fixCleanup3_3_0))
     {
         if (auto const ret = checkReserve(
-                ctx_.getApplyViewContext(),
-                sleSubject,
-                preFeeBalance_,
-                *txSponsorSle,
-                {.ownerCountDelta = 1},
-                j_);
+                ctx_.getApplyViewContext(), sleSubject, preFeeBalance_, {.ownerCountDelta = 1}, j_);
             !isTesSuccess(ret))
             return ret;
     }
 
-    addSponsorToLedgerEntry(sleCred, *txSponsorSle);
-    increaseOwnerCount(view(), sleSubject, *txSponsorSle, 1, j_);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred);
+    increaseOwnerCount(ctx_.getApplyViewContext(), sleSubject, 1, j_);
     view().update(sleCred);
 
     return tesSUCCESS;

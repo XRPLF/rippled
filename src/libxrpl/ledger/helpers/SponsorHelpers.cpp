@@ -96,6 +96,17 @@ addSponsorToLedgerEntry(SLE::ref sle, SLE::const_ref sponsorSle, SF_ACCOUNT cons
 }
 
 void
+addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& field)
+{
+    // getTxReserveSponsor yields a null pointer when the tx is not
+    // reserve-sponsored, so addSponsorToLedgerEntry becomes a no-op then. The
+    // error case (tecINTERNAL) is an already-checked invariant; skip stamping.
+    auto const sponsorSle = getTxReserveSponsor(ctx);
+    if (sponsorSle && *sponsorSle)
+        addSponsorToLedgerEntry(sle, *sponsorSle, field);
+}
+
+void
 removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field)
 {
     XRPL_ASSERT(

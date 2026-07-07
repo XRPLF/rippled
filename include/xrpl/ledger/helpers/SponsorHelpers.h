@@ -61,6 +61,17 @@ addSponsorToLedgerEntry(
     SLE::const_ref sponsorSle,
     SF_ACCOUNT const& field = sfSponsor);
 
+/** Stamp the transaction's reserve sponsor onto a newly-created ledger entry.
+ *
+ *  Equivalent to the overload above, but resolves the sponsor via
+ *  getTxReserveSponsor(ctx) instead of taking it explicitly. A no-op when the
+ *  transaction is not reserve-sponsored. The entry is assumed to be owned by
+ *  the transaction submitter, which is the only account a tx reserve sponsor
+ *  can cover.
+ */
+void
+addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& field = sfSponsor);
+
 void
 removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field = sfSponsor);
 
