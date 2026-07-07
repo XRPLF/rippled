@@ -93,8 +93,12 @@ find_package(OpenSSL REQUIRED)
 find_package(secp256k1 REQUIRED)
 find_package(SOCI REQUIRED)
 find_package(SQLite3 REQUIRED)
-find_package(wasmi REQUIRED)
 find_package(xxHash REQUIRED)
+
+option(wasm "Enable WASM host functions (programmable escrows)" OFF)
+if(wasm)
+    find_package(wasmi REQUIRED)
+endif()
 
 target_link_libraries(
     xrpl_libs

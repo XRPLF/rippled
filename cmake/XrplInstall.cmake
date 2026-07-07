@@ -32,8 +32,17 @@ install(
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT development
 )
 
+# When the `wasm` option is disabled, keep the WASM host-function headers out
+# of the installed package: they include <wasmi/*>, which downstream consumers
+# won't have available.
+set(wasm_headers_exclude)
+if(NOT wasm)
+    set(wasm_headers_exclude REGEX "/tx/wasm(/|$)" EXCLUDE)
+endif()
+
 install(
     DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/xrpl"
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
     COMPONENT development
+    ${wasm_headers_exclude}
 )
