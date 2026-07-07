@@ -323,7 +323,7 @@ SHAMapStoreImp::run()
             canDelete_ >= lastRotated - 1 && healthWait() == HealthResult::KeepGoing;
 
         {
-            JLOG(journal_.debug()) << "run: Setting lastGoodValidatedLedger_ to " << validatedSeq;
+            JLOG(journal_.trace()) << "run: Setting lastGoodValidatedLedger_ to " << validatedSeq;
             // Note that this is set after the healthWait() check, so that we
             // don't start the rotation until the validated ledger is fully
             // processed. It is not guaranteed to be done at this point. It also
@@ -672,6 +672,7 @@ SHAMapStoreImp::healthWait()
     std::chrono::seconds age;
     OperatingMode mode = OperatingMode::DISCONNECTED;
     std::size_t numMissing = 0;
+    LedgerIndex lastLedger = 0;
 
     std::unique_lock lock(mutex_);
 
@@ -692,8 +693,13 @@ SHAMapStoreImp::healthWait()
 
         ScopeUnlock const unlock(lock);
 
-        auto const stream =
-            mode != OperatingMode::FULL || age > ageThreshold ? journal_.warn() : journal_.info();
+        auto const stream = std::invoke([mode, age, ageThreshold, index, lastLedger, this]() {
+            if (mode != OperatingMode::FULL || age > ageThreshold)
+                return journal_.warn();
+            if (index != lastLedger)
+                return journal_.trace();
+            return journal_.info();
+        });
         JLOG(stream) << "Waiting " << waitTime.count() << "s for node to stabilize. state: "
                      << app_.getOPs().strOperatingMode(mode, false) << ". age " << age.count()
                      << "s. Missing ledgers: " << numMissing << ".  Expect: " << lowerBound << "-"
@@ -701,6 +707,7 @@ SHAMapStoreImp::healthWait()
         std::this_thread::sleep_for(waitTime);
 
         readServerStatus(index, age, mode, numMissing, lowerBound, unlock);
+        lastLedger = index;
     }
 
     return stop_ ? HealthResult::Stopping : HealthResult::KeepGoing;
