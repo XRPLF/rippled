@@ -33,7 +33,6 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -182,7 +181,7 @@ void
 Door<Handler>::Detector::run()
 {
     util::spawn(
-        strand_, std::bind(&Detector::doDetect, this->shared_from_this(), std::placeholders::_1));
+        strand_, [self = this->shared_from_this()](yield_context yield) { self->doDetect(yield); });
 }
 
 template <class Handler>
@@ -297,8 +296,7 @@ void
 Door<Handler>::run()
 {
     util::spawn(
-        strand_,
-        std::bind(&Door<Handler>::doAccept, this->shared_from_this(), std::placeholders::_1));
+        strand_, [self = this->shared_from_this()](yield_context yield) { self->doAccept(yield); });
 }
 
 template <class Handler>
@@ -307,8 +305,7 @@ Door<Handler>::close()
 {
     if (!strand_.running_in_this_thread())
     {
-        return boost::asio::post(
-            strand_, std::bind(&Door<Handler>::close, this->shared_from_this()));
+        return boost::asio::post(strand_, [self = this->shared_from_this()] { self->close(); });
     }
     backoffTimer_.cancel();
     error_code ec;

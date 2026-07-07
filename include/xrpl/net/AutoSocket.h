@@ -120,12 +120,9 @@ public:
             socket_->next_layer().async_receive(
                 boost::asio::buffer(buffer_),
                 boost::asio::socket_base::message_peek,
-                std::bind(
-                    &AutoSocket::handleAutodetect,
-                    this,
-                    cbFunc,
-                    std::placeholders::_1,
-                    std::placeholders::_2));
+                [this, cbFunc](error_code const& ec, size_t bytesTransferred) {
+                    handleAutodetect(cbFunc, ec, bytesTransferred);
+                });
         }
     }
 

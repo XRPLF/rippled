@@ -25,7 +25,7 @@ You can verify that the required tools are installed and runnable with:
 | ----------- | --------------- |
 | GCC         | 15.2            |
 | Clang       | 22              |
-| Apple Clang | 17              |
+| Apple Clang | 21              |
 | MSVC        | 19.44[^windows] |
 
 ## Operating Systems

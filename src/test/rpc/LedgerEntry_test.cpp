@@ -2974,29 +2974,32 @@ class LedgerEntry_XChain_test : public beast::unit_test::Suite,
             BEAST_EXPECT(
                 attest[json::Value::UInt(0)].isMember(sfXChainCreateAccountProofSig.jsonName));
             json::Value a[kNumAttest];
-            for (size_t i = 0; i < kNumAttest; ++i)
+            for (auto& attestation : a)
             {
-                a[i] = attest[json::Value::UInt(0)][sfXChainCreateAccountProofSig.jsonName];
+                attestation = attest[json::Value::UInt(0)][sfXChainCreateAccountProofSig.jsonName];
                 BEAST_EXPECT(
-                    a[i].isMember(jss::Amount) && a[i][jss::Amount].asInt() == 1000 * kDropPerXrp);
+                    attestation.isMember(jss::Amount) &&
+                    attestation[jss::Amount].asInt() == 1000 * kDropPerXrp);
                 BEAST_EXPECT(
-                    a[i].isMember(jss::Destination) && a[i][jss::Destination] == scCarol.human());
+                    attestation.isMember(jss::Destination) &&
+                    attestation[jss::Destination] == scCarol.human());
                 BEAST_EXPECT(
-                    a[i].isMember(sfAttestationSignerAccount.jsonName) &&
+                    attestation.isMember(sfAttestationSignerAccount.jsonName) &&
                     std::ranges::any_of(signers, [&](Signer const& s) {
-                        return a[i][sfAttestationSignerAccount.jsonName] == s.account.human();
+                        return attestation[sfAttestationSignerAccount.jsonName] ==
+                            s.account.human();
                     }));
                 BEAST_EXPECT(
-                    a[i].isMember(sfAttestationRewardAccount.jsonName) &&
+                    attestation.isMember(sfAttestationRewardAccount.jsonName) &&
                     std::ranges::any_of(payee, [&](Account const& account) {
-                        return a[i][sfAttestationRewardAccount.jsonName] == account.human();
+                        return attestation[sfAttestationRewardAccount.jsonName] == account.human();
                     }));
                 BEAST_EXPECT(
-                    a[i].isMember(sfWasLockingChainSend.jsonName) &&
-                    a[i][sfWasLockingChainSend.jsonName] == 1);
+                    attestation.isMember(sfWasLockingChainSend.jsonName) &&
+                    attestation[sfWasLockingChainSend.jsonName] == 1);
                 BEAST_EXPECT(
-                    a[i].isMember(sfSignatureReward.jsonName) &&
-                    a[i][sfSignatureReward.jsonName].asInt() == 1 * kDropPerXrp);
+                    attestation.isMember(sfSignatureReward.jsonName) &&
+                    attestation[sfSignatureReward.jsonName].asInt() == 1 * kDropPerXrp);
             }
         }
 

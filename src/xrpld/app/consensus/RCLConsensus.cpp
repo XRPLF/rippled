@@ -690,7 +690,7 @@ RCLConsensus::Adaptor::doAccept(
 
         JLOG(j_.info()) << "We closed at " << closeTime.time_since_epoch().count();
         using usec64_t = std::chrono::duration<std::uint64_t>;
-        usec64_t closeTotal = std::chrono::duration_cast<usec64_t>(closeTime.time_since_epoch());
+        auto closeTotal = std::chrono::duration_cast<usec64_t>(closeTime.time_since_epoch());
         int closeCount = 1;
 
         for (auto const& [t, v] : rawCloseTimes.peers)

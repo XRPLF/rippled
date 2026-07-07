@@ -1155,7 +1155,11 @@ toClaim(STTx const& tx)
 
     try
     {
-        STObject o{tx};
+        // Copy just the field bag out of the transaction (explicitly, via the
+        // STObject base) so it can be reinterpreted as a cross-chain attestation
+        // below, with sfAccount replaced by sfOtherChainSource. STTx-specific
+        // state (txType_, tid_) is intentionally not needed here.
+        STObject o{static_cast<STObject const&>(tx)};
         o.setAccountID(sfAccount, o[sfOtherChainSource]);
         return TAttestation(o);
     }

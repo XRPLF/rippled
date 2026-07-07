@@ -282,7 +282,7 @@ public:
         auto const maxVMantissa = mantissa(maxV);
         auto const expDiff = exponent(maxV) - exponent(minV);
 
-        double const minVD = static_cast<double>(minVMantissa);
+        auto const minVD = static_cast<double>(minVMantissa);
         double const maxVD =
             (expDiff != 0) ? maxVMantissa * pow(10, expDiff) : static_cast<double>(maxVMantissa);
 

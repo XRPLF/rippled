@@ -185,22 +185,10 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
-    if (sleDst->isFlag(lsfDisallowIncomingTrustline))
+    if (sleDst && sleDst->isFlag(lsfDisallowIncomingTrustline) &&
+        !ctx.view.exists(keylet::trustLine(id, uDstAccountID, currency)))
     {
-        // The original implementation of featureDisallowIncoming was
-        // too restrictive. If
-        //   o fixDisallowIncomingV1 is enabled and
-        //   o The trust line already exists
-        // Then allow the TrustSet.
-        if (ctx.view.rules().enabled(fixDisallowIncomingV1) &&
-            ctx.view.exists(keylet::trustLine(id, uDstAccountID, currency)))
-        {
-            // pass
-        }
-        else
-        {
-            return tecNO_PERMISSION;
-        }
+        return tecNO_PERMISSION;
     }
 
     // In general, trust lines to pseudo accounts are not permitted, unless

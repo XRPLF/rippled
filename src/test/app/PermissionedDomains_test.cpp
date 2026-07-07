@@ -289,8 +289,8 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         for (auto const& c : alice)
             human2Acc.emplace(c.human(), c);
 
-        for (int i = 0; i < accNum; ++i)
-            env.fund(XRP(1000), alice[i]);
+        for (auto const& account : alice)
+            env.fund(XRP(1000), account);
 
         // Create new from existing account with a single credential.
         pdomain::Credentials const credentials1{{.issuer = alice[2], .credType = "credential1"}};
