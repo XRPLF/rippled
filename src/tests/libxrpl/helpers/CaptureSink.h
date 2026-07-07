@@ -10,7 +10,7 @@ namespace xrpl::test {
 
 class CaptureSink : public beast::Journal::Sink
 {
-    std::mutex mutable mutex_;
+    mutable std::mutex mutex_;
     std::stringstream strm_;
 
 public:
