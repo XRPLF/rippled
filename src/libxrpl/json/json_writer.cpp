@@ -77,7 +77,7 @@ valueToString(UInt value)
 std::string
 valueToString(double value)
 {
-    // Format with 16 significant digits
+    // Format with 16 significant digits.
     // We need not request the alternative representation that always has a
     // decimal point because JSON doesn't distinguish the concepts of reals and integers.
     // A double never needs more than 32 characters in this form,
