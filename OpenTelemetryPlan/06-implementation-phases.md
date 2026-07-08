@@ -1496,7 +1496,7 @@ New Grafana dashboard: `validator-health.json`
 | State Changes Rate         | stat       | `rate(xrpld_state_changes_total[1h])`                          |
 | Ledgers Closed Rate        | stat       | `rate(xrpld_ledgers_closed_total[5m]) * 60`                    |
 
-**Dashboard conventions**: `$node` template variable for `exported_instance` filtering, dark theme, matching existing panel sizes and color schemes.
+**Dashboard conventions**: `$node` template variable for `service_instance_id` filtering, dark theme, matching existing panel sizes and color schemes.
 
 ---
 
