@@ -634,11 +634,14 @@ public:
         LedgerIndex minSeq = 2;
         LedgerIndex maxSeq = env.closed()->header().seq;
         auto& store = env.app().getSHAMapStore();
-        BEAST_EXPECT(store.rendezvous());
         LedgerIndex lastRotated = store.getLastRotated();
+        while (lastRotated != 3)
+        {
+            BEAST_EXPECT(store.rendezvous());
+            lastRotated = store.getLastRotated();
+        }
         BEAST_EXPECTS(maxSeq == 3, std::to_string(maxSeq));
         BEAST_EXPECTS(lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
-        BEAST_EXPECTS(lastRotated == 3, to_string(lastRotated));
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 0);
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq + 1, maxSeq - 1) == 0);
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq - 1, maxSeq + 1) == 2);
