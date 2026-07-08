@@ -2404,7 +2404,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         // Do some touch testing to show that the taxon is recoverable no
         // matter what else changes around it in the nft ID.
         {
-            std::uint32_t const taxon = randInt<std::uint32_t>();
+            auto const taxon = randInt<std::uint32_t>();
             for (int i = 0; i < 10; ++i)
             {
                 // lambda to produce a useful message on error.

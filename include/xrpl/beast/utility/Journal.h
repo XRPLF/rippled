@@ -108,12 +108,12 @@ public:
     };
 
 #ifndef __INTELLISENSE__
-    static_assert(!std::is_default_constructible_v<Sink>, "");
-    static_assert(!std::is_copy_constructible_v<Sink>, "");
-    static_assert(!std::is_move_constructible_v<Sink>, "");
-    static_assert(!std::is_copy_assignable_v<Sink>, "");
-    static_assert(!std::is_move_assignable_v<Sink>, "");
-    static_assert(std::is_nothrow_destructible_v<Sink>, "");
+    static_assert(!std::is_default_constructible_v<Sink>);
+    static_assert(!std::is_copy_constructible_v<Sink>);
+    static_assert(!std::is_move_constructible_v<Sink>);
+    static_assert(!std::is_copy_assignable_v<Sink>);
+    static_assert(!std::is_move_assignable_v<Sink>);
+    static_assert(std::is_nothrow_destructible_v<Sink>);
 #endif
 
     /** Returns a Sink which does nothing. */
@@ -164,12 +164,12 @@ public:
     };
 
 #ifndef __INTELLISENSE__
-    static_assert(!std::is_default_constructible_v<ScopedStream>, "");
-    static_assert(std::is_copy_constructible_v<ScopedStream>, "");
-    static_assert(std::is_move_constructible_v<ScopedStream>, "");
-    static_assert(!std::is_copy_assignable_v<ScopedStream>, "");
-    static_assert(!std::is_move_assignable_v<ScopedStream>, "");
-    static_assert(std::is_nothrow_destructible_v<ScopedStream>, "");
+    static_assert(!std::is_default_constructible_v<ScopedStream>);
+    static_assert(std::is_copy_constructible_v<ScopedStream>);
+    static_assert(std::is_move_constructible_v<ScopedStream>);
+    static_assert(!std::is_copy_assignable_v<ScopedStream>);
+    static_assert(!std::is_move_assignable_v<ScopedStream>);
+    static_assert(std::is_nothrow_destructible_v<ScopedStream>);
 #endif
 
     //--------------------------------------------------------------------------
@@ -246,12 +246,12 @@ public:
     };
 
 #ifndef __INTELLISENSE__
-    static_assert(std::is_default_constructible_v<Stream>, "");
-    static_assert(std::is_copy_constructible_v<Stream>, "");
-    static_assert(std::is_move_constructible_v<Stream>, "");
-    static_assert(!std::is_copy_assignable_v<Stream>, "");
-    static_assert(!std::is_move_assignable_v<Stream>, "");
-    static_assert(std::is_nothrow_destructible_v<Stream>, "");
+    static_assert(std::is_default_constructible_v<Stream>);
+    static_assert(std::is_copy_constructible_v<Stream>);
+    static_assert(std::is_move_constructible_v<Stream>);
+    static_assert(!std::is_copy_assignable_v<Stream>);
+    static_assert(!std::is_move_assignable_v<Stream>);
+    static_assert(std::is_nothrow_destructible_v<Stream>);
 #endif
 
     //--------------------------------------------------------------------------
@@ -329,12 +329,12 @@ public:
 };
 
 #ifndef __INTELLISENSE__
-static_assert(!std::is_default_constructible_v<Journal>, "");
-static_assert(std::is_copy_constructible_v<Journal>, "");
-static_assert(std::is_move_constructible_v<Journal>, "");
-static_assert(std::is_copy_assignable_v<Journal>, "");
-static_assert(std::is_move_assignable_v<Journal>, "");
-static_assert(std::is_nothrow_destructible_v<Journal>, "");
+static_assert(!std::is_default_constructible_v<Journal>);
+static_assert(std::is_copy_constructible_v<Journal>);
+static_assert(std::is_move_constructible_v<Journal>);
+static_assert(std::is_copy_assignable_v<Journal>);
+static_assert(std::is_move_assignable_v<Journal>);
+static_assert(std::is_nothrow_destructible_v<Journal>);
 #endif
 
 //------------------------------------------------------------------------------

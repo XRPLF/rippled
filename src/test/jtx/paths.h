@@ -67,8 +67,9 @@ private:
     appendOne(AccountID const& account);
 
     template <class T>
-    std::enable_if_t<std::is_constructible_v<Account, T>>
+    void
     appendOne(T const& t)
+        requires(std::is_constructible_v<Account, T>)
     {
         appendOne(Account{t});
     }
