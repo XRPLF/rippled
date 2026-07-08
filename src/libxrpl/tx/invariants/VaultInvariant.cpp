@@ -1157,6 +1157,18 @@ ValidVault::finalize(
                 }
                 auto const& loan = afterLoan_[0];
 
+                // The created loan must record exactly the principal the vault
+                // released. Otherwise the borrower's claim (and thus the assets
+                // booked back to the vault on repayment) is decoupled from the
+                // assets actually lent, which would skew the vault's share price.
+                if (loan.principalOutstanding != tx[sfPrincipalRequested])
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan set principal outstanding must "
+                        "equal principal requested";
+                    result = false;
+                }
+
                 // Interest accrues to the vault: assets outstanding must grow by
                 // exactly the interest due booked on the newly created loan.
                 auto const assetsTotalDelta = roundToAsset(
@@ -1420,8 +1432,8 @@ ValidVault::finalize(
                 return result;
             }
 
+            // LCOV_EXCL_START
             default:
-                // LCOV_EXCL_START
                 UNREACHABLE("xrpl::ValidVault::finalize : unknown transaction type");
                 return false;
                 // LCOV_EXCL_STOP
