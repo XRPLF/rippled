@@ -122,6 +122,7 @@
       exposed — all interaction goes through the public methods.
 */
 
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <memory>
