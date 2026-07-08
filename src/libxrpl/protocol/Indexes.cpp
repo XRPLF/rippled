@@ -152,7 +152,12 @@ std::uint64_t
 getQuality(uint256 const& uBase)
 {
     // VFALCO [base_uint] This assumes a certain storage format
-    return boost::endian::big_to_native(((std::uint64_t*)uBase.end())[-1]);
+    //
+    // Load the final 8 bytes as a big-endian integer.  load_big_u64 reads
+    // through unaligned byte storage (via memcpy) and applies the endian
+    // conversion, avoiding the alignment/strict-aliasing UB of casting the
+    // unsigned char* returned by end() to a std::uint64_t*.
+    return boost::endian::load_big_u64(uBase.end() - 8);
 }
 
 uint256
@@ -278,8 +283,11 @@ quality(Keylet const& k, std::uint64_t q) noexcept
     // for indexes.
     uint256 x = k.key;
 
-    // FIXME This is ugly and we can and should do better...
-    ((std::uint64_t*)x.end())[-1] = boost::endian::native_to_big(q);
+    // Store the quality as a big-endian integer in the final 8 bytes.
+    // store_big_u64 writes through unaligned byte storage (via memcpy) and
+    // applies the endian conversion, avoiding the alignment/strict-aliasing UB
+    // of casting the unsigned char* returned by end() to a std::uint64_t*.
+    boost::endian::store_big_u64(x.end() - 8, q);
 
     return {ltDIR_NODE, x};
 }
