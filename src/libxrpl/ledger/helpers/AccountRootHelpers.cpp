@@ -406,7 +406,7 @@ TER
 checkReserve(
     ApplyViewContext ctx,
     SLE::const_ref accSle,
-    STAmount const& accBalance,
+    XRPAmount accBalance,
     Adjustment adj,
     beast::Journal j)
 {

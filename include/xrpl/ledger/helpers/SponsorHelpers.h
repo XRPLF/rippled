@@ -53,7 +53,7 @@ inline std::unordered_set<TxType> const kReserveSponsorAllowed = {
 inline bool
 isFeeSponsored(STTx const& tx)
 {
-    return (tx.getFieldU32(sfSponsorFlags) & spfSponsorFee) != 0u;
+    return tx.isFieldPresent(sfSponsor) && ((tx.getFieldU32(sfSponsorFlags) & spfSponsorFee) != 0u);
 }
 
 inline bool

@@ -581,7 +581,8 @@ class Simulate_test : public beast::unit_test::Suite
 
             auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
-                checkBasicReturnValidity(result, tx, 2, env.current()->fees().base);
+                checkBasicReturnValidity(
+                    result, tx, env.seq(env.master), env.current()->fees().base);
 
                 BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
                 BEAST_EXPECT(result[jss::engine_result_code] == 0);

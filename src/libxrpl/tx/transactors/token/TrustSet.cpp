@@ -576,7 +576,12 @@ TrustSet::doApply()
                     {.ownerCountDelta = 1},
                     j_);
                 highSponsor && !isTesSuccess(ret))
-                return tecINSUF_RESERVE_LINE;
+            {
+                // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
+                if (ret == tecINSUFFICIENT_RESERVE)
+                    return tecINSUF_RESERVE_LINE;
+                return ret;
+            }
 
             // Set reserve for high account.
             increaseOwnerCount(view(), sleHighAccount, highSponsor, 1, viewJ);
