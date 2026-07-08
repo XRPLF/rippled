@@ -330,15 +330,7 @@ decreaseOwnerCountForObject(
 XRPAmount
 accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjustment adj)
 {
-    if (!sle)
-    {
-        Throw<std::runtime_error>("xrpl::accountReserve : valid sle");  // LCOV_EXCL_LINE
-    }
-
-    if (sle->getType() != ltACCOUNT_ROOT)
-    {
-        Throw<std::logic_error>("xrpl::accountReserve : valid sle type");  // LCOV_EXCL_LINE
-    }
+    XRPL_ASSERT(sle && sle->getType() == ltACCOUNT_ROOT, "xrpl::accountReserve : valid sle");
 
     std::uint32_t const currentOwnerCount = ownerCount(sle, j, adj.ownerCountDelta);
     std::uint32_t const currentAccountCount = accountCountImpl(sle, adj.accountCountDelta, j);
