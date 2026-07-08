@@ -36,7 +36,7 @@ jobs:
         env:
           GENERATE_CONFIG: ${{ inputs.os != '' && format('--config={0}', inputs.os) || '' }}
           # Run only the minimal matrix for pull requests that are not yet
-          # labeled "Ready to merge". Any other event (merge queue, push,
-          # schedule, manual dispatch) runs the full matrix.
-          GENERATE_MINIMAL: ${{ (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'Ready to merge')) && '--minimal' || '' }}
+          # labeled "Ready to merge" or "Full CI build". Any other event (merge
+          # queue, push, schedule, manual dispatch) runs the full matrix.
+          GENERATE_MINIMAL: ${{ (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'Ready to merge') && !contains(github.event.pull_request.labels.*.name, 'Full CI build')) && '--minimal' || '' }}
         run: ./generate.py ${GENERATE_CONFIG} ${GENERATE_MINIMAL} >>"${GITHUB_OUTPUT}"

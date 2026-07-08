@@ -1,8 +1,10 @@
 # This workflow runs all workflows to check, build and test the project on
 # various Linux flavors, as well as on MacOS and Windows, on every push to a
 # user branch. However, it will not run if the pull request is a draft unless it
-# has the 'DraftRunCI' label. For commits to PRs that target a release branch,
-# it also uploads the libxrpl recipe to the Conan remote.
+# has the 'DraftRunCI' or 'Full CI build' label. By default a pull request builds
+# only a minimal matrix; the full matrix runs once the PR is labeled "Ready to
+# merge" or "Full CI build". For commits to PRs that target a release branch, it
+# also uploads the libxrpl recipe to the Conan remote.
 name: PR
 
 on:
@@ -27,14 +29,15 @@ concurrency:
   # `on:` block) would otherwise cancel an in-progress build and then run
   # nothing, because `should-run` skips it. Give such no-op runs a unique group
   # (suffixed with the run id) so they cancel nothing. Runs we act on — pushes,
-  # and changes to the 'Ready to merge'/'DraftRunCI' labels — share the per-ref
-  # group, so a newer one supersedes the previous as before. Keep this label
-  # list in sync with the `should-run` job's `if` condition.
+  # and changes to the 'Ready to merge'/'DraftRunCI'/'Full CI build' labels —
+  # share the per-ref group, so a newer one supersedes the previous as before.
+  # Keep this label list in sync with the `should-run` job's `if` condition.
   group: >-
     ${{ github.workflow }}-${{ github.ref }}${{
       (github.event.action == 'labeled' || github.event.action == 'unlabeled')
       && github.event.label.name != 'Ready to merge'
       && github.event.label.name != 'DraftRunCI'
+      && github.event.label.name != 'Full CI build'
       && format('-{0}', github.run_id) || ''
     }}
   cancel-in-progress: true
@@ -46,17 +49,19 @@ defaults:
 jobs:
   # This job determines whether the rest of the workflow should run. It runs
   # when the PR is not a draft (which should also cover merge-group) or has the
-  # 'DraftRunCI' label. For label events it only runs when the label added or
-  # removed is one we act on ('Ready to merge' or 'DraftRunCI'), so unrelated
-  # label changes do not trigger a redundant run.
+  # 'DraftRunCI' or 'Full CI build' label. For label events it only runs when the
+  # label added or removed is one we act on ('Ready to merge', 'DraftRunCI' or
+  # 'Full CI build'), so unrelated label changes do not trigger a redundant run.
   should-run:
     if: >-
       ${{
         (github.event.action != 'labeled' && github.event.action != 'unlabeled'
           || github.event.label.name == 'Ready to merge'
-          || github.event.label.name == 'DraftRunCI')
+          || github.event.label.name == 'DraftRunCI'
+          || github.event.label.name == 'Full CI build')
         && (!github.event.pull_request.draft
-          || contains(github.event.pull_request.labels.*.name, 'DraftRunCI'))
+          || contains(github.event.pull_request.labels.*.name, 'DraftRunCI')
+          || contains(github.event.pull_request.labels.*.name, 'Full CI build'))
       }}
     runs-on: ubuntu-latest
     steps:
@@ -119,15 +124,17 @@ jobs:
         # least one of:
         # * Any of the files checked in the `changes` step were modified
         # * The PR is NOT a draft and is labeled "Ready to merge"
+        # * The PR is labeled "Full CI build" (draft or not)
         # * The workflow is running from the merge queue
         id: go
         env:
           FILES: ${{ steps.changes.outputs.any_changed }}
           DRAFT: ${{ github.event.pull_request.draft }}
           READY: ${{ contains(github.event.pull_request.labels.*.name, 'Ready to merge') }}
+          FULL: ${{ contains(github.event.pull_request.labels.*.name, 'Full CI build') }}
           MERGE: ${{ github.event_name == 'merge_group' }}
         run: |
-          echo "go=${{ (env.DRAFT != 'true' && env.READY == 'true') || env.FILES == 'true' || env.MERGE == 'true' }}" >>"${GITHUB_OUTPUT}"
+          echo "go=${{ (env.DRAFT != 'true' && env.READY == 'true') || env.FULL == 'true' || env.FILES == 'true' || env.MERGE == 'true' }}" >>"${GITHUB_OUTPUT}"
           cat "${GITHUB_OUTPUT}"
     outputs:
       go: ${{ steps.go.outputs.go == 'true' }}
@@ -171,9 +178,9 @@ jobs:
   package:
     needs: [should-run, build-test]
     # Packaging consumes the debian/rhel release binaries, which are only built
-    # by the full matrix. Skip it for pull requests that are not yet labeled
-    # "Ready to merge" (i.e. whenever only the minimal matrix ran).
-    if: ${{ needs.should-run.outputs.go == 'true' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Ready to merge')) }}
+    # by the full matrix. Skip it for pull requests that ran only the minimal
+    # matrix (i.e. not yet labeled "Ready to merge" or "Full CI build").
+    if: ${{ needs.should-run.outputs.go == 'true' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Ready to merge') || contains(github.event.pull_request.labels.*.name, 'Full CI build')) }}
     uses: ./.github/workflows/reusable-package.yml
 
   upload-recipe:

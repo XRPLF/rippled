@@ -35,7 +35,7 @@
         "compiler": ["clang"],
         "build_type": ["Debug"],
         "arch": ["amd64"],
-        "minimal": true,
+        "minimal": false,
         "suffix": "voidstar",
         "extra_cmake_args": "-Dvoidstar=ON"
       },
