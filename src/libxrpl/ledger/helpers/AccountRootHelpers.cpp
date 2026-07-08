@@ -53,8 +53,8 @@ static std::uint32_t
 confineOwnerCount(
     std::uint32_t currentOwnerCount,
     std::int32_t ownerCountAdj,
-    std::optional<AccountID> const& id,
-    beast::Journal j)
+    std::optional<AccountID> const& id = std::nullopt,
+    beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
 {
     std::uint32_t totalOwnerCount{currentOwnerCount + ownerCountAdj};
     if (ownerCountAdj > 0)
@@ -97,7 +97,7 @@ accountCountImpl(SLE::const_ref sle, std::int32_t accountCountAdj, beast::Journa
     std::int64_t totalAccountCount{currentAccountCount + accountCountAdj};
     if (totalAccountCount > std::numeric_limits<std::uint32_t>::max())
     {
-        JLOG(j.error()) << "Reserve count exceeds max!";
+        JLOG(j.fatal()) << "Reserve count exceeds max!";
         totalAccountCount = std::numeric_limits<std::uint32_t>::max();
     }
     else if (totalAccountCount < 0)
@@ -124,8 +124,7 @@ ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj)
 
     XRPL_ASSERT(
         currentOwnerCount >= sponsoredOwnerCount,
-        "xrpl::ownerCount : OwnerCount must be greater than or equal to "
-        "SponsoredOwnerCount");
+        "xrpl::ownerCount : OwnerCount must be greater than or equal to SponsoredOwnerCount");
 
     std::int64_t deltaCount =
         static_cast<std::int64_t>(ownerCountAdj) - sponsoredOwnerCount + sponsoringOwnerCount;
