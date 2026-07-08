@@ -19,8 +19,7 @@ set(PROTO_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/xrpl/proto")
 set(PROTO_HEADER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/xrpl/proto_generated")
 set(PROTO_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/libxrpl/proto_generated")
 
-file(GLOB PROTO_ROOT_FILES "${PROTO_SRC_DIR}/*.proto")
-file(GLOB_RECURSE PROTO_GRPC_FILES "${PROTO_SRC_DIR}/org/*.proto")
+file(GLOB_RECURSE PROTO_FILES "${PROTO_SRC_DIR}/*.proto")
 
 # Custom target for protobuf code generation, excluded from ALL.
 # Run manually with: cmake --build . --target proto_gen
@@ -36,7 +35,7 @@ add_custom_target(
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     COMMENT "Regenerating committed protobuf sources..."
     VERBATIM
-    SOURCES ${PROTO_ROOT_FILES} ${PROTO_GRPC_FILES}
+    SOURCES ${PROTO_FILES}
 )
 
 # Single entry point to regenerate every committed generated source: the
