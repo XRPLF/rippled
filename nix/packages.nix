@@ -49,6 +49,8 @@ in
     cargo
     rustc
     rustfmt
+    rust-analyzer
+    clippy
     cargo-audit
     cargo-nextest
     cargo-llvm-cov
