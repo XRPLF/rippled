@@ -243,7 +243,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
             auto const startingAmount =
                 accountHolds(pv, alice, iss.currency, iss.account, FreezeHandling::IgnoreFreeze, j);
 
-            BEAST_EXPECT(issueIOU(pv, alice, toCredit, iss, j) == tesSUCCESS);
+            BEAST_EXPECT(issueIOU(pv, alice, toCredit, iss, {}, j) == tesSUCCESS);
             BEAST_EXPECT(
                 accountHolds(
                     pv, alice, iss.currency, iss.account, FreezeHandling::IgnoreFreeze, j) ==

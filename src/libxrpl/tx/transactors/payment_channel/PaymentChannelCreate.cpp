@@ -82,8 +82,7 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.rules().enabled(featureSponsor))
     {
         auto const balance = (*sle)[sfBalance];
-        auto const fees = ctx.view.fees();
-        auto const reserve = fees.reserve + fees.increment * ((*sle)[sfOwnerCount] + 1);
+        auto const reserve = ctx.view.fees().accountReserve((*sle)[sfOwnerCount] + 1, 1);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
