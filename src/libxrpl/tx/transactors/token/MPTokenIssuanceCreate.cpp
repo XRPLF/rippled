@@ -129,7 +129,7 @@ MPTokenIssuanceCreate::create(
     {
         auto sle = getTxReserveSponsor(ctx);
         if (!sle)
-            return std::unexpected(sle.error());
+            return std::unexpected(sle.error());  // LCOV_EXCL_LINE
         sponsorSle = std::move(*sle);
     }
 
