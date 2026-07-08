@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <initializer_list>
 #include <memory>
 #include <string>
@@ -5926,7 +5927,7 @@ public:
     void
     run() override
     {
-        forAllApiVersions([this](unsigned apiVersion) { testRPCCall(apiVersion); });
+        forAllApiVersions(std::bind_front(&RPCCall_test::testRPCCall, this));
     }
 };
 

@@ -35,8 +35,8 @@
 #include <boost/system/system_error.hpp>
 
 #include <chrono>
-#include <cstddef>
 #include <exception>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -86,7 +86,7 @@ ConnectAttempt::stop()
 {
     if (!strand_.running_in_this_thread())
     {
-        boost::asio::post(strand_, [self = shared_from_this()] { self->stop(); });
+        boost::asio::post(strand_, std::bind(&ConnectAttempt::stop, shared_from_this()));
         return;
     }
     if (socket_.is_open())
@@ -104,7 +104,8 @@ ConnectAttempt::run()
     stream_.next_layer().async_connect(
         remoteEndpoint_,
         boost::asio::bind_executor(
-            strand_, [self = shared_from_this()](error_code const& ec) { self->onConnect(ec); }));
+            strand_,
+            std::bind(&ConnectAttempt::onConnect, shared_from_this(), std::placeholders::_1)));
 }
 
 //------------------------------------------------------------------------------
@@ -159,7 +160,8 @@ ConnectAttempt::setTimer()
 
     timer_.async_wait(
         boost::asio::bind_executor(
-            strand_, [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
+            strand_,
+            std::bind(&ConnectAttempt::onTimer, shared_from_this(), std::placeholders::_1)));
 }
 
 void
@@ -226,7 +228,8 @@ ConnectAttempt::onConnect(error_code ec)
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
         boost::asio::bind_executor(
-            strand_, [self = shared_from_this()](error_code const& ec) { self->onHandshake(ec); }));
+            strand_,
+            std::bind(&ConnectAttempt::onHandshake, shared_from_this(), std::placeholders::_1)));
 }
 
 void
@@ -287,7 +290,7 @@ ConnectAttempt::onHandshake(error_code ec)
         req_,
         boost::asio::bind_executor(
             strand_,
-            [self = shared_from_this()](error_code const& ec, std::size_t) { self->onWrite(ec); }));
+            std::bind(&ConnectAttempt::onWrite, shared_from_this(), std::placeholders::_1)));
 }
 
 void
@@ -313,7 +316,7 @@ ConnectAttempt::onWrite(error_code ec)
         response_,
         boost::asio::bind_executor(
             strand_,
-            [self = shared_from_this()](error_code const& ec, std::size_t) { self->onRead(ec); }));
+            std::bind(&ConnectAttempt::onRead, shared_from_this(), std::placeholders::_1)));
 }
 
 void
@@ -336,7 +339,8 @@ ConnectAttempt::onRead(error_code ec)
             stream_.async_shutdown(
                 boost::asio::bind_executor(
                     strand_,
-                    [self = shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
+                    std::bind(
+                        &ConnectAttempt::onShutdown, shared_from_this(), std::placeholders::_1)));
             return;
         }
 

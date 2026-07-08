@@ -3,6 +3,7 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Store.h>
 
+#include <xrpl/basics/comparators.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
@@ -11,8 +12,6 @@
 #include <boost/bimap/multiset_of.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/iterator/transform_iterator.hpp>
-
-#include <functional>
 
 namespace xrpl::PeerFinder {
 
@@ -63,9 +62,11 @@ private:
         int valence_;
     };
 
-    using left_t = boost::bimaps::
-        unordered_set_of<beast::IP::Endpoint, boost::hash<beast::IP::Endpoint>, std::equal_to<>>;
-    using right_t = boost::bimaps::multiset_of<Entry, std::less<>>;
+    using left_t = boost::bimaps::unordered_set_of<
+        beast::IP::Endpoint,
+        boost::hash<beast::IP::Endpoint>,
+        xrpl::equal_to<beast::IP::Endpoint>>;
+    using right_t = boost::bimaps::multiset_of<Entry, xrpl::less<Entry>>;
     using map_type = boost::bimap<left_t, right_t>;
     using value_type = map_type::value_type;
 

@@ -82,7 +82,7 @@ private:
     using txs_map = std::map<
         key_type,
         TxData,
-        std::less<>,
+        std::less<key_type>,
         boost::container::pmr::polymorphic_allocator<std::pair<key_type const, TxData>>>;
 
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be

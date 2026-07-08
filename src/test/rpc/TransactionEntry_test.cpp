@@ -17,6 +17,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
+#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -352,7 +353,7 @@ public:
     run() override
     {
         testBadInput();
-        forAllApiVersions([this](unsigned apiVersion) { testRequest(apiVersion); });
+        forAllApiVersions(std::bind_front(&TransactionEntry_test::testRequest, this));
     }
 };
 

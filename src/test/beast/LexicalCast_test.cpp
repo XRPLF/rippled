@@ -24,7 +24,7 @@ public:
     testInteger(IntType in)
     {
         std::string s;
-        auto out = static_cast<IntType>(~in);  // Ensure out != in
+        IntType out = static_cast<IntType>(~in);  // Ensure out != in
 
         expect(lexicalCastChecked(s, in));
         expect(lexicalCastChecked(out, s));
@@ -42,7 +42,7 @@ public:
 
             for (int i = 0; i < 1000; ++i)
             {
-                auto const value = nextRandomInt<IntType>(r);
+                IntType const value(nextRandomInt<IntType>(r));
                 testInteger(value);
             }
         }
@@ -229,7 +229,7 @@ public:
 
         while (i <= std::numeric_limits<std::int16_t>::max())
         {
-            auto const j = static_cast<std::int16_t>(i);
+            std::int16_t const j = static_cast<std::int16_t>(i);
 
             auto actual = std::to_string(j);
 

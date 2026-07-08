@@ -40,6 +40,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <initializer_list>
 #include <optional>
 #include <stdexcept>
@@ -111,7 +112,7 @@ class ElementComboIter
         };
 
     std::uint16_t state_ = 0;
-    static_assert(safeCast<size_t>(SB::Last) <= sizeof(decltype(state_)) * 8);
+    static_assert(safeCast<size_t>(SB::Last) <= sizeof(decltype(state_)) * 8, "");
     STPathElement const* prev_ = nullptr;
     // disallow iss and cur to be specified with acc is specified (simplifies
     // some tests)
@@ -308,26 +309,31 @@ struct ExistingElementPool
         currencyNames.clear();
         currencyNames.reserve(numCur);
 
+        static constexpr size_t kBufSize = 32;
+        char buf[kBufSize];
+
         for (size_t id = 0; id < numAct; ++id)
-            accounts.emplace_back("A" + std::to_string(id));
+        {
+            snprintf(buf, kBufSize, "A%zu", id);
+            accounts.emplace_back(buf);
+        }
 
         for (size_t id = 0; id < numCur; ++id)
         {
-            std::string name;
             if (id < 10)
             {
-                name = "CC" + std::to_string(id);
+                snprintf(buf, kBufSize, "CC%zu", id);
             }
             else if (id < 100)
             {
-                name = "C" + std::to_string(id);
+                snprintf(buf, kBufSize, "C%zu", id);
             }
             else
             {
-                name = std::to_string(id);
+                snprintf(buf, kBufSize, "%zu", id);
             }
-            currencies.emplace_back(toCurrency(name));
-            currencyNames.emplace_back(name);
+            currencies.emplace_back(toCurrency(buf));
+            currencyNames.emplace_back(buf);
         }
 
         for (auto const& a : accounts)

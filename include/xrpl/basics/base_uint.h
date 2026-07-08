@@ -97,7 +97,7 @@ public:
     //
 
     static constexpr std::size_t kBytes = Bits / 8;
-    static_assert(sizeof(data_) == kBytes);
+    static_assert(sizeof(data_) == kBytes, "");
 
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
@@ -280,11 +280,12 @@ public:
     {
     }
 
-    template <class Container>
-    explicit BaseUInt(Container const& c)
-        requires(
+    template <
+        class Container,
+        class = std::enable_if_t<
             detail::IsContiguousContainer<Container>::value &&
-            std::is_trivially_copyable_v<typename Container::value_type>)
+            std::is_trivially_copyable_v<typename Container::value_type>>>
+    explicit BaseUInt(Container const& c)
     {
         // Use AlwaysFalseT so the static_assert condition is dependent
         // and only triggers when this constructor template is instantiated.
@@ -294,12 +295,13 @@ public:
             "Use base_uint::fromRaw instead.");
     }
 
-    template <class Container>
+    template <
+        class Container,
+        class = std::enable_if_t<
+            detail::IsContiguousContainer<Container>::value &&
+            std::is_trivially_copyable_v<typename Container::value_type>>>
     static BaseUInt
     fromRaw(Container const& c)
-        requires(
-            detail::IsContiguousContainer<Container>::value &&
-            std::is_trivially_copyable_v<typename Container::value_type>)
     {
         BaseUInt result;
         XRPL_ASSERT(
@@ -310,11 +312,11 @@ public:
     }
 
     template <class Container>
-    BaseUInt&
+    std::enable_if_t<
+        detail::IsContiguousContainer<Container>::value &&
+            std::is_trivially_copyable_v<typename Container::value_type>,
+        BaseUInt&>
     operator=(Container const& c)
-        requires(
-            detail::IsContiguousContainer<Container>::value &&
-            std::is_trivially_copyable_v<typename Container::value_type>)
     {
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),

@@ -138,7 +138,6 @@ intrusive_ptr_release(SHAMapItem const* x)
 
         // If the slabber doesn't claim this pointer, it was allocated
         // manually, so we free it manually.
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
         if (!detail::gSlabber.deallocate(const_cast<std::uint8_t*>(p)))
             delete[] p;
     }

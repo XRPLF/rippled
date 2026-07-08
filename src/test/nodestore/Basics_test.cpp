@@ -40,9 +40,9 @@ public:
 
         auto batch = createPredictableBatch(kNumObjectsToTest, seedValue);
 
-        for (auto const& expected : batch)
+        for (int i = 0; i < batch.size(); ++i)
         {
-            EncodedBlob const encoded(expected);
+            EncodedBlob const encoded(batch[i]);
 
             DecodedBlob decoded(encoded.getKey(), encoded.getData(), encoded.getSize());
 
@@ -52,7 +52,7 @@ public:
             {
                 std::shared_ptr<NodeObject> const object(decoded.createObject());
 
-                BEAST_EXPECT(isSame(expected, object));
+                BEAST_EXPECT(isSame(batch[i], object));
             }
         }
     }

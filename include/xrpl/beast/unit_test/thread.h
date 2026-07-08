@@ -45,10 +45,7 @@ public:
     template <class F, class... Args>
     explicit Thread(Suite& s, F&& f, Args&&... args) : s_(&s)
     {
-        std::function<void(void)> b = [f = std::forward<F>(f),
-                                       ... args = std::forward<Args>(args)]() mutable {
-            std::invoke(f, args...);
-        };
+        std::function<void(void)> b = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
         t_ = std::thread(&Thread::run, this, std::move(b));
     }
 

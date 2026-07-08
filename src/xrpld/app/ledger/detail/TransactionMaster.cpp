@@ -152,7 +152,7 @@ TransactionMaster::canonicalize(std::shared_ptr<Transaction>* pTransaction)
 }
 
 void
-TransactionMaster::sweep()
+TransactionMaster::sweep(void)
 {
     cache_.sweep();
 }

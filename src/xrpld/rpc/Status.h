@@ -33,11 +33,9 @@ public:
 
     Status() = default;
 
-    // The constraint allows only integers (not enums).  Prevents enum narrowing.
-    template <typename T>
-    Status(T code, Strings d = {})
-        requires(std::is_integral_v<T>)
-        : code_(code), messages_(std::move(d))
+    // The enable_if allows only integers (not enums).  Prevents enum narrowing.
+    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+    Status(T code, Strings d = {}) : code_(code), messages_(std::move(d))
     {
     }
 

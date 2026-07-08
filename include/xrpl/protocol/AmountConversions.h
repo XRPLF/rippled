@@ -13,7 +13,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
-#include <limits>  // IWYU pragma: keep
+#include <limits>
 #include <stdexcept>
 #include <type_traits>
 

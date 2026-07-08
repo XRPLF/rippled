@@ -50,13 +50,14 @@ public:
     STVar&
     operator=(STVar&& rhs);
 
-    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
-    STVar(STBase&& t) : p_(t.move(kMaxSize, &d_))
+    STVar(STBase&& t)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     {
+        p_ = t.move(kMaxSize, &d_);
     }
 
-    STVar(STBase const& t) : p_(t.copy(kMaxSize, &d_))
+    STVar(STBase const& t)
     {
+        p_ = t.copy(kMaxSize, &d_);
     }
 
     STVar(DefaultObjectT, SField const& name);

@@ -133,7 +133,7 @@ OverlayImpl::Timer::asyncWait()
     timer.async_wait(
         boost::asio::bind_executor(
             overlay_.strand_,
-            [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
+            std::bind(&Timer::onTimer, shared_from_this(), std::placeholders::_1)));
 }
 
 void
@@ -190,7 +190,7 @@ OverlayImpl::OverlayImpl(
     , nextId_(1)
     , slots_(app, *this, app.config())
     , stats_(
-          [this] { collectMetrics(); },
+          std::bind(&OverlayImpl::collectMetrics, this),
           collector,
           [counts = traffic_.getCounts(), collector]() {
               std::unordered_map<TrafficCount::Category, TrafficGauges> ret;
@@ -593,7 +593,7 @@ OverlayImpl::start()
 void
 OverlayImpl::stop()
 {
-    boost::asio::dispatch(strand_, [this] { stopChildren(); });
+    boost::asio::dispatch(strand_, std::bind(&OverlayImpl::stopChildren, this));
     {
         std::unique_lock<decltype(mutex_)> lock(mutex_);
         cond_.wait(lock, [this] { return list_.empty(); });
@@ -1490,7 +1490,7 @@ OverlayImpl::deletePeer(Peer::id_t id)
 {
     if (!strand_.running_in_this_thread())
     {
-        post(strand_, [this, id] { deletePeer(id); });
+        post(strand_, std::bind(&OverlayImpl::deletePeer, this, id));
         return;
     }
 
@@ -1502,7 +1502,7 @@ OverlayImpl::deleteIdlePeers()
 {
     if (!strand_.running_in_this_thread())
     {
-        post(strand_, [this] { deleteIdlePeers(); });
+        post(strand_, std::bind(&OverlayImpl::deleteIdlePeers, this));
         return;
     }
 

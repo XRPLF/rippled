@@ -39,7 +39,7 @@ readVarint(void const* buf, std::size_t buflen, std::size_t& t)
     if (buflen == 0)
         return 0;
     t = 0;
-    auto const* p = reinterpret_cast<std::uint8_t const*>(buf);
+    std::uint8_t const* p = reinterpret_cast<std::uint8_t const*>(buf);
     std::size_t n = 0;
     while (p[n] & 0x80)
     {
@@ -68,10 +68,9 @@ readVarint(void const* buf, std::size_t buflen, std::size_t& t)
     return used;
 }
 
-template <class T>
+template <class T, std::enable_if_t<std::is_unsigned_v<T>>* = nullptr>
 std::size_t
 sizeVarint(T v)
-    requires(std::is_unsigned_v<T>)
 {
     std::size_t n = 0;
     do
@@ -87,7 +86,7 @@ std::size_t
 writeVarint(void* p0, std::size_t v)
 {
     // NOLINTNEXTLINE(misc-const-correctness)
-    auto* p = reinterpret_cast<std::uint8_t*>(p0);
+    std::uint8_t* p = reinterpret_cast<std::uint8_t*>(p0);
     do
     {
         std::uint8_t d = v % 127;
@@ -101,10 +100,9 @@ writeVarint(void* p0, std::size_t v)
 
 // input stream
 
-template <class T>
+template <class T, std::enable_if_t<std::is_same_v<T, varint>>* = nullptr>
 void
 read(nudb::detail::istream& is, std::size_t& u)
-    requires(std::is_same_v<T, varint>)
 {
     auto p0 = is(1);
     auto p1 = p0;
@@ -115,10 +113,9 @@ read(nudb::detail::istream& is, std::size_t& u)
 
 // output stream
 
-template <class T>
+template <class T, std::enable_if_t<std::is_same_v<T, varint>>* = nullptr>
 void
 write(nudb::detail::ostream& os, std::size_t t)
-    requires(std::is_same_v<T, varint>)
 {
     writeVarint(os.data(sizeVarint(t)), t);
 }

@@ -223,7 +223,10 @@ BaseHTTPPeer<Handler, Impl>::close()
 {
     if (!strand_.running_in_this_thread())
     {
-        return post(strand_, [self = impl().shared_from_this()] { self->close(); });
+        return post(
+            strand_,
+            std::bind(
+                (void (BaseHTTPPeer::*)(void))&BaseHTTPPeer::close, impl().shared_from_this()));
     }
     boost::beast::get_lowest_layer(impl().stream_).close();
 }
@@ -319,18 +322,22 @@ BaseHTTPPeer<Handler, Impl>::onWrite(error_code const& ec, std::size_t bytesTran
             v,
             bind_executor(
                 strand_,
-                [self = impl().shared_from_this()](
-                    error_code const& ec, std::size_t bytesTransferred) {
-                    self->onWrite(ec, bytesTransferred);
-                }));
+                std::bind(
+                    &BaseHTTPPeer::onWrite,
+                    impl().shared_from_this(),
+                    std::placeholders::_1,
+                    std::placeholders::_2)));
     }
     if (!complete_)
         return;
     if (graceful_)
         return doClose();
-    util::spawn(strand_, [self = impl().shared_from_this()](yield_context doYield) {
-        self->doRead(doYield);
-    });
+    util::spawn(
+        strand_,
+        std::bind(
+            &BaseHTTPPeer<Handler, Impl>::doRead,
+            impl().shared_from_this(),
+            std::placeholders::_1));
 }
 
 template <class Handler, class Impl>
@@ -344,9 +351,14 @@ BaseHTTPPeer<Handler, Impl>::doWriter(
     {
         auto const p = impl().shared_from_this();
         resume = std::function<void(void)>([this, p, writer, keepAlive]() {
-            util::spawn(strand_, [p, writer, keepAlive](yield_context doYield) {
-                p->doWriter(writer, keepAlive, doYield);
-            });
+            util::spawn(
+                strand_,
+                std::bind(
+                    &BaseHTTPPeer<Handler, Impl>::doWriter,
+                    p,
+                    writer,
+                    keepAlive,
+                    std::placeholders::_1));
         });
     }
 
@@ -367,9 +379,12 @@ BaseHTTPPeer<Handler, Impl>::doWriter(
     if (!keepAlive)
         return doClose();
 
-    util::spawn(strand_, [self = impl().shared_from_this()](yield_context doYield) {
-        self->doRead(doYield);
-    });
+    util::spawn(
+        strand_,
+        std::bind(
+            &BaseHTTPPeer<Handler, Impl>::doRead,
+            impl().shared_from_this(),
+            std::placeholders::_1));
 }
 
 //------------------------------------------------------------------------------
@@ -390,7 +405,8 @@ BaseHTTPPeer<Handler, Impl>::write(void const* buf, std::size_t bytes)
         if (!strand_.running_in_this_thread())
         {
             return post(
-                strand_, [self = impl().shared_from_this()] { self->onWrite(error_code{}, 0); });
+                strand_,
+                std::bind(&BaseHTTPPeer::onWrite, impl().shared_from_this(), error_code{}, 0));
         }
         return onWrite(error_code{}, 0);
     }
@@ -401,9 +417,13 @@ void
 BaseHTTPPeer<Handler, Impl>::write(std::shared_ptr<Writer> const& writer, bool keepAlive)
 {
     util::spawn(
-        strand_, [self = impl().shared_from_this(), writer, keepAlive](yield_context doYield) {
-            self->doWriter(writer, keepAlive, doYield);
-        });
+        strand_,
+        std::bind(
+            &BaseHTTPPeer<Handler, Impl>::doWriter,
+            impl().shared_from_this(),
+            writer,
+            keepAlive,
+            std::placeholders::_1));
 }
 
 // DEPRECATED
@@ -423,7 +443,8 @@ BaseHTTPPeer<Handler, Impl>::complete()
 {
     if (!strand_.running_in_this_thread())
     {
-        return post(strand_, [self = impl().shared_from_this()] { self->complete(); });
+        return post(
+            strand_, std::bind(&BaseHTTPPeer<Handler, Impl>::complete, impl().shared_from_this()));
     }
 
     message_ = {};
@@ -436,9 +457,12 @@ BaseHTTPPeer<Handler, Impl>::complete()
     }
 
     // keep-alive
-    util::spawn(strand_, [self = impl().shared_from_this()](yield_context doYield) {
-        self->doRead(doYield);
-    });
+    util::spawn(
+        strand_,
+        std::bind(
+            &BaseHTTPPeer<Handler, Impl>::doRead,
+            impl().shared_from_this(),
+            std::placeholders::_1));
 }
 
 // DEPRECATED
@@ -450,7 +474,11 @@ BaseHTTPPeer<Handler, Impl>::close(bool graceful)
     if (!strand_.running_in_this_thread())
     {
         return post(
-            strand_, [self = impl().shared_from_this(), graceful] { self->close(graceful); });
+            strand_,
+            std::bind(
+                (void (BaseHTTPPeer::*)(bool))&BaseHTTPPeer<Handler, Impl>::close,
+                impl().shared_from_this(),
+                graceful));
     }
 
     complete_ = true;

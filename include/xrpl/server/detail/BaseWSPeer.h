@@ -20,7 +20,6 @@
 
 #include <algorithm>
 #include <chrono>
-#include <cstddef>
 #include <functional>
 #include <iterator>
 #include <list>
@@ -181,13 +180,12 @@ void
 BaseWSPeer<Handler, Impl>::run()
 {
     if (!strand_.running_in_this_thread())
-        return post(strand_, [self = impl().shared_from_this()] { self->run(); });
+        return post(strand_, std::bind(&BaseWSPeer::run, impl().shared_from_this()));
     impl().ws_.set_option(port().pmdOptions);
     // Must manage the control callback memory outside of the `control_callback`
     // function
-    controlCallback_ = [this](
-                           boost::beast::websocket::frame_type kind,
-                           boost::beast::string_view payload) { onPingPong(kind, payload); };
+    controlCallback_ =
+        std::bind(&BaseWSPeer::onPingPong, this, std::placeholders::_1, std::placeholders::_2);
     impl().ws_.control_callback(controlCallback_);
     startTimer();
     closeOnTimer_ = true;
@@ -195,9 +193,11 @@ BaseWSPeer<Handler, Impl>::run()
         res.set(boost::beast::http::field::server, BuildInfo::getFullVersionString());
     }));
     impl().ws_.async_accept(
-        request_, bind_executor(strand_, [self = impl().shared_from_this()](error_code const& ec) {
-            self->onWsHandshake(ec);
-        }));
+        request_,
+        bind_executor(
+            strand_,
+            std::bind(
+                &BaseWSPeer::onWsHandshake, impl().shared_from_this(), std::placeholders::_1)));
 }
 
 template <class Handler, class Impl>
@@ -205,10 +205,7 @@ void
 BaseWSPeer<Handler, Impl>::send(std::shared_ptr<WSMsg> w)
 {
     if (!strand_.running_in_this_thread())
-    {
-        return post(
-            strand_, [self = impl().shared_from_this(), w = std::move(w)] { self->send(w); });
-    }
+        return post(strand_, std::bind(&BaseWSPeer::send, impl().shared_from_this(), std::move(w)));
     if (doClose_)
         return;
     if (wq_.size() > port().wsQueueLimit)
@@ -261,7 +258,7 @@ void
 BaseWSPeer<Handler, Impl>::complete()
 {
     if (!strand_.running_in_this_thread())
-        return post(strand_, [self = impl().shared_from_this()] { self->complete(); });
+        return post(strand_, std::bind(&BaseWSPeer::complete, impl().shared_from_this()));
     doRead();
 }
 
@@ -280,7 +277,7 @@ void
 BaseWSPeer<Handler, Impl>::doWrite()
 {
     if (!strand_.running_in_this_thread())
-        return post(strand_, [self = impl().shared_from_this()] { self->doWrite(); });
+        return post(strand_, std::bind(&BaseWSPeer::doWrite, impl().shared_from_this()));
     onWrite({});
 }
 
@@ -291,7 +288,8 @@ BaseWSPeer<Handler, Impl>::onWrite(error_code const& ec)
     if (ec)
         return fail(ec, "write");
     auto& w = *wq_.front();
-    auto const result = w.prepare(65536, [self = impl().shared_from_this()] { self->doWrite(); });
+    auto const result =
+        w.prepare(65536, std::bind(&BaseWSPeer::doWrite, impl().shared_from_this()));
     if (boost::indeterminate(result.first))
         return;
     startTimer();
@@ -301,9 +299,8 @@ BaseWSPeer<Handler, Impl>::onWrite(error_code const& ec)
             static_cast<bool>(result.first),
             result.second,
             bind_executor(
-                strand_, [self = impl().shared_from_this()](error_code const& ec, std::size_t) {
-                    self->onWrite(ec);
-                }));
+                strand_,
+                std::bind(&BaseWSPeer::onWrite, impl().shared_from_this(), std::placeholders::_1)));
     }
     else
     {
@@ -311,9 +308,9 @@ BaseWSPeer<Handler, Impl>::onWrite(error_code const& ec)
             static_cast<bool>(result.first),
             result.second,
             bind_executor(
-                strand_, [self = impl().shared_from_this()](error_code const& ec, std::size_t) {
-                    self->onWriteFin(ec);
-                }));
+                strand_,
+                std::bind(
+                    &BaseWSPeer::onWriteFin, impl().shared_from_this(), std::placeholders::_1)));
     }
 }
 
@@ -327,9 +324,10 @@ BaseWSPeer<Handler, Impl>::onWriteFin(error_code const& ec)
     if (doClose_)
     {
         impl().ws_.async_close(
-            cr_, bind_executor(strand_, [self = impl().shared_from_this()](error_code const& ec) {
-                self->onClose(ec);
-            }));
+            cr_,
+            bind_executor(
+                strand_,
+                std::bind(&BaseWSPeer::onClose, impl().shared_from_this(), std::placeholders::_1)));
     }
     else if (!wq_.empty())
     {
@@ -342,13 +340,12 @@ void
 BaseWSPeer<Handler, Impl>::doRead()
 {
     if (!strand_.running_in_this_thread())
-        return post(strand_, [self = impl().shared_from_this()] { self->doRead(); });
+        return post(strand_, std::bind(&BaseWSPeer::doRead, impl().shared_from_this()));
     impl().ws_.async_read(
         rb_,
         bind_executor(
-            strand_, [self = impl().shared_from_this()](error_code const& ec, std::size_t) {
-                self->onRead(ec);
-            }));
+            strand_,
+            std::bind(&BaseWSPeer::onRead, impl().shared_from_this(), std::placeholders::_1)));
 }
 
 template <class Handler, class Impl>
@@ -392,7 +389,11 @@ BaseWSPeer<Handler, Impl>::startTimer()
     }
 
     timer_.async_wait(bind_executor(
-        strand_, [self = impl().shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
+        strand_,
+        std::bind(
+            &BaseWSPeer<Handler, Impl>::onTimer,
+            impl().shared_from_this(),
+            std::placeholders::_1)));
 }
 
 // Convenience for discarding the error code
@@ -460,9 +461,10 @@ BaseWSPeer<Handler, Impl>::onTimer(error_code ec)
             beast::rngfill(payload_.begin(), payload_.size(), cryptoPrng());
             impl().ws_.async_ping(
                 payload_,
-                bind_executor(strand_, [self = impl().shared_from_this()](error_code const& ec) {
-                    self->onPing(ec);
-                }));
+                bind_executor(
+                    strand_,
+                    std::bind(
+                        &BaseWSPeer::onPing, impl().shared_from_this(), std::placeholders::_1)));
             JLOG(this->j_.trace()) << "sent ping";
             return;
         }

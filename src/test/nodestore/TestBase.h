@@ -124,9 +124,9 @@ public:
     static void
     storeBatch(Backend& backend, Batch const& batch)
     {
-        for (auto const& object : batch)
+        for (int i = 0; i < batch.size(); ++i)
         {
-            backend.store(object);
+            backend.store(batch[i]);
         }
     }
 
@@ -137,11 +137,11 @@ public:
         pCopy->clear();
         pCopy->reserve(batch.size());
 
-        for (auto const& expected : batch)
+        for (int i = 0; i < batch.size(); ++i)
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status = backend.fetch(expected->getHash(), &object);
+            Status const status = backend.fetch(batch[i]->getHash(), &object);
 
             BEAST_EXPECT(status == Status::Ok);
 
@@ -157,11 +157,11 @@ public:
     void
     fetchMissing(Backend& backend, Batch const& batch)
     {
-        for (auto const& expected : batch)
+        for (int i = 0; i < batch.size(); ++i)
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status = backend.fetch(expected->getHash(), &object);
+            Status const status = backend.fetch(batch[i]->getHash(), &object);
 
             BEAST_EXPECT(status == Status::NotFound);
         }
@@ -171,8 +171,10 @@ public:
     static void
     storeBatch(Database& db, Batch const& batch)
     {
-        for (auto const& object : batch)
+        for (int i = 0; i < batch.size(); ++i)
         {
+            std::shared_ptr<NodeObject> const object(batch[i]);
+
             Blob data(object->getData());
 
             db.store(object->getType(), std::move(data), object->getHash(), db.earliestLedgerSeq());
@@ -186,9 +188,9 @@ public:
         pCopy->clear();
         pCopy->reserve(batch.size());
 
-        for (auto const& expected : batch)
+        for (int i = 0; i < batch.size(); ++i)
         {
-            std::shared_ptr<NodeObject> const object = db.fetchNodeObject(expected->getHash(), 0);
+            std::shared_ptr<NodeObject> const object = db.fetchNodeObject(batch[i]->getHash(), 0);
 
             if (object != nullptr)
                 pCopy->push_back(object);

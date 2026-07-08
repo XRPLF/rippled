@@ -8672,7 +8672,7 @@ protected:
         Account const borrower("borrower");
 
         // Determine all the random parameters at once
-        auto const assetType = static_cast<AssetType>(assetDist_(engine_));
+        AssetType const assetType = static_cast<AssetType>(assetDist_(engine_));
         auto const principalRequest = principalDist_(engine_);
         TenthBips16 const managementFeeRate{managementFeeRateDist_(engine_)};
         auto const serviceFee = serviceFeeDist_(engine_);

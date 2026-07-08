@@ -338,7 +338,7 @@ STObject::getText() const
 bool
 STObject::isEquivalent(STBase const& t) const
 {
-    auto const* v = dynamic_cast<STObject const*>(&t);
+    STObject const* v = dynamic_cast<STObject const*>(&t);
 
     if (v == nullptr)
         return false;
@@ -474,7 +474,7 @@ STObject::peekFieldArray(SField const& field)
 bool
 STObject::setFlag(std::uint32_t f)
 {
-    auto* t = dynamic_cast<STUInt32*>(getPField(sfFlags, true));
+    STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags, true));
 
     if (t == nullptr)
         return false;
@@ -486,7 +486,7 @@ STObject::setFlag(std::uint32_t f)
 bool
 STObject::clearFlag(std::uint32_t f)
 {
-    auto* t = dynamic_cast<STUInt32*>(getPField(sfFlags));
+    STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags));
 
     if (t == nullptr)
         return false;
@@ -502,9 +502,9 @@ STObject::isFlag(std::uint32_t f) const
 }
 
 std::uint32_t
-STObject::getFlags() const
+STObject::getFlags(void) const
 {
-    auto const* t = dynamic_cast<STUInt32 const*>(peekAtPField(sfFlags));
+    STUInt32 const* t = dynamic_cast<STUInt32 const*>(peekAtPField(sfFlags));
 
     if (t == nullptr)
         return 0;
@@ -651,7 +651,7 @@ Blob
 STObject::getFieldVL(SField const& field) const
 {
     STBlob const empty;
-    auto const& b = getFieldByConstRef<STBlob>(field, empty);
+    STBlob const& b = getFieldByConstRef<STBlob>(field, empty);
     return Blob(b.data(), b.data() + b.size());
 }
 

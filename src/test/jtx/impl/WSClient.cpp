@@ -30,7 +30,6 @@
 
 #include <chrono>
 #include <condition_variable>
-#include <cstddef>
 #include <exception>
 #include <functional>
 #include <iostream>
@@ -173,9 +172,9 @@ public:
                     }));
             ws_.handshake(ep.address().to_string() + ":" + std::to_string(ep.port()), "/");
             ws_.async_read(
-                rb_, boost::asio::bind_executor(strand_, [this](error_code const& ec, std::size_t) {
-                    onReadMsg(ec);
-                }));
+                rb_,
+                boost::asio::bind_executor(
+                    strand_, std::bind(&WSClientImpl::onReadMsg, this, std::placeholders::_1)));
         }
         catch (std::exception&)
         {
@@ -311,9 +310,9 @@ private:
             cv_.notify_all();
         }
         ws_.async_read(
-            rb_, boost::asio::bind_executor(strand_, [this](error_code const& ec, std::size_t) {
-                onReadMsg(ec);
-            }));
+            rb_,
+            boost::asio::bind_executor(
+                strand_, std::bind(&WSClientImpl::onReadMsg, this, std::placeholders::_1)));
     }
 
     // Called when the read op terminates

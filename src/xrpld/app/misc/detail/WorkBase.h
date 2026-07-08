@@ -12,7 +12,6 @@
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/write.hpp>
 
-#include <cstddef>
 #include <functional>
 #include <string>
 #include <utility>
@@ -139,9 +138,9 @@ WorkBase<Impl>::run()
     if (!strand_.running_in_this_thread())
     {
         return boost::asio::post(
-            ios_, boost::asio::bind_executor(strand_, [self = impl().shared_from_this()] {
-                self->run();
-            }));
+            ios_,
+            boost::asio::bind_executor(
+                strand_, std::bind(&WorkBase::run, impl().shared_from_this())));
     }
 
     resolver_.async_resolve(
@@ -149,9 +148,11 @@ WorkBase<Impl>::run()
         port_,
         boost::asio::bind_executor(
             strand_,
-            [self = impl().shared_from_this()](error_code const& ec, results_type results) {
-                self->onResolve(ec, results);
-            }));
+            std::bind(
+                &WorkBase::onResolve,
+                impl().shared_from_this(),
+                std::placeholders::_1,
+                std::placeholders::_2)));
 }
 
 template <class Impl>
@@ -164,7 +165,7 @@ WorkBase<Impl>::cancel()
             ios_,
 
             boost::asio::bind_executor(
-                strand_, [self = impl().shared_from_this()] { self->cancel(); }));
+                strand_, std::bind(&WorkBase::cancel, impl().shared_from_this())));
     }
 
     error_code ec;
@@ -195,12 +196,11 @@ WorkBase<Impl>::onResolve(error_code const& ec, results_type results)
         results,
         boost::asio::bind_executor(
             strand_,
-            [self = impl().shared_from_this()](
-                error_code const& ec, endpoint_type const& endpoint) {
-                // Call the base-class overload explicitly: the derived Impl
-                // hides it with its own single-argument onConnect(ec).
-                self->WorkBase::onConnect(ec, endpoint);
-            }));
+            std::bind(
+                &WorkBase::onConnect,
+                impl().shared_from_this(),
+                std::placeholders::_1,
+                std::placeholders::_2)));
 }
 
 template <class Impl>
@@ -229,9 +229,8 @@ WorkBase<Impl>::onStart()
         impl().stream(),
         req_,
         boost::asio::bind_executor(
-            strand_, [self = impl().shared_from_this()](error_code const& ec, std::size_t) {
-                self->onRequest(ec);
-            }));
+            strand_,
+            std::bind(&WorkBase::onRequest, impl().shared_from_this(), std::placeholders::_1)));
 }
 
 template <class Impl>
@@ -246,9 +245,8 @@ WorkBase<Impl>::onRequest(error_code const& ec)
         readBuf_,
         res_,
         boost::asio::bind_executor(
-            strand_, [self = impl().shared_from_this()](error_code const& ec, std::size_t) {
-                self->onResponse(ec);
-            }));
+            strand_,
+            std::bind(&WorkBase::onResponse, impl().shared_from_this(), std::placeholders::_1)));
 }
 
 template <class Impl>

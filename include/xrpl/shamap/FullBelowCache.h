@@ -103,7 +103,7 @@ public:
 
     /** generation determines whether cached entry is valid */
     std::uint32_t
-    getGeneration() const
+    getGeneration(void) const
     {
         return gen_;
     }

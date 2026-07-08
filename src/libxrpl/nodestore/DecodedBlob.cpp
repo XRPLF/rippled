@@ -12,7 +12,7 @@
 
 namespace xrpl::NodeStore {
 
-DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes) : key_(key)
+DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
 {
     /*  Data format:
 
@@ -23,13 +23,17 @@ DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes) : k
         9...end                     The body of the object data
     */
 
+    success_ = false;
+    key_ = key;
+    objectType_ = NodeObjectType::Unknown;
+    objectData_ = nullptr;
     dataBytes_ = std::max(0, valueBytes - 9);
 
     // VFALCO NOTE What about bytes 4 through 7 inclusive?
 
     if (valueBytes > 8)
     {
-        auto const* byte = static_cast<unsigned char const*>(value);
+        unsigned char const* byte = static_cast<unsigned char const*>(value);
         objectType_ = safeCast<NodeObjectType>(byte[8]);
     }
 
