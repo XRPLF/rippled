@@ -1011,7 +1011,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 ## Alerting
 
-rippled provisions six Grafana alert rules on the health-critical metrics, so a
+xrpld provisions six Grafana alert rules on the health-critical metrics, so a
 stock stack alerts out of the box with no UI setup. Rules are provisioned from
 `docker/telemetry/grafana/provisioning/alerting/` and load automatically when
 the Grafana container starts. They appear under **Alerting → Alert rules**,
