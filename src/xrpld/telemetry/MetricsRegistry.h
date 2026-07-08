@@ -142,7 +142,8 @@
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/metrics/meter.h>
 #include <opentelemetry/metrics/meter_provider.h>
-#include <opentelemetry/metrics/observer_result.h>
+#include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/nostd/unique_ptr.h>
 #include <opentelemetry/sdk/metrics/meter_provider.h>
 #endif
 

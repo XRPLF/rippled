@@ -465,7 +465,7 @@ These metrics serve multiple external consumer categories identified during rese
 
 ### Purpose
 
-Phase 9 exports ~68 internal rippled metrics and ships Grafana dashboards for
+Phase 9 exports ~68 internal xrpld metrics and ships Grafana dashboards for
 them. This adds the missing operator-facing piece: **provisioned Grafana alert
 rules** that fire on the health-critical metrics phase 9 introduces. The
 phase-9 task list (line 311) and Jira story RIPD-5187 both already list

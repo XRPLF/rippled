@@ -1032,11 +1032,11 @@ MetricsRegistry::registerPeerQualityGauge()
                 int divergedCount = 0;
 
                 // Encode a version string into BuildInfo's comparable numeric
-                // form. Peers report the full "rippled-3.3.0-b0" string while
+                // form. Peers report the full "xrpld-3.3.0-b0" string while
                 // our baseline is the bare "3.3.0-b0", and SemanticVersion
                 // requires a leading digit, so strip any non-digit prefix
                 // first. Numeric encoding avoids the lexicographic bug where
-                // "2.3.0" > "2.10.0" and "rippled-..." > "3...".
+                // "2.3.0" > "2.10.0" and "xrpld-..." > "3...".
                 auto const encodeVersion = [](std::string_view v) -> std::uint64_t {
                     auto const firstDigit = v.find_first_of("0123456789");
                     if (firstDigit == std::string_view::npos)
@@ -1242,7 +1242,7 @@ MetricsRegistry::registerStateTrackingGauge()
 
                 // State value: 0-4 from OperatingMode, 5=validating, 6=proposing.
                 auto const mode = app.getOPs().getOperatingMode();
-                double stateValue = static_cast<double>(mode);
+                auto stateValue = static_cast<double>(mode);
 
                 // If FULL, refine using consensus info for validating/proposing.
                 if (mode == OperatingMode::FULL)
