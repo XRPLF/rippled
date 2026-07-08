@@ -130,8 +130,8 @@ CredentialAccept::doApply()
     decreaseOwnerCountForObject(view(), sleIssuer, sleCred, 1, j_);
     removeSponsorFromLedgerEntry(sleCred);
 
-    addSponsorToLedgerEntry(sleCred, *txSponsorSle);
-    increaseOwnerCount(view(), sleSubject, *txSponsorSle, 1, j_);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred);
+    increaseOwnerCount(ctx_.getApplyViewContext(), sleSubject, 1, j_);
     view().update(sleCred);
 
     return tesSUCCESS;

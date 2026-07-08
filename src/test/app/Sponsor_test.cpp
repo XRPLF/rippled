@@ -1236,7 +1236,7 @@ public:
 
             env(sponsor::transfer(alice, tfSponsorshipCreate, checkId),
                 sponsor::As(sponsor1, spfSponsorReserve),
-                Ter(terNO_SPONSORSHIP));
+                Ter(terNO_PERMISSION));
             env.close();
 
             env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::SponseeAcc(alice));
@@ -1248,7 +1248,7 @@ public:
 
             env(sponsor::transfer(alice, tfSponsorshipReassign, checkId),
                 sponsor::As(sponsor1, spfSponsorReserve),
-                Ter(terNO_SPONSORSHIP));
+                Ter(terNO_PERMISSION));
             env.close();
         }
         {
@@ -1720,7 +1720,7 @@ public:
                 env(pay(alice, bob, XRP(100)),
                     Fee(XRP(2000)),
                     sponsor::As(sponsor, spfSponsorFee),
-                    Ter(terNO_SPONSORSHIP));
+                    Ter(terNO_PERMISSION));
                 env.close();
                 BEAST_EXPECT(env.balance(alice) == aliceBalance);
                 BEAST_EXPECT(env.balance(bob) == bobBalance);
@@ -1970,7 +1970,7 @@ public:
             env(pay(alice, bob, XRP(100)),
                 Fee(XRP(10)),
                 sponsor::As(sponsor, spfSponsorFee),
-                Ter(terNO_SPONSORSHIP));
+                Ter(terNO_PERMISSION));
             env.close();
 
             BEAST_EXPECT(
@@ -2004,7 +2004,7 @@ public:
             env(pay(alice, bob, XRP(100)),
                 Fee(XRP(1)),
                 sponsor::As(sponsor, spfSponsorFee),
-                Ter(terNO_SPONSORSHIP));
+                Ter(terNO_PERMISSION));
             env.close();
 
             // co-signing (with sig) should succeed
@@ -2167,7 +2167,7 @@ public:
             env(check::create(alice, bob, XRP(100)),
                 Fee(XRP(10)),
                 sponsor::As(sponsor, spfSponsorReserve),
-                Ter(terNO_SPONSORSHIP));
+                Ter(terNO_PERMISSION));
 
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
@@ -2202,7 +2202,7 @@ public:
             env(check::create(alice, bob, XRP(100)),
                 Fee(XRP(10)),
                 sponsor::As(sponsor, spfSponsorFee),
-                Ter(terNO_SPONSORSHIP));
+                Ter(terNO_PERMISSION));
 
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(
@@ -4493,7 +4493,7 @@ public:
                 delegate::As(bob),
                 sponsor::As(sponsor, spfSponsorReserve),
                 Sig(sfSponsorSignature, sponsor),
-                Ter(terNO_SPONSORSHIP));
+                Ter(terNO_PERMISSION));
         }
 
         // Pre-funded reserve sponsorship is blocked for delegated transactions.
@@ -4509,7 +4509,7 @@ public:
             env(check::create(alice, carol, XRP(1)),
                 delegate::As(bob),
                 sponsor::As(sponsor, spfSponsorReserve),
-                Ter(terNO_SPONSORSHIP));
+                Ter(terNO_PERMISSION));
         }
     }
 

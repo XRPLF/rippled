@@ -409,7 +409,7 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
 
     // Reserve sponsorship with permissioned delegation is disallowed.
     if (tx.isFieldPresent(sfDelegate) && isReserveSponsored(tx))
-        return terNO_SPONSORSHIP;
+        return terNO_PERMISSION;
 
     if (auto const sponsorSle = getTxReserveSponsor(view, tx); !sponsorSle)
         return terNO_ACCOUNT;
@@ -430,13 +430,13 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
 
     // sponsorship object missing for pre-funded tx
     if (!sponsorshipSle)
-        return terNO_SPONSORSHIP;
+        return terNO_PERMISSION;
 
     if (isFeeSponsored(tx) && sponsorshipSle->isFlag(lsfSponsorshipRequireSignForFee))
-        return terNO_SPONSORSHIP;
+        return terNO_PERMISSION;
 
     if (isReserveSponsored(tx) && sponsorshipSle->isFlag(lsfSponsorshipRequireSignForReserve))
-        return terNO_SPONSORSHIP;
+        return terNO_PERMISSION;
 
     return tesSUCCESS;
 }

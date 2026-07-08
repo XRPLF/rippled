@@ -647,7 +647,6 @@ LoanPay::doApply()
             asset,
             {{vaultPseudoAccount, totalPaidToVaultRounded}, {brokerPayee, totalPaidToBroker}},
             j_,
-            {},  // Vault and Broker cannot be sponsored
             WaiveTransferFee::Yes))
         return ter;
 

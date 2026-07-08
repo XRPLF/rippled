@@ -225,7 +225,7 @@ enum TERcodes : TERUnderlyingType {
                                 // create a pseudo-account
     terNO_DELEGATE_PERMISSION,  // Delegate does not have permission
     terLOCKED,                  // MPT is locked
-    terNO_SPONSORSHIP,          // No sponsorship found
+    terNO_PERMISSION,           // No permission but retry
 };
 
 //------------------------------------------------------------------------------

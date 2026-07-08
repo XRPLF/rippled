@@ -585,7 +585,6 @@ LoanSet::doApply()
             vaultAsset,
             {{borrower, loanAssetsToBorrower}, {brokerOwner, originationFee}},
             j_,
-            {},  // Vault and Broker cannot be sponsored
             WaiveTransferFee::Yes))
         return ter;
 

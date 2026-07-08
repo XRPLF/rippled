@@ -6,7 +6,6 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -90,18 +89,17 @@ PaymentChannelFund::doApply()
     {
         // Check reserve and funds availability
         auto const balance = (*sle)[sfBalance];
-        auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
-        if (!sponsorSle)
-            return sponsorSle.error();  // LCOV_EXCL_LINE
+        if (auto const ret = checkReserve(ctx_.getApplyViewContext(), sle, balance, {}, j_);
+            !isTesSuccess(ret))
+            return ret;
 
-        auto const reserve = accountReserve(view(), sle, j_);
-
-        // There are no objects being created here, so sponsorship does not need to be taken into
-        // account
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-
-        if (balance < reserve + ctx_.tx[sfAmount])
+        // After locking sfAmount in the channel, the source must still meet
+        // its own reserve floor. We compare directly (rather than via
+        // checkReserve) because that helper diverts to the sponsor's balance
+        // when a sponsor is present and would ignore the source's post-lock
+        // balance entirely. Funding an existing channel adds no owned object,
+        // so there is no owner-count delta.
+        if (balance < accountReserve(ctx_.view(), sle, j_) + ctx_.tx[sfAmount])
             return tecUNFUNDED;
     }
 

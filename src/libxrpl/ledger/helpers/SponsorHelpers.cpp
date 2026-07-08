@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -58,6 +59,15 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx)
     return SLE::pointer();
 }
 
+std::expected<SLE::pointer, TER>
+getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle)
+{
+    // A reserve sponsor only covers tx.Account's own objects.
+    if (isPseudoAccount(accountSle) || accountSle->getAccountID(sfAccount) != ctx.tx[sfAccount])
+        return SLE::pointer();
+    return getTxReserveSponsor(ctx);
+}
+
 std::optional<AccountID>
 getLedgerEntryReserveSponsorAccountID(SLE::const_ref sle, SF_ACCOUNT const& field)
 {
@@ -93,6 +103,17 @@ addSponsorToLedgerEntry(SLE::ref sle, SLE::const_ref sponsorSle, SF_ACCOUNT cons
         "addSponsorToLedgerEntry : Invalid field to the LedgerEntry");
     if (sponsorSle)
         sle->setAccountID(field, sponsorSle->getAccountID(sfAccount));
+}
+
+void
+addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& field)
+{
+    // getTxReserveSponsor yields a null pointer when the tx is not
+    // reserve-sponsored, so addSponsorToLedgerEntry becomes a no-op then. The
+    // error case (tecINTERNAL) is an already-checked invariant; skip stamping.
+    auto const sponsorSle = getTxReserveSponsor(ctx);
+    if (sponsorSle && *sponsorSle)
+        addSponsorToLedgerEntry(sle, *sponsorSle, field);
 }
 
 void

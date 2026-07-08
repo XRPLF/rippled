@@ -71,6 +71,22 @@ getTxReserveSponsor(ApplyViewContext ctx);
 std::expected<SLE::const_pointer, TER>
 getTxReserveSponsor(ReadView const& view, STTx const& tx);
 
+/** The transaction's reserve sponsor for the given account, if applicable.
+ *
+ *  A reserve sponsor only covers the transaction submitter's own objects, so
+ *  this returns the tx reserve sponsor SLE only when accountSle is the tx's own
+ *  (non-pseudo) account; otherwise it returns a null sponsor pointer. This is
+ *  the single source of truth for the "sponsor applies to tx.Account only" rule
+ *  that the sponsor-deriving helper overloads in AccountRootHelpers rely on.
+ *
+ *  @param ctx The apply-view context (view + tx)
+ *  @param accountSle The account whose sponsor is being resolved
+ *  @return The sponsor SLE (nullptr if unsponsored), or tecINTERNAL if the
+ *          sponsor account cannot be loaded (an already-checked invariant)
+ */
+[[nodiscard]] std::expected<SLE::pointer, TER>
+getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle);
+
 std::optional<AccountID>
 getLedgerEntryReserveSponsorAccountID(SLE::const_ref sle, SF_ACCOUNT const& field = sfSponsor);
 
@@ -91,6 +107,17 @@ addSponsorToLedgerEntry(
     SLE::ref sle,
     SLE::const_ref sponsorSle,
     SF_ACCOUNT const& field = sfSponsor);
+
+/** Stamp the transaction's reserve sponsor onto a newly-created ledger entry.
+ *
+ *  Equivalent to the overload above, but resolves the sponsor via
+ *  getTxReserveSponsor(ctx) instead of taking it explicitly. A no-op when the
+ *  transaction is not reserve-sponsored. The entry is assumed to be owned by
+ *  the transaction submitter, which is the only account a tx reserve sponsor
+ *  can cover.
+ */
+void
+addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& field = sfSponsor);
 
 void
 removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field = sfSponsor);

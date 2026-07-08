@@ -138,13 +138,9 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref a
     {
         switch (before->getType())
         {
-            case ltACCOUNT_ROOT: {
-                XRPL_ASSERT(
-                    isXRP((*before)[sfBalance]),
-                    "XRPNotCreated::visitEntry : AccountRoot.Balance is XRP");
+            case ltACCOUNT_ROOT:
                 drops_ -= (*before)[sfBalance].xrp().drops();
                 break;
-            }
             case ltPAYCHAN:
                 drops_ -= ((*before)[sfAmount] - (*before)[sfBalance]).xrp().drops();
                 break;
@@ -183,7 +179,12 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref a
                 break;
             case ltSPONSORSHIP:
                 if (!isDelete && after->isFieldPresent(sfFeeAmount))
+                {
+                    XRPL_ASSERT(
+                        isXRP((*after)[sfFeeAmount]),
+                        "XRPNotCreated::visitEntry : Sponsorship.FeeAmount is XRP");
                     drops_ += (*after)[sfFeeAmount].xrp().drops();
+                }
                 break;
             default:
                 break;
