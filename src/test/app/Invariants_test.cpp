@@ -3450,7 +3450,8 @@ class Invariants_test : public beast::unit_test::Suite
                         .assetsAvailable = -100,
                         .vaultAssets = -100,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = 100},
-                        .createLoan = LoanParams{}});
+                        .createLoan =
+                            LoanParams{.principalOutstanding = 200, .totalValueOutstanding = 200}});
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
@@ -3509,7 +3510,8 @@ class Invariants_test : public beast::unit_test::Suite
                         .assetsAvailable = -200,
                         .vaultAssets = -200,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
-                        .createLoan = LoanParams{}});
+                        .createLoan =
+                            LoanParams{.principalOutstanding = 200, .totalValueOutstanding = 200}});
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
@@ -3530,7 +3532,8 @@ class Invariants_test : public beast::unit_test::Suite
                         .vaultAssets = -200,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
                         .accountShares = AccountAmount{.account = a2.id(), .amount = 10},
-                        .createLoan = LoanParams{}});
+                        .createLoan =
+                            LoanParams{.principalOutstanding = 200, .totalValueOutstanding = 200}});
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
@@ -3553,7 +3556,34 @@ class Invariants_test : public beast::unit_test::Suite
                         .assetsMaximum = 1,
                         .vaultAssets = -200,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
-                        .createLoan = LoanParams{}});
+                        .createLoan =
+                            LoanParams{.principalOutstanding = 200, .totalValueOutstanding = 200}});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_SET: everything balances (principal released, exactly one loan
+        // created booking zero interest, shares untouched, assets outstanding
+        // unchanged), but the created loan records a principal outstanding that
+        // differs from the principal requested. The vault only released 200 to
+        // the borrower, yet the loan claims 300 principal, decoupling the
+        // borrower's debt from the assets actually lent and enabling share-price
+        // manipulation on repayment.
+        doInvariantCheck(
+            {"loan set principal outstanding must equal principal requested"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsAvailable = -200,
+                        .vaultAssets = -200,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
+                        .createLoan =
+                            LoanParams{.principalOutstanding = 300, .totalValueOutstanding = 300}});
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
