@@ -1269,11 +1269,15 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
         // TraceCategory-aware, so gate it explicitly to match the gating
         // of the hashSpan/span factories used below.
         if (link != nullptr && app_.getTelemetry().shouldTraceConsensus())
+        {
             roundSpan_.emplace(telemetry::SpanGuard::linkedSpan(cs::round, *link));
+        }
         else
+        {
             roundSpan_.emplace(
                 telemetry::SpanGuard::span(
                     telemetry::TraceCategory::Consensus, telemetry::seg::consensus, cs::op::round));
+        }
     }
     else
     {
@@ -1289,7 +1293,9 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
     }
 
     if (!*roundSpan_)
+    {
         return;
+    }
 
     roundSpan_->setAttribute(cs::attr::ledgerId, to_string(prevLgr.id()).c_str());
     roundSpan_->setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(prevLgr.seq()) + 1);
