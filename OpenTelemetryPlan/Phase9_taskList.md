@@ -376,7 +376,7 @@ These metrics serve multiple external consumer categories identified during rese
 | State Changes Rate         | stat       | `rate(xrpld_state_changes_total[1h])`                          |
 | Ledgers Closed Rate        | stat       | `rate(xrpld_ledgers_closed_total[5m]) * 60`                    |
 
-**Dashboard conventions**: `$node` template variable for `exported_instance` filtering, dark theme, matching existing panel sizes and color schemes.
+**Dashboard conventions**: `$node` template variable for `service_instance_id` filtering, dark theme, matching existing panel sizes and color schemes.
 
 **Key new files**: `docker/telemetry/grafana/dashboards/rippled-validator-health.json`
 
@@ -495,7 +495,7 @@ New files under `docker/telemetry/grafana/provisioning/alerting/`:
 | File                 | Purpose                                                                                                             |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `contactpoints.yaml` | One contact point `xrpld-default` (webhook to a documented placeholder; comments show how to swap for Slack/email). |
-| `policies.yaml`      | Default notification policy: route all alerts → `xrpld-default`, grouped by `alertname` + `exported_instance`.      |
+| `policies.yaml`      | Default notification policy: route all alerts → `xrpld-default`, grouped by `alertname` + `service_instance_id`.    |
 | `rules.yaml`         | 6 alert rules across 3 groups (below).                                                                              |
 
 Plus the Alerting section of `docs/telemetry-runbook.md` — operator runbook:
@@ -507,21 +507,21 @@ real receiver.
 All rules target Prometheus datasource `uid: prometheus`. Each rule uses the
 Grafana rule shape: query (A) → reduce (B, last value) → threshold (C). All
 `rate()`/`histogram_quantile()` expressions aggregate with
-`sum by (exported_instance)` (or `+ le`) so **each node alerts independently**.
+`sum by (service_instance_id)` (or `+ le`) so **each node alerts independently**.
 Alert rules run headless, so they cannot use the dashboards' `$node` template
-variables — they match all series and group by `exported_instance` instead.
+variables — they match all series and group by `service_instance_id` instead.
 
-| Group     | Alert                 | Expression (5m window)                                                                                    | Fires                 | `for` | severity |
-| --------- | --------------------- | --------------------------------------------------------------------------------------------------------- | --------------------- | ----- | -------- |
-| Consensus | LedgerHistoryMismatch | `sum by (exported_instance)(rate(xrpld_ledger_history_mismatch_total[5m]))`                               | `> 0`                 | 5m    | critical |
-| Consensus | LedgerCloseStalled    | `sum by (exported_instance)(rate(xrpld_ledgers_closed_total[5m]))`                                        | `< 0.001` (≈0)        | 3m    | critical |
-| Validator | ValidationsMissed     | `sum by (exported_instance)(rate(xrpld_validation_missed_total[5m]))`                                     | `> 0`                 | 5m    | warning  |
-| Validator | ValidationsNotChecked | `sum by (exported_instance)(rate(xrpld_validations_checked_total[5m]))`                                   | `< 0.001` (≈0)        | 5m    | warning  |
-| Job queue | JobQueueTxOverflow    | `sum by (exported_instance)(rate(xrpld_jq_trans_overflow_total[5m]))`                                     | `> 0`                 | 5m    | warning  |
-| Job queue | JobQueueLatencyHigh   | `histogram_quantile(0.99, sum by (le, exported_instance)(rate(xrpld_job_queued_duration_us_bucket[5m])))` | `> 1000000` (µs = 1s) | 5m    | warning  |
+| Group     | Alert                 | Expression (5m window)                                                                                      | Fires                 | `for` | severity |
+| --------- | --------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------- | ----- | -------- |
+| Consensus | LedgerHistoryMismatch | `sum by (service_instance_id)(rate(xrpld_ledger_history_mismatch_total[5m]))`                               | `> 0`                 | 5m    | critical |
+| Consensus | LedgerCloseStalled    | `sum by (service_instance_id)(rate(xrpld_ledgers_closed_total[5m]))`                                        | `< 0.001` (≈0)        | 3m    | critical |
+| Validator | ValidationsMissed     | `sum by (service_instance_id)(rate(xrpld_validation_missed_total[5m]))`                                     | `> 0`                 | 5m    | warning  |
+| Validator | ValidationsNotChecked | `sum by (service_instance_id)(rate(xrpld_validations_checked_total[5m]))`                                   | `< 0.001` (≈0)        | 5m    | warning  |
+| Job queue | JobQueueTxOverflow    | `sum by (service_instance_id)(rate(xrpld_jq_trans_overflow_total[5m]))`                                     | `> 0`                 | 5m    | warning  |
+| Job queue | JobQueueLatencyHigh   | `histogram_quantile(0.99, sum by (le, service_instance_id)(rate(xrpld_job_queued_duration_us_bucket[5m])))` | `> 1000000` (µs = 1s) | 5m    | warning  |
 
 Each rule carries labels `severity` and `category` (consensus/validator/jobqueue)
-and annotations `summary` + `description` (with `{{ $labels.exported_instance }}`
+and annotations `summary` + `description` (with `{{ $labels.service_instance_id }}`
 and `{{ $values.B.Value }}` interpolation).
 
 #### Threshold rationale
