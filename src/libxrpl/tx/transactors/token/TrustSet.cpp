@@ -538,7 +538,7 @@ TrustSet::doApply()
             {
                 // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
                 if (ret == tecINSUFFICIENT_RESERVE)
-                    return tecNO_LINE_INSUF_RESERVE;
+                    return tecINSUF_RESERVE_LINE;
                 return ret;
             }
 
