@@ -362,10 +362,7 @@ SponsorshipSet::doApply()
 }
 
 void
-SponsorshipSet::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+SponsorshipSet::visitInvariantEntry(bool, SLE::const_ref&, SLE::const_ref&)
 {
 }
 

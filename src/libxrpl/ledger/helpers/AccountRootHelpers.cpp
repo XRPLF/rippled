@@ -365,6 +365,9 @@ checkReserve(
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (sponsorSle)
     {
+        if (sponsorSle->getType() != ltACCOUNT_ROOT)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
         auto const sle = ctx.view.read(
             keylet::sponsorship(
                 sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));

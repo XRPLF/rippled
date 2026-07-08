@@ -18,7 +18,7 @@
 namespace xrpl {
 
 std::optional<AccountID>
-getTxReserveSponsorAccountID(STTx const& tx)
+getTxReserveSponsorID(STTx const& tx)
 {
     if (tx.isFieldPresent(sfSponsor) && isReserveSponsored(tx))
     {
@@ -30,7 +30,7 @@ getTxReserveSponsorAccountID(STTx const& tx)
 std::expected<SLE::pointer, TER>
 getTxReserveSponsor(ApplyViewContext ctx)
 {
-    auto const sponsorID = getTxReserveSponsorAccountID(ctx.tx);
+    auto const sponsorID = getTxReserveSponsorID(ctx.tx);
     if (sponsorID)
     {
         auto sle = ctx.view.peek(keylet::account(*sponsorID));
@@ -46,7 +46,7 @@ getTxReserveSponsor(ApplyViewContext ctx)
 std::expected<SLE::const_pointer, TER>
 getTxReserveSponsor(ReadView const& view, STTx const& tx)
 {
-    auto const sponsorID = getTxReserveSponsorAccountID(tx);
+    auto const sponsorID = getTxReserveSponsorID(tx);
     if (sponsorID)
     {
         auto sle = view.read(keylet::account(*sponsorID));
@@ -69,7 +69,7 @@ getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle)
 }
 
 std::optional<AccountID>
-getLedgerEntryReserveSponsorAccountID(SLE::const_ref sle, SF_ACCOUNT const& field)
+getLedgerEntryReserveSponsorID(SLE::const_ref sle, SF_ACCOUNT const& field)
 {
     if (sle->isFieldPresent(field))
         return sle->getAccountID(field);
@@ -79,7 +79,7 @@ getLedgerEntryReserveSponsorAccountID(SLE::const_ref sle, SF_ACCOUNT const& fiel
 SLE::pointer
 getLedgerEntryReserveSponsor(ApplyView& view, SLE::const_ref sle, SF_ACCOUNT const& field)
 {
-    auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);
+    auto const sponsorID = getLedgerEntryReserveSponsorID(sle, field);
     if (sponsorID)
         return view.peek(keylet::account(*sponsorID));
     return {};
@@ -88,7 +88,7 @@ getLedgerEntryReserveSponsor(ApplyView& view, SLE::const_ref sle, SF_ACCOUNT con
 SLE::const_pointer
 getLedgerEntryReserveSponsor(ReadView const& view, SLE::const_ref sle, SF_ACCOUNT const& field)
 {
-    auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);
+    auto const sponsorID = getLedgerEntryReserveSponsorID(sle, field);
     if (sponsorID)
         return view.read(keylet::account(*sponsorID));
     return {};
@@ -125,6 +125,128 @@ removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field)
         "removeSponsorFromLedgerEntry : Invalid field to the LedgerEntry");
     if (sle->isFieldPresent(field))
         sle->makeFieldAbsent(field);
+}
+
+std::optional<AccountID>
+getLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& account)
+{
+    switch (sle.getType())
+    {
+        case ltCHECK:
+        case ltESCROW:
+        case ltPAYCHAN:
+        case ltMPTOKEN:
+        case ltDELEGATE:
+        case ltDEPOSIT_PREAUTH:
+            return sle.getAccountID(sfAccount);
+        case ltMPTOKEN_ISSUANCE:
+            return sle.getAccountID(sfIssuer);
+        case ltSIGNER_LIST: {
+            auto const signerList = view.read(keylet::signerList(account));
+            if (!signerList)
+                return std::nullopt;
+            if (signerList->key() == sle.key())
+                return account;
+            return std::nullopt;
+        }
+        case ltCREDENTIAL: {
+            if (sle.isFlag(lsfAccepted))
+                return sle.getAccountID(sfSubject);
+            return sle.getAccountID(sfIssuer);
+        }
+        case ltRIPPLE_STATE: {
+            if (sle.isFlag(lsfHighReserve))
+            {
+                auto const highAccount = sle.getFieldAmount(sfHighLimit).getIssuer();
+                if (highAccount == account)
+                    return highAccount;
+            }
+            if (sle.isFlag(lsfLowReserve))
+            {
+                auto const lowAccount = sle.getFieldAmount(sfLowLimit).getIssuer();
+                if (lowAccount == account)
+                    return lowAccount;
+            }
+            return std::nullopt;
+        }
+        default:
+            UNREACHABLE("xrpl::getLedgerEntryOwner : object is not supported by sponsorship.");
+            return std::nullopt;
+    };
+}
+
+bool
+isLedgerEntrySupportedBySponsorship(SLE const& sle)
+{
+    switch (sle.getType())
+    {
+        case ltCHECK:
+        case ltESCROW:
+        case ltPAYCHAN:
+        case ltMPTOKEN:
+        case ltDELEGATE:
+        case ltDEPOSIT_PREAUTH:
+        case ltMPTOKEN_ISSUANCE:
+        case ltSIGNER_LIST:
+        case ltCREDENTIAL:
+        case ltRIPPLE_STATE:
+            return true;
+        default:
+            return false;
+    };
+}
+
+std::uint32_t
+getLedgerEntryOwnerCount(SLE const& sle)
+{
+    switch (sle.getType())
+    {
+        case ltORACLE: {
+            return calculateOracleReserve(sle.getFieldArray(sfPriceDataSeries).size());
+        }
+        // Vaults require 2 owner counts (the vault and a pseudo-account)
+        case ltVAULT:
+            return 2;
+        case ltSIGNER_LIST: {
+            // Mirror SignerListSet's owner-count accounting so that create and
+            // delete agree. Modern lists (post-MultiSignReserve) carry the
+            // lsfOneOwnerCount flag and cost a single owner count. Legacy
+            // pre-MultiSignReserve lists cost 2 + signer_count owner counts
+            if (sle.isFlag(lsfOneOwnerCount))
+                return 1;
+            return 2 + static_cast<std::uint32_t>(sle.getFieldArray(sfSignerEntries).size());
+        }
+        default:
+            return 1;
+    }
+}
+
+SF_ACCOUNT const&
+getLedgerEntrySponsorField(SLE const& sle, AccountID const& owner)
+{
+    switch (sle.getType())
+    {
+        case ltRIPPLE_STATE: {
+            if (sle.isFlag(lsfHighReserve))
+            {
+                auto const highAccount = sle.getFieldAmount(sfHighLimit).getIssuer();
+                if (highAccount == owner)
+                    return sfHighSponsor;
+            }
+            if (sle.isFlag(lsfLowReserve))
+            {
+                auto const lowAccount = sle.getFieldAmount(sfLowLimit).getIssuer();
+                if (lowAccount == owner)
+                    return sfLowSponsor;
+            }
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::getLedgerEntrySponsorField : unknown owner for RippleState");
+            return sfSponsor;
+            // LCOV_EXCL_STOP
+        }
+        default:
+            return sfSponsor;
+    }
 }
 
 }  // namespace xrpl
