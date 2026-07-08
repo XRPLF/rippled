@@ -195,7 +195,7 @@ MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::strin
     auto reader =
         metric_sdk::PeriodicExportingMetricReaderFactory::Create(std::move(exporter), readerOpts);
 
-    // Configure resource attributes so Prometheus exported_instance labels
+    // Configure resource attributes so Prometheus service_instance_id labels
     // distinguish metrics from different nodes (matches OTelCollector setup).
     resource::ResourceAttributes attrs;
     // Use std::string, not a string literal: ResourceAttributes stores an

@@ -58,7 +58,7 @@ public network with all tracing and native metrics enabled:
 
 Both set `[insight] server=otel` (native metrics → collector → Prometheus, which
 drives the dashboards) and `service_instance_id`, exposed by Prometheus as the
-`exported_instance` label that the `$node` dashboard variable filters on. The
+`service_instance_id` label that the `$node` dashboard variable filters on. The
 mainnet config logs to `/var/log/xrpld/mainnet/debug.log` — the path
 the collector's filelog receiver tails for log-trace correlation.
 
@@ -1020,7 +1020,7 @@ folder **xrpld**.
 ### Alert catalogue
 
 All rules evaluate every minute against the Prometheus datasource, over a
-5-minute window, and group by `exported_instance` so each node alerts on its
+5-minute window, and group by `service_instance_id` so each node alerts on its
 own. Alerts fire only after the condition holds for the `for` dwell time.
 
 | Alert                   | Severity | Fires when                                      | For |
@@ -1097,7 +1097,7 @@ The severity split lives in
 sends everything to `xrpld-default`, and a child route matching
 `severity = critical` overrides to `xrpld-critical`. So a critical alert goes
 to Slack **and** email; a warning goes to Slack only. Both group by
-`alertname` + `exported_instance`; critical alerts re-page hourly vs the 4h default.
+`alertname` + `service_instance_id`; critical alerts re-page hourly vs the 4h default.
 
 #### Configure delivery (no secrets in git)
 

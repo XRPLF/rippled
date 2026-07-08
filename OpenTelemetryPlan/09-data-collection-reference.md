@@ -618,7 +618,7 @@ matches its Prometheus label), letting one Grafana stack be sliced by tier:
 
 | Variable                  | Source label             | Description                                                  |
 | ------------------------- | ------------------------ | ------------------------------------------------------------ |
-| `$node`                   | `exported_instance`      | Filter by xrpld node instance                                |
+| `$node`                   | `service_instance_id`    | Filter by xrpld node instance                                |
 | `$service_name`           | `service_name`           | Filter by service (`service.name`, e.g. `xrpld`)             |
 | `$deployment_environment` | `deployment_environment` | Filter by deployment tier (`local` / `test` / `ci` / `prod`) |
 | `$xrpl_network_type`      | `xrpl_network_type`      | Filter by network (`mainnet` / `testnet` / `devnet`)         |
