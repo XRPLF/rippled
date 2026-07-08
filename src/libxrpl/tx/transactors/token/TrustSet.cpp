@@ -527,9 +527,6 @@ TrustSet::doApply()
         {
             SLE::pointer const lowSponsor = getSponsor(uLowAccountID);
 
-            // should be checked PreFunded Sponsor before increaseOwnerCount()
-            // For PreFunded sponsors, we need to check if there are sufficient reserves before
-            // calling increaseOwnerCount().
             if (auto const ret = checkReserve(
                     ctx_.getApplyViewContext(),
                     sleLowAccount,
@@ -538,7 +535,12 @@ TrustSet::doApply()
                     {.ownerCountDelta = 1},
                     j_);
                 lowSponsor && !isTesSuccess(ret))
-                return tecINSUF_RESERVE_LINE;
+            {
+                // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
+                if (ret == tecINSUFFICIENT_RESERVE)
+                    return tecNO_LINE_INSUF_RESERVE;
+                return ret;
+            }
 
             // Set reserve for low account.
             increaseOwnerCount(view(), sleLowAccount, lowSponsor, 1, viewJ);
