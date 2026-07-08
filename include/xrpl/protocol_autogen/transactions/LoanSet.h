@@ -85,6 +85,32 @@ public:
     }
 
     /**
+     * @brief Get sfBorrower (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    getBorrower() const
+    {
+        if (hasBorrower())
+        {
+            return this->tx_->at(sfBorrower);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfBorrower is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasBorrower() const
+    {
+        return this->tx_->isFieldPresent(sfBorrower);
+    }
+
+    /**
      * @brief Get sfCounterparty (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -521,6 +547,17 @@ public:
     setData(std::decay_t<typename SF_VL::type::value_type> const& value)
     {
         object_[sfData] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfBorrower (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    LoanSetBuilder&
+    setBorrower(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    {
+        object_[sfBorrower] = value;
         return *this;
     }
 

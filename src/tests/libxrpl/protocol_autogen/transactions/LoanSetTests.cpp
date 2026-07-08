@@ -31,6 +31,7 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
     // Transaction-specific field values
     auto const loanBrokerIDValue = canonical_UINT256();
     auto const dataValue = canonical_VL();
+    auto const borrowerValue = canonical_ACCOUNT();
     auto const counterpartyValue = canonical_ACCOUNT();
     auto const counterpartySignatureValue = canonical_OBJECT();
     auto const loanOriginationFeeValue = canonical_NUMBER();
@@ -57,6 +58,7 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setData(dataValue);
+    builder.setBorrower(borrowerValue);
     builder.setCounterparty(counterpartyValue);
     builder.setCounterpartySignature(counterpartySignatureValue);
     builder.setLoanOriginationFee(loanOriginationFeeValue);
@@ -106,6 +108,14 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfData should be present";
         expectEqualField(expected, *actualOpt, "sfData");
         EXPECT_TRUE(tx.hasData());
+    }
+
+    {
+        auto const& expected = borrowerValue;
+        auto const actualOpt = tx.getBorrower();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBorrower should be present";
+        expectEqualField(expected, *actualOpt, "sfBorrower");
+        EXPECT_TRUE(tx.hasBorrower());
     }
 
     {
@@ -238,6 +248,7 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
     // Transaction-specific field values
     auto const loanBrokerIDValue = canonical_UINT256();
     auto const dataValue = canonical_VL();
+    auto const borrowerValue = canonical_ACCOUNT();
     auto const counterpartyValue = canonical_ACCOUNT();
     auto const counterpartySignatureValue = canonical_OBJECT();
     auto const loanOriginationFeeValue = canonical_NUMBER();
@@ -264,6 +275,7 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
     };
 
     initialBuilder.setData(dataValue);
+    initialBuilder.setBorrower(borrowerValue);
     initialBuilder.setCounterparty(counterpartyValue);
     initialBuilder.setCounterpartySignature(counterpartySignatureValue);
     initialBuilder.setLoanOriginationFee(loanOriginationFeeValue);
@@ -313,6 +325,13 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getData();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfData should be present";
         expectEqualField(expected, *actualOpt, "sfData");
+    }
+
+    {
+        auto const& expected = borrowerValue;
+        auto const actualOpt = rebuiltTx.getBorrower();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfBorrower should be present";
+        expectEqualField(expected, *actualOpt, "sfBorrower");
     }
 
     {
@@ -474,6 +493,8 @@ TEST(TransactionsLoanSetTests, OptionalFieldsReturnNullopt)
     // Verify optional fields are not present
     EXPECT_FALSE(tx.hasData());
     EXPECT_FALSE(tx.getData().has_value());
+    EXPECT_FALSE(tx.hasBorrower());
+    EXPECT_FALSE(tx.getBorrower().has_value());
     EXPECT_FALSE(tx.hasCounterparty());
     EXPECT_FALSE(tx.getCounterparty().has_value());
     EXPECT_FALSE(tx.hasCounterpartySignature());
