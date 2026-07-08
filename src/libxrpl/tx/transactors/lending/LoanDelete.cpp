@@ -108,11 +108,7 @@ LoanDelete::doApply()
 
     // Decrement the LoanBroker's owner count.
     // The broker's owner count is solely for the number of outstanding loans,
-    // and is distinct from the broker's pseudo-account's owner count. Use the
-    // no-sponsor overload to mirror the sponsor-free increment in LoanSet: the
-    // loan's reserve sponsor applies to the borrower's count, not the broker's,
-    // and forwarding it here would make adjustOwnerCountSigned skip the
-    // LoanBroker (non-ACCOUNT_ROOT) decrement entirely.
+    // and is distinct from the broker's pseudo-account's owner count.
     decreaseOwnerCount(view, brokerSle, {}, 1, j_);
 
     // If there are no loans left, then any remaining debt must be forgiven,
