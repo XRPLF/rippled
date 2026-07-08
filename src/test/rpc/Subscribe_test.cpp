@@ -513,18 +513,18 @@ public:
 
                 if (env.closed()->rules().enabled(featureSmartEscrow))
                 {
-                    if (jv.isMember(jss::extension_compute) != isFlagLedger)
+                    if (jv.isMember(jss::gas_limit) != isFlagLedger)
                         return false;
 
-                    if (jv.isMember(jss::extension_size) != isFlagLedger)
+                    if (jv.isMember(jss::bytecode_size_limit) != isFlagLedger)
                         return false;
                 }
                 else
                 {
-                    if (jv.isMember(jss::extension_compute))
+                    if (jv.isMember(jss::gas_limit))
                         return false;
 
-                    if (jv.isMember(jss::extension_size))
+                    if (jv.isMember(jss::bytecode_size_limit))
                         return false;
                 }
                 return true;

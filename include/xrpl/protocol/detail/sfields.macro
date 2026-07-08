@@ -113,8 +113,8 @@ TYPED_SFIELD(sfInterestRate,             UINT32,    65) // 1/10 basis points (bi
 TYPED_SFIELD(sfLateInterestRate,         UINT32,    66) // 1/10 basis points (bips)
 TYPED_SFIELD(sfCloseInterestRate,        UINT32,    67) // 1/10 basis points (bips)
 TYPED_SFIELD(sfOverpaymentInterestRate,  UINT32,    68) // 1/10 basis points (bips)
-TYPED_SFIELD(sfExtensionComputeLimit,    UINT32,    69)
-TYPED_SFIELD(sfExtensionSizeLimit,       UINT32,    70)
+TYPED_SFIELD(sfGasLimit,                 UINT32,    69)
+TYPED_SFIELD(sfBytecodeSizeLimit,        UINT32,    70)
 TYPED_SFIELD(sfGasPrice,                 UINT32,    71)
 
 // 64-bit integers (common)

@@ -48,8 +48,8 @@ struct FeeSettingsFields
     std::optional<XRPAmount> baseFeeDrops = std::nullopt;
     std::optional<XRPAmount> reserveBaseDrops = std::nullopt;
     std::optional<XRPAmount> reserveIncrementDrops = std::nullopt;
-    std::optional<std::uint32_t> extensionComputeLimit = std::nullopt;
-    std::optional<std::uint32_t> extensionSizeLimit = std::nullopt;
+    std::optional<std::uint32_t> gasLimit = std::nullopt;
+    std::optional<std::uint32_t> bytecodeSizeLimit = std::nullopt;
     std::optional<std::uint32_t> gasPrice = std::nullopt;
 };
 
@@ -88,11 +88,9 @@ createFeeTx(
         }
         if (rules.enabled(featureSmartEscrow) || forceAllFields)
         {
+            obj.setFieldU32(sfGasLimit, fields.gasLimit ? *fields.gasLimit : 0);
             obj.setFieldU32(
-                sfExtensionComputeLimit,
-                fields.extensionComputeLimit ? *fields.extensionComputeLimit : 0);
-            obj.setFieldU32(
-                sfExtensionSizeLimit, fields.extensionSizeLimit ? *fields.extensionSizeLimit : 0);
+                sfBytecodeSizeLimit, fields.bytecodeSizeLimit ? *fields.bytecodeSizeLimit : 0);
             obj.setFieldU32(sfGasPrice, fields.gasPrice ? *fields.gasPrice : 0);
         }
     };
@@ -145,8 +143,8 @@ createInvalidFeeTx(
             }
             if (rules.enabled(featureSmartEscrow))
             {
-                obj.setFieldU32(sfExtensionComputeLimit, 100 + uniqueValue);
-                obj.setFieldU32(sfExtensionSizeLimit, 200 + uniqueValue);
+                obj.setFieldU32(sfGasLimit, 100 + uniqueValue);
+                obj.setFieldU32(sfBytecodeSizeLimit, 200 + uniqueValue);
                 obj.setFieldU32(sfGasPrice, 300 + uniqueValue);
             }
         }
@@ -213,18 +211,17 @@ verifyFeeObject(
     }
     if (rules.enabled(featureSmartEscrow))
     {
-        if (!checkEquality(sfExtensionComputeLimit, expected.extensionComputeLimit.value_or(0)))
+        if (!checkEquality(sfGasLimit, expected.gasLimit.value_or(0)))
             return false;
-        if (!checkEquality(sfExtensionSizeLimit, expected.extensionSizeLimit.value_or(0)))
+        if (!checkEquality(sfBytecodeSizeLimit, expected.bytecodeSizeLimit.value_or(0)))
             return false;
         if (!checkEquality(sfGasPrice, expected.gasPrice.value_or(0)))
             return false;
     }
     else
     {
-        if (feeObject->isFieldPresent(sfExtensionComputeLimit) ||
-            feeObject->isFieldPresent(sfExtensionSizeLimit) ||
-            feeObject->isFieldPresent(sfGasPrice))
+        if (feeObject->isFieldPresent(sfGasLimit) ||
+            feeObject->isFieldPresent(sfBytecodeSizeLimit) || feeObject->isFieldPresent(sfGasPrice))
             return false;
     }
 
@@ -258,8 +255,8 @@ class FeeVote_test : public beast::unit_test::Suite
             BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
             BEAST_EXPECT(setup.account_reserve == defaultSetup.account_reserve);
             BEAST_EXPECT(setup.owner_reserve == defaultSetup.owner_reserve);
-            BEAST_EXPECT(setup.extension_compute_limit == defaultSetup.extension_compute_limit);
-            BEAST_EXPECT(setup.extension_size_limit == defaultSetup.extension_size_limit);
+            BEAST_EXPECT(setup.gas_limit == defaultSetup.gas_limit);
+            BEAST_EXPECT(setup.bytecode_size_limit == defaultSetup.bytecode_size_limit);
             BEAST_EXPECT(setup.gas_price == defaultSetup.gas_price);
         }
         {
@@ -268,15 +265,15 @@ class FeeVote_test : public beast::unit_test::Suite
                 {"reference_fee = 50",
                  "account_reserve = 1234567",
                  "owner_reserve = 1234",
-                 "extension_compute_limit = 100",
-                 "extension_size_limit = 200",
+                 "gas_limit = 100",
+                 "bytecode_size_limit = 200",
                  "gas_price = 300"});
             auto setup = setupFeeVote(config);
             BEAST_EXPECT(setup.reference_fee == 50);
             BEAST_EXPECT(setup.account_reserve == 1234567);
             BEAST_EXPECT(setup.owner_reserve == 1234);
-            BEAST_EXPECT(setup.extension_compute_limit == 100);
-            BEAST_EXPECT(setup.extension_size_limit == 200);
+            BEAST_EXPECT(setup.gas_limit == 100);
+            BEAST_EXPECT(setup.bytecode_size_limit == 200);
             BEAST_EXPECT(setup.gas_price == 300);
         }
         {
@@ -285,16 +282,16 @@ class FeeVote_test : public beast::unit_test::Suite
                 {"reference_fee = blah",
                  "account_reserve = yada",
                  "owner_reserve = foo",
-                 "extension_compute_limit = bar",
-                 "extension_size_limit = baz",
+                 "gas_limit = bar",
+                 "bytecode_size_limit = baz",
                  "gas_price = qux"});
             // Illegal values are ignored, and the defaults left unchanged
             auto setup = setupFeeVote(config);
             BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
             BEAST_EXPECT(setup.account_reserve == defaultSetup.account_reserve);
             BEAST_EXPECT(setup.owner_reserve == defaultSetup.owner_reserve);
-            BEAST_EXPECT(setup.extension_compute_limit == defaultSetup.extension_compute_limit);
-            BEAST_EXPECT(setup.extension_size_limit == defaultSetup.extension_size_limit);
+            BEAST_EXPECT(setup.gas_limit == defaultSetup.gas_limit);
+            BEAST_EXPECT(setup.bytecode_size_limit == defaultSetup.bytecode_size_limit);
             BEAST_EXPECT(setup.gas_price == defaultSetup.gas_price);
         }
         {
@@ -303,17 +300,17 @@ class FeeVote_test : public beast::unit_test::Suite
                 {"reference_fee = -50",
                  "account_reserve = -1234567",
                  "owner_reserve = -1234",
-                 "extension_compute_limit = -100",
-                 "extension_size_limit = -200",
+                 "gas_limit = -100",
+                 "bytecode_size_limit = -200",
                  "gas_price = -300"});
-            // Negative extension limit values wrap past their maximum and are
+            // Negative gas/bytecode limit values wrap past their maximum and are
             // ignored. Other uint32_t fields keep the existing behavior.
             auto setup = setupFeeVote(config);
             BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
             BEAST_EXPECT(setup.account_reserve == static_cast<std::uint32_t>(-1234567));
             BEAST_EXPECT(setup.owner_reserve == static_cast<std::uint32_t>(-1234));
-            BEAST_EXPECT(setup.extension_compute_limit == defaultSetup.extension_compute_limit);
-            BEAST_EXPECT(setup.extension_size_limit == defaultSetup.extension_size_limit);
+            BEAST_EXPECT(setup.gas_limit == defaultSetup.gas_limit);
+            BEAST_EXPECT(setup.bytecode_size_limit == defaultSetup.bytecode_size_limit);
             BEAST_EXPECT(setup.gas_price == static_cast<std::uint32_t>(-300));
         }
         {
@@ -324,35 +321,35 @@ class FeeVote_test : public beast::unit_test::Suite
                 {"reference_fee = " + big64,
                  "account_reserve = " + big64,
                  "owner_reserve = " + big64,
-                 "extension_compute_limit = " + big64,
-                 "extension_size_limit = " + big64,
+                 "gas_limit = " + big64,
+                 "bytecode_size_limit = " + big64,
                  "gas_price = " + big64});
             // Illegal values are ignored, and the defaults left unchanged
             auto setup = setupFeeVote(config);
             BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
             BEAST_EXPECT(setup.account_reserve == defaultSetup.account_reserve);
             BEAST_EXPECT(setup.owner_reserve == defaultSetup.owner_reserve);
-            BEAST_EXPECT(setup.extension_compute_limit == defaultSetup.extension_compute_limit);
-            BEAST_EXPECT(setup.extension_size_limit == defaultSetup.extension_size_limit);
+            BEAST_EXPECT(setup.gas_limit == defaultSetup.gas_limit);
+            BEAST_EXPECT(setup.bytecode_size_limit == defaultSetup.bytecode_size_limit);
             BEAST_EXPECT(setup.gas_price == defaultSetup.gas_price);
         }
         {
             Section config;
             config.append(
-                {"extension_compute_limit = " + std::to_string(kMaxExtensionComputeLimit + 1),
-                 "extension_size_limit = " + std::to_string(kMaxExtensionSizeLimit + 1)});
+                {"gas_limit = " + std::to_string(kMaxGasLimit + 1),
+                 "bytecode_size_limit = " + std::to_string(kMaxBytecodeSizeLimit + 1)});
             auto const setup = setupFeeVote(config);
-            BEAST_EXPECT(setup.extension_compute_limit == defaultSetup.extension_compute_limit);
-            BEAST_EXPECT(setup.extension_size_limit == defaultSetup.extension_size_limit);
+            BEAST_EXPECT(setup.gas_limit == defaultSetup.gas_limit);
+            BEAST_EXPECT(setup.bytecode_size_limit == defaultSetup.bytecode_size_limit);
         }
         {
             Section config;
             config.append(
-                {"extension_compute_limit = " + std::to_string(kMaxExtensionComputeLimit),
-                 "extension_size_limit = " + std::to_string(kMaxExtensionSizeLimit)});
+                {"gas_limit = " + std::to_string(kMaxGasLimit),
+                 "bytecode_size_limit = " + std::to_string(kMaxBytecodeSizeLimit)});
             auto const setup = setupFeeVote(config);
-            BEAST_EXPECT(setup.extension_compute_limit == kMaxExtensionComputeLimit);
-            BEAST_EXPECT(setup.extension_size_limit == kMaxExtensionSizeLimit);
+            BEAST_EXPECT(setup.gas_limit == kMaxGasLimit);
+            BEAST_EXPECT(setup.bytecode_size_limit == kMaxBytecodeSizeLimit);
         }
     }
 
@@ -436,8 +433,8 @@ class FeeVote_test : public beast::unit_test::Suite
                 .baseFeeDrops = XRPAmount{10},
                 .reserveBaseDrops = XRPAmount{200000},
                 .reserveIncrementDrops = XRPAmount{50000},
-                .extensionComputeLimit = 100,
-                .extensionSizeLimit = 200,
+                .gasLimit = 100,
+                .bytecodeSizeLimit = 200,
                 .gasPrice = 300};
             // Test successful fee transaction with new fields
             auto feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields);
@@ -472,15 +469,15 @@ class FeeVote_test : public beast::unit_test::Suite
                 {.baseFeeDrops = XRPAmount{10},
                  .reserveBaseDrops = XRPAmount{200000},
                  .reserveIncrementDrops = XRPAmount{50000},
-                 .extensionComputeLimit = kMaxExtensionComputeLimit + 1,
-                 .extensionSizeLimit = kMaxExtensionSizeLimit,
+                 .gasLimit = kMaxGasLimit + 1,
+                 .bytecodeSizeLimit = kMaxBytecodeSizeLimit,
                  .gasPrice = 300});
             testBadFields(
                 {.baseFeeDrops = XRPAmount{10},
                  .reserveBaseDrops = XRPAmount{200000},
                  .reserveIncrementDrops = XRPAmount{50000},
-                 .extensionComputeLimit = kMaxExtensionComputeLimit,
-                 .extensionSizeLimit = kMaxExtensionSizeLimit + 1,
+                 .gasLimit = kMaxGasLimit,
+                 .bytecodeSizeLimit = kMaxBytecodeSizeLimit + 1,
                  .gasPrice = 300});
         }
 
@@ -502,8 +499,8 @@ class FeeVote_test : public beast::unit_test::Suite
                 .baseFeeDrops = XRPAmount{10},
                 .reserveBaseDrops = XRPAmount{200000},
                 .reserveIncrementDrops = XRPAmount{50000},
-                .extensionComputeLimit = 100,
-                .extensionSizeLimit = 200,
+                .gasLimit = 100,
+                .bytecodeSizeLimit = 200,
                 .gasPrice = 300};
             // Test successful fee transaction with new fields
             auto feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields, true);
@@ -951,8 +948,8 @@ class FeeVote_test : public beast::unit_test::Suite
         BEAST_EXPECT(env.current()->fees().base == XRPAmount{UNIT_TEST_REFERENCE_FEE});
         BEAST_EXPECT(env.current()->fees().reserve == XRPAmount{200'000'000});
         BEAST_EXPECT(env.current()->fees().increment == XRPAmount{50'000'000});
-        BEAST_EXPECT(env.current()->fees().extensionComputeLimit == 0);
-        BEAST_EXPECT(env.current()->fees().extensionSizeLimit == 0);
+        BEAST_EXPECT(env.current()->fees().gasLimit == 0);
+        BEAST_EXPECT(env.current()->fees().bytecodeSizeLimit == 0);
         BEAST_EXPECT(env.current()->fees().gasPrice == 0);
 
         auto const createFeeTxFromVoting =
@@ -993,8 +990,8 @@ class FeeVote_test : public beast::unit_test::Suite
                         v.setFieldAmount(sfBaseFeeDrops, XRPAmount{setup.reference_fee});
                         v.setFieldAmount(sfReserveBaseDrops, XRPAmount{setup.account_reserve});
                         v.setFieldAmount(sfReserveIncrementDrops, XRPAmount{setup.owner_reserve});
-                        v.setFieldU32(sfExtensionComputeLimit, setup.extension_compute_limit);
-                        v.setFieldU32(sfExtensionSizeLimit, setup.extension_size_limit);
+                        v.setFieldU32(sfGasLimit, setup.gas_limit);
+                        v.setFieldU32(sfBytecodeSizeLimit, setup.bytecode_size_limit);
                         v.setFieldU32(sfGasPrice, setup.gas_price);
                     });
                 if (i % 2)
@@ -1041,10 +1038,9 @@ class FeeVote_test : public beast::unit_test::Suite
             BEAST_EXPECTS(
                 feeTx.getFieldAmount(sfReserveIncrementDrops) == XRPAmount{setup.owner_reserve},
                 line);
+            BEAST_EXPECTS(feeTx.getFieldU32(sfGasLimit) == setup.gas_limit, line);
             BEAST_EXPECTS(
-                feeTx.getFieldU32(sfExtensionComputeLimit) == setup.extension_compute_limit, line);
-            BEAST_EXPECTS(
-                feeTx.getFieldU32(sfExtensionSizeLimit) == setup.extension_size_limit, line);
+                feeTx.getFieldU32(sfBytecodeSizeLimit) == setup.bytecode_size_limit, line);
             BEAST_EXPECTS(feeTx.getFieldU32(sfGasPrice) == setup.gas_price, line);
         };
 
@@ -1053,8 +1049,8 @@ class FeeVote_test : public beast::unit_test::Suite
             setup.reference_fee = 42;
             setup.account_reserve = 1234567;
             setup.owner_reserve = 7654321;
-            setup.extension_compute_limit = 100;
-            setup.extension_size_limit = 200;
+            setup.gas_limit = 100;
+            setup.bytecode_size_limit = 200;
             setup.gas_price = 300;
             auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
 
@@ -1066,8 +1062,8 @@ class FeeVote_test : public beast::unit_test::Suite
             setup.reference_fee = 42;
             setup.account_reserve = 1234567;
             setup.owner_reserve = 7654321;
-            setup.extension_compute_limit = 0;
-            setup.extension_size_limit = 0;
+            setup.gas_limit = 0;
+            setup.bytecode_size_limit = 0;
             setup.gas_price = 300;
             auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
 
@@ -1079,13 +1075,13 @@ class FeeVote_test : public beast::unit_test::Suite
             setup.reference_fee = 42;
             setup.account_reserve = 1234567;
             setup.owner_reserve = 7654321;
-            setup.extension_compute_limit = kMaxExtensionComputeLimit + 1;
-            setup.extension_size_limit = kMaxExtensionSizeLimit + 1;
+            setup.gas_limit = kMaxGasLimit + 1;
+            setup.bytecode_size_limit = kMaxBytecodeSizeLimit + 1;
             setup.gas_price = 300;
             auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
 
-            setup.extension_compute_limit = ledger->fees().extensionComputeLimit;
-            setup.extension_size_limit = ledger->fees().extensionSizeLimit;
+            setup.gas_limit = ledger->fees().gasLimit;
+            setup.bytecode_size_limit = ledger->fees().bytecodeSizeLimit;
             checkFeeTx(setup, feeTx, ledger);
         }
     }

@@ -14,8 +14,8 @@ inline constexpr std::uint32_t kFeeUnitsDeprecated = 10;
 constexpr std::uint32_t microDropsPerDrop{1'000'000};
 
 /** Maximum Feature Extension fee settings. */
-inline constexpr std::uint32_t kMaxExtensionComputeLimit{2'000'000};
-inline constexpr std::uint32_t kMaxExtensionSizeLimit{200'000};
+inline constexpr std::uint32_t kMaxGasLimit{2'000'000};
+inline constexpr std::uint32_t kMaxBytecodeSizeLimit{200'000};
 
 /** Reflects the fee settings for a particular ledger.
 
@@ -33,11 +33,11 @@ struct Fees
     /** @brief Additional XRP reserve required per owned ledger object. */
     XRPAmount increment{0};
 
-    /** @brief Compute limit for Feature Extensions (instructions). */
-    std::uint32_t extensionComputeLimit{0};
+    /** @brief Gas limit for Feature Extensions (instructions). */
+    std::uint32_t gasLimit{0};
 
-    /** @brief Size limit for Feature Extensions (bytes). */
-    std::uint32_t extensionSizeLimit{0};
+    /** @brief Bytecode size limit for Feature Extensions (bytes). */
+    std::uint32_t bytecodeSizeLimit{0};
 
     /** @brief Price of WASM gas (micro-drops). */
     std::uint32_t gasPrice{0};

@@ -126,19 +126,18 @@ Change::preclaim(PreclaimContext const& ctx)
             }
             if (ctx.view.rules().enabled(featureSmartEscrow))
             {
-                if (!ctx.tx.isFieldPresent(sfExtensionComputeLimit) ||
-                    !ctx.tx.isFieldPresent(sfExtensionSizeLimit) ||
+                if (!ctx.tx.isFieldPresent(sfGasLimit) ||
+                    !ctx.tx.isFieldPresent(sfBytecodeSizeLimit) ||
                     !ctx.tx.isFieldPresent(sfGasPrice))
                     return temMALFORMED;
-                if (ctx.tx[sfExtensionComputeLimit] > kMaxExtensionComputeLimit ||
-                    ctx.tx[sfExtensionSizeLimit] > kMaxExtensionSizeLimit)
+                if (ctx.tx[sfGasLimit] > kMaxGasLimit ||
+                    ctx.tx[sfBytecodeSizeLimit] > kMaxBytecodeSizeLimit)
                     return temBAD_FEE;
             }
             else
             {
-                if (ctx.tx.isFieldPresent(sfExtensionComputeLimit) ||
-                    ctx.tx.isFieldPresent(sfExtensionSizeLimit) ||
-                    ctx.tx.isFieldPresent(sfGasPrice))
+                if (ctx.tx.isFieldPresent(sfGasLimit) ||
+                    ctx.tx.isFieldPresent(sfBytecodeSizeLimit) || ctx.tx.isFieldPresent(sfGasPrice))
                     return temDISABLED;
             }
             return tesSUCCESS;
@@ -304,8 +303,8 @@ Change::applyFee()
     }
     if (view().rules().enabled(featureSmartEscrow))
     {
-        set(feeObject, ctx_.tx, sfExtensionComputeLimit);
-        set(feeObject, ctx_.tx, sfExtensionSizeLimit);
+        set(feeObject, ctx_.tx, sfGasLimit);
+        set(feeObject, ctx_.tx, sfBytecodeSizeLimit);
         set(feeObject, ctx_.tx, sfGasPrice);
     }
 

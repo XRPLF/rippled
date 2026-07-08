@@ -23,8 +23,8 @@ setupConfigForUnitTests(Config& cfg)
     cfg.FEES.reference_fee = UNIT_TEST_REFERENCE_FEE;
     cfg.FEES.account_reserve = XRP(200).value().xrp().drops();
     cfg.FEES.owner_reserve = XRP(50).value().xrp().drops();
-    cfg.FEES.extension_compute_limit = 1'000'000;
-    cfg.FEES.extension_size_limit = 1'000'000;
+    cfg.FEES.gas_limit = 1'000'000;
+    cfg.FEES.bytecode_size_limit = 1'000'000;
     cfg.FEES.gas_price = 1'000;
 
     // The Beta API (currently v2) is always available to tests
