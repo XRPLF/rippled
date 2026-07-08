@@ -7,6 +7,7 @@
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
+#include <test/jtx/sig.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
@@ -3536,6 +3537,29 @@ class Invariants_test : public beast::unit_test::Suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
+        // ttLOAN_SET: everything balances (principal released, exactly one loan
+        // created booking zero interest so assets outstanding is unchanged, and
+        // shares are untouched), but the vault has a positive assets maximum
+        // below its assets outstanding, so only the maximum check trips.
+        doInvariantCheck(
+            {"loan set assets outstanding must not exceed assets maximum"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsAvailable = -200,
+                        .assetsMaximum = 1,
+                        .vaultAssets = -200,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
+                        .createLoan = LoanParams{}});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
         // ttLOAN_MANAGE: vault balance and assets available do not add up
         doInvariantCheck(
             {"loan manage vault balance and assets available must add up"},
@@ -3814,6 +3838,74 @@ class Invariants_test : public beast::unit_test::Suite
                 "the change in the loan claim"));
         }
 
+        // A loan may only be deleted by a LoanDelete transaction, and only once
+        // it is fully paid off. Both branches are exercised by creating a real
+        // loan in the Preclose (so it exists in the base ledger with outstanding
+        // principal) and then erasing it in the Precheck.
+        {
+            Keylet loanKeylet = keylet::amendments();
+            auto const precloseLoan = [&loanKeylet, this](
+                                          Account const& a1, Account const& a2, Env& env) -> bool {
+                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+
+                Vault const vault{env};
+                auto [tx, vaultKeylet] = vault.create({.owner = a1, .asset = xrpAsset});
+                env(tx);
+                env.close();
+                if (!BEAST_EXPECT(env.le(vaultKeylet)))
+                    return false;
+
+                env(vault.deposit(
+                    {.depositor = a1, .id = vaultKeylet.key, .amount = xrpAsset(100)}));
+                env.close();
+
+                auto const brokerKeylet = keylet::loanBroker(a1.id(), env.seq(a1));
+                env(loanBroker::set(a1, vaultKeylet.key), Fee(kIncrement));
+                env.close();
+                auto const brokerSle = env.le(brokerKeylet);
+                if (!BEAST_EXPECT(brokerSle))
+                    return false;
+
+                loanKeylet = keylet::loan(brokerKeylet.key, brokerSle->at(sfLoanSequence));
+                env(loan::set(a2, brokerKeylet.key, xrpAsset(50).value()),
+                    Sig(sfCounterpartySignature, a1),
+                    Fee(env.current()->fees().base * 2));
+                env.close();
+                return BEAST_EXPECT(env.le(loanKeylet));
+            };
+
+            auto const eraseLoan = [&loanKeylet](Account const&, Account const&, ApplyContext& ac) {
+                auto sle = ac.view().peek(loanKeylet);
+                if (!sle)
+                    return false;
+                ac.view().erase(sle);
+                return true;
+            };
+
+            // Deleting the loan under any transaction type other than LoanDelete
+            // (here the neutral ttACCOUNT_SET) is a violation, even while the
+            // loan still has outstanding obligations: the transaction-type check
+            // fires before the not-fully-paid-off check.
+            doInvariantCheck(
+                {"Loan deleted by a transaction other than LoanDelete"},
+                eraseLoan,
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseLoan);
+
+            // Deleting the loan via LoanDelete while it still has outstanding
+            // obligations is a violation: the transaction-type check passes and
+            // the not-fully-paid-off check fires.
+            doInvariantCheck(
+                {"Loan deleted while not fully paid off"},
+                eraseLoan,
+                XRPAmount{},
+                STTx{ttLOAN_DELETE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseLoan);
+        }
+
         // Loan interest due (total value less principal and management fee)
         // must never be negative. A neutral transaction type is used so the
         // vault invariants short-circuit and only the loan check fires. The
@@ -3834,6 +3926,42 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().insert(sleLoan);
                 return true;
             });
+
+        // Each of these loan STNumber fields must never be negative. A neutral
+        // transaction type is used so the vault invariants short-circuit and
+        // only the loan check fires. The loan is created directly with a single
+        // field set negative while the paid-off bookkeeping is kept consistent
+        // so that only the "<field> is negative" check trips.
+        for (auto const field : {
+                 &sfLoanServiceFee,
+                 &sfLatePaymentFee,
+                 &sfClosePaymentFee,
+                 &sfPrincipalOutstanding,
+                 &sfTotalValueOutstanding,
+                 &sfManagementFeeOutstanding,
+             })
+        {
+            // The outstanding-balance fields also feed the paid-off checks, so
+            // a loan carrying one must still have payments remaining; a loan
+            // with only a negative fee stays fully paid off (zero remaining).
+            bool const isOutstanding = *field == sfPrincipalOutstanding ||
+                *field == sfTotalValueOutstanding || *field == sfManagementFeeOutstanding;
+            doInvariantCheck(
+                {field->getName() + " is negative"},
+                [&, field](Account const& a1, Account const&, ApplyContext& ac) {
+                    auto const vaultKeylet = keylet::vault(a1.id(), ac.view().seq());
+                    auto const loanKeylet = keylet::loan(vaultKeylet.key, 1);
+                    auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                    sleLoan->at(sfPrincipalOutstanding) = Number(0);
+                    sleLoan->at(sfTotalValueOutstanding) = Number(0);
+                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                    sleLoan->at(sfPeriodicPayment) = Number(1);
+                    sleLoan->at(*field) = Number(-10);
+                    sleLoan->setFieldU32(sfPaymentRemaining, isOutstanding ? 1 : 0);
+                    ac.view().insert(sleLoan);
+                    return true;
+                });
+        }
 
         // ttVAULT_SET: owner is immutable
         doInvariantCheck(

@@ -1404,8 +1404,8 @@ ValidVault::finalize(
                 return result;
             }
 
+            // LCOV_EXCL_START
             default:
-                // LCOV_EXCL_START
                 UNREACHABLE("xrpl::ValidVault::finalize : unknown transaction type");
                 return false;
                 // LCOV_EXCL_STOP
