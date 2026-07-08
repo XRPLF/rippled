@@ -31,8 +31,8 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "xrpld_peer_quality{metric=\"peer_latency_p90_ms\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "P90 Latency [{{exported_instance}}]"
+          "expr": "xrpld_peer_quality{metric=\"peer_latency_p90_ms\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "P90 Latency [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -93,8 +93,8 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "xrpld_peer_quality{metric=\"peers_insane_count\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Insane Peers [{{exported_instance}}]"
+          "expr": "xrpld_peer_quality{metric=\"peers_insane_count\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Insane Peers [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -143,8 +143,8 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "xrpld_peer_quality{metric=\"peers_higher_version_pct\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Higher Version % [{{exported_instance}}]"
+          "expr": "xrpld_peer_quality{metric=\"peers_higher_version_pct\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Higher Version % [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -195,8 +195,8 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "xrpld_peer_quality{metric=\"upgrade_recommended\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Upgrade [{{exported_instance}}]"
+          "expr": "xrpld_peer_quality{metric=\"upgrade_recommended\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Upgrade [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -261,8 +261,8 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "xrpld_server_info{metric=\"peer_disconnects_resources\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Disconnects [{{exported_instance}}]"
+          "expr": "xrpld_server_info{metric=\"peer_disconnects_resources\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Disconnects [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -309,16 +309,16 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "xrpld_Peer_Finder_Active_Inbound_Peers{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Inbound [{{exported_instance}}]"
+          "expr": "xrpld_Peer_Finder_Active_Inbound_Peers{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Inbound [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "xrpld_Peer_Finder_Active_Outbound_Peers{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Outbound [{{exported_instance}}]"
+          "expr": "xrpld_Peer_Finder_Active_Outbound_Peers{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Outbound [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -451,7 +451,7 @@
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id)",
         "type": "query",
-        "query": "label_values(xrpld_peer_quality, exported_instance)",
+        "query": "label_values(xrpld_peer_quality, service_instance_id)",
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"

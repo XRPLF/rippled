@@ -8,7 +8,7 @@
 #
 # Rule shape (Grafana server-side evaluation):
 #   A  Prometheus query  — a 5-minute rate / histogram_quantile, aggregated
-#                          `by (exported_instance)` so each node evaluates
+#                          `by (service_instance_id)` so each node evaluates
 #                          independently. Alert rules run headless and cannot
 #                          use the dashboards' `$node` template variable.
 #   B  reduce (last)      — collapse A's series to its most recent value.
@@ -41,9 +41,9 @@ groups:
           severity: critical
           category: consensus
         annotations:
-          summary: "Ledger history mismatch on {{ $labels.exported_instance }}"
+          summary: "Ledger history mismatch on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.exported_instance }} is recording ledger history
+            Node {{ $labels.service_instance_id }} is recording ledger history
             mismatches ({{ $values.B.Value }}/s over 5m). The node's built ledger
             diverges from the validated network chain.
         data:
@@ -54,7 +54,7 @@ groups:
             datasourceUid: prometheus
             model:
               refId: A
-              expr: sum by (exported_instance) (rate(xrpld_ledger_history_mismatch_total[5m]))
+              expr: sum by (service_instance_id) (rate(xrpld_ledger_history_mismatch_total[5m]))
               instant: true
               range: false
               intervalMs: 1000
@@ -102,9 +102,9 @@ groups:
           severity: critical
           category: consensus
         annotations:
-          summary: "Ledger closing stalled on {{ $labels.exported_instance }}"
+          summary: "Ledger closing stalled on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.exported_instance }} has closed no ledgers for
+            Node {{ $labels.service_instance_id }} has closed no ledgers for
             several minutes (5m rate has decayed to zero). Consensus or ledger
             advancement is stuck.
         data:
@@ -115,7 +115,7 @@ groups:
             datasourceUid: prometheus
             model:
               refId: A
-              expr: sum by (exported_instance) (rate(xrpld_ledgers_closed_total[5m]))
+              expr: sum by (service_instance_id) (rate(xrpld_ledgers_closed_total[5m]))
               instant: true
               range: false
               intervalMs: 1000
@@ -171,9 +171,9 @@ groups:
           severity: warning
           category: validator
         annotations:
-          summary: "Validations missed on {{ $labels.exported_instance }}"
+          summary: "Validations missed on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.exported_instance }} is missing validations
+            Node {{ $labels.service_instance_id }} is missing validations
             ({{ $values.B.Value }}/s over 5m). Its validations are not agreeing with
             the validated ledger.
         data:
@@ -184,7 +184,7 @@ groups:
             datasourceUid: prometheus
             model:
               refId: A
-              expr: sum by (exported_instance) (rate(xrpld_validation_missed_total[5m]))
+              expr: sum by (service_instance_id) (rate(xrpld_validation_missed_total[5m]))
               instant: true
               range: false
               intervalMs: 1000
@@ -232,9 +232,9 @@ groups:
           severity: warning
           category: validator
         annotations:
-          summary: "No validations checked on {{ $labels.exported_instance }}"
+          summary: "No validations checked on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.exported_instance }} has checked no incoming
+            Node {{ $labels.service_instance_id }} has checked no incoming
             validations for several minutes (5m rate has decayed to zero). The
             validation stream from peers may have stopped.
         data:
@@ -245,7 +245,7 @@ groups:
             datasourceUid: prometheus
             model:
               refId: A
-              expr: sum by (exported_instance) (rate(xrpld_validations_checked_total[5m]))
+              expr: sum by (service_instance_id) (rate(xrpld_validations_checked_total[5m]))
               instant: true
               range: false
               intervalMs: 1000
@@ -300,9 +300,9 @@ groups:
           severity: warning
           category: jobqueue
         annotations:
-          summary: "Job queue transaction overflow on {{ $labels.exported_instance }}"
+          summary: "Job queue transaction overflow on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.exported_instance }} is overflowing its transaction
+            Node {{ $labels.service_instance_id }} is overflowing its transaction
             job queue ({{ $values.B.Value }}/s over 5m). Transactions are being
             dropped under load.
         data:
@@ -313,7 +313,7 @@ groups:
             datasourceUid: prometheus
             model:
               refId: A
-              expr: sum by (exported_instance) (rate(xrpld_jq_trans_overflow_total[5m]))
+              expr: sum by (service_instance_id) (rate(xrpld_jq_trans_overflow_total[5m]))
               instant: true
               range: false
               intervalMs: 1000
@@ -361,9 +361,9 @@ groups:
           severity: warning
           category: jobqueue
         annotations:
-          summary: "Job queue latency high on {{ $labels.exported_instance }}"
+          summary: "Job queue latency high on {{ $labels.service_instance_id }}"
           description: >-
-            Node {{ $labels.exported_instance }} has a p99 job-queue wait of
+            Node {{ $labels.service_instance_id }} has a p99 job-queue wait of
             {{ $values.B.Value }}µs (>1s) over 5m. The node is saturated and jobs are
             backing up.
         data:
@@ -374,7 +374,7 @@ groups:
             datasourceUid: prometheus
             model:
               refId: A
-              expr: histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket[5m])))
+              expr: histogram_quantile(0.99, sum by (le, service_instance_id) (rate(xrpld_job_queued_duration_us_bucket[5m])))
               instant: true
               range: false
               intervalMs: 1000
