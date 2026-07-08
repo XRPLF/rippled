@@ -47,13 +47,13 @@ in
     zip
     # Rust packages
     cargo
+    cargo-audit
+    cargo-llvm-cov
+    cargo-nextest
+    clippy
+    corrosion
+    rust-analyzer
     rustc
     rustfmt
-    rust-analyzer
-    clippy
-    cargo-audit
-    cargo-nextest
-    cargo-llvm-cov
-    corrosion
   ];
 }
