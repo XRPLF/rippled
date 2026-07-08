@@ -263,7 +263,7 @@ See the [environment setup guide](./docs/build/environment.md#clang-tidy) for ho
 
 ### Running clang-tidy locally
 
-Before running clang-tidy, you must build the project to generate required files (particularly protobuf headers). Refer to [`BUILD.md`](./BUILD.md) for build instructions.
+Before running clang-tidy, you must configure the project so that a `compile_commands.json` is generated in your build directory. A full build is not required. Refer to [`BUILD.md`](./BUILD.md) for instructions.
 
 #### Via pre-commit (recommended)
 

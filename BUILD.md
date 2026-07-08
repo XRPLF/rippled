@@ -234,18 +234,26 @@ install ccache --version 4.11.3 --allow-downgrade`.
 
 ## Code generation
 
-The protocol wrapper classes in `include/xrpl/protocol_autogen/` are generated
-from macro definition files in `include/xrpl/protocol/detail/`. If you modify
-the macro files (e.g. `transactions.macro`, `ledger_entries.macro`) or the
-generation scripts/templates in `cmake/scripts/codegen/`, you need to regenerate the
-files:
+Some sources are generated from higher-level definitions and committed to the
+repository:
+
+- The protocol wrapper classes in `include/xrpl/protocol_autogen/` are generated
+  from the macro definition files in `include/xrpl/protocol/detail/` (e.g.
+  `transactions.macro`, `ledger_entries.macro`) and the generation
+  scripts/templates in `cmake/scripts/codegen/`.
+- The protobuf and gRPC code generated from the `.proto` files in
+  `include/xrpl/proto/`: headers in `include/xrpl/proto_generated/` and sources
+  in `src/libxrpl/proto_generated/` (they are committed so that a normal build
+  and tools such as clang-tidy do not need `protoc`).
+
+If you modify any of those inputs, regenerate all of them with a single target:
 
 ```
-cmake --build . --target setup_code_gen  # create venv and install dependencies (once)
-cmake --build . --target code_gen        # regenerate code
+cmake --build . --target generate
 ```
 
-The regenerated files should be committed alongside your changes.
+The regenerated files should be committed alongside your changes. CI verifies
+that these committed files are up-to-date.
 
 ## Coverage report
 
@@ -389,7 +397,7 @@ you might have generated CMake files for a different `build_type` than the
 `CMAKE_BUILD_TYPE` you passed to Conan.
 
 ```
-/xrpld/.build/pb-xrpl.libpb/xrpl/proto/xrpl.pb.h:10:10: fatal error: 'google/protobuf/port_def.inc' file not found
+/xrpld/include/xrpl/proto_generated/xrpl.pb.h:10:10: fatal error: 'google/protobuf/port_def.inc' file not found
    10 | #include <google/protobuf/port_def.inc>
       |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 1 error generated.

@@ -46,7 +46,8 @@ setup_target_for_coverage_gcovr(
         "src/tests"
         "include/xrpl/beast/test"
         "include/xrpl/beast/unit_test"
-        "${CMAKE_BINARY_DIR}/pb-xrpl.libpb"
+        "include/xrpl/proto_generated"
+        "src/libxrpl/proto_generated"
     DEPENDENCIES xrpld xrpl_tests
 )
 

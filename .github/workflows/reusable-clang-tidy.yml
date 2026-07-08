@@ -82,12 +82,6 @@ jobs:
               -Dverify_headers=ON \
               ..
 
-      # clang-tidy needs headers generated from proto files
-      - name: Build libxrpl.libpb
-        working-directory: ${{ env.BUILD_DIR }}
-        run: |
-          ninja -j ${{ steps.nproc.outputs.nproc }} xrpl.libpb
-
       - name: Run clang tidy
         id: run_clang_tidy
         continue-on-error: true

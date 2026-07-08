@@ -2,38 +2,42 @@
   Exported targets.
 #]===================================================================]
 
-include(target_protobuf_sources)
+include(GNUInstallDirs)
 
 # Protocol buffers cannot participate in a unity build,
 # because all the generated sources
 # define a bunch of `static const` variables with the same names,
 # so we just build them as a separate library.
+#
+# The generated sources are committed to the repository (headers under
+# `include/xrpl/proto_generated`, implementation files under
+# `src/libxrpl/proto_generated`; the `.proto` sources live in
+# `include/xrpl/proto`) rather than being generated at build time, so that tools
+# like clang-tidy can find the headers without protoc (and a full build). Run
+# the `proto_gen` target (see cmake/XrplProto.cmake) to regenerate them after
+# changing any `.proto` file; the up-to-date check in CI verifies that the
+# committed files are current.
 add_library(xrpl.libpb)
 set_target_properties(xrpl.libpb PROPERTIES UNITY_BUILD OFF)
-target_protobuf_sources(
-    xrpl.libpb
-    xrpl/proto
-    LANGUAGE cpp
-    IMPORT_DIRS include/xrpl/proto
-    PROTOS include/xrpl/proto/xrpl.proto
-)
 
-file(GLOB_RECURSE protos "include/xrpl/proto/org/*.proto")
-target_protobuf_sources(
-    xrpl.libpb
-    xrpl/proto
-    LANGUAGE cpp
-    IMPORT_DIRS include/xrpl/proto
-    PROTOS "${protos}"
+file(
+    GLOB_RECURSE pb_sources
+    CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/libxrpl/proto_generated/*.pb.cc"
 )
-target_protobuf_sources(
+target_sources(xrpl.libpb PRIVATE ${pb_sources})
+
+target_include_directories(
     xrpl.libpb
-    xrpl/proto
-    LANGUAGE grpc
-    IMPORT_DIRS include/xrpl/proto
-    PROTOS "${protos}"
-    PLUGIN protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>
-    GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
+    SYSTEM
+    PUBLIC
+        # Allows #include <file.pb.h> and #include "path/to/file.pb.h" used by
+        # consumers and by the generated files to find each other. The generated
+        # headers are only ever reached through this SYSTEM include directory, so
+        # their diagnostics are suppressed (important under -Dwerr=ON).
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/xrpl/proto_generated>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/xrpl/proto_generated>
 )
 
 target_compile_options(

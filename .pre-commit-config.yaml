@@ -127,5 +127,6 @@ exclude: |
   (?x)^(
       external/.*|
       .github/scripts/levelization/results/.*\.txt|
-      src/tests/libxrpl/protocol_autogen/(transactions|ledger_entries)/.*
+      src/tests/libxrpl/protocol_autogen/(transactions|ledger_entries)/.*|
+      (include/xrpl|src/libxrpl)/proto_generated/.*\.pb\.(cc|h)
   )$
