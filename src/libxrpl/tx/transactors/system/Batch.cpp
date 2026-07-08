@@ -360,6 +360,10 @@ Batch::preflight(PreflightContext const& ctx)
             return temBAD_FEE;
         }
 
+        // Disallow fee sponsorship on Batch inner txs
+        if (stx.isFieldPresent(sfSponsor) && isFeeSponsored(stx))
+            return temINVALID_FLAG;
+
         auto const innerAccount = stx.getAccountID(sfAccount);
         if (auto const preflightResult =
                 xrpl::preflight(ctx.registry, ctx.rules, parentBatchId, stx, TapBatch, ctx.j);

@@ -4800,7 +4800,7 @@ public:
             {
                 auto jt = env.jtnofill(
                     noop(alice),
-                    sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee),
+                    sponsor::As(sponsor, spfSponsorReserve),
                     Sig(sfSponsorSignature, sponsor));
                 jt.jv.removeMember(sfTxnSignature.jsonName);
                 jt.jv[sfSponsorSignature.jsonName].removeMember(sfTxnSignature.jsonName);
@@ -4830,8 +4830,7 @@ public:
             BEAST_EXPECT(env.balance(sponsor) == XRP(900));
 
             auto jt = env.jtnofill(
-                check::create(alice, bob, XRP(1)),
-                sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee));
+                check::create(alice, bob, XRP(1)), sponsor::As(sponsor, spfSponsorReserve));
             // remove txn signature since it is filled by env.jtnofill()
             jt.jv.removeMember(jss::TxnSignature);
 
@@ -4866,7 +4865,7 @@ public:
 
             auto jt = env.jtnofill(
                 check::create(alice, bob, XRP(1)),
-                sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee),
+                sponsor::As(sponsor, spfSponsorReserve),
                 Sig(sfSponsorSignature, sponsor));
             // remove txn signature since it is filled by env.jtnofill()
             jt.jv.removeMember(sfTxnSignature.jsonName);
@@ -4889,6 +4888,98 @@ public:
             // Fee is paid by outer transaction originator (alice)
             BEAST_EXPECT(env.balance(alice) == XRP(999));
             BEAST_EXPECT(env.balance(sponsor) == XRP(1000));
+        }
+
+        // Inner tx with sfSponsor + spfSponsorFee (pre-funded) is rejected
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000), alice, bob, sponsor);
+            env.close();
+
+            // Create pre-funded sponsorship
+            env(sponsor::set(sponsor, 0, 0, XRP(1)), sponsor::SponseeAcc(alice), Fee(XRP(1)));
+            env.close();
+
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+            // Create inner transaction with sponsor fee
+            auto innerPay = pay(alice, bob, XRP(1));
+            innerPay[sfSponsor.jsonName] = sponsor.human();
+            innerPay[sfSponsorFlags.jsonName] = static_cast<std::uint32_t>(spfSponsorFee);
+
+            // Should be rejected with temBAD_FEE
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::Inner(innerPay, seq + 1),
+                batch::Inner(noop(alice), seq + 2),
+                Ter(temINVALID_FLAG));
+            env.close();
+        }
+
+        // Inner tx with sfSponsor + spfSponsorFee (co-signed) is rejected
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000), alice, bob, sponsor);
+            env.close();
+
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+
+            auto innerPay = pay(alice, bob, XRP(1));
+            innerPay[sfSponsor.jsonName] = sponsor.human();
+            innerPay[sfSponsorFlags.jsonName] = static_cast<std::uint32_t>(spfSponsorFee);
+
+            // Should be rejected with temBAD_FEE
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::Inner(innerPay, seq + 1),
+                batch::Inner(noop(alice), seq + 2),
+                batch::Sig(sponsor),
+                Ter(temINVALID_FLAG));
+            env.close();
+        }
+
+        //  Inner tx with spfSponsorFee + spfSponsorReserve is rejected
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000), alice, bob, sponsor);
+            env.close();
+
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+            auto innerTx = check::create(alice, bob, XRP(1));
+            innerTx[sfSponsor.jsonName] = sponsor.human();
+            innerTx[sfSponsorFlags.jsonName] =
+                static_cast<std::uint32_t>(spfSponsorFee | spfSponsorReserve);
+
+            // Should be rejected with temBAD_FEE (fee sponsorship check comes first)
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::Inner(innerTx, seq + 1),
+                batch::Inner(noop(alice), seq + 2),
+                Ter(temINVALID_FLAG));
+            env.close();
+        }
+
+        // Outer batch tx with sponsor fee is allowed
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000), alice, bob, sponsor);
+            env.close();
+
+            auto const seq = env.seq(bob);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+            // Outer batch with sponsor fee should work fine
+            env(batch::outer(bob, seq, batchFee, tfAllOrNothing),
+                batch::Inner(noop(bob), seq + 1),
+                batch::Inner(noop(bob), seq + 2),
+                sponsor::As(sponsor, spfSponsorFee),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // Sponsor paid the fee
+            BEAST_EXPECT(env.balance(bob) == XRP(1000));
         }
     }
 
