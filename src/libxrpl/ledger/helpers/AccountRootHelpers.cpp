@@ -347,6 +347,9 @@ checkReserve(
     Adjustment adj,
     beast::Journal j)
 {
+    // TODO: swap to assert after fixCleanup3_2_0 is retired
+    if (!accSle || accSle->getType() != ltACCOUNT_ROOT)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
     if (sponsorSle)
     {
         auto const sle = ctx.view.read(
