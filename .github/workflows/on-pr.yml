@@ -1,10 +1,12 @@
-# This workflow runs all workflows to check, build and test the project on
-# various Linux flavors, as well as on MacOS and Windows, on every push to a
-# user branch. However, it will not run if the pull request is a draft unless it
-# has the 'DraftRunCI' or 'Full CI build' label. By default a pull request builds
-# only a minimal matrix; the full matrix runs once the PR is labeled "Ready to
-# merge" or "Full CI build". For commits to PRs that target a release branch, it
-# also uploads the libxrpl recipe to the Conan remote.
+# This workflow runs workflows to check, build and test the project
+# on every meaningful change on pull_request.
+# However, it will not run if the PR is a draft
+# unless it has the 'DraftRunCI' or 'Full CI build' label.
+#
+# By default a PR builds only a minimal matrix.
+# The full matrix runs once the PR is labeled "Ready to merge" or "Full CI build".
+# For commits to PRs that target a release branch,
+# it also uploads the libxrpl recipe to the Conan remote.
 name: PR
 
 on:
