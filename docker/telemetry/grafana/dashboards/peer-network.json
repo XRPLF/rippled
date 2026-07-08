@@ -177,7 +177,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "xrpld_reduce_relay_metrics{metric=\"selected_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "reduce_relay_metrics{metric=\"selected_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Selected [{{service_instance_id}}]"
         },
         {
@@ -185,7 +185,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "xrpld_reduce_relay_metrics{metric=\"suppressed_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "reduce_relay_metrics{metric=\"suppressed_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Suppressed [{{service_instance_id}}]"
         },
         {
@@ -193,7 +193,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "xrpld_reduce_relay_metrics{metric=\"not_enabled_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "reduce_relay_metrics{metric=\"not_enabled_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Not Enabled [{{service_instance_id}}]"
         }
       ],
@@ -233,7 +233,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "xrpld_reduce_relay_metrics{metric=\"missing_tx_freq\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "reduce_relay_metrics{metric=\"missing_tx_freq\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Missing Tx Freq [{{service_instance_id}}]"
         }
       ],

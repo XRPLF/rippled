@@ -101,6 +101,7 @@
 #include <opentelemetry/metrics/meter.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/trace/span.h>
+#include <opentelemetry/trace/span_metadata.h>
 #include <opentelemetry/trace/tracer.h>
 #endif
 
