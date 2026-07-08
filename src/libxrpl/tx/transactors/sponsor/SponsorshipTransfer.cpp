@@ -372,7 +372,7 @@ SponsorshipTransfer::doApply()
                 if (auto const ter =
                         decrementPrefundedReserveCount(view(), sponsorshipSle, ownerCountDelta);
                     !isTesSuccess(ter))
-                    return ter;
+                    return ter;  // LCOV_EXCL_LINE
             }
         }
         else if (ctx_.tx.isFlag(tfSponsorshipReassign))
@@ -432,7 +432,7 @@ SponsorshipTransfer::doApply()
                 if (auto const ter =
                         decrementPrefundedReserveCount(view(), sponsorshipSle, ownerCountDelta);
                     !isTesSuccess(ter))
-                    return ter;
+                    return ter;  // LCOV_EXCL_LINE
             }
         }
         else if (ctx_.tx.isFlag(tfSponsorshipEnd))
@@ -602,6 +602,7 @@ SponsorshipTransfer::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // LCOV_EXCL_LINE
 }
 
 bool
@@ -612,7 +613,7 @@ SponsorshipTransfer::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    return true;
+    return true;  // LCOV_EXCL_LINE
 }
 
 }  // namespace xrpl

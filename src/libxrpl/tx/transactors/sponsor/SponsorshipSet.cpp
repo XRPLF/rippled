@@ -367,6 +367,7 @@ SponsorshipSet::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // LCOV_EXCL_LINE
 }
 
 bool
@@ -377,7 +378,7 @@ SponsorshipSet::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    return true;
+    return true;  // LCOV_EXCL_LINE
 }
 
 }  // namespace xrpl

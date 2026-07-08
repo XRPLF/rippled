@@ -139,8 +139,10 @@ getLedgerEntryOwner(ReadView const& view, T const& sle, AccountID const& account
             return std::nullopt;
         }
         default:
+            // LCOV_EXCL_START
             UNREACHABLE("Object is not supported by sponsorship.");
             return std::nullopt;
+            // LCOV_EXCL_STOP
     };
 }
 
