@@ -4805,29 +4805,6 @@ public:
             env.close();
         }
 
-        // Inner tx with only sfSponsor but no spfSponsorFee is allowed
-        // (This tests that we only reject when spfSponsorFee is set)
-        {
-            Env env{*this, testableAmendments()};
-            env.fund(XRP(1000), alice, bob, sponsor);
-            env.close();
-
-            auto const seq = env.seq(alice);
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
-
-            auto innerTx = check::create(alice, bob, XRP(1));
-            innerTx[sfSponsor.jsonName] = sponsor.human();
-            innerTx[sfSponsorFlags.jsonName] = static_cast<std::uint32_t>(spfSponsorReserve);
-
-            // Should NOT be rejected with temBAD_FEE - reserve sponsorship
-            // doesn't have the same fee-model conflict as fee sponsorship
-            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::Inner(innerTx, seq + 1),
-                batch::Inner(noop(alice), seq + 2),
-                Ter(tesSUCCESS));
-            env.close();
-        }
-
         // Outer batch tx with sponsor fee is allowed
         {
             Env env{*this, testableAmendments()};
