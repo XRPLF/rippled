@@ -1,15 +1,33 @@
 { pkgs }:
 let
+  # Compiler versions used across the dev shell and the CI environment.
+  gccVersion = 15;
+  llvmVersion = 22;
+
+  gccPackage = pkgs."gcc${toString gccVersion}";
+  llvmPackages = pkgs."llvmPackages_${toString llvmVersion}";
+
+  # Bound explicitly so it tracks llvmPackages above, not the `with pkgs` default.
+  clangTools = llvmPackages.clang-tools;
+
   # In LLVM 22, run-clang-tidy.py moved from share/clang/ to bin/, so nixpkgs
   # clang-tools no longer links it. Wrap it manually.
   runClangTidy = pkgs.writeShellScriptBin "run-clang-tidy" ''
-    exec ${pkgs.python3}/bin/python3 ${pkgs.llvmPackages_22.clang-unwrapped}/bin/run-clang-tidy "$@"
+    exec ${pkgs.python3}/bin/python3 ${llvmPackages.clang-unwrapped}/bin/run-clang-tidy "$@"
   '';
 in
 {
+  inherit
+    gccVersion
+    llvmVersion
+    gccPackage
+    llvmPackages
+    ;
+
   commonPackages = with pkgs; [
     ccache
     clangbuildanalyzer
+    clangTools
     cmake
     conan
     curlMinimal # needed for codecov/codecov-action
@@ -23,7 +41,6 @@ in
     gnumake
     gnupg # needed for signing commits & codecov/codecov-action
     graphviz
-    llvmPackages_22.clang-tools
     less # needed for git diff
     mold
     nettools # provides netstat, used to debug failures in CI
