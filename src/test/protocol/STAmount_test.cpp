@@ -1102,6 +1102,21 @@ public:
             BEAST_EXPECT(multiplyRound(largeAmount, transferRate, asset, true) == scaledAmount);
             BEAST_EXPECT(divideRound(scaledAmount, transferRate, asset, true) == largeAmount);
         }
+
+        {
+            // mulRound with an integral (XRP) operand whose mantissa is below
+            // kMinValue exercises the legacy value-scaling loop that normalizes
+            // the mantissa before multiply. The MPTokensV2 Number path is
+            // not taken here because the target asset is an IOU.
+            Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+            STAmount const iouVal{usd, 5};
+            STAmount const xrpVal{XRPAmount{7}};  // integral, mantissa < kMinValue
+
+            auto const up = mulRound(iouVal, xrpVal, usd, /*roundUp*/ true);
+            auto const down = mulRound(iouVal, xrpVal, usd, /*roundUp*/ false);
+            BEAST_EXPECT(down.signum() > 0);
+            BEAST_EXPECT(up >= down);
+        }
     }
 
     void

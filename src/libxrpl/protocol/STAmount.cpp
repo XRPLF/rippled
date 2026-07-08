@@ -1474,11 +1474,20 @@ roundNumberResult(
 
     if (roundUp && !resultNegative && !result)
     {
-        // Preserve existing mulRound/divRound behavior for a positive result
-        // too small to represent in the target asset.
+        // Intended to preserve existing mulRound/divRound behavior for a
+        // positive result too small to represent in the target asset.
+        //
+        // Unreachable in practice: when roundUp is set, roundMode() above
+        // selects Upward, and materializing a Number into an STAmount honors
+        // that mode (Number::operator rep()), so any positive value rounds up
+        // to at least the smallest representable unit. Hence, a positive result
+        // is never !result here; the only zero case is a zero operand, which
+        // the mulRound/divRound callers handle before reaching this function.
+        // LCOV_EXCL_START
         if (asset.integral())
             return STAmount{asset, 1};
         return STAmount{asset, STAmount::kMinValue, STAmount::kMinOffset, false};
+        // LCOV_EXCL_STOP
     }
 
     return result;

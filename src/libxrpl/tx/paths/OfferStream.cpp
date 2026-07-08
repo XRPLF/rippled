@@ -330,7 +330,11 @@ TOfferStreamBase<TIn, TOut>::step()
                 offer_ = TOffer<TIn, TOut>{};
                 continue;
             }
-            throw;
+            // The strict reduction only overflows for a crafted MPT offer, and
+            // MPT offers require featureMPTokensV2 (enforced at OfferCreate
+            // preflight). So the amendment is always enabled here and this
+            // legacy re-throw is unreachable in practice.
+            throw;  // LCOV_EXCL_LINE
         }
 
         if (shouldRemoveSmallIncreasedQOffer)

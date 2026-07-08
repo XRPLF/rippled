@@ -849,7 +849,11 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 removeOffer("Removing offer with overflowing amount calculation");
                 return true;
             }
-            throw;
+            // An overflow can only be produced by a crafted MPT offer, and MPT
+            // offers require featureMPTokensV2 (enforced at OfferCreate
+            // preflight). So the amendment is always enabled when we get here
+            // and this legacy re-throw is unreachable in practice.
+            throw;  // LCOV_EXCL_LINE
         }
     };
 
@@ -922,7 +926,13 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
             // deleted by BookTip::step().
             if (auto const err = checkCreateMPT(sb, book_.in.get<MPTIssue>(), offer.owner(), j_);
                 !isTesSuccess(err))
-                Throw<FlowException>(err);
+            {
+                // checkCreateMPT only fails on tecDIR_FULL (its source line is
+                // itself LCOV-excluded) or a missing offer-owner account, which
+                // cannot happen since that account owns the offer being
+                // consumed. Defensive and unreachable in practice.
+                Throw<FlowException>(err);  // LCOV_EXCL_LINE
+            }
         }
 
         auto const dr = offer.send(

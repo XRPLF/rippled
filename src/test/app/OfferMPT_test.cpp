@@ -1,4 +1,5 @@
 #include <test/jtx/AMM.h>
+#include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
 #include <test/jtx/TestHelpers.h>
@@ -6,6 +7,7 @@
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
+#include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/jtx_json.h>
 #include <test/jtx/mpt.h>
@@ -23,6 +25,7 @@
 #include <test/jtx/txflags.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -47,6 +50,7 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <memory>
 #include <optional>
 #include <string>
 #include <type_traits>
@@ -3655,6 +3659,46 @@ public:
             BEAST_EXPECT(env.le(keylet::offer(taker.id(), takerSeq)) != nullptr);
             BEAST_EXPECT(env.balance(poisonMaker, token) == token(funded));
             BEAST_EXPECT(env.balance(taker, token) == token(0));
+        }
+
+        {
+            // Same overflow scenario as the ownerGives case above, but run with
+            // trace-level logging so BookStep::forEachOffer's removeOffer()
+            // emits its "Removing offer with overflowing amount calculation"
+            // trace line. This exercises the JLOG body inside removeOffer,
+            // which is skipped when logging is above trace severity.
+            std::string logs;
+            {
+                Env env{
+                    *this,
+                    envconfig(),
+                    features,
+                    std::make_unique<CaptureLogs>(&logs),
+                    beast::Severity::Trace};
+                env.fund(XRP(10'000), issuer, taker);
+                env.close();
+
+                MPTTester const token{
+                    {.env = env, .issuer = issuer, .holders = {taker}, .transferFee = 10'000}};
+
+                std::int64_t const poisonAmount = 8'500'000'000'000'000'000LL;
+                auto const poisonSeq = env.seq(issuer);
+                env(offer(issuer, XRP(1), token(poisonAmount)));
+                env.close();
+
+                auto const poisonKeylet = keylet::offer(issuer.id(), poisonSeq);
+                BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
+
+                auto const takerSeq = env.seq(taker);
+                env(offer(taker, token(100), XRP(100)));
+                env.close();
+
+                BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
+                BEAST_EXPECT(env.le(keylet::offer(taker.id(), takerSeq)) != nullptr);
+            }
+            BEAST_EXPECT(
+                logs.find("Removing offer with overflowing amount calculation") !=
+                std::string::npos);
         }
     }
 

@@ -687,7 +687,18 @@ AMMWithdraw::withdraw(
                 !isTesSuccess(err))
             {
                 if (authHandling != AuthHandling::IgnoreAuth || err != tecNO_AUTH)
-                    return err;
+                {
+                    // Unreachable in practice. Normal withdraws (authHandling
+                    // != IgnoreAuth) are rejected for unauthorized holders in
+                    // preclaim, so they never get here. Under clawback
+                    // (IgnoreAuth) requireAuth returns a non-tecNO_AUTH error
+                    // (e.g. tecEXPIRED) only for a domain-authorized MPT, but no
+                    // such MPT can be in an AMM pool: a directly domain-gated
+                    // RequireAuth MPT fails AMMCreate/deposit with tecNO_AUTH,
+                    // and vault shares (whose recursive auth could yield
+                    // tecEXPIRED) are rejected by AMMCreate with tecWRONG_ASSET.
+                    return err;  // LCOV_EXCL_LINE
+                }
 
                 // AMMClawback ignores authorization so the issuer can recover
                 // MPT locked in the pool even if the holder deleted their
@@ -708,7 +719,11 @@ AMMWithdraw::withdraw(
             if (auto const err = checkCreateMPT(view, mptIssue, account, createFlags, journal);
                 !isTesSuccess(err))
             {
-                return err;
+                // checkCreateMPT only fails on tecDIR_FULL (its source line is
+                // itself LCOV-excluded) or a missing account, which cannot
+                // happen since `account` is the withdrawing LP. Defensive and
+                // unreachable in practice.
+                return err;  // LCOV_EXCL_LINE
             }
         }
         return tesSUCCESS;
