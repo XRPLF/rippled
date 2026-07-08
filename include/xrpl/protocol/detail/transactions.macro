@@ -1164,6 +1164,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
     {sfMPTAmount, SoeRequired},
     {sfZKProof, SoeRequired},
 }))/** This transaction transfer sponsorship */
+
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/sponsor/SponsorshipTransfer.h>
 #endif
