@@ -97,7 +97,7 @@ accountCountImpl(SLE::const_ref sle, std::int32_t accountCountAdj, beast::Journa
     std::int64_t totalAccountCount{currentAccountCount + accountCountAdj};
     if (totalAccountCount > std::numeric_limits<std::uint32_t>::max())
     {
-        JLOG(j.error()) << "Reserve count exceeds max!";
+        JLOG(j.fatal()) << "Reserve count exceeds max!";
         totalAccountCount = std::numeric_limits<std::uint32_t>::max();
     }
     else if (totalAccountCount < 0)
@@ -124,8 +124,7 @@ ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj)
 
     XRPL_ASSERT(
         currentOwnerCount >= sponsoredOwnerCount,
-        "xrpl::ownerCount : OwnerCount must be greater than or equal to "
-        "SponsoredOwnerCount");
+        "xrpl::ownerCount : OwnerCount must be greater than or equal to SponsoredOwnerCount");
 
     std::int64_t deltaCount =
         static_cast<std::int64_t>(ownerCountAdj) - sponsoredOwnerCount + sponsoringOwnerCount;
@@ -331,15 +330,7 @@ decreaseOwnerCountForObject(
 XRPAmount
 accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjustment adj)
 {
-    if (!sle)
-    {
-        Throw<std::runtime_error>("xrpl::accountReserve : valid sle");  // LCOV_EXCL_LINE
-    }
-
-    if (sle->getType() != ltACCOUNT_ROOT)
-    {
-        Throw<std::logic_error>("xrpl::accountReserve : valid sle type");  // LCOV_EXCL_LINE
-    }
+    XRPL_ASSERT(sle && sle->getType() == ltACCOUNT_ROOT, "xrpl::accountReserve : valid sle");
 
     std::uint32_t const currentOwnerCount = ownerCount(sle, j, adj.ownerCountDelta);
     std::uint32_t const currentAccountCount = accountCountImpl(sle, adj.accountCountDelta, j);
@@ -356,6 +347,9 @@ checkReserve(
     Adjustment adj,
     beast::Journal j)
 {
+    // TODO: swap to assert after fixCleanup3_2_0 is retired
+    if (!accSle || accSle->getType() != ltACCOUNT_ROOT)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
     if (sponsorSle)
     {
         auto const sle = ctx.view.read(

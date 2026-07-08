@@ -78,8 +78,10 @@ escrowUnlockApplyHelper<Issue>(
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
                                      "Insufficient reserve to create line.";
-
-            return tecNO_LINE_INSUF_RESERVE;
+            // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
+            if (ret == tecINSUFFICIENT_RESERVE)
+                return tecNO_LINE_INSUF_RESERVE;
+            return ret;
         }
 
         Currency const currency = issue.currency;
@@ -214,8 +216,6 @@ escrowUnlockApplyHelper<MPTIssue>(
 
         // update owner count.
         increaseOwnerCount(ctx.view, sleDest, *sponsorSle, 1, journal);
-        auto mptSle = ctx.view.peek(mptKeylet);
-        addSponsorToLedgerEntry(mptSle, *sponsorSle);
     }
 
     if (!ctx.view.exists(mptKeylet) && !receiverIssuer)
