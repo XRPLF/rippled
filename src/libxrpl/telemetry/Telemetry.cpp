@@ -273,7 +273,9 @@ public:
         otlp_http::OtlpHttpExporterOptions exporterOpts;
         exporterOpts.url = setup_.exporterEndpoint;
         if (setup_.useTls)
+        {
             exporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;
+        }
 
         auto exporter = otlp_http::OtlpHttpExporterFactory::Create(exporterOpts);
 
@@ -392,7 +394,9 @@ public:
     getTracer(std::string_view name = kTracerName) override
     {
         if (!sdkProvider_)
+        {
             return trace_api::Provider::GetTracerProvider()->GetTracer(std::string(name));
+        }
         return sdkProvider_->GetTracer(std::string(name));
     }
 
@@ -425,7 +429,9 @@ std::unique_ptr<Telemetry>
 makeTelemetry(Telemetry::Setup const& setup, beast::Journal journal)
 {
     if (setup.enabled)
+    {
         return std::make_unique<TelemetryImpl>(setup, journal);
+    }
     return std::make_unique<NullTelemetryOtel>(setup);
 }
 
