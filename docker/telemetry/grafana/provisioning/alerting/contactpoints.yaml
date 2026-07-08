@@ -40,7 +40,7 @@ contactPoints:
           # provisioning valid. Replace with a real ${SLACK_WEBHOOK_URL} to
           # enable delivery.
           url: https://hooks.slack.invalid/disabled
-          title: "{{ .CommonLabels.alertname }} on {{ .CommonLabels.exported_instance }}"
+          title: "{{ .CommonLabels.alertname }} on {{ .CommonLabels.service_instance_id }}"
         disableResolveMessage: false
 
   # --- Critical tier: Slack + email ---
@@ -52,7 +52,7 @@ contactPoints:
         settings:
           # Disabled placeholder — see xrpld-slack-default above.
           url: https://hooks.slack.invalid/disabled
-          title: "[CRITICAL] {{ .CommonLabels.alertname }} on {{ .CommonLabels.exported_instance }}"
+          title: "[CRITICAL] {{ .CommonLabels.alertname }} on {{ .CommonLabels.service_instance_id }}"
         disableResolveMessage: false
       - uid: xrpld-email-critical
         type: email

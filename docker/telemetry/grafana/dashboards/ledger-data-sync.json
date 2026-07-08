@@ -30,57 +30,57 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_data_get_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Ledger Data Get [{{exported_instance}}]"
+          "expr": "xrpld_ledger_data_get_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Ledger Data Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_data_share_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Ledger Data Share [{{exported_instance}}]"
+          "expr": "xrpld_ledger_data_share_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Ledger Data Share [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_data_Transaction_Set_candidate_get_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "TX Set Candidate Get [{{exported_instance}}]"
+          "expr": "xrpld_ledger_data_Transaction_Set_candidate_get_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "TX Set Candidate Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_data_Transaction_Set_candidate_share_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "TX Set Candidate Share [{{exported_instance}}]"
+          "expr": "xrpld_ledger_data_Transaction_Set_candidate_share_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "TX Set Candidate Share [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_data_Transaction_Node_get_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "TX Node Get [{{exported_instance}}]"
+          "expr": "xrpld_ledger_data_Transaction_Node_get_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "TX Node Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_data_Transaction_Node_share_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "TX Node Share [{{exported_instance}}]"
+          "expr": "xrpld_ledger_data_Transaction_Node_share_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "TX Node Share [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_data_Account_State_Node_get_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Account State Node Get [{{exported_instance}}]"
+          "expr": "xrpld_ledger_data_Account_State_Node_get_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Account State Node Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_data_Account_State_Node_share_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Account State Node Share [{{exported_instance}}]"
+          "expr": "xrpld_ledger_data_Account_State_Node_share_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Account State Node Share [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -118,57 +118,57 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_share_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Ledger Share In [{{exported_instance}}]"
+          "expr": "xrpld_ledger_share_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Ledger Share In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_get_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Ledger Get In [{{exported_instance}}]"
+          "expr": "xrpld_ledger_get_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Ledger Get In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_Transaction_Set_candidate_share_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "TX Set Candidate Share [{{exported_instance}}]"
+          "expr": "xrpld_ledger_Transaction_Set_candidate_share_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "TX Set Candidate Share [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_Transaction_Set_candidate_get_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "TX Set Candidate Get [{{exported_instance}}]"
+          "expr": "xrpld_ledger_Transaction_Set_candidate_get_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "TX Set Candidate Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_Transaction_node_share_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "TX Node Share [{{exported_instance}}]"
+          "expr": "xrpld_ledger_Transaction_node_share_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "TX Node Share [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_Transaction_node_get_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "TX Node Get [{{exported_instance}}]"
+          "expr": "xrpld_ledger_Transaction_node_get_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "TX Node Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_Account_State_node_share_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Account State Share [{{exported_instance}}]"
+          "expr": "xrpld_ledger_Account_State_node_share_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Account State Share [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_Account_State_node_get_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Account State Get [{{exported_instance}}]"
+          "expr": "xrpld_ledger_Account_State_node_get_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Account State Get [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -206,57 +206,57 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Ledger_get_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Ledger Get [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Ledger_get_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Ledger Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Ledger_share_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Ledger Share [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Ledger_share_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Ledger Share [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Transaction_get_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Transaction Get [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Transaction_get_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Transaction Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Transaction_share_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Transaction Share [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Transaction_share_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Transaction Share [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Transaction_node_get_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "TX Node Get [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Transaction_node_get_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "TX Node Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Transaction_node_share_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "TX Node Share [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Transaction_node_share_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "TX Node Share [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Account_State_node_get_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Account State Get [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Account_State_node_get_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Account State Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Account_State_node_share_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Account State Share [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Account_State_node_share_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Account State Share [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -294,50 +294,50 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_CAS_get_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "CAS Get [{{exported_instance}}]"
+          "expr": "xrpld_getobject_CAS_get_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "CAS Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_CAS_share_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "CAS Share [{{exported_instance}}]"
+          "expr": "xrpld_getobject_CAS_share_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "CAS Share [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Fetch_Pack_share_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Fetch Pack Share [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Fetch_Pack_share_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Fetch Pack Share [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Fetch_Pack_get_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Fetch Pack Get [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Fetch_Pack_get_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Fetch Pack Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Transactions_get_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Transactions Get [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Transactions_get_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Transactions Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_get_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Aggregate Get [{{exported_instance}}]"
+          "expr": "xrpld_getobject_get_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Aggregate Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_share_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Aggregate Share [{{exported_instance}}]"
+          "expr": "xrpld_getobject_share_Bytes_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Aggregate Share [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -375,50 +375,50 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Ledger_get_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Ledger Get [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Ledger_get_Messages_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Ledger Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Transaction_get_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Transaction Get [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Transaction_get_Messages_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Transaction Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Transaction_node_get_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "TX Node Get [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Transaction_node_get_Messages_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "TX Node Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Account_State_node_get_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Account State Get [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Account_State_node_get_Messages_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Account State Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_CAS_get_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "CAS Get [{{exported_instance}}]"
+          "expr": "xrpld_getobject_CAS_get_Messages_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "CAS Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Fetch_Pack_get_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Fetch Pack Get [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Fetch_Pack_get_Messages_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Fetch Pack Get [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_getobject_Transactions_get_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Transactions Get [{{exported_instance}}]"
+          "expr": "xrpld_getobject_Transactions_get_Messages_In{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "legendFormat": "Transactions Get [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -463,8 +463,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(20, {exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", __name__=~\"xrpld_.*_Bytes_In\", __name__!~\"xrpld_total_.*\"})",
-          "legendFormat": "{{__name__}} [{{exported_instance}}]"
+          "expr": "topk(20, {service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", __name__=~\"xrpld_.*_Bytes_In\", __name__!~\"xrpld_total_.*\"})",
+          "legendFormat": "{{__name__}} [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -561,7 +561,7 @@
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id)",
         "type": "query",
-        "query": "label_values(xrpld_ledger_data_get_Bytes_In, exported_instance)",
+        "query": "label_values(xrpld_ledger_data_get_Bytes_In, service_instance_id)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
