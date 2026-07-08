@@ -3,9 +3,11 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
 
+#include <cstddef>
 #include <functional>
 #include <initializer_list>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace xrpl {

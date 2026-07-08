@@ -1,8 +1,22 @@
 #pragma once
 
-#include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <optional>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -72,10 +86,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -155,13 +166,18 @@ public:
     static std::pair<TER, bool>
     deleteAMMAccountIfEmpty(
         Sandbox& sb,
-        std::shared_ptr<SLE> const ammSle,
+        SLE::pointer const ammSle,
         STAmount const& lpTokenBalance,
         Asset const& asset1,
         Asset const& asset2,
         beast::Journal const& journal);
 
 private:
+    /** Returns IgnoreFreeze when the withdrawer is the issuer of a pool
+     *  asset (post-fixCleanup3_3_0), ZeroIfFrozen otherwise. */
+    [[nodiscard]] FreezeHandling
+    issuerFreezeHandling() const;
+
     std::pair<TER, bool>
     applyGuts(Sandbox& view);
 

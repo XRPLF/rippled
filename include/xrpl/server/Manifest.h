@@ -1,14 +1,22 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 
+#include <atomic>
+#include <cstdint>
+#include <functional>
 #include <optional>
 #include <shared_mutex>
 #include <string>
+#include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -153,13 +161,12 @@ deserializeManifest(
     return deserializeManifest(makeSlice(s), journal);
 }
 
-template <
-    class T,
-    class = std::enable_if_t<std::is_same_v<T, char> || std::is_same_v<T, unsigned char>>>
+template <class T>
 std::optional<Manifest>
 deserializeManifest(
     std::vector<T> const& v,
     beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
+    requires(std::is_same_v<T, char> || std::is_same_v<T, unsigned char>)
 {
     return deserializeManifest(makeSlice(v), journal);
 }

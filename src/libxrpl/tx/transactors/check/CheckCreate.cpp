@@ -111,10 +111,10 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         {
             // The currency may not be globally frozen
             AccountID const& issuerId{sendMax.getIssuer()};
-            if (isGlobalFrozen(ctx.view, sendMax.asset()))
+            if (auto const ter = checkGlobalFrozen(ctx.view, sendMax.asset()); !isTesSuccess(ter))
             {
-                JLOG(ctx.j.warn()) << "Creating a check for frozen asset";
-                return sendMax.asset().holds<MPTIssue>() ? tecLOCKED : tecFROZEN;
+                JLOG(ctx.j.warn()) << "Creating a check for frozen or locked asset";
+                return ter;
             }
             auto const err = sendMax.asset().visit(
                 [&](Issue const& issue) -> std::optional<TER> {
@@ -127,7 +127,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                     {
                         // Check if the issuer froze the line
                         auto const sleTrust =
-                            ctx.view.read(keylet::line(srcId, issuerId, issue.currency));
+                            ctx.view.read(keylet::trustLine(srcId, issuerId, issue.currency));
                         if (sleTrust &&
                             sleTrust->isFlag((issuerId > srcId) ? lsfHighFreeze : lsfLowFreeze))
                         {
@@ -139,7 +139,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                     {
                         // Check if dst froze the line.
                         auto const sleTrust =
-                            ctx.view.read(keylet::line(issuerId, dstId, issue.currency));
+                            ctx.view.read(keylet::trustLine(issuerId, dstId, issue.currency));
                         if (sleTrust &&
                             sleTrust->isFlag((dstId > issuerId) ? lsfHighFreeze : lsfLowFreeze))
                         {
@@ -153,9 +153,21 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                 },
                 [&](MPTIssue const& issue) -> std::optional<TER> {
                     if (srcId != issuerId && isFrozen(ctx.view, srcId, issue))
+                    {
+                        JLOG(ctx.j.warn()) << "Creating a check for locked MPT.";
                         return tecLOCKED;
+                    }
                     if (dstId != issuerId && isFrozen(ctx.view, dstId, issue))
+                    {
+                        JLOG(ctx.j.warn()) << "Creating a check for locked MPT.";
                         return tecLOCKED;
+                    }
+                    if (auto const ter = canTransfer(ctx.view, issue, srcId, dstId);
+                        !isTesSuccess(ter))
+                    {
+                        JLOG(ctx.j.warn()) << "MPT transfer is disabled.";
+                        return ter;
+                    }
 
                     return std::nullopt;
                 });
@@ -169,7 +181,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         return tecEXPIRED;
     }
 
-    return canTrade(ctx.view, ctx.tx[sfSendMax].asset());
+    return tesSUCCESS;
 }
 
 TER
@@ -246,10 +258,7 @@ CheckCreate::doApply()
 }
 
 void
-CheckCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+CheckCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

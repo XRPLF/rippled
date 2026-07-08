@@ -1,8 +1,12 @@
 #pragma once
 
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
+
+#include <compare>
+#include <ostream>
+#include <string>
 
 namespace xrpl {
 

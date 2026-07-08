@@ -1,20 +1,20 @@
 #pragma once
 
 #include <xrpl/basics/Buffer.h>
-#include <xrpl/basics/Expected.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/TER.h>
 
 #include <boost/container/flat_set.hpp>
 #include <boost/container/vector.hpp>
 
 #include <cstddef>
+#include <cstdint>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -379,16 +379,16 @@ public:
     [[nodiscard]] STArray
     toSTArray() const;
 
-    [[nodiscard]] typename AttCollection::const_iterator
+    [[nodiscard]] AttCollection::const_iterator
     begin() const;
 
-    [[nodiscard]] typename AttCollection::const_iterator
+    [[nodiscard]] AttCollection::const_iterator
     end() const;
 
-    typename AttCollection::iterator
+    AttCollection::iterator
     begin();
 
-    typename AttCollection::iterator
+    AttCollection::iterator
     end();
 
     template <class F>
@@ -419,7 +419,7 @@ operator==(
 }
 
 template <class TAttestation>
-inline typename XChainAttestationsBase<TAttestation>::AttCollection const&
+inline XChainAttestationsBase<TAttestation>::AttCollection const&
 XChainAttestationsBase<TAttestation>::attestations() const
 {
     return attestations_;

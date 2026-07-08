@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cstddef>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace xrpl {
@@ -34,7 +36,7 @@ private:
     static void
     standard(std::string& strWord);
     static int
-    wsrch(std::string const& strWord, int iMin, int iMax);
+    wsrch(std::string_view strWord, int iMin, int iMax);
     static int
     etob(std::string& strData, std::vector<std::string> vsHuman);
 

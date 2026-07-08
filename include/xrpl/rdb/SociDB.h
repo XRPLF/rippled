@@ -8,6 +8,10 @@
     This module requires the @ref beast_sqlite external module.
 */
 
+#include <soci/blob.h>
+#include <soci/session.h>
+
+#include <memory>
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated"
@@ -17,7 +21,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 
 #define SOCI_USE_BOOST
-#include <soci/soci.h>
 
 #include <cstdint>
 #include <string>

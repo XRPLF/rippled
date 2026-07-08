@@ -41,7 +41,6 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <initializer_list>
 #include <iterator>
 #include <memory>
@@ -131,7 +130,7 @@ class AccountTx_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FEES.reference_fee = 10;
+            cfg->fees.referenceFee = 10;
             return cfg;
         }));
         Account const a1{"A1"};
@@ -589,7 +588,7 @@ class AccountTx_test : public beast::unit_test::Suite
             env(payChanCreate, Sig(alie));
             env.close();
 
-            std::string const payChanIndex{strHex(keylet::payChan(alice, gw, payChanSeq).key)};
+            std::string const payChanIndex{strHex(keylet::payChannel(alice, gw, payChanSeq).key)};
 
             {
                 json::Value payChanFund;
@@ -821,7 +820,7 @@ class AccountTx_test : public beast::unit_test::Suite
         using namespace std::chrono_literals;
 
         auto cfg = makeConfig();
-        cfg->FEES.reference_fee = 10;
+        cfg->fees.referenceFee = 10;
         Env env(*this, std::move(cfg));
 
         Account const alice{"alice"};
@@ -893,7 +892,7 @@ public:
     void
     run() override
     {
-        forAllApiVersions(std::bind_front(&AccountTx_test::testParameters, this));
+        forAllApiVersions([this](unsigned apiVersion) { testParameters(apiVersion); });
         testContents();
         testAccountDelete();
         testMPT();

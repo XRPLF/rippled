@@ -1,69 +1,73 @@
 Our [build instructions][BUILD.md] assume you have a C++ development
 environment complete with Git, Python, Conan, CMake, and a C++ compiler.
-This document exists to help readers set one up on any of the Big Three
-platforms: Linux, macOS, or Windows.
-
-As an alternative to system packages, the Nix development shell can be used to provide a development environment. See [using nix development shell](./nix.md) for more details.
+This document explains how to set one up.
 
 [BUILD.md]: ../../BUILD.md
 
-## Linux
+## Tested compiler versions
 
-Package ecosystems vary across Linux distributions,
-so there is no one set of instructions that will work for every Linux user.
-The instructions below are written for Debian 12 (Bookworm).
+`xrpld` is built in the **C++23** dialect by default.
+Make sure your toolchain is recent enough — the compiler versions currently tested in CI are:
 
+| Compiler    | Version |
+| ----------- | ------- |
+| GCC         | 15.2    |
+| Clang       | 22      |
+| Apple Clang | 17      |
+| MSVC        | 19.44   |
+
+LLVM tools (`clang-tidy` and `clang-format`) are also pinned to version 22.
+
+Older compilers may fail to build the latest `develop` code: the codebase now
+relies on C++23 features and has been adjusted for `clang-tidy`.
+If the latest code doesn't build for you, update your build toolchain first.
+
+## Linux and macOS
+
+The **recommended way** to get a development environment on Linux and macOS is
+the Nix development shell. It provides the exact tooling used in CI — `git`,
+`python`, `conan`, `cmake`, `clang-tidy`, `clang-format`, and everything else —
+with a single command and without installing anything system-wide:
+
+```bash
+nix --experimental-features 'nix-command flakes' develop
 ```
-export GCC_RELEASE=12
-sudo apt update
-sudo apt install --yes gcc-${GCC_RELEASE} g++-${GCC_RELEASE} python3-pip \
-  python-is-python3 python3-venv python3-dev curl wget ca-certificates \
-  git build-essential cmake ninja-build libc6-dev
-sudo pip install --break-system-packages conan
 
-sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-${GCC_RELEASE} 999
-sudo update-alternatives --install \
-  /usr/bin/gcc gcc /usr/bin/gcc-${GCC_RELEASE} 100 \
-  --slave /usr/bin/g++ g++ /usr/bin/g++-${GCC_RELEASE} \
-  --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-${GCC_RELEASE} \
-  --slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-${GCC_RELEASE} \
-  --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-${GCC_RELEASE} \
-  --slave /usr/bin/gcov gcov /usr/bin/gcov-${GCC_RELEASE} \
-  --slave /usr/bin/gcov-tool gcov-tool /usr/bin/gcov-tool-${GCC_RELEASE} \
-  --slave /usr/bin/gcov-dump gcov-dump /usr/bin/gcov-dump-${GCC_RELEASE} \
-  --slave /usr/bin/lto-dump lto-dump /usr/bin/lto-dump-${GCC_RELEASE}
-sudo update-alternatives --auto cc
-sudo update-alternatives --auto gcc
-```
+On **Linux**, Nix also provides the compiler (GCC). On **macOS**, the shell uses
+your **system-wide Apple Clang** as the compiler, so you still need to manage
+its version (see below).
 
-If you use different Linux distribution, hope the instruction above can guide
-you in the right direction. We try to maintain compatibility with all recent
-compiler releases, so if you use a rolling distribution like e.g. Arch or CentOS
-then there is a chance that everything will "just work".
+See [Using the Nix development shell](./nix.md) for installation and usage
+details, including how to select a different compiler.
 
-## macOS
+> [!NOTE]
+> Using Nix is not mandatory. Any custom environment (Homebrew packages or
+> anything else) will continue to work, but then it is up to you to keep it in
+> sync with the environment used in CI. Nix unifies the development environment
+> for everyone and synchronizes updates, which is why we recommend it.
 
-Open a Terminal and enter the below command to bring up a dialog to install
-the command line developer tools.
-Once it is finished, this command should return a version greater than the
-minimum required (see [BUILD.md][]).
+### macOS: managing the Apple Clang version
 
-```
+Because the Nix shell uses the system-wide Apple Clang on macOS, the compiler
+version is whatever your installed Xcode (or Command Line Tools) provides. The
+following command should return a version greater than or equal to the
+[minimum required](#tested-compiler-versions):
+
+```bash
 clang --version
 ```
 
-### Install Xcode Specific Version (Optional)
-
-If you develop other applications using XCode you might be consistently updating to the newest version of Apple Clang.
-This will likely cause issues building xrpld. You may want to install a specific version of Xcode:
+If you develop other applications using Xcode, you might be consistently
+updating to the newest version of Apple Clang, which will likely cause issues
+building xrpld. You may want to install and pin a specific version of Xcode:
 
 1. **Download Xcode**
    - Visit [Apple Developer Downloads](https://developer.apple.com/download/more/)
    - Sign in with your Apple Developer account
-   - Search for an Xcode version that includes **Apple Clang (Expected Version)**
+   - Search for an Xcode version that includes the expected Apple Clang version
    - Download the `.xip` file
 
-2. **Install and Configure Xcode**
+2. **Install and configure Xcode**
 
    ```bash
    # Extract the .xip file and rename for version management
@@ -79,62 +83,28 @@ This will likely cause issues building xrpld. You may want to install a specific
    export DEVELOPER_DIR=/Applications/Xcode_16.2.app/Contents/Developer
    ```
 
-The command line developer tools should include Git too:
+## Windows
 
-```
-git --version
-```
+Nix is not available on Windows, so the required tools have to be installed
+manually:
 
-Install [Homebrew][],
-use it to install [pyenv][],
-use it to install Python,
-and use it to install Conan:
+- [Visual Studio 2022](https://visualstudio.microsoft.com/) with the
+  **"Desktop development with C++"** workload — this provides MSVC and the
+  "x64 Native Tools Command Prompt".
+- [Git for Windows](https://git-scm.com/download/win)
+- [Python 3.11](https://www.python.org/downloads/), or higher
+- [Conan 2.17](https://conan.io/downloads.html), or higher
+- [CMake 3.22](https://cmake.org/download/), or higher
 
-[Homebrew]: https://brew.sh/
-[pyenv]: https://github.com/pyenv/pyenv
-
-```
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-brew update
-brew install xz
-brew install pyenv
-pyenv install 3.11
-pyenv global 3.11
-eval "$(pyenv init -)"
-pip install 'conan'
-```
-
-Install CMake with Homebrew too:
-
-```
-brew install cmake
-```
+> [!NOTE]
+> Windows is used for development only and is not recommended for production.
 
 ## Clang-tidy
 
-Clang-tidy is required to run static analysis checks locally (see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
-It is not required to build the project. Currently this project uses clang-tidy version 21.
+`clang-tidy` is required to run static analysis checks locally (see
+[CONTRIBUTING.md](../../CONTRIBUTING.md)). It is not required to build the
+project. This project currently uses `clang-tidy` version 22.
 
-### Linux
-
-LLVM 21 is not available in the default Debian 12 (Bookworm) repositories.
-Install it using the official LLVM apt installer:
-
-```
-wget https://apt.llvm.org/llvm.sh
-chmod +x llvm.sh
-sudo ./llvm.sh 21
-sudo apt install --yes clang-tidy-21
-```
-
-Then use `run-clang-tidy-21` when running clang-tidy locally.
-
-### macOS
-
-Install LLVM 21 via Homebrew:
-
-```
-brew install llvm@21
-```
-
-Then use `run-clang-tidy` from the LLVM 21 Homebrew prefix when running clang-tidy locally.
+On Linux and macOS, the [Nix development shell](./nix.md) provides `clang-tidy`
+22 out of the box — run it via `run-clang-tidy`. No separate installation is
+needed.

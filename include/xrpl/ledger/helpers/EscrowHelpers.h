@@ -1,15 +1,28 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -18,7 +31,7 @@ TER
 escrowUnlockApplyHelper(
     ApplyView& view,
     Rate lockedRate,
-    std::shared_ptr<SLE> const& sleDest,
+    SLE::ref sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -32,7 +45,7 @@ inline TER
 escrowUnlockApplyHelper<Issue>(
     ApplyView& view,
     Rate lockedRate,
-    std::shared_ptr<SLE> const& sleDest,
+    SLE::ref sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -41,8 +54,8 @@ escrowUnlockApplyHelper<Issue>(
     bool createAsset,
     beast::Journal journal)
 {
-    Issue const& issue = amount.get<Issue>();
-    Keylet const trustLineKey = keylet::line(receiver, issue);
+    auto const& issue = amount.get<Issue>();
+    Keylet const trustLineKey = keylet::trustLine(receiver, issue);
     bool const recvLow = issuer > receiver;
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
@@ -162,7 +175,7 @@ inline TER
 escrowUnlockApplyHelper<MPTIssue>(
     ApplyView& view,
     Rate lockedRate,
-    std::shared_ptr<SLE> const& sleDest,
+    SLE::ref sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -175,7 +188,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     bool const receiverIssuer = issuer == receiver;
 
     auto const mptID = amount.get<MPTIssue>().getMptID();
-    auto const issuanceKey = keylet::mptIssuance(mptID);
+    auto const issuanceKey = keylet::mptokenIssuance(mptID);
     if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) && createAsset && !receiverIssuer)
     {
         if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};

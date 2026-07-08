@@ -1,7 +1,5 @@
 #pragma once
 
-#include <xrpl/beast/utility/instrumentation.h>
-
 #include <boost/asio/ip/address_v6.hpp>
 
 namespace beast::IP {

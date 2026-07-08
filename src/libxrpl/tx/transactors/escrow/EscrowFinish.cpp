@@ -30,7 +30,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
 #include <system_error>
 #include <variant>
 
@@ -173,7 +172,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
         return tesSUCCESS;
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
+    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -401,10 +400,7 @@ EscrowFinish::doApply()
 }
 
 void
-EscrowFinish::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+EscrowFinish::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

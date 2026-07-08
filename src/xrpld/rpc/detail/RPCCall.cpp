@@ -1589,7 +1589,7 @@ struct RPCCallImp
 
             jvResult["result"] = jvReply;
 
-            (callbackFuncP)(jvResult);
+            callbackFuncP(jvResult);
         }
 
         return false;
@@ -1702,19 +1702,19 @@ rpcClient(
                 // line client works without a config file
             }
 
-            if (config.rpc_ip)
+            if (config.rpcIp)
             {
-                setup.client.ip = config.rpc_ip->address().to_string();
-                setup.client.port = config.rpc_ip->port();
+                setup.client.ip = config.rpcIp->address().to_string();
+                setup.client.port = config.rpcIp->port();
             }
 
             json::Value jvParams(json::ValueType::Array);
 
-            if (!setup.client.admin_user.empty())
-                jvRequest["admin_user"] = setup.client.admin_user;
+            if (!setup.client.adminUser.empty())
+                jvRequest["admin_user"] = setup.client.adminUser;
 
-            if (!setup.client.admin_password.empty())
-                jvRequest["admin_password"] = setup.client.admin_password;
+            if (!setup.client.adminPassword.empty())
+                jvRequest["admin_password"] = setup.client.adminPassword;
 
             if (jvRequest.isObject())
             {
@@ -1745,7 +1745,9 @@ rpcClient(
                     static_cast<int>(setup.client.secure) != 0,  // Use SSL
                     config.quiet(),
                     logs,
-                    std::bind(RPCCallImp::callRPCHandler, &jvOutput, std::placeholders::_1),
+                    [&jvOutput](json::Value const& jvInput) {
+                        RPCCallImp::callRPCHandler(&jvOutput, jvInput);
+                    },
                     headers);
                 isService.run();  // This blocks until there are no more
                                   // outstanding async calls.
@@ -1870,24 +1872,16 @@ fromNetwork(
         ioContext,
         strIp,
         iPort,
-        std::bind(
-            &RPCCallImp::onRequest,
-            strMethod,
-            jvParams,
-            headers,
-            strPath,
-            std::placeholders::_1,
-            std::placeholders::_2,
-            j),
+        [strMethod, jvParams, headers, strPath, j](
+            boost::asio::streambuf& sb, std::string const& strHost) {
+            RPCCallImp::onRequest(strMethod, jvParams, headers, strPath, sb, strHost, j);
+        },
         kRpcReplyMaxBytes,
         kRpcWebhookTimeout,
-        std::bind(
-            &RPCCallImp::onResponse,
-            callbackFuncP,
-            std::placeholders::_1,
-            std::placeholders::_2,
-            std::placeholders::_3,
-            j),
+        [callbackFuncP, j](
+            boost::system::error_code const& ecResult, int iStatus, std::string const& strData) {
+            return RPCCallImp::onResponse(callbackFuncP, ecResult, iStatus, strData, j);
+        },
         j);
 }
 

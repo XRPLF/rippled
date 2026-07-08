@@ -1,12 +1,23 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/RawView.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <cstddef>
+#include <functional>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -24,6 +35,10 @@ public:
         ApplyFlags flags,
         beast::Journal journal = beast::Journal{beast::Journal::getNullSink()});
 
+    // Convenience constructor used only by tests that build an ApplyContext
+    // directly (e.g. invariant checks). Production always uses the parentBatchId
+    // constructor above; this one fixes parentBatchId to std::nullopt and so is
+    // never valid for a batch inner (hence the TapBatch assert).
     explicit ApplyContext(
         ServiceRegistry& registry,
         OpenView& base,
@@ -93,8 +108,8 @@ public:
         std::function<void(
             uint256 const& key,
             bool isDelete,
-            std::shared_ptr<SLE const> const& before,
-            std::shared_ptr<SLE const> const& after)> const& func);
+            SLE::const_ref before,
+            SLE::const_ref after)> const& func);
 
     void
     destroyXRP(XRPAmount const& fee)
@@ -124,7 +139,7 @@ private:
     ApplyFlags flags_;
     std::optional<ApplyViewImpl> view_;
 
-    // The ID of the batch transaction we are executing under, if seated.
+    // The ID of the batch transaction we are executing under, if set.
     std::optional<uint256 const> parentBatchId_;
 };
 

@@ -1,8 +1,17 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Types.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace xrpl::NodeStore {
 
@@ -82,10 +91,6 @@ public:
     */
     virtual Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) = 0;
-
-    /** Fetch a batch synchronously. */
-    virtual std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256> const& hashes) = 0;
 
     /** Store a single object.
         Depending on the implementation this may happen immediately

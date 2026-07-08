@@ -6,6 +6,7 @@
 #include <boost/container/pmr/monotonic_buffer_resource.hpp>
 #include <boost/intrusive/set.hpp>
 
+#include <chrono>
 #include <type_traits>
 #include <utility>
 
@@ -27,9 +28,9 @@ class Scheduler
 public:
     using clock_type = beast::ManualClock<std::chrono::steady_clock>;
 
-    using duration = typename clock_type::duration;
+    using duration = clock_type::duration;
 
-    using time_point = typename clock_type::time_point;
+    using time_point = clock_type::time_point;
 
 private:
     using by_when_hook =
@@ -87,14 +88,14 @@ private:
     class QueueType
     {
     private:
-        using by_when_set = typename boost::intrusive::
+        using by_when_set = boost::intrusive::
             make_multiset<Event, boost::intrusive::constant_time_size<false>>::type;
         // alloc_ is owned by the scheduler
         boost::container::pmr::monotonic_buffer_resource* alloc_;
-        by_when_set by_when_;
+        by_when_set byWhen_;
 
     public:
-        using iterator = typename by_when_set::iterator;
+        using iterator = by_when_set::iterator;
 
         QueueType(QueueType const&) = delete;
         QueueType&
@@ -114,7 +115,7 @@ private:
         end();
 
         template <class Handler>
-        typename by_when_set::iterator
+        by_when_set::iterator
         emplace(time_point when, Handler&& h);
 
         iterator
@@ -258,7 +259,7 @@ inline Scheduler::QueueType::QueueType(boost::container::pmr::monotonic_buffer_r
 
 inline Scheduler::QueueType::~QueueType()
 {
-    for (auto iter = by_when_.begin(); iter != by_when_.end();)
+    for (auto iter = byWhen_.begin(); iter != byWhen_.end();)
     {
         auto e = &*iter;
         ++iter;
@@ -270,36 +271,36 @@ inline Scheduler::QueueType::~QueueType()
 inline bool
 Scheduler::QueueType::empty() const
 {
-    return by_when_.empty();
+    return byWhen_.empty();
 }
 
 inline auto
 Scheduler::QueueType::begin() -> iterator
 {
-    return by_when_.begin();
+    return byWhen_.begin();
 }
 
 inline auto
 Scheduler::QueueType::end() -> iterator
 {
-    return by_when_.end();
+    return byWhen_.end();
 }
 
 template <class Handler>
 inline auto
-Scheduler::QueueType::emplace(time_point when, Handler&& h) -> typename by_when_set::iterator
+Scheduler::QueueType::emplace(time_point when, Handler&& h) -> by_when_set::iterator
 {
     using event_type = EventImpl<std::decay_t<Handler>>;
     auto const p = alloc_->allocate(sizeof(event_type));
     auto& e = *new (p) event_type(when, std::forward<Handler>(h));
-    return by_when_.insert(e);
+    return byWhen_.insert(e);
 }
 
 inline auto
-Scheduler::QueueType::erase(iterator iter) -> typename by_when_set::iterator
+Scheduler::QueueType::erase(iterator iter) -> by_when_set::iterator
 {
     auto& e = *iter;
-    auto next = by_when_.erase(iter);
+    auto next = byWhen_.erase(iter);
     e.~Event();
     alloc_->deallocate(&e, sizeof(e));
     return next;
@@ -309,7 +310,7 @@ Scheduler::QueueType::erase(iterator iter) -> typename by_when_set::iterator
 struct Scheduler::CancelToken
 {
 private:
-    typename QueueType::iterator iter_;
+    QueueType::iterator iter_;
 
 public:
     CancelToken() = delete;
@@ -319,7 +320,7 @@ public:
 
 private:
     friend class Scheduler;
-    CancelToken(typename QueueType::iterator iter) : iter_(iter)
+    CancelToken(QueueType::iterator iter) : iter_(iter)
     {
     }
 };

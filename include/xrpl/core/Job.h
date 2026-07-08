@@ -2,9 +2,14 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/core/ClosureCounter.h>
+#include <xrpl/core/LoadEvent.h>
 #include <xrpl/core/LoadMonitor.h>
 
+#include <chrono>
+#include <cstdint>
 #include <functional>
+#include <memory>
+#include <string>
 
 namespace xrpl {
 
@@ -127,7 +132,7 @@ private:
     std::function<void()> job_;
     std::shared_ptr<LoadEvent> loadEvent_;
     std::string name_;
-    clock_type::time_point queue_time_;
+    clock_type::time_point queueTime_;
 };
 
 using JobCounter = ClosureCounter<void>;

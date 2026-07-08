@@ -1,17 +1,19 @@
 #pragma once
 
 #include <xrpl/basics/Blob.h>
-#include <xrpl/basics/strHex.h>
 
 #include <boost/format.hpp>
 #include <boost/utility/string_view.hpp>
 
 #include <array>
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <type_traits>
+#include <utility>
 
 namespace xrpl {
 
@@ -95,13 +97,7 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 }
 
 inline std::optional<Blob>
-strUnHex(std::string const& strSrc)
-{
-    return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
-}
-
-inline std::optional<Blob>
-strViewUnHex(std::string_view strSrc)
+strUnHex(std::string_view strSrc)
 {
     return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
 }

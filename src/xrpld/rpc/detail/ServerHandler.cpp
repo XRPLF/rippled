@@ -1,7 +1,6 @@
 #include <xrpld/rpc/ServerHandler.h>
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
@@ -16,6 +15,7 @@
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/Output.h>
@@ -139,9 +139,9 @@ ServerHandler::ServerHandler(
     , jobQueue_(jobQueue)
 {
     auto const& group(cm.group("rpc"));
-    rpc_requests_ = group->makeCounter("requests");
-    rpc_size_ = group->makeEvent("size");
-    rpc_time_ = group->makeEvent("time");
+    rpcRequests_ = group->makeCounter("requests");
+    rpcSize_ = group->makeEvent("size");
+    rpcTime_ = group->makeEvent("time");
 }
 
 ServerHandler::~ServerHandler()
@@ -165,10 +165,10 @@ ServerHandler::setup(Setup const& setup, beast::Journal journal)
                 port.port = endpointPort;
 
             if ((setup_.client.port == 0u) &&
-                (port.protocol.count("http") > 0 || port.protocol.count("https") > 0))
+                (port.protocol.contains("http") || port.protocol.contains("https")))
                 setup_.client.port = endpointPort;
 
-            if ((setup_.overlay.port() == 0u) && (port.protocol.count("peer") > 0))
+            if ((setup_.overlay.port() == 0u) && (port.protocol.contains("peer")))
                 setup_.overlay.port(endpointPort);
         }
     }
@@ -217,7 +217,7 @@ ServerHandler::onHandoff(
     using namespace boost::beast;
     auto const& p{session.port().protocol};
     bool const isWs{
-        p.count("ws") > 0 || p.count("ws2") > 0 || p.count("wss") > 0 || p.count("wss2") > 0};
+        p.contains("ws") || p.contains("ws2") || p.contains("wss") || p.contains("wss2")};
 
     if (websocket::is_upgrade(request))
     {
@@ -251,7 +251,7 @@ ServerHandler::onHandoff(
         return handoff;
     }
 
-    if (bundle && p.count("peer") > 0)
+    if (bundle && p.contains("peer"))
         return app_.getOverlay().onHandoff(std::move(bundle), std::move(request), remoteAddress);
 
     if (isWs && isStatusRequest(request))
@@ -301,7 +301,7 @@ void
 ServerHandler::onRequest(Session& session)
 {
     // Make sure RPC is enabled on the port
-    if (session.port().protocol.count("http") == 0 && session.port().protocol.count("https") == 0)
+    if (!session.port().protocol.contains("http") && !session.port().protocol.contains("https"))
     {
         httpReply(403, "Forbidden", makeOutput(session), app_.getJournal("RPC"));
         session.close(true);
@@ -429,7 +429,7 @@ ServerHandler::processSession(
     Resource::Charge loadType = Resource::kFeeReferenceRpc;
     try
     {
-        auto apiVersion = RPC::getAPIVersionNumber(jv, app_.config().BETA_RPC_API);
+        auto apiVersion = RPC::getAPIVersionNumber(jv, app_.config().betaRpcApi);
         if (apiVersion == RPC::kApiInvalidVersion ||
             (!jv.isMember(jss::command) && !jv.isMember(jss::method)) ||
             (jv.isMember(jss::command) && !jv[jss::command].isString()) ||
@@ -457,7 +457,7 @@ ServerHandler::processSession(
 
         auto required = RPC::roleRequired(
             apiVersion,
-            app_.config().BETA_RPC_API,
+            app_.config().betaRpcApi,
             jv.isMember(jss::command) ? jv[jss::command].asString() : jv[jss::method].asString());
         auto role = requestRole(
             required,
@@ -657,13 +657,13 @@ ServerHandler::processRequest(
             jsonRPC[jss::params].size() > 0 && jsonRPC[jss::params][0u].isObject())
         {
             apiVersion = RPC::getAPIVersionNumber(
-                jsonRPC[jss::params][json::UInt(0)], app_.config().BETA_RPC_API);
+                jsonRPC[jss::params][json::UInt(0)], app_.config().betaRpcApi);
         }
 
         if (apiVersion == RPC::kApiVersionIfUnspecified && batch)
         {
             // for batch request, api_version may be at a different level
-            apiVersion = RPC::getAPIVersionNumber(jsonRPC, app_.config().BETA_RPC_API);
+            apiVersion = RPC::getAPIVersionNumber(jsonRPC, app_.config().betaRpcApi);
         }
 
         if (apiVersion == RPC::kApiInvalidVersion)
@@ -686,7 +686,7 @@ ServerHandler::processRequest(
         if (jsonRPC.isMember(jss::method) && jsonRPC[jss::method].isString())
         {
             required = RPC::roleRequired(
-                apiVersion, app_.config().BETA_RPC_API, jsonRPC[jss::method].asString());
+                apiVersion, app_.config().betaRpcApi, jsonRPC[jss::method].asString());
         }
 
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
@@ -993,11 +993,11 @@ ServerHandler::processRequest(
 
     auto response = to_string(reply);
 
-    rpc_time_.notify(
+    rpcTime_.notify(
         std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::high_resolution_clock::now() - start));
-    ++rpc_requests_;
-    rpc_size_.notify(beast::insight::Event::value_type{response.size()});
+    ++rpcRequests_;
+    rpcSize_.notify(beast::insight::Event::value_type{response.size()});
 
     response += '\n';
 
@@ -1060,13 +1060,13 @@ ServerHandler::Setup::makeContexts()
     {
         if (p.secure())
         {
-            if (p.ssl_key.empty() && p.ssl_cert.empty() && p.ssl_chain.empty())
+            if (p.sslKey.empty() && p.sslCert.empty() && p.sslChain.empty())
             {
-                p.context = makeSslContext(p.ssl_ciphers);
+                p.context = makeSslContext(p.sslCiphers);
             }
             else
             {
-                p.context = makeSslContextAuthed(p.ssl_key, p.ssl_cert, p.ssl_chain, p.ssl_ciphers);
+                p.context = makeSslContextAuthed(p.sslKey, p.sslCert, p.sslChain, p.sslCiphers);
             }
         }
         else
@@ -1106,19 +1106,19 @@ toPort(ParsedPort const& parsed, std::ostream& log)
 
     p.user = parsed.user;
     p.password = parsed.password;
-    p.admin_user = parsed.admin_user;
-    p.admin_password = parsed.admin_password;
-    p.ssl_key = parsed.ssl_key;
-    p.ssl_cert = parsed.ssl_cert;
-    p.ssl_chain = parsed.ssl_chain;
-    p.ssl_ciphers = parsed.ssl_ciphers;
-    p.pmd_options = parsed.pmd_options;
-    p.ws_queue_limit = parsed.ws_queue_limit;
+    p.adminUser = parsed.adminUser;
+    p.adminPassword = parsed.adminPassword;
+    p.sslKey = parsed.sslKey;
+    p.sslCert = parsed.sslCert;
+    p.sslChain = parsed.sslChain;
+    p.sslCiphers = parsed.sslCiphers;
+    p.pmdOptions = parsed.pmdOptions;
+    p.wsQueueLimit = parsed.wsQueueLimit;
     p.limit = parsed.limit;
-    p.admin_nets_v4 = parsed.admin_nets_v4;
-    p.admin_nets_v6 = parsed.admin_nets_v6;
-    p.secure_gateway_nets_v4 = parsed.secure_gateway_nets_v4;
-    p.secure_gateway_nets_v6 = parsed.secure_gateway_nets_v6;
+    p.adminNetsV4 = parsed.adminNetsV4;
+    p.adminNetsV6 = parsed.adminNetsV6;
+    p.secureGatewayNetsV4 = parsed.secureGatewayNetsV4;
+    p.secureGatewayNetsV6 = parsed.secureGatewayNetsV6;
 
     return p;
 }
@@ -1128,16 +1128,16 @@ parsePorts(Config const& config, std::ostream& log)
 {
     std::vector<Port> result;
 
-    if (!config.exists("server"))
+    if (!config.exists(Sections::kServer))
     {
         log << "Required section [server] is missing";
         Throw<std::exception>();
     }
 
     ParsedPort common;
-    parsePort(common, config["server"], log);
+    parsePort(common, config[Sections::kServer], log);
 
-    auto const& names = config.section("server").values();
+    auto const& names = config.section(Sections::kServer).values();
     result.reserve(names.size());
     for (auto const& name : names)
     {
@@ -1149,7 +1149,7 @@ parsePorts(Config const& config, std::ostream& log)
 
         // grpc ports are parsed by GRPCServer class. Do not validate
         // grpc port information in this file.
-        if (name == SECTION_PORT_GRPC)
+        if (name == Sections::kPortGrpc)
             continue;
 
         ParsedPort parsed = common;
@@ -1179,9 +1179,8 @@ parsePorts(Config const& config, std::ostream& log)
     }
     else
     {
-        auto const count = std::count_if(result.cbegin(), result.cend(), [](Port const& p) {
-            return p.protocol.count("peer") != 0;
-        });
+        auto const count = std::ranges::count_if(
+            result, [](Port const& p) { return p.protocol.contains("peer"); });
 
         if (count > 1)
         {
@@ -1203,12 +1202,12 @@ setupClient(ServerHandler::Setup& setup)
     decltype(setup.ports)::const_iterator iter;
     for (iter = setup.ports.cbegin(); iter != setup.ports.cend(); ++iter)
     {
-        if (iter->protocol.count("http") > 0 || iter->protocol.count("https") > 0)
+        if (iter->protocol.contains("http") || iter->protocol.contains("https"))
             break;
     }
     if (iter == setup.ports.cend())
         return;
-    setup.client.secure = iter->protocol.count("https") > 0;
+    setup.client.secure = iter->protocol.contains("https");
     if (beast::IP::isUnspecified(iter->ip))
     {
         // VFALCO HACK! to make localhost work
@@ -1221,8 +1220,8 @@ setupClient(ServerHandler::Setup& setup)
     setup.client.port = iter->port;
     setup.client.user = iter->user;
     setup.client.password = iter->password;
-    setup.client.admin_user = iter->admin_user;
-    setup.client.admin_password = iter->admin_password;
+    setup.client.adminUser = iter->adminUser;
+    setup.client.adminPassword = iter->adminPassword;
 }
 
 // Fill out the overlay portion of the Setup
@@ -1230,7 +1229,7 @@ static void
 setupOverlay(ServerHandler::Setup& setup)
 {
     auto const iter = std::ranges::find_if(
-        setup.ports, [](Port const& port) { return port.protocol.count("peer") != 0; });
+        setup.ports, [](Port const& port) { return port.protocol.contains("peer"); });
     if (iter == setup.ports.cend())
     {
         setup.overlay = {};

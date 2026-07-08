@@ -2,6 +2,10 @@
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
+
 #include <boost/asio/io_context.hpp>
 
 #include <memory>
