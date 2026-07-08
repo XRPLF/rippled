@@ -48,6 +48,7 @@ public:
         if (length == kUnknown)
             length = (value != nullptr) ? (unsigned int)strlen(value) : 0;
 
+        // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
         char* newString = static_cast<char*>(malloc(length + 1));
         if (value != nullptr)
             memcpy(newString, value, length);
@@ -59,7 +60,10 @@ public:
     releaseStringValue(char* value) override
     {
         if (value != nullptr)
+        {
+            // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
             free(value);
+        }
     }
 };
 
@@ -120,7 +124,10 @@ Value::CZString::CZString(CZString const& other)
 Value::CZString::~CZString()
 {
     if ((cstr_ != nullptr) && index_ == static_cast<int>(DuplicationPolicy::Duplicate))
+    {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
         valueAllocator()->releaseMemberName(const_cast<char*>(cstr_));
+    }
 }
 
 bool
@@ -241,6 +248,7 @@ Value::Value(std::string const& value) : type_(ValueType::String), allocated_(tr
 
 Value::Value(StaticString const& value) : type_(ValueType::String)
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     value_.stringVal = const_cast<char*>(value.cStr());
 }
 
