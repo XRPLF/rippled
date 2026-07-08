@@ -434,7 +434,7 @@ RFC1751::getWordFromBlob(void const* blob, size_t bytes)
     // This is a simple implementation of the Jenkins one-at-a-time hash
     // algorithm:
     // http://en.wikipedia.org/wiki/Jenkins_hash_function#one-at-a-time
-    auto const* data = static_cast<unsigned char const*>(blob);
+    unsigned char const* data = static_cast<unsigned char const*>(blob);
     std::uint32_t hash = 0;
 
     for (size_t i = 0; i < bytes; ++i)

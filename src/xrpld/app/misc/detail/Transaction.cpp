@@ -103,7 +103,7 @@ Transaction::transactionFromSQL(
     Blob const& rawTxn,
     Application& app)
 {
-    auto const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
+    std::uint32_t const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
 
     SerialIter it(makeSlice(rawTxn));
     auto txn = std::make_shared<STTx const>(it);

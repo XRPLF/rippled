@@ -1158,10 +1158,11 @@ Pathfinder::addLink(
                 {
                     std::ranges::sort(
                         candidates,
-                        [seq = ledger_->seq()](
-                            AccountCandidate const& first, AccountCandidate const& second) {
-                            return compareAccountCandidate(seq, first, second);
-                        });
+                        std::bind(
+                            compareAccountCandidate,
+                            ledger_->seq(),
+                            std::placeholders::_1,
+                            std::placeholders::_2));
 
                     int count = candidates.size();
                     // allow more paths from source

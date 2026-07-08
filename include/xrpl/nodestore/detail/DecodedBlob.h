@@ -34,11 +34,11 @@ public:
     createObject();
 
 private:
-    bool success_{false};
+    bool success_;
 
     void const* key_;
-    NodeObjectType objectType_{NodeObjectType::Unknown};
-    unsigned char const* objectData_{nullptr};
+    NodeObjectType objectType_;
+    unsigned char const* objectData_;
     int dataBytes_;
 };
 

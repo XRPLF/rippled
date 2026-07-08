@@ -323,11 +323,12 @@ class Validator
     using Links = std::unordered_map<Peer::id_t, LinkSPtr>;
 
 public:
-    Validator() : pkey_(std::get<0>(randomKeyPair(KeyType::Ed25519))), id_(sid++)
+    Validator() : pkey_(std::get<0>(randomKeyPair(KeyType::Ed25519)))
     {
         protocol::TMValidation v;
         v.set_validation("validation");
         message_ = std::make_shared<Message>(v, protocol::mtVALIDATION, pkey_);
+        id_ = sid++;
     }
     Validator(Validator const&) = default;
     Validator(Validator&&) = default;
@@ -456,6 +457,7 @@ public:
     using id_t = Peer::id_t;
     PeerSim(Overlay& overlay, beast::Journal journal) : overlay_(overlay), squelch_(journal)
     {
+        id_ = sid++;
     }
 
     ~PeerSim() override = default;
@@ -510,7 +512,7 @@ public:
 private:
     inline static id_t sid = 0;
     std::string fingerprint_;
-    id_t id_{sid++};
+    id_t id_;
     Overlay& overlay_;
     reduce_relay::Squelch<ManualClock> squelch_;
 };

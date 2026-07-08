@@ -86,7 +86,6 @@ valueToString(double value)
                                                        // to avoid warning.
     sprintf_s(buffer, sizeof(buffer), "%.16g", value);
 #else
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
     snprintf(buffer, sizeof(buffer), "%.16g", value);
 #endif
     return buffer;
@@ -233,7 +232,7 @@ FastWriter::writeValue(Value const& value)
             Value::Members members(value.getMemberNames());
             document_ += "{";
 
-            for (auto it = members.begin(); it != members.end(); ++it)
+            for (Value::Members::iterator it = members.begin(); it != members.end(); ++it)
             {
                 std::string const& name = *it;
 
@@ -311,7 +310,7 @@ StyledWriter::writeValue(Value const& value)
             {
                 writeWithIndent("{");
                 indent();
-                auto it = members.begin();
+                Value::Members::iterator it = members.begin();
 
                 while (true)
                 {
@@ -546,7 +545,7 @@ StyledStreamWriter::writeValue(Value const& value)
             {
                 writeWithIndent("{");
                 indent();
-                auto it = members.begin();
+                Value::Members::iterator it = members.begin();
 
                 while (true)
                 {

@@ -7,7 +7,6 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -17,7 +16,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-#include <cstdint>
+#include <cstdlib>
 #include <memory>
 #include <optional>
 #include <string>
@@ -174,7 +173,7 @@ public:
                 Oracle const oracle(
                     env,
                     {.owner = owner,
-                     .documentID = randInt<std::uint32_t>(),
+                     .documentID = rand(),
                      .series = {{"XRP", "USD", 740 + i, 1}, {"XRP", "EUR", 740, 1}},
                      .fee = baseFee});
                 oracles.emplace_back(owner, oracle.documentID());
@@ -298,13 +297,13 @@ public:
 
             OraclesData oracles;
             prep(env, oracles);
-            for (auto& oracleData : oracles)
+            for (int i = 0; i < oracles.size(); ++i)
             {
                 Oracle oracle(
                     env,
-                    {.owner = oracleData.first,
+                    {.owner = oracles[i].first,
                      // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                     .documentID = asUInt(*oracleData.second),
+                     .documentID = asUInt(*oracles[i].second),
                      .fee = baseFee},
                     false);
                 // push XRP/USD by two ledgers, so this price

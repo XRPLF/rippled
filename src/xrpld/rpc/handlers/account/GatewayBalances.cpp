@@ -106,8 +106,8 @@ doGatewayBalances(RPC::JsonContext& context)
         // null is treated as a valid 0-sized array of hotwallet
         if (hw.isArrayOrNull())
         {
-            for (auto const& wallet : hw)
-                valid &= addHotWallet(wallet);
+            for (unsigned i = 0; i < hw.size(); ++i)
+                valid &= addHotWallet(hw[i]);
         }
         else if (hw.isString())
         {

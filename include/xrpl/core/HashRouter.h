@@ -127,7 +127,7 @@ private:
         }
 
         [[nodiscard]] HashRouterFlags
-        getFlags() const
+        getFlags(void) const
         {
             return flags_;
         }

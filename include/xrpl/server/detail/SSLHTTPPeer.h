@@ -13,6 +13,7 @@
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 
+#include <functional>
 #include <memory>
 #include <utility>
 
@@ -98,15 +99,14 @@ SSLHTTPPeer<Handler>::run()
 {
     if (!this->handler_.onAccept(this->session(), this->remoteAddress_))
     {
-        util::spawn(
-            this->strand_, [self = this->shared_from_this()](yield_context) { self->doClose(); });
+        util::spawn(this->strand_, std::bind(&SSLHTTPPeer::doClose, this->shared_from_this()));
         return;
     }
     if (!socket_.is_open())
         return;
-    util::spawn(this->strand_, [self = this->shared_from_this()](yield_context doYield) {
-        self->doHandshake(doYield);
-    });
+    util::spawn(
+        this->strand_,
+        std::bind(&SSLHTTPPeer::doHandshake, this->shared_from_this(), std::placeholders::_1));
 }
 
 template <class Handler>
@@ -142,9 +142,9 @@ SSLHTTPPeer<Handler>::doHandshake(yield_context doYield)
         this->port().protocol.count("https") > 0;
     if (http)
     {
-        util::spawn(this->strand_, [self = this->shared_from_this()](yield_context doYield) {
-            self->doRead(doYield);
-        });
+        util::spawn(
+            this->strand_,
+            std::bind(&SSLHTTPPeer::doRead, this->shared_from_this(), std::placeholders::_1));
         return;
     }
     // `this` will be destroyed
@@ -172,7 +172,7 @@ SSLHTTPPeer<Handler>::doClose()
     this->startTimer();
     stream_.async_shutdown(bind_executor(
         this->strand_,
-        [self = this->shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
+        std::bind(&SSLHTTPPeer::onShutdown, this->shared_from_this(), std::placeholders::_1)));
 }
 
 template <class Handler>

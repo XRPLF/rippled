@@ -86,8 +86,8 @@ Reader::parse(char const* beginDoc, char const* endDoc, Value& root)
     begin_ = beginDoc;
     end_ = endDoc;
     current_ = begin_;
-    lastValueEnd_ = nullptr;
-    lastValue_ = nullptr;
+    lastValueEnd_ = 0;
+    lastValue_ = 0;
     errors_.clear();
 
     while (!nodes_.empty())
@@ -624,13 +624,11 @@ Reader::decodeDouble(Token& token)
         Char buffer[bufferSize + 1];
         memcpy(buffer, token.start, length);
         buffer[length] = 0;
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
         count = sscanf(buffer, format, &value);
     }
     else
     {
         std::string const buffer(token.start, token.end);
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
         count = sscanf(buffer.c_str(), format, &value);
     }
     if (count != 1)
@@ -910,8 +908,9 @@ Reader::getFormattedErrorMessages() const
 {
     std::string formattedMessage;
 
-    for (auto const& error : errors_)
+    for (Errors::const_iterator itError = errors_.begin(); itError != errors_.end(); ++itError)
     {
+        ErrorInfo const& error = *itError;
         formattedMessage += "* " + getLocationLineAndColumn(error.token.start) + "\n";
         formattedMessage += "  " + error.message + "\n";
 

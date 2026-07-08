@@ -6,7 +6,7 @@
 #include <xrpl/protocol/MPTAmount.h>  // IWYU pragma: keep
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <ostream>  // IWYU pragma: keep
+#include <ostream>
 #include <stdexcept>
 #include <variant>
 

@@ -9,6 +9,7 @@
 
 #include <boost/beast/core/tcp_stream.hpp>
 
+#include <functional>
 #include <memory>
 #include <utility>
 
@@ -88,9 +89,7 @@ PlainHTTPPeer<Handler>::run()
 {
     if (!this->handler_.onAccept(this->session(), this->remoteAddress_))
     {
-        util::spawn(this->strand_, [self = this->shared_from_this()](boost::asio::yield_context) {
-            self->doClose();
-        });
+        util::spawn(this->strand_, std::bind(&PlainHTTPPeer::doClose, this->shared_from_this()));
         return;
     }
 
@@ -98,9 +97,8 @@ PlainHTTPPeer<Handler>::run()
         return;
 
     util::spawn(
-        this->strand_, [self = this->shared_from_this()](boost::asio::yield_context doYield) {
-            self->doRead(doYield);
-        });
+        this->strand_,
+        std::bind(&PlainHTTPPeer::doRead, this->shared_from_this(), std::placeholders::_1));
 }
 
 template <class Handler>

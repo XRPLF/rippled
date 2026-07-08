@@ -1,8 +1,6 @@
 #include <xrpl/basics/hardened_hash.h>
-
 #include <xrpl/beast/hash/hash_append.h>
-
-#include <gtest/gtest.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <array>
 #include <cstddef>
@@ -155,20 +153,20 @@ static_assert(sha256_t::kBits == 256, "sha256_t must have 256 bits");
 
 namespace xrpl {
 
-class HardenedHashTest : public ::testing::Test
+class hardened_hash_test : public beast::unit_test::Suite
 {
 public:
     template <class T>
-    static void
+    void
     check()
     {
         T t{};
         HardenedHash<>()(t);
-        SUCCEED();
+        pass();
     }
 
     template <template <class T> class U>
-    static void
+    void
     checkUserType()
     {
         check<U<bool>>();
@@ -193,35 +191,48 @@ public:
     }
 
     template <template <class T> class C>
-    static void
+    void
     checkContainer()
     {
         {
             C<detail::TestUserTypeMember<std::string>> const c;
         }
 
-        SUCCEED();
+        pass();
 
         {
             C<detail::TestUserTypeFree<std::string>> const c;
         }
 
-        SUCCEED();
+        pass();
+    }
+
+    void
+    testUserTypes()
+    {
+        testcase("user types");
+        checkUserType<detail::TestUserTypeMember>();
+        checkUserType<detail::TestUserTypeFree>();
+    }
+
+    void
+    testContainers()
+    {
+        testcase("containers");
+        checkContainer<detail::test_hardened_unordered_set>();
+        checkContainer<detail::test_hardened_unordered_map>();
+        checkContainer<detail::test_hardened_unordered_multiset>();
+        checkContainer<detail::test_hardened_unordered_multimap>();
+    }
+
+    void
+    run() override
+    {
+        testUserTypes();
+        testContainers();
     }
 };
 
-TEST_F(HardenedHashTest, user_types)
-{
-    checkUserType<detail::TestUserTypeMember>();
-    checkUserType<detail::TestUserTypeFree>();
-}
-
-TEST_F(HardenedHashTest, containers)
-{
-    checkContainer<detail::test_hardened_unordered_set>();
-    checkContainer<detail::test_hardened_unordered_map>();
-    checkContainer<detail::test_hardened_unordered_multiset>();
-    checkContainer<detail::test_hardened_unordered_multimap>();
-}
+BEAST_DEFINE_TESTSUITE(hardened_hash, basics, xrpl);
 
 }  // namespace xrpl

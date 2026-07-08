@@ -192,7 +192,7 @@ public:
             boost::asio::dispatch(
                 ioContext,
                 boost::asio::bind_executor(
-                    strand, [this, counter = CompletionCounter(this)] { doStop(counter); }));
+                    strand, std::bind(&ResolverAsioImpl::doStop, this, CompletionCounter(this))));
 
             JLOG(journal.debug()) << "Queued a stop request";
         }
@@ -221,9 +221,9 @@ public:
         boost::asio::dispatch(
             ioContext,
             boost::asio::bind_executor(
-                strand, [this, names, handler, counter = CompletionCounter(this)] {
-                    doResolve(names, handler, counter);
-                }));
+                strand,
+                std::bind(
+                    &ResolverAsioImpl::doResolve, this, names, handler, CompletionCounter(this))));
     }
 
     //-------------------------------------------------------------------------
@@ -272,7 +272,7 @@ public:
         boost::asio::post(
             ioContext,
             boost::asio::bind_executor(
-                strand, [this, counter = CompletionCounter(this)] { doWork(counter); }));
+                strand, std::bind(&ResolverAsioImpl::doWork, this, CompletionCounter(this))));
     }
 
     static HostAndPort
@@ -291,10 +291,8 @@ public:
         // a port separator
 
         // Attempt to find the first and last non-whitespace
-        std::locale const loc;
-        auto const findWhitespace = [&loc](std::string::value_type c) {
-            return std::isspace<std::string::value_type>(c, loc);
-        };
+        auto const findWhitespace =
+            std::bind(&std::isspace<std::string::value_type>, std::placeholders::_1, std::locale());
 
         auto hostFirst = std::ranges::find_if_not(str, findWhitespace);
 
@@ -350,7 +348,7 @@ public:
             boost::asio::post(
                 ioContext,
                 boost::asio::bind_executor(
-                    strand, [this, counter = CompletionCounter(this)] { doWork(counter); }));
+                    strand, std::bind(&ResolverAsioImpl::doWork, this, CompletionCounter(this))));
 
             return;
         }
@@ -358,11 +356,14 @@ public:
         resolver.async_resolve(
             host,
             port,
-            [this, name, handler, counter = CompletionCounter(this)](
-                boost::system::error_code const& ec,
-                boost::asio::ip::tcp::resolver::results_type results) {
-                doFinish(name, ec, handler, results, counter);
-            });
+            std::bind(
+                &ResolverAsioImpl::doFinish,
+                this,
+                name,
+                std::placeholders::_1,
+                handler,
+                std::placeholders::_2,
+                CompletionCounter(this)));
     }
 
     void
@@ -382,7 +383,8 @@ public:
                 boost::asio::post(
                     ioContext,
                     boost::asio::bind_executor(
-                        strand, [this, counter = CompletionCounter(this)] { doWork(counter); }));
+                        strand,
+                        std::bind(&ResolverAsioImpl::doWork, this, CompletionCounter(this))));
             }
         }
     }

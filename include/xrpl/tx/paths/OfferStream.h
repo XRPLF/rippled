@@ -92,7 +92,6 @@ public:
     [[nodiscard]] TOffer<TIn, TOut>&
     tip() const
     {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
         return const_cast<TOfferStreamBase*>(this)->offer_;
     }
 

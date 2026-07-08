@@ -154,7 +154,7 @@ private:
         Location end,
         unsigned int& unicode);
     bool
-    addError(std::string const& message, Token& token, Location extra = nullptr);
+    addError(std::string const& message, Token& token, Location extra = 0);
     bool
     recoverFromError(TokenType skipUntilToken);
     bool

@@ -41,7 +41,7 @@ public:
     operator=(NodePtr node)
     {
         node_ = node;
-        return *this;
+        return static_cast<LockFreeStackIterator&>(*this);
     }
 
     LockFreeStackIterator&

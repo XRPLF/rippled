@@ -36,7 +36,9 @@ overrides:
       - /'[^']*'/g # single-quoted strings
       - /`[^`]*`/g # backtick strings
 suggestWords:
-  - unsynched->unsynced
+  - xprl->xrpl
+  - xprld->xrpld # cspell: disable-line not sure what this problem is....
+  - unsynched->unsynced # cspell: disable-line not sure what this problem is....
   - synched->synced
   - synch->sync
 words:

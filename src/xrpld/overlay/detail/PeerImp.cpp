@@ -321,9 +321,9 @@ PeerImp::send(std::shared_ptr<Message> const& m)
             self->stream_,
             boost::asio::buffer(self->sendQueue_.front()->getBuffer(self->compressionEnabled_)),
             bind_executor(
-                self->strand_, [self](error_code const& ec, std::size_t bytesTransferred) {
-                    self->onWriteMessage(ec, bytesTransferred);
-                }));
+                self->strand_,
+                std::bind(
+                    &PeerImp::onWriteMessage, self, std::placeholders::_1, std::placeholders::_2)));
     });
 }
 
@@ -650,7 +650,7 @@ PeerImp::gracefulClose()
         return;
     setTimer();
     stream_.async_shutdown(bind_executor(
-        strand_, [self = shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
+        strand_, std::bind(&PeerImp::onShutdown, shared_from_this(), std::placeholders::_1)));
 }
 
 void
@@ -666,7 +666,7 @@ PeerImp::setTimer()
         return;
     }
     timer_.async_wait(bind_executor(
-        strand_, [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
+        strand_, std::bind(&PeerImp::onTimer, shared_from_this(), std::placeholders::_1)));
 }
 
 // convenience for ignoring the error code
@@ -975,9 +975,11 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytesTransferred)
         readBuffer_.prepare(std::max(Tuning::kReadBufferBytes, hint)),
         bind_executor(
             strand_,
-            [self = shared_from_this()](error_code const& ec, std::size_t bytesTransferred) {
-                self->onReadMessage(ec, bytesTransferred);
-            }));
+            std::bind(
+                &PeerImp::onReadMessage,
+                shared_from_this(),
+                std::placeholders::_1,
+                std::placeholders::_2)));
 }
 
 void
@@ -1012,16 +1014,18 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytesTransferred)
             boost::asio::buffer(sendQueue_.front()->getBuffer(compressionEnabled_)),
             bind_executor(
                 strand_,
-                [self = shared_from_this()](error_code const& ec, std::size_t bytesTransferred) {
-                    self->onWriteMessage(ec, bytesTransferred);
-                }));
+                std::bind(
+                    &PeerImp::onWriteMessage,
+                    shared_from_this(),
+                    std::placeholders::_1,
+                    std::placeholders::_2)));
         return;
     }
 
     if (gracefulClose_)
     {
         stream_.async_shutdown(bind_executor(
-            strand_, [self = shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
+            strand_, std::bind(&PeerImp::onShutdown, shared_from_this(), std::placeholders::_1)));
         return;
     }
 }
@@ -2130,7 +2134,6 @@ PeerImp::onValidatorListMessage(
             publisherListSequences_[pubKey] = applyResult.sequence;
         }
         break;
-        // NOLINTNEXTLINE(bugprone-branch-clone): identical to the next branch only in Release
         case ListDisposition::SameSequence:
         case ListDisposition::KnownSequence:
 #ifndef NDEBUG

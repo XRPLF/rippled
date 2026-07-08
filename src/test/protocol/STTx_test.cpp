@@ -1366,7 +1366,6 @@ public:
         {
             fail("Unable to build object from json");
         }
-        // NOLINTNEXTLINE(cppcoreguidelines-slicing)
         else if (STObject(j) != parsed.object)
         {
             log << "ORIG: " << j.getJson(JsonOptions::Values::None) << '\n'

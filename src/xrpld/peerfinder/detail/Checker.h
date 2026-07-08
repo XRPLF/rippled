@@ -8,6 +8,7 @@
 #include <boost/intrusive/list.hpp>
 
 #include <condition_variable>
+#include <functional>
 #include <memory>
 #include <mutex>
 
@@ -182,7 +183,7 @@ Checker<Protocol>::asyncConnect(beast::IP::Endpoint const& endpoint, Handler&& h
     }
     op->socket.async_connect(
         beast::IPAddressConversion::toAsioEndpoint(endpoint),
-        [op](error_code const& ec) { (*op)(ec); });
+        std::bind(&BasicAsyncOp::operator(), op, std::placeholders::_1));
 }
 
 template <class Protocol>

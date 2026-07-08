@@ -7,7 +7,7 @@
 #include <xrpl/ledger/detail/ReadViewFwdRange.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Fees.h>
-#include <xrpl/protocol/Issue.h>  // IWYU pragma: keep
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/LedgerHeader.h>

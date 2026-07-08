@@ -107,7 +107,7 @@ parseTakerIssuerJSON(
 
     if (taker.isMember(jss::currency))
     {
-        auto& issue = asset.get<Issue>();
+        Issue& issue = asset.get<Issue>();
 
         if (taker.isMember(jss::issuer))
         {

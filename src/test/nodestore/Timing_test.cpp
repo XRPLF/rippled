@@ -564,10 +564,10 @@ public:
                     char p[2];
                     p[0] = rand_(gen_) < 50 ? 0 : 1;
                     p[1] = 1 - p[0];
-                    for (char const op : p)
+                    for (int q = 0; q < 2; ++q)
                     {
                         // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
-                        switch (op)
+                        switch (p[q])
                         {
                             case 0: {
                                 // fetch recent

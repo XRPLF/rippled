@@ -196,7 +196,7 @@ escrowCreatePreclaimHelper<Issue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    auto const& issue = amount.get<Issue>();
+    Issue const& issue = amount.get<Issue>();
     AccountID const& issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)

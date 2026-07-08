@@ -12,7 +12,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <ios>
-#include <limits>  // IWYU pragma: keep
+#include <limits>
 #include <ostream>
 #include <sstream>
 #include <string>

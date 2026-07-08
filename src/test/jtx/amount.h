@@ -93,16 +93,19 @@ public:
 
     /** drops */
     template <class T>
-    PrettyAmount(T v)
-        requires(sizeof(T) >= sizeof(int) && std::is_integral_v<T> && std::is_signed_v<T>)
+    PrettyAmount(
+        T v,
+        std::enable_if_t<
+            sizeof(T) >= sizeof(int) && std::is_integral_v<T> && std::is_signed_v<T>>* = nullptr)
         : amount_((v > 0) ? v : -v, v < 0)
     {
     }
 
     /** drops */
     template <class T>
-    PrettyAmount(T v)
-        requires(sizeof(T) >= sizeof(int) && std::is_unsigned_v<T>)
+    PrettyAmount(
+        T v,
+        std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_unsigned_v<T>>* = nullptr)
         : amount_(v)
     {
     }
@@ -279,10 +282,9 @@ struct XrpT
         @param v The number of XRP (not drops)
     */
     /** @{ */
-    template <class T>
+    template <class T, class = std::enable_if_t<std::is_integral_v<T>>>
     PrettyAmount
     operator()(T v) const
-        requires(std::is_integral_v<T>)
     {
         using TOut = std::conditional_t<std::is_signed_v<T>, std::int64_t, std::uint64_t>;
         return {TOut{v} * kJtxDropsPerXrp};
@@ -348,10 +350,9 @@ extern XrpT const XRP;  // NOLINT(readability-identifier-naming)
     Example:
         drops(10)   Returns PrettyAmount of 10 drops
 */
-template <class Integer>
+template <class Integer, class = std::enable_if_t<std::is_integral_v<Integer>>>
 PrettyAmount
 drops(Integer i)
-    requires(std::is_integral_v<Integer>)
 {
     return {i};
 }
@@ -435,10 +436,11 @@ public:
         return asset();
     }
 
-    template <class T>
+    template <
+        class T,
+        class = std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_arithmetic_v<T>>>
     PrettyAmount
     operator()(T v) const
-        requires(sizeof(T) >= sizeof(int) && std::is_arithmetic_v<T>)
     {
         // VFALCO NOTE Should throw if the
         //             representation of v is not exact.

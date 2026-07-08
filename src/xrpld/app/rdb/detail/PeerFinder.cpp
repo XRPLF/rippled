@@ -147,10 +147,10 @@ updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Jour
             s.reserve(list.size());
             valence.reserve(list.size());
 
-            for (auto const& entry : list)
+            for (auto iter(list.cbegin()); iter != list.cend(); ++iter)
             {
-                s.emplace_back(to_string(entry.endpoint));
-                valence.emplace_back(entry.valence);
+                s.emplace_back(to_string(iter->endpoint));
+                valence.emplace_back(iter->valence);
             }
 
             session << "INSERT INTO PeerFinder_BootstrapCache_Next ( "

@@ -28,7 +28,6 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/random.h>
 #include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -453,7 +452,7 @@ struct TestPeerSet : public PeerSet
             dropRate = 100;
         }
 
-        if (randInt(1, 100) <= dropRate)
+        if (((rand() % 100) + 1) <= dropRate)
             return;
 
         switch (type)

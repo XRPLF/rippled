@@ -26,6 +26,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstddef>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -198,7 +199,7 @@ private:
             {
                 if (!strand.running_in_this_thread())
                 {
-                    post(strand, [self = shared_from_this()] { self->close(); });
+                    post(strand, std::bind(&Acceptor::close, shared_from_this()));
                     return;
                 }
                 acceptor.close();
@@ -209,9 +210,9 @@ private:
             {
                 acceptor.async_accept(
                     socket,
-                    bind_executor(strand, [self = shared_from_this()](error_code const& ec) {
-                        self->onAccept(ec);
-                    }));
+                    bind_executor(
+                        strand,
+                        std::bind(&Acceptor::onAccept, shared_from_this(), std::placeholders::_1)));
             }
 
             void
@@ -238,9 +239,9 @@ private:
                 p->run();
                 acceptor.async_accept(
                     socket,
-                    bind_executor(strand, [self = shared_from_this()](error_code const& ec) {
-                        self->onAccept(ec);
-                    }));
+                    bind_executor(
+                        strand,
+                        std::bind(&Acceptor::onAccept, shared_from_this(), std::placeholders::_1)));
             }
         };
 
@@ -270,7 +271,7 @@ private:
             {
                 if (!strand.running_in_this_thread())
                 {
-                    post(strand, [self = shared_from_this()] { self->close(); });
+                    post(strand, std::bind(&Connection::close, shared_from_this()));
                     return;
                 }
                 if (socket.is_open())
@@ -286,12 +287,13 @@ private:
                 timer.expires_after(std::chrono::seconds(3));
                 timer.async_wait(bind_executor(
                     strand,
-                    [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
+                    std::bind(&Connection::onTimer, shared_from_this(), std::placeholders::_1)));
                 stream.async_handshake(
                     stream_type::server,
-                    bind_executor(strand, [self = shared_from_this()](error_code const& ec) {
-                        self->onHandshake(ec);
-                    }));
+                    bind_executor(
+                        strand,
+                        std::bind(
+                            &Connection::onHandshake, shared_from_this(), std::placeholders::_1)));
             }
 
             void
@@ -328,16 +330,21 @@ private:
                     fail("handshake", ec);
                     return;
                 }
+#if 1
                 boost::asio::async_read_until(
                     stream,
                     buf,
                     "\n",
                     bind_executor(
                         strand,
-                        [self = shared_from_this()](
-                            error_code const& ec, std::size_t bytesTransferred) {
-                            self->onRead(ec, bytesTransferred);
-                        }));
+                        std::bind(
+                            &Connection::onRead,
+                            shared_from_this(),
+                            std::placeholders::_1,
+                            std::placeholders::_2)));
+#else
+                close();
+#endif
             }
 
             void
@@ -346,10 +353,10 @@ private:
                 if (ec == boost::asio::error::eof)
                 {
                     server.test_.log << "[server] read: EOF" << std::endl;
-                    stream.async_shutdown(
-                        bind_executor(strand, [self = shared_from_this()](error_code const& ec) {
-                            self->onShutdown(ec);
-                        }));
+                    stream.async_shutdown(bind_executor(
+                        strand,
+                        std::bind(
+                            &Connection::onShutdown, shared_from_this(), std::placeholders::_1)));
                     return;
                 }
                 if (ec)
@@ -366,10 +373,11 @@ private:
                     buf.data(),
                     bind_executor(
                         strand,
-                        [self = shared_from_this()](
-                            error_code const& ec, std::size_t bytesTransferred) {
-                            self->onWrite(ec, bytesTransferred);
-                        }));
+                        std::bind(
+                            &Connection::onWrite,
+                            shared_from_this(),
+                            std::placeholders::_1,
+                            std::placeholders::_2)));
             }
 
             void
@@ -383,7 +391,7 @@ private:
                 }
                 stream.async_shutdown(bind_executor(
                     strand,
-                    [self = shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
+                    std::bind(&Connection::onShutdown, shared_from_this(), std::placeholders::_1)));
             }
 
             void
@@ -455,7 +463,7 @@ private:
             {
                 if (!strand.running_in_this_thread())
                 {
-                    post(strand, [self = shared_from_this()] { self->close(); });
+                    post(strand, std::bind(&Connection::close, shared_from_this()));
                     return;
                 }
                 if (socket.is_open())
@@ -471,11 +479,13 @@ private:
                 timer.expires_after(std::chrono::seconds(3));
                 timer.async_wait(bind_executor(
                     strand,
-                    [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
+                    std::bind(&Connection::onTimer, shared_from_this(), std::placeholders::_1)));
                 socket.async_connect(
-                    ep, bind_executor(strand, [self = shared_from_this()](error_code const& ec) {
-                        self->onConnect(ec);
-                    }));
+                    ep,
+                    bind_executor(
+                        strand,
+                        std::bind(
+                            &Connection::onConnect, shared_from_this(), std::placeholders::_1)));
             }
 
             void
@@ -514,9 +524,10 @@ private:
                 }
                 stream.async_handshake(
                     stream_type::client,
-                    bind_executor(strand, [self = shared_from_this()](error_code const& ec) {
-                        self->onHandshake(ec);
-                    }));
+                    bind_executor(
+                        strand,
+                        std::bind(
+                            &Connection::onHandshake, shared_from_this(), std::placeholders::_1)));
             }
 
             void
@@ -529,15 +540,23 @@ private:
                 }
                 write(buf, "HELLO\n");
 
+#if 1
                 boost::asio::async_write(
                     stream,
                     buf.data(),
                     bind_executor(
                         strand,
-                        [self = shared_from_this()](
-                            error_code const& ec, std::size_t bytesTransferred) {
-                            self->onWrite(ec, bytesTransferred);
-                        }));
+                        std::bind(
+                            &Connection::onWrite,
+                            shared_from_this(),
+                            std::placeholders::_1,
+                            std::placeholders::_2)));
+#else
+                stream_.async_shutdown(bind_executor(
+                    strand_,
+                    std::bind(
+                        &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+#endif
             }
 
             void
@@ -549,16 +568,24 @@ private:
                     fail("write", ec);
                     return;
                 }
+#if 1
                 boost::asio::async_read_until(
                     stream,
                     buf,
                     "\n",
                     bind_executor(
                         strand,
-                        [self = shared_from_this()](
-                            error_code const& ec, std::size_t bytesTransferred) {
-                            self->onRead(ec, bytesTransferred);
-                        }));
+                        std::bind(
+                            &Connection::onRead,
+                            shared_from_this(),
+                            std::placeholders::_1,
+                            std::placeholders::_2)));
+#else
+                stream_.async_shutdown(bind_executor(
+                    strand_,
+                    std::bind(
+                        &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+#endif
             }
 
             void
@@ -572,7 +599,7 @@ private:
                 buf.commit(bytesTransferred);
                 stream.async_shutdown(bind_executor(
                     strand,
-                    [self = shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
+                    std::bind(&Connection::onShutdown, shared_from_this(), std::placeholders::_1)));
             }
 
             void

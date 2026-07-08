@@ -20,6 +20,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -60,7 +61,7 @@ public:
         , checker_(io_context_)
         , logic_(clock, store_, checker_, journal)
         , config_(config)
-        , stats_([this] { collectMetrics(); }, collector)
+        , stats_(std::bind(&ManagerImp::collectMetrics, this), collector)
     {
     }
 
