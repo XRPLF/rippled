@@ -142,7 +142,7 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfMPTCanTrade, lsfMPTCanTrade)                                                                                                                 \
         TF_FLAG(tfMPTCanTransfer, lsfMPTCanTransfer)                                                                                                           \
         TF_FLAG(tfMPTCanClawback, lsfMPTCanClawback)                                                                                                           \
-        TF_FLAG(tfMPTCanHoldConfidentialBalance, lsfMPTCanHoldConfidentialBalance),                                                                                                            \
+        TF_FLAG(tfMPTCanHoldConfidentialBalance, lsfMPTCanHoldConfidentialBalance),                                                                            \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(MPTokenAuthorize,                                                                                                                              \
@@ -222,14 +222,14 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfSponsorshipSetRequireSignForFee, 0x00010000)                                                                                                 \
         TF_FLAG(tfSponsorshipClearRequireSignForFee, 0x00020000)                                                                                               \
         TF_FLAG(tfSponsorshipSetRequireSignForReserve, 0x00040000)                                                                                             \
-        TF_FLAG(tfSponsorshipClearRequireSignForReserve, 0x00080000)                                                                                          \
+        TF_FLAG(tfSponsorshipClearRequireSignForReserve, 0x00080000)                                                                                           \
         TF_FLAG(tfDeleteObject, 0x00100000),                                                                                                                   \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(SponsorshipTransfer,                                                                                                                           \
-        TF_FLAG(tfSponsorshipEnd, 0x00000001)                                                                                                                  \
-        TF_FLAG(tfSponsorshipCreate, 0x00000002)                                                                                                               \
-        TF_FLAG(tfSponsorshipReassign, 0x00000004),                                                                                                            \
+        TF_FLAG(tfSponsorshipEnd, 0x00010000)                                                                                                                  \
+        TF_FLAG(tfSponsorshipCreate, 0x00020000)                                                                                                               \
+        TF_FLAG(tfSponsorshipReassign, 0x00040000),                                                                                                            \
         MASK_ADJ(0))
 
 // clang-format on
