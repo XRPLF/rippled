@@ -240,6 +240,9 @@ private:
 
 inline STPathElement::STPathElement() : type_(TypeNone), isOffer_(true)
 {
+    // hashValue_ is derived from the whole object, so it is computed in the body
+    // once every other member is initialized (as in the other constructors).
+    // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
     hashValue_ = getHash(*this);
 }
 
@@ -315,6 +318,9 @@ inline STPathElement::STPathElement(
     assetID_.visit(
         [&](Currency const&) { type_ = type_ & (~Type::TypeMpt); },
         [&](MPTID const&) { type_ = type_ & (~Type::TypeCurrency); });
+    // hashValue_ must be computed after type_ is adjusted above, so this cannot
+    // be a member initializer.
+    // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
     hashValue_ = getHash(*this);
 }
 

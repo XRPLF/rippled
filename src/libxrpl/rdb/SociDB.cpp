@@ -213,6 +213,12 @@ public:
         if (auto [conn, keepAlive] = getConnection(); conn)
         {
             (void)keepAlive;
+            // The checkpointer is identified to the C callback by an integer id
+            // (resolved via checkpointerFromId) rather than a raw `this`, so it
+            // cannot dangle if the checkpointer is destroyed. Passing the id
+            // through sqlite's void* user-data requires an integer-to-pointer
+            // cast.
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
             sqlite_api::sqlite3_wal_hook(conn, &sqliteWALHook, reinterpret_cast<void*>(id_));
         }
     }
