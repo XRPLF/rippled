@@ -453,6 +453,10 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
 
     auto const hasSponsorSignature = tx.isFieldPresent(sfSponsorSignature);
 
+    // Skip Sponsorship existence checks if the sponsor has signed the transaction - this
+    // transaction is valid regardless of the Sponsorship object.
+    // The use of the Sponsorship object is properly handled in
+    // getFeePayer/checkReserve/increaseOwnerCount/decreaseOwnerCount.
     if (hasSponsorSignature)
         return tesSUCCESS;
 
