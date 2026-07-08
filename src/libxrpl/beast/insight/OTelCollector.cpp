@@ -823,21 +823,17 @@ OTelCollectorImp::otelMeter() const
 std::string
 OTelCollectorImp::formatName(std::string const& name) const
 {
-    // StatsD uses "prefix.group.name" format. The OTel StatsD receiver
-    // converts dots to underscores for Prometheus. We replicate this
-    // to preserve metric name compatibility.
-    //
-    // Example: prefix="xrpld", name="LedgerMaster.Validated_Ledger_Age"
-    //   -> "xrpld_LedgerMaster_Validated_Ledger_Age"
+    // Produce a clean, lowercase, Prometheus-compatible metric name.
+    // No prefix — the OTel resource (service.name) identifies the service.
+    // Dots and spaces become underscores; everything lowercased.
     std::string result;
-    if (!prefix_.empty())
-    {
-        result = prefix_;
-        result += '_';
-    }
+    result.reserve(name.size());
     for (char const c : name)
     {
-        result += (c == '.') ? '_' : c;
+        if (c == '.' || c == ' ')
+            result += '_';
+        else
+            result += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
     }
     return result;
 }
