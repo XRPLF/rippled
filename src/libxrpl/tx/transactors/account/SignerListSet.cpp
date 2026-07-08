@@ -319,14 +319,10 @@ SignerListSet::replaceSignerList()
     // We check the reserve against the starting balance because we want to
     // allow dipping into the reserve to pay fees.  This behavior is consistent
     // with TicketCreate.
-    auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkReserve(
             ctx_.getApplyViewContext(),
             sle,
             preFeeBalance_,
-            *sponsorSle,
             {.ownerCountDelta = kAddedOwnerCount},
             ctx_.journal);
         !isTesSuccess(ret))
@@ -352,8 +348,8 @@ SignerListSet::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    increaseOwnerCount(view(), sle, *sponsorSle, kAddedOwnerCount, viewJ);
-    addSponsorToLedgerEntry(signerList, *sponsorSle);
+    increaseOwnerCount(ctx_.getApplyViewContext(), sle, kAddedOwnerCount, viewJ);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), signerList);
     return tesSUCCESS;
 }
 

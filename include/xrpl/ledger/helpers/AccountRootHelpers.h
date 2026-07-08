@@ -105,6 +105,30 @@ checkReserve(
     Adjustment adj,
     beast::Journal j);
 
+/** Check if an account has sufficient reserve, deriving the sponsor internally.
+ *
+ *  Equivalent to the overload above, but resolves the sponsor via
+ *  getEffectiveTxReserveSponsor(ctx, accSle) instead of taking it explicitly. Use this
+ *  in the common case where the sponsor is simply the transaction's reserve
+ *  sponsor for accSle. Callers that must force the account's-own-reserve branch
+ *  (passing a null sponsor) or supply a different sponsor should use the
+ *  explicit overload above.
+ *
+ *  @param ctx The apply-view context (view + tx)
+ *  @param accSle The account's ledger entry
+ *  @param accBalance The account's balance
+ *  @param adj Reserve adjustments (owner/account count deltas)
+ *  @param j Journal for logging (default: null sink)
+ *  @return Transaction result code
+ */
+[[nodiscard]] TER
+checkReserve(
+    ApplyViewContext ctx,
+    SLE::const_ref accSle,
+    STAmount const& accBalance,
+    Adjustment adj,
+    beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
+
 /** Return number of the objects which reserve is covered by the account(sle) (so called "owner
  *  count"). Actual owner count can be adjusted by delta in ownerCountAdj.
  *
@@ -134,6 +158,26 @@ increaseOwnerCount(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref sponsorSle,
+    std::uint32_t count,
+    beast::Journal j);
+
+/** Increase owner-count fields, deriving the tx reserve sponsor internally.
+ *
+ *  Equivalent to the overload above, but resolves the sponsor via
+ *  getEffectiveTxReserveSponsor(ctx, accountSle) instead of taking it explicitly. Use
+ *  this when the sponsor is the transaction's reserve sponsor for accountSle
+ *  (the common create path). Deletion paths, which derive the sponsor from an
+ *  object's sfSponsor field, should keep using the explicit overload.
+ *
+ *  @param ctx The apply-view context (view + tx)
+ *  @param accountSle The account's ledger entry
+ *  @param count Amount to add to the owner count
+ *  @param j Journal for logging
+ */
+void
+increaseOwnerCount(
+    ApplyViewContext ctx,
+    SLE::ref accountSle,
     std::uint32_t count,
     beast::Journal j);
 

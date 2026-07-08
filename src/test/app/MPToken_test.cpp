@@ -4040,8 +4040,8 @@ class MPToken_test : public beast::unit_test::Suite
                                  std::optional<std::uint64_t> expectedOutstanding,
                                  std::string const& label) {
             ApplyViewImpl av(&*env.current(), TapNone);
-            auto const ter = accountSendMulti(
-                av, issuer.id(), asset, receivers, env.app().getJournal("View"), {});
+            auto const ter =
+                accountSendMulti(av, issuer.id(), asset, receivers, env.app().getJournal("View"));
             BEAST_EXPECTS(ter == expectedTer, label);
 
             // Only verify OutstandingAmount on success — on error the

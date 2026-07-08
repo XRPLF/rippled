@@ -440,6 +440,8 @@ doWithdraw(
     STAmount const& amount,
     beast::Journal j)
 {
+    auto const dstSle = ctx.view.read(keylet::account(dstAcct));
+
     // Create trust line or MPToken for the receiving account
     if (dstAcct == senderAcct)
     {
@@ -449,7 +451,6 @@ doWithdraw(
     }
     else
     {
-        auto dstSle = ctx.view.read(keylet::account(dstAcct));
         if (auto err = verifyDepositPreauth(ctx.tx, ctx.view, senderAcct, dstAcct, dstSle, j))
             return err;
     }
@@ -469,7 +470,11 @@ doWithdraw(
         // LCOV_EXCL_STOP
     }
 
-    auto const sponsorSle = getTxReserveSponsor(ctx);
+    // A reserve sponsor only covers tx.Account's own objects, so resolve the
+    // sponsor against the destination. accountSend can auto-create a holding
+    // for dstAcct; keying on the destination ensures a third-party destination's
+    // holding is never stamped with the tx's reserve sponsor.
+    auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, dstSle);
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
 

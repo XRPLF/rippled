@@ -30,7 +30,6 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <utility>
 
 namespace xrpl {
 
@@ -664,16 +663,11 @@ addEmptyHolding(
     if (ctx.view.read(index))
         return tecDUPLICATE;
 
-    SLE::pointer sponsorSle;
-
     // A reserve sponsor only covers tx.Account's own objects.
-    if (!isPseudoAccount(sleDst) && accountID == ctx.tx[sfAccount])
-    {
-        auto sle = getTxReserveSponsor(ctx);
-        if (!sle)
-            return sle.error();  // LCOV_EXCL_LINE
-        sponsorSle = std::move(*sle);
-    }
+    auto const sponsorExp = getEffectiveTxReserveSponsor(ctx, sleDst);
+    if (!sponsorExp)
+        return sponsorExp.error();  // LCOV_EXCL_LINE
+    auto const sponsorSle = *sponsorExp;
 
     // Can the account cover the trust line reserve ?
     if (auto const ret =
