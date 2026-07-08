@@ -414,7 +414,7 @@ public:
         // histogram instruments align with the collector's SpanMetrics.
         auto histogramSelector = metrics_sdk::InstrumentSelectorFactory::Create(
             metrics_sdk::InstrumentType::kHistogram, "*", "ms");
-        auto meterSelector = metrics_sdk::MeterSelectorFactory::Create("xrpld_metrics", "", "");
+        auto meterSelector = metrics_sdk::MeterSelectorFactory::Create("metrics", "", "");
         auto histogramConfig = std::make_shared<metrics_sdk::HistogramAggregationConfig>();
         histogramConfig->boundaries_ =
             std::vector<double>{1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1000.0, 5000.0};

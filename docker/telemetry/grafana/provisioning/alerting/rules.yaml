@@ -54,7 +54,7 @@ groups:
             datasourceUid: prometheus
             model:
               refId: A
-              expr: sum by (service_instance_id) (rate(xrpld_ledger_history_mismatch_total[5m]))
+              expr: sum by (service_instance_id) (rate(ledger_history_mismatch_total[5m]))
               instant: true
               range: false
               intervalMs: 1000
@@ -115,7 +115,7 @@ groups:
             datasourceUid: prometheus
             model:
               refId: A
-              expr: sum by (service_instance_id) (rate(xrpld_ledgers_closed_total[5m]))
+              expr: sum by (service_instance_id) (rate(ledgers_closed_total[5m]))
               instant: true
               range: false
               intervalMs: 1000
@@ -184,7 +184,7 @@ groups:
             datasourceUid: prometheus
             model:
               refId: A
-              expr: sum by (service_instance_id) (rate(xrpld_validation_missed_total[5m]))
+              expr: sum by (service_instance_id) (rate(validation_missed_total[5m]))
               instant: true
               range: false
               intervalMs: 1000
@@ -245,7 +245,7 @@ groups:
             datasourceUid: prometheus
             model:
               refId: A
-              expr: sum by (service_instance_id) (rate(xrpld_validations_checked_total[5m]))
+              expr: sum by (service_instance_id) (rate(validations_checked_total[5m]))
               instant: true
               range: false
               intervalMs: 1000
@@ -313,7 +313,7 @@ groups:
             datasourceUid: prometheus
             model:
               refId: A
-              expr: sum by (service_instance_id) (rate(xrpld_jq_trans_overflow_total[5m]))
+              expr: sum by (service_instance_id) (rate(jq_trans_overflow_total[5m]))
               instant: true
               range: false
               intervalMs: 1000
@@ -374,7 +374,7 @@ groups:
             datasourceUid: prometheus
             model:
               refId: A
-              expr: histogram_quantile(0.99, sum by (le, service_instance_id) (rate(xrpld_job_queued_duration_us_bucket[5m])))
+              expr: histogram_quantile(0.99, sum by (le, service_instance_id) (rate(job_queued_us_bucket[5m])))
               instant: true
               range: false
               intervalMs: 1000

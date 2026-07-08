@@ -300,7 +300,7 @@ trace_ledger=1
 # Native OTel metrics via OTLP/HTTP. The collector has no StatsD receiver
 # (metrics pipeline is [otlp, spanmetrics]), so beast::insight must export
 # over OTLP for system metrics to reach Prometheus. prefix=xrpld matches the
-# OTel resource service name and the xrpld_* names the dashboards query.
+# OTel resource service name and the metric names the dashboards query.
 server=otel
 endpoint=http://localhost:4318/v1/metrics
 prefix=xrpld

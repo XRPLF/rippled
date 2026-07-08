@@ -390,7 +390,7 @@ The `StatsDMeterImpl` in `StatsDCollector.cpp` sends metrics with `|m` suffix, w
 
 ### Exit Criteria
 
-- [ ] StatsD metrics visible in Prometheus (`curl localhost:9090/api/v1/query?query=xrpld_LedgerMaster_Validated_Ledger_Age`)
+- [ ] StatsD metrics visible in Prometheus (`curl localhost:9090/api/v1/query?query=ledgermaster_validated_ledger_age`)
 - [ ] All 3 new Grafana dashboards load without errors
 - [ ] Integration test verifies at least core StatsD metrics (ledger age, peer counts, RPC requests)
 - [ ] ~~Meter metrics (`warn`, `drop`) flow correctly after `|m` → `|c` fix~~ — DEFERRED (breaking change, tracked separately; resolved by Phase 7's OTel Counter mapping)
@@ -500,7 +500,7 @@ graph LR
 
     BP -->|"OTLP/gRPC"| D
     SM -->|"RED metrics"| E
-    R1 -->|"xrpld_* metrics<br/>(native OTLP)"| E
+    R1 -->|"system metrics<br/>(native OTLP)"| E
 
     E --> F
     D --> F
@@ -680,7 +680,7 @@ graph LR
 
     BP -->|"OTLP/gRPC"| D
     SM -->|"RED metrics"| E
-    R1 -->|"xrpld_* metrics<br/>(native OTLP)"| E
+    R1 -->|"system metrics<br/>(native OTLP)"| E
 
     E --> F
     D --> F
@@ -1028,7 +1028,7 @@ flowchart LR
 ### Key Implementation Details
 
 - **Transaction submitter and RPC load generator** both use xrpld's native WebSocket command format (`{"command": ...}`) — not JSON-RPC format. Response data lives inside `"result"` with `"status"` at the top level.
-- **Node config** requires `[signing_support] true` for server-side signing, and `[ips]` (not `[ips_fixed]`) to ensure peer connections count in `Peer_Finder_Active_*` metrics.
+- **Node config** requires `[signing_support] true` for server-side signing, and `[ips]` (not `[ips_fixed]`) to ensure peer connections count in `peer_finder_active_*` metrics.
 - **Metric validation** uses the Prometheus `/api/v1/series` endpoint (not instant queries) to avoid false negatives from stale StatsD gauges. Every metric in `expected_metrics.json` must have > 0 series.
 - **StatsD gauge fix**: `StatsDGaugeImpl` initializes `m_dirty = true` so all gauges emit their initial value on first flush. Without this, gauges starting at 0 that never change (e.g. `jobq_job_count`) would be invisible in Prometheus.
 - **I/O latency fix**: `io_latency_sampler` emits unconditionally on first sample, then applies the 10 ms threshold. This ensures `ios_latency` is registered in Prometheus even in low-load CI environments.
@@ -1057,7 +1057,7 @@ The validation suite (`validate_telemetry.py`) runs exactly 71 checks, broken do
 - **14 span attribute** — required attributes on the 14 spans that define them (22 unique attributes total)
 - **2 span hierarchies** — `rpc.process` -> `rpc.command.*`, `ledger.build` -> `tx.apply` (1 skipped: `rpc.request` -> `rpc.process`, cross-thread)
 - **1 span duration bounds** — all spans > 0 and < 60 s
-- **26 metric existence** — 4 SpanMetrics (`traces_span_metrics_calls_total`, `..._duration_milliseconds_{bucket,count,sum}`), 6 StatsD gauges (`LedgerMaster_Validated_Ledger_Age`, `Published_Ledger_Age`, `State_Accounting_Full_duration`, `Peer_Finder_Active_{Inbound,Outbound}_Peers`, `jobq_job_count`), 2 StatsD counters (`rpc_requests_total`, `ledger_fetches_total`), 3 StatsD histograms (`rpc_time`, `rpc_size`, `ios_latency`), 4 overlay traffic (`total_Bytes_{In,Out}`, `total_Messages_{In,Out}`), 7 Phase 9 OTLP (`nodestore_state`, `cache_metrics`, `txq_metrics`, `rpc_method_{started,finished}_total`, `object_count`, `load_factor_metrics`)
+- **26 metric existence** — 4 SpanMetrics (`span_calls_total`, `span_duration_milliseconds_{bucket,count,sum}`), 6 StatsD gauges (`ledgermaster_validated_ledger_age`, `published_ledger_age`, `state_accounting_full_duration`, `peer_finder_active_{inbound,outbound}_peers`, `jobq_job_count`), 2 StatsD counters (`rpc_requests_total`, `ledger_fetches_total`), 3 StatsD histograms (`rpc_time`, `rpc_size`, `ios_latency`), 4 overlay traffic (`total_bytes_{in,out}`, `total_messages_{in,out}`), 7 Phase 9 OTLP (`nodestore_state`, `cache_metrics`, `txq_metrics`, `rpc_method_{started,finished}_total`, `object_count`, `load_factor_metrics`)
 - **10 dashboard loads** — `rpc-performance`, `transaction-overview`, `consensus-health`, `ledger-operations`, `peer-network`, `node-health`, `network-traffic`, `rpc-pathfinding`, `overlay-traffic-detail`, `ledger-data-sync`
 
 See [Phase10_taskList.md](./Phase10_taskList.md) for the full numbered check-by-check enumeration.
@@ -1701,12 +1701,12 @@ The overlay already tracks resource-limit disconnects via `OverlayImpl::Stats::p
 
 **What to do**:
 
-- Ensure `xrpld_Overlay_Peer_Disconnects_Charges` appears in the StatsD-to-Prometheus metric name mapping
+- Ensure `overlay_peer_disconnects_charges` appears in the StatsD-to-Prometheus metric name mapping
 - Verify the metric appears in Prometheus after StatsD bridge is active
 
 **File**: `src/xrpld/overlay/detail/OverlayImpl.cpp`
 
-**Prometheus name**: `xrpld_Overlay_Peer_Disconnects_Charges`
+**Prometheus name**: `overlay_peer_disconnects_charges`
 
 ---
 
@@ -1813,12 +1813,12 @@ class ValidationTracker
 
 New MetricsRegistry observable gauge for amendment, UNL, and quorum health.
 
-| Gauge Name               | Label `metric=`     | Type   | Source                                            |
-| ------------------------ | ------------------- | ------ | ------------------------------------------------- |
-| `xrpld_validator_health` | `amendment_blocked` | int64  | `app_.getOPs().isAmendmentBlocked()` → 0/1        |
-|                          | `unl_blocked`       | int64  | `app_.getOPs().isUNLBlocked()` → 0/1              |
-|                          | `unl_expiry_days`   | double | `app_.validators().expires()` → days until expiry |
-|                          | `validation_quorum` | int64  | `app_.validators().quorum()`                      |
+| Gauge Name         | Label `metric=`     | Type   | Source                                            |
+| ------------------ | ------------------- | ------ | ------------------------------------------------- |
+| `validator_health` | `amendment_blocked` | int64  | `app_.getOPs().isAmendmentBlocked()` → 0/1        |
+|                    | `unl_blocked`       | int64  | `app_.getOPs().isUNLBlocked()` → 0/1              |
+|                    | `unl_expiry_days`   | double | `app_.validators().expires()` → days until expiry |
+|                    | `validation_quorum` | int64  | `app_.validators().quorum()`                      |
 
 **File**: `src/xrpld/telemetry/MetricsRegistry.cpp` (new gauge callback in `registerAsyncGauges()`)
 
@@ -1834,12 +1834,12 @@ New MetricsRegistry observable gauge for amendment, UNL, and quorum health.
 
 New MetricsRegistry observable gauge for peer health aggregates.
 
-| Gauge Name           | Label `metric=`            | Type   | Source                                     |
-| -------------------- | -------------------------- | ------ | ------------------------------------------ |
-| `xrpld_peer_quality` | `peer_latency_p90_ms`      | double | Iterate peers, compute P90 from `latency_` |
-|                      | `peers_insane_count`       | int64  | Count peers with `tracking_ == diverged`   |
-|                      | `peers_higher_version_pct` | double | Compare `getVersion()` to own version      |
-|                      | `upgrade_recommended`      | int64  | 1 if `peers_higher_version_pct > 60%`      |
+| Gauge Name     | Label `metric=`            | Type   | Source                                     |
+| -------------- | -------------------------- | ------ | ------------------------------------------ |
+| `peer_quality` | `peer_latency_p90_ms`      | double | Iterate peers, compute P90 from `latency_` |
+|                | `peers_insane_count`       | int64  | Count peers with `tracking_ == diverged`   |
+|                | `peers_higher_version_pct` | double | Compare `getVersion()` to own version      |
+|                | `upgrade_recommended`      | int64  | 1 if `peers_higher_version_pct > 60%`      |
 
 **Implementation note**: The callback iterates `app_.overlay().foreach(...)` to collect per-peer latency and version data. This runs every 10s on the metrics reader thread — acceptable overhead for ~50-200 peers.
 
@@ -1858,13 +1858,13 @@ New MetricsRegistry observable gauge for peer health aggregates.
 
 New MetricsRegistry observable gauge for fee and ledger metrics.
 
-| Gauge Name             | Label `metric=`      | Type   | Source                                    |
-| ---------------------- | -------------------- | ------ | ----------------------------------------- |
-| `xrpld_ledger_economy` | `base_fee_xrp`       | double | `app_.getFeeTrack().getBaseFee()` → drops |
-|                        | `reserve_base_xrp`   | double | From validated ledger fee settings        |
-|                        | `reserve_inc_xrp`    | double | From validated ledger fee settings        |
-|                        | `ledger_age_seconds` | double | `now - lastValidatedCloseTime`            |
-|                        | `transaction_rate`   | double | Derived: tx count delta / time delta      |
+| Gauge Name       | Label `metric=`      | Type   | Source                                    |
+| ---------------- | -------------------- | ------ | ----------------------------------------- |
+| `ledger_economy` | `base_fee_xrp`       | double | `app_.getFeeTrack().getBaseFee()` → drops |
+|                  | `reserve_base_xrp`   | double | From validated ledger fee settings        |
+|                  | `reserve_inc_xrp`    | double | From validated ledger fee settings        |
+|                  | `ledger_age_seconds` | double | `now - lastValidatedCloseTime`            |
+|                  | `transaction_rate`   | double | Derived: tx count delta / time delta      |
 
 **File**: `src/xrpld/telemetry/MetricsRegistry.cpp`
 
@@ -1880,10 +1880,10 @@ New MetricsRegistry observable gauge for fee and ledger metrics.
 
 New MetricsRegistry observable gauge for node state duration.
 
-| Gauge Name             | Label `metric=`                 | Type   | Source                                           |
-| ---------------------- | ------------------------------- | ------ | ------------------------------------------------ |
-| `xrpld_state_tracking` | `state_value`                   | int64  | 0-7 numeric encoding matching external dashboard |
-|                        | `time_in_current_state_seconds` | double | `now - lastModeChangeTime`                       |
+| Gauge Name       | Label `metric=`                 | Type   | Source                                           |
+| ---------------- | ------------------------------- | ------ | ------------------------------------------------ |
+| `state_tracking` | `state_value`                   | int64  | 0-7 numeric encoding matching external dashboard |
+|                  | `time_in_current_state_seconds` | double | `now - lastModeChangeTime`                       |
 
 **State value encoding**:
 
@@ -1912,9 +1912,9 @@ xrpld's `OperatingMode` enum maps 0-4 (DISCONNECTED through FULL). The external 
 
 **Task 7.13: Storage Detail Observable Gauge**
 
-| Gauge Name             | Label `metric=` | Type  | Source                                   |
-| ---------------------- | --------------- | ----- | ---------------------------------------- |
-| `xrpld_storage_detail` | `nudb_bytes`    | int64 | NuDB backend file size (filesystem stat) |
+| Gauge Name       | Label `metric=` | Type  | Source                                   |
+| ---------------- | --------------- | ----- | ---------------------------------------- |
+| `storage_detail` | `nudb_bytes`    | int64 | NuDB backend file size (filesystem stat) |
 
 **File**: `src/xrpld/telemetry/MetricsRegistry.cpp`
 
@@ -1929,15 +1929,15 @@ xrpld's `OperatingMode` enum maps 0-4 (DISCONNECTED through FULL). The external 
 
 New counters incremented at event sites. Declared in MetricsRegistry, recording sites added in consensus/overlay/network code.
 
-| Counter Name                        | Increment Site                   | Source File           |
-| ----------------------------------- | -------------------------------- | --------------------- |
-| `xrpld_ledgers_closed_total`        | `onAccept()` in consensus        | RCLConsensus.cpp      |
-| `xrpld_validations_sent_total`      | `validate()` in consensus        | RCLConsensus.cpp      |
-| `xrpld_validations_checked_total`   | Network validation received      | LedgerMaster.cpp      |
-| `xrpld_validation_agreements_total` | ValidationTracker reconciliation | ValidationTracker.cpp |
-| `xrpld_validation_missed_total`     | ValidationTracker reconciliation | ValidationTracker.cpp |
-| `xrpld_state_changes_total`         | `setMode()` in NetworkOPs        | NetworkOPs.cpp        |
-| `xrpld_jq_trans_overflow_total`     | Job queue overflow path          | JobQueue.cpp          |
+| Counter Name                  | Increment Site                   | Source File           |
+| ----------------------------- | -------------------------------- | --------------------- |
+| `ledgers_closed_total`        | `onAccept()` in consensus        | RCLConsensus.cpp      |
+| `validations_sent_total`      | `validate()` in consensus        | RCLConsensus.cpp      |
+| `validations_checked_total`   | Network validation received      | LedgerMaster.cpp      |
+| `validation_agreements_total` | ValidationTracker reconciliation | ValidationTracker.cpp |
+| `validation_missed_total`     | ValidationTracker reconciliation | ValidationTracker.cpp |
+| `state_changes_total`         | `setMode()` in NetworkOPs        | NetworkOPs.cpp        |
+| `jq_trans_overflow_total`     | Job queue overflow path          | JobQueue.cpp          |
 
 **Key modified files**:
 
@@ -1958,14 +1958,14 @@ New counters incremented at event sites. Declared in MetricsRegistry, recording 
 
 Reads from the `ValidationTracker` (Task 7.8) to export rolling window stats.
 
-| Gauge Name                   | Label `metric=`     | Type   | Source                      |
-| ---------------------------- | ------------------- | ------ | --------------------------- |
-| `xrpld_validation_agreement` | `agreement_pct_1h`  | double | `tracker.agreementPct1h()`  |
-|                              | `agreements_1h`     | int64  | `tracker.agreements1h()`    |
-|                              | `missed_1h`         | int64  | `tracker.missed1h()`        |
-|                              | `agreement_pct_24h` | double | `tracker.agreementPct24h()` |
-|                              | `agreements_24h`    | int64  | `tracker.agreements24h()`   |
-|                              | `missed_24h`        | int64  | `tracker.missed24h()`       |
+| Gauge Name             | Label `metric=`     | Type   | Source                      |
+| ---------------------- | ------------------- | ------ | --------------------------- |
+| `validation_agreement` | `agreement_pct_1h`  | double | `tracker.agreementPct1h()`  |
+|                        | `agreements_1h`     | int64  | `tracker.agreements1h()`    |
+|                        | `missed_1h`         | int64  | `tracker.missed1h()`        |
+|                        | `agreement_pct_24h` | double | `tracker.agreementPct24h()` |
+|                        | `agreements_24h`    | int64  | `tracker.agreements24h()`   |
+|                        | `missed_24h`        | int64  | `tracker.missed24h()`       |
 
 **File**: `src/xrpld/telemetry/MetricsRegistry.cpp`
 
@@ -1985,21 +1985,21 @@ Reads from the `ValidationTracker` (Task 7.8) to export rolling window stats.
 
 New Grafana dashboard: `validator-health.json`
 
-| Panel                      | Type       | PromQL                                                         |
-| -------------------------- | ---------- | -------------------------------------------------------------- |
-| Agreement % (1h)           | stat       | `xrpld_validation_agreement{metric="agreement_pct_1h"}`        |
-| Agreement % (24h)          | stat       | `xrpld_validation_agreement{metric="agreement_pct_24h"}`       |
-| Agreements vs Missed (1h)  | bargauge   | `agreements_1h` and `missed_1h` side by side                   |
-| Agreements vs Missed (24h) | bargauge   | `agreements_24h` and `missed_24h` side by side                 |
-| Validation Rate            | stat       | `rate(xrpld_validations_sent_total[5m]) * 60`                  |
-| Validations Checked Rate   | stat       | `rate(xrpld_validations_checked_total[5m]) * 60`               |
-| Amendment Blocked          | stat       | `xrpld_validator_health{metric="amendment_blocked"}`           |
-| UNL Expiry (days)          | stat       | `xrpld_validator_health{metric="unl_expiry_days"}`             |
-| Validation Quorum          | stat       | `xrpld_validator_health{metric="validation_quorum"}`           |
-| State Value Timeline       | timeseries | `xrpld_state_tracking{metric="state_value"}`                   |
-| Time in Current State      | stat       | `xrpld_state_tracking{metric="time_in_current_state_seconds"}` |
-| State Changes Rate         | stat       | `rate(xrpld_state_changes_total[1h])`                          |
-| Ledgers Closed Rate        | stat       | `rate(xrpld_ledgers_closed_total[5m]) * 60`                    |
+| Panel                      | Type       | PromQL                                                   |
+| -------------------------- | ---------- | -------------------------------------------------------- |
+| Agreement % (1h)           | stat       | `validation_agreement{metric="agreement_pct_1h"}`        |
+| Agreement % (24h)          | stat       | `validation_agreement{metric="agreement_pct_24h"}`       |
+| Agreements vs Missed (1h)  | bargauge   | `agreements_1h` and `missed_1h` side by side             |
+| Agreements vs Missed (24h) | bargauge   | `agreements_24h` and `missed_24h` side by side           |
+| Validation Rate            | stat       | `rate(validations_sent_total[5m]) * 60`                  |
+| Validations Checked Rate   | stat       | `rate(validations_checked_total[5m]) * 60`               |
+| Amendment Blocked          | stat       | `validator_health{metric="amendment_blocked"}`           |
+| UNL Expiry (days)          | stat       | `validator_health{metric="unl_expiry_days"}`             |
+| Validation Quorum          | stat       | `validator_health{metric="validation_quorum"}`           |
+| State Value Timeline       | timeseries | `state_tracking{metric="state_value"}`                   |
+| Time in Current State      | stat       | `state_tracking{metric="time_in_current_state_seconds"}` |
+| State Changes Rate         | stat       | `rate(state_changes_total[1h])`                          |
+| Ledgers Closed Rate        | stat       | `rate(ledgers_closed_total[5m]) * 60`                    |
 
 **Dashboard conventions**: `$node` template variable for `service_instance_id` filtering, dark theme, matching existing panel sizes and color schemes.
 
@@ -2009,14 +2009,14 @@ New Grafana dashboard: `validator-health.json`
 
 New Grafana dashboard: `peer-quality.json`
 
-| Panel                  | Type       | PromQL                                                         |
-| ---------------------- | ---------- | -------------------------------------------------------------- |
-| P90 Peer Latency       | timeseries | `xrpld_peer_quality{metric="peer_latency_p90_ms"}`             |
-| Insane/Diverged Peers  | stat       | `xrpld_peer_quality{metric="peers_insane_count"}`              |
-| Higher Version Peers % | stat       | `xrpld_peer_quality{metric="peers_higher_version_pct"}`        |
-| Upgrade Recommended    | stat       | `xrpld_peer_quality{metric="upgrade_recommended"}`             |
-| Resource Disconnects   | timeseries | `xrpld_Overlay_Peer_Disconnects_Charges`                       |
-| Inbound vs Outbound    | bargauge   | `xrpld_Peer_Finder_Active_Inbound_Peers`, `..._Outbound_Peers` |
+| Panel                  | Type       | PromQL                                                   |
+| ---------------------- | ---------- | -------------------------------------------------------- |
+| P90 Peer Latency       | timeseries | `peer_quality{metric="peer_latency_p90_ms"}`             |
+| Insane/Diverged Peers  | stat       | `peer_quality{metric="peers_insane_count"}`              |
+| Higher Version Peers % | stat       | `peer_quality{metric="peers_higher_version_pct"}`        |
+| Upgrade Recommended    | stat       | `peer_quality{metric="upgrade_recommended"}`             |
+| Resource Disconnects   | timeseries | `overlay_peer_disconnects_charges`                       |
+| Inbound vs Outbound    | bargauge   | `peer_finder_active_inbound_peers`, `..._outbound_peers` |
 
 ---
 
@@ -2024,13 +2024,13 @@ New Grafana dashboard: `peer-quality.json`
 
 Add a "Ledger Economy" row to the existing `node-health.json` dashboard:
 
-| Panel                | Type       | PromQL                                              |
-| -------------------- | ---------- | --------------------------------------------------- |
-| Base Fee (drops)     | stat       | `xrpld_ledger_economy{metric="base_fee_xrp"}`       |
-| Reserve Base (drops) | stat       | `xrpld_ledger_economy{metric="reserve_base_xrp"}`   |
-| Reserve Inc (drops)  | stat       | `xrpld_ledger_economy{metric="reserve_inc_xrp"}`    |
-| Ledger Age           | stat       | `xrpld_ledger_economy{metric="ledger_age_seconds"}` |
-| Transaction Rate     | timeseries | `xrpld_ledger_economy{metric="transaction_rate"}`   |
+| Panel                | Type       | PromQL                                        |
+| -------------------- | ---------- | --------------------------------------------- |
+| Base Fee (drops)     | stat       | `ledger_economy{metric="base_fee_xrp"}`       |
+| Reserve Base (drops) | stat       | `ledger_economy{metric="reserve_base_xrp"}`   |
+| Reserve Inc (drops)  | stat       | `ledger_economy{metric="reserve_inc_xrp"}`    |
+| Ledger Age           | stat       | `ledger_economy{metric="ledger_age_seconds"}` |
+| Transaction Rate     | timeseries | `ledger_economy{metric="transaction_rate"}`   |
 
 ---
 
@@ -2057,21 +2057,21 @@ Add checks to `validate_telemetry.py` for all new span attributes and metrics.
 
 **New metric existence checks (~13)**:
 
-| Metric Name                                              |
-| -------------------------------------------------------- |
-| `xrpld_validation_agreement{metric="agreement_pct_1h"}`  |
-| `xrpld_validation_agreement{metric="agreement_pct_24h"}` |
-| `xrpld_validator_health{metric="amendment_blocked"}`     |
-| `xrpld_validator_health{metric="unl_expiry_days"}`       |
-| `xrpld_peer_quality{metric="peer_latency_p90_ms"}`       |
-| `xrpld_peer_quality{metric="peers_insane_count"}`        |
-| `xrpld_ledger_economy{metric="base_fee_xrp"}`            |
-| `xrpld_ledger_economy{metric="transaction_rate"}`        |
-| `xrpld_state_tracking{metric="state_value"}`             |
-| `xrpld_ledgers_closed_total`                             |
-| `xrpld_validations_sent_total`                           |
-| `xrpld_state_changes_total`                              |
-| `xrpld_storage_detail{metric="nudb_bytes"}`              |
+| Metric Name                                        |
+| -------------------------------------------------- |
+| `validation_agreement{metric="agreement_pct_1h"}`  |
+| `validation_agreement{metric="agreement_pct_24h"}` |
+| `validator_health{metric="amendment_blocked"}`     |
+| `validator_health{metric="unl_expiry_days"}`       |
+| `peer_quality{metric="peer_latency_p90_ms"}`       |
+| `peer_quality{metric="peers_insane_count"}`        |
+| `ledger_economy{metric="base_fee_xrp"}`            |
+| `ledger_economy{metric="transaction_rate"}`        |
+| `state_tracking{metric="state_value"}`             |
+| `ledgers_closed_total`                             |
+| `validations_sent_total`                           |
+| `state_changes_total`                              |
+| `storage_detail{metric="nudb_bytes"}`              |
 
 **New dashboard load checks (~3)**:
 
@@ -2104,36 +2104,36 @@ Port 18 alert rules from the external `xrpl-validator-dashboard` to Grafana aler
 
 **Critical Group** (8 rules, eval interval 10s):
 
-| Rule                | Condition                                                     | For |
-| ------------------- | ------------------------------------------------------------- | --- |
-| Agreement Below 90% | `xrpld_validation_agreement{metric="agreement_pct_24h"} < 90` | 30s |
-| Not Proposing       | `xrpld_state_tracking{metric="state_value"} < 6`              | 10s |
-| Unhealthy State     | `xrpld_state_tracking{metric="state_value"} < 4`              | 10s |
-| Amendment Blocked   | `xrpld_validator_health{metric="amendment_blocked"} == 1`     | 1m  |
-| UNL Expiring        | `xrpld_validator_health{metric="unl_expiry_days"} < 14`       | 1h  |
-| High IO Latency     | `histogram_quantile(0.95, xrpld_ios_latency_bucket) > 50`     | 1m  |
-| High Load Factor    | `xrpld_load_factor_metrics{metric="load_factor"} > 1000`      | 1m  |
-| Peer Count Critical | `xrpld_server_info{metric="peers"} < 5`                       | 1m  |
+| Rule                | Condition                                               | For |
+| ------------------- | ------------------------------------------------------- | --- |
+| Agreement Below 90% | `validation_agreement{metric="agreement_pct_24h"} < 90` | 30s |
+| Not Proposing       | `state_tracking{metric="state_value"} < 6`              | 10s |
+| Unhealthy State     | `state_tracking{metric="state_value"} < 4`              | 10s |
+| Amendment Blocked   | `validator_health{metric="amendment_blocked"} == 1`     | 1m  |
+| UNL Expiring        | `validator_health{metric="unl_expiry_days"} < 14`       | 1h  |
+| High IO Latency     | `histogram_quantile(0.95, ios_latency_bucket) > 50`     | 1m  |
+| High Load Factor    | `load_factor_metrics{metric="load_factor"} > 1000`      | 1m  |
+| Peer Count Critical | `server_info{metric="peers"} < 5`                       | 1m  |
 
 **Network Group** (3 rules, eval interval 10s):
 
-| Rule                      | Condition                                                         | For |
-| ------------------------- | ----------------------------------------------------------------- | --- |
-| Peer Drop >10%            | `delta(xrpld_server_info{metric="peers"}[30s]) / ... * 100 < -10` | 30s |
-| Peer Drop >30%            | Same formula, threshold -30                                       | 30s |
-| P90 Latency + Disconnects | `peer_latency_p90_ms > 500 AND rate(disconnects) > 0`             | 2m  |
+| Rule                      | Condition                                                   | For |
+| ------------------------- | ----------------------------------------------------------- | --- |
+| Peer Drop >10%            | `delta(server_info{metric="peers"}[30s]) / ... * 100 < -10` | 30s |
+| Peer Drop >30%            | Same formula, threshold -30                                 | 30s |
+| P90 Latency + Disconnects | `peer_latency_p90_ms > 500 AND rate(disconnects) > 0`       | 2m  |
 
 **Performance Group** (7 rules, eval interval 10s):
 
-| Rule                | Condition                                                    | For |
-| ------------------- | ------------------------------------------------------------ | --- |
-| CPU High            | Per-core CPU > 80%                                           | 2m  |
-| Memory Critical     | Memory usage > 90%                                           | 1m  |
-| Disk Warning        | Disk usage > 85%                                             | 2m  |
-| Job Queue Overflow  | `rate(xrpld_jq_trans_overflow_total[5m]) > 0`                | 1m  |
-| Upgrade Recommended | `xrpld_peer_quality{metric="peers_higher_version_pct"} > 60` | 1m  |
-| TX Rate Drop        | Transaction rate dropped > 50% in 5m window                  | 5m  |
-| Stale Ledger        | `xrpld_ledger_economy{metric="ledger_age_seconds"} > 30`     | 1m  |
+| Rule                | Condition                                              | For |
+| ------------------- | ------------------------------------------------------ | --- |
+| CPU High            | Per-core CPU > 80%                                     | 2m  |
+| Memory Critical     | Memory usage > 90%                                     | 1m  |
+| Disk Warning        | Disk usage > 85%                                       | 2m  |
+| Job Queue Overflow  | `rate(jq_trans_overflow_total[5m]) > 0`                | 1m  |
+| Upgrade Recommended | `peer_quality{metric="peers_higher_version_pct"} > 60` | 1m  |
+| TX Rate Drop        | Transaction rate dropped > 50% in 5m window            | 5m  |
+| Stale Ledger        | `ledger_economy{metric="ledger_age_seconds"} > 30`     | 1m  |
 
 **Notification channels**: Template configs for Email/SMTP, Discord, Slack, PagerDuty.
 

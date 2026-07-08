@@ -262,9 +262,8 @@ MetricsRegistry::initSyncInstruments()
         "txq_expired_total", "Total transactions expired out of the transaction queue");
     txqDroppedCounter_ = meter_->CreateUInt64Counter(
         "txq_dropped_total", "Total transactions refused admission to the queue by reason");
-    // Note: xrpld_validation_agreements_total / xrpld_validation_missed_total
-    // are monotonic ObservableCounters created in registerValidationTotalsCounters()
-    // (below), observed from ValidationTracker's gross lifetime tallies.
+    // Note: validation_agreements_total / validation_missed_total are monotonic
+    // ObservableCounters created in registerValidationTotalsCounters() (below).
 }
 #endif  // XRPL_ENABLE_TELEMETRY
 
@@ -1364,7 +1363,7 @@ MetricsRegistry::registerValidationTotalsCounters()
     // count). We therefore observe the tracker's GROSS lifetime tallies, which
     // count each ledger once at first classification and are never adjusted on
     // repair (initial-classification semantics — see ValidationTracker). The
-    // repaired/agreement view remains available from xrpld_validation_agreement.
+    // repaired/agreement view remains available from validation_agreement.
     //
     // reconcile() is called first so pending events are resolved before the
     // tallies are read; the callback fires every ~10 s from the
