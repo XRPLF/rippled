@@ -21,16 +21,37 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(CompilationEnv)
 
+option(with_coverage "Turn on coverage mapping" OFF)
+
 if(is_gcc)
     # GCC-specific fixes
     add_compile_options(-Wno-unknown-pragmas -Wno-subobject-linkage)
     # -Wno-subobject-linkage can be removed when we upgrade GCC version to at least 13.3
+
+    if(with_coverage)
+        add_compile_options(--coverage)
+        add_link_options(--coverage)
+    endif()
 elseif(is_clang)
     # Clang-specific fixes
     add_compile_options(-Wno-unknown-warning-option) # Ignore unknown warning options
+
+    if(with_coverage)
+        add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
+        add_link_options(-fprofile-instr-generate)
+    endif()
 elseif(is_msvc)
     # MSVC-specific fixes
     add_compile_options(/wd4068) # Ignore unknown pragmas
+
+    if(with_coverage)
+        message(
+            WARNING
+            "with_coverage is not supported with MSVC: cl.exe has no source-based "
+            "coverage mapping. Ignoring the flag. Use a GCC/Clang build "
+            "for coverage."
+        )
+    endif()
 endif()
 
 # Enable ccache to speed up builds.

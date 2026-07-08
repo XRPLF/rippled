@@ -118,6 +118,7 @@ words:
   - finalizers
   - firewalled
   - fmtdur
+  - fprofile
   - fsanitize
   - funclets
   - Gamal
