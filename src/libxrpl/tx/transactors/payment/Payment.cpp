@@ -512,7 +512,7 @@ Payment::doApply()
                 // LCOV_EXCL_START
                 JLOG(j_.fatal()) << "Sponsoring account count overflow for account "
                                  << to_string(accountID_);
-                return tecINTERNAL;  // LCOV_EXCL_LINE
+                return tecINTERNAL;
                 // LCOV_EXCL_STOP
             }
             sponsor->setFieldU32(sfSponsoringAccountCount, currentSponsoringAccountCount + 1);
