@@ -294,6 +294,19 @@ increaseOwnerCount(
 }
 
 void
+increaseOwnerCount(ApplyViewContext ctx, SLE::ref accountSle, std::uint32_t count, beast::Journal j)
+{
+    auto const sponsorExp = getEffectiveTxReserveSponsor(ctx, accountSle);
+
+    // The sponsor's existence is validated by checkReserve/checkSponsor before
+    // any owner-count mutation, so loading it here cannot fail.
+    XRPL_ASSERT(
+        sponsorExp.has_value(), "xrpl::increaseOwnerCount : sponsor validated before mutation");
+
+    increaseOwnerCount(ctx.view, accountSle, sponsorExp ? *sponsorExp : SLE::pointer(), count, j);
+}
+
+void
 decreaseOwnerCount(
     ApplyView& view,
     SLE::ref accountSle,
@@ -387,6 +400,20 @@ checkReserve(
             return tecINSUFFICIENT_RESERVE;
     }
     return tesSUCCESS;
+}
+
+TER
+checkReserve(
+    ApplyViewContext ctx,
+    SLE::const_ref accSle,
+    STAmount const& accBalance,
+    Adjustment adj,
+    beast::Journal j)
+{
+    auto const sponsorExp = getEffectiveTxReserveSponsor(ctx, accSle);
+    if (!sponsorExp)
+        return sponsorExp.error();  // LCOV_EXCL_LINE
+    return checkReserve(ctx, accSle, accBalance, *sponsorExp, adj, j);
 }
 
 // ----------------------------------------------------

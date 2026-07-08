@@ -24,7 +24,6 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
-#include <utility>
 
 namespace xrpl {
 
@@ -124,14 +123,11 @@ MPTokenIssuanceCreate::create(
     if (!acct)
         return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
-    SLE::pointer sponsorSle;
-    if (!isPseudoAccount(acct))
-    {
-        auto sle = getTxReserveSponsor(ctx);
-        if (!sle)
-            return std::unexpected(sle.error());
-        sponsorSle = std::move(*sle);
-    }
+    // A reserve sponsor only covers tx.Account's own objects.
+    auto const sponsorExp = getEffectiveTxReserveSponsor(ctx, acct);
+    if (!sponsorExp)
+        return std::unexpected(sponsorExp.error());
+    auto const sponsorSle = *sponsorExp;
 
     if (args.priorBalance)
     {

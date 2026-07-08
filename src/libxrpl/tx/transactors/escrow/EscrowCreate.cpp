@@ -33,7 +33,6 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
-#include <cstdint>
 #include <memory>
 #include <system_error>
 #include <variant>
@@ -437,45 +436,36 @@ EscrowCreate::doApply()
     STAmount const amount{ctx_.tx[sfAmount]};
 
     auto const balance = sle->getFieldAmount(sfBalance).xrp();
-    auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
     // First check: whoever is on the hook for the new owner increment
     // can cover it. When sponsored this hits the sponsor branch and
     // validates the sponsor's reserve + remaining credit. When
     // unsponsored this hits the source branch and validates the
     // source's pre-lock balance against base + (currentOC+1)*increment.
-    if (auto const ret = checkReserve(
-            ctx_.getApplyViewContext(), sle, balance, *sponsorSle, {.ownerCountDelta = 1}, j_);
+    if (auto const ret =
+            checkReserve(ctx_.getApplyViewContext(), sle, balance, {.ownerCountDelta = 1}, j_);
         !isTesSuccess(ret))
         return ret;
 
     if (isXRP(amount))
     {
         // Second check (XRP escrow only): after locking the escrowed
-        // amount, the source must still meet its own reserve floor.
-        // Always passes `{}` so the source branch runs (the sponsor's
-        // reserve was already validated above; here we're verifying the
-        // source can fund the lock without dipping below its own
-        // reserve). ownerCountAdj differs by case:
-        // - sponsored:   adj=0  — sponsor covers the new owner increment,
-        //                so the source only owes its base reserve.
-        // - unsponsored: adj=1  — source owes base + the new increment.
-        std::int32_t const ownerCountAdj = *sponsorSle ? 0 : 1;
-        if (auto const ret = checkReserve(
-                ctx_.getApplyViewContext(),
-                sle,
-                balance - STAmount(amount).xrp(),
-                {},
-                {.ownerCountDelta = ownerCountAdj},
-                j_);
-            !isTesSuccess(ret))
-        {
-            // checkReserve can return tecINSUFFICIENT_RESERVE or tefINTERNAL
-            if (ret == tecINSUFFICIENT_RESERVE)
-                return tecUNFUNDED;
-            return ret;
-        }
+        // amount, the source must still meet its own reserve floor. This is
+        // always the source's own balance against the source's own reserve —
+        // the sponsor's reserve was already validated above, and a sponsor
+        // never covers the locked funds. We compare directly (rather than via
+        // checkReserve) because that helper diverts to the sponsor's balance
+        // when a sponsor is present and would ignore the source's post-lock
+        // balance entirely. ownerCountDelta differs by case:
+        // - sponsored:   0  — sponsor covers the new owner increment, so the
+        //                source only owes reserve for its current owners.
+        // - unsponsored: 1  — source owes reserve including the new increment.
+        auto const sourceReserve = accountReserve(
+            ctx_.view(),
+            sle,
+            j_,
+            {.ownerCountDelta = getTxReserveSponsorAccountID(ctx_.tx) ? 0 : 1});
+        if (balance - STAmount(amount).xrp() < sourceReserve)
+            return tecUNFUNDED;
     }
 
     // Check destination account
@@ -566,8 +556,8 @@ EscrowCreate::doApply()
     }
 
     // increment owner count
-    increaseOwnerCount(ctx_.view(), sle, *sponsorSle, 1, ctx_.journal);
-    addSponsorToLedgerEntry(slep, *sponsorSle);
+    increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, ctx_.journal);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), slep);
     ctx_.view().update(sle);
     return tesSUCCESS;
 }
