@@ -172,7 +172,12 @@ PaymentChannelCreate::doApply()
                 {.ownerCountDelta = ownerCountAdj},
                 j_);
             !isTesSuccess(ret))
-            return tecUNFUNDED;
+        {
+            // checkReserve can return tecINSUFFICIENT_RESERVE or tefINTERNAL
+            if (ret == tecINSUFFICIENT_RESERVE)
+                return tecUNFUNDED;
+            return ret;
+        }
     }
 
     auto const dst = ctx_.tx[sfDestination];

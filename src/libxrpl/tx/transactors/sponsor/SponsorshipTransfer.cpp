@@ -299,10 +299,10 @@ SponsorshipTransfer::doApply()
     if (!sponseeSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const balanceBeforeFee = [&](SLE::const_ref sle) -> STAmount {
+    auto const balanceBeforeFee = [&](SLE::const_ref sle) -> XRPAmount {
         if (sle->getAccountID(sfAccount) == accountID_)
-            return STAmount{preFeeBalance_};
-        return sle->getFieldAmount(sfBalance);
+            return preFeeBalance_;
+        return sle->getFieldAmount(sfBalance).xrp();
     };
 
     if (objectID.has_value())
@@ -342,7 +342,7 @@ SponsorshipTransfer::doApply()
             if (auto const ter = checkReserve(
                     ctx_.getApplyViewContext(),
                     sponseeSle,
-                    sponseeSle->getFieldAmount(sfBalance),
+                    sponseeSle->getFieldAmount(sfBalance).xrp(),
                     newSponsorSle,
                     {.ownerCountDelta = ownerCountDelta},
                     ctx_.journal);
@@ -402,7 +402,7 @@ SponsorshipTransfer::doApply()
             if (auto const ter = checkReserve(
                     ctx_.getApplyViewContext(),
                     sponseeSle,
-                    sponseeSle->getFieldAmount(sfBalance),
+                    sponseeSle->getFieldAmount(sfBalance).xrp(),
                     newSponsorSle,
                     {.ownerCountDelta = ownerCountDelta},
                     ctx_.journal);
@@ -496,7 +496,7 @@ SponsorshipTransfer::doApply()
             if (auto const ter = checkReserve(
                     ctx_.getApplyViewContext(),
                     sponseeSle,
-                    sponseeSle->getFieldAmount(sfBalance),
+                    sponseeSle->getFieldAmount(sfBalance).xrp(),
                     newSponsorSle,
                     {.accountCountDelta = 1},
                     ctx_.journal);
@@ -531,7 +531,7 @@ SponsorshipTransfer::doApply()
             if (auto const ter = checkReserve(
                     ctx_.getApplyViewContext(),
                     sponseeSle,
-                    sponseeSle->getFieldAmount(sfBalance),
+                    sponseeSle->getFieldAmount(sfBalance).xrp(),
                     newSponsorSle,
                     {.accountCountDelta = 1},
                     ctx_.journal);

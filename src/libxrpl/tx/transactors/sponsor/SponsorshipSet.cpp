@@ -233,7 +233,13 @@ SponsorshipSet::doApply()
                 {.ownerCountDelta = 1},
                 ctx_.journal);
             !isTesSuccess(ret))
-            return tecUNFUNDED;
+        {
+            // checkReserve can return tecINSUFFICIENT_RESERVE, tecINTERNAL, or
+            // tefINTERNAL
+            if (ret == tecINSUFFICIENT_RESERVE)
+                return tecUNFUNDED;
+            return ret;
+        }
 
         if (hasPositiveFeeAmount)
         {
@@ -300,7 +306,13 @@ SponsorshipSet::doApply()
                     {},
                     ctx_.journal);
                 !isTesSuccess(ret))
-                return tecUNFUNDED;
+            {
+                // checkReserve can return tecINSUFFICIENT_RESERVE, tecINTERNAL,
+                // or tefINTERNAL
+                if (ret == tecINSUFFICIENT_RESERVE)
+                    return tecUNFUNDED;
+                return ret;
+            }
 
             (*sponsorAccSle)[sfBalance] -= feeAmountDelta;
             if (*feeAmount == beast::kZero)

@@ -43,13 +43,15 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer)
     return false;
 }
 
+namespace {
+
 // An owner count cannot be negative. If adjustment would cause a negative
 // owner count, clamp the owner count at 0. Similarly for overflow. This
 // adjustment allows the ownerCount to be adjusted up or down in multiple steps.
 // If id != std::nullopt, then do error reporting.
 //
 // Returns adjusted owner count.
-static std::uint32_t
+std::uint32_t
 confineOwnerCount(
     std::uint32_t currentOwnerCount,
     std::int32_t ownerCountAdj,
@@ -85,9 +87,9 @@ confineOwnerCount(
     return totalOwnerCount;
 }
 
-// Return number of the accounts which reserve is covered by current account (so called "reserve
-// count")
-static std::uint32_t
+// Returns the number of account reserves funded by this account: 1 for itself (0 if sponsored by
+// another account) plus the count of accounts it sponsors.
+std::uint32_t
 accountCountImpl(SLE::const_ref sle, std::int32_t accountCountAdj, beast::Journal j)
 {
     bool const isSponsored = sle->isFieldPresent(sfSponsor);
@@ -111,6 +113,88 @@ accountCountImpl(SLE::const_ref sle, std::int32_t accountCountAdj, beast::Journa
 
     return totalAccountCount;
 }
+
+std::uint32_t
+adjustOwnerCountImpl(
+    ApplyView& view,
+    SLE::ref sle,
+    SF_UINT32 const& sfield,
+    AccountID const& accID,
+    std::int32_t ownerCountAdj,
+    beast::Journal j)
+{
+    std::uint32_t const currentOwnerCount = sle->at(sfield);
+    std::uint32_t const totalOwnerCount =
+        confineOwnerCount(currentOwnerCount, ownerCountAdj, accID, j);
+    sle->at(sfield) = totalOwnerCount;
+    view.update(sle);
+    return totalOwnerCount;
+}
+
+void
+adjustOwnerCountSigned(
+    ApplyView& view,
+    SLE::ref accountSle,
+    SLE::ref sponsorSle,
+    std::int32_t adjustment,
+    beast::Journal j)
+{
+    XRPL_ASSERT(accountSle, "xrpl::adjustOwnerCountSigned : valid account sle");
+    if (!accountSle)
+        return;  // LCOV_EXCL_LINE
+
+    auto const accountID = accountSle->getAccountID(sfAccount);
+    auto const sleType = accountSle->getType();
+    bool const validType = sponsorSle ? sleType == ltACCOUNT_ROOT
+                                      : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
+    XRPL_ASSERT(validType, "xrpl::adjustOwnerCountSigned : valid account sle type");
+    if (!validType)
+        return;  // LCOV_EXCL_LINE
+
+    XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
+
+    OwnerCounts const currentOwnerCount(
+        sleType == ltACCOUNT_ROOT ? OwnerCounts(*accountSle) : OwnerCounts());
+    OwnerCounts totalOwnerCount(currentOwnerCount);
+
+    if (sponsorSle)
+    {
+        bool const validSponsorType = sponsorSle->getType() == ltACCOUNT_ROOT;
+        XRPL_ASSERT(validSponsorType, "xrpl::adjustOwnerCountSigned : valid sponsor sle type");
+        if (!validSponsorType)
+            return;  // LCOV_EXCL_LINE
+        auto const sponsorID = sponsorSle->getAccountID(sfAccount);
+
+        totalOwnerCount.sponsored =
+            adjustOwnerCountImpl(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
+
+        {
+            OwnerCounts const sponsorCurrent(*sponsorSle);
+            OwnerCounts sponsorAdjustment(sponsorCurrent);
+            sponsorAdjustment.sponsoring = adjustOwnerCountImpl(
+                view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
+            view.adjustOwnerCountHook(sponsorID, sponsorCurrent, sponsorAdjustment);
+        }
+
+        auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
+        if (sponsorshipSle && adjustment > 0)
+        {
+            // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new objects.
+            // Removing/reassigning ownership of the object doesn't increase RemainingOwnerCount
+            // back. Don't call hook because this counter is not something that requires reserve
+            // (like other sf...OwnerCounts do).
+            adjustOwnerCountImpl(
+                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j);
+        }
+    }
+
+    totalOwnerCount.owner =
+        adjustOwnerCountImpl(view, accountSle, sfOwnerCount, accountID, adjustment, j);
+    if (sleType == ltACCOUNT_ROOT)
+        view.adjustOwnerCountHook(accountID, currentOwnerCount, totalOwnerCount);
+}
+
+}  // namespace
 
 std::uint32_t
 ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj)
@@ -192,86 +276,6 @@ transferRate(ReadView const& view, AccountID const& issuer)
     return kParityRate;
 }
 
-static std::uint32_t
-adjustOwnerCountImpl(
-    ApplyView& view,
-    SLE::ref sle,
-    SF_UINT32 const& sfield,
-    AccountID const& accID,
-    std::int32_t ownerCountAdj,
-    beast::Journal j)
-{
-    std::uint32_t const currentOwnerCount = sle->at(sfield);
-    std::uint32_t const totalOwnerCount =
-        confineOwnerCount(currentOwnerCount, ownerCountAdj, accID, j);
-    sle->at(sfield) = totalOwnerCount;
-    view.update(sle);
-    return totalOwnerCount;
-}
-
-static void
-adjustOwnerCountSigned(
-    ApplyView& view,
-    SLE::ref accountSle,
-    SLE::ref sponsorSle,
-    std::int32_t adjustment,
-    beast::Journal j)
-{
-    XRPL_ASSERT(accountSle, "xrpl::adjustOwnerCountSigned : valid account sle");
-    if (!accountSle)
-        return;  // LCOV_EXCL_LINE
-
-    auto const accountID = accountSle->getAccountID(sfAccount);
-    auto const sleType = accountSle->getType();
-    bool const validType = sponsorSle ? sleType == ltACCOUNT_ROOT
-                                      : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
-    XRPL_ASSERT(validType, "xrpl::adjustOwnerCountSigned : valid account sle type");
-    if (!validType)
-        return;  // LCOV_EXCL_LINE
-
-    XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
-
-    OwnerCounts const currentOwnerCount(
-        sleType == ltACCOUNT_ROOT ? OwnerCounts(*accountSle) : OwnerCounts());
-    OwnerCounts totalOwnerCount(currentOwnerCount);
-
-    if (sponsorSle)
-    {
-        bool const validSponsorType = sponsorSle->getType() == ltACCOUNT_ROOT;
-        XRPL_ASSERT(validSponsorType, "xrpl::adjustOwnerCountSigned : valid sponsor sle type");
-        if (!validSponsorType)
-            return;  // LCOV_EXCL_LINE
-        auto const sponsorID = sponsorSle->getAccountID(sfAccount);
-
-        totalOwnerCount.sponsored =
-            adjustOwnerCountImpl(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
-
-        {
-            OwnerCounts const sponsorCurrent(*sponsorSle);
-            OwnerCounts sponsorAdjustment(sponsorCurrent);
-            sponsorAdjustment.sponsoring = adjustOwnerCountImpl(
-                view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
-            view.adjustOwnerCountHook(sponsorID, sponsorCurrent, sponsorAdjustment);
-        }
-
-        auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
-        if (sponsorshipSle && adjustment > 0)
-        {
-            // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new objects.
-            // Removing/reassigning ownership of the object doesn't increase RemainingOwnerCount
-            // back. Don't call hook because this counter is not something that requires reserve
-            // (like other sf...OwnerCounts do).
-            adjustOwnerCountImpl(
-                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j);
-        }
-    }
-
-    totalOwnerCount.owner =
-        adjustOwnerCountImpl(view, accountSle, sfOwnerCount, accountID, adjustment, j);
-    if (sleType == ltACCOUNT_ROOT)
-        view.adjustOwnerCountHook(accountID, currentOwnerCount, totalOwnerCount);
-}
-
 void
 increaseOwnerCount(
     ApplyView& view,
@@ -342,7 +346,7 @@ TER
 checkReserve(
     ApplyViewContext ctx,
     SLE::const_ref accSle,
-    STAmount const& accBalance,
+    XRPAmount accBalance,
     SLE::const_ref sponsorSle,
     Adjustment adj,
     beast::Journal j)
@@ -370,15 +374,15 @@ checkReserve(
                 return tecINSUFFICIENT_RESERVE;
         }
 
-        auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance);
-        STAmount const sponsorReserve = accountReserve(ctx.view, sponsorSle, j, adj);
+        auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance).xrp();
+        XRPAmount const sponsorReserve = accountReserve(ctx.view, sponsorSle, j, adj);
 
         if (sponsorBalance < sponsorReserve)
             return tecINSUFFICIENT_RESERVE;
     }
     else
     {
-        STAmount const reserve = accountReserve(ctx.view, accSle, j, adj);
+        XRPAmount const reserve = accountReserve(ctx.view, accSle, j, adj);
         if (accBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }

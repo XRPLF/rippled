@@ -100,7 +100,7 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
 checkReserve(
     ApplyViewContext ctx,
     SLE::const_ref accSle,
-    STAmount const& accBalance,
+    XRPAmount accBalance,
     SLE::const_ref sponsorSle,
     Adjustment adj,
     beast::Journal j);
