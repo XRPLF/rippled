@@ -30,10 +30,9 @@ def get_cmake_args(build_type: str, extra_args: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-# Every config must explicitly declare 'minimal'. When true, the config is part
-# of the reduced matrix that runs for pull requests without the "Ready to merge"
-# label; when false, it only runs in the full matrix. Packaging configs are
-# never minimal (packaging is gated at the workflow level instead).
+# Every config must declare 'minimal'. Minimal configs form the reduced matrix
+# built for pull requests by default; the full matrix adds the rest. Packaging
+# configs declare it too, but packaging is gated in the workflow, not by it.
 
 
 @dataclasses.dataclass
@@ -281,9 +280,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "-m",
         "--minimal",
-        help="Emit only the minimal matrix (the configs flagged as 'minimal'). "
-        "Used for pull requests without the 'Ready to merge' label. If omitted, "
-        "the full matrix is emitted.",
+        help="Emit only the minimal matrix (the configs flagged 'minimal'), "
+        "used for pull requests by default. If omitted, the full matrix is "
+        "emitted.",
         action="store_true",
     )
     args = parser.parse_args()

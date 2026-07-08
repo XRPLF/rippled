@@ -17,21 +17,20 @@ on:
       - reopened
       - synchronize
       - ready_for_review
-      # Trigger on label changes so that adding the "Ready to merge" label
-      # launches the full matrix (and removing it falls back to the minimal
-      # one) without needing a new push.
+      # Trigger on label changes so toggling "Ready to merge" or "Full CI build"
+      # switches between the minimal and full matrix without needing a new push.
       - labeled
       - unlabeled
 
 concurrency:
-  # Concurrency is evaluated before the job-level `if` filters, so an unrelated
-  # `labeled`/`unlabeled` event (which GitHub cannot filter by label name in the
-  # `on:` block) would otherwise cancel an in-progress build and then run
-  # nothing, because `should-run` skips it. Give such no-op runs a unique group
-  # (suffixed with the run id) so they cancel nothing. Runs we act on — pushes,
-  # and changes to the 'Ready to merge'/'DraftRunCI'/'Full CI build' labels —
-  # share the per-ref group, so a newer one supersedes the previous as before.
-  # Keep this label list in sync with the `should-run` job's `if` condition.
+  # Concurrency is evaluated before the job-level `if`, so an unrelated
+  # `labeled`/`unlabeled` event (GitHub can't filter labels by name in `on:`)
+  # would cancel an in-progress build and then run nothing, since `should-run`
+  # skips it. Give those no-op runs a unique group (per run id) so they cancel
+  # nothing. Runs we act on — pushes and changes to the 'Ready to merge',
+  # 'DraftRunCI' or 'Full CI build' labels — keep the shared per-ref group, so a
+  # newer run supersedes the previous one. Keep this list in sync with the
+  # `should-run` job's `if`.
   group: >-
     ${{ github.workflow }}-${{ github.ref }}${{
       (github.event.action == 'labeled' || github.event.action == 'unlabeled')
