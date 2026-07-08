@@ -1,0 +1,39 @@
+-------------------------------------------------------------------------------------------------
+Openssl 3.6.0: https://github.com/XRPLF/rippled/tree/pratik/openssl-3.6.0-alpha-performance-test
+
+valentin@valentin-Thelio-Major:~/projects/rippled3/rippled$ hyperfine -N --warmup 5 --min-runs 200 -- ./run_singlehash.sh
+Benchmark 1: ./run_singlehash.sh
+  Time (mean ± σ):       4.5 ms ±   0.4 ms    [User: 2.3 ms, System: 2.1 ms]
+  Range (min … max):     3.7 ms …   6.2 ms    673 runs
+ 
+valentin@valentin-Thelio-Major:~/projects/rippled3/rippled$ hyperfine   --warmup 5   --min-runs 20   './.build/src/tests/libxrpl/xrpl.test.basics --test-case="*MultihashAllSlices*" -s'
+Benchmark 1: ./.build/src/tests/libxrpl/xrpl.test.basics --test-case="*MultihashAllSlices*" -s
+  Time (mean ± σ):      5.636 s ±  0.005 s    [User: 5.633 s, System: 0.002 s]
+  Range (min … max):    5.630 s …  5.651 s    20 runs
+
+
+----------------------------------------------------------------------------------------------
+Openssl 3.5.4: https://github.com/XRPLF/rippled/tree/pratik/openssl_354_test
+
+hyperfine -N --warmup 5 --min-runs 200 -- ./run_singlehash.sh
+Benchmark 1: ./run_singlehash.sh
+  Time (mean ± σ):       4.5 ms ±   0.4 ms    [User: 2.3 ms, System: 2.1 ms]
+  Range (min … max):     3.7 ms …   6.0 ms    663 runs
+ 
+valentin@valentin-Thelio-Major:~/projects/rippled3/rippled$ hyperfine   --warmup 5   --min-runs 20   './.build/src/tests/libxrpl/xrpl.test.basics --test-case="*MultihashAllSlices*" -s'
+Benchmark 1: ./.build/src/tests/libxrpl/xrpl.test.basics --test-case="*MultihashAllSlices*" -s
+  Time (mean ± σ):      3.968 s ±  0.003 s    [User: 3.966 s, System: 0.002 s]
+  Range (min … max):    3.965 s …  3.977 s    20 runs
+
+
+----------------------------------------------------------------------------------------------
+Openssl 1.1.1: https://github.com/XRPLF/rippled/tree/pratik/openssl_111_perf_test
+valentin@valentin-Thelio-Major:~/projects/rippled3/rippled$ hyperfine -N --warmup 5 --min-runs 200 -- ./run_singlehash.sh
+Benchmark 1: ./run_singlehash.sh
+  Time (mean ± σ):       4.4 ms ±   0.4 ms    [User: 2.3 ms, System: 2.0 ms]
+  Range (min … max):     3.7 ms …   6.1 ms    623 runs
+ 
+valentin@valentin-Thelio-Major:~/projects/rippled3/rippled$ hyperfine   --warmup 5   --min-runs 20   './.build/src/tests/libxrpl/xrpl.test.basics --test-case="*MultihashAllSlices*" -s'
+Benchmark 1: ./.build/src/tests/libxrpl/xrpl.test.basics --test-case="*MultihashAllSlices*" -s
+  Time (mean ± σ):      3.969 s ±  0.004 s    [User: 3.966 s, System: 0.002 s]
+  Range (min … max):    3.964 s …  3.980 s    20 runs
