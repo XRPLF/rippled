@@ -677,7 +677,14 @@ Transactor::payFee()
         return tefINTERNAL;  // LCOV_EXCL_LINE
     }
 
-    if (feePaid > balance)
+    // Only sponsor fee-payers reject here on insufficient funds. For an
+    // ordinary account, the fee falls through and is capped by reset(), which
+    // caps to the account's balance. That capping is wrong for sponsors: a
+    // co-signed sponsor would be charged into its own reserve, and a prefunded
+    // sponsorship's fee amount should be rejected rather than partially spent.
+    if (feePaid > balance &&
+        (feePayer.type == FeePayerType::SponsorPreFunded ||
+         feePayer.type == FeePayerType::SponsorCoSigned))
     {
         if ((balance > beast::kZero) && !view().open())
             return tecINSUFF_FEE;
