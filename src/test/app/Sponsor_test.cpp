@@ -5,6 +5,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/batch.h>
 #include <test/jtx/check.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/delegate.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/did.h>
@@ -802,55 +803,88 @@ public:
         testcase("Transfer Sponsor");
         using namespace test::jtx;
 
+        // Verify preflight checks
         {
-            // invalid fields
             Env env{*this, testableAmendments()};
             Account const alice("alice");
             Account const bob("bob");
-            Account const sponsor1("sponsor1");
-            env.fund(XRP(10000), alice, bob, sponsor1);
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), alice, bob, sponsor);
             env.close();
 
-            env(sponsor::transfer(
-                    alice, (tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd) + 1),
-                Ter(temINVALID_FLAG));
+            // Test invalid flags for SponsorshipTransfer
+            {
+                // Invalid flag is provided
+                env(sponsor::transfer(
+                        alice,
+                        (tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd) + 1),
+                    Ter(temINVALID_FLAG));
 
-            // invalid combination of flags
-            for (auto flag : {
-                     tfSponsorshipCreate | tfSponsorshipReassign,
-                     tfSponsorshipCreate | tfSponsorshipEnd,
-                     tfSponsorshipReassign | tfSponsorshipEnd,
-                     tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd,
-                 })
-                env(sponsor::transfer(alice, flag), Ter(temINVALID_FLAG));
+                // No SponsorshipTransfer flag is provided
+                env(sponsor::transfer(alice, 0), Ter(temINVALID_FLAG));
 
-            // invalid tfSponsorshipCreate
-            // no sponsor field present
-            env(sponsor::transfer(alice, tfSponsorshipCreate), Ter(temINVALID_FLAG));
-            // sponsee field present
-            env(sponsor::transfer(alice, tfSponsorshipCreate),
-                sponsor::SponseeAcc(bob),
-                sponsor::As(sponsor1, spfSponsorReserve),
-                Ter(temMALFORMED));
+                // Only one of the three valid flags can be set.
+                // Setting more than one flag is invalid
+                for (auto flag : {
+                         tfSponsorshipCreate | tfSponsorshipReassign,
+                         tfSponsorshipCreate | tfSponsorshipEnd,
+                         tfSponsorshipReassign | tfSponsorshipEnd,
+                         tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd,
+                     })
+                    env(sponsor::transfer(alice, flag), Ter(temINVALID_FLAG));
+            }
 
-            // invalid tfSponsorshipReassign
-            // no sponsor field present
-            env(sponsor::transfer(alice, tfSponsorshipReassign), Ter(temINVALID_FLAG));
-            // sponsee field present
-            env(sponsor::transfer(alice, tfSponsorshipReassign),
-                sponsor::SponseeAcc(bob),
-                sponsor::As(sponsor1, spfSponsorReserve),
-                Ter(temMALFORMED));
+            // Malformed tests for tfSponsorshipCreate
+            {
+                // No sponsor field present
+                env(sponsor::transfer(alice, tfSponsorshipCreate), Ter(temMALFORMED));
 
-            // invalid tfSponsorshipEnd
-            // sponsor field present
-            env(sponsor::transfer(alice, tfSponsorshipEnd),
-                sponsor::As(sponsor1, spfSponsorReserve),
-                Ter(temINVALID_FLAG));
-            // account = sponsee
-            env(sponsor::transfer(alice, tfSponsorshipEnd),
-                sponsor::SponseeAcc(alice),
-                Ter(temMALFORMED));
+                // Sponsor field present without spfSponsorReserve
+                env(sponsor::transfer(alice, tfSponsorshipCreate),
+                    sponsor::As(sponsor, spfSponsorFee),
+                    Ter(temINVALID_FLAG));
+
+                // Sponsee field present
+                env(sponsor::transfer(alice, tfSponsorshipCreate),
+                    sponsor::SponseeAcc(bob),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Ter(temMALFORMED));
+            }
+
+            // Malformed tests for tfSponsorshipReassign
+            {
+                // No sponsor field present
+                env(sponsor::transfer(alice, tfSponsorshipReassign), Ter(temMALFORMED));
+
+                // Sponsor field present without spfSponsorReserve
+                env(sponsor::transfer(alice, tfSponsorshipReassign),
+                    sponsor::As(sponsor, spfSponsorFee),
+                    Ter(temINVALID_FLAG));
+
+                // Sponsee field present
+                env(sponsor::transfer(alice, tfSponsorshipReassign),
+                    sponsor::SponseeAcc(bob),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Ter(temMALFORMED));
+            }
+
+            // Malformed tests for tfSponsorshipEnd
+            {
+                // Sponsor field present
+                env(sponsor::transfer(alice, tfSponsorshipEnd),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Ter(temMALFORMED));
+
+                // SponsorFlags field present
+                auto tx = sponsor::transfer(alice, tfSponsorshipEnd);
+                tx[sfSponsorFlags.jsonName] = spfSponsorFee;
+                env(tx, Ter(temINVALID_FLAG));
+
+                // Account = Sponsee
+                env(sponsor::transfer(alice, tfSponsorshipEnd),
+                    sponsor::SponseeAcc(alice),
+                    Ter(temMALFORMED));
+            }
         }
 
         {
@@ -887,6 +921,14 @@ public:
                 env(sponsor::transfer(bob, tfSponsorshipEnd),
                     sponsor::SponseeAcc(alice),
                     Ter(tecNO_PERMISSION));
+            }
+            {
+                // The provided sfSponsee account does not exist
+                // when ending sponsorship.
+                Account const ghost("ghost");  // never funded, absent from ledger
+                env(sponsor::transfer(sponsor, tfSponsorshipEnd),
+                    sponsor::SponseeAcc(ghost),
+                    Ter(terNO_ACCOUNT));
             }
         }
 
@@ -1079,6 +1121,13 @@ public:
                 Ter(tecNO_PERMISSION));
             env.close();
 
+            // Reassign an object that is not sponsored yet
+            env(sponsor::transfer(alice, tfSponsorshipReassign, checkId),
+                sponsor::As(sponsor1, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor1),
+                Ter(tecNO_PERMISSION));
+            env.close();
+
             // Valid Owner
             env(sponsor::transfer(alice, tfSponsorshipCreate, checkId),
                 sponsor::As(sponsor1, spfSponsorReserve),
@@ -1095,6 +1144,13 @@ public:
             auto const sle1 = env.le(keylet::unchecked(checkId));
             BEAST_EXPECT(sle1->isFieldPresent(sfSponsor));
             BEAST_EXPECT(sle1->getAccountID(sfSponsor) == sponsor1.id());
+
+            // Create on an object that is already sponsored
+            env(sponsor::transfer(alice, tfSponsorshipCreate, checkId),
+                sponsor::As(sponsor2, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor2),
+                Ter(tecNO_PERMISSION));
+            env.close();
 
             // transfer sponsor
             env(sponsor::transfer(alice, tfSponsorshipReassign, checkId),
@@ -2552,6 +2608,76 @@ public:
                     BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
                     BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
                     BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+                    // the newly-created trust line carries the sponsor on
+                    // bob's side, and no sponsor on the counterparty side
+                    bool const bobLow = bob.id() < gw.id();
+                    auto const lineSle = env.le(keylet::trustLine(bob, gw, usd.currency));
+                    BEAST_EXPECT(lineSle);
+                    if (lineSle)
+                    {
+                        BEAST_EXPECT(
+                            lineSle->getAccountID(bobLow ? sfLowSponsor : sfHighSponsor) ==
+                            sponsor.id());
+                        BEAST_EXPECT(
+                            !lineSle->isFieldPresent(bobLow ? sfHighSponsor : sfLowSponsor));
+                    }
+                });
+        }
+
+        // MPT sponsor: cashing an MPT check creates a sponsored MPToken for
+        // the casher. Unlike the trust-line path, this returns
+        // tecINSUFFICIENT_RESERVE (not tecNO_LINE_INSUF_RESERVE) on shortfall.
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(10000), bob, sponsor, sponsor2);
+            env.close();
+
+            MPTTester mptGw(env, gw, {.holders = {alice}});
+            mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env.close();
+
+            // CheckCreate (alice -> bob) paying the MPT
+            uint32_t seq2 = 0;
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
+                    seq2 = env.seq(alice);
+                    submit(check::create(alice, bob, mpt(1)));
+                });
+
+            auto const checkKeylet = keylet::check(alice, seq2);
+            BEAST_EXPECT(env.le(checkKeylet)->getAccountID(sfSponsor) == sponsor.id());
+            BEAST_EXPECT(ownerCount(env, bob) == 0);
+
+            // CheckCash by bob (no MPToken yet) creates a sponsored MPToken
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor,
+                bob,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
+                    submit(check::cash(bob, checkKeylet.key, mpt(1)));
+                },
+                [&]() {
+                    BEAST_EXPECT(ownerCount(env, bob) == 1);  // MPToken
+                    BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
+                    BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+                    BEAST_EXPECT(
+                        env.le(keylet::mptoken(mptGw.issuanceID(), bob))->getAccountID(sfSponsor) ==
+                        sponsor.id());
                 });
         }
     }
@@ -2584,8 +2710,11 @@ public:
                     submit(delegate::set(alice, bob, {"Payment"}));
                 });
 
-            // transfer sponsor
+            // the created Delegate object carries the sponsor
             auto const keylet = keylet::delegate(alice, bob);
+            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsor) == sponsor.id());
+
+            // transfer sponsor
             if (cosigning)
             {
                 env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
@@ -2607,6 +2736,7 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsor) == sponsor2.id());
 
             // delete
             env(delegate::set(alice, bob, {}));
@@ -2644,8 +2774,11 @@ public:
                 tecINSUFFICIENT_RESERVE,
                 [&](Env& env, auto const& submit) { submit(deposit::auth(alice, sponsor)); });
 
-            // transfer sponsor
+            // the created DepositPreauth object carries the sponsor
             auto const keylet = keylet::depositPreauth(alice, sponsor);
+            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsor) == sponsor.id());
+
+            // transfer sponsor
             if (cosigning)
             {
                 env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
@@ -2676,6 +2809,7 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsor) == sponsor2.id());
 
             // DepositPreauthDelete
             env(deposit::unauth(alice, sponsor));
@@ -2713,6 +2847,7 @@ public:
 
             // Cover sfUnauthorizeCredentials cleanup for a sponsored preauth object.
             BEAST_EXPECT(env.le(preauthKeylet));
+            BEAST_EXPECT(env.le(preauthKeylet)->getAccountID(sfSponsor) == sponsor.id());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
@@ -2724,6 +2859,171 @@ public:
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
+    }
+
+    void
+    testCredential(bool cosigning)
+    {
+        testcase("Credential");
+        using namespace test::jtx;
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
+        auto const credType = std::string("test");
+
+        // Self-issued credential: alice creates for herself, sponsor covers reserve
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
+            env.close();
+
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
+                    submit(credentials::create(alice, alice, credType));
+                });
+
+            auto const credKeylet = credentials::keylet(alice, alice, credType);
+            BEAST_EXPECT(env.le(credKeylet)->getAccountID(sfSponsor) == sponsor.id());
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            // Transfer sponsor
+            if (cosigning)
+            {
+                env(sponsor::transfer(alice, tfSponsorshipReassign, credKeylet.key),
+                    sponsor::As(sponsor2, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor2));
+                env.close();
+            }
+            else
+            {
+                env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::SponseeAcc(alice));
+                env.close();
+                env(sponsor::transfer(alice, tfSponsorshipReassign, credKeylet.key),
+                    sponsor::As(sponsor2, spfSponsorReserve));
+                env.close();
+            }
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+            BEAST_EXPECT(env.le(credKeylet)->getAccountID(sfSponsor) == sponsor2.id());
+
+            // CredentialDelete
+            env(credentials::deleteCred(alice, alice, alice, credType));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+        }
+
+        // Issuer creates for subject; sponsorship transfers to subject on accept
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            // alice (issuer) creates credential for bob (subject), sponsor covers alice's reserve
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
+                    submit(credentials::create(bob, alice, credType));
+                });
+
+            // Before accept: alice (issuer) owns the credential
+            auto const credKeylet = credentials::keylet(bob, alice, credType);
+            BEAST_EXPECT(env.le(credKeylet)->getAccountID(sfSponsor) == sponsor.id());
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
+
+            // Bob accepts: issuer's sponsorship ends, bob becomes unsponsored owner
+            env(credentials::accept(bob, alice, credType));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);  // original sponsorship ended
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);  // bob owns it without a sponsor
+
+            // CredentialDelete by subject
+            env(credentials::deleteCred(bob, bob, alice, credType));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
+
+        // Issuer creates for subject; accept tx itself is reserve-sponsored
+        // This exercises the checkReserve() call in CredentialAccept::doApply()
+        // that guards the sponsor's reserve when featureSponsor is enabled.
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            // alice (issuer) creates credential for bob (subject) without sponsor
+            env(credentials::create(bob, alice, credType));
+            env.close();
+
+            auto const credKeylet = credentials::keylet(bob, alice, credType);
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 0);
+
+            // Bob accepts with a sponsored reserve; the first attempt uses an
+            // undercapitalized sponsor and must fail with tecINSUFFICIENT_RESERVE;
+            // the second attempt uses a properly funded sponsor and must succeed.
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor,
+                bob,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
+                    submit(credentials::accept(bob, alice, credType));
+                });
+
+            // After successful accept: alice (issuer) no longer owns the credential,
+            // bob owns it and sponsor covers his reserve.
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            BEAST_EXPECT(env.le(credKeylet)->getAccountID(sfSponsor) == sponsor.id());
+
+            // Cleanup
+            env(credentials::deleteCred(bob, bob, alice, credType));
+            env.close();
         }
     }
 
@@ -2942,6 +3242,158 @@ public:
                 sponsor2.id());
         }
         {
+            // IOU EscrowFinish recycles reserve when the same sponsor backs
+            // the escrow being removed and the destination line being created.
+            Env env{*this, testableAmendments()};
+            auto const baseFee = env.current()->fees().base;
+
+            env.fund(XRP(1000000), alice, bob, gw, sponsor);
+            env.close();
+
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+
+            env.trust(usd(1000000), alice);
+            env.close();
+            env(pay(gw, alice, usd(10000)));
+            env.close();
+
+            uint32_t seq = 0;
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
+                    seq = env.seq(alice);
+                    submit(
+                        escrow::create(alice, bob, usd(100)),
+                        escrow::kCondition(escrow::kCb1),
+                        escrow::kCancelTime(env.now() + 100s));
+                });
+
+            BEAST_EXPECT(
+                env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsor) == sponsor.id());
+
+            if (cosigning)
+            {
+                adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
+            }
+            else
+            {
+                env(sponsor::set_reserve(sponsor, 0, 1), sponsor::SponseeAcc(bob));
+                env.close();
+            }
+
+            if (cosigning)
+            {
+                env(escrow::finish(bob, alice, seq),
+                    escrow::kCondition(escrow::kCb1),
+                    escrow::kFulfillment(escrow::kFb1),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
+                    Fee(baseFee * 150),
+                    Ter(tesSUCCESS));
+            }
+            else
+            {
+                env(escrow::finish(bob, alice, seq),
+                    escrow::kCondition(escrow::kCb1),
+                    escrow::kFulfillment(escrow::kFb1),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Fee(baseFee * 150),
+                    Ter(tesSUCCESS));
+            }
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            BEAST_EXPECT(
+                env.le(keylet::trustLine(bob, gw, usd.currency))->getAccountID(sfHighSponsor) ==
+                sponsor.id());
+        }
+        {
+            // IOU Escrow cancel re-creates the owner's trust line, and the
+            // cancel transaction's sponsor can cover that new line's reserve.
+            // Creating an IOU escrow moves the sender's balance to the issuer,
+            // so the sender can delete their now-zero trust line while the
+            // escrow is pending. Cancelling returns the funds, re-creating the
+            // line.
+            Env env{*this, testableAmendments()};
+
+            env.fund(XRP(1000000), alice, bob, gw, sponsor, sponsor2);
+            env.close();
+
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+
+            env.trust(usd(1000000), alice);
+            env.close();
+            env(pay(gw, alice, usd(10000)));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+            // alice escrows her entire balance so the trust line can be removed
+            auto const cancelAfter = env.now() + 100s;
+            auto const seq = env.seq(alice);
+            env(escrow::create(alice, bob, usd(10000)),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kCancelTime(cancelAfter));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 2);  // trust line + escrow
+
+            // alice deletes her now-zero trust line while the escrow is pending
+            env(trust(alice, usd(0)));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::trustLine(alice, gw, usd.currency)));
+            BEAST_EXPECT(ownerCount(env, alice) == 1);  // just the escrow
+
+            // advance the ledger past the cancel time
+            for (; env.now() < cancelAfter; env.close())
+            {
+            }
+
+            // EscrowCancel by alice re-creates her trust line; the sponsor
+            // covers the new line's reserve. On the insufficient-reserve
+            // attempt the whole transaction rolls back, leaving the escrow
+            // intact to be cancelled on the success attempt.
+            bool const aliceLow = alice.id() < gw.id();
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecNO_LINE_INSUF_RESERVE,
+                [&](Env& env, auto const& submit) { submit(escrow::cancel(alice, alice, seq)); },
+                [&]() {
+                    BEAST_EXPECT(!env.le(keylet::escrow(alice, seq)));
+                    auto const trustSle = env.le(keylet::trustLine(alice, gw, usd.currency));
+                    BEAST_EXPECT(trustSle);
+                    if (trustSle)
+                    {
+                        BEAST_EXPECT(
+                            trustSle->getAccountID(aliceLow ? sfLowSponsor : sfHighSponsor) ==
+                            sponsor.id());
+                        BEAST_EXPECT(
+                            !trustSle->isFieldPresent(aliceLow ? sfHighSponsor : sfLowSponsor));
+                    }
+                    BEAST_EXPECT(ownerCount(env, alice) == 1);  // re-created trust line
+                    BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+                    BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+                });
+        }
+        {
             // MPT Escrow
             Env env{*this, testableAmendments()};
             env.fund(XRP(1000000), bob, sponsor);
@@ -2966,19 +3418,110 @@ public:
             BEAST_EXPECT(ownerCount(env, bob) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
 
-            // finish Escrow
-            env(escrow::finish(bob, alice, seq),
-                escrow::kCondition(escrow::kCb1),
-                escrow::kFulfillment(escrow::kFb1),
-                sponsor::As(sponsor, spfSponsorReserve),
-                Sig(sfSponsorSignature, sponsor),
-                Fee(XRP(1)));
-            env.close();
+            // finish Escrow: bob has no MPToken, so finishing creates one and
+            // the finish transaction's sponsor covers its reserve. The MPT
+            // create-token path returns tecINSUFFICIENT_RESERVE (not
+            // tecNO_LINE_INSUF_RESERVE) when the sponsor is underfunded.
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor,
+                bob,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
+                    submit(
+                        escrow::finish(bob, alice, seq),
+                        escrow::kCondition(escrow::kCb1),
+                        escrow::kFulfillment(escrow::kFb1),
+                        Fee(XRP(1)));
+                });
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(ownerCount(env, bob) == 1);
             BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            BEAST_EXPECT(
+                env.le(keylet::mptoken(mptGw.issuanceID(), bob))->getAccountID(sfSponsor) ==
+                sponsor.id());
+        }
+        {
+            // MPT EscrowFinish has the same reserve recycling behavior as IOU
+            // when it creates the destination MPToken.
+            Env env{*this, testableAmendments()};
+            auto const baseFee = env.current()->fees().base;
+            env.fund(XRP(1000000), bob, sponsor);
+            env.close();
+
+            MPTTester mptGw(env, gw, {.holders = {alice}});
+            mptGw.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env.close();
+
+            uint32_t seq = 0;
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
+                    seq = env.seq(alice);
+                    submit(
+                        escrow::create(alice, bob, mpt(100)),
+                        escrow::kCondition(escrow::kCb1),
+                        escrow::kCancelTime(env.now() + 100s));
+                });
+
+            BEAST_EXPECT(
+                env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsor) == sponsor.id());
+
+            if (cosigning)
+            {
+                adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
+            }
+            else
+            {
+                env(sponsor::set_reserve(sponsor, 0, 1), sponsor::SponseeAcc(bob));
+                env.close();
+            }
+
+            if (cosigning)
+            {
+                env(escrow::finish(bob, alice, seq),
+                    escrow::kCondition(escrow::kCb1),
+                    escrow::kFulfillment(escrow::kFb1),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
+                    Fee(baseFee * 150),
+                    Ter(tesSUCCESS));
+            }
+            else
+            {
+                env(escrow::finish(bob, alice, seq),
+                    escrow::kCondition(escrow::kCb1),
+                    escrow::kFulfillment(escrow::kFb1),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Fee(baseFee * 150),
+                    Ter(tesSUCCESS));
+            }
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            BEAST_EXPECT(
+                env.le(keylet::mptoken(mptGw.issuanceID(), bob))->getAccountID(sfSponsor) ==
+                sponsor.id());
         }
 
         // A sponsored EscrowCreate must still verify that the source
@@ -3257,6 +3800,9 @@ public:
                     submit(paychan::create(alice, bob, XRP(100), settleDelay, pk));
                 });
 
+            // the created PayChannel object carries the sponsor
+            BEAST_EXPECT(env.le(Keylet(ltPAYCHAN, chan))->getAccountID(sfSponsor) == sponsor.id());
+
             // transfer sponsor
             if (cosigning)
             {
@@ -3279,6 +3825,7 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+            BEAST_EXPECT(env.le(Keylet(ltPAYCHAN, chan))->getAccountID(sfSponsor) == sponsor2.id());
 
             env.close(env.now() + settleDelay);
             // PayChanClaim (delete PayChan)
@@ -3359,6 +3906,9 @@ public:
             tecINSUFFICIENT_RESERVE,
             [&](Env& env, auto const& submit) { submit(signers(alice, 1, {{bob, 1}})); });
 
+        // the created SignerList object carries the sponsor
+        BEAST_EXPECT(env.le(keylet::signerList(alice))->getAccountID(sfSponsor) == sponsor.id());
+
         // transfer sponsor
         if (cosigning)
         {
@@ -3394,6 +3944,7 @@ public:
         BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+        BEAST_EXPECT(env.le(keylet::signerList(alice))->getAccountID(sfSponsor) == sponsor2.id());
 
         // Delete
         env(signers(alice, NoneT()));
@@ -3403,6 +3954,77 @@ public:
         BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+    }
+
+    // Legacy (pre-MultiSignReserve) SignerLists lack lsfOneOwnerCount and cost
+    // 2 + signer_count owner units, whereas modern lists cost 1.
+    void
+    testLegacySignerListReserve()
+    {
+        testcase("Legacy SignerList sponsorship reserve");
+        using namespace test::jtx;
+
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const dave("dave");
+        Account const sponsor("sponsor");
+
+        Env env{*this, testableAmendments()};
+        env.fund(XRP(1000000), alice, bob, carol, dave, sponsor);
+        env.close();
+
+        // Modern 3-signer list: weight 1, lsfOneOwnerCount set.
+        env(signers(alice, 1, {{bob, 1}, {carol, 1}, {dave, 1}}));
+        env.close();
+
+        auto const signerListKeylet = keylet::signerList(alice.id());
+        auto const sponsorKeylet = keylet::sponsorship(sponsor.id(), alice.id());
+        std::uint32_t const legacyWeight = 5;  // 2 + 3 signers
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+        // Pre-fund exactly the legacy weight
+        env(sponsor::set_reserve(sponsor, 0, legacyWeight), sponsor::SponseeAcc(alice));
+        env.close();
+        if (auto const sle = env.le(sponsorKeylet); BEAST_EXPECT(sle))
+            BEAST_EXPECT(sle->getFieldU32(sfRemainingOwnerCount) == legacyWeight);
+
+        // Synthesize a pre-MultiSignReserve list: clear lsfOneOwnerCount and
+        // restore the owner's OwnerCount to the legacy weight.
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+            auto signerList = std::make_shared<SLE>(*view.read(signerListKeylet));
+            auto account = std::make_shared<SLE>(*view.read(keylet::account(alice.id())));
+            signerList->clearFlag(lsfOneOwnerCount);
+            account->setFieldU32(sfOwnerCount, legacyWeight);
+            view.rawReplace(signerList);
+            view.rawReplace(account);
+            return true;
+        });
+        if (auto const sle = env.le(signerListKeylet); BEAST_EXPECT(sle))
+            BEAST_EXPECT((sle->getFlags() & lsfOneOwnerCount) == 0);
+        BEAST_EXPECT(ownerCount(env, alice) == legacyWeight);
+
+        // Create must charge the full legacy weight (5), not 1: the bug bumped
+        // the counters by 1 and left 4 pre-funded units unspent.
+        env(sponsor::transfer(alice, tfSponsorshipCreate, signerListKeylet.key),
+            sponsor::As(sponsor, spfSponsorReserve));
+
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == legacyWeight);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == legacyWeight);
+        // All pre-funded units consumed (drained to absent).
+        if (auto const sle = env.le(sponsorKeylet); BEAST_EXPECT(sle))
+            BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
+
+        // Delete unwinds the legacy weight; create bumped by the same amount, so
+        // the counters return to 0 (the bug bumped by 1 -> underflow on delete).
+        env(signers(alice, NoneT()));
+
+        BEAST_EXPECT(!env.le(signerListKeylet));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        if (auto const sle = env.le(sponsorKeylet); BEAST_EXPECT(sle))
+            BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
     }
 
     void
@@ -3771,12 +4393,6 @@ public:
 
             auto const usd = gw["usd"];
 
-            // Create sponsorship allowing reserve sponsoring
-            env(sponsor::set(sponsor, 0, 100, XRP(100)),
-                sponsor::SponseeAcc(alice),
-                Ter(tesSUCCESS));
-            env.close();
-
             // Create a trust line for alice
             env(trust(alice, usd(1000)));
             env.close();
@@ -3835,6 +4451,37 @@ public:
             BEAST_EXPECT(sponsorSleAfter->isFieldPresent(sfSponsoringAccountCount));
             BEAST_EXPECT(
                 sponsorSleAfter->getFieldU32(sfSponsoringAccountCount) == sponsoringAccountCount);
+        }
+
+        {
+            // Account with sponsored objects should be deletable
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            // Create sponsored delegate (a non-deletion-blocker)
+            env(deposit::auth(alice, bob),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor));
+
+            {
+                auto const sponsorSle = env.le(keylet::account(sponsor));
+                auto const aliceSle = env.le(keylet::account(alice));
+                BEAST_EXPECT(sponsorSle->at(sfSponsoringOwnerCount) == 1);
+                BEAST_EXPECT(aliceSle->at(sfOwnerCount) == 1);
+                BEAST_EXPECT(aliceSle->at(sfSponsoredOwnerCount) == 1);
+            }
+
+            incLgrSeqForAccDel(env, alice);
+
+            // AccountDelete should succeed
+            {
+                auto const requiredFee = drops(env.current()->fees().increment);
+                env(acctdelete(alice, bob), Fee(requiredFee), Ter(tesSUCCESS));
+                BEAST_EXPECT(!env.le(keylet::account(alice)));
+                auto const sponsorSle = env.le(keylet::account(sponsor));
+                BEAST_EXPECT(sponsorSle->at(sfSponsoringOwnerCount) == 0);
+            }
         }
     }
 
@@ -4285,6 +4932,7 @@ public:
         testRequireFlag();
         testSponsorReserveSimple(cosigning);
         testCheck(cosigning);
+        testCredential(cosigning);
         testDelegate(cosigning);
         testDepositPreauth(cosigning);
         testEscrow(cosigning);
@@ -4292,6 +4940,360 @@ public:
         testPayChan(cosigning);
         testSignerList(cosigning);
         testTrustSet(cosigning);
+    }
+
+    void
+    testZeroBalanceSponsoredPaymentFeePayerCheck()
+    {
+        // Zero-balance sponsored Payment: getFeePayer() consistency check
+        testcase("Sponsored Payment: minimal-balance account with sponsor-pays-fee");
+
+        using namespace jtx;
+        Env env{*this, testableAmendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        Account const dest("dest");
+
+        auto const baseFee = env.current()->fees().base;
+        auto const baseReserve = env.current()->fees().reserve;
+
+        // Fund sponsor and dest generously, alice with base reserve + 1 XRP for payment
+        env.fund(XRP(10000), sponsor, dest);
+        env.fund(baseReserve + XRP(1), alice);
+        env.close();
+
+        // Precondition: alice has base reserve + 1 XRP (enough for payment but not fee)
+        BEAST_EXPECT(env.balance(alice) == baseReserve + XRP(1));
+
+        // Alice tries to send a Payment to dest where sponsor pays the fee via spfSponsorFee.
+        // Passed even alice balance doesn't have enough to pay fee.
+        auto const preDest = env.balance(dest);
+        auto const preSponsor = env.balance(sponsor);
+
+        // Alice sends 1 XRP to dest, sponsor pays the fee
+        env(pay(alice, dest, XRP(1)),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Fee(baseFee));
+        env.close();
+
+        // Payment succeeded
+        // Alice's balance decreased by 1 XRP (the payment amount, NOT the fee)
+        BEAST_EXPECT(env.balance(alice) == baseReserve);
+
+        // Dest received 1 XRP
+        BEAST_EXPECT(env.balance(dest) == preDest + XRP(1));
+
+        // Sponsor paid the fee (NOT alice)
+        BEAST_EXPECT(env.balance(sponsor) == preSponsor - baseFee);
+    }
+
+    void
+    testTrustSetCounterpartySponsorMisroute()
+    {
+        // TrustSet's modify path applies the tx-level reserve sponsor to whichever
+        // side has its reserve gate trip on this update, regardless of whether that
+        // side belongs to the tx submitter. trustCreate only sets the submitter's
+        // reserve flag and snapshots the counterparty's asfDefaultRipple state into
+        // the line's NoRipple bit; if the counterparty later toggles asfDefaultRipple
+        // (the canonical issuer flow), the line and account flags disagree and on
+        // the submitter's next TrustSet the counterparty-side gate fires. Sponsor still will be
+        // checked if it can be applied to that end of the trustLine.
+
+        testcase("TrustSet modify with sponsor does not misroute onto counterparty side");
+
+        using namespace test::jtx;
+
+        Env env(*this);
+        Account const alice{"alice_t2178"};
+        Account const bob{"bob_t2178"};
+        Account const carol{"carol_t2178"};
+
+        // Fund without auto-setting asfDefaultRipple
+        env.fund(XRP(100'000), alice, bob, carol);
+        env.close();
+
+        // Determine account ordering
+        bool const aliceIsHigh = alice.id() > bob.id();
+
+        // To trigger the bug, we need the COUNTERPARTY's reserve gate to trip
+        // We use issuer/holder terminology where:
+        // - holder creates the trust line (their reserve is set first)
+        // - issuer enables DefaultRipple after (creates flag mismatch)
+        // - holder's second TrustSet triggers issuer's reserve gate
+
+        auto const issuer = aliceIsHigh ? bob : alice;
+        auto const holder = aliceIsHigh ? alice : bob;
+        auto const usd = issuer["USD"];
+
+        // Issuer must NOT have DefaultRipple set initially
+        // Clear it explicitly (env.fund may have set it)
+        env(fclear(issuer, asfDefaultRipple));
+        env.close();
+
+        // Holder creates the trust line first (holder's reserve flag is set)
+        // At this point, issuer does NOT have DefaultRipple set, so
+        // the NoRipple bit on issuer's side is set according to issuer's current flag
+        env(trust(holder, usd(1'000)));
+        env.close();
+
+        // Issuer now enables asfDefaultRipple (canonical issuer flow)
+        // This creates a mismatch: issuer's account flag says DefaultRipple=true
+        // but the trust line's NoRipple bit on issuer's side is still set
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        SF_ACCOUNT const& issuerSponsorField = aliceIsHigh ? sfLowSponsor : sfHighSponsor;
+        SF_ACCOUNT const& holderSponsorField = aliceIsHigh ? sfHighSponsor : sfLowSponsor;
+
+        auto const lineKey = keylet::trustLine(alice, bob, usd.currency);
+        auto const sleLineBefore = env.le(lineKey);
+        if (!BEAST_EXPECT(sleLineBefore))
+            return;
+        BEAST_EXPECT(!sleLineBefore->isFieldPresent(sfLowSponsor));
+        BEAST_EXPECT(!sleLineBefore->isFieldPresent(sfHighSponsor));
+
+        auto const carolBefore = sponsoringOwnerCount(env, carol);
+        BEAST_EXPECT(carolBefore == 0);
+        auto const issuerSponsoredBefore = sponsoredOwnerCount(env, issuer);
+        BEAST_EXPECT(issuerSponsoredBefore == 0);
+
+        // Holder modifies the trust line with Carol as sponsor
+        // This should trigger the issuer's reserve gate because of the DefaultRipple mismatch
+        // Carol (sponsor) should NOT be applied to issuer's side (issuer != tx submitter)
+        env(trust(holder, usd(2'000)),
+            sponsor::As(carol, spfSponsorReserve),
+            Sig(sfSponsorSignature, carol),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const sleLineAfter = env.le(lineKey);
+        if (!BEAST_EXPECT(sleLineAfter))
+            return;
+
+        // Carol only agreed to back the holder, not the issuer
+        BEAST_EXPECT(!sleLineAfter->isFieldPresent(issuerSponsorField));
+
+        // Holder's side also has no sponsor because holder's reserve flag was
+        // already set on the FIRST TrustSet (no sponsor in scope then)
+        BEAST_EXPECT(!sleLineAfter->isFieldPresent(holderSponsorField));
+
+        // Carol's sponsoring count should remain unchanged (no misroute)
+        auto const carolAfter = sponsoringOwnerCount(env, carol);
+        BEAST_EXPECT(carolAfter == carolBefore);
+
+        // Issuer's sponsored count should remain unchanged (no misroute)
+        auto const issuerSponsoredAfter = sponsoredOwnerCount(env, issuer);
+        BEAST_EXPECT(issuerSponsoredAfter == issuerSponsoredBefore);
+    }
+
+    void
+    testSelfEscrowFinishReserveGate()
+    {
+        testcase("Self-escrow finish reserve order gated by amendment");
+        using namespace test::jtx;
+        using namespace std::chrono_literals;
+
+        // Finishing a self-escrow (source == destination) whose trust line
+        // was deleted while the escrow was outstanding auto-creates the line,
+        // and the outcome of that reserve check depends on whether the escrow
+        // reserve is released before delivery (Sponsor) or after (legacy).
+        // With the source's balance in the one-increment window
+        // [reserve(1), reserve(2)), the legacy order requires reserve(2) and
+        // fails, while the Sponsor order requires reserve(1) and succeeds.
+        auto runTest = [&](FeatureBitset features, TER expected) {
+            Account const alice("alice");
+            Account const gw("gw");
+            auto const usd = gw["usd"];
+
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+
+            env.fund(XRP(10000), alice, gw);
+            env.close();
+
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+
+            env.trust(usd(1000), alice);
+            env.close();
+            env(pay(gw, alice, usd(100)));
+            env.close();
+
+            // Escrow alice's entire USD balance to herself. The escrowed
+            // IOUs return to the issuer, zeroing the line balance.
+            auto const seq = env.seq(alice);
+            env(escrow::create(alice, alice, usd(100)),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kCancelTime(env.now() + 100s));
+            env.close();
+
+            // Delete the now-empty trust line. Both accounts have
+            // DefaultRipple set (jtx fund does that), so a plain limit-0
+            // TrustSet returns the line to its default state.
+            env(trust(alice, usd(0)));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::trustLine(alice, gw, usd.currency)));
+            BEAST_EXPECT(ownerCount(env, alice) == 1);  // just the escrow
+
+            // Put alice's balance in the window. Pay the excess away
+            // directly: adjustAccountXRPBalance needs the Sponsor amendment.
+            STAmount const target = reserve(env, 1) + XRP(1);
+            env(pay(alice, env.master, env.balance(alice) - target - baseFee), Fee(baseFee));
+            env.close();
+            BEAST_EXPECT(env.balance(alice) == target);
+
+            env(escrow::finish(alice, alice, seq),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFulfillment(escrow::kFb1),
+                Fee(baseFee * 150),
+                Ter(expected));
+            env.close();
+
+            if (expected == tesSUCCESS)
+            {
+                BEAST_EXPECT(!env.le(keylet::escrow(alice, seq)));
+                BEAST_EXPECT(env.le(keylet::trustLine(alice, gw, usd.currency)));
+                BEAST_EXPECT(env.balance(alice, usd) == usd(100));
+                BEAST_EXPECT(ownerCount(env, alice) == 1);  // the new line
+            }
+            else
+            {
+                BEAST_EXPECT(env.le(keylet::escrow(alice, seq)));
+                BEAST_EXPECT(!env.le(keylet::trustLine(alice, gw, usd.currency)));
+                BEAST_EXPECT(ownerCount(env, alice) == 1);  // still the escrow
+            }
+        };
+
+        // Pre-amendment: legacy order — the escrow still counts against the
+        // reserve while the auto-created line is checked.
+        runTest(testableAmendments() - featureSponsor, tecNO_LINE_INSUF_RESERVE);
+
+        // Post-amendment: the escrow reserve is recycled into the new line.
+        runTest(testableAmendments(), tesSUCCESS);
+    }
+
+    void
+    testFeeSponsoredVaultInvariant()
+    {
+        // The ValidVault invariant checks that the vault's balance and the
+        // depositor's balance change by equal amounts. For XRP vaults it adds the
+        // fee back into the depositor's balance change: normally the depositor
+        // pays the fee, so their balance drops by (deposit amount + fee), and
+        // adding the fee back leaves just the deposit amount to compare against
+        // the vault. But when a fee sponsor pays, the depositor's balance drops
+        // by only the deposit amount, so the fee must NOT be added back or the
+        // equal-amount check fails.
+        testcase("Fee-sponsored VaultDeposit/VaultWithdraw pass ValidVault invariant");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        env.fund(XRP(10000), alice, sponsor);
+        env.close();
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = xrpAsset});
+        env(vaultTx);
+        env.close();
+
+        // Control: the same deposit shape, unsponsored, succeeds.
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(100)}),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Fee-sponsored (co-signed) deposit succeeds.
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(100)}),
+            Fee(XRP(1)),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // The same helper (deltaAssetsTxAccount) drives the withdraw path, so a
+        // fee-sponsored withdrawal back to the depositor's own account also
+        // passes on the destination side.
+        env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(50)}),
+            Fee(XRP(1)),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tesSUCCESS));
+        env.close();
+    }
+
+    void
+    testSponsoredObjectDeletionRefund()
+    {
+        // Deleting a co-signed reserve-sponsored object must
+        // refund the sponsor's SponsoringOwnerCount back to zero.
+        testcase("Sponsored object deletion refunds sponsor owner count");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const sponsor("sponsor");
+        env.fund(XRP(100000), sponsor);
+        env.close();
+
+        // Sponsored Check deletion - verify decreaseOwnerCountForObject
+        // (used by CheckCancel) reads the object's sfSponsor field and refunds
+        // the sponsor's owner count.
+        {
+            testcase("  — Check deletion");
+
+            Account const checkOwner("check_owner");
+            Account const dest("check_dest");
+            env.fund(XRP(100000), checkOwner, dest);
+            env.close();
+
+            // Create a check with co-signed reserve sponsorship. This bumps the
+            // sponsor's sfSponsoringOwnerCount rather than the check owner's.
+            auto const checkSeq = env.seq(checkOwner);
+            env(check::create(checkOwner, dest, XRP(1)),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            auto sponsorCountBefore = sponsoringOwnerCount(env, sponsor);
+            BEAST_EXPECT(sponsorCountBefore == 1);  // check costs 1 owner count
+
+            // Cancel (delete) the check.
+            env(check::cancel(checkOwner, keylet::check(checkOwner, checkSeq).key));
+            env.close();
+
+            auto sponsorCountAfter = sponsoringOwnerCount(env, sponsor);
+            BEAST_EXPECT(sponsorCountAfter == 0);  // fully refunded
+        }
+
+        // Sponsored TrustSet (trust line) deletion - verify the sponsor
+        // refund works when a sponsored trust line is deleted
+        {
+            testcase("  — TrustLine deletion");
+
+            Account const issuer("issuer");
+            Account const holder("holder");
+            env.fund(XRP(100000), issuer, holder);
+            env.close();
+
+            auto const usd = issuer["USD"];
+
+            // Create trust line with sponsorship on the holder side
+            env(trust(holder, usd(1000)),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            auto sponsorCountBefore = sponsoringOwnerCount(env, sponsor);
+            BEAST_EXPECT(sponsorCountBefore == 1);  // trust line costs 1
+
+            // Delete the trust line by clearing it to default
+            env(trust(holder, usd(0)));
+            env.close();
+
+            auto sponsorCountAfter = sponsoringOwnerCount(env, sponsor);
+            BEAST_EXPECT(sponsorCountAfter == 0);  // fully refunded
+        }
     }
 
 protected:
@@ -4313,6 +5315,7 @@ protected:
         testSponsoredFreeTierReserve();
 
         testTransferSponsor();
+        testLegacySignerListReserve();
         testSponsorFee();
         testSponsorAccount();
 
@@ -4327,6 +5330,13 @@ protected:
         testSponsoredTrustLineNoFreeReserve();
         testCoSignReserveBoundedBySponsorshipBudget();
         testReserveSponsorGate();
+
+        testZeroBalanceSponsoredPaymentFeePayerCheck();
+        testTrustSetCounterpartySponsorMisroute();
+        testSelfEscrowFinishReserveGate();
+
+        testFeeSponsoredVaultInvariant();
+        testSponsoredObjectDeletionRefund();
     }
 
     void

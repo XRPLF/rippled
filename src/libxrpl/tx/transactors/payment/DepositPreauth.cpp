@@ -165,7 +165,7 @@ DepositPreauth::doApply()
         auto const sponsorSle = getTxReserveSponsor(applyViewContext);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
-        if (auto const ret = checkInsufficientReserve(
+        if (auto const ret = checkReserve(
                 applyViewContext,
                 sleOwner,
                 preFeeBalance_,
@@ -218,7 +218,7 @@ DepositPreauth::doApply()
         auto const sponsorSle = getTxReserveSponsor(applyViewContext);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
-        if (auto const ret = checkInsufficientReserve(
+        if (auto const ret = checkReserve(
                 applyViewContext,
                 sleOwner,
                 preFeeBalance_,

@@ -396,44 +396,42 @@ Payment::preclaim(PreclaimContext const& ctx)
             if (ctx.parentBatchId && ctx.view.rules().enabled(featureBatchV1_1))
                 return tefNO_DST_PARTIAL;
         }
-        if (ctx.tx.isFlag(tfSponsorCreatedAccount))
-        {
-            // The minimum amount when creating a Sponsored Account is 1 drop.
-            // Since the reserve is covered by the sponsor, you don't need to hold the 1-increment
-            // reserve yourself.
-        }
-        else if (dstAmount < STAmount(ctx.view.fees().reserve))
+        if (dstAmount < STAmount(ctx.view.fees().reserve))
         {
             // accountReserve is the minimum amount that an account can have.
             // Reserve is not scaled by load.
-            JLOG(ctx.j.trace()) << "Delay transaction: Destination account does not exist. "
-                                << "Insufficent payment to create account.";
+            if (!ctx.tx.isFlag(tfSponsorCreatedAccount))
+            {
+                // The minimum amount when creating a Sponsored Account is 1 drop.
+                // Since the reserve is covered by the sponsor, you don't need to hold the
+                // 1-increment reserve yourself.
+                JLOG(ctx.j.trace()) << "Delay transaction: Destination account does not exist. "
+                                    << "Insufficent payment to create account.";
 
-            // TODO: de-dupe
-            // Another transaction could create the account and then this
-            // transaction would succeed.
-            return tecNO_DST_INSUF_XRP;
+                // TODO: de-dupe
+                // Another transaction could create the account and then this
+                // transaction would succeed.
+                return tecNO_DST_INSUF_XRP;
+            }
         }
     }
-    else
+    else if (ctx.tx.isFlag(tfSponsorCreatedAccount))
     {
         // The tfSponsorCreatedAccount flag is specific to account creation via
         // sponsorship. If the destination account already exists, applying this
         // flag is invalid.
-        if (ctx.tx.isFlag(tfSponsorCreatedAccount))
-            return tecNO_SPONSOR_PERMISSION;
+        return tecNO_SPONSOR_PERMISSION;
+    }
+    else if (sleDst->isFlag(lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
+    {
+        // The tag is basically account-specific information we don't
+        // understand, but we can require someone to fill it in.
 
-        if (sleDst->isFlag(lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
-        {
-            // The tag is basically account-specific information we don't
-            // understand, but we can require someone to fill it in.
+        // We didn't make this test for a newly-formed account because there's
+        // no way for this field to be set.
+        JLOG(ctx.j.trace()) << "Malformed transaction: DestinationTag required.";
 
-            // We didn't make this test for a newly-formed account because
-            // there's no way for this field to be set.
-            JLOG(ctx.j.trace()) << "Malformed transaction: DestinationTag required.";
-
-            return tecDST_TAG_NEEDED;
-        }
+        return tecDST_TAG_NEEDED;
     }
 
     // Payment with at least one intermediate step and uses transitive balances.
@@ -691,9 +689,8 @@ Payment::doApply()
     // reserve.
     auto const reserve = accountReserve(view(), sleSrc, j_);
 
-    // In a delegated payment, the fee payer is the delegated account,
-    // not the source account (accountID_).
-    bool const accountIsPayer = (ctx_.tx.getInitiator() == accountID_);
+    // In a delegated / fee sponsored payment, the fee payer is not the source account (accountID_).
+    bool const accountIsPayer = ctx_.tx.getFeePayerID() == accountID_;
 
     // preFeeBalance_ is the balance on the source account (accountID_) BEFORE the fees
     // were charged. If source account is the fee payer, it must also cover the fee.

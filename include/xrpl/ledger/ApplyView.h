@@ -5,7 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Issue.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -289,7 +289,7 @@ public:
     // Called when the owner count changes
     // This is required to support PaymentSandbox
     virtual void
-    adjustOwnerCountHook(AccountID const& account, std::uint32_t cur, std::uint32_t next)
+    adjustOwnerCountHook(AccountID const& account, OwnerCounts const& cur, OwnerCounts const& next)
     {
     }
 

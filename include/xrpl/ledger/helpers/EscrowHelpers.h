@@ -53,7 +53,7 @@ escrowUnlockApplyHelper<Issue>(
     bool createAsset,
     beast::Journal journal)
 {
-    Issue const& issue = amount.get<Issue>();
+    auto const& issue = amount.get<Issue>();
     Keylet const trustLineKey = keylet::trustLine(receiver, issue);
     bool const recvLow = issuer > receiver;
     bool const senderIssuer = issuer == sender;
@@ -72,7 +72,7 @@ escrowUnlockApplyHelper<Issue>(
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
-        if (auto const ret = checkInsufficientReserve(
+        if (auto const ret = checkReserve(
                 ctx, sleDest, xrpBalance, *sponsorSle, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
         {
@@ -201,7 +201,7 @@ escrowUnlockApplyHelper<MPTIssue>(
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
-        if (auto const ret = checkInsufficientReserve(
+        if (auto const ret = checkReserve(
                 ctx, sleDest, xrpBalance, *sponsorSle, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
             return ret;

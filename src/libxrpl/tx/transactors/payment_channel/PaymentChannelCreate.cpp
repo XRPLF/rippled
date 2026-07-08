@@ -82,8 +82,7 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.rules().enabled(featureSponsor))
     {
         auto const balance = (*sle)[sfBalance];
-        auto const fees = ctx.view.fees();
-        auto const reserve = fees.reserve + fees.increment * ((*sle)[sfOwnerCount] + 1);
+        auto const reserve = ctx.view.fees().accountReserve((*sle)[sfOwnerCount] + 1, 1);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -146,7 +145,7 @@ PaymentChannelCreate::doApply()
         // validates the sponsor's reserve + remaining credit. When
         // unsponsored this hits the source branch and validates the
         // source's pre-lock balance against base + (currentOC+1)*increment.
-        if (auto const ret = checkInsufficientReserve(
+        if (auto const ret = checkReserve(
                 ctx_.getApplyViewContext(),
                 sle,
                 preFeeBalance_,
@@ -165,7 +164,7 @@ PaymentChannelCreate::doApply()
         //                so the source only owes its base reserve.
         // - unsponsored: adj=1  — source owes base + the new increment.
         std::int32_t const ownerCountAdj = *sponsorSle ? 0 : 1;
-        if (auto const ret = checkInsufficientReserve(
+        if (auto const ret = checkReserve(
                 ctx_.getApplyViewContext(),
                 sle,
                 preFeeBalance_ - ctx_.tx[sfAmount].xrp(),

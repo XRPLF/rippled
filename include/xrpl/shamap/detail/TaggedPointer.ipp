@@ -507,6 +507,9 @@ TaggedPointer::operator=(TaggedPointer&& other)
 [[nodiscard]] inline std::pair<std::uint8_t, void*>
 TaggedPointer::decode() const
 {
+    // tp_ packs a raw pointer together with the tag bits; recovering the
+    // pointer inherently requires an integer-to-pointer cast.
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     return {tp_ & kTagMask, reinterpret_cast<void*>(tp_ & kPtrMask)};
 }
 
@@ -535,6 +538,9 @@ TaggedPointer::getHashesAndChildren() const
 [[nodiscard]] inline SHAMapHash*
 TaggedPointer::getHashes() const
 {
+    // tp_ packs a raw pointer together with the tag bits; recovering the
+    // pointer inherently requires an integer-to-pointer cast.
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     return reinterpret_cast<SHAMapHash*>(tp_ & kPtrMask);
 };
 

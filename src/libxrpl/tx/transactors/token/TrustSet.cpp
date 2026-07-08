@@ -185,22 +185,10 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
-    if (sleDst->isFlag(lsfDisallowIncomingTrustline))
+    if (sleDst && sleDst->isFlag(lsfDisallowIncomingTrustline) &&
+        !ctx.view.exists(keylet::trustLine(id, uDstAccountID, currency)))
     {
-        // The original implementation of featureDisallowIncoming was
-        // too restrictive. If
-        //   o fixDisallowIncomingV1 is enabled and
-        //   o The trust line already exists
-        // Then allow the TrustSet.
-        if (ctx.view.rules().enabled(fixDisallowIncomingV1) &&
-            ctx.view.exists(keylet::trustLine(id, uDstAccountID, currency)))
-        {
-            // pass
-        }
-        else
-        {
-            return tecNO_PERMISSION;
-        }
+        return tecNO_PERMISSION;
     }
 
     // In general, trust lines to pseudo accounts are not permitted, unless
@@ -332,12 +320,14 @@ TrustSet::doApply()
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
 
-    std::uint32_t const uOwnerCount = ownerCount(*sponsorSle ? *sponsorSle : sle, j_);
+    auto getSponsor = [&sponsorSle = *sponsorSle, this](AccountID const& account) {
+        return (sponsorSle && account == accountID_) ? sponsorSle : SLE::pointer();
+    };
 
     // The "free-tier" shortcut (ownerCount < 2) only applies when there is no sponsor.
     // With any sponsor on the tx, the sponsor must cover the reserve (via balance or
     // prefunded budget), so the reserve check always runs.
-    bool const freeTrustLine = uOwnerCount < 2 && !*sponsorSle;
+    bool const freeTrustLine = !*sponsorSle && (ownerCount(sle, j_) < 2);
 
     std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
@@ -535,24 +525,26 @@ TrustSet::doApply()
 
         if (bLowReserveSet && !bLowReserved)
         {
+            SLE::pointer const lowSponsor = getSponsor(uLowAccountID);
+
             // should be checked PreFunded Sponsor before increaseOwnerCount()
             // For PreFunded sponsors, we need to check if there are sufficient reserves before
             // calling increaseOwnerCount().
-            if (auto const ret = checkInsufficientReserve(
+            if (auto const ret = checkReserve(
                     ctx_.getApplyViewContext(),
                     sleLowAccount,
                     preFeeBalance_,
-                    *sponsorSle,
+                    lowSponsor,
                     {.ownerCountDelta = 1},
                     j_);
-                *sponsorSle && !isTesSuccess(ret))
+                lowSponsor && !isTesSuccess(ret))
                 return tecINSUF_RESERVE_LINE;
 
             // Set reserve for low account.
-            increaseOwnerCount(view(), sleLowAccount, *sponsorSle, 1, viewJ);
+            increaseOwnerCount(view(), sleLowAccount, lowSponsor, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
-            addSponsorToLedgerEntry(sleRippleState, *sponsorSle, sfLowSponsor);
+            addSponsorToLedgerEntry(sleRippleState, lowSponsor, sfLowSponsor);
 
             if (!bHigh)
                 bReserveIncrease = true;
@@ -569,24 +561,26 @@ TrustSet::doApply()
 
         if (bHighReserveSet && !bHighReserved)
         {
+            SLE::pointer const highSponsor = getSponsor(uHighAccountID);
+
             // should be checked PreFunded Sponsor before increaseOwnerCount()
             // For PreFunded sponsors, we need to check if there are sufficient reserves before
             // calling increaseOwnerCount().
-            if (auto const ret = checkInsufficientReserve(
+            if (auto const ret = checkReserve(
                     ctx_.getApplyViewContext(),
                     sleHighAccount,
                     preFeeBalance_,
-                    *sponsorSle,
+                    highSponsor,
                     {.ownerCountDelta = 1},
                     j_);
-                *sponsorSle && !isTesSuccess(ret))
+                highSponsor && !isTesSuccess(ret))
                 return tecINSUF_RESERVE_LINE;
 
             // Set reserve for high account.
-            increaseOwnerCount(view(), sleHighAccount, *sponsorSle, 1, viewJ);
+            increaseOwnerCount(view(), sleHighAccount, highSponsor, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
-            addSponsorToLedgerEntry(sleRippleState, *sponsorSle, sfHighSponsor);
+            addSponsorToLedgerEntry(sleRippleState, highSponsor, sfHighSponsor);
 
             if (bHigh)
                 bReserveIncrease = true;
@@ -612,8 +606,8 @@ TrustSet::doApply()
         }
         // Reserve is not scaled by load.
         else if (
-            auto const ret = checkInsufficientReserve(
-                ctx_.getApplyViewContext(), sle, preFeeBalance_, *sponsorSle, {}, j_);
+            auto const ret =
+                checkReserve(ctx_.getApplyViewContext(), sle, preFeeBalance_, *sponsorSle, {}, j_);
             !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
         {
             JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
@@ -643,7 +637,7 @@ TrustSet::doApply()
         return tecNO_LINE_REDUNDANT;
     }
     else if (
-        auto const ret = checkInsufficientReserve(
+        auto const ret = checkReserve(
             ctx_.getApplyViewContext(),
             sle,
             preFeeBalance_,

@@ -396,11 +396,11 @@ CheckCash::doApply()
 
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
-            auto checkReserve = [&]() -> SLE::pointer {
+            auto checkDstReserve = [&]() -> SLE::pointer {
                 auto sleDst = psb.peek(keylet::account(accountID_));
 
                 // Can the account cover the trust line's or MPT reserve?
-                if (auto const ret = checkInsufficientReserve(
+                if (auto const ret = checkReserve(
                         applyViewContext,
                         sleDst,
                         preFeeBalance_,
@@ -441,7 +441,7 @@ CheckCash::doApply()
                         //     a. this (destination) account and
                         //     b. issuing account (not sending account).
 
-                        auto const sleDst = checkReserve();
+                        auto const sleDst = checkDstReserve();
                         if (sleDst == nullptr)
                             return tecNO_LINE_INSUF_RESERVE;
 
@@ -507,7 +507,7 @@ CheckCash::doApply()
                         auto const mptokenKey = keylet::mptoken(mptID, accountID_);
                         if (!psb.exists(mptokenKey))
                         {
-                            auto sleDst = checkReserve();
+                            auto sleDst = checkDstReserve();
                             if (sleDst == nullptr)
                                 return tecINSUFFICIENT_RESERVE;
 

@@ -225,7 +225,7 @@ SponsorshipSet::doApply()
         if (hasPositiveFeeAmount)
             sponsorBalanceAfterFee -= *feeAmount;
 
-        if (auto const ret = checkInsufficientReserve(
+        if (auto const ret = checkReserve(
                 ctx_.getApplyViewContext(),
                 sponsorAccSle,
                 sponsorBalanceAfterFee.xrp(),
@@ -292,7 +292,7 @@ SponsorshipSet::doApply()
             STAmount sponsorBalanceAfterFee = (*sponsorAccSle)[sfBalance];
             sponsorBalanceAfterFee -= feeAmountDelta;
 
-            if (auto const ret = checkInsufficientReserve(
+            if (auto const ret = checkReserve(
                     ctx_.getApplyViewContext(),
                     sponsorAccSle,
                     sponsorBalanceAfterFee.xrp(),

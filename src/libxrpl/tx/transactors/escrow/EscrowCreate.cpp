@@ -196,7 +196,7 @@ escrowCreatePreclaimHelper<Issue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    Issue const& issue = amount.get<Issue>();
+    auto const& issue = amount.get<Issue>();
     AccountID const& issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)
@@ -445,7 +445,7 @@ EscrowCreate::doApply()
     // validates the sponsor's reserve + remaining credit. When
     // unsponsored this hits the source branch and validates the
     // source's pre-lock balance against base + (currentOC+1)*increment.
-    if (auto const ret = checkInsufficientReserve(
+    if (auto const ret = checkReserve(
             ctx_.getApplyViewContext(), sle, balance, *sponsorSle, {.ownerCountDelta = 1}, j_);
         !isTesSuccess(ret))
         return ret;
@@ -462,7 +462,7 @@ EscrowCreate::doApply()
         //                so the source only owes its base reserve.
         // - unsponsored: adj=1  — source owes base + the new increment.
         std::int32_t const ownerCountAdj = *sponsorSle ? 0 : 1;
-        if (auto const ret = checkInsufficientReserve(
+        if (auto const ret = checkReserve(
                 ctx_.getApplyViewContext(),
                 sle,
                 balance - STAmount(amount).xrp(),

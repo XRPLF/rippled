@@ -161,13 +161,12 @@ deserializeManifest(
     return deserializeManifest(makeSlice(s), journal);
 }
 
-template <
-    class T,
-    class = std::enable_if_t<std::is_same_v<T, char> || std::is_same_v<T, unsigned char>>>
+template <class T>
 std::optional<Manifest>
 deserializeManifest(
     std::vector<T> const& v,
     beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
+    requires(std::is_same_v<T, char> || std::is_same_v<T, unsigned char>)
 {
     return deserializeManifest(makeSlice(v), journal);
 }

@@ -137,7 +137,8 @@ enum class FeePayerType {
 
 struct FeePayer
 {
-    Keylet entry;
+    AccountID id;
+    Keylet keylet;
     SF_AMOUNT const& balanceField;
     FeePayerType type{FeePayerType::Account};
 };
@@ -317,6 +318,7 @@ public:
 
     static NotTEC
     checkSponsor(ReadView const& view, STTx const& tx);
+
     /////////////////////////////////////////////////////
 
     // Interface used by AccountDelete

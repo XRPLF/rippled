@@ -7,24 +7,92 @@
 #include <xrpl/ledger/detail/ReadViewFwdRange.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Fees.h>
-#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Issue.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <unordered_set>
 #include <utility>
 
 namespace xrpl {
+
+struct OwnerCounts
+{
+    std::uint32_t owner = 0;
+    std::uint32_t sponsored = 0;
+    std::uint32_t sponsoring = 0;
+
+    OwnerCounts() = default;
+    OwnerCounts(SLE const& sle)
+        : owner(sle[sfOwnerCount])
+        , sponsored(sle[sfSponsoredOwnerCount])
+        , sponsoring(sle[sfSponsoringOwnerCount])
+    {
+        XRPL_ASSERT(
+            owner >= sponsored,
+            "xrpl::OwnerCounts : OwnerCount must be greater than or equal to "
+            "SponsoredOwnerCount");
+        XRPL_ASSERT(sle.getType() == ltACCOUNT_ROOT, "xrpl::OwnerCounts : sle is AccountRoot");
+    }
+
+    [[nodiscard]] std::uint32_t
+    count() const
+    {
+        std::int64_t const x = static_cast<std::int64_t>(owner) - sponsored + sponsoring;
+        if (x < 0)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::OwnerCounts::count : count less than zero");
+            return 0;
+            // LCOV_EXCL_STOP
+        }
+
+        if (x > std::numeric_limits<std::uint32_t>::max())
+            return std::numeric_limits<std::uint32_t>::max();
+        return static_cast<std::uint32_t>(x);
+    }
+
+    auto
+    operator<=>(OwnerCounts const& o) const
+    {
+        if (auto cmp = count() <=> o.count(); cmp != 0)
+            return cmp;
+        if (auto cmp = owner <=> o.owner; cmp != 0)
+            return cmp;
+        if (auto cmp = sponsored <=> o.sponsored; cmp != 0)
+            return cmp;
+        return sponsoring <=> o.sponsoring;
+    }
+
+    bool
+    operator==(OwnerCounts const& o) const
+    {
+        return this == &o ||
+            (owner == o.owner && sponsored == o.sponsored && sponsoring == o.sponsoring);
+    }
+
+    [[nodiscard]] bool
+    valid() const
+    {
+        int64_t const x = static_cast<int64_t>(owner) - sponsored + sponsoring;
+        if (x < 0 || x > std::numeric_limits<std::uint32_t>::max())
+            return false;
+        return owner >= sponsored;
+    }
+};
 
 //------------------------------------------------------------------------------
 
@@ -189,8 +257,8 @@ public:
     // changes that accounts make during a payment. `ownerCountHook` adjusts the
     // ownerCount so it returns the max value of the ownerCount so far.
     // This is required to support PaymentSandbox.
-    [[nodiscard]] virtual std::uint32_t
-    ownerCountHook(AccountID const& account, std::uint32_t count) const
+    [[nodiscard]] virtual OwnerCounts
+    ownerCountHook(AccountID const& account, OwnerCounts const& count) const
     {
         return count;
     }

@@ -12,12 +12,43 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 
 #include <cstdint>
 #include <expected>
 #include <optional>
+#include <unordered_set>
 
 namespace xrpl {
+
+inline std::unordered_set<TxType> const kReserveSponsorAllowed = {
+    // Explicitly allow-listed for v1.
+    ttDELEGATE_SET,
+    ttDEPOSIT_PREAUTH,
+    ttPAYMENT,
+    ttSIGNER_LIST_SET,
+    ttCHECK_CANCEL,
+    ttCHECK_CASH,
+    ttCHECK_CREATE,
+    ttESCROW_CANCEL,
+    ttESCROW_CREATE,
+    ttESCROW_FINISH,
+    ttPAYCHAN_CLAIM,
+    ttPAYCHAN_CREATE,
+    ttPAYCHAN_FUND,
+    ttCLAWBACK,
+    ttMPTOKEN_AUTHORIZE,
+    ttMPTOKEN_ISSUANCE_CREATE,
+    ttMPTOKEN_ISSUANCE_DESTROY,
+    ttMPTOKEN_ISSUANCE_SET,
+    ttTRUST_SET,
+    ttCREDENTIAL_ACCEPT,
+    ttCREDENTIAL_CREATE,
+    ttCREDENTIAL_DELETE,
+    ttACCOUNT_SET,
+    ttREGULAR_KEY_SET,
+    ttSPONSORSHIP_TRANSFER,
+};
 
 inline bool
 isFeeSponsored(STTx const& tx)
@@ -31,104 +62,38 @@ isReserveSponsored(STTx const& tx)
     return (tx.getFieldU32(sfSponsorFlags) & spfSponsorReserve) != 0u;
 }
 
-inline std::optional<AccountID>
-getTxReserveSponsorAccountID(STTx const& tx)
-{
-    if (tx.isFieldPresent(sfSponsor) && isReserveSponsored(tx))
-    {
-        return tx.getAccountID(sfSponsor);
-    }
-    return {};
-}
+std::optional<AccountID>
+getTxReserveSponsorAccountID(STTx const& tx);
 
-inline std::expected<SLE::pointer, TER>
-getTxReserveSponsor(ApplyViewContext ctx)
-{
-    auto const sponsorID = getTxReserveSponsorAccountID(ctx.tx);
-    if (sponsorID)
-    {
-        auto sle = ctx.view.peek(keylet::account(*sponsorID));
+std::expected<SLE::pointer, TER>
+getTxReserveSponsor(ApplyViewContext ctx);
 
-        // already checked in Transactor::checkSponsor
-        if (!sle)
-            return std::unexpected(tecINTERNAL);
-        return sle;
-    }
-    return SLE::pointer();
-}
+std::expected<SLE::const_pointer, TER>
+getTxReserveSponsor(ReadView const& view, STTx const& tx);
 
-inline std::expected<SLE::const_pointer, TER>
-getTxReserveSponsor(ReadView const& view, STTx const& tx)
-{
-    auto const sponsorID = getTxReserveSponsorAccountID(tx);
-    if (sponsorID)
-    {
-        auto sle = view.read(keylet::account(*sponsorID));
+std::optional<AccountID>
+getLedgerEntryReserveSponsorAccountID(SLE::const_ref sle, SF_ACCOUNT const& field = sfSponsor);
 
-        // already checked in Transactor::checkSponsor
-        if (!sle)
-            return std::unexpected(tecINTERNAL);
-        return sle;
-    }
-    return SLE::pointer();
-}
-
-inline std::optional<AccountID>
-getLedgerEntryReserveSponsorAccountID(SLE::const_ref sle, SF_ACCOUNT const& field = sfSponsor)
-{
-    if (sle->isFieldPresent(field))
-        return sle->getAccountID(field);
-    return {};
-}
-
-inline SLE::pointer
+SLE::pointer
 getLedgerEntryReserveSponsor(
     ApplyView& view,
     SLE::const_ref sle,
-    SF_ACCOUNT const& field = sfSponsor)
-{
-    auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);
-    if (sponsorID)
-        return view.peek(keylet::account(*sponsorID));
-    return {};
-}
+    SF_ACCOUNT const& field = sfSponsor);
 
-inline SLE::const_pointer
+SLE::const_pointer
 getLedgerEntryReserveSponsor(
     ReadView const& view,
     SLE::const_ref sle,
-    SF_ACCOUNT const& field = sfSponsor)
-{
-    auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);
-    if (sponsorID)
-        return view.read(keylet::account(*sponsorID));
-    return {};
-}
+    SF_ACCOUNT const& field = sfSponsor);
 
-inline void
+void
 addSponsorToLedgerEntry(
     SLE::ref sle,
     SLE::const_ref sponsorSle,
-    SF_ACCOUNT const& field = sfSponsor)
-{
-    XRPL_ASSERT(
-        (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
-            (sle->getType() != ltRIPPLE_STATE && field == sfSponsor),
-        "addSponsorToLedgerEntry : Invalid field to the LedgerEntry");
-    if (sponsorSle)
-        sle->setAccountID(field, sponsorSle->getAccountID(sfAccount));
-}
+    SF_ACCOUNT const& field = sfSponsor);
 
-inline void
-removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field = sfSponsor)
-{
-    XRPL_ASSERT(
-        (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
-            (sle->getType() != ltRIPPLE_STATE && field == sfSponsor),
-        "removeSponsorFromLedgerEntry : Invalid field to the LedgerEntry");
-    if (sle->isFieldPresent(field))
-        sle->makeFieldAbsent(field);
-}
+void
+removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field = sfSponsor);
 
 template <typename T>
 inline std::optional<AccountID>
@@ -213,6 +178,15 @@ getLedgerEntryOwnerCount(T const& sle)
         // Vaults require 2 owner counts (the vault and a pseudo-account)
         case ltVAULT:
             return 2;
+        case ltSIGNER_LIST: {
+            // Mirror SignerListSet's owner-count accounting so that create and
+            // delete agree. Modern lists (post-MultiSignReserve) carry the
+            // lsfOneOwnerCount flag and cost a single owner count. Legacy
+            // pre-MultiSignReserve lists cost 2 + signer_count owner counts
+            if (sle->isFlag(lsfOneOwnerCount))
+                return 1;
+            return 2 + static_cast<std::uint32_t>(sle->getFieldArray(sfSignerEntries).size());
+        }
         default:
             return 1;
     }

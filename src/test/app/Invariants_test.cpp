@@ -5152,7 +5152,7 @@ class Invariants_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
         using namespace std::string_literals;
-        testcase << "Sponsorship";
+        testcase("Sponsorship");
         {
             auto const expectMessage =
                 "SponsoredOwnerCount does not equal "

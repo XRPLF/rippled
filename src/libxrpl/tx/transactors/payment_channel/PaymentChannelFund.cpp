@@ -93,14 +93,15 @@ PaymentChannelFund::doApply()
         auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
-        if (auto const ret = checkInsufficientReserve(
-                ctx_.getApplyViewContext(), sle, balance, *sponsorSle, {}, j_);
-            !isTesSuccess(ret))
-            return ret;
 
-        if (auto const ret = checkInsufficientReserve(
-                ctx_.getApplyViewContext(), sle, balance - ctx_.tx[sfAmount], {}, {}, j_);
-            !isTesSuccess(ret))
+        auto const reserve = accountReserve(view(), sle, j_);
+
+        // There are no objects being created here, so sponsorship does not need to be taken into
+        // account
+        if (balance < reserve)
+            return tecINSUFFICIENT_RESERVE;
+
+        if (balance < reserve + ctx_.tx[sfAmount])
             return tecUNFUNDED;
     }
 

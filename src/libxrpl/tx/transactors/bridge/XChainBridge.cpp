@@ -725,9 +725,8 @@ finalizeClaimHelper(
             }
 
             // Remove the claim id from the ledger
+            decreaseOwnerCountForObject(outerSb, sleOwner, sleClaimID, 1, j);
             outerSb.erase(sleClaimID);
-
-            decreaseOwnerCount(outerSb, sleOwner, {}, 1, j);
         }
     }
 
@@ -1027,7 +1026,7 @@ applyCreateAccountAttestations(
 
             // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
-            auto const reserve = accountReserve(view, sleDoor, j, {.ownerCountDelta = 1});
+            auto const reserve = accountReserve(psb, sleDoor, j, {.ownerCountDelta = 1});
 
             if (balance < reserve)
                 return std::unexpected(tecINSUFFICIENT_RESERVE);
@@ -1156,7 +1155,11 @@ toClaim(STTx const& tx)
 
     try
     {
-        STObject o{tx};
+        // Copy just the field bag out of the transaction (explicitly, via the
+        // STObject base) so it can be reinterpreted as a cross-chain attestation
+        // below, with sfAccount replaced by sfOtherChainSource. STTx-specific
+        // state (txType_, tid_) is intentionally not needed here.
+        STObject o{static_cast<STObject const&>(tx)};
         o.setAccountID(sfAccount, o[sfOtherChainSource]);
         return TAttestation(o);
     }

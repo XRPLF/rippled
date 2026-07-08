@@ -179,6 +179,7 @@ issueIOU(
     AccountID const& account,
     STAmount const& amount,
     Issue const& issue,
+    SLE::ref sponsorSle,
     beast::Journal j);
 
 [[nodiscard]] TER
