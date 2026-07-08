@@ -154,13 +154,11 @@ ValidPermissionedDomain::finalize(
             default: {
                 if (!sleStatus_.empty())
                 {
-                    // LCOV_EXCL_START
                     JLOG(j.fatal()) << "Invariant failed: " << sleStatus_.size()
                                     << " domain object(s) affected by an "
                                        "unauthorized transaction. "
                                     << tx.getTxnType();
                     return false;
-                    // LCOV_EXCL_STOP
                 }
                 return true;
             }
