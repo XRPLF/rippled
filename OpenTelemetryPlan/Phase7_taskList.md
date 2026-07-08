@@ -358,7 +358,7 @@ validatorParticipationGauge_ = meter_->CreateInt64ObservableGauge(
 
 - **Label dimensions**:
   - `validator` — base58-encoded validator master public key
-  - `exported_instance` — this node's identity (standard)
+  - `service_instance_id` — this node's identity (standard)
 
 - **Emission**: every flag ledger (256 ledgers, ~15 minutes) or on a
   10-second async gauge callback with cached results (recompute only
