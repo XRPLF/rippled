@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <ranges>
 #include <string>
 
 using namespace xrpl;
@@ -28,7 +29,7 @@ TEST(Redaction, token_is_16_lowercase_hex_and_stable)
 {
     auto const token = redactAccount("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
     EXPECT_EQ(token.size(), 16u);
-    EXPECT_TRUE(std::all_of(token.begin(), token.end(), [](unsigned char c) {
+    EXPECT_TRUE(std::ranges::all_of(token, [](unsigned char c) {
         return std::isdigit(c) || (c >= 'a' && c <= 'f');
     }));
     // Deterministic: hashing the same input twice yields the same token.
