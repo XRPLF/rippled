@@ -677,7 +677,12 @@ addEmptyHolding(
     if (auto const ret =
             checkReserve(ctx, sleDst, priorBalance, sponsorSle, {.ownerCountDelta = 1}, journal);
         !isTesSuccess(ret))
-        return tecNO_LINE_INSUF_RESERVE;
+    {
+        // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
+        if (ret == tecINSUFFICIENT_RESERVE)
+            return tecNO_LINE_INSUF_RESERVE;
+        return ret;
+    }
 
     return trustCreate(
         ctx.view,
