@@ -5203,21 +5203,25 @@ class Invariants_test : public beast::unit_test::Suite
 
         {
             auto const expectMessage =
-                "SponsoredObjectOwnerCount does not "
-                "equal SponsoredOwnerCount delta.";
+                "SponsoredObjectOwnerCount does not equal SponsoredOwnerCount delta.";
+            uint256 checkID;
 
             doInvariantCheck(
-                {{expectMessage}}, [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                    auto const sle = ac.view().peek(keylet::account(a1.id()));
-                    if (!sle)
+                {{expectMessage}},
+                [&](Account const&, Account const& a2, ApplyContext& ac) {
+                    auto const check = ac.view().peek(keylet::check(checkID));
+                    if (!check)
                         return false;
-
-                    auto check = std::make_shared<SLE>(keylet::check(a1.id(), (*sle)[sfSequence]));
-                    check->setAccountID(sfAccount, a1.id());
-                    check->setAccountID(sfDestination, a2.id());
                     check->setAccountID(sfSponsor, a2.id());
-                    check->setFieldAmount(sfSendMax, XRP(1));
-                    ac.view().insert(check);
+                    ac.view().update(check);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&checkID](Account const& a1, Account const& a2, Env& env) {
+                    checkID = keylet::check(a1.id(), env.seq(a1)).key;
+                    env(check::create(a1, a2, XRP(1)));
                     return true;
                 });
         }
