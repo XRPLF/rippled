@@ -43,7 +43,7 @@ graph LR
     BP -->|"OTLP/gRPC :4317"| D
 
     SM -->|"span_calls_total<br/>span_duration_ms<br/>(6 dimension labels)"| E
-    R1 -->|"xrpld_* gauges<br/>xrpld_* counters<br/>xrpld_* histograms"| E
+    R1 -->|"gauges, counters,<br/>histograms (OTLP)"| E
 
     E -->|"Prometheus<br/>data source"| F
     D -->|"Tempo<br/>data source"| F
@@ -426,12 +426,12 @@ the parent `ledger.build` carries `ledger_seq` and the close-time attributes.
 
 The OTel Collector's SpanMetrics connector automatically generates RED (Rate, Errors, Duration) metrics from every span. No custom metrics code in xrpld is needed.
 
-| Prometheus Metric                                  | Type      | Description                                                                    |
-| -------------------------------------------------- | --------- | ------------------------------------------------------------------------------ |
-| `traces_span_metrics_calls_total`                  | Counter   | Total span invocations                                                         |
-| `traces_span_metrics_duration_milliseconds_bucket` | Histogram | Latency distribution (buckets: 1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000 ms) |
-| `traces_span_metrics_duration_milliseconds_count`  | Histogram | Observation count                                                              |
-| `traces_span_metrics_duration_milliseconds_sum`    | Histogram | Cumulative latency                                                             |
+| Prometheus Metric                   | Type      | Description                                                                    |
+| ----------------------------------- | --------- | ------------------------------------------------------------------------------ |
+| `span_calls_total`                  | Counter   | Total span invocations                                                         |
+| `span_duration_milliseconds_bucket` | Histogram | Latency distribution (buckets: 1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000 ms) |
+| `span_duration_milliseconds_count`  | Histogram | Observation count                                                              |
+| `span_duration_milliseconds_sum`    | Histogram | Cumulative latency                                                             |
 
 **Standard labels on every metric**: `span_name`, `status_code`, `service_name`, `span_kind`
 
@@ -474,7 +474,7 @@ _Transaction Overview_ dashboard charts rate, p95 latency, and failure rate by s
 > the retained traces, whereas native StatsD/meter metrics do not sample.
 > Account for any collector-side tail sampling when reading absolute stage rates.
 
-**Where to query**: Prometheus → `traces_span_metrics_calls_total{span_name="rpc.command.server_info"}`
+**Where to query**: Prometheus → `span_calls_total{span_name="rpc.command.server_info"}`
 
 ---
 
@@ -507,51 +507,51 @@ prefix=xrpld
 
 ### 2.1 Gauges
 
-| Prometheus Metric                                 | Source File           | Description                               | Typical Range                   |
-| ------------------------------------------------- | --------------------- | ----------------------------------------- | ------------------------------- |
-| `xrpld_LedgerMaster_Validated_Ledger_Age`         | LedgerMaster.h        | Seconds since last validated ledger       | 0–10 (healthy), >30 (stale)     |
-| `xrpld_LedgerMaster_Published_Ledger_Age`         | LedgerMaster.h        | Seconds since last published ledger       | 0–10 (healthy)                  |
-| `xrpld_State_Accounting_Disconnected_duration`    | NetworkOPs.cpp        | Cumulative seconds in Disconnected state  | Monotonic                       |
-| `xrpld_State_Accounting_Connected_duration`       | NetworkOPs.cpp        | Cumulative seconds in Connected state     | Monotonic                       |
-| `xrpld_State_Accounting_Syncing_duration`         | NetworkOPs.cpp        | Cumulative seconds in Syncing state       | Monotonic                       |
-| `xrpld_State_Accounting_Tracking_duration`        | NetworkOPs.cpp        | Cumulative seconds in Tracking state      | Monotonic                       |
-| `xrpld_State_Accounting_Full_duration`            | NetworkOPs.cpp        | Cumulative seconds in Full state          | Monotonic (should dominate)     |
-| `xrpld_State_Accounting_Disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected      | Low                             |
-| `xrpld_State_Accounting_Connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected         | Low                             |
-| `xrpld_State_Accounting_Syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing           | Low                             |
-| `xrpld_State_Accounting_Tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking          | Low                             |
-| `xrpld_State_Accounting_Full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full              | Low (should be 1 after startup) |
-| `xrpld_Peer_Finder_Active_Inbound_Peers`          | PeerfinderManager.cpp | Active inbound peer connections           | 0–85                            |
-| `xrpld_Peer_Finder_Active_Outbound_Peers`         | PeerfinderManager.cpp | Active outbound peer connections          | 10–21                           |
-| `xrpld_Overlay_Peer_Disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count       | Low growth                      |
-| `xrpld_Overlay_Peer_Disconnects_Charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges | Low growth (subset of above)    |
-| `xrpld_jobq_job_count`                            | JobQueue.cpp          | Current job queue depth (group `jobq`)    | 0–100 (healthy)                 |
+| Prometheus Metric                           | Source File           | Description                               | Typical Range                   |
+| ------------------------------------------- | --------------------- | ----------------------------------------- | ------------------------------- |
+| `ledgermaster_validated_ledger_age`         | LedgerMaster.h        | Seconds since last validated ledger       | 0–10 (healthy), >30 (stale)     |
+| `ledgermaster_published_ledger_age`         | LedgerMaster.h        | Seconds since last published ledger       | 0–10 (healthy)                  |
+| `state_accounting_disconnected_duration`    | NetworkOPs.cpp        | Cumulative seconds in Disconnected state  | Monotonic                       |
+| `state_accounting_connected_duration`       | NetworkOPs.cpp        | Cumulative seconds in Connected state     | Monotonic                       |
+| `state_accounting_syncing_duration`         | NetworkOPs.cpp        | Cumulative seconds in Syncing state       | Monotonic                       |
+| `state_accounting_tracking_duration`        | NetworkOPs.cpp        | Cumulative seconds in Tracking state      | Monotonic                       |
+| `state_accounting_full_duration`            | NetworkOPs.cpp        | Cumulative seconds in Full state          | Monotonic (should dominate)     |
+| `state_accounting_disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected      | Low                             |
+| `state_accounting_connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected         | Low                             |
+| `state_accounting_syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing           | Low                             |
+| `state_accounting_tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking          | Low                             |
+| `state_accounting_full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full              | Low (should be 1 after startup) |
+| `peer_finder_active_inbound_peers`          | PeerfinderManager.cpp | Active inbound peer connections           | 0–85                            |
+| `peer_finder_active_outbound_peers`         | PeerfinderManager.cpp | Active outbound peer connections          | 10–21                           |
+| `overlay_peer_disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count       | Low growth                      |
+| `overlay_peer_disconnects_charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges | Low growth (subset of above)    |
+| `jobq_job_count`                            | JobQueue.cpp          | Current job queue depth (group `jobq`)    | 0–100 (healthy)                 |
 
 **Grafana dashboard**: _Node Health_ (`node-health`)
 
 ### 2.2 Counters
 
-| Prometheus Metric               | Source File        | Description                                   |
-| ------------------------------- | ------------------ | --------------------------------------------- |
-| `xrpld_rpc_requests`            | ServerHandler.cpp  | Total RPC requests received                   |
-| `xrpld_ledger_fetches`          | InboundLedgers.cpp | Inbound ledger fetch attempts                 |
-| `xrpld_ledger_history_mismatch` | LedgerHistory.cpp  | Ledger hash mismatches detected               |
-| `xrpld_warn`                    | Logic.h            | Resource manager warnings issued              |
-| `xrpld_drop`                    | Logic.h            | Resource manager drops (connections rejected) |
+| Prometheus Metric         | Source File        | Description                                   |
+| ------------------------- | ------------------ | --------------------------------------------- |
+| `rpc_requests`            | ServerHandler.cpp  | Total RPC requests received                   |
+| `ledger_fetches`          | InboundLedgers.cpp | Inbound ledger fetch attempts                 |
+| `ledger_history_mismatch` | LedgerHistory.cpp  | Ledger hash mismatches detected               |
+| `warn`                    | Logic.h            | Resource manager warnings issued              |
+| `drop`                    | Logic.h            | Resource manager drops (connections rejected) |
 
-**Note**: With `server=otel`, `xrpld_warn` and `xrpld_drop` are properly exported as OTel Counter instruments. The previous StatsD `|m` type limitation no longer applies.
+**Note**: With `server=otel`, `warn` and `drop` are properly exported as OTel Counter instruments. The previous StatsD `|m` type limitation no longer applies.
 
 **Grafana dashboard**: _RPC & Pathfinding_ (`rpc-pathfinding`)
 
 ### 2.3 Histograms (Event timers)
 
-| Prometheus Metric     | Source File       | Unit  | Description                    |
-| --------------------- | ----------------- | ----- | ------------------------------ |
-| `xrpld_rpc_time`      | ServerHandler.cpp | ms    | RPC response time distribution |
-| `xrpld_rpc_size`      | ServerHandler.cpp | bytes | RPC response size distribution |
-| `xrpld_ios_latency`   | Application.cpp   | ms    | I/O service loop latency       |
-| `xrpld_pathfind_fast` | PathRequests.h    | ms    | Fast pathfinding duration      |
-| `xrpld_pathfind_full` | PathRequests.h    | ms    | Full pathfinding duration      |
+| Prometheus Metric | Source File       | Unit  | Description                    |
+| ----------------- | ----------------- | ----- | ------------------------------ |
+| `rpc_time`        | ServerHandler.cpp | ms    | RPC response time distribution |
+| `rpc_size`        | ServerHandler.cpp | bytes | RPC response size distribution |
+| `ios_latency`     | Application.cpp   | ms    | I/O service loop latency       |
+| `pathfind_fast`   | PathRequests.h    | ms    | Fast pathfinding duration      |
+| `pathfind_full`   | PathRequests.h    | ms    | Full pathfinding duration      |
 
 Quantiles collected: 0th, 50th, 90th, 95th, 99th, 100th percentile.
 
@@ -561,10 +561,10 @@ Quantiles collected: 0th, 50th, 90th, 95th, 99th, 100th percentile.
 
 For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), four gauges are emitted:
 
-- `xrpld_{category}_Bytes_In`
-- `xrpld_{category}_Bytes_Out`
-- `xrpld_{category}_Messages_In`
-- `xrpld_{category}_Messages_Out`
+- `{category}_bytes_in`
+- `{category}_bytes_out`
+- `{category}_messages_in`
+- `{category}_messages_out`
 
 **Key categories**:
 
@@ -695,38 +695,38 @@ ledger.store                       (persist to DB)
 
 ```promql
 # RPC request rate by command (last 5 minutes)
-sum by (command) (rate(traces_span_metrics_calls_total{span_name=~"rpc.command.*"}[5m]))
+sum by (command) (rate(span_calls_total{span_name=~"rpc.command.*"}[5m]))
 
 # RPC p95 latency by command
-histogram_quantile(0.95, sum by (le, command) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))
+histogram_quantile(0.95, sum by (le, command) (rate(span_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))
 
 # Consensus round duration p95
-histogram_quantile(0.95, sum by (le) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name="consensus.round"}[5m])))
+histogram_quantile(0.95, sum by (le) (rate(span_duration_milliseconds_bucket{span_name="consensus.round"}[5m])))
 
 # Transaction processing rate (local vs relay)
-sum by (local) (rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))
+sum by (local) (rate(span_calls_total{span_name="tx.process"}[5m]))
 
 # Trusted vs untrusted proposal rate
-sum by (proposal_trusted) (rate(traces_span_metrics_calls_total{span_name="peer.proposal.receive"}[5m]))
+sum by (proposal_trusted) (rate(span_calls_total{span_name="peer.proposal.receive"}[5m]))
 ```
 
 ### StatsD Metrics
 
 ```promql
 # Validated ledger age (should be < 10s)
-xrpld_LedgerMaster_Validated_Ledger_Age
+ledgermaster_validated_ledger_age
 
 # Active peer count
-xrpld_Peer_Finder_Active_Inbound_Peers + xrpld_Peer_Finder_Active_Outbound_Peers
+peer_finder_active_inbound_peers + peer_finder_active_outbound_peers
 
 # RPC response time p95
-histogram_quantile(0.95, xrpld_rpc_time_bucket)
+histogram_quantile(0.95, rpc_time_bucket)
 
 # Total network bytes in (rate)
-rate(xrpld_total_Bytes_In[5m])
+rate(total_bytes_in[5m])
 
 # Operating mode (should be "Full" after startup)
-xrpld_State_Accounting_Full_duration
+state_accounting_full_duration
 ```
 
 ---
@@ -816,60 +816,60 @@ async callbacks for new categories.
 
 > **Authoritative metric names live in [§ Phase 9: OTel SDK-Exported Metrics](#phase-9-otel-sdk-exported-metrics-metricsregistry) below.**
 > Most internal metrics are emitted as **labeled** gauges — one instrument carrying many logical
-> values via a `metric` label (e.g. `xrpld_cache_metrics{metric="SLE_hit_rate"}`,
-> `xrpld_txq_metrics{metric="txq_count"}`, `xrpld_load_factor_metrics{metric="load_factor"}`,
-> `xrpld_nodestore_state{metric="node_reads_total"}`) — not the flat per-name form. Query the
-> labeled names; the flat names (`xrpld_cache_SLE_hit_rate`, `xrpld_txq_count`, …) are **not** emitted.
+> values via a `metric` label (e.g. `cache_metrics{metric="sle_hit_rate"}`,
+> `txq_metrics{metric="txq_count"}`, `load_factor_metrics{metric="load_factor"}`,
+> `nodestore_state{metric="node_reads_total"}`) — not the flat per-name form. Query the
+> labeled names; the flat names (`cache_sle_hit_rate`, `txq_count`, …) are **not** emitted.
 
 #### Server Info (via OTel MetricsRegistry)
 
-| Prometheus Metric                                         | Type  | Labels   | Description                                  |
-| --------------------------------------------------------- | ----- | -------- | -------------------------------------------- |
-| `xrpld_server_info{metric="server_state"}`                | Gauge | `metric` | Operating mode (0=DISCONNECTED .. 4=FULL)    |
-| `xrpld_server_info{metric="uptime"}`                      | Gauge | `metric` | Seconds since server start                   |
-| `xrpld_server_info{metric="peers"}`                       | Gauge | `metric` | Total connected peers                        |
-| `xrpld_server_info{metric="validated_ledger_seq"}`        | Gauge | `metric` | Validated ledger sequence number             |
-| `xrpld_server_info{metric="ledger_current_index"}`        | Gauge | `metric` | Current open ledger sequence                 |
-| `xrpld_server_info{metric="peer_disconnects_resources"}`  | Gauge | `metric` | Cumulative resource-related peer disconnects |
-| `xrpld_server_info{metric="last_close_proposers"}`        | Gauge | `metric` | Proposers in last closed round               |
-| `xrpld_server_info{metric="last_close_converge_time_ms"}` | Gauge | `metric` | Last close convergence time (milliseconds)   |
+| Prometheus Metric                                   | Type  | Labels   | Description                                  |
+| --------------------------------------------------- | ----- | -------- | -------------------------------------------- |
+| `server_info{metric="server_state"}`                | Gauge | `metric` | Operating mode (0=DISCONNECTED .. 4=FULL)    |
+| `server_info{metric="uptime"}`                      | Gauge | `metric` | Seconds since server start                   |
+| `server_info{metric="peers"}`                       | Gauge | `metric` | Total connected peers                        |
+| `server_info{metric="validated_ledger_seq"}`        | Gauge | `metric` | Validated ledger sequence number             |
+| `server_info{metric="ledger_current_index"}`        | Gauge | `metric` | Current open ledger sequence                 |
+| `server_info{metric="peer_disconnects_resources"}`  | Gauge | `metric` | Cumulative resource-related peer disconnects |
+| `server_info{metric="last_close_proposers"}`        | Gauge | `metric` | Proposers in last closed round               |
+| `server_info{metric="last_close_converge_time_ms"}` | Gauge | `metric` | Last close convergence time (milliseconds)   |
 
 #### Build Info (via OTel MetricsRegistry)
 
-| Prometheus Metric                   | Type  | Labels    | Description                       |
-| ----------------------------------- | ----- | --------- | --------------------------------- |
-| `xrpld_build_info{version="<ver>"}` | Gauge | `version` | Info-style metric, always value 1 |
+| Prometheus Metric             | Type  | Labels    | Description                       |
+| ----------------------------- | ----- | --------- | --------------------------------- |
+| `build_info{version="<ver>"}` | Gauge | `version` | Info-style metric, always value 1 |
 
 #### Complete Ledger Ranges (via OTel MetricsRegistry)
 
-| Prometheus Metric                                   | Type  | Labels          | Description                 |
-| --------------------------------------------------- | ----- | --------------- | --------------------------- |
-| `xrpld_complete_ledgers{bound="start",index="<N>"}` | Gauge | `bound`,`index` | Start of contiguous range N |
-| `xrpld_complete_ledgers{bound="end",index="<N>"}`   | Gauge | `bound`,`index` | End of contiguous range N   |
+| Prometheus Metric                             | Type  | Labels          | Description                 |
+| --------------------------------------------- | ----- | --------------- | --------------------------- |
+| `complete_ledgers{bound="start",index="<N>"}` | Gauge | `bound`,`index` | Start of contiguous range N |
+| `complete_ledgers{bound="end",index="<N>"}`   | Gauge | `bound`,`index` | End of contiguous range N   |
 
 #### Database Metrics (via OTel MetricsRegistry)
 
-| Prometheus Metric                                 | Type  | Labels   | Description                       |
-| ------------------------------------------------- | ----- | -------- | --------------------------------- |
-| `xrpld_db_metrics{metric="db_kb_total"}`          | Gauge | `metric` | Total database size (KB)          |
-| `xrpld_db_metrics{metric="db_kb_ledger"}`         | Gauge | `metric` | Ledger database size (KB)         |
-| `xrpld_db_metrics{metric="db_kb_transaction"}`    | Gauge | `metric` | Transaction database size (KB)    |
-| `xrpld_db_metrics{metric="historical_perminute"}` | Gauge | `metric` | Historical ledger fetches per min |
+| Prometheus Metric                           | Type  | Labels   | Description                       |
+| ------------------------------------------- | ----- | -------- | --------------------------------- |
+| `db_metrics{metric="db_kb_total"}`          | Gauge | `metric` | Total database size (KB)          |
+| `db_metrics{metric="db_kb_ledger"}`         | Gauge | `metric` | Ledger database size (KB)         |
+| `db_metrics{metric="db_kb_transaction"}`    | Gauge | `metric` | Transaction database size (KB)    |
+| `db_metrics{metric="historical_perminute"}` | Gauge | `metric` | Historical ledger fetches per min |
 
-#### Extended Cache Metrics (additions to existing xrpld_cache_metrics)
+#### Extended Cache Metrics (additions to existing cache_metrics)
 
-| Prometheus Metric                       | Type  | Labels   | Description               |
-| --------------------------------------- | ----- | -------- | ------------------------- |
-| `xrpld_cache_metrics{metric="AL_size"}` | Gauge | `metric` | AcceptedLedger cache size |
+| Prometheus Metric                 | Type  | Labels   | Description               |
+| --------------------------------- | ----- | -------- | ------------------------- |
+| `cache_metrics{metric="al_size"}` | Gauge | `metric` | AcceptedLedger cache size |
 
-#### Extended NodeStore Metrics (additions to existing xrpld_nodestore_state)
+#### Extended NodeStore Metrics (additions to existing nodestore_state)
 
-| Prometheus Metric                                        | Type  | Labels   | Description                         |
-| -------------------------------------------------------- | ----- | -------- | ----------------------------------- |
-| `xrpld_nodestore_state{metric="node_reads_duration_us"}` | Gauge | `metric` | Cumulative read time (microseconds) |
-| `xrpld_nodestore_state{metric="read_request_bundle"}`    | Gauge | `metric` | Read request bundle count           |
-| `xrpld_nodestore_state{metric="read_threads_running"}`   | Gauge | `metric` | Active read threads                 |
-| `xrpld_nodestore_state{metric="read_threads_total"}`     | Gauge | `metric` | Total read threads configured       |
+| Prometheus Metric                                  | Type  | Labels   | Description                         |
+| -------------------------------------------------- | ----- | -------- | ----------------------------------- |
+| `nodestore_state{metric="node_reads_duration_us"}` | Gauge | `metric` | Cumulative read time (microseconds) |
+| `nodestore_state{metric="read_request_bundle"}`    | Gauge | `metric` | Read request bundle count           |
+| `nodestore_state{metric="read_threads_running"}`   | Gauge | `metric` | Active read threads                 |
+| `nodestore_state{metric="read_threads_total"}`     | Gauge | `metric` | Total read threads configured       |
 
 ### New Grafana Dashboards (Phase 9)
 
@@ -906,20 +906,20 @@ docker/telemetry/workload/benchmark.sh --xrpld .build/xrpld --duration 300
 > **Counting note — families vs series.** A _metric family_ is one distinct Prometheus `__name__`
 > (histogram `_bucket`/`_count`/`_sum` collapsed to one). A _series_ is a family × its label
 > combinations. The legacy overlay-traffic block is the bulk of the count: ~56 message categories ×
-> 4 (`_Bytes_In/_Out`, `_Messages_In/_Out`) ≈ 224 families on its own. The labeled gauges
-> (`xrpld_cache_metrics{metric}`, …) are few families but many series. Validate against the figures
+> 4 (`_bytes_in/_out`, `_messages_in/_out`) ≈ 224 families on its own. The labeled gauges
+> (`cache_metrics{metric}`, …) are few families but many series. Validate against the figures
 > below as **families currently emitting** (idle nodes under-report — workload-gated metrics such as
 > per-RPC/error counters appear only once exercised, which is Phase 10's purpose).
 
-| Category                  | Expected Count            | Validation Method                | Config File             |
-| ------------------------- | ------------------------- | -------------------------------- | ----------------------- |
-| Trace spans               | ~37 (required + optional) | Tempo API query                  | `expected_spans.json`   |
-| Span attributes           | per-span assertion        | Per-span attribute assertion     | `expected_spans.json`   |
-| Legacy `xrpld_*` families | ~270 (≈224 traffic)       | Prometheus `__name__` query      | `expected_metrics.json` |
-| Native MetricsRegistry    | 35 instruments            | Prometheus query                 | `expected_metrics.json` |
-| SpanMetrics RED           | 4 per span                | Prometheus query                 | `expected_metrics.json` |
-| Grafana dashboards        | 15                        | Dashboard API "no data" check    | `expected_metrics.json` |
-| Log-trace links           | Present                   | Loki query + Tempo reverse check | —                       |
+| Category                       | Expected Count            | Validation Method                | Config File             |
+| ------------------------------ | ------------------------- | -------------------------------- | ----------------------- |
+| Trace spans                    | ~37 (required + optional) | Tempo API query                  | `expected_spans.json`   |
+| Span attributes                | per-span assertion        | Per-span attribute assertion     | `expected_spans.json`   |
+| Legacy beast::insight families | ~270 (≈224 traffic)       | Prometheus `__name__` query      | `expected_metrics.json` |
+| Native MetricsRegistry         | 35 instruments            | Prometheus query                 | `expected_metrics.json` |
+| SpanMetrics RED                | 4 per span                | Prometheus query                 | `expected_metrics.json` |
+| Grafana dashboards             | 15                        | Dashboard API "no data" check    | `expected_metrics.json` |
+| Log-trace links                | Present                   | Loki query + Tempo reverse check | —                       |
 
 ### Performance Overhead Targets
 
@@ -1009,102 +1009,102 @@ via OTLP/HTTP to the OTel Collector and scraped by Prometheus.
 
 #### NodeStore I/O (Observable Gauge — `nodestore_state`)
 
-| Prometheus Metric                                    | Type  | Labels   | Description                          |
-| ---------------------------------------------------- | ----- | -------- | ------------------------------------ |
-| `xrpld_nodestore_state{metric="node_reads_total"}`   | Gauge | `metric` | Cumulative NodeStore read operations |
-| `xrpld_nodestore_state{metric="node_reads_hit"}`     | Gauge | `metric` | Reads served from cache              |
-| `xrpld_nodestore_state{metric="node_writes"}`        | Gauge | `metric` | Cumulative write operations          |
-| `xrpld_nodestore_state{metric="node_written_bytes"}` | Gauge | `metric` | Cumulative bytes written             |
-| `xrpld_nodestore_state{metric="node_read_bytes"}`    | Gauge | `metric` | Cumulative bytes read                |
-| `xrpld_nodestore_state{metric="write_load"}`         | Gauge | `metric` | Current write load score             |
-| `xrpld_nodestore_state{metric="read_queue"}`         | Gauge | `metric` | Items in read prefetch queue         |
+| Prometheus Metric                              | Type  | Labels   | Description                          |
+| ---------------------------------------------- | ----- | -------- | ------------------------------------ |
+| `nodestore_state{metric="node_reads_total"}`   | Gauge | `metric` | Cumulative NodeStore read operations |
+| `nodestore_state{metric="node_reads_hit"}`     | Gauge | `metric` | Reads served from cache              |
+| `nodestore_state{metric="node_writes"}`        | Gauge | `metric` | Cumulative write operations          |
+| `nodestore_state{metric="node_written_bytes"}` | Gauge | `metric` | Cumulative bytes written             |
+| `nodestore_state{metric="node_read_bytes"}`    | Gauge | `metric` | Cumulative bytes read                |
+| `nodestore_state{metric="write_load"}`         | Gauge | `metric` | Current write load score             |
+| `nodestore_state{metric="read_queue"}`         | Gauge | `metric` | Items in read prefetch queue         |
 
 #### Cache Hit Rates & Sizes (Observable Gauge — `cache_metrics`)
 
-| Prometheus Metric                                   | Type  | Labels   | Description                   |
-| --------------------------------------------------- | ----- | -------- | ----------------------------- |
-| `xrpld_cache_metrics{metric="SLE_hit_rate"}`        | Gauge | `metric` | SLE cache hit rate (0.0-1.0)  |
-| `xrpld_cache_metrics{metric="ledger_hit_rate"}`     | Gauge | `metric` | Ledger cache hit rate         |
-| `xrpld_cache_metrics{metric="AL_hit_rate"}`         | Gauge | `metric` | AcceptedLedger cache hit rate |
-| `xrpld_cache_metrics{metric="treenode_cache_size"}` | Gauge | `metric` | SHAMap TreeNode cache entries |
-| `xrpld_cache_metrics{metric="treenode_track_size"}` | Gauge | `metric` | Tracked tree nodes            |
-| `xrpld_cache_metrics{metric="fullbelow_size"}`      | Gauge | `metric` | FullBelow cache entries       |
+| Prometheus Metric                             | Type  | Labels   | Description                   |
+| --------------------------------------------- | ----- | -------- | ----------------------------- |
+| `cache_metrics{metric="sle_hit_rate"}`        | Gauge | `metric` | SLE cache hit rate (0.0-1.0)  |
+| `cache_metrics{metric="ledger_hit_rate"}`     | Gauge | `metric` | Ledger cache hit rate         |
+| `cache_metrics{metric="al_hit_rate"}`         | Gauge | `metric` | AcceptedLedger cache hit rate |
+| `cache_metrics{metric="treenode_cache_size"}` | Gauge | `metric` | SHAMap TreeNode cache entries |
+| `cache_metrics{metric="treenode_track_size"}` | Gauge | `metric` | Tracked tree nodes            |
+| `cache_metrics{metric="fullbelow_size"}`      | Gauge | `metric` | FullBelow cache entries       |
 
 #### Transaction Queue (Observable Gauge — `txq_metrics`)
 
-| Prometheus Metric                                          | Type  | Labels   | Description                      |
-| ---------------------------------------------------------- | ----- | -------- | -------------------------------- |
-| `xrpld_txq_metrics{metric="txq_count"}`                    | Gauge | `metric` | Transactions currently in queue  |
-| `xrpld_txq_metrics{metric="txq_max_size"}`                 | Gauge | `metric` | Maximum queue capacity           |
-| `xrpld_txq_metrics{metric="txq_in_ledger"}`                | Gauge | `metric` | Transactions in open ledger      |
-| `xrpld_txq_metrics{metric="txq_per_ledger"}`               | Gauge | `metric` | Expected transactions per ledger |
-| `xrpld_txq_metrics{metric="txq_reference_fee_level"}`      | Gauge | `metric` | Reference fee level              |
-| `xrpld_txq_metrics{metric="txq_min_processing_fee_level"}` | Gauge | `metric` | Minimum fee to get processed     |
-| `xrpld_txq_metrics{metric="txq_med_fee_level"}`            | Gauge | `metric` | Median fee level in queue        |
-| `xrpld_txq_metrics{metric="txq_open_ledger_fee_level"}`    | Gauge | `metric` | Open ledger fee escalation level |
+| Prometheus Metric                                    | Type  | Labels   | Description                      |
+| ---------------------------------------------------- | ----- | -------- | -------------------------------- |
+| `txq_metrics{metric="txq_count"}`                    | Gauge | `metric` | Transactions currently in queue  |
+| `txq_metrics{metric="txq_max_size"}`                 | Gauge | `metric` | Maximum queue capacity           |
+| `txq_metrics{metric="txq_in_ledger"}`                | Gauge | `metric` | Transactions in open ledger      |
+| `txq_metrics{metric="txq_per_ledger"}`               | Gauge | `metric` | Expected transactions per ledger |
+| `txq_metrics{metric="txq_reference_fee_level"}`      | Gauge | `metric` | Reference fee level              |
+| `txq_metrics{metric="txq_min_processing_fee_level"}` | Gauge | `metric` | Minimum fee to get processed     |
+| `txq_metrics{metric="txq_med_fee_level"}`            | Gauge | `metric` | Median fee level in queue        |
+| `txq_metrics{metric="txq_open_ledger_fee_level"}`    | Gauge | `metric` | Open ledger fee escalation level |
 
 #### Per-RPC Method Metrics (Synchronous Counters/Histogram)
 
-| Prometheus Metric                 | Type      | Labels            | Description                      |
-| --------------------------------- | --------- | ----------------- | -------------------------------- |
-| `xrpld_rpc_method_started_total`  | Counter   | `method="<name>"` | RPC calls started                |
-| `xrpld_rpc_method_finished_total` | Counter   | `method="<name>"` | RPC calls completed successfully |
-| `xrpld_rpc_method_errored_total`  | Counter   | `method="<name>"` | RPC calls that errored           |
-| `xrpld_rpc_method_duration_us`    | Histogram | `method="<name>"` | Execution time distribution (us) |
+| Prometheus Metric           | Type      | Labels            | Description                      |
+| --------------------------- | --------- | ----------------- | -------------------------------- |
+| `rpc_method_started_total`  | Counter   | `method="<name>"` | RPC calls started                |
+| `rpc_method_finished_total` | Counter   | `method="<name>"` | RPC calls completed successfully |
+| `rpc_method_errored_total`  | Counter   | `method="<name>"` | RPC calls that errored           |
+| `rpc_method_us`             | Histogram | `method="<name>"` | Execution time distribution (us) |
 
 #### Per-Job-Type Metrics (Synchronous Counters/Histogram)
 
-| Prometheus Metric               | Type      | Labels              | Description                       |
-| ------------------------------- | --------- | ------------------- | --------------------------------- |
-| `xrpld_job_queued_total`        | Counter   | `job_type="<name>"` | Jobs enqueued                     |
-| `xrpld_job_started_total`       | Counter   | `job_type="<name>"` | Jobs started                      |
-| `xrpld_job_finished_total`      | Counter   | `job_type="<name>"` | Jobs completed                    |
-| `xrpld_job_queued_duration_us`  | Histogram | `job_type="<name>"` | Queue wait time distribution (us) |
-| `xrpld_job_running_duration_us` | Histogram | `job_type="<name>"` | Execution time distribution (us)  |
+| Prometheus Metric    | Type      | Labels              | Description                       |
+| -------------------- | --------- | ------------------- | --------------------------------- |
+| `job_queued_total`   | Counter   | `job_type="<name>"` | Jobs enqueued                     |
+| `job_started_total`  | Counter   | `job_type="<name>"` | Jobs started                      |
+| `job_finished_total` | Counter   | `job_type="<name>"` | Jobs completed                    |
+| `job_queued_us`      | Histogram | `job_type="<name>"` | Queue wait time distribution (us) |
+| `job_running_us`     | Histogram | `job_type="<name>"` | Execution time distribution (us)  |
 
 #### Counted Object Instances (Observable Gauge — `object_count`)
 
-| Prometheus Metric                            | Type  | Labels          | Description                    |
-| -------------------------------------------- | ----- | --------------- | ------------------------------ |
-| `xrpld_object_count{type="Transaction"}`     | Gauge | `type="<name>"` | Live Transaction objects       |
-| `xrpld_object_count{type="Ledger"}`          | Gauge | `type="<name>"` | Live Ledger objects            |
-| `xrpld_object_count{type="NodeObject"}`      | Gauge | `type="<name>"` | Live NodeObject instances      |
-| `xrpld_object_count{type="STTx"}`            | Gauge | `type="<name>"` | Serialized transaction objects |
-| `xrpld_object_count{type="STLedgerEntry"}`   | Gauge | `type="<name>"` | Serialized ledger entries      |
-| `xrpld_object_count{type="InboundLedger"}`   | Gauge | `type="<name>"` | Ledgers being fetched          |
-| `xrpld_object_count{type="Pathfinder"}`      | Gauge | `type="<name>"` | Active pathfinding operations  |
-| `xrpld_object_count{type="PathRequest"}`     | Gauge | `type="<name>"` | Active path requests           |
-| `xrpld_object_count{type="HashRouterEntry"}` | Gauge | `type="<name>"` | Hash router entries            |
+| Prometheus Metric                      | Type  | Labels          | Description                    |
+| -------------------------------------- | ----- | --------------- | ------------------------------ |
+| `object_count{type="transaction"}`     | Gauge | `type="<name>"` | Live Transaction objects       |
+| `object_count{type="ledger"}`          | Gauge | `type="<name>"` | Live Ledger objects            |
+| `object_count{type="nodeobject"}`      | Gauge | `type="<name>"` | Live NodeObject instances      |
+| `object_count{type="sttx"}`            | Gauge | `type="<name>"` | Serialized transaction objects |
+| `object_count{type="stledgerentry"}`   | Gauge | `type="<name>"` | Serialized ledger entries      |
+| `object_count{type="inboundledger"}`   | Gauge | `type="<name>"` | Ledgers being fetched          |
+| `object_count{type="pathfinder"}`      | Gauge | `type="<name>"` | Active pathfinding operations  |
+| `object_count{type="pathrequest"}`     | Gauge | `type="<name>"` | Active path requests           |
+| `object_count{type="hashrouterentry"}` | Gauge | `type="<name>"` | Hash router entries            |
 
 #### Load Factor Breakdown (Observable Gauge — `load_factor_metrics`)
 
-| Prometheus Metric                                                | Type  | Labels   | Description                             |
-| ---------------------------------------------------------------- | ----- | -------- | --------------------------------------- |
-| `xrpld_load_factor_metrics{metric="load_factor"}`                | Gauge | `metric` | Combined transaction cost multiplier    |
-| `xrpld_load_factor_metrics{metric="load_factor_server"}`         | Gauge | `metric` | Server + cluster + network contribution |
-| `xrpld_load_factor_metrics{metric="load_factor_local"}`          | Gauge | `metric` | Local server load only                  |
-| `xrpld_load_factor_metrics{metric="load_factor_net"}`            | Gauge | `metric` | Network-wide load estimate              |
-| `xrpld_load_factor_metrics{metric="load_factor_cluster"}`        | Gauge | `metric` | Cluster peer load                       |
-| `xrpld_load_factor_metrics{metric="load_factor_fee_escalation"}` | Gauge | `metric` | Open ledger fee escalation              |
-| `xrpld_load_factor_metrics{metric="load_factor_fee_queue"}`      | Gauge | `metric` | Queue entry fee level                   |
+| Prometheus Metric                                          | Type  | Labels   | Description                             |
+| ---------------------------------------------------------- | ----- | -------- | --------------------------------------- |
+| `load_factor_metrics{metric="load_factor"}`                | Gauge | `metric` | Combined transaction cost multiplier    |
+| `load_factor_metrics{metric="load_factor_server"}`         | Gauge | `metric` | Server + cluster + network contribution |
+| `load_factor_metrics{metric="load_factor_local"}`          | Gauge | `metric` | Local server load only                  |
+| `load_factor_metrics{metric="load_factor_net"}`            | Gauge | `metric` | Network-wide load estimate              |
+| `load_factor_metrics{metric="load_factor_cluster"}`        | Gauge | `metric` | Cluster peer load                       |
+| `load_factor_metrics{metric="load_factor_fee_escalation"}` | Gauge | `metric` | Open ledger fee escalation              |
+| `load_factor_metrics{metric="load_factor_fee_queue"}`      | Gauge | `metric` | Queue entry fee level                   |
 
 #### Prometheus Query Examples (Phase 9)
 
 ```promql
 # NodeStore cache hit ratio
-xrpld_nodestore_state{metric="node_reads_hit"} / xrpld_nodestore_state{metric="node_reads_total"}
+nodestore_state{metric="node_reads_hit"} / nodestore_state{metric="node_reads_total"}
 
 # RPC error rate for server_info
-rate(xrpld_rpc_method_errored_total{method="server_info"}[5m])
+rate(rpc_method_errored_total{method="server_info"}[5m])
 
 # Job queue wait time p95
-histogram_quantile(0.95, sum by (le) (rate(xrpld_job_queued_duration_us_bucket[5m])))
+histogram_quantile(0.95, sum by (le) (rate(job_queued_us_bucket[5m])))
 
 # TxQ utilization percentage
-xrpld_txq_metrics{metric="txq_count"} / xrpld_txq_metrics{metric="txq_max_size"}
+txq_metrics{metric="txq_count"} / txq_metrics{metric="txq_max_size"}
 
 # High load factor alert candidate
-xrpld_load_factor_metrics{metric="load_factor"} > 5
+load_factor_metrics{metric="load_factor"} > 5
 ```
 
 ### Phase 7+: External Dashboard Parity Metrics
@@ -1117,83 +1117,83 @@ These metrics fill gaps identified by comparing xrpld's internal observability w
 
 #### Validation Agreement (Observable Gauge — `validation_agreement`)
 
-| Prometheus Metric                                        | Type   | Labels   | Description                             |
-| -------------------------------------------------------- | ------ | -------- | --------------------------------------- |
-| `xrpld_validation_agreement{metric="agreement_pct_1h"}`  | Double | `metric` | Rolling 1h agreement percentage (0-100) |
-| `xrpld_validation_agreement{metric="agreement_pct_24h"}` | Double | `metric` | Rolling 24h agreement percentage        |
-| `xrpld_validation_agreement{metric="agreements_1h"}`     | Int64  | `metric` | Agreed validations in 1h window         |
-| `xrpld_validation_agreement{metric="missed_1h"}`         | Int64  | `metric` | Missed validations in 1h window         |
-| `xrpld_validation_agreement{metric="agreements_24h"}`    | Int64  | `metric` | Agreed validations in 24h window        |
-| `xrpld_validation_agreement{metric="missed_24h"}`        | Int64  | `metric` | Missed validations in 24h window        |
+| Prometheus Metric                                  | Type   | Labels   | Description                             |
+| -------------------------------------------------- | ------ | -------- | --------------------------------------- |
+| `validation_agreement{metric="agreement_pct_1h"}`  | Double | `metric` | Rolling 1h agreement percentage (0-100) |
+| `validation_agreement{metric="agreement_pct_24h"}` | Double | `metric` | Rolling 24h agreement percentage        |
+| `validation_agreement{metric="agreements_1h"}`     | Int64  | `metric` | Agreed validations in 1h window         |
+| `validation_agreement{metric="missed_1h"}`         | Int64  | `metric` | Missed validations in 1h window         |
+| `validation_agreement{metric="agreements_24h"}`    | Int64  | `metric` | Agreed validations in 24h window        |
+| `validation_agreement{metric="missed_24h"}`        | Int64  | `metric` | Missed validations in 24h window        |
 
 Data source: `ValidationTracker` class with 8s grace period and 5m late repair window.
 
 #### Validator Health (Observable Gauge — `validator_health`)
 
-| Prometheus Metric                                    | Type   | Labels   | Description                    |
-| ---------------------------------------------------- | ------ | -------- | ------------------------------ |
-| `xrpld_validator_health{metric="amendment_blocked"}` | Int64  | `metric` | 1 if amendment-blocked, else 0 |
-| `xrpld_validator_health{metric="unl_blocked"}`       | Int64  | `metric` | 1 if UNL-blocked, else 0       |
-| `xrpld_validator_health{metric="unl_expiry_days"}`   | Double | `metric` | Days until UNL list expires    |
-| `xrpld_validator_health{metric="validation_quorum"}` | Int64  | `metric` | Validation quorum threshold    |
+| Prometheus Metric                              | Type   | Labels   | Description                    |
+| ---------------------------------------------- | ------ | -------- | ------------------------------ |
+| `validator_health{metric="amendment_blocked"}` | Int64  | `metric` | 1 if amendment-blocked, else 0 |
+| `validator_health{metric="unl_blocked"}`       | Int64  | `metric` | 1 if UNL-blocked, else 0       |
+| `validator_health{metric="unl_expiry_days"}`   | Double | `metric` | Days until UNL list expires    |
+| `validator_health{metric="validation_quorum"}` | Int64  | `metric` | Validation quorum threshold    |
 
 #### Peer Quality (Observable Gauge — `peer_quality`)
 
-| Prometheus Metric                                       | Type   | Labels   | Description                          |
-| ------------------------------------------------------- | ------ | -------- | ------------------------------------ |
-| `xrpld_peer_quality{metric="peer_latency_p90_ms"}`      | Double | `metric` | P90 peer latency in milliseconds     |
-| `xrpld_peer_quality{metric="peers_insane_count"}`       | Int64  | `metric` | Peers with diverged tracking status  |
-| `xrpld_peer_quality{metric="peers_higher_version_pct"}` | Double | `metric` | % of peers on newer xrpld version    |
-| `xrpld_peer_quality{metric="upgrade_recommended"}`      | Int64  | `metric` | 1 if >60% of peers are newer version |
+| Prometheus Metric                                 | Type   | Labels   | Description                          |
+| ------------------------------------------------- | ------ | -------- | ------------------------------------ |
+| `peer_quality{metric="peer_latency_p90_ms"}`      | Double | `metric` | P90 peer latency in milliseconds     |
+| `peer_quality{metric="peers_insane_count"}`       | Int64  | `metric` | Peers with diverged tracking status  |
+| `peer_quality{metric="peers_higher_version_pct"}` | Double | `metric` | % of peers on newer xrpld version    |
+| `peer_quality{metric="upgrade_recommended"}`      | Int64  | `metric` | 1 if >60% of peers are newer version |
 
 #### Ledger Economy (Observable Gauge — `ledger_economy`)
 
-| Prometheus Metric                                   | Type   | Labels   | Description                        |
-| --------------------------------------------------- | ------ | -------- | ---------------------------------- |
-| `xrpld_ledger_economy{metric="base_fee_xrp"}`       | Double | `metric` | Base transaction fee in drops      |
-| `xrpld_ledger_economy{metric="reserve_base_xrp"}`   | Double | `metric` | Account reserve in drops           |
-| `xrpld_ledger_economy{metric="reserve_inc_xrp"}`    | Double | `metric` | Owner reserve increment in drops   |
-| `xrpld_ledger_economy{metric="ledger_age_seconds"}` | Double | `metric` | Seconds since last validated close |
-| `xrpld_ledger_economy{metric="transaction_rate"}`   | Double | `metric` | Smoothed transaction rate (tx/s)   |
+| Prometheus Metric                             | Type   | Labels   | Description                        |
+| --------------------------------------------- | ------ | -------- | ---------------------------------- |
+| `ledger_economy{metric="base_fee_xrp"}`       | Double | `metric` | Base transaction fee in drops      |
+| `ledger_economy{metric="reserve_base_xrp"}`   | Double | `metric` | Account reserve in drops           |
+| `ledger_economy{metric="reserve_inc_xrp"}`    | Double | `metric` | Owner reserve increment in drops   |
+| `ledger_economy{metric="ledger_age_seconds"}` | Double | `metric` | Seconds since last validated close |
+| `ledger_economy{metric="transaction_rate"}`   | Double | `metric` | Smoothed transaction rate (tx/s)   |
 
 #### State Tracking (Observable Gauge — `state_tracking`)
 
-| Prometheus Metric                                              | Type   | Labels   | Description                            |
-| -------------------------------------------------------------- | ------ | -------- | -------------------------------------- |
-| `xrpld_state_tracking{metric="state_value"}`                   | Int64  | `metric` | Numeric state 0-6 (see encoding below) |
-| `xrpld_state_tracking{metric="time_in_current_state_seconds"}` | Double | `metric` | Duration in current state              |
+| Prometheus Metric                                        | Type   | Labels   | Description                            |
+| -------------------------------------------------------- | ------ | -------- | -------------------------------------- |
+| `state_tracking{metric="state_value"}`                   | Int64  | `metric` | Numeric state 0-6 (see encoding below) |
+| `state_tracking{metric="time_in_current_state_seconds"}` | Double | `metric` | Duration in current state              |
 
 State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full, 5=validating (FULL + validating), 6=proposing (FULL + proposing).
 
 #### Storage Detail (Observable Gauge — `storage_detail`)
 
-| Prometheus Metric                           | Type  | Labels   | Description            |
-| ------------------------------------------- | ----- | -------- | ---------------------- |
-| `xrpld_storage_detail{metric="nudb_bytes"}` | Int64 | `metric` | NuDB backend file size |
+| Prometheus Metric                     | Type  | Labels   | Description            |
+| ------------------------------------- | ----- | -------- | ---------------------- |
+| `storage_detail{metric="nudb_bytes"}` | Int64 | `metric` | NuDB backend file size |
 
 #### Synchronous Counters (Phase 7+)
 
-| Prometheus Metric                 | Type    | Description                     | Increment Site   |
-| --------------------------------- | ------- | ------------------------------- | ---------------- |
-| `xrpld_ledgers_closed_total`      | Counter | Ledgers closed by consensus     | RCLConsensus.cpp |
-| `xrpld_validations_sent_total`    | Counter | Validations sent                | RCLConsensus.cpp |
-| `xrpld_validations_checked_total` | Counter | Network validations observed    | LedgerMaster.cpp |
-| `xrpld_state_changes_total`       | Counter | Operating mode transitions      | NetworkOPs.cpp   |
-| `xrpld_jq_trans_overflow_total`   | Counter | Job queue transaction overflows | JobQueue.cpp     |
+| Prometheus Metric           | Type    | Description                     | Increment Site   |
+| --------------------------- | ------- | ------------------------------- | ---------------- |
+| `ledgers_closed_total`      | Counter | Ledgers closed by consensus     | RCLConsensus.cpp |
+| `validations_sent_total`    | Counter | Validations sent                | RCLConsensus.cpp |
+| `validations_checked_total` | Counter | Network validations observed    | LedgerMaster.cpp |
+| `state_changes_total`       | Counter | Operating mode transitions      | NetworkOPs.cpp   |
+| `jq_trans_overflow_total`   | Counter | Job queue transaction overflows | JobQueue.cpp     |
 
 Lifetime validation agreement/miss tallies are exported as monotonic **ObservableCounters**
 (not synchronous counters) observed from `ValidationTracker`'s gross lifetime totals:
 
-| Prometheus Metric                   | Type              | Description                                | Source                |
-| ----------------------------------- | ----------------- | ------------------------------------------ | --------------------- |
-| `xrpld_validation_agreements_total` | ObservableCounter | Lifetime validations that initially agreed | ValidationTracker.cpp |
-| `xrpld_validation_missed_total`     | ObservableCounter | Lifetime validations that initially missed | ValidationTracker.cpp |
+| Prometheus Metric             | Type              | Description                                | Source                |
+| ----------------------------- | ----------------- | ------------------------------------------ | --------------------- |
+| `validation_agreements_total` | ObservableCounter | Lifetime validations that initially agreed | ValidationTracker.cpp |
+| `validation_missed_total`     | ObservableCounter | Lifetime validations that initially missed | ValidationTracker.cpp |
 
 > **Counting semantics (initial-classification only):** each reconciled ledger increments exactly
 > one of these two counters, at first classification. A later late-repair (miss → agreement) does
 > **not** move either counter — keeping both strictly monotonic (a Prometheus `_total` must never
 > decrease) and additive (`agreements_total + missed_total` = ledgers reconciled). The
-> repair-aware, windowed view remains on `xrpld_validation_agreement{metric="…"}`.
+> repair-aware, windowed view remains on `validation_agreement{metric="…"}`.
 
 #### Span Attribute Enrichments (Phases 2-4)
 
@@ -1258,8 +1258,8 @@ Lifetime validation agreement/miss tallies are exported as monotonic **Observabl
 | Issue                                                              | Impact                                           | Status                                                               |
 | ------------------------------------------------------------------ | ------------------------------------------------ | -------------------------------------------------------------------- |
 | `warn` and `drop` metrics use non-standard StatsD `\|m` meter type | Metrics silently dropped by OTel StatsD receiver | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp |
-| `xrpld_jobq_job_count` may not emit in standalone mode             | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
-| `xrpld_rpc_requests` depends on `[insight]` config                 | Zero series if StatsD not configured             | Requires `[insight] server=statsd` in xrpld.cfg                      |
+| `jobq_job_count` may not emit in standalone mode                   | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
+| `rpc_requests` depends on `[insight]` config                       | Zero series if StatsD not configured             | Requires `[insight] server=statsd` in xrpld.cfg                      |
 | Peer tracing enabled by default                                    | `peer.*` spans emit unless `trace_peer=0`        | High volume — set `trace_peer=0` to opt out on busy mainnet nodes    |
 
 ---

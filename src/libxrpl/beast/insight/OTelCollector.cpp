@@ -130,7 +130,7 @@ public:
     /**
      * @param name   Export-ready metric name, already run through
      *               formatName() by the collector: prefix prepended and
-     *               dots replaced with underscores (e.g. "xrpld_rpc_size").
+     *               dots replaced with underscores (e.g. "rpc_size").
      * @param meter  OTel Meter used to create the counter instrument.
      */
     OTelCounterImpl(
@@ -172,7 +172,7 @@ public:
     /**
      * @param name   Export-ready metric name, already run through
      *               formatName() by the collector: prefix prepended and
-     *               dots replaced with underscores (e.g. "xrpld_rpc_size").
+     *               dots replaced with underscores (e.g. "rpc_size").
      * @param meter  OTel Meter used to create the histogram instrument.
      */
     OTelEventImpl(
@@ -294,7 +294,7 @@ public:
     /**
      * @param name   Export-ready metric name, already run through
      *               formatName() by the collector: prefix prepended and
-     *               dots replaced with underscores (e.g. "xrpld_rpc_size").
+     *               dots replaced with underscores (e.g. "rpc_size").
      * @param meter  OTel Meter used to create the counter instrument.
      */
     OTelMeterImpl(
@@ -374,7 +374,7 @@ private:
  *       "node-1", "xrpld", "mainnet", journal);
  *   auto counter = collector->makeCounter("rpc.requests");
  *   counter.increment(1);
- *   // Metric "xrpld_rpc_requests" exported via OTLP every 1s.
+ *   // Metric "rpc_requests" exported via OTLP every 1s.
  * @endcode
  */
 class OTelCollectorImp : public OTelCollector, public std::enable_shared_from_this<OTelCollectorImp>
@@ -484,7 +484,7 @@ public:
      *
      * Replaces dots with underscores to match StatsD->Prometheus naming.
      * Example: prefix="xrpld", name="LedgerMaster.Validated_Ledger_Age"
-     *   -> "xrpld_LedgerMaster_Validated_Ledger_Age"
+     *   -> "ledgermaster_validated_ledger_age"
      *
      * @param name  Raw metric name from beast::insight callers.
      * @return Fully-qualified metric name.

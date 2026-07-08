@@ -584,15 +584,15 @@ log "--- Phase 5: Spanmetrics ---"
 log "Waiting 20s for Prometheus scrape cycle..."
 sleep 20
 
-calls_count=$(curl -sf "$PROM/api/v1/query?query=traces_span_metrics_calls_total" |
+calls_count=$(curl -sf "$PROM/api/v1/query?query=span_calls_total" |
     jq '.data.result | length' 2>/dev/null || echo 0)
 if [ "$calls_count" -gt 0 ]; then
-    ok "Prometheus: traces_span_metrics_calls_total ($calls_count series)"
+    ok "Prometheus: span_calls_total ($calls_count series)"
 else
-    fail "Prometheus: traces_span_metrics_calls_total (0 series)"
+    fail "Prometheus: span_calls_total (0 series)"
 fi
 
-duration_count=$(curl -sf "$PROM/api/v1/query?query=traces_span_metrics_duration_milliseconds_count" |
+duration_count=$(curl -sf "$PROM/api/v1/query?query=span_duration_milliseconds_count" |
     jq '.data.result | length' 2>/dev/null || echo 0)
 if [ "$duration_count" -gt 0 ]; then
     ok "Prometheus: duration histogram ($duration_count series)"
@@ -680,46 +680,46 @@ check_otel_metric() {
 }
 
 # Task 9.1: NodeStore I/O
-check_otel_metric 'xrpld_nodestore_state{metric="node_reads_total"}'
-check_otel_metric 'xrpld_nodestore_state{metric="write_load"}'
+check_otel_metric 'nodestore_state{metric="node_reads_total"}'
+check_otel_metric 'nodestore_state{metric="write_load"}'
 
 # Task 9.2: Cache hit rates
-check_otel_metric 'xrpld_cache_metrics{metric="SLE_hit_rate"}'
-check_otel_metric 'xrpld_cache_metrics{metric="treenode_cache_size"}'
+check_otel_metric 'cache_metrics{metric="SLE_hit_rate"}'
+check_otel_metric 'cache_metrics{metric="treenode_cache_size"}'
 
 # Task 9.3: TxQ metrics
-check_otel_metric 'xrpld_txq_metrics{metric="txq_count"}'
-check_otel_metric 'xrpld_txq_metrics{metric="txq_reference_fee_level"}'
+check_otel_metric 'txq_metrics{metric="txq_count"}'
+check_otel_metric 'txq_metrics{metric="txq_reference_fee_level"}'
 
 # Task 9.4: Per-RPC metrics
-check_otel_metric "xrpld_rpc_method_started_total"
-check_otel_metric "xrpld_rpc_method_finished_total"
+check_otel_metric "rpc_method_started_total"
+check_otel_metric "rpc_method_finished_total"
 
 # Task 9.5: Per-job metrics
-check_otel_metric "xrpld_job_queued_total"
-check_otel_metric "xrpld_job_finished_total"
+check_otel_metric "job_queued_total"
+check_otel_metric "job_finished_total"
 
 # Task 9.6: Counted object instances
-check_otel_metric "xrpld_object_count"
+check_otel_metric "object_count"
 
 # Task 9.7: Load factor breakdown
-check_otel_metric 'xrpld_load_factor_metrics{metric="load_factor"}'
-check_otel_metric 'xrpld_load_factor_metrics{metric="load_factor_server"}'
+check_otel_metric 'load_factor_metrics{metric="load_factor"}'
+check_otel_metric 'load_factor_metrics{metric="load_factor_server"}'
 
 # Task 7.15 / Phase 9: ValidationTracker rolling-window agreement gauge.
 # MetricsRegistry::registerValidationAgreementGauge() publishes
-# xrpld_validation_agreement with a `metric` label for each window
+# validation_agreement with a `metric` label for each window
 # (1h / 24h / 7d) plus the matching agreement/miss counts. The 7-day
 # window matches the external xrpl-validator-dashboard parity target.
-check_otel_metric 'xrpld_validation_agreement{metric="agreement_pct_1h"}'
-check_otel_metric 'xrpld_validation_agreement{metric="agreement_pct_24h"}'
-check_otel_metric 'xrpld_validation_agreement{metric="agreement_pct_7d"}'
-check_otel_metric 'xrpld_validation_agreement{metric="agreements_1h"}'
-check_otel_metric 'xrpld_validation_agreement{metric="missed_1h"}'
-check_otel_metric 'xrpld_validation_agreement{metric="agreements_24h"}'
-check_otel_metric 'xrpld_validation_agreement{metric="missed_24h"}'
-check_otel_metric 'xrpld_validation_agreement{metric="agreements_7d"}'
-check_otel_metric 'xrpld_validation_agreement{metric="missed_7d"}'
+check_otel_metric 'validation_agreement{metric="agreement_pct_1h"}'
+check_otel_metric 'validation_agreement{metric="agreement_pct_24h"}'
+check_otel_metric 'validation_agreement{metric="agreement_pct_7d"}'
+check_otel_metric 'validation_agreement{metric="agreements_1h"}'
+check_otel_metric 'validation_agreement{metric="missed_1h"}'
+check_otel_metric 'validation_agreement{metric="agreements_24h"}'
+check_otel_metric 'validation_agreement{metric="missed_24h"}'
+check_otel_metric 'validation_agreement{metric="agreements_7d"}'
+check_otel_metric 'validation_agreement{metric="missed_7d"}'
 
 # ---------------------------------------------------------------------------
 # Step 11: Summary

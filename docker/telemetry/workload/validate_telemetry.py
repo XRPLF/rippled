@@ -541,20 +541,30 @@ async def validate_metrics(
         ) as resp:
             label_data = await resp.json()
             all_metrics = label_data.get("data", [])
-            # Log xrpld-related and Phase 9 metrics for debugging.
+            # Log relevant metrics for debugging.
             relevant = [
                 m
                 for m in all_metrics
-                if "xrpld" in m.lower()
-                or m.startswith(
+                if m.startswith(
                     (
+                        "span_",
                         "rpc_method",
                         "cache_",
                         "txq_",
                         "object_count",
                         "load_factor",
                         "nodestore",
-                        "traces_span",
+                        "ledgermaster",
+                        "peer_finder",
+                        "jobq_",
+                        "total_bytes",
+                        "total_messages",
+                        "validation_agreement",
+                        "validator_health",
+                        "peer_quality",
+                        "ledger_economy",
+                        "state_tracking",
+                        "storage_detail",
                     )
                 )
             ]
@@ -936,8 +946,8 @@ async def validate_span_durations(
 # dotted xrpl.* reserved for resource attributes). The amendment_blocked,
 # server_state, and proposers_validated values that earlier external-dashboard
 # work tracked are NOT span attributes — they exist only as MetricsRegistry
-# metrics (xrpld_validator_health{metric="amendment_blocked"},
-# xrpld_state_tracking{metric="state_value"}, etc.), so they are validated by
+# metrics (validator_health{metric="amendment_blocked"},
+# state_tracking{metric="state_value"}, etc.), so they are validated by
 # PARITY_VALUE_SANITY below rather than as span attributes here.
 PARITY_SPAN_ATTRS: list[dict[str, str]] = [
     {"span": "tx.receive", "attr": "peer_version"},
@@ -955,26 +965,26 @@ PARITY_SPAN_ATTRS: list[dict[str, str]] = [
 PARITY_VALUE_SANITY: list[dict[str, Any]] = [
     {
         "name": "validation_agreement_pct_1h",
-        "query": 'xrpld_validation_agreement{metric="agreement_pct_1h"}',
+        "query": 'validation_agreement{metric="agreement_pct_1h"}',
         "lo": 0,
         "hi": 100,
     },
     {
         "name": "unl_expiry_days",
-        "query": 'xrpld_validator_health{metric="unl_expiry_days"}',
+        "query": 'validator_health{metric="unl_expiry_days"}',
         "lo": 0,
         "hi": None,
         "exclusive_lo": True,
     },
     {
         "name": "peer_latency_p90_ms",
-        "query": 'xrpld_peer_quality{metric="peer_latency_p90_ms"}',
+        "query": 'peer_quality{metric="peer_latency_p90_ms"}',
         "lo": 0,
         "hi": None,
     },
     {
         "name": "state_value",
-        "query": 'xrpld_state_tracking{metric="state_value"}',
+        "query": 'state_tracking{metric="state_value"}',
         "lo": 0,
         "hi": 7,
     },

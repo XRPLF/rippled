@@ -76,7 +76,7 @@ trace_ledger=1
 # --- Native OTel metrics (beast::insight over OTLP/HTTP) ---
 # The collector has no StatsD receiver (metrics pipeline is [otlp, spanmetrics]),
 # so beast::insight exports natively over OTLP. prefix=xrpld matches the OTel
-# resource service name and the xrpld_* names the dashboards query.
+# resource service name and the metric names the dashboards query.
 [insight]
 server=otel
 endpoint={{OTEL_METRICS_ENDPOINT}}
