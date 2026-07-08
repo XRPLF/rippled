@@ -46,7 +46,6 @@
 #include <xrpl/proto/xrpl.pb.h>
 
 #include <algorithm>
-#include <ranges>
 #include <string>
 
 namespace xrpl::telemetry {
