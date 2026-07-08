@@ -1,6 +1,10 @@
 #pragma once
 
 // Disable lz4 deprecation warning due to incompatibility with clang attributes
+#include <array>
+#include <cstdint>
+#include <stdexcept>
+#include <utility>
 #define LZ4_DISABLE_DEPRECATE_WARNINGS
 
 #include <xrpl/basics/contract.h>
@@ -58,7 +62,7 @@ lz4Compress(void const* in, std::size_t inSize, BufferFactory&& bf)
     std::array<std::uint8_t, varint_traits<std::size_t>::kMax> vi{};
     auto const n = writeVarint(vi.data(), inSize);
     auto const outMax = LZ4_compressBound(inSize);
-    std::uint8_t* out = reinterpret_cast<std::uint8_t*>(bf(n + outMax));
+    auto* out = reinterpret_cast<std::uint8_t*>(bf(n + outMax));
     result.first = out;
     std::memcpy(out, vi.data(), n);
     auto const outSize = LZ4_compress_default(
@@ -86,7 +90,7 @@ nodeobjectDecompress(void const* in, std::size_t inSize, BufferFactory&& bf)
 {
     using namespace nudb::detail;
 
-    std::uint8_t const* p = reinterpret_cast<std::uint8_t const*>(in);
+    auto const* p = reinterpret_cast<std::uint8_t const*>(in);
     std::size_t type = 0;
     auto const vn = readVarint(p, inSize, type);
     if (vn == 0)
@@ -233,7 +237,7 @@ nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
                 auto const vs = sizeVarint(type);
                 result.second = vs + field<std::uint16_t>::size +  // mask
                     (n * 32);                                      // hashes
-                std::uint8_t* out = reinterpret_cast<std::uint8_t*>(bf(result.second));
+                auto* out = reinterpret_cast<std::uint8_t*>(bf(result.second));
                 result.first = out;
                 ostream os(out, result.second);
                 write<varint>(os, type);
@@ -245,7 +249,7 @@ nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
             auto const type = 3U;
             auto const vs = sizeVarint(type);
             result.second = vs + (n * 32);  // hashes
-            std::uint8_t* out = reinterpret_cast<std::uint8_t*>(bf(result.second));
+            auto* out = reinterpret_cast<std::uint8_t*>(bf(result.second));
             result.first = out;
             ostream os(out, result.second);
             write<varint>(os, type);

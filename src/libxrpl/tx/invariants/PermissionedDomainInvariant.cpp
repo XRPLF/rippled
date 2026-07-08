@@ -8,6 +8,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAccount.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -15,23 +16,19 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <memory>
 #include <vector>
 
 namespace xrpl {
 
 void
-ValidPermissionedDomain::visitEntry(
-    bool isDel,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidPermissionedDomain::visitEntry(bool isDel, SLE::const_ref before, SLE::const_ref after)
 {
     if (before && before->getType() != ltPERMISSIONED_DOMAIN)
         return;
     if (after && after->getType() != ltPERMISSIONED_DOMAIN)
         return;
 
-    auto check = [isDel](std::vector<SleStatus>& sleStatus, std::shared_ptr<SLE const> const& sle) {
+    auto check = [isDel](std::vector<SleStatus>& sleStatus, SLE::const_ref sle) {
         auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
         auto const sorted = credentials::makeSorted(credentials);
 

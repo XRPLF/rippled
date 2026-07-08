@@ -1,25 +1,26 @@
 #include <xrpl/beast/clock/manual_clock.h>
-#include <xrpl/beast/container/aged_map.h>
-#include <xrpl/beast/container/aged_multimap.h>
-#include <xrpl/beast/container/aged_multiset.h>
-#include <xrpl/beast/container/aged_set.h>
-#include <xrpl/beast/container/aged_unordered_map.h>
-#include <xrpl/beast/container/aged_unordered_multimap.h>
-#include <xrpl/beast/container/aged_unordered_multiset.h>
-#include <xrpl/beast/container/aged_unordered_set.h>
+#include <xrpl/beast/container/aged_map.h>                 // IWYU pragma: keep
+#include <xrpl/beast/container/aged_multimap.h>            // IWYU pragma: keep
+#include <xrpl/beast/container/aged_multiset.h>            // IWYU pragma: keep
+#include <xrpl/beast/container/aged_set.h>                 // IWYU pragma: keep
+#include <xrpl/beast/container/aged_unordered_map.h>       // IWYU pragma: keep
+#include <xrpl/beast/container/aged_unordered_multimap.h>  // IWYU pragma: keep
+#include <xrpl/beast/container/aged_unordered_multiset.h>  // IWYU pragma: keep
+#include <xrpl/beast/container/aged_unordered_set.h>       // IWYU pragma: keep
 #include <xrpl/beast/container/detail/aged_ordered_container.h>
 #include <xrpl/beast/container/detail/aged_unordered_container.h>
 #include <xrpl/beast/unit_test/suite.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <functional>
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
+#include <type_traits>  // IWYU pragma: keep
 #include <utility>
-#include <vector>
+#include <vector>  // IWYU pragma: keep
 
 #ifndef BEAST_AGED_UNORDERED_NO_ALLOC_DEFAULTCTOR
 #ifdef _MSC_VER
@@ -144,7 +145,7 @@ public:
         }
 
         T*
-        allocate(std::size_t n, T const* = 0)
+        allocate(std::size_t n, T const* = nullptr)
         {
             return static_cast<T*>(::operator new(n * sizeof(T)));
         }
@@ -232,10 +233,10 @@ public:
     {
     public:
         using T = void;
-        using Value = typename Base::Key;
+        using Value = Base::Key;
         using Values = std::vector<Value>;
 
-        static typename Base::Key const&
+        static Base::Key const&
         extract(Value const& value)
         {
             return value;  // NOLINT(bugprone-return-const-ref-from-parameter)
@@ -271,7 +272,7 @@ public:
         using Value = std::pair<typename Base::Key, T>;
         using Values = std::vector<Value>;
 
-        static typename Base::Key const&
+        static Base::Key const&
         extract(Value const& value)
         {
             return value.first;
@@ -387,7 +388,7 @@ public:
     struct EqualValue
     {
         bool
-        operator()(typename Traits::Value const& lhs, typename Traits::Value const& rhs)
+        operator()(Traits::Value const& lhs, Traits::Value const& rhs)
         {
             return Traits::extract(lhs) == Traits::extract(rhs);
         }
@@ -403,23 +404,27 @@ public:
     //--------------------------------------------------------------------------
 
     template <class Container, class Values>
-    std::enable_if_t<Container::is_map::value && !Container::is_multi::value>
-    checkMapContents(Container& c, Values const& v);
+    void
+    checkMapContents(Container& c, Values const& v)
+        requires(Container::is_map::value && !Container::is_multi::value);
 
     template <class Container, class Values>
-    std::enable_if_t<!(Container::is_map::value && !Container::is_multi::value)>
+    void
     checkMapContents(Container, Values const&)
+        requires(!(Container::is_map::value && !Container::is_multi::value))
     {
     }
 
     // unordered
     template <class C, class Values>
-    std::enable_if_t<std::remove_reference<C>::type::is_unordered::value>
-    checkUnorderedContentsRefRef(C&& c, Values const& v);
+    void
+    checkUnorderedContentsRefRef(C&& c, Values const& v)
+        requires(std::remove_reference_t<C>::is_unordered::value);
 
     template <class C, class Values>
-    std::enable_if_t<!std::remove_reference<C>::type::is_unordered::value>
+    void
     checkUnorderedContentsRefRef(C&&, Values const&)
+        requires(!std::remove_reference_t<C>::is_unordered::value)
     {
     }
 
@@ -439,33 +444,39 @@ public:
 
     // ordered
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<!IsUnordered>
-    testConstructEmpty();
+    void
+    testConstructEmpty()
+        requires(!IsUnordered);
 
     // unordered
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<IsUnordered>
-    testConstructEmpty();
+    void
+    testConstructEmpty()
+        requires IsUnordered;
 
     // ordered
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<!IsUnordered>
-    testConstructRange();
+    void
+    testConstructRange()
+        requires(!IsUnordered);
 
     // unordered
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<IsUnordered>
-    testConstructRange();
+    void
+    testConstructRange()
+        requires IsUnordered;
 
     // ordered
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<!IsUnordered>
-    testConstructInitList();
+    void
+    testConstructInitList()
+        requires(!IsUnordered);
 
     // unordered
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<IsUnordered>
-    testConstructInitList();
+    void
+    testConstructInitList()
+        requires IsUnordered;
 
     //--------------------------------------------------------------------------
 
@@ -481,12 +492,14 @@ public:
 
     // Unordered containers don't have reverse iterators
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<!IsUnordered>
-    testReverseIterator();
+    void
+    testReverseIterator()
+        requires(!IsUnordered);
 
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<IsUnordered>
+    void
     testReverseIterator()
+        requires IsUnordered
     {
     }
 
@@ -530,12 +543,14 @@ public:
 
     // map, unordered_map
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<IsMap && !IsMulti>
-    testArrayCreate();
+    void
+    testArrayCreate()
+        requires(IsMap && !IsMulti);
 
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<!IsMap || IsMulti>
+    void
     testArrayCreate()
+        requires(!IsMap || IsMulti)
     {
     }
 
@@ -574,12 +589,14 @@ public:
 
     // ordered
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<!IsUnordered>
-    testCompare();
+    void
+    testCompare()
+        requires(!IsUnordered);
 
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<IsUnordered>
+    void
     testCompare()
+        requires IsUnordered
     {
     }
 
@@ -587,13 +604,15 @@ public:
 
     // ordered
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<!IsUnordered>
-    testObservers();
+    void
+    testObservers()
+        requires(!IsUnordered);
 
     // unordered
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    std::enable_if_t<IsUnordered>
-    testObservers();
+    void
+    testObservers()
+        requires IsUnordered;
 
     //--------------------------------------------------------------------------
 
@@ -615,8 +634,9 @@ public:
 // Check contents via at() and operator[]
 // map, unordered_map
 template <class Container, class Values>
-std::enable_if_t<Container::is_map::value && !Container::is_multi::value>
+void
 AgedAssociativeContainerTestBase::checkMapContents(Container& c, Values const& v)
+    requires(Container::is_map::value && !Container::is_multi::value)
 {
     if (v.empty())
     {
@@ -641,13 +661,14 @@ AgedAssociativeContainerTestBase::checkMapContents(Container& c, Values const& v
 
 // unordered
 template <class C, class Values>
-std::enable_if_t<std::remove_reference<C>::type::is_unordered::value>
+void
 AgedAssociativeContainerTestBase::checkUnorderedContentsRefRef(C&& c, Values const& v)
+    requires(std::remove_reference_t<C>::is_unordered::value)
 {
     using Cont = std::remove_reference_t<C>;
     using Traits =
         TestTraits<Cont::is_unordered::value, Cont::is_multi::value, Cont::is_map::value>;
-    using size_type = typename Cont::size_type;
+    using size_type = Cont::size_type;
     auto const hash(c.hashFunction());
     auto const keyEq(c.keyEq());
     for (size_type i(0); i < c.bucketCount(); ++i)
@@ -655,10 +676,9 @@ AgedAssociativeContainerTestBase::checkUnorderedContentsRefRef(C&& c, Values con
         auto const last(c.end(i));
         for (auto iter(c.begin(i)); iter != last; ++iter)
         {
-            auto const match(
-                std::find_if(v.begin(), v.end(), [iter](typename Values::value_type const& e) {
-                    return Traits::extract(*iter) == Traits::extract(e);
-                }));
+            auto const match(std::ranges::find_if(v, [iter](Values::value_type const& e) {
+                return Traits::extract(*iter) == Traits::extract(e);
+            }));
             BEAST_EXPECT(match != v.end());
             BEAST_EXPECT(keyEq(Traits::extract(*iter), Traits::extract(*match)));
             BEAST_EXPECT(hash(Traits::extract(*iter)) == hash(Traits::extract(*match)));
@@ -671,7 +691,7 @@ void
 AgedAssociativeContainerTestBase::checkContentsRefRef(C&& c, Values const& v)
 {
     using Cont = std::remove_reference_t<C>;
-    using size_type = typename Cont::size_type;
+    using size_type = Cont::size_type;
 
     BEAST_EXPECT(c.size() == v.size());
     BEAST_EXPECT(size_type(std::distance(c.begin(), c.end())) == v.size());
@@ -703,7 +723,7 @@ AgedAssociativeContainerTestBase::checkContents(Cont& c)
 {
     using Traits =
         TestTraits<Cont::is_unordered::value, Cont::is_multi::value, Cont::is_map::value>;
-    using Values = typename Traits::Values;
+    using Values = Traits::Values;
     checkContents(c, Values());
 }
 
@@ -715,14 +735,15 @@ AgedAssociativeContainerTestBase::checkContents(Cont& c)
 
 // ordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-std::enable_if_t<!IsUnordered>
+void
 AgedAssociativeContainerTestBase::testConstructEmpty()
+    requires(!IsUnordered)
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Comp = typename Traits::Comp;
-    using Alloc = typename Traits::Alloc;
-    using MyComp = typename Traits::MyComp;
-    using MyAlloc = typename Traits::MyAlloc;
+    using Comp = Traits::Comp;
+    using Alloc = Traits::Alloc;
+    using MyComp = Traits::MyComp;
+    using MyAlloc = Traits::MyAlloc;
     typename Traits::ManualClock clock;
 
     // testcase (Traits::name() + " empty");
@@ -751,16 +772,17 @@ AgedAssociativeContainerTestBase::testConstructEmpty()
 
 // unordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-std::enable_if_t<IsUnordered>
+void
 AgedAssociativeContainerTestBase::testConstructEmpty()
+    requires IsUnordered
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Hash = typename Traits::Hash;
-    using Equal = typename Traits::Equal;
-    using Alloc = typename Traits::Alloc;
-    using MyHash = typename Traits::MyHash;
-    using MyEqual = typename Traits::MyEqual;
-    using MyAlloc = typename Traits::MyAlloc;
+    using Hash = Traits::Hash;
+    using Equal = Traits::Equal;
+    using Alloc = Traits::Alloc;
+    using MyHash = Traits::MyHash;
+    using MyEqual = Traits::MyEqual;
+    using MyAlloc = Traits::MyAlloc;
     typename Traits::ManualClock clock;
 
     // testcase (Traits::name() + " empty");
@@ -809,14 +831,15 @@ AgedAssociativeContainerTestBase::testConstructEmpty()
 
 // ordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-std::enable_if_t<!IsUnordered>
+void
 AgedAssociativeContainerTestBase::testConstructRange()
+    requires(!IsUnordered)
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Comp = typename Traits::Comp;
-    using Alloc = typename Traits::Alloc;
-    using MyComp = typename Traits::MyComp;
-    using MyAlloc = typename Traits::MyAlloc;
+    using Comp = Traits::Comp;
+    using Alloc = Traits::Alloc;
+    using MyComp = Traits::MyComp;
+    using MyAlloc = Traits::MyAlloc;
     typename Traits::ManualClock clock;
     auto const v(Traits::values());
 
@@ -856,16 +879,17 @@ AgedAssociativeContainerTestBase::testConstructRange()
 
 // unordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-std::enable_if_t<IsUnordered>
+void
 AgedAssociativeContainerTestBase::testConstructRange()
+    requires IsUnordered
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Hash = typename Traits::Hash;
-    using Equal = typename Traits::Equal;
-    using Alloc = typename Traits::Alloc;
-    using MyHash = typename Traits::MyHash;
-    using MyEqual = typename Traits::MyEqual;
-    using MyAlloc = typename Traits::MyAlloc;
+    using Hash = Traits::Hash;
+    using Equal = Traits::Equal;
+    using Alloc = Traits::Alloc;
+    using MyHash = Traits::MyHash;
+    using MyEqual = Traits::MyEqual;
+    using MyAlloc = Traits::MyAlloc;
     typename Traits::ManualClock clock;
     auto const v(Traits::values());
 
@@ -922,8 +946,9 @@ AgedAssociativeContainerTestBase::testConstructRange()
 
 // ordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-std::enable_if_t<!IsUnordered>
+void
 AgedAssociativeContainerTestBase::testConstructInitList()
+    requires(!IsUnordered)
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock const clock;
@@ -938,8 +963,9 @@ AgedAssociativeContainerTestBase::testConstructInitList()
 
 // unordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-std::enable_if_t<IsUnordered>
+void
 AgedAssociativeContainerTestBase::testConstructInitList()
+    requires IsUnordered
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock const clock;
@@ -962,7 +988,7 @@ void
 AgedAssociativeContainerTestBase::testCopyMove()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Alloc = typename Traits::Alloc;
+    using Alloc = Traits::Alloc;
     typename Traits::ManualClock clock;
     auto const v(Traits::values());
 
@@ -1084,8 +1110,9 @@ AgedAssociativeContainerTestBase::testIterator()
 }
 
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-std::enable_if_t<!IsUnordered>
+void
 AgedAssociativeContainerTestBase::testReverseIterator()
+    requires(!IsUnordered)
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;
@@ -1296,18 +1323,12 @@ AgedAssociativeContainerTestBase::testChronological()
 
     typename Traits::template Cont<> c(v.begin(), v.end(), clock);
 
-    BEAST_EXPECT(
-        std::equal(
-            c.chronological.cbegin(),
-            c.chronological.cend(),
-            v.begin(),
-            v.end(),
-            EqualValue<Traits>()));
+    BEAST_EXPECT(std::ranges::equal(c.chronological, v, EqualValue<Traits>()));
 
     // Test touch() with a non-const iterator.
     for (auto iter(v.crbegin()); iter != v.crend(); ++iter)
     {
-        using iterator = typename decltype(c)::iterator;
+        using iterator = decltype(c)::iterator;
         iterator const found(c.find(Traits::extract(*iter)));
 
         BEAST_EXPECT(found != c.cend());
@@ -1327,7 +1348,7 @@ AgedAssociativeContainerTestBase::testChronological()
     // Test touch() with a const_iterator
     for (auto iter(v.cbegin()); iter != v.cend(); ++iter)
     {
-        using const_iterator = typename decltype(c)::const_iterator;
+        using const_iterator = decltype(c)::const_iterator;
         const_iterator const found(c.find(Traits::extract(*iter)));
 
         BEAST_EXPECT(found != c.cend());
@@ -1336,13 +1357,7 @@ AgedAssociativeContainerTestBase::testChronological()
         c.touch(found);
     }
 
-    BEAST_EXPECT(
-        std::equal(
-            c.chronological.cbegin(),
-            c.chronological.cend(),
-            v.cbegin(),
-            v.cend(),
-            EqualValue<Traits>()));
+    BEAST_EXPECT(std::ranges::equal(c.chronological, v, EqualValue<Traits>()));
 
     {
         // Because touch (reverse_iterator pos) is not allowed, the following
@@ -1360,8 +1375,9 @@ AgedAssociativeContainerTestBase::testChronological()
 
 // map, unordered_map
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-std::enable_if_t<IsMap && !IsMulti>
+void
 AgedAssociativeContainerTestBase::testArrayCreate()
+    requires(IsMap && !IsMulti)
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;
@@ -1403,12 +1419,12 @@ AgedAssociativeContainerTestBase::reverseFillAgedContainer(Container& c, Values 
     // c.clock() returns an abstract_clock, so dynamic_cast to ManualClock.
     // VFALCO NOTE This is sketchy
     using ManualClock = TestTraitsBase::ManualClock;
-    ManualClock& clk(dynamic_cast<ManualClock&>(c.clock()));
+    auto& clk = dynamic_cast<ManualClock&>(c.clock());
     clk.set(0);
 
     Values rev(values);
-    std::sort(rev.begin(), rev.end());
-    std::reverse(rev.begin(), rev.end());
+    std::ranges::sort(rev);
+    std::ranges::reverse(rev);
     for (auto& v : rev)
     {
         // Add values in reverse order so they are reversed chronologically.
@@ -1643,8 +1659,9 @@ AgedAssociativeContainerTestBase::testRangeErase()
 
 // ordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-std::enable_if_t<!IsUnordered>
+void
 AgedAssociativeContainerTestBase::testCompare()
+    requires(!IsUnordered)
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;
@@ -1674,8 +1691,9 @@ AgedAssociativeContainerTestBase::testCompare()
 
 // ordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-std::enable_if_t<!IsUnordered>
+void
 AgedAssociativeContainerTestBase::testObservers()
+    requires(!IsUnordered)
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;
@@ -1692,8 +1710,9 @@ AgedAssociativeContainerTestBase::testObservers()
 
 // unordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-std::enable_if_t<IsUnordered>
+void
 AgedAssociativeContainerTestBase::testObservers()
+    requires IsUnordered
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;

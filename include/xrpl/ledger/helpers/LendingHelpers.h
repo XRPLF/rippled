@@ -1,10 +1,28 @@
 #pragma once
 
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 
+#include <cstdint>
+#include <expected>
 #include <string_view>
+#include <utility>
 
 namespace xrpl {
 
@@ -397,7 +415,7 @@ struct LoanStateDeltas
     nonNegative();
 };
 
-Expected<std::pair<LoanPaymentParts, LoanProperties>, TER>
+std::expected<std::pair<LoanPaymentParts, LoanProperties>, TER>
 tryOverpayment(
     Rules const& rules,
     Asset const& asset,
@@ -461,6 +479,7 @@ loanAccruedInterest(
 
 ExtendedPaymentComponents
 computeOverpaymentComponents(
+    Rules const& rules,
     Asset const& asset,
     int32_t const loanScale,
     Number const& overpayment,
@@ -522,7 +541,7 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale);
 // potential extra work at the end.
 enum class LoanPaymentType { Regular = 0, Late, Full, Overpayment };
 
-Expected<LoanPaymentParts, TER>
+std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
     ApplyView& view,

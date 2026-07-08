@@ -3,6 +3,11 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/AcceptedLedgerTx.h>
+#include <xrpl/ledger/ReadView.h>
+
+#include <cstddef>
+#include <memory>
+#include <vector>
 
 namespace xrpl {
 
@@ -25,7 +30,7 @@ namespace xrpl {
 class AcceptedLedger : public CountedObject<AcceptedLedger>
 {
 public:
-    AcceptedLedger(std::shared_ptr<ReadView const> const& ledger);
+    AcceptedLedger(std::shared_ptr<ReadView const> ledger);
 
     [[nodiscard]] std::shared_ptr<ReadView const> const&
     getLedger() const

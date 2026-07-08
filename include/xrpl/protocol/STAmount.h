@@ -1,20 +1,34 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
-#include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/json_get_or_throw.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -189,7 +203,6 @@ public:
     /**
      * Checks if this amount evaluates to zero when constrained to a specific
      * accounting scale.
-     *
      * For XRP and MPT `roundToScale` is a no-op, returns true only when the amount itself is zero.
      * The `scale` argument is ignored in that case.
      * For IOU, the amount is rounded to the given scale using Number::RoundingMode::ToNearest mode
@@ -560,7 +573,7 @@ STAmount::fromNumber(A const& a, Number const& number)
         return STAmount{asset, intValue, 0, negative};
     }
 
-    auto const [mantissa, exponent] = working.normalizeToRange(kMinValue, kMaxValue);
+    auto const [mantissa, exponent] = working.normalizeToRange<kMinValue, kMaxValue>();
 
     return STAmount{asset, mantissa, exponent, negative};
 }

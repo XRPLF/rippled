@@ -150,18 +150,18 @@ struct SEnv
         return env.current()->fees().base;
     }
 
-    std::shared_ptr<SLE const>
+    SLE::const_pointer
     account(jtx::Account const& account)
     {
         return env.le(account);
     }
 
-    std::shared_ptr<SLE const>
+    SLE::const_pointer
     bridge(json::Value const& jvb)
     {
         STXChainBridge const b(jvb);
 
-        auto tryGet = [&](STXChainBridge::ChainType ct) -> std::shared_ptr<SLE const> {
+        auto tryGet = [&](STXChainBridge::ChainType ct) -> SLE::const_pointer {
             if (auto r = env.le(keylet::bridge(b, ct)))
             {
                 if ((*r)[sfXChainBridge] == b)
@@ -186,13 +186,13 @@ struct SEnv
         return (*bridge(jvb))[sfXChainClaimID];
     }
 
-    std::shared_ptr<SLE const>
+    SLE::const_pointer
     claimID(json::Value const& jvb, std::uint64_t seq)
     {
         return env.le(keylet::xChainClaimID(STXChainBridge(jvb), seq));
     }
 
-    std::shared_ptr<SLE const>
+    SLE::const_pointer
     caClaimID(json::Value const& jvb, std::uint64_t seq)
     {
         return env.le(keylet::xChainCreateAccountClaimID(STXChainBridge(jvb), seq));
@@ -245,9 +245,9 @@ struct Balance
     T& env;
     STAmount startAmount;
 
-    Balance(T& env, jtx::Account const& account) : account(account), env(env)
+    Balance(T& env, jtx::Account const& account)
+        : account(account), env(env), startAmount(env.balance(account))
     {
-        startAmount = env.balance(account);
     }
 
     [[nodiscard]] STAmount
@@ -306,9 +306,8 @@ struct BalanceTransfer
     [[nodiscard]] bool
     payeesReceived(STAmount const& reward) const
     {
-        return std::all_of(rewardAccounts.begin(), rewardAccounts.end(), [&](balance const& b) {
-            return b.diff() == reward;
-        });
+        return std::ranges::all_of(
+            rewardAccounts, [&](balance const& b) { return b.diff() == reward; });
     }
 
     bool
@@ -2164,14 +2163,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                     scAttester, jvb, mcAlice, amt, payees[i], true, claimID, dst, signers[i]);
 
                 TER const expectedTER = i < quorum ? tesSUCCESS : TER{tecXCHAIN_NO_CLAIM_ID};
-                if (i + 1 == quorum)
-                {
-                    scEnv.tx(att, Ter(expectedTER)).close();
-                }
-                else
-                {
-                    scEnv.tx(att, Ter(expectedTER)).close();
-                }
+                scEnv.tx(att, Ter(expectedTER)).close();
 
                 if (i + 1 < quorum)
                 {
@@ -4375,6 +4367,7 @@ public:
     {
         using namespace jtx;
         uint64_t time = 0;
+        // NOLINTNEXTLINE(bugprone-random-generator-seed): fixed seed for reproducible test
         std::mt19937 gen(27);  // Standard mersenne_twister_engine
         std::uniform_int_distribution<uint32_t> distrib(0, 9);
 

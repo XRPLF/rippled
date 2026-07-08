@@ -1,14 +1,29 @@
 #pragma once
 
-#include <xrpl/basics/BasicConfig.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/TaggedCache.ipp>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
-#include <xrpl/protocol/SystemParameters.h>
 
+#include <atomic>
 #include <condition_variable>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace xrpl {
+class Section;
+}  // namespace xrpl
 
 namespace xrpl::NodeStore {
 
@@ -130,6 +145,10 @@ public:
         uint256 const& hash,
         std::uint32_t ledgerSeq,
         std::function<void(std::shared_ptr<NodeObject> const&)>&& callback);
+
+    /** Remove expired entries from the positive and negative caches. */
+    virtual void
+    sweep() = 0;
 
     /** Gather statistics pertaining to read and write activities.
      *

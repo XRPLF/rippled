@@ -36,7 +36,7 @@ doBalance(Env& env, AccountID const& account, bool kNone, STAmount const& value,
     }
     else
     {
-        auto const sle = env.le(keylet::line(account, issue));
+        auto const sle = env.le(keylet::trustLine(account, issue));
         if (kNone)
         {
             TEST_EXPECT(!sle);
