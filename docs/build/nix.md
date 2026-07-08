@@ -114,7 +114,15 @@ Once inside the Nix development shell, follow the standard [build instructions](
 
 [direnv](https://direnv.net/) or [nix-direnv](https://github.com/nix-community/nix-direnv) can automatically activate the Nix development shell when you enter the repository directory.
 
-This is also the most robust way to use the environment from **any shell** (bash, zsh, fish, …): direnv stays in your current shell and loads the environment _after_ your shell's startup files have run, so the Nix-provided tools take precedence over anything your shell configuration adds to `$PATH`. To use it, install direnv for your shell, then add an `.envrc` containing `use flake` at the repository root and run `direnv allow`.
+This is also the most robust way to use the environment from **any shell** (bash, zsh, fish, …): direnv stays in your current shell and loads the environment _after_ your shell's startup files have run, so the Nix-provided tools take precedence over anything your shell configuration adds to `$PATH`.
+
+The repository already ships an `.envrc` at its root that activates the Nix flake development shell, so you don't need to create one. To use it:
+
+1. [Install direnv](https://direnv.net/docs/installation.html) and [hook it into your shell](https://direnv.net/docs/hook.html) (bash, zsh, fish, …). Installing [nix-direnv](https://github.com/nix-community/nix-direnv) as well is recommended: it caches the shell so that activation is near-instant after the first run.
+2. Run `direnv allow` once in the repository root. direnv will then load (and reload) the Nix development shell automatically whenever you enter the directory.
+
+> [!NOTE]
+> direnv only caches the `.direnv` directory (already listed in `.gitignore`); no other repository files are affected.
 
 ## Conan and Prebuilt Packages
 
