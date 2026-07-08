@@ -427,7 +427,7 @@ public:
     addTxMetrics(Args... args)
     {
         if (!strand_.running_in_this_thread())
-            return post(strand_, [this, args...] { addTxMetrics(args...); });
+            return post(strand_, std::bind(&OverlayImpl::addTxMetrics<Args...>, this, args...));
 
         txMetrics_.addMetrics(args...);
     }

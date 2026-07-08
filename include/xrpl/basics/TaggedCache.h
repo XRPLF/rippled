@@ -212,13 +212,11 @@ public:
     */
     template <class ReturnType = bool>
     auto
-    insert(key_type const& key, T const& value) -> ReturnType
-        requires(!IsKeyCache);
+    insert(key_type const& key, T const& value) -> std::enable_if_t<!IsKeyCache, ReturnType>;
 
     template <class ReturnType = bool>
     auto
-    insert(key_type const& key) -> ReturnType
-        requires IsKeyCache;
+    insert(key_type const& key) -> std::enable_if_t<IsKeyCache, ReturnType>;
 
     // VFALCO NOTE It looks like this returns a copy of the data in
     //             the output parameter 'data'. This could be expensive.

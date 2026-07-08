@@ -3,6 +3,7 @@
 #include <test/csf/Tx.h>
 
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/comparators.h>
 #include <xrpl/basics/tagged_integer.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/LedgerTiming.h>
@@ -12,7 +13,6 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <optional>
 #include <set>
 #include <string>
@@ -232,8 +232,8 @@ private:
 class LedgerOracle
 {
     using InstanceMap = boost::bimaps::bimap<
-        boost::bimaps::set_of<Ledger::Instance, std::less<>>,
-        boost::bimaps::set_of<Ledger::ID, std::less<>>>;
+        boost::bimaps::set_of<Ledger::Instance, xrpl::less<Ledger::Instance>>,
+        boost::bimaps::set_of<Ledger::ID, xrpl::less<Ledger::ID>>>;
     using InstanceEntry = InstanceMap::value_type;
 
     // Set of all known ledgers; note this is never pruned

@@ -26,7 +26,9 @@ struct Zero
     explicit Zero() = default;
 };
 
-inline constexpr Zero kZero{};
+namespace {
+constexpr Zero kZero{};
+}  // namespace
 
 /** Default implementation of signum calls the method on the class. */
 template <typename T>

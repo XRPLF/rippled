@@ -137,7 +137,7 @@ LedgerMaster::LedgerMaster(
           std::chrono::seconds{45},
           stopwatch,
           app_.getJournal("TaggedCache"))
-    , stats_([this] { collectMetrics(); }, collector)
+    , stats_(std::bind(&LedgerMaster::collectMetrics, this), collector)
 {
 }
 

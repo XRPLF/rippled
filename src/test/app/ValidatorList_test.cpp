@@ -146,8 +146,8 @@ private:
 
         for (auto const& val : validators)
         {
-            data += R"({"validation_public_key":")" + strHex(val.masterPublic) +
-                R"(","manifest":")" + val.manifest + "\"},";
+            data += "{\"validation_public_key\":\"" + strHex(val.masterPublic) +
+                "\",\"manifest\":\"" + val.manifest + "\"},";
         }
 
         data.pop_back();

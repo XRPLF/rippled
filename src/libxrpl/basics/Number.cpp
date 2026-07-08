@@ -876,7 +876,7 @@ Number::operator/=(Number const& y)
     int const ds = (dp ? -1 : 1);
     // Create the denominator as 128-bit unsigned, since that's what we
     // need to work with.
-    auto const dm = static_cast<uint128_t>(y.mantissa_);
+    uint128_t const dm = static_cast<uint128_t>(y.mantissa_);
     auto const de = y.exponent_;
 
     auto const& range = kRange.get();

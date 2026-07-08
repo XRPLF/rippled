@@ -322,11 +322,12 @@ public:
     removeTxQueue(uint256 const& hash) override;
 
     /** Send a set of PeerFinder endpoints as a protocol message. */
-    template <class FwdIt>
+    template <
+        class FwdIt,
+        class = std::enable_if_t<
+            std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>>>
     void
-    sendEndpoints(FwdIt first, FwdIt last)
-        requires(
-            std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>);
+    sendEndpoints(FwdIt first, FwdIt last);
 
     beast::IP::Endpoint
     getRemoteAddress() const override
@@ -786,10 +787,9 @@ PeerImp::PeerImp(
         << id_;
 }
 
-template <class FwdIt>
+template <class FwdIt, class>
 void
 PeerImp::sendEndpoints(FwdIt first, FwdIt last)
-    requires(std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>)
 {
     protocol::TMEndpoints tm;
 

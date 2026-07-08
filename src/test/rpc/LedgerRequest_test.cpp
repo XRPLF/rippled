@@ -11,6 +11,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <utility>
@@ -349,7 +350,7 @@ public:
     {
         testLedgerRequest();
         testEvolution();
-        forAllApiVersions([this](unsigned apiVersion) { testBadInput(apiVersion); });
+        forAllApiVersions(std::bind_front(&LedgerRequest_test::testBadInput, this));
         testMoreThan256Closed();
         testNonAdmin();
     }

@@ -237,10 +237,12 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
     return std::nullopt;
 }
 
-template <class T, class Buffers>
+template <
+    class T,
+    class Buffers,
+    class = std::enable_if_t<std::is_base_of_v<::google::protobuf::Message, T>>>
 std::shared_ptr<T>
 parseMessageContent(MessageHeader const& header, Buffers const& buffers)
-    requires(std::is_base_of_v<::google::protobuf::Message, T>)
 {
     auto m = std::make_shared<T>();
 
@@ -270,10 +272,13 @@ parseMessageContent(MessageHeader const& header, Buffers const& buffers)
     return m;
 }
 
-template <class T, class Buffers, class Handler>
+template <
+    class T,
+    class Buffers,
+    class Handler,
+    class = std::enable_if_t<std::is_base_of_v<::google::protobuf::Message, T>>>
 bool
 invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
-    requires(std::is_base_of_v<::google::protobuf::Message, T>)
 {
     auto const m = parseMessageContent<T>(header, buffers);
     if (!m)

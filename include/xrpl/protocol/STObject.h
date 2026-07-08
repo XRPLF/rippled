@@ -555,14 +555,9 @@ public:
     ValueProxy&
     operator=(ValueProxy const&) = delete;
 
-    // Write-through proxy: assignment sets the referenced field to the given
-    // value, so it intentionally takes the assigned value rather than a
-    // ValueProxy.
     template <class U>
-    // NOLINTNEXTLINE(misc-unconventional-assign-operator)
-    ValueProxy&
-    operator=(U&& u)
-        requires(std::is_assignable_v<T, U>);
+    std::enable_if_t<std::is_assignable_v<T, U>, ValueProxy&>
+    operator=(U&& u);
 
     // Convenience operators for value types supporting
     // arithmetic operations
@@ -696,9 +691,8 @@ public:
     operator=(optional_type const& v);
 
     template <class U>
-    OptionalProxy&
-    operator=(U&& u)
-        requires(std::is_assignable_v<T, U>);
+    std::enable_if_t<std::is_assignable_v<T, U>, OptionalProxy&>
+    operator=(U&& u);
 
 private:
     friend class STObject;
@@ -804,10 +798,8 @@ STObject::Proxy<T>::assign(U&& u)
 
 template <class T>
 template <class U>
-// NOLINTNEXTLINE(misc-unconventional-assign-operator)
-STObject::ValueProxy<T>&
+std::enable_if_t<std::is_assignable_v<T, U>, STObject::ValueProxy<T>&>
 STObject::ValueProxy<T>::operator=(U&& u)
-    requires(std::is_assignable_v<T, U>)
 {
     this->assign(std::forward<U>(u));
     return *this;
@@ -910,9 +902,8 @@ STObject::OptionalProxy<T>::operator=(optional_type const& v) -> OptionalProxy&
 
 template <class T>
 template <class U>
-STObject::OptionalProxy<T>&
+std::enable_if_t<std::is_assignable_v<T, U>, STObject::OptionalProxy<T>&>
 STObject::OptionalProxy<T>::operator=(U&& u)
-    requires(std::is_assignable_v<T, U>)
 {
     this->assign(std::forward<U>(u));
     return *this;
@@ -1250,7 +1241,7 @@ template <typename T, typename V>
 void
 STObject::setFieldUsingSetValue(SField const& field, V value)
 {
-    static_assert(!std::is_lvalue_reference_v<V>);
+    static_assert(!std::is_lvalue_reference_v<V>, "");
 
     STBase* rf = getPField(field, true);
 

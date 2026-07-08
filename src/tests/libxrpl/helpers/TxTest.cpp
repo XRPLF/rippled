@@ -80,9 +80,7 @@ TxTest::TxTest(std::optional<FeatureBitset> features)
         std::vector<uint256>{featureSet_.begin(), featureSet_.end()},
         registry_.getNodeFamily());
 
-    // Initialize time from the genesis ledger.  closedLedger_ is created above
-    // in the body, so this cannot be a member initializer.
-    // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
+    // Initialize time from the genesis ledger
     now_ = closedLedger_->header().closeTime;
 
     // Create an open view on top of the genesis ledger

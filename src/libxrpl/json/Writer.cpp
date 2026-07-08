@@ -230,8 +230,9 @@ Writer::~Writer()
         impl_->finishAll();
 }
 
-Writer::Writer(Writer&& w) noexcept : impl_(std::move(w.impl_))
+Writer::Writer(Writer&& w) noexcept
 {
+    impl_ = std::move(w.impl_);
 }
 
 Writer&

@@ -838,7 +838,7 @@ TEST(json_value, compact)
 {
     json::Value j;
     json::Reader r;
-    char const* s(R"({"array":[{"12":23},{},null,false,0.5]})");
+    char const* s("{\"array\":[{\"12\":23},{},null,false,0.5]}");
 
     auto countLines = [](std::string const& str) {
         return 1 + std::count_if(str.begin(), str.end(), [](char c) { return c == '\n'; });

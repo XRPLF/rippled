@@ -413,9 +413,8 @@ void
 stpathAppendOne(STPath& st, Account const& account);
 
 template <class T>
-void
+std::enable_if_t<std::is_constructible_v<Account, T>>
 stpathAppendOne(STPath& st, T const& t)
-    requires(std::is_constructible_v<Account, T>)
 {
     stpathAppendOne(st, Account{t});
 }

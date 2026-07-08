@@ -1,5 +1,5 @@
 #include <xrpl/basics/Number.h>
-
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
@@ -10,8 +10,6 @@
 #include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/multiprecision/number.hpp>
 
-#include <gtest/gtest.h>
-
 #include <algorithm>
 #include <array>
 #include <cctype>
@@ -19,7 +17,6 @@
 #include <iomanip>
 #include <limits>
 #include <map>
-#include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -29,81 +26,82 @@
 
 namespace xrpl {
 
-using BigInt = boost::multiprecision::cpp_int;
-using Dec = boost::multiprecision::cpp_dec_float_50;
-
-static std::string
-fmt(BigInt const& value)
+class Number_test : public beast::unit_test::Suite
 {
-    auto s = to_string(value);
-    std::string out;
-    int count = 0;
-    for (char const& ch : std::views::reverse(s))
-    {
-        if (count != 0 && count % 3 == 0 && (isdigit(ch) != 0))
-            out.insert(out.begin(), '_');
-        out.insert(out.begin(), ch);
-        ++count;
-    }
-    return out;
-}
+    using BigInt = boost::multiprecision::cpp_int;
 
-template <class T = Dec>
-static T
-pow10(int n)
-{
-    if (n == 0)
-        return 1;
-    if (n == 1)
-        return 10;
-
-    if (n > 1)
+    static std::string
+    fmt(BigInt const& value)
     {
-        auto r = pow10<T>(n / 2);
-        r *= r;
-        if (n % 2 != 0)
-            r *= 10;
-        return r;
+        auto s = to_string(value);
+        std::string out;
+        int count = 0;
+        for (auto it = s.rbegin(); it != s.rend(); ++it)
+        {
+            if (count != 0 && count % 3 == 0 && (isdigit(*it) != 0))
+                out.insert(out.begin(), '_');
+            out.insert(out.begin(), *it);
+            ++count;
+        }
+        return out;
     }
 
-    T p = 1;
-    p /= pow10<T>(-n);
-    return p;
-}
+    using dec = boost::multiprecision::cpp_dec_float_50;
 
-static std::string
-fmt(Dec const& value)
-{
-    std::ostringstream os;
-    os << std::setprecision(40) << value;
-    return os.str();
-}
-
-TEST(NumberTest, zero)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    template <class T = dec>
+    static T
+    pow10(int n)
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
+        if (n == 0)
+            return 1;
+        if (n == 1)
+            return 10;
+
+        if (n > 1)
+        {
+            auto r = pow10<T>(n / 2);
+            r *= r;
+            if (n % 2 != 0)
+                r *= 10;
+            return r;
+        }
+
+        // n < 0
+        T p = 1;
+        p /= pow10<T>(-n);
+        return p;
+    }
+
+    static std::string
+    fmt(dec const& v)
+    {
+        std::ostringstream os;
+        os << std::setprecision(40) << v;
+        return os.str();
+    }
+
+public:
+    void
+    testZero()
+    {
+        testcase << "zero " << to_string(Number::getMantissaScale());
 
         for (Number const& z : {Number{0, 0}, Number{0}})
         {
-            EXPECT_EQ(z.mantissa(), 0);
-            EXPECT_EQ(z.exponent(), Number{}.exponent());
+            BEAST_EXPECT(z.mantissa() == 0);
+            BEAST_EXPECT(z.exponent() == Number{}.exponent());
 
-            EXPECT_EQ((z + z), z);
-            EXPECT_EQ((z - z), z);
-            EXPECT_EQ(z, -z);
+            BEAST_EXPECT((z + z) == z);
+            BEAST_EXPECT((z - z) == z);
+            BEAST_EXPECT(z == -z);
         }
     }
-}
 
-TEST(NumberTest, limits)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testLimits()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
-
         auto const scale = Number::getMantissaScale();
+        testcase << "test_limits " << to_string(scale);
         bool caught = false;
         auto const minMantissa = Number::minMantissa();
         try
@@ -115,13 +113,13 @@ TEST(NumberTest, limits)
         {
             caught = true;
         }
-        EXPECT_TRUE(caught);
+        BEAST_EXPECT(caught);
 
-        auto test = [](auto const& x, auto const& y, int line) {
+        auto test = [this](auto const& x, auto const& y, int line) {
             auto const result = x == y;
             std::stringstream ss;
             ss << x << " == " << y << " -> " << (result ? "true" : "false");
-            EXPECT_TRUE(result) << ss.str() << " (" << __FILE__ << ":" << line << ")";
+            expect(result, ss.str(), __FILE__, line);
         };
 
         test(
@@ -165,17 +163,14 @@ TEST(NumberTest, limits)
         {
             caught = true;
         }
-        EXPECT_TRUE(caught);
+        BEAST_EXPECT(caught);
     }
-}
 
-TEST(NumberTest, add)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testAdd()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
-
         auto const scale = Number::getMantissaScale();
+        testcase << "test_add " << to_string(scale);
 
         using Case = std::tuple<Number, Number, Number>;
         auto const cSmall = std::to_array<Case>(
@@ -254,11 +249,11 @@ TEST(NumberTest, add)
                     Number{2, 19},
                 },
                 {
-                    // Does not round. Mantissas are going to be > maxRep, so if
+                    // Does not round. Mantissas are going to be > kMaxRep, so if
                     // added together as uint64_t's, the result will overflow.
                     // With addition using uint128_t, there's no problem. After
                     // normalizing, the resulting mantissa ends up less than
-                    // maxRep.
+                    // kMaxRep.
                     Number{false, 9'999'999'999'999'999'990ULL, 0, Number::Normalized{}},
                     Number{false, 9'999'999'999'999'999'990ULL, 0, Number::Normalized{}},
                     Number{false, 1'999'999'999'999'999'998ULL, 1, Number::Normalized{}},
@@ -270,13 +265,13 @@ TEST(NumberTest, add)
         auto const cLargeCorrected = std::to_array<Case>({
             {Number{Number::kMaxRep}, Number{6, -1}, Number{(Number::kMaxRep / 10) + 1, 1}},
         });
-        auto test = [](auto const& c) {
+        auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
             {
                 auto const result = x + y;
                 std::stringstream ss;
                 ss << x << " + " << y << " = " << result << ". Expected: " << z;
-                EXPECT_EQ(result, z) << ss.str();
+                BEAST_EXPECTS(result == z, ss.str());
             }
         };
         if (scale == MantissaRange::MantissaScale::Small)
@@ -306,18 +301,15 @@ TEST(NumberTest, add)
             {
                 caught = true;
             }
-            EXPECT_TRUE(caught);
+            BEAST_EXPECT(caught);
         }
     }
-}
 
-TEST(NumberTest, sub)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testSub()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
-
         auto const scale = Number::getMantissaScale();
+        testcase << "test_sub " << to_string(scale);
 
         using Case = std::tuple<Number, Number, Number>;
         auto const cSmall = std::to_array<Case>(
@@ -377,13 +369,13 @@ TEST(NumberTest, sub)
                  Number{Number::kMaxRep}},
                 {power(2, 63), Number{3, 0}, Number{Number::kMaxRep}},
             });
-        auto test = [](auto const& c) {
+        auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
             {
                 auto const result = x - y;
                 std::stringstream ss;
                 ss << x << " - " << y << " = " << result << ". Expected: " << z;
-                EXPECT_EQ(result, z) << ss.str();
+                BEAST_EXPECTS(result == z, ss.str());
             }
         };
         if (scale == MantissaRange::MantissaScale::Small)
@@ -395,24 +387,21 @@ TEST(NumberTest, sub)
             test(cLarge);
         }
     }
-}
 
-TEST(NumberTest, mul)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testMul()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
-
         auto const scale = Number::getMantissaScale();
+        testcase << "test_mul " << to_string(scale);
 
         using Case = std::tuple<Number, Number, Number>;
-        auto test = [](auto const& c) {
+        auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
             {
                 auto const result = x * y;
                 std::stringstream ss;
                 ss << x << " * " << y << " = " << result << ". Expected: " << z;
-                EXPECT_EQ(result, z) << ss.str();
+                BEAST_EXPECTS(result == z, ss.str());
             }
         };
         auto tests = [&](auto const& cSmall, auto const& cLarge) {
@@ -494,6 +483,7 @@ TEST(NumberTest, mul)
             tests(cSmall, cLarge);
         }
         Number::setround(Number::RoundingMode::TowardsZero);
+        testcase << "test_mul " << to_string(Number::getMantissaScale()) << " towards_zero";
         {
             auto const cSmall = std::to_array<Case>(
                 {{Number{7}, Number{8}, Number{56}},
@@ -560,6 +550,7 @@ TEST(NumberTest, mul)
             tests(cSmall, cLarge);
         }
         Number::setround(Number::RoundingMode::Downward);
+        testcase << "test_mul " << to_string(Number::getMantissaScale()) << " downward";
         {
             auto const cSmall = std::to_array<Case>(
                 {{Number{7}, Number{8}, Number{56}},
@@ -626,6 +617,7 @@ TEST(NumberTest, mul)
             tests(cSmall, cLarge);
         }
         Number::setround(Number::RoundingMode::Upward);
+        testcase << "test_mul " << to_string(Number::getMantissaScale()) << " upward";
         {
             auto const cSmall = std::to_array<Case>(
                 {{Number{7}, Number{8}, Number{56}},
@@ -691,6 +683,7 @@ TEST(NumberTest, mul)
                 });
             tests(cSmall, cLarge);
         }
+        testcase << "test_mul " << to_string(Number::getMantissaScale()) << " overflow";
         {
             bool caught = false;
             try
@@ -702,27 +695,24 @@ TEST(NumberTest, mul)
             {
                 caught = true;
             }
-            EXPECT_TRUE(caught);
+            BEAST_EXPECT(caught);
         }
     }
-}
 
-TEST(NumberTest, div)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testDiv()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
-
         auto const scale = Number::getMantissaScale();
+        testcase << "test_div " << to_string(scale);
 
         using Case = std::tuple<Number, Number, Number>;
-        auto test = [](auto const& c) {
+        auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
             {
                 auto const result = x / y;
                 std::stringstream ss;
                 ss << x << " / " << y << " = " << result << ". Expected: " << z;
-                EXPECT_EQ(result, z) << ss.str();
+                BEAST_EXPECTS(result == z, ss.str());
             }
         };
         auto const maxMantissa = Number::maxMantissa();
@@ -773,6 +763,7 @@ TEST(NumberTest, div)
                   Number{false, maxMantissa, -18, Number::Normalized{}}}});
             tests(cSmall, cLarge);
         }
+        testcase << "test_div " << to_string(Number::getMantissaScale()) << " towards_zero";
         Number::setround(Number::RoundingMode::TowardsZero);
         {
             auto const cSmall = std::to_array<Case>(
@@ -810,6 +801,7 @@ TEST(NumberTest, div)
                   Number{false, maxMantissa, -18, Number::Normalized{}}}});
             tests(cSmall, cLarge);
         }
+        testcase << "test_div " << to_string(Number::getMantissaScale()) << " downward";
         Number::setround(Number::RoundingMode::Downward);
         {
             auto const cSmall = std::to_array<Case>(
@@ -847,6 +839,7 @@ TEST(NumberTest, div)
                   Number{false, maxMantissa, -18, Number::Normalized{}}}});
             tests(cSmall, cLarge);
         }
+        testcase << "test_div " << to_string(Number::getMantissaScale()) << " upward";
         Number::setround(Number::RoundingMode::Upward);
         {
             auto const cSmall = std::to_array<Case>(
@@ -884,6 +877,7 @@ TEST(NumberTest, div)
                   Number{false, maxMantissa, -18, Number::Normalized{}}}});
             tests(cSmall, cLarge);
         }
+        testcase << "test_div " << to_string(Number::getMantissaScale()) << " overflow";
         bool caught = false;
         try
         {
@@ -893,30 +887,29 @@ TEST(NumberTest, div)
         {
             caught = true;
         }
-        EXPECT_TRUE(caught);
+        BEAST_EXPECT(caught);
     }
-}
 
-TEST(NumberTest, root)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testRoot()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
+        auto const scale = Number::getMantissaScale();
+        testcase << "test_root " << to_string(scale);
 
         using Case = std::tuple<Number, unsigned, Number>;
-        auto test = [](auto const& c) {
+        auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
             {
                 auto const result = root(x, y);
                 std::stringstream ss;
                 ss << "root(" << x << ", " << y << ") = " << result << ". Expected: " << z;
-                EXPECT_EQ(result, z) << ss.str();
+                BEAST_EXPECTS(result == z, ss.str());
             }
         };
         /*
         auto tests = [&](auto const& cSmall, auto const& cLarge) {
             test(cSmall);
-            if (scale != MantissaRange::mantissa_scale::small)
+            if (scale != MantissaRange::MantissaScale::Small)
                 test(cLarge);
         };
         */
@@ -960,7 +953,7 @@ TEST(NumberTest, root)
         {
             caught = true;
         }
-        EXPECT_TRUE(caught);
+        BEAST_EXPECT(caught);
         caught = false;
         try
         {
@@ -970,24 +963,23 @@ TEST(NumberTest, root)
         {
             caught = true;
         }
-        EXPECT_TRUE(caught);
+        BEAST_EXPECT(caught);
     }
-}
 
-TEST(NumberTest, root2)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testRoot2()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
+        auto const scale = Number::getMantissaScale();
+        testcase << "test_root2 " << to_string(scale);
 
-        auto test = [](auto const& c) {
+        auto test = [this](auto const& c) {
             for (auto const& x : c)
             {
                 auto const expected = root(x, 2);
                 auto const result = root2(x);
                 std::stringstream ss;
                 ss << "root2(" << x << ") = " << result << ". Expected: " << expected;
-                EXPECT_EQ(result, expected) << ss.str();
+                BEAST_EXPECTS(result == expected, ss.str());
             }
         };
 
@@ -1012,16 +1004,13 @@ TEST(NumberTest, root2)
         {
             caught = true;
         }
-        EXPECT_TRUE(caught);
+        BEAST_EXPECT(caught);
     }
-}
 
-TEST(NumberTest, power1)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testPower1()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
-
+        testcase << "test_power1 " << to_string(Number::getMantissaScale());
         using Case = std::tuple<Number, unsigned, Number>;
         Case const c[]{
             {Number{64}, 0, Number{1}},
@@ -1033,16 +1022,13 @@ TEST(NumberTest, power1)
             {Number{64}, 11, Number{false, 7378697629483820646ULL, 1, Number::Normalized{}}},
             {Number{-64}, 11, Number{true, 7378697629483820646ULL, 1, Number::Normalized{}}}};
         for (auto const& [x, y, z] : c)
-            EXPECT_EQ(power(x, y), z);
+            BEAST_EXPECT((power(x, y) == z));
     }
-}
 
-TEST(NumberTest, power2)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testPower2()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
-
+        testcase << "test_power2 " << to_string(Number::getMantissaScale());
         using Case = std::tuple<Number, unsigned, unsigned, Number>;
         Case const c[]{
             {Number{1}, 3, 7, Number{1}},
@@ -1052,7 +1038,7 @@ TEST(NumberTest, power2)
             {Number{34}, 3, 3, Number{34}},
             {Number{4}, 3, 2, Number{8}}};
         for (auto const& [x, n, d, z] : c)
-            EXPECT_EQ(power(x, n, d), z);
+            BEAST_EXPECT((power(x, n, d) == z));
         bool caught = false;
         try
         {
@@ -1062,7 +1048,7 @@ TEST(NumberTest, power2)
         {
             caught = true;
         }
-        EXPECT_TRUE(caught);
+        BEAST_EXPECT(caught);
         caught = false;
         try
         {
@@ -1072,7 +1058,7 @@ TEST(NumberTest, power2)
         {
             caught = true;
         }
-        EXPECT_TRUE(caught);
+        BEAST_EXPECT(caught);
         caught = false;
         try
         {
@@ -1082,44 +1068,39 @@ TEST(NumberTest, power2)
         {
             caught = true;
         }
-        EXPECT_TRUE(caught);
+        BEAST_EXPECT(caught);
     }
-}
 
-TEST(NumberTest, conversions)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testConversions()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
+        testcase << "testConversions " << to_string(Number::getMantissaScale());
 
         IOUAmount const x{5, 6};
         Number const y = x;
-        EXPECT_EQ(y, (Number{5, 6}));
+        BEAST_EXPECT((y == Number{5, 6}));
         IOUAmount const z{y};
-        EXPECT_EQ(x, z);
+        BEAST_EXPECT(x == z);
         XRPAmount const xrp{500};
         STAmount const st = xrp;
         Number const n = st;
-        EXPECT_EQ(XRPAmount{n}, xrp);
+        BEAST_EXPECT(XRPAmount{n} == xrp);
         IOUAmount const x0{0, 0};
         Number const y0 = x0;
-        EXPECT_EQ(y0, Number{0});
+        BEAST_EXPECT((y0 == Number{0}));
         IOUAmount const z0{y0};
-        EXPECT_EQ(x0, z0);
+        BEAST_EXPECT(x0 == z0);
         XRPAmount const xrp0{0};
         Number const n0 = xrp0;
-        EXPECT_EQ(n0, Number{0});
-        XRPAmount const xrp1{n0};  // NOLINT misc-confusable-identifiers
-        EXPECT_EQ(xrp1, xrp0);
+        BEAST_EXPECT(n0 == Number{0});
+        XRPAmount const xrp1{n0};
+        BEAST_EXPECT(xrp1 == xrp0);
     }
-}
 
-TEST(NumberTest, to_integer)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testToInteger()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
-
+        testcase << "test_to_integer " << to_string(Number::getMantissaScale());
         using Case = std::tuple<Number, std::int64_t>;
         SaveNumberRoundMode const save{Number::setround(Number::RoundingMode::ToNearest)};
         {
@@ -1155,11 +1136,11 @@ TEST(NumberTest, to_integer)
             for (auto const& [x, y] : c)
             {
                 auto j = static_cast<std::int64_t>(x);
-                EXPECT_EQ(j, y);
+                BEAST_EXPECT(j == y);
             }
         }
         auto prevMode = Number::setround(Number::RoundingMode::TowardsZero);
-        EXPECT_EQ(prevMode, Number::RoundingMode::ToNearest);
+        BEAST_EXPECT(prevMode == Number::RoundingMode::ToNearest);
         {
             Case const c[]{
                 {Number{0}, 0},
@@ -1193,11 +1174,11 @@ TEST(NumberTest, to_integer)
             for (auto const& [x, y] : c)
             {
                 auto j = static_cast<std::int64_t>(x);
-                EXPECT_EQ(j, y);
+                BEAST_EXPECT(j == y);
             }
         }
         prevMode = Number::setround(Number::RoundingMode::Downward);
-        EXPECT_EQ(prevMode, Number::RoundingMode::TowardsZero);
+        BEAST_EXPECT(prevMode == Number::RoundingMode::TowardsZero);
         {
             Case const c[]{
                 {Number{0}, 0},
@@ -1231,11 +1212,11 @@ TEST(NumberTest, to_integer)
             for (auto const& [x, y] : c)
             {
                 auto j = static_cast<std::int64_t>(x);
-                EXPECT_EQ(j, y);
+                BEAST_EXPECT(j == y);
             }
         }
         prevMode = Number::setround(Number::RoundingMode::Upward);
-        EXPECT_EQ(prevMode, Number::RoundingMode::Downward);
+        BEAST_EXPECT(prevMode == Number::RoundingMode::Downward);
         {
             Case const c[]{
                 {Number{0}, 0},
@@ -1269,7 +1250,7 @@ TEST(NumberTest, to_integer)
             for (auto const& [x, y] : c)
             {
                 auto j = static_cast<std::int64_t>(x);
-                EXPECT_EQ(j, y);
+                BEAST_EXPECT(j == y);
             }
         }
         bool caught = false;
@@ -1281,39 +1262,33 @@ TEST(NumberTest, to_integer)
         {
             caught = true;
         }
-        EXPECT_TRUE(caught);
+        BEAST_EXPECT(caught);
     }
-}
 
-TEST(NumberTest, squelch)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testSquelch()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
-
+        testcase << "test_squelch " << to_string(Number::getMantissaScale());
         Number const limit{1, -6};
-        EXPECT_EQ(squelch(Number{2, -6}, limit), (Number{2, -6}));
-        EXPECT_EQ(squelch(Number{1, -6}, limit), (Number{1, -6}));
-        EXPECT_EQ(squelch(Number{9, -7}, limit), Number{0});
-        EXPECT_EQ(squelch(Number{-2, -6}, limit), (Number{-2, -6}));
-        EXPECT_EQ(squelch(Number{-1, -6}, limit), (Number{-1, -6}));
-        EXPECT_EQ(squelch(Number{-9, -7}, limit), Number{0});
+        BEAST_EXPECT((squelch(Number{2, -6}, limit) == Number{2, -6}));
+        BEAST_EXPECT((squelch(Number{1, -6}, limit) == Number{1, -6}));
+        BEAST_EXPECT((squelch(Number{9, -7}, limit) == Number{0}));
+        BEAST_EXPECT((squelch(Number{-2, -6}, limit) == Number{-2, -6}));
+        BEAST_EXPECT((squelch(Number{-1, -6}, limit) == Number{-1, -6}));
+        BEAST_EXPECT((squelch(Number{-9, -7}, limit) == Number{0}));
     }
-}
 
-TEST(NumberTest, to_string)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testToString()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
-
         auto const scale = Number::getMantissaScale();
+        testcase << "testToString " << to_string(scale);
 
-        auto test = [](Number const& n, std::string const& expected) {
+        auto test = [this](Number const& n, std::string const& expected) {
             auto const result = to_string(n);
             std::stringstream ss;
             ss << "to_string(" << result << "). Expected: " << expected;
-            EXPECT_EQ(result, expected) << ss.str();
+            BEAST_EXPECTS(result == expected, ss.str());
         };
 
         test(Number(-2, 0), "-2");
@@ -1345,7 +1320,7 @@ TEST(NumberTest, to_string)
                     NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
 
                     auto const maxMantissa = Number::maxMantissa();
-                    EXPECT_EQ(maxMantissa, (9'999'999'999'999'999));
+                    BEAST_EXPECT(maxMantissa == 9'999'999'999'999'999);
                     test(
                         Number{false, (maxMantissa * 1000) + 999, -3, Number::Normalized()},
                         "9999999999999999");
@@ -1376,7 +1351,7 @@ TEST(NumberTest, to_string)
                     NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
 
                     auto const maxMantissa = Number::maxMantissa();
-                    EXPECT_EQ((maxMantissa), (9'999'999'999'999'999'999ULL));
+                    BEAST_EXPECT(maxMantissa == 9'999'999'999'999'999'999ULL);
                     test(
                         Number{false, maxMantissa, 0, Number::Normalized{}}, "9999999999999999990");
                     test(
@@ -1406,20 +1381,18 @@ TEST(NumberTest, to_string)
                     "-9223372036854775810");
                 break;
             default:
-                EXPECT_TRUE(false);
+                BEAST_EXPECT(false);
         }
     }
-}
 
-TEST(NumberTest, relationals)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testRelationals()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
+        testcase << "test_relationals " << to_string(Number::getMantissaScale());
 
         {
-            auto test = [](auto const& nums) {
-                EXPECT_TRUE(std::ranges::is_sorted(nums));
+            auto test = [this](auto const& nums) {
+                BEAST_EXPECT(std::ranges::is_sorted(nums));
 
                 for (auto iter1 = nums.begin(); iter1 != nums.end(); ++iter1)
                 {
@@ -1435,32 +1408,32 @@ TEST(NumberTest, relationals)
                         // The ==/!= operators use a completely different code path than <, etc.
                         // This helps detect a breakage in one but not the other. It also helps
                         // verify that the values are being ordered correctly.
-                        EXPECT_TRUE(smaller != larger) << str << " (!=)";
-                        EXPECT_FALSE(smaller == larger) << str << " (==)";
+                        BEAST_EXPECTS(smaller != larger, str + " (!=)");
+                        BEAST_EXPECTS(!(smaller == larger), str + " (==)");
 
                         // true results using operator< and derived operators
-                        EXPECT_TRUE(smaller < larger) << str << " (<)";
-                        EXPECT_TRUE(larger > smaller) << str << " (>)";
-                        EXPECT_TRUE(larger >= smaller) << str << " (>=)";
-                        EXPECT_TRUE(smaller <= larger) << str << " (<=)";
+                        BEAST_EXPECTS(smaller < larger, str + " (<)");
+                        BEAST_EXPECTS(larger > smaller, str + " (>)");
+                        BEAST_EXPECTS(larger >= smaller, str + " (>=)");
+                        BEAST_EXPECTS(smaller <= larger, str + " (<=)");
 
                         // false results using operator< and derived operators
-                        EXPECT_FALSE(larger < smaller) << str << " (! <)";
-                        EXPECT_FALSE(smaller > larger) << str << " (! >)";
-                        EXPECT_FALSE(smaller >= larger) << str << " (! >=)";
-                        EXPECT_FALSE(larger <= smaller) << str << " (! <=)";
+                        BEAST_EXPECTS(!(larger < smaller), str + " (! <)");
+                        BEAST_EXPECTS(!(smaller > larger), str + " (! >)");
+                        BEAST_EXPECTS(!(smaller >= larger), str + " (! >=)");
+                        BEAST_EXPECTS(!(larger <= smaller), str + " (! <=)");
                     }
                 }
             };
 
-            auto const intNums = []() {
+            auto const intNums = [this]() {
                 // Inequality test cases are built from a list of sorted integers
                 auto const values =
                     std::to_array<int>({-100, -50, -20, -10, -1, 0, 1, 10, 20, 50, 100});
                 // Check this list is sorted before converting it to Numbers.
                 // That way if any of the other tests fail, we know it's because of code and not the
                 // source data.
-                EXPECT_TRUE(std::ranges::is_sorted(values));
+                BEAST_EXPECT(std::ranges::is_sorted(values));
 
                 std::vector<Number> result;
                 result.reserve(values.size());
@@ -1500,114 +1473,95 @@ TEST(NumberTest, relationals)
             for (auto const& [n, line] : c)
             {
                 auto const str = to_string(n);
-                auto const location =
-                    std::string{" ("} + __FILE__ + ":" + std::to_string(line) + ")";
 
                 // NOLINTBEGIN(misc-redundant-expression) Explicitly testing operators with
                 // equivalent values
-                EXPECT_TRUE(n == n) << str << " ==" << location;
-                EXPECT_FALSE(n != n) << str << " !=" << location;
+                expect(n == n, str + " ==", __FILE__, line);
+                expect(!(n != n), str + " !=", __FILE__, line);
 
-                EXPECT_FALSE(n < n) << str << " <" << location;
-                EXPECT_FALSE(n > n) << str << " >" << location;
-                EXPECT_TRUE(n >= n) << str << " >=" << location;
-                EXPECT_TRUE(n <= n) << str << " <=" << location;
+                expect(!(n < n), str + " < ", __FILE__, line);
+                expect(!(n > n), str + " >", __FILE__, line);
+                expect(n >= n, str + " >=", __FILE__, line);
+                expect(n <= n, str + " <=", __FILE__, line);
                 // NOLINTEND(misc-redundant-expression)
             }
         }
     }
-}
 
-TEST(NumberTest, stream)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testStream()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
-
+        testcase << "test_stream " << to_string(Number::getMantissaScale());
         Number const x{100};
         std::ostringstream os;
         os << x;
-        EXPECT_EQ((os.str()), (to_string(x)));
+        BEAST_EXPECT(os.str() == to_string(x));
     }
-}
 
-TEST(NumberTest, inc_dec)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testIncDec()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
-
+        testcase << "test_inc_dec " << to_string(Number::getMantissaScale());
         Number x{100};
         Number const y = +x;
-        EXPECT_EQ((x), (y));
-        EXPECT_EQ((x++), (y));
-        EXPECT_EQ((x), (Number{101}));
-        EXPECT_EQ((x--), (Number{101}));
-        EXPECT_EQ((x), (y));
+        BEAST_EXPECT(x == y);
+        BEAST_EXPECT(x++ == y);
+        BEAST_EXPECT(x == Number{101});
+        BEAST_EXPECT(x-- == Number{101});
+        BEAST_EXPECT(x == y);
     }
-}
 
-TEST(NumberTest, to_st_amount)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testToStAmount()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
-
         Issue const issue;
         Number const n{7'518'783'80596, -5};
         SaveNumberRoundMode const save{Number::setround(Number::RoundingMode::ToNearest)};
         auto res2 = STAmount{issue, n};
-        EXPECT_EQ((res2), (STAmount{7518784}));
+        BEAST_EXPECT(res2 == STAmount{7518784});
 
         Number::setround(Number::RoundingMode::TowardsZero);
         res2 = STAmount{issue, n};
-        EXPECT_EQ((res2), (STAmount{7518783}));
+        BEAST_EXPECT(res2 == STAmount{7518783});
 
         Number::setround(Number::RoundingMode::Downward);
         res2 = STAmount{issue, n};
-        EXPECT_EQ((res2), (STAmount{7518783}));
+        BEAST_EXPECT(res2 == STAmount{7518783});
 
         Number::setround(Number::RoundingMode::Upward);
         res2 = STAmount{issue, n};
-        EXPECT_EQ((res2), (STAmount{7518784}));
+        BEAST_EXPECT(res2 == STAmount{7518784});
     }
-}
 
-TEST(NumberTest, truncate)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testTruncate()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
+        BEAST_EXPECT(Number(25, +1).truncate() == Number(250, 0));
+        BEAST_EXPECT(Number(25, 0).truncate() == Number(25, 0));
+        BEAST_EXPECT(Number(25, -1).truncate() == Number(2, 0));
+        BEAST_EXPECT(Number(25, -2).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(99, -2).truncate() == Number(0, 0));
 
-        EXPECT_EQ((Number(25, +1).truncate()), (Number(250, 0)));
-        EXPECT_EQ((Number(25, 0).truncate()), (Number(25, 0)));
-        EXPECT_EQ((Number(25, -1).truncate()), (Number(2, 0)));
-        EXPECT_EQ((Number(25, -2).truncate()), (Number(0, 0)));
-        EXPECT_EQ((Number(99, -2).truncate()), (Number(0, 0)));
+        BEAST_EXPECT(Number(-25, +1).truncate() == Number(-250, 0));
+        BEAST_EXPECT(Number(-25, 0).truncate() == Number(-25, 0));
+        BEAST_EXPECT(Number(-25, -1).truncate() == Number(-2, 0));
+        BEAST_EXPECT(Number(-25, -2).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(-99, -2).truncate() == Number(0, 0));
 
-        EXPECT_EQ((Number(-25, +1).truncate()), (Number(-250, 0)));
-        EXPECT_EQ((Number(-25, 0).truncate()), (Number(-25, 0)));
-        EXPECT_EQ((Number(-25, -1).truncate()), (Number(-2, 0)));
-        EXPECT_EQ((Number(-25, -2).truncate()), (Number(0, 0)));
-        EXPECT_EQ((Number(-99, -2).truncate()), (Number(0, 0)));
-
-        EXPECT_EQ((Number(0, 0).truncate()), (Number(0, 0)));
-        EXPECT_EQ((Number(0, 30000).truncate()), (Number(0, 0)));
-        EXPECT_EQ((Number(0, -30000).truncate()), (Number(0, 0)));
-        EXPECT_EQ((Number(100, -30000).truncate()), (Number(0, 0)));
-        EXPECT_EQ((Number(100, -30000).truncate()), (Number(0, 0)));
-        EXPECT_EQ((Number(-100, -30000).truncate()), (Number(0, 0)));
-        EXPECT_EQ((Number(-100, -30000).truncate()), (Number(0, 0)));
+        BEAST_EXPECT(Number(0, 0).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(0, 30000).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(0, -30000).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(100, -30000).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(100, -30000).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(-100, -30000).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(-100, -30000).truncate() == Number(0, 0));
     }
-}
 
-TEST(NumberTest, rounding)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testRounding()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
-
         // Test that rounding works as expected.
+        testcase("Rounding");
 
         using NumberRoundings = std::map<Number::RoundingMode, std::int64_t>;
 
@@ -1703,340 +1657,348 @@ TEST(NumberTest, rounding)
             {
                 NumberRoundModeGuard const g{mode};
                 auto const res = static_cast<std::int64_t>(num);
-                EXPECT_EQ((res), (val)) << to_string(num) + " with mode " +
-                        std::to_string(static_cast<int>(mode)) + " expected " +
-                        std::to_string(val) + " got " + std::to_string(res);
+                BEAST_EXPECTS(
+                    res == val,
+                    to_string(num) + " with mode " + std::to_string(static_cast<int>(mode)) +
+                        " expected " + std::to_string(val) + " got " + std::to_string(res));
             }
         }
     }
-}
 
-TEST(NumberTest, int64)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testInt64()
     {
-        NumberMantissaScaleGuard const sg(mantissaScale);
-
         auto const scale = Number::getMantissaScale();
+        testcase << "std::int64_t " << to_string(scale);
 
         // Control case
-        EXPECT_GT((Number::maxMantissa()), (10));
+        BEAST_EXPECT(Number::maxMantissa() > 10);
         Number const ten{10};
-        EXPECT_LE((ten.exponent()), (0));
+        BEAST_EXPECT(ten.exponent() <= 0);
 
         if (scale == MantissaRange::MantissaScale::Small)
         {
-            EXPECT_GT((std::numeric_limits<std::int64_t>::max()), (kInitialXrp.drops()));
-            EXPECT_LT((Number::maxMantissa()), (kInitialXrp.drops()));
+            BEAST_EXPECT(std::numeric_limits<std::int64_t>::max() > kInitialXrp.drops());
+            BEAST_EXPECT(Number::maxMantissa() < kInitialXrp.drops());
             Number const initalXrp{kInitialXrp};
-            EXPECT_GT((initalXrp.exponent()), (0));
+            BEAST_EXPECT(initalXrp.exponent() > 0);
 
             Number const maxInt64{Number::kMaxRep};
-            EXPECT_GT((maxInt64.exponent()), (0));
+            BEAST_EXPECT(maxInt64.exponent() > 0);
             // 85'070'591'730'234'615'865'843'651'857'942'052'864 - 38 digits
-            EXPECT_EQ((power(maxInt64, 2)), (Number{85'070'591'730'234'62, 22}));
+            BEAST_EXPECT((power(maxInt64, 2) == Number{85'070'591'730'234'62, 22}));
 
             Number const max = Number{false, Number::maxMantissa(), 0, Number::Normalized{}};
-            EXPECT_LE(max.exponent(), 0);
+            BEAST_EXPECT(max.exponent() <= 0);
             // 99'999'999'999'999'980'000'000'000'000'001 - 32 digits
-            EXPECT_EQ(power(max, 2), (Number{99'999'999'999'999'98, 16}));
+            BEAST_EXPECT((power(max, 2) == Number{99'999'999'999'999'98, 16}));
         }
         else
         {
-            EXPECT_GT((std::numeric_limits<std::int64_t>::max()), (kInitialXrp.drops()));
-            EXPECT_GT((Number::maxMantissa()), (kInitialXrp.drops()));
+            BEAST_EXPECT(std::numeric_limits<std::int64_t>::max() > kInitialXrp.drops());
+            BEAST_EXPECT(Number::maxMantissa() > kInitialXrp.drops());
             Number const initalXrp{kInitialXrp};
-            EXPECT_LE((initalXrp.exponent()), (0));
+            BEAST_EXPECT(initalXrp.exponent() <= 0);
 
             Number const maxInt64{Number::kMaxRep};
-            EXPECT_LE((maxInt64.exponent()), (0));
+            BEAST_EXPECT(maxInt64.exponent() <= 0);
             // 85'070'591'730'234'615'847'396'907'784'232'501'249 - 38 digits
-            EXPECT_EQ((power(maxInt64, 2)), (Number{85'070'591'730'234'615'85, 19}));
+            BEAST_EXPECT((power(maxInt64, 2) == Number{85'070'591'730'234'615'85, 19}));
 
             NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
 
             auto const maxMantissa = Number::maxMantissa();
             Number const max = Number{false, maxMantissa, 0, Number::Normalized{}};
-            EXPECT_EQ((max.mantissa()), (maxMantissa / 10));
-            EXPECT_EQ((max.exponent()), (1));
+            BEAST_EXPECT(max.mantissa() == maxMantissa / 10);
+            BEAST_EXPECT(max.exponent() == 1);
             // 99'999'999'999'999'999'800'000'000'000'000'000'100 - also 38
             // digits
-            EXPECT_EQ(
-                (power(max, 2)), (Number{false, (maxMantissa / 10) - 1, 20, Number::Normalized{}}));
+            BEAST_EXPECT(
+                (power(max, 2) == Number{false, (maxMantissa / 10) - 1, 20, Number::Normalized{}}));
         }
     }
-}
 
-TEST(NumberTest, upward_rounding_produces_value_not_below_exact_at_k_max_rep_cusp)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    testUpwardRoundsDown()
     {
-        NumberMantissaScaleGuard const mg{mantissaScale};
-        NumberRoundModeGuard const rg{Number::RoundingMode::Upward};
-
         auto const scale = Number::getMantissaScale();
-
-        constexpr std::int64_t kAValue = 1'000'000'000'000'049'863LL;
-        constexpr std::int64_t kBValue = 9'223'372'036'854'315'903LL;
-
-        Number const a = kAValue;
-        Number const b = kBValue;
-        Number const product = a * b;
-
-        // Exact reference in BigInt.
-        BigInt const exactProduct = BigInt(kAValue) * BigInt(kBValue);
-
-        // What Number actually stored.
-        BigInt storedValue = BigInt(product.mantissa());
-        for (int i = 0; i < product.exponent(); ++i)
-            storedValue *= 10;
-
-        BigInt const signedDifference = storedValue - exactProduct;
-
-        auto const message = [&] {
-            std::ostringstream os;
-            os << "\n"
-               << "  a              = " << fmt(BigInt(kAValue)) << "\n"
-               << "  b              = " << fmt(BigInt(kBValue)) << "\n"
-               << "  exact a*b      = " << fmt(exactProduct) << "\n"
-               << "  stored         = " << fmt(storedValue) << "\n"
-               << "  stored - exact = " << fmt(signedDifference) << "\n"
-               << "  upward         = " << (signedDifference >= 0 ? "held" : "VIOLATED") << "\n"
-               << " stored.mantissa = " << product.mantissa() << "\n"
-               << " stored.exponent = " << product.exponent() << "\n";
-            return os.str();
-        };
-
-        switch (scale)
         {
-            case MantissaRange::MantissaScale::Large:
-                EXPECT_TRUE(signedDifference >= 0) << message();
-                EXPECT_TRUE(signedDifference < pow10<BigInt>(product.exponent())) << message();
-                EXPECT_EQ(product.mantissa(), (std::numeric_limits<std::int64_t>::max() / 10) + 1);
-                EXPECT_EQ(product.exponent(), 19);
-                break;
+            testcase << "upward rounding produces a value below exact at kMaxRep cusp "
+                     << to_string(scale);
 
-            case MantissaRange::MantissaScale::LargeLegacy:
-                EXPECT_TRUE(signedDifference < 0) << message();
-                EXPECT_EQ(
-                    product.mantissa(), (std::numeric_limits<std::int64_t>::max() / 100) * 100);
-                EXPECT_EQ(product.exponent(), 18);
-                break;
+            NumberRoundModeGuard const rg{Number::RoundingMode::Upward};
 
-            case MantissaRange::MantissaScale::Small:
-                // The seemingly weird rounding here is because a & b are both
-                // normalized, and both round up when being converted to Number,
-                // so you're really getting
-                // 1_000_000_000_000_050 * 9_223_372_036_854_316.
-                EXPECT_TRUE(signedDifference >= 0) << message();
-                EXPECT_EQ(
-                    product.mantissa(), (std::numeric_limits<std::int64_t>::max() / 1000) + 3);
-                EXPECT_EQ(product.exponent(), 21);
-                break;
+            constexpr std::int64_t kAValue = 1'000'000'000'000'049'863LL;
+            constexpr std::int64_t kBValue = 9'223'372'036'854'315'903LL;
+
+            Number const a = kAValue;
+            Number const b = kBValue;
+            Number const product = a * b;
+
+            // Exact reference in BigInt.
+            BigInt const exactProduct = BigInt(kAValue) * BigInt(kBValue);
+
+            // What Number actually stored.
+            BigInt storedValue = BigInt(product.mantissa());
+            for (int i = 0; i < product.exponent(); ++i)
+                storedValue *= 10;
+
+            BigInt const signedDifference = storedValue - exactProduct;
+
+            log << "\n"
+                << "  a              = " << fmt(BigInt(kAValue)) << "\n"
+                << "  b              = " << fmt(BigInt(kBValue)) << "\n"
+                << "  exact a*b      = " << fmt(exactProduct) << "\n"
+                << "  stored         = " << fmt(storedValue) << "\n"
+                << "  stored - exact = " << fmt(signedDifference) << "\n"
+                << "  upward         = " << (signedDifference >= 0 ? "held" : "VIOLATED") << "\n"
+                << " stored.mantissa = " << product.mantissa() << "\n"
+                << " stored.exponent = " << product.exponent() << "\n";
+            log.flush();
+
+            switch (scale)
+            {
+                case MantissaRange::MantissaScale::Large:
+                    BEAST_EXPECT(signedDifference >= 0);
+                    BEAST_EXPECT(signedDifference < pow10<BigInt>(product.exponent()));
+                    BEAST_EXPECT(
+                        product.mantissa() == (std::numeric_limits<std::int64_t>::max() / 10) + 1);
+                    BEAST_EXPECT(product.exponent() == 19);
+                    break;
+
+                case MantissaRange::MantissaScale::LargeLegacy:
+                    BEAST_EXPECT(signedDifference < 0);
+                    BEAST_EXPECT(
+                        product.mantissa() ==
+                        (std::numeric_limits<std::int64_t>::max() / 100) * 100);
+                    BEAST_EXPECT(product.exponent() == 18);
+                    break;
+
+                case MantissaRange::MantissaScale::Small:
+                    // The seemingly weird rounding here is because
+                    // a & b are both normalized, and both round up when
+                    // being converted to Number, so you're really
+                    // getting 1_000_000_000_000_050 * 9_223_372_036_854_316
+                    BEAST_EXPECT(signedDifference >= 0);
+                    BEAST_EXPECT(
+                        product.mantissa() ==
+                        (std::numeric_limits<std::int64_t>::max() / 1000) + 3);
+                    BEAST_EXPECT(product.exponent() == 21);
+                    break;
+            }
+        }
+
+        {
+            /* Companion regression for the kMaxRep cusp behavior, but for
+             * `operator/=` on the cusp-fix-ENABLED `Large` scale.
+             *
+             * Before the dropped-remainder fix, `operator/=` with Upward
+             * rounding could return a value STRICTLY LESS than the exact quotient,
+             * violating Upward's directional invariant.
+             *
+             * Mechanism (fix-enabled path):
+             *   1. `operator/=` computes `numerator = nm * 10^17` and
+             *      `zm = numerator / dm` (integer division, truncates remainder).
+             *   2. If `remainder != 0`, the correction block runs:
+             *        zm *= 100000
+             *        correction = (remainder * 100000) / dm  // also truncates
+             *        zm += correction
+             *        ze -= 5
+             *      The truncation in `correction` discards a sub-1/100000 residual.
+             *   3. `normalize`'s shift loop reduces zm to fit, but the discarded
+             *      residual is BELOW the Guard's visibility, so the Guard sees fraction = 0.
+             *   4. Under Upward + positive, `round()` returns -1 (no round-up), and
+             *      the algorithm returns the truncated zm
+             */
+            testcase << "operator/= Upward on Large returns value < truth " << to_string(scale);
+
+            NumberRoundModeGuard const roundGuard{Number::RoundingMode::Upward};
+
+            constexpr std::int64_t aValue = 2LL;
+            constexpr std::int64_t bValue = 1'000'000'000'000'000'007LL;
+            // bValue = 10^18 + 7 (prime, in [minMantissa, kMaxRep]).
+
+            Number const a{aValue, 0};
+            Number const b{bValue, 0};
+            Number const quotient = a / b;
+
+            dec const exact = dec(aValue) / dec(bValue);
+            dec const stored = dec(quotient.mantissa()) * pow10(quotient.exponent());
+            dec const diff = stored - exact;
+
+            log << "\n"
+                << "  a                 = " << aValue << "\n"
+                << "  b                 = " << bValue << "\n"
+                << "  exact a/b         = " << fmt(exact) << "\n"
+                << "  stored a/b        = " << fmt(stored) << "\n"
+                << "  stored - exact    = " << fmt(diff)
+                << "    (negative => Upward gave value BELOW truth)\n"
+                << "  quotient.mantissa = " << quotient.mantissa() << "\n"
+                << "  quotient.exponent = " << quotient.exponent() << "\n";
+            log.flush();
+
+            // Upward invariant: stored >= exact. Bug: stored < exact.
+            switch (scale)
+            {
+                case MantissaRange::MantissaScale::Large:
+                    BEAST_EXPECT(stored >= exact);
+                    BEAST_EXPECT(diff < pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::LargeLegacy:
+                    BEAST_EXPECT(stored < exact);
+                    BEAST_EXPECT(diff >= -pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::Small:
+                    // Small mantissa doesn't have the correction for
+                    // dropped remainders
+                    BEAST_EXPECT(stored < exact);
+                    break;
+            }
+        }
+        {
+            /* Companion test case for Upward positive operator/=: Downward negative
+             */
+            testcase << "operator/= Downward on Large returns value < truth " << to_string(scale);
+
+            NumberRoundModeGuard const roundGuard{Number::RoundingMode::Downward};
+
+            constexpr std::int64_t aValue = -2LL;
+            constexpr std::int64_t bValue = 1'000'000'000'000'000'007LL;
+            // bValue = 10^18 + 7 (prime, in [minMantissa, kMaxRep]).
+
+            Number const a{aValue, 0};
+            Number const b{bValue, 0};
+            Number const quotient = a / b;
+
+            dec const exact = dec(aValue) / dec(bValue);
+            dec const stored = dec(quotient.mantissa()) * pow10(quotient.exponent());
+            dec const diff = stored - exact;
+
+            log << "\n"
+                << "  a                 = " << aValue << "\n"
+                << "  b                 = " << bValue << "\n"
+                << "  exact a/b         = " << fmt(exact) << "\n"
+                << "  stored a/b        = " << fmt(stored) << "\n"
+                << "  stored - exact    = " << fmt(diff)
+                << "    (positive => Downward gave value ABOVE truth)\n"
+                << "  quotient.mantissa = " << quotient.mantissa() << "\n"
+                << "  quotient.exponent = " << quotient.exponent() << "\n";
+            log.flush();
+
+            // invariant: stored <= exact. Bug: stored > exact.
+            switch (scale)
+            {
+                case MantissaRange::MantissaScale::Large:
+                    BEAST_EXPECT(stored <= exact);
+                    BEAST_EXPECT(diff > -pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::LargeLegacy:
+                    BEAST_EXPECT(stored > exact);
+                    BEAST_EXPECT(diff <= pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::Small:
+                    // Small mantissa doesn't have the correction for
+                    // dropped remainders
+                    BEAST_EXPECT(stored < exact);
+                    break;
+            }
+        }
+        {
+            /* Companion test case for Upward positive operator/=: ToNearest
+             *
+             * With ToNearest, if the dropped digits are exactly "5", then the mantissa will be
+             * rounded to even. The numbers below result in a value where the unrounded mantissa
+             * ends in an even digit, and "infinite precision" would drop
+             * "500000000000000000145...", but doNormalize only sees "5". Without the rounding fix,
+             * doNormalize rounds down to the even value. With the rounding fix, doNormalize knows
+             * there are more digits beyond "5", and so rounds _up_ to the odd value.
+             */
+            testcase << "operator/= ToNearest on Large returns value < truth " << to_string(scale);
+
+            NumberRoundModeGuard const roundGuard{Number::RoundingMode::ToNearest};
+
+            constexpr std::int64_t aValue = 1'269'917'268'816'087'809LL;
+            constexpr std::int64_t bValue = 3'458'525'013'821'685'511LL;
+            // bValue = 10^18 + 7 (prime, in [minMantissa, kMaxRep]).
+
+            Number const a{aValue, 0};
+            Number const b{bValue, 0};
+            Number const quotient = a / b;
+
+            dec const exact = dec(aValue) / dec(bValue);
+            dec const stored = dec(quotient.mantissa()) * pow10(quotient.exponent());
+            dec const diff = stored - exact;
+
+            log << "\n"
+                << "  a                 = " << aValue << "\n"
+                << "  b                 = " << bValue << "\n"
+                << "  exact a/b         = " << fmt(exact) << "\n"
+                << "  stored a/b        = " << fmt(stored) << "\n"
+                << "  stored - exact    = " << fmt(diff)
+                << "    (negative => ToNearest gave value BELOW truth)\n"
+                << "  quotient.mantissa = " << quotient.mantissa() << "\n"
+                << "  quotient.exponent = " << quotient.exponent() << "\n";
+            log.flush();
+
+            // invariant: stored >= exact. Bug: stored < exact.
+            switch (scale)
+            {
+                case MantissaRange::MantissaScale::Large:
+                    BEAST_EXPECT(stored >= exact);
+                    BEAST_EXPECT(diff < pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::LargeLegacy:
+                    BEAST_EXPECT(stored < exact);
+                    BEAST_EXPECT(diff >= -pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::Small:
+                    // Small mantissa doesn't have the correction for
+                    // dropped remainders
+                    BEAST_EXPECT(stored < exact);
+                    break;
+            }
         }
     }
-}
 
-/*
- * Companion regression for the kMaxRep cusp behavior, but for `operator/=` on
- * the cusp-fix-ENABLED `Large` scale.
- *
- * Before the dropped-remainder fix, `operator/=` with Upward rounding could
- * return a value STRICTLY LESS than the exact quotient, violating Upward's
- * directional invariant.
- *
- * Mechanism (fix-enabled path):
- *   1. `operator/=` computes `numerator = nm * 10^17` and
- *      `zm = numerator / dm` (integer division, truncates remainder).
- *   2. If `remainder != 0`, the correction block runs:
- *        zm *= 100000
- *        correction = (remainder * 100000) / dm  // also truncates
- *        zm += correction
- *        ze -= 5
- *      The truncation in `correction` discards a sub-1/100000 residual.
- *   3. `normalize`'s shift loop reduces zm to fit, but the discarded residual
- *      is BELOW the Guard's visibility, so the Guard sees fraction = 0.
- *   4. Under Upward + positive, `round()` returns -1 (no round-up), and the
- *      algorithm returns the truncated zm.
- */
-TEST(NumberTest, upward_division_returns_value_not_below_exact_on_large_scale)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
+    void
+    run() override
     {
-        NumberMantissaScaleGuard const mg{mantissaScale};
-        NumberRoundModeGuard const rg{Number::RoundingMode::Upward};
-
-        auto const scale = Number::getMantissaScale();
-
-        constexpr std::int64_t kAValue = 2LL;
-        constexpr std::int64_t kBValue = 1'000'000'000'000'000'007LL;
-        // kBValue = 10^18 + 7 (prime, in [minMantissa, kMaxRep]).
-
-        Number const a{kAValue, 0};
-        Number const b{kBValue, 0};
-        Number const quotient = a / b;
-
-        Dec const exact = Dec(kAValue) / Dec(kBValue);
-        Dec const stored = Dec(quotient.mantissa()) * pow10(quotient.exponent());
-        Dec const diff = stored - exact;
-
-        auto const message = [&] {
-            std::ostringstream os;
-            os << "\n"
-               << "  a                 = " << kAValue << "\n"
-               << "  b                 = " << kBValue << "\n"
-               << "  exact a/b         = " << fmt(exact) << "\n"
-               << "  stored a/b        = " << fmt(stored) << "\n"
-               << "  stored - exact    = " << fmt(diff)
-               << "    (negative => Upward gave value BELOW truth)\n"
-               << "  quotient.mantissa = " << quotient.mantissa() << "\n"
-               << "  quotient.exponent = " << quotient.exponent() << "\n";
-            return os.str();
-        };
-
-        // Upward invariant: stored >= exact. Bug: stored < exact.
-        switch (scale)
+        for (auto const scale : MantissaRange::getAllScales())
         {
-            case MantissaRange::MantissaScale::Large:
-                EXPECT_TRUE(stored >= exact) << message();
-                EXPECT_TRUE(diff < pow10(quotient.exponent())) << message();
-                break;
+            NumberMantissaScaleGuard const sg(scale);
+            testZero();
+            testLimits();
+            testToString();
+            testAdd();
+            testSub();
+            testMul();
+            testDiv();
+            testRoot();
+            testRoot2();
+            testPower1();
+            testPower2();
+            testConversions();
+            testToInteger();
+            testSquelch();
+            testRelationals();
+            testStream();
+            testIncDec();
+            testToStAmount();
+            testTruncate();
+            testRounding();
+            testInt64();
 
-            case MantissaRange::MantissaScale::LargeLegacy:
-                EXPECT_TRUE(stored < exact) << message();
-                EXPECT_TRUE(diff >= -pow10(quotient.exponent())) << message();
-                break;
-
-            case MantissaRange::MantissaScale::Small:
-                // Small mantissa doesn't have the correction for dropped remainders.
-                EXPECT_TRUE(stored < exact) << message();
-                break;
+            testUpwardRoundsDown();
         }
     }
-}
+};
 
-// Companion test case for Upward positive operator/=: Downward negative.
-TEST(NumberTest, downward_division_returns_value_not_above_exact_on_large_scale)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
-    {
-        NumberMantissaScaleGuard const mg{mantissaScale};
-        NumberRoundModeGuard const rg{Number::RoundingMode::Downward};
-
-        auto const scale = Number::getMantissaScale();
-
-        constexpr std::int64_t kAValue = -2LL;
-        constexpr std::int64_t kBValue = 1'000'000'000'000'000'007LL;
-        // kBValue = 10^18 + 7 (prime, in [minMantissa, kMaxRep]).
-
-        Number const a{kAValue, 0};
-        Number const b{kBValue, 0};
-        Number const quotient = a / b;
-
-        Dec const exact = Dec(kAValue) / Dec(kBValue);
-        Dec const stored = Dec(quotient.mantissa()) * pow10(quotient.exponent());
-        Dec const diff = stored - exact;
-
-        auto const message = [&] {
-            std::ostringstream os;
-            os << "\n"
-               << "  a                 = " << kAValue << "\n"
-               << "  b                 = " << kBValue << "\n"
-               << "  exact a/b         = " << fmt(exact) << "\n"
-               << "  stored a/b        = " << fmt(stored) << "\n"
-               << "  stored - exact    = " << fmt(diff)
-               << "    (positive => Downward gave value ABOVE truth)\n"
-               << "  quotient.mantissa = " << quotient.mantissa() << "\n"
-               << "  quotient.exponent = " << quotient.exponent() << "\n";
-            return os.str();
-        };
-
-        // Downward invariant: stored <= exact. Bug: stored > exact.
-        switch (scale)
-        {
-            case MantissaRange::MantissaScale::Large:
-                EXPECT_TRUE(stored <= exact) << message();
-                EXPECT_TRUE(diff > -pow10(quotient.exponent())) << message();
-                break;
-
-            case MantissaRange::MantissaScale::LargeLegacy:
-                EXPECT_TRUE(stored > exact) << message();
-                EXPECT_TRUE(diff <= pow10(quotient.exponent())) << message();
-                break;
-
-            case MantissaRange::MantissaScale::Small:
-                // Small mantissa doesn't have the correction for dropped remainders.
-                EXPECT_TRUE(stored < exact) << message();
-                break;
-        }
-    }
-}
-
-/*
- * Companion test case for Upward positive operator/=: ToNearest.
- *
- * With ToNearest, if the dropped digits are exactly "5", then the mantissa will
- * be rounded to even. The numbers below result in a value where the unrounded
- * mantissa ends in an even digit, and "infinite precision" would drop
- * "500000000000000000145...", but doNormalize only sees "5". Without the
- * rounding fix, doNormalize rounds down to the even value. With the rounding
- * fix, doNormalize knows there are more digits beyond "5", and so rounds _up_
- * to the odd value.
- */
-TEST(NumberTest, to_nearest_division_uses_dropped_digits_on_large_scale)
-{
-    for (auto const mantissaScale : MantissaRange::getAllScales())
-    {
-        NumberMantissaScaleGuard const mg{mantissaScale};
-        NumberRoundModeGuard const rg{Number::RoundingMode::ToNearest};
-
-        auto const scale = Number::getMantissaScale();
-
-        constexpr std::int64_t kAValue = 1'269'917'268'816'087'809LL;
-        constexpr std::int64_t kBValue = 3'458'525'013'821'685'511LL;
-        // kBValue is prime and in [minMantissa, kMaxRep].
-
-        Number const a{kAValue, 0};
-        Number const b{kBValue, 0};
-        Number const quotient = a / b;
-
-        Dec const exact = Dec(kAValue) / Dec(kBValue);
-        Dec const stored = Dec(quotient.mantissa()) * pow10(quotient.exponent());
-        Dec const diff = stored - exact;
-
-        auto const message = [&] {
-            std::ostringstream os;
-            os << "\n"
-               << "  a                 = " << kAValue << "\n"
-               << "  b                 = " << kBValue << "\n"
-               << "  exact a/b         = " << fmt(exact) << "\n"
-               << "  stored a/b        = " << fmt(stored) << "\n"
-               << "  stored - exact    = " << fmt(diff)
-               << "    (negative => ToNearest gave value BELOW truth)\n"
-               << "  quotient.mantissa = " << quotient.mantissa() << "\n"
-               << "  quotient.exponent = " << quotient.exponent() << "\n";
-            return os.str();
-        };
-
-        // ToNearest should account for dropped digits beyond the visible "5".
-        switch (scale)
-        {
-            case MantissaRange::MantissaScale::Large:
-                EXPECT_TRUE(stored >= exact) << message();
-                EXPECT_TRUE(diff < pow10(quotient.exponent())) << message();
-                break;
-
-            case MantissaRange::MantissaScale::LargeLegacy:
-                EXPECT_TRUE(stored < exact) << message();
-                EXPECT_TRUE(diff >= -pow10(quotient.exponent())) << message();
-                break;
-
-            case MantissaRange::MantissaScale::Small:
-                // Small mantissa doesn't have the correction for dropped remainders.
-                EXPECT_TRUE(stored < exact) << message();
-                break;
-        }
-    }
-}
+BEAST_DEFINE_TESTSUITE(Number, basics, xrpl);
 
 }  // namespace xrpl

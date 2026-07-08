@@ -1745,9 +1745,7 @@ rpcClient(
                     static_cast<int>(setup.client.secure) != 0,  // Use SSL
                     config.quiet(),
                     logs,
-                    [&jvOutput](json::Value const& jvInput) {
-                        RPCCallImp::callRPCHandler(&jvOutput, jvInput);
-                    },
+                    std::bind(RPCCallImp::callRPCHandler, &jvOutput, std::placeholders::_1),
                     headers);
                 isService.run();  // This blocks until there are no more
                                   // outstanding async calls.
@@ -1872,16 +1870,24 @@ fromNetwork(
         ioContext,
         strIp,
         iPort,
-        [strMethod, jvParams, headers, strPath, j](
-            boost::asio::streambuf& sb, std::string const& strHost) {
-            RPCCallImp::onRequest(strMethod, jvParams, headers, strPath, sb, strHost, j);
-        },
+        std::bind(
+            &RPCCallImp::onRequest,
+            strMethod,
+            jvParams,
+            headers,
+            strPath,
+            std::placeholders::_1,
+            std::placeholders::_2,
+            j),
         kRpcReplyMaxBytes,
         kRpcWebhookTimeout,
-        [callbackFuncP, j](
-            boost::system::error_code const& ecResult, int iStatus, std::string const& strData) {
-            return RPCCallImp::onResponse(callbackFuncP, ecResult, iStatus, strData, j);
-        },
+        std::bind(
+            &RPCCallImp::onResponse,
+            callbackFuncP,
+            std::placeholders::_1,
+            std::placeholders::_2,
+            std::placeholders::_3,
+            j),
         j);
 }
 

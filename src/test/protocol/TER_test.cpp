@@ -72,9 +72,8 @@ struct TER_test : public beast::unit_test::Suite
         std::size_t I2,
         template <std::size_t, std::size_t> class Func,
         typename Tup>
-    void
+    std::enable_if_t<I1 != 0>
     testIterate(Tup const& tup, beast::unit_test::Suite& s)
-        requires(I1 != 0)
     {
         Func<I1, I2> const func;
         func(tup, s);
@@ -87,9 +86,8 @@ struct TER_test : public beast::unit_test::Suite
         std::size_t I2,
         template <std::size_t, std::size_t> class Func,
         typename Tup>
-    void
+    std::enable_if_t<I1 == 0 && I2 != 0>
     testIterate(Tup const& tup, beast::unit_test::Suite& s)
-        requires(I1 == 0 && I2 != 0)
     {
         Func<I1, I2> const func;
         func(tup, s);
@@ -102,9 +100,8 @@ struct TER_test : public beast::unit_test::Suite
         std::size_t I2,
         template <std::size_t, std::size_t> class Func,
         typename Tup>
-    void
+    std::enable_if_t<I1 == 0 && I2 == 0>
     testIterate(Tup const& tup, beast::unit_test::Suite& s)
-        requires(I1 == 0 && I2 == 0)
     {
         Func<I1, I2> const func;
         func(tup, s);

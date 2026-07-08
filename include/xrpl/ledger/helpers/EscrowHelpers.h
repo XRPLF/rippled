@@ -53,7 +53,7 @@ escrowUnlockApplyHelper<Issue>(
     bool createAsset,
     beast::Journal journal)
 {
-    auto const& issue = amount.get<Issue>();
+    Issue const& issue = amount.get<Issue>();
     Keylet const trustLineKey = keylet::trustLine(receiver, issue);
     bool const recvLow = issuer > receiver;
     bool const senderIssuer = issuer == sender;

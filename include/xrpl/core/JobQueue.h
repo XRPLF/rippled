@@ -154,14 +154,16 @@ public:
 
         @param type The type of job.
         @param name Name of the job.
-        @param jobHandler Callable with signature void(). Called when the job is executed.
+        @param jobHandler Lambda with signature void (Job&).  Called when the
+       job is executed.
 
         @return true if jobHandler added to queue.
     */
-    template <typename JobHandler>
+    template <
+        typename JobHandler,
+        typename = std::enable_if_t<std::is_same_v<decltype(std::declval<JobHandler&&>()()), void>>>
     bool
     addJob(JobType type, std::string const& name, JobHandler&& jobHandler)
-        requires(std::is_void_v<std::invoke_result_t<JobHandler>>)
     {
         if (auto optionalCountedJob = jobCounter_.wrap(std::forward<JobHandler>(jobHandler)))
         {

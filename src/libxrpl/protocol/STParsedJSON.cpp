@@ -50,9 +50,8 @@ namespace xrpl {
 
 namespace STParsedJSONDetail {
 template <typename U, typename S>
-constexpr U
+constexpr std::enable_if_t<std::is_unsigned_v<U> && std::is_signed_v<S>, U>
 toUnsigned(S value)
-    requires(std::is_unsigned_v<U> && std::is_signed_v<S>)
 {
     if (value < 0 || std::numeric_limits<U>::max() < value)
         Throw<std::runtime_error>("Value out of range");
@@ -60,9 +59,8 @@ toUnsigned(S value)
 }
 
 template <typename U1, typename U2>
-constexpr U1
+constexpr std::enable_if_t<std::is_unsigned_v<U1> && std::is_unsigned_v<U2>, U1>
 toUnsigned(U2 value)
-    requires(std::is_unsigned_v<U1> && std::is_unsigned_v<U2>)
 {
     if (std::numeric_limits<U1>::max() < value)
         Throw<std::runtime_error>("Value out of range");

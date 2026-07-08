@@ -789,7 +789,7 @@ STAmount::add(Serializer& s) const
 bool
 STAmount::isEquivalent(STBase const& t) const
 {
-    auto const* v = dynamic_cast<STAmount const*>(&t);
+    STAmount const* v = dynamic_cast<STAmount const*>(&t);
     return (v != nullptr) && (*v == *this);
 }
 

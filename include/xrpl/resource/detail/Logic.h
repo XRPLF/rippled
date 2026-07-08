@@ -351,9 +351,10 @@ public:
             Import& import(iter->second);
             if (iter->second.whenExpires <= elapsed)
             {
-                for (auto& item : import.items)
+                for (auto itemIter(import.items.begin()); itemIter != import.items.end();
+                     ++itemIter)
                 {
-                    item.consumer.entry().remoteBalance -= item.balance;
+                    itemIter->consumer.entry().remoteBalance -= itemIter->balance;
                 }
 
                 iter = importTable_.erase(iter);

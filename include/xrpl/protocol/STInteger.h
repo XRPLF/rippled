@@ -115,7 +115,7 @@ template <typename Integer>
 inline bool
 STInteger<Integer>::isEquivalent(STBase const& t) const
 {
-    auto const* v = dynamic_cast<STInteger const*>(&t);
+    STInteger const* v = dynamic_cast<STInteger const*>(&t);
     return v && (value_ == v->value_);
 }
 

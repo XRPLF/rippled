@@ -10,9 +10,9 @@
 #include <boost/assert.hpp>
 
 #include <set>
-#include <string>         // IWYU pragma: keep
-#include <typeindex>      // IWYU pragma: keep
-#include <unordered_set>  // IWYU pragma: keep
+#include <string>
+#include <typeindex>
+#include <unordered_set>
 
 namespace beast::unit_test {
 

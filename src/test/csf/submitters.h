@@ -61,9 +61,8 @@ class Submitter
     }
 
     template <class T>
-    static SimDuration
+    static std::enable_if_t<std::is_arithmetic_v<T>, SimDuration>
     asDuration(T t)
-        requires(std::is_arithmetic_v<T>)
     {
         return SimDuration{static_cast<SimDuration::rep>(t)};
     }

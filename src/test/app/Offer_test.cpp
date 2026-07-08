@@ -2195,7 +2195,7 @@ public:
         jtx::Account const& account,
         jtx::PrettyAmount const& expectBalance)
     {
-        auto const& issue = expectBalance.value().get<Issue>();
+        Issue const& issue = expectBalance.value().get<Issue>();
         auto const sleTrust = env.le(keylet::trustLine(account.id(), issue));
         BEAST_EXPECT(sleTrust);
         if (sleTrust)

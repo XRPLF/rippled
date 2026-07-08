@@ -12,6 +12,7 @@
 #include <boost/asio/ssl/stream_base.hpp>
 #include <boost/format/free_funcs.hpp>
 
+#include <functional>
 #include <stdexcept>
 #include <string>
 
@@ -54,7 +55,7 @@ WorkSSL::onConnect(error_code const& ec)
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
         boost::asio::bind_executor(
-            strand_, [self = shared_from_this()](error_code const& ec) { self->onHandshake(ec); }));
+            strand_, std::bind(&WorkSSL::onHandshake, shared_from_this(), std::placeholders::_1)));
 }
 
 void
