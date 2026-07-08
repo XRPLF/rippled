@@ -378,7 +378,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (method, service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m]))",
+          "expr": "sum by (method, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m]))",
           "legendFormat": "{{method}} [{{service_instance_id}}]"
         }
       ],
@@ -418,7 +418,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, method, service_instance_id) (rate(traces_span_metrics_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, method, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m])))",
           "legendFormat": "{{method}} [{{service_instance_id}}]"
         }
       ],
@@ -458,7 +458,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (grpc_status, service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"grpc\\\\..*\", grpc_status!=\"\"}[5m]))",
+          "expr": "sum by (grpc_status, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"grpc\\\\..*\", grpc_status!=\"\"}[5m]))",
           "legendFormat": "{{grpc_status}} [{{service_instance_id}}]"
         }
       ],
@@ -498,7 +498,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(traces_span_metrics_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.compute\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.compute\"}[5m])))",
           "legendFormat": "P95 Compute [{{service_instance_id}}]"
         }
       ],
@@ -538,7 +538,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.request\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.request\"}[5m]))",
           "legendFormat": "Requests / Sec [{{service_instance_id}}]"
         },
         {
@@ -546,7 +546,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.discover\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.discover\"}[5m]))",
           "legendFormat": "Discoveries / Sec [{{service_instance_id}}]"
         }
       ],
@@ -667,7 +667,7 @@
         "label": "gRPC Method",
         "description": "Filter by gRPC method (GetLedger, GetLedgerData, GetLedgerDiff, GetLedgerEntry)",
         "type": "query",
-        "query": "label_values(traces_span_metrics_calls_total{span_name=~\"grpc\\\\..*\"}, method)",
+        "query": "label_values(span_calls_total{span_name=~\"grpc\\\\..*\"}, method)",
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"

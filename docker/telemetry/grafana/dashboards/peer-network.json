@@ -31,7 +31,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"peer.proposal.receive\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"peer.proposal.receive\"}[5m]))",
           "legendFormat": "Proposals Received / Sec [{{service_instance_id}}]"
         }
       ],
@@ -71,7 +71,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"peer.validation.receive\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"peer.validation.receive\"}[5m]))",
           "legendFormat": "Validations Received / Sec [{{service_instance_id}}]"
         }
       ],
@@ -111,7 +111,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (proposal_trusted, service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", proposal_trusted=~\"$proposal_trusted\", span_name=\"peer.proposal.receive\"}[5m]))",
+          "expr": "sum by (proposal_trusted, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", proposal_trusted=~\"$proposal_trusted\", span_name=\"peer.proposal.receive\"}[5m]))",
           "legendFormat": "Trusted = {{proposal_trusted}} [{{service_instance_id}}]"
         }
       ],
@@ -144,7 +144,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (validation_trusted, service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", validation_trusted=~\"$validation_trusted\", span_name=\"peer.validation.receive\"}[5m]))",
+          "expr": "sum by (validation_trusted, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", validation_trusted=~\"$validation_trusted\", span_name=\"peer.validation.receive\"}[5m]))",
           "legendFormat": "Trusted = {{validation_trusted}} [{{service_instance_id}}]"
         }
       ],
@@ -334,7 +334,7 @@
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
         "type": "query",
-        "query": "label_values(traces_span_metrics_calls_total, service_instance_id)",
+        "query": "label_values(span_calls_total, service_instance_id)",
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
@@ -354,7 +354,7 @@
         "label": "Proposal Trusted",
         "description": "Filter by proposal trust status (true = from trusted validator)",
         "type": "query",
-        "query": "label_values(traces_span_metrics_calls_total{span_name=\"peer.proposal.receive\"}, proposal_trusted)",
+        "query": "label_values(span_calls_total{span_name=\"peer.proposal.receive\"}, proposal_trusted)",
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
@@ -374,7 +374,7 @@
         "label": "Validation Trusted",
         "description": "Filter by validation trust status (true = from trusted validator)",
         "type": "query",
-        "query": "label_values(traces_span_metrics_calls_total{span_name=\"peer.validation.receive\"}, validation_trusted)",
+        "query": "label_values(span_calls_total{span_name=\"peer.validation.receive\"}, validation_trusted)",
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"

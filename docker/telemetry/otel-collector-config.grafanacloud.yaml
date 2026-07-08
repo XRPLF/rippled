@@ -102,12 +102,14 @@ processors:
     metric_statements:
       - context: datapoint
         statements:
+          - set(attributes["service_name"], resource.attributes["service.name"])
           - set(attributes["service_instance_id"], resource.attributes["service.instance.id"])
           - set(attributes["deployment_environment"], resource.attributes["deployment.environment"])
           - set(attributes["xrpl_network_type"], resource.attributes["xrpl.network.type"])
 
 connectors:
   spanmetrics:
+    namespace: "span"
     # Resource attributes that define the resource-metrics grouping key.
     # All resource attributes propagate to the output metrics regardless;
     # label promotion is handled by resource_to_telemetry_conversion on the
