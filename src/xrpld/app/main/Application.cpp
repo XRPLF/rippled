@@ -390,7 +390,7 @@ public:
               stopwatch(),
               logs_->journal("TaggedCache"))
         , cachedSLEs_(
-              "Cached SLEs",
+              "Cached_SLEs",
               0,
               std::chrono::minutes(1),
               stopwatch(),
