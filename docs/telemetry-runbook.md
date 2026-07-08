@@ -1,5 +1,40 @@
 # xrpld Telemetry Operator Runbook
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [Configuration Reference](#configuration-reference)
+- [Exporting to Grafana Cloud](#exporting-to-grafana-cloud)
+- [Span Reference](#span-reference)
+  - [RPC Spans](#rpc-spans)
+  - [Transaction Spans](#transaction-spans)
+  - [Transaction Queue Spans](#transaction-queue-spans)
+  - [PathFinding Spans](#pathfinding-spans)
+  - [Consensus Spans](#consensus-spans)
+  - [Ledger Spans](#ledger-spans)
+  - [Peer Spans](#peer-spans)
+- [Insights and Sample Queries](#insights-and-sample-queries)
+  - [Transaction Workflow Analysis](#transaction-workflow-analysis)
+  - [DEX (OfferCreate / OfferCancel)](#dex-offercreate--offercancel)
+  - [Apply Pipeline by Stage](#apply-pipeline-by-stage)
+  - [Transaction Queue Health](#transaction-queue-health)
+  - [RPC Debugging](#rpc-debugging)
+  - [PathFinding Performance](#pathfinding-performance)
+  - [Consensus Health](#consensus-health)
+  - [Cross-Subsystem Correlation](#cross-subsystem-correlation)
+- [Cross-Node Trace Propagation](#cross-node-trace-propagation)
+- [Prometheus Metrics (Spanmetrics)](#prometheus-metrics-spanmetrics)
+- [System Metrics (OTel native -- beast::insight)](#system-metrics-otel-native----beastinsight)
+- [Grafana Dashboards](#grafana-dashboards)
+- [Alerting](#alerting)
+- [Log-Trace Correlation](#log-trace-correlation)
+- [Troubleshooting](#troubleshooting)
+- [Performance Tuning](#performance-tuning)
+- [Disabling Telemetry](#disabling-telemetry)
+- [Validating Telemetry Stack](#validating-telemetry-stack)
+- [Performance Benchmarking](#performance-benchmarking)
+
 ## Overview
 
 xrpld supports OpenTelemetry distributed tracing to provide visibility into RPC requests, transaction processing, and consensus rounds.
