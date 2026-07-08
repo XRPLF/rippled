@@ -42,7 +42,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validation_agreement{metric=\"agreement_pct_1h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "validation_agreement{metric=\"agreement_pct_1h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Agreement 1h [{{service_instance_id}}]"
         }
       ],
@@ -93,7 +93,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validation_agreement{metric=\"agreement_pct_24h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "validation_agreement{metric=\"agreement_pct_24h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Agreement 24h [{{service_instance_id}}]"
         }
       ],
@@ -146,14 +146,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validation_agreement{metric=\"agreements_1h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "validation_agreement{metric=\"agreements_1h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Agreements 1h [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validation_agreement{metric=\"missed_1h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "validation_agreement{metric=\"missed_1h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Missed 1h [{{service_instance_id}}]"
         }
       ],
@@ -212,14 +212,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validation_agreement{metric=\"agreements_24h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "validation_agreement{metric=\"agreements_24h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Agreements 24h [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validation_agreement{metric=\"missed_24h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "validation_agreement{metric=\"missed_24h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Missed 24h [{{service_instance_id}}]"
         }
       ],
@@ -288,7 +288,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(xrpld_validations_sent_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) * 60",
+          "expr": "rate(validations_sent_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) * 60",
           "legendFormat": "Sent/min [{{service_instance_id}}]"
         }
       ],
@@ -337,7 +337,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(xrpld_validations_checked_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) * 60",
+          "expr": "rate(validations_checked_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) * 60",
           "legendFormat": "Checked/min [{{service_instance_id}}]"
         }
       ],
@@ -370,7 +370,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validator_health{metric=\"amendment_blocked\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "validator_health{metric=\"amendment_blocked\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Blocked [{{service_instance_id}}]"
         }
       ],
@@ -435,7 +435,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validator_health{metric=\"unl_expiry_days\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "validator_health{metric=\"unl_expiry_days\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "UNL Expiry [{{service_instance_id}}]"
         }
       ],
@@ -484,7 +484,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validator_health{metric=\"unl_blocked\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "validator_health{metric=\"unl_blocked\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "UNL Blocked [{{service_instance_id}}]"
         }
       ],
@@ -549,14 +549,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(xrpld_validation_agreements_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) * 60",
+          "expr": "rate(validation_agreements_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) * 60",
           "legendFormat": "Agreements/min [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(xrpld_validation_missed_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) * 60",
+          "expr": "rate(validation_missed_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) * 60",
           "legendFormat": "Missed/min [{{service_instance_id}}]"
         }
       ],
@@ -629,7 +629,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validator_health{metric=\"validation_quorum\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "validator_health{metric=\"validation_quorum\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Quorum [{{service_instance_id}}]"
         }
       ],
@@ -662,7 +662,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_state_tracking{metric=\"state_value\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "state_tracking{metric=\"state_value\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "State [{{service_instance_id}}]"
         }
       ],
@@ -707,7 +707,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_state_tracking{metric=\"time_in_current_state_seconds\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "state_tracking{metric=\"time_in_current_state_seconds\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Time in State [{{service_instance_id}}]"
         }
       ],
@@ -740,7 +740,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "3600 * sum by (service_instance_id) (rate(xrpld_state_changes_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[1h]))",
+          "expr": "3600 * sum by (service_instance_id) (rate(state_changes_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[1h]))",
           "legendFormat": "Changes/hr [{{service_instance_id}}]"
         }
       ],
@@ -789,7 +789,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(xrpld_ledgers_closed_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) * 60",
+          "expr": "rate(ledgers_closed_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) * 60",
           "legendFormat": "Closed/min [{{service_instance_id}}]"
         }
       ],
@@ -838,7 +838,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validation_agreement{metric=\"agreement_pct_7d\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "validation_agreement{metric=\"agreement_pct_7d\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Agreement 7d [{{service_instance_id}}]"
         }
       ],
@@ -889,14 +889,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validation_agreement{metric=\"agreements_7d\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "validation_agreement{metric=\"agreements_7d\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Agreements 7d [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validation_agreement{metric=\"missed_7d\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "validation_agreement{metric=\"missed_7d\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Missed 7d [{{service_instance_id}}]"
         }
       ],
@@ -984,7 +984,7 @@
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id)",
         "type": "query",
-        "query": "label_values(xrpld_validation_agreement, service_instance_id)",
+        "query": "label_values(validation_agreement, service_instance_id)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"

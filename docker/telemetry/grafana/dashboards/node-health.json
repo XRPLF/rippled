@@ -30,7 +30,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_LedgerMaster_Validated_Ledger_Age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "ledgermaster_validated_ledger_age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Validated Age [{{service_instance_id}}]"
         }
       ],
@@ -79,7 +79,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_LedgerMaster_Published_Ledger_Age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "ledgermaster_published_ledger_age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Published Age [{{service_instance_id}}]"
         }
       ],
@@ -128,35 +128,35 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_State_Accounting_Full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "state_accounting_full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Full [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_State_Accounting_Tracking_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "state_accounting_tracking_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Tracking [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_State_Accounting_Syncing_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "state_accounting_syncing_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Syncing [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_State_Accounting_Connected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "state_accounting_connected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Connected [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_State_Accounting_Disconnected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "state_accounting_disconnected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Disconnected [{{service_instance_id}}]"
         }
       ],
@@ -195,35 +195,35 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_State_Accounting_Full_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "state_accounting_full_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Full [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_State_Accounting_Tracking_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "state_accounting_tracking_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Tracking [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_State_Accounting_Syncing_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "state_accounting_syncing_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Syncing [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_State_Accounting_Connected_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "state_accounting_connected_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Connected [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_State_Accounting_Disconnected_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "state_accounting_disconnected_transitions{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Disconnected [{{service_instance_id}}]"
         }
       ],
@@ -262,7 +262,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(xrpld_ios_latency_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(ios_latency_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "P95 I/O Latency [{{service_instance_id}}]"
         }
       ],
@@ -301,7 +301,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_job_count{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "job_count{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Job Queue Depth [{{service_instance_id}}]"
         }
       ],
@@ -340,7 +340,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(xrpld_ledger_fetches_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(ledger_fetches_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
           "legendFormat": "Fetches / Sec [{{service_instance_id}}]"
         }
       ],
@@ -373,7 +373,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(xrpld_ledger_history_mismatch_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(ledger_history_mismatch_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
           "legendFormat": "Mismatches / Sec [{{service_instance_id}}]"
         }
       ],
@@ -430,21 +430,21 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"node_reads_total\"}",
+          "expr": "nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"node_reads_total\"}",
           "legendFormat": "Reads Total [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"node_reads_hit\"}",
+          "expr": "nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"node_reads_hit\"}",
           "legendFormat": "Reads Hit (cache) [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"node_writes\"}",
+          "expr": "nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"node_writes\"}",
           "legendFormat": "Writes Total [{{service_instance_id}}]"
         }
       ],
@@ -485,14 +485,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"write_load\"}",
+          "expr": "nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"write_load\"}",
           "legendFormat": "Write Load [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"read_queue\"}",
+          "expr": "nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"read_queue\"}",
           "legendFormat": "Read Queue [{{service_instance_id}}]"
         }
       ],
@@ -549,14 +549,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"node_read_bytes\"}",
+          "expr": "nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"node_read_bytes\"}",
           "legendFormat": "Bytes Read [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"node_written_bytes\"}",
+          "expr": "nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"node_written_bytes\"}",
           "legendFormat": "Bytes Written [{{service_instance_id}}]"
         }
       ],
@@ -597,28 +597,28 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"read_threads_running\"}",
+          "expr": "nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"read_threads_running\"}",
           "legendFormat": "Read Threads Running [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"read_threads_total\"}",
+          "expr": "nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"read_threads_total\"}",
           "legendFormat": "Read Threads Total [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"read_request_bundle\"}",
+          "expr": "nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"read_request_bundle\"}",
           "legendFormat": "Read Request Bundle [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"node_reads_duration_us\"}",
+          "expr": "nodestore_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"node_reads_duration_us\"}",
           "legendFormat": "Read Duration (µs) [{{service_instance_id}}]"
         }
       ],
@@ -671,21 +671,21 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_cache_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"SLE_hit_rate\"}",
+          "expr": "cache_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"SLE_hit_rate\"}",
           "legendFormat": "SLE Hit Rate [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_cache_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"ledger_hit_rate\"}",
+          "expr": "cache_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"ledger_hit_rate\"}",
           "legendFormat": "Ledger Hit Rate [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_cache_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"AL_hit_rate\"}",
+          "expr": "cache_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"AL_hit_rate\"}",
           "legendFormat": "AcceptedLedger Hit Rate [{{service_instance_id}}]"
         }
       ],
@@ -732,28 +732,28 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_cache_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"treenode_cache_size\"}",
+          "expr": "cache_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"treenode_cache_size\"}",
           "legendFormat": "TreeNode Cache [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_cache_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"treenode_track_size\"}",
+          "expr": "cache_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"treenode_track_size\"}",
           "legendFormat": "TreeNode Track [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_cache_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"fullbelow_size\"}",
+          "expr": "cache_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"fullbelow_size\"}",
           "legendFormat": "FullBelow [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_cache_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"AL_size\"}",
+          "expr": "cache_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"AL_size\"}",
           "legendFormat": "AcceptedLedger Size [{{service_instance_id}}]"
         }
       ],
@@ -811,7 +811,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(15, xrpld_object_count{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", type=~\"$type\"})",
+          "expr": "topk(15, object_count{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", type=~\"$type\"})",
           "legendFormat": "{{type}} [{{service_instance_id}}]"
         }
       ],
@@ -864,7 +864,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"server_state\"}",
+          "expr": "server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"server_state\"}",
           "legendFormat": "State [{{service_instance_id}}]"
         }
       ],
@@ -944,7 +944,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"uptime\"}",
+          "expr": "server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"uptime\"}",
           "legendFormat": "Uptime [{{service_instance_id}}]"
         }
       ],
@@ -977,7 +977,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"peers\"}",
+          "expr": "server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"peers\"}",
           "legendFormat": "Peers [{{service_instance_id}}]"
         }
       ],
@@ -1010,7 +1010,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"validated_ledger_seq\"}",
+          "expr": "server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"validated_ledger_seq\"}",
           "legendFormat": "Seq [{{service_instance_id}}]"
         }
       ],
@@ -1043,14 +1043,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"last_close_proposers\"}",
+          "expr": "server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"last_close_proposers\"}",
           "legendFormat": "Proposers [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"last_close_converge_time_ms\"}",
+          "expr": "server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"last_close_converge_time_ms\"}",
           "legendFormat": "Converge Time ms [{{service_instance_id}}]"
         }
       ],
@@ -1091,7 +1091,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_build_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "build_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "v{{version}} [{{service_instance_id}}]"
         }
       ],
@@ -1124,7 +1124,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"ledger_current_index\"}",
+          "expr": "server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"ledger_current_index\"}",
           "legendFormat": "Current Ledger [{{service_instance_id}}]"
         }
       ],
@@ -1157,7 +1157,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_storage_detail{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"nudb_bytes\"}",
+          "expr": "storage_detail{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"nudb_bytes\"}",
           "legendFormat": "NuDB Size [{{service_instance_id}}]"
         }
       ],
@@ -1207,7 +1207,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_complete_ledgers{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "complete_ledgers{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "{{bound}} [range {{index}}] [{{service_instance_id}}]",
           "format": "table",
           "instant": true
@@ -1242,21 +1242,21 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_db_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"db_kb_total\"}",
+          "expr": "db_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"db_kb_total\"}",
           "legendFormat": "Total KB [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_db_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"db_kb_ledger\"}",
+          "expr": "db_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"db_kb_ledger\"}",
           "legendFormat": "Ledger KB [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_db_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"db_kb_transaction\"}",
+          "expr": "db_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"db_kb_transaction\"}",
           "legendFormat": "Transaction KB [{{service_instance_id}}]"
         }
       ],
@@ -1297,7 +1297,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_db_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"historical_perminute\"}",
+          "expr": "db_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"historical_perminute\"}",
           "legendFormat": "Fetches/min [{{service_instance_id}}]"
         }
       ],
@@ -1330,7 +1330,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"peer_disconnects_resources\"}",
+          "expr": "server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"peer_disconnects_resources\"}",
           "legendFormat": "Resource Disconnects [{{service_instance_id}}]"
         }
       ],
@@ -1382,7 +1382,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_economy{metric=\"base_fee_xrp\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "ledger_economy{metric=\"base_fee_xrp\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Base Fee [{{service_instance_id}}]"
         }
       ],
@@ -1415,7 +1415,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_economy{metric=\"reserve_base_xrp\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "ledger_economy{metric=\"reserve_base_xrp\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Reserve Base [{{service_instance_id}}]"
         }
       ],
@@ -1448,7 +1448,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_economy{metric=\"reserve_inc_xrp\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "ledger_economy{metric=\"reserve_inc_xrp\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Reserve Inc [{{service_instance_id}}]"
         }
       ],
@@ -1481,7 +1481,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_economy{metric=\"ledger_age_seconds\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "ledger_economy{metric=\"ledger_age_seconds\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Ledger Age [{{service_instance_id}}]"
         }
       ],
@@ -1530,7 +1530,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_ledger_economy{metric=\"transaction_rate\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "ledger_economy{metric=\"transaction_rate\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Tx Rate [{{service_instance_id}}]"
         }
       ],
@@ -1587,77 +1587,77 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_running_duration_us_bucket{job_type=\"acceptLedger\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_running_us_bucket{job_type=\"acceptLedger\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Accept Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_running_duration_us_bucket{job_type=\"advanceLedger\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_running_us_bucket{job_type=\"advanceLedger\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Advance Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_running_duration_us_bucket{job_type=\"transaction\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_running_us_bucket{job_type=\"transaction\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Transaction [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_running_duration_us_bucket{job_type=\"writeObjects\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_running_us_bucket{job_type=\"writeObjects\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Write Objects [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_running_duration_us_bucket{job_type=\"heartbeat\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_running_us_bucket{job_type=\"heartbeat\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Heartbeat [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_running_duration_us_bucket{job_type=\"sweep\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_running_us_bucket{job_type=\"sweep\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Sweep [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_running_duration_us_bucket{job_type=\"trustedValidation\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_running_us_bucket{job_type=\"trustedValidation\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Trusted Validation [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_running_duration_us_bucket{job_type=\"trustedProposal\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_running_us_bucket{job_type=\"trustedProposal\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Trusted Proposal [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_running_duration_us_bucket{job_type=\"publishNewLedger\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_running_us_bucket{job_type=\"publishNewLedger\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Publish New Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_running_duration_us_bucket{job_type=\"clientRPC\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_running_us_bucket{job_type=\"clientRPC\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Client RPC [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_running_duration_us_bucket{job_type=\"ledgerData\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_running_us_bucket{job_type=\"ledgerData\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Ledger Data [{{quantile}}]"
         }
       ],
@@ -1696,77 +1696,77 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"acceptLedger\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_queued_us_bucket{job_type=\"acceptLedger\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Accept Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"advanceLedger\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_queued_us_bucket{job_type=\"advanceLedger\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Advance Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"transaction\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_queued_us_bucket{job_type=\"transaction\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Transaction [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"writeObjects\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_queued_us_bucket{job_type=\"writeObjects\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Write Objects [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"heartbeat\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_queued_us_bucket{job_type=\"heartbeat\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Heartbeat [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"sweep\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_queued_us_bucket{job_type=\"sweep\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Sweep [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"trustedValidation\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_queued_us_bucket{job_type=\"trustedValidation\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Trusted Validation [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"trustedProposal\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_queued_us_bucket{job_type=\"trustedProposal\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Trusted Proposal [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"publishNewLedger\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_queued_us_bucket{job_type=\"publishNewLedger\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Publish New Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"clientRPC\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_queued_us_bucket{job_type=\"clientRPC\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Client RPC [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(xrpld_job_queued_duration_us_bucket{job_type=\"ledgerData\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, service_instance_id) (rate(job_queued_us_bucket{job_type=\"ledgerData\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "Ledger Data [{{quantile}}]"
         }
       ],
@@ -1805,7 +1805,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_Node_family_full_below_cache_size{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "node_family_full_below_cache_size{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "FullBelowCache Size"
         }
       ],
@@ -1844,7 +1844,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_Node_family_full_below_cache_hit_rate{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "node_family_full_below_cache_hit_rate{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Hit Rate"
         }
       ],
@@ -1894,7 +1894,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_LedgerMaster_Published_Ledger_Age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"} - xrpld_LedgerMaster_Validated_Ledger_Age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "ledgermaster_published_ledger_age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"} - ledgermaster_validated_ledger_age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Publish Gap"
         }
       ],
@@ -1942,14 +1942,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(xrpld_State_Accounting_Full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) / 1000000",
+          "expr": "rate(state_accounting_full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) / 1000000",
           "legendFormat": "Full Mode Rate"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(xrpld_State_Accounting_Tracking_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) / 1000000",
+          "expr": "rate(state_accounting_tracking_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) / 1000000",
           "legendFormat": "Tracking Mode Rate"
         }
       ],
@@ -1988,7 +1988,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, job_type) (rate(xrpld_job_running_duration_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, job_type) (rate(job_running_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "{{job_type}}"
         }
       ],
@@ -2027,7 +2027,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile($quantile, sum by (le, job_type) (rate(xrpld_job_queued_duration_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "expr": "histogram_quantile($quantile, sum by (le, job_type) (rate(job_queued_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
           "legendFormat": "{{job_type}}"
         }
       ],
@@ -2066,7 +2066,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(traces_span_metrics_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.acquire\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.acquire\"}[5m])))",
           "legendFormat": "P95 Acquire [{{service_instance_id}}]"
         }
       ],
@@ -2105,7 +2105,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (outcome, service_instance_id) (rate(traces_span_metrics_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.acquire\"}[5m]))",
+          "expr": "sum by (outcome, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.acquire\"}[5m]))",
           "legendFormat": "{{outcome}} [{{service_instance_id}}]"
         }
       ],
@@ -2193,7 +2193,7 @@
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id)",
         "type": "query",
-        "query": "label_values(xrpld_LedgerMaster_Validated_Ledger_Age, service_instance_id)",
+        "query": "label_values(ledgermaster_validated_ledger_age, service_instance_id)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
@@ -2213,7 +2213,7 @@
         "label": "Object Type",
         "description": "Filter by internal object type (CountedObject<T> class name)",
         "type": "query",
-        "query": "label_values(xrpld_object_count, type)",
+        "query": "label_values(object_count, type)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
