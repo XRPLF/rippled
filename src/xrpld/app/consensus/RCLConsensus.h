@@ -21,7 +21,6 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/UintTypes.h>
-#include <xrpl/shamap/SHAMap.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
 #include <xrpl.pb.h>
@@ -36,6 +35,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace xrpl {
