@@ -673,17 +673,11 @@ protected:
             case AssetType::MPT: {
                 // Enough to cover initial fees
                 if (!env.le(keylet::account(issuer)))
-                {
                     env.fund(env.current()->fees().accountReserve(10, 1) * 10, issuer);
-                }
                 if (!env.le(keylet::account(lender)))
-                {
                     env.fund(env.current()->fees().accountReserve(10, 1) * 10, noripple(lender));
-                }
                 if (!env.le(keylet::account(borrower)))
-                {
                     env.fund(env.current()->fees().accountReserve(10, 1) * 10, noripple(borrower));
-                }
 
                 MPTTester mptt{env, issuer, kMptInitNoFund};
                 mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
@@ -770,13 +764,9 @@ protected:
         // Enough to cover initial fees
         env.fund(env.current()->fees().accountReserve(10, 1) * 10, issuer);
         if (lender != issuer)
-        {
             env.fund(env.current()->fees().accountReserve(10, 1) * 10, noripple(lender));
-        }
         if (borrower != issuer && borrower != lender)
-        {
             env.fund(env.current()->fees().accountReserve(10, 1) * 10, noripple(borrower));
-        }
 
         describeLoan(env, brokerParams, loanParams, assetType, issuer, lender, borrower);
 
