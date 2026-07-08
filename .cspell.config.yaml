@@ -135,6 +135,7 @@ words:
   - godexsoft
   - gpgcheck
   - gpgkey
+  - havetxset
   - hotwallet
   - hicpp
   - htpasswd
