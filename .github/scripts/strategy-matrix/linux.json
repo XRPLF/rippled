@@ -3,10 +3,16 @@
   "configs": {
     "ubuntu": [
       {
-        "compiler": ["gcc", "clang"],
+        "compiler": ["clang"],
         "build_type": ["Release"],
         "arch": ["amd64"],
         "minimal": true
+      },
+      {
+        "compiler": ["gcc"],
+        "build_type": ["Release"],
+        "arch": ["amd64"],
+        "minimal": false
       },
       {
         "compiler": ["gcc", "clang"],
