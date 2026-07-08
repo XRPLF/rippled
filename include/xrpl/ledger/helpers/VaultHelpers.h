@@ -5,7 +5,6 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -21,10 +20,7 @@ namespace xrpl {
     @return The number of shares, or nullopt on error.
 */
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
-    STAmount const& assets);
+assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets);
 
 /** From the perspective of a vault, return the number of assets to take from
     depositor when they receive a fixed amount of shares. Note, since shares are
@@ -37,10 +33,7 @@ assetsToSharesDeposit(
     @return The number of assets, or nullopt on error.
 */
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
-    STAmount const& shares);
+sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
 
 /** Controls whether to truncate shares instead of rounding. */
 enum class TruncateShares : bool { No = false, Yes = true };
@@ -69,8 +62,8 @@ enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
 */
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
     STAmount const& assets,
     TruncateShares truncate = TruncateShares::No,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
@@ -89,8 +82,8 @@ assetsToSharesWithdraw(
 */
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
 
@@ -104,9 +97,6 @@ sharesToAssetsWithdraw(
                     both the share MPTID and the outstanding-amount total.
 */
 [[nodiscard]] bool
-isSoleShareholder(
-    ReadView const& view,
-    AccountID const& account,
-    std::shared_ptr<SLE const> const& issuance);
+isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref issuance);
 
 }  // namespace xrpl

@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -22,6 +21,7 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
+#include <expected>
 #include <memory>
 
 namespace xrpl {
@@ -37,7 +37,15 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfMutableFlags) && !ctx.rules.enabled(featureDynamicMPT))
         return false;
 
-    return true;
+    if (ctx.tx.isFlag(tfMPTCanHoldConfidentialBalance) &&
+        !ctx.rules.enabled(featureConfidentialTransfer))
+        return false;
+
+    // can not set tmfMPTCannotEnableCanHoldConfidentialBalance without featureConfidentialTransfer
+    auto const mutableFlags = ctx.tx[~sfMutableFlags];
+    return !mutableFlags ||
+        ((*mutableFlags & tmfMPTCannotEnableCanHoldConfidentialBalance) == 0u) ||
+        ctx.rules.enabled(featureConfidentialTransfer);
 }
 
 std::uint32_t
@@ -70,6 +78,10 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         // must also be set.
         if (fee > 0u && !ctx.tx.isFlag(tfMPTCanTransfer))
             return temMALFORMED;
+
+        // Confidential amounts are encrypted so transfer rate is disallowed.
+        if (fee > 0u && ctx.tx.isFlag(tfMPTCanHoldConfidentialBalance))
+            return temBAD_TRANSFER_FEE;
     }
 
     if (auto const domain = ctx.tx[~sfDomainID])
@@ -100,19 +112,19 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-Expected<MPTID, TER>
+std::expected<MPTID, TER>
 MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreateArgs const& args)
 {
     auto const acct = view.peek(keylet::account(args.account));
     if (!acct)
-        return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+        return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
     if (args.priorBalance &&
         *(args.priorBalance) < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
-        return Unexpected(tecINSUFFICIENT_RESERVE);
+        return std::unexpected(tecINSUFFICIENT_RESERVE);
 
     auto const mptId = makeMptID(args.sequence, args.account);
-    auto const mptIssuanceKeylet = keylet::mptIssuance(mptId);
+    auto const mptIssuanceKeylet = keylet::mptokenIssuance(mptId);
 
     // create the MPTokenIssuance
     {
@@ -120,7 +132,7 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
             keylet::ownerDir(args.account), mptIssuanceKeylet, describeOwnerDir(args.account));
 
         if (!ownerNode)
-            return Unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE
+            return std::unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE
 
         auto mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
         (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
@@ -156,10 +168,10 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
             // would dangle the pointer and is a programmer error.
             auto const sleHolding = view.read(keylet::unchecked(*args.referenceHolding));
             if (!sleHolding)
-                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const type = sleHolding->getType();
             if (type != ltMPTOKEN && type != ltRIPPLE_STATE)
-                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             (*mptIssuance)[sfReferenceHolding] = *args.referenceHolding;
         }
 
@@ -195,10 +207,7 @@ MPTokenIssuanceCreate::doApply()
 }
 
 void
-MPTokenIssuanceCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+MPTokenIssuanceCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

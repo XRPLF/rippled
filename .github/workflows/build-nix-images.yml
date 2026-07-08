@@ -1,0 +1,62 @@
+name: Build Nix Docker images
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - ".github/workflows/build-nix-images.yml"
+      - "flake.nix"
+      - "flake.lock"
+      - "nix/**"
+      - "!nix/docker/README.md"
+      - "!nix/devshell.nix"
+      - "bin/check-tools.sh"
+      - "bin/install-sanitizer-libs.sh"
+  pull_request:
+    paths:
+      - ".github/workflows/build-nix-images.yml"
+      - "flake.nix"
+      - "flake.lock"
+      - "nix/**"
+      - "!nix/docker/README.md"
+      - "!nix/devshell.nix"
+      - "bin/check-tools.sh"
+      - "bin/install-sanitizer-libs.sh"
+  workflow_dispatch:
+
+concurrency:
+  # Read `on-trigger.yml` for the rationale behind this concurrency group name.
+  group: ${{ github.workflow }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.sha || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-merge:
+    name: Build and push nix-${{ matrix.distro.name }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # The base images are the oldest supported version of each distro
+        # that we want to build images for.
+        distro:
+          - name: nixos
+            base_image: nixos/nix:latest
+          - name: ubuntu
+            base_image: ubuntu:20.04
+          - name: debian
+            base_image: debian:bookworm
+          - name: rhel
+            base_image: registry.access.redhat.com/ubi9/ubi:latest
+    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@ee03d31bcc4501d7599dc1b1ecd7a34af582ad1c
+    with:
+      image_name: xrpld/nix-${{ matrix.distro.name }}
+      dockerfile: nix/docker/Dockerfile
+      base_image: ${{ matrix.distro.base_image }}
+      push: ${{ github.event_name == 'push' }}

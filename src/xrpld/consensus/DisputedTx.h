@@ -4,10 +4,15 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 
 #include <boost/container/flat_map.hpp>
 
+#include <cstddef>
+#include <memory>
+#include <sstream>
+#include <string>
 #include <utility>
 
 namespace xrpl {
@@ -29,7 +34,7 @@ namespace xrpl {
 template <class Tx, class NodeId>
 class DisputedTx
 {
-    using TxID_t = typename Tx::ID;
+    using TxID_t = Tx::ID;
     using Map_t = boost::container::flat_map<NodeId, bool>;
 
 public:
@@ -286,7 +291,7 @@ DisputedTx<Tx, NodeId>::updateVote(int percentTime, bool proposing, ConsensusPar
     if (proposing)  // give ourselves full weight
     {
         // This is basically the percentage of nodes voting 'yes' (including us)
-        weight = (yays_ * 100 + (ourVote_ ? 100 : 0)) / (nays_ + yays_ + 1);
+        weight = ((yays_ * 100) + (ourVote_ ? 100 : 0)) / (nays_ + yays_ + 1);
 
         newPosition = weight > requiredPct;
     }

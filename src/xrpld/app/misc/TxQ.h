@@ -1,17 +1,35 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/applySteps.h>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/intrusive/set.hpp>
 
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <map>
+#include <memory>
+#include <mutex>
 #include <optional>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -288,7 +306,7 @@ public:
 
     /** Return the next sequence that would go in the TxQ for an account. */
     SeqProxy
-    nextQueuableSeq(std::shared_ptr<SLE const> const& sleAccount) const;
+    nextQueuableSeq(SLE::const_ref sleAccount) const;
 
     /** Returns fee metrics in reference fee level units.
      */
@@ -342,9 +360,7 @@ public:
 private:
     // Implementation for nextQueuableSeq().  The passed lock must be held.
     SeqProxy
-    nextQueuableSeqImpl(
-        std::shared_ptr<SLE const> const& sleAccount,
-        std::scoped_lock<std::mutex> const&) const;
+    nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex> const&) const;
 
     /**
         Track and use the fee escalation metrics of the
@@ -782,7 +798,7 @@ private:
         STTx const&,
         ApplyFlags const,
         OpenView const&,
-        std::shared_ptr<SLE const> const& sleAccount,
+        SLE::const_ref sleAccount,
         AccountMap::iterator const&,
         std::optional<TxQAccount::TxMap::iterator> const&,
         std::scoped_lock<std::mutex> const& lock);

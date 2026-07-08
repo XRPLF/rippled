@@ -641,6 +641,9 @@ template <class T>
 T*
 SharedWeakUnion<T>::unsafeGetRawPtr() const
 {
+    // tp_ packs a raw pointer together with a strength bit; recovering the
+    // pointer inherently requires an integer-to-pointer cast.
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     return reinterpret_cast<T*>(tp_ & kPtrMask);
 }
 

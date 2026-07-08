@@ -1,12 +1,20 @@
 #pragma once
 
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 
 #include <boost/container/pmr/monotonic_buffer_resource.hpp>
 #include <boost/container/pmr/polymorphic_allocator.hpp>
 
+#include <cstddef>
+#include <functional>
 #include <map>
+#include <memory>
+#include <optional>
 #include <utility>
 
 namespace xrpl::detail {
@@ -49,15 +57,15 @@ public:
     succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last) const;
 
     void
-    erase(std::shared_ptr<SLE> const& sle);
+    erase(SLE::ref sle);
 
     void
-    insert(std::shared_ptr<SLE> const& sle);
+    insert(SLE::ref sle);
 
     void
-    replace(std::shared_ptr<SLE> const& sle);
+    replace(SLE::ref sle);
 
-    [[nodiscard]] std::shared_ptr<SLE const>
+    [[nodiscard]] SLE::const_pointer
     read(ReadView const& base, Keylet const& k) const;
 
     void
@@ -84,10 +92,10 @@ private:
     struct SleAction
     {
         Action action;
-        std::shared_ptr<SLE> sle;
+        SLE::pointer sle;
 
         // Constructor needed for emplacement in std::map
-        SleAction(Action action, std::shared_ptr<SLE> const& sle) : action(action), sle(sle)
+        SleAction(Action action, SLE::pointer sle) : action(action), sle(std::move(sle))
         {
         }
     };
@@ -97,7 +105,7 @@ private:
     using items_t = std::map<
         key_type,
         SleAction,
-        std::less<key_type>,
+        std::less<>,
         boost::container::pmr::polymorphic_allocator<std::pair<key_type const, SleAction>>>;
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.

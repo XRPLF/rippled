@@ -3,20 +3,30 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/Slot.h>
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/TxMetrics.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/Slot.h>
 #include <xrpld/rpc/ServerHandler.h>
 
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/basics/UnorderedContainers.h>
-#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/UptimeClock.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Gauge.h>
+#include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/Job.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
+#include <xrpl/server/Writer.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
@@ -25,14 +35,22 @@
 #include <boost/asio/strand.hpp>
 #include <boost/container/flat_map.hpp>
 
+#include <xrpl.pb.h>
+
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <set>
+#include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -202,16 +220,16 @@ public:
     findPeerByPublicKey(PublicKey const& pubKey) override;
 
     void
-    broadcast(protocol::TMProposeSet& m) override;
+    broadcast(protocol::TMProposeSet const& m) override;
 
     void
-    broadcast(protocol::TMValidation& m) override;
+    broadcast(protocol::TMValidation const& m) override;
 
     std::set<Peer::id_t>
-    relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator) override;
+    relay(protocol::TMProposeSet const& m, uint256 const& uid, PublicKey const& validator) override;
 
     std::set<Peer::id_t>
-    relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator) override;
+    relay(protocol::TMValidation const& m, uint256 const& uid, PublicKey const& validator) override;
 
     void
     relay(
@@ -409,7 +427,7 @@ public:
     addTxMetrics(Args... args)
     {
         if (!strand_.running_in_this_thread())
-            return post(strand_, std::bind(&OverlayImpl::addTxMetrics<Args...>, this, args...));
+            return post(strand_, [this, args...] { addTxMetrics(args...); });
 
         txMetrics_.addMetrics(args...);
     }
@@ -433,7 +451,7 @@ private:
         std::shared_ptr<PeerFinder::Slot> const& slot,
         http_request_type const& request,
         address_type remoteAddress,
-        std::string msg);
+        std::string const& msg);
 
     /** Handles crawl requests. Crawl returns information about the
         node and its peers so crawlers can map the network.

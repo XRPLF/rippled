@@ -1,18 +1,26 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
 #include <functional>
 #include <map>
-#include <memory>
 #include <optional>
 #include <set>
 #include <utility>
@@ -135,7 +143,7 @@ areCompatible(
 dirLink(
     ApplyView& view,
     AccountID const& owner,
-    std::shared_ptr<SLE>& object,
+    SLE::pointer& object,
     SF_UINT64 const& node = sfOwnerNode);
 
 /** Checks that can withdraw funds from an object to itself or a destination.
@@ -215,8 +223,8 @@ doWithdraw(
  * (if should not be skipped) and if the entry should be skipped. The status
  * is always tesSUCCESS if the entry should be skipped.
  */
-using EntryDeleter = std::function<
-    std::pair<TER, SkipEntry>(LedgerEntryType, uint256 const&, std::shared_ptr<SLE>&)>;
+using EntryDeleter =
+    std::function<std::pair<TER, SkipEntry>(LedgerEntryType, uint256 const&, SLE::pointer&)>;
 /** Cleanup owner directory entries on account delete.
  * Used for a regular and AMM accounts deletion. The caller
  * has to provide the deleter function, which handles details of

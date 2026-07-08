@@ -1,9 +1,12 @@
 #pragma once
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/Serializer.h>
 
+#include <concepts>
+#include <cstddef>
 #include <ostream>
 #include <string>
 #include <type_traits>

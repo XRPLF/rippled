@@ -17,8 +17,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
-#include <memory>
-
 namespace xrpl {
 
 NotTEC
@@ -90,7 +88,7 @@ NFTokenCancelOffer::doApply()
 {
     for (auto const& id : ctx_.tx[sfNFTokenOffers])
     {
-        if (auto offer = view().peek(keylet::nftoffer(id));
+        if (auto offer = view().peek(keylet::nftokenOffer(id));
             offer && !nft::deleteTokenOffer(view(), offer))
         {
             // LCOV_EXCL_START
@@ -105,10 +103,7 @@ NFTokenCancelOffer::doApply()
 }
 
 void
-NFTokenCancelOffer::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+NFTokenCancelOffer::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

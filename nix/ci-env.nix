@@ -4,14 +4,16 @@
   ...
 }:
 let
-  inherit (import ./packages.nix { inherit pkgs; }) commonPackages;
-  inherit (pkgs) lib;
+  inherit (import ./packages.nix { inherit pkgs; })
+    commonPackages
+    gccPackage
+    llvmPackages
+    llvmVersion
+    ;
 
-  # Underlying compiler toolchains to wrap. Bump these in one place to
-  # roll the whole environment forward.
-  customGccPackage = pkgs.gcc15;
-  customLlvmPackages = pkgs.llvmPackages_22;
-  customClangMajor = lib.versions.major (lib.getVersion customLlvmPackages.clang-unwrapped);
+  # Underlying compiler toolchains to wrap (versions pinned in packages.nix).
+  customGccPackage = gccPackage;
+  customLlvmPackages = llvmPackages;
 
   # binutils wrapped to emit binaries that reference the custom glibc
   # (dynamic linker path, library search path, RPATH).
@@ -42,6 +44,15 @@ let
     libc = customGlibc;
     bintools = customBinutils;
   };
+
+  # gcov ships in gcc's `cc` output, but the cc-wrapper doesn't expose it.
+  # Surface the gcov from our rebuilt gcc (linked against the custom glibc, so
+  # it runs under the loader installed in the image) and matching the exact
+  # compiler version, so gcovr can produce coverage reports in the CI env.
+  customGcov = pkgs.runCommand "gcov-custom-for-ci-env" { } ''
+    mkdir -p "$out/bin"
+    ln -s "${customGccCc}/bin/gcov" "$out/bin/gcov"
+  '';
 
   # stdenv built around the rebuilt gcc / custom glibc. Used to rebuild
   # compiler-rt below so its sanitizer runtimes see the custom glibc
@@ -81,10 +92,18 @@ let
     extraBuildCommands = ''
       rsrc="$out/resource-root"
       mkdir "$rsrc"
-      ln -s "${customLlvmPackages.clang-unwrapped.lib}/lib/clang/${customClangMajor}/include" "$rsrc/include"
+      ln -s "${customLlvmPackages.clang-unwrapped.lib}/lib/clang/${toString llvmVersion}/include" "$rsrc/include"
       ln -s "${customCompilerRt.out}/lib" "$rsrc/lib"
       ln -s "${customCompilerRt.out}/share" "$rsrc/share" || true
       echo "-resource-dir=$rsrc" >> $out/nix-support/cc-cflags
+      # compiler-rt ships the sanitizer/profile/xray interface headers (e.g.
+      # <sanitizer/lsan_interface.h>) in its `dev` output. In a normal Nix
+      # build these reach the include path because compiler-rt is propagated
+      # via depsTargetTargetPropagated and stdenv's setup hooks add its
+      # dev/include. The CI image runs clang outside a Nix stdenv (binaries
+      # on PATH, no setup hooks), so that never happens; add the headers
+      # explicitly. gcc ships its own copy, which is why this is clang-only.
+      echo "-isystem ${customCompilerRt.dev}/include" >> $out/nix-support/cc-cflags
     '';
   };
 
@@ -105,11 +124,16 @@ in
     name = "xrpld-ci-env";
     paths = commonPackages ++ [
       customGcc
+      customGcov
       customClangForCiEnv
       customBinutils
+      # CA certificate bundle so HTTPS clients (git, curl, conan) can verify
+      # TLS connections without ca-certificates being installed in the system.
+      pkgs.cacert
     ];
     pathsToLink = [
       "/bin"
+      "/etc/ssl/certs"
       "/lib"
       "/include"
       "/share"

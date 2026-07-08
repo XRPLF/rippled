@@ -1,8 +1,20 @@
 #pragma once
 
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/PeerReservationTable.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/Manifest.h>
+
+#include <functional>
+#include <memory>
+#include <string>
+#include <unordered_set>
+#include <utility>
 
 namespace xrpl {
 

@@ -1,21 +1,28 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/detail/ReadViewFwdRange.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Fees.h>
-#include <xrpl/protocol/IOUAmount.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>  // IWYU pragma: keep
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <unordered_set>
+#include <utility>
 
 namespace xrpl {
 
@@ -34,9 +41,9 @@ public:
 
     using key_type = uint256;
 
-    using mapped_type = std::shared_ptr<SLE const>;
+    using mapped_type = SLE::const_pointer;
 
-    struct SlesType : detail::ReadViewFwdRange<std::shared_ptr<SLE const>>
+    struct SlesType : detail::ReadViewFwdRange<SLE::const_pointer>
     {
         explicit SlesType(ReadView const& view);
         [[nodiscard]] Iterator
@@ -143,7 +150,7 @@ public:
         @return `nullptr` if the key is not present or
                 if the type does not match.
     */
-    [[nodiscard]] virtual std::shared_ptr<SLE const>
+    [[nodiscard]] virtual SLE::const_pointer
     read(Keylet const& k) const = 0;
 
     // Accounts in a payment are not allowed to use assets acquired during that

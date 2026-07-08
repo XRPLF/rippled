@@ -19,8 +19,6 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
-#include <memory>
-
 namespace xrpl {
 
 TxConsequences
@@ -115,10 +113,7 @@ PaymentChannelFund::doApply()
 }
 
 void
-PaymentChannelFund::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+PaymentChannelFund::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

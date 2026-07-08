@@ -1,12 +1,16 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/TER.h>
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <type_traits>
@@ -15,11 +19,7 @@ namespace xrpl {
 
 namespace detail {
 
-template <
-    class V,
-    class N,
-    class = std::enable_if_t<
-        std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>>>
+template <class V, class N>
 bool
 internalDirNext(
     V& view,
@@ -27,6 +27,7 @@ internalDirNext(
     std::shared_ptr<N>& page,
     unsigned int& index,
     uint256& entry)
+    requires(std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>)
 {
     auto const& svIndexes = page->getFieldV256(sfIndexes);
     XRPL_ASSERT(index <= svIndexes.size(), "xrpl::detail::internalDirNext : index inside range");
@@ -64,11 +65,7 @@ internalDirNext(
     return true;
 }
 
-template <
-    class V,
-    class N,
-    class = std::enable_if_t<
-        std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>>>
+template <class V, class N>
 bool
 internalDirFirst(
     V& view,
@@ -76,6 +73,7 @@ internalDirFirst(
     std::shared_ptr<N>& page,
     unsigned int& index,
     uint256& entry)
+    requires(std::is_same_v<std::remove_cv_t<N>, SLE> && std::is_base_of_v<ReadView, V>)
 {
     if constexpr (std::is_const_v<N>)
     {
@@ -115,7 +113,7 @@ bool
 cdirFirst(
     ReadView const& view,
     uint256 const& root,
-    std::shared_ptr<SLE const>& page,
+    SLE::const_pointer& page,
     unsigned int& index,
     uint256& entry);
 
@@ -123,7 +121,7 @@ bool
 dirFirst(
     ApplyView& view,
     uint256 const& root,
-    std::shared_ptr<SLE>& page,
+    SLE::pointer& page,
     unsigned int& index,
     uint256& entry);
 /** @} */
@@ -147,7 +145,7 @@ bool
 cdirNext(
     ReadView const& view,
     uint256 const& root,
-    std::shared_ptr<SLE const>& page,
+    SLE::const_pointer& page,
     unsigned int& index,
     uint256& entry);
 
@@ -155,17 +153,14 @@ bool
 dirNext(
     ApplyView& view,
     uint256 const& root,
-    std::shared_ptr<SLE>& page,
+    SLE::pointer& page,
     unsigned int& index,
     uint256& entry);
 /** @} */
 
 /** Iterate all items in the given directory. */
 void
-forEachItem(
-    ReadView const& view,
-    Keylet const& root,
-    std::function<void(std::shared_ptr<SLE const> const&)> const& f);
+forEachItem(ReadView const& view, Keylet const& root, std::function<void(SLE::const_ref)> const& f);
 
 /** Iterate all items after an item in the given directory.
     @param after The key of the item to start after
@@ -180,14 +175,11 @@ forEachItemAfter(
     uint256 const& after,
     std::uint64_t const hint,
     unsigned int limit,
-    std::function<bool(std::shared_ptr<SLE const> const&)> const& f);
+    std::function<bool(SLE::const_ref)> const& f);
 
 /** Iterate all items in an account's owner directory. */
 inline void
-forEachItem(
-    ReadView const& view,
-    AccountID const& id,
-    std::function<void(std::shared_ptr<SLE const> const&)> const& f)
+forEachItem(ReadView const& view, AccountID const& id, std::function<void(SLE::const_ref)> const& f)
 {
     forEachItem(view, keylet::ownerDir(id), f);
 }
@@ -205,7 +197,7 @@ forEachItemAfter(
     uint256 const& after,
     std::uint64_t const hint,
     unsigned int limit,
-    std::function<bool(std::shared_ptr<SLE const> const&)> const& f)
+    std::function<bool(SLE::const_ref)> const& f)
 {
     return forEachItemAfter(view, keylet::ownerDir(id), after, hint, limit, f);
 }

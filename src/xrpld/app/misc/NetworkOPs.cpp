@@ -24,7 +24,6 @@
 #include <xrpld/consensus/ConsensusParms.h>
 #include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/ClusterNode.h>
 #include <xrpld/overlay/Overlay.h>
@@ -54,6 +53,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/utility/rngfill.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/ClosureCounter.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
@@ -313,7 +313,7 @@ public:
         , consensus_(
               registry_.get().getApp(),
               makeFeeVote(
-                  setupFeeVote(registry_.get().getApp().config().section("voting")),
+                  setupFeeVote(registry_.get().getApp().config().section(Sections::kVoting)),
                   registry_.get().getJournal("FeeVote")),
               ledgerMaster,
               *localTX_,
@@ -330,7 +330,7 @@ public:
         , jobQueue_(jobQueue)
         , standalone_(standalone)
         , minPeerCount_(startValid ? 0 : minPeerCount)
-        , stats_(std::bind(&NetworkOPsImp::collectMetrics, this), collector)
+        , stats_([this] { collectMetrics(); }, collector)
     {
     }
 
@@ -1253,8 +1253,9 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
         return;
     }
 
-    // Enforce Network bar for batch txn
-    if (iTrans->isFlag(tfInnerBatchTxn) && ledgerMaster_.getValidatedRules().enabled(featureBatch))
+    // Reject any transaction with the tfInnerBatchTxn flag at the network
+    // boundary, regardless of amendment state.
+    if (iTrans->isFlag(tfInnerBatchTxn))
     {
         JLOG(journal_.error()) << "Submitted transaction invalid: tfInnerBatchTxn flag present.";
         return;
@@ -1320,7 +1321,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     // under no circumstances will we ever accept an inner txn within a batch
     // txn from the network.
     auto const sttx = *transaction->getSTransaction();
-    if (sttx.isFlag(tfInnerBatchTxn) && view->rules().enabled(featureBatch))
+    if (sttx.isFlag(tfInnerBatchTxn))
     {
         transaction->setStatus(TransStatus::INVALID);
         transaction->setResult(temINVALID_FLAG);
@@ -1687,11 +1688,13 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                         e.transaction->setKept();
                     }
                     else
+                    {
                         JLOG(journal_.debug())
                             << "Not holding transaction " << e.transaction->getID() << ": "
                             << (e.local ? "local" : "network") << ", "
                             << "result: " << e.result << " ledgers left: "
                             << (ledgersLeft ? to_string(*ledgersLeft) : "unspecified");
+                    }
                 }
             }
             else
@@ -3020,11 +3023,12 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             }
         }
 
-        if (registry_.get().getApp().config().exists(SECTION_PORT_GRPC))
+        if (registry_.get().getApp().config().exists(Sections::kPortGrpc))
         {
-            auto const& grpcSection = registry_.get().getApp().config().section(SECTION_PORT_GRPC);
-            auto const optPort = grpcSection.get("port");
-            if (optPort && grpcSection.get("ip"))
+            auto const& grpcSection =
+                registry_.get().getApp().config().section(Sections::kPortGrpc);
+            auto const optPort = grpcSection.get(Keys::kPort);
+            if (optPort && grpcSection.get(Keys::kIp))
             {
                 auto& jv = ports.append(json::Value(json::ValueType::Object));
                 jv[jss::port] = *optPort;
@@ -4388,7 +4392,7 @@ NetworkOPsImp::findRpcSub(std::string const& strUrl)
 {
     std::scoped_lock const sl(subLock_);
 
-    subRpcMapType::iterator const it = rpcSubMap_.find(strUrl);
+    auto const it = rpcSubMap_.find(strUrl);
 
     if (it != rpcSubMap_.end())
         return it->second;
@@ -4464,7 +4468,7 @@ NetworkOPsImp::getBookPage(
     bool bDone = false;
     bool bDirectAdvance = true;
 
-    std::shared_ptr<SLE const> sleOfferDir;
+    SLE::const_pointer sleOfferDir;
     uint256 offerIndex;
     unsigned int uBookEntry = 0;
     STAmount saDirRate;
@@ -4823,7 +4827,7 @@ NetworkOPsImp::StateAccounting::json(json::Value& obj) const
     counters[static_cast<std::size_t>(mode)].dur += current;
 
     obj[jss::state_accounting] = json::ValueType::Object;
-    for (std::size_t i = static_cast<std::size_t>(OperatingMode::DISCONNECTED);
+    for (auto i = static_cast<std::size_t>(OperatingMode::DISCONNECTED);
          i <= static_cast<std::size_t>(OperatingMode::FULL);
          ++i)
     {

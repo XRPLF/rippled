@@ -7,7 +7,10 @@
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/write.hpp>
 
-#include <utility>
+#include <cstddef>
+#include <functional>
+#include <iterator>
+#include <vector>
 
 namespace xrpl {
 
