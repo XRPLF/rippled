@@ -8,3 +8,12 @@
 *.vcxproj   text eol=crlf
 *.props     text eol=crlf
 *.filters   text eol=crlf
+
+# Committed generated sources are emitted with LF by the generation tooling
+# (protoc and the codegen scripts). Pin them to LF so they are not rewritten
+# with CRLF on checkout (e.g. with core.autocrlf=true on Windows), which would
+# otherwise make the regenerated files differ from what is committed.
+include/xrpl/proto_generated/** text eol=lf
+src/libxrpl/proto_generated/** text eol=lf
+include/xrpl/protocol_autogen/** text eol=lf
+src/tests/libxrpl/protocol_autogen/** text eol=lf
