@@ -1,0 +1,35 @@
+-------------------------------------------------------------------------------------------------
+OpenSSL 3.5.6 vs 3.6.2 comparison
+Date: 2026-07-08
+Branch: vlntb/pratik-openssl-performance-test (commit 9b7582be93)
+Machine: valentin-Thelio-Major (Ubuntu 24.04, 48 cores)
+
+Both binaries are identical Release builds (GCC 13.3, C++23, same conan.lock),
+differing only in the statically linked OpenSSL version (verified via the
+embedded version banner: grep -aom1 'OpenSSL 3\.' <binary>).
+Tests were ported from doctest to GTest, so the runner differs from the
+openssl_test_results_1 runs: single combined binary xrpl_tests, --gtest_filter
+instead of --test-case. Old absolute numbers are not directly comparable
+(different compiler: GCC 12 vs GCC 13).
+
+Benchmark script: run_openssl_comparison.sh (hyperfine 1.18.0)
+
+SingleHashFullSlice (hyperfine -N --warmup 5 --min-runs 200)
+Note: startup-dominated (~ms); one 100 KB hash takes microseconds.
+
+| Command                    | Mean [ms] | Min [ms] | Max [ms] | Relative    |
+|:---------------------------|----------:|---------:|---------:|------------:|
+| openssl-3.5.6 singlehash   | 4.6 ± 0.5 |      3.9 |      7.4 | 1.02 ± 0.14 |
+| openssl-3.6.2 singlehash   | 4.5 ± 0.5 |      3.9 |      6.5 | 1.00        |
+
+MultihashAllSlices (hyperfine --warmup 5 --min-runs 20; 100k sha512Half calls per run)
+
+| Command                    | Mean [s]      | Min [s] | Max [s] | Relative    |
+|:---------------------------|--------------:|--------:|--------:|------------:|
+| openssl-3.5.6 multihash    | 4.084 ± 0.021 |   4.056 |   4.123 | 1.01 ± 0.01 |
+| openssl-3.6.2 multihash    | 4.060 ± 0.011 |   4.046 |   4.086 | 1.00        |
+
+Conclusion: 3.6.2 is on par with 3.5.6 on both benchmarks (differences within
+noise). The ~42% SHA-512 regression observed with the 3.6.0 alpha (see
+openssl_test_results_1: 5.636 s vs 3.968 s for 3.5.4) is fixed in the 3.6.2
+release. No performance objection to upgrading.
