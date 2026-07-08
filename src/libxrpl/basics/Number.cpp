@@ -472,8 +472,7 @@ Number::Guard::doRound(internalrep& drops, std::string_view location) const
     auto r = round();
     if (r == 1 || (r == 0 && (drops & 1) == 1))
     {
-        auto const& range = kRange.get();
-        if (drops >= range.max)
+        if (drops > kLargestMantissa)
         {
             static_assert(sizeof(internalrep) == sizeof(rep));
             // This should be impossible, because it's impossible to represent
@@ -640,7 +639,7 @@ Number::one()
     return one(kRange);
 }
 
-template <class T>
+template <std::unsigned_integral T>
 void
 doNormalize(
     bool& negative,
@@ -681,7 +680,7 @@ doNormalize(
             throw std::overflow_error("Number::normalize 1");
         g.doDropDigit(m, exponent);
     }
-    if ((exponent < kMinExponent) || (m == 0))
+    if ((exponent < kMinExponent) || (m < minMantissa) || (m == 0))
     {
         std::tie(negative, mantissa, exponent) = kZero.toInternal(range);
         return;

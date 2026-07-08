@@ -698,7 +698,7 @@ private:
         internalrep const& maxMantissa,
         MantissaRange::CuspRoundingFix cuspRoundingFixEnabled);
 
-    template <class T>
+    template <std::unsigned_integral T>
     friend void
     doNormalize(
         bool& negative,
