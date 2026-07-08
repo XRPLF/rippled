@@ -137,6 +137,15 @@ if(coverage)
 endif()
 
 include(XrplCore)
+
+# Aggregate target to regenerate every committed generated source; individual
+# generators (see XrplProtocolAutogen, XrplProto) register themselves as its
+# dependencies. Run with: cmake --build . --target generate
+add_custom_target(
+    generate
+    COMMENT "Regenerating all committed generated sources..."
+)
+
 include(XrplProtocolAutogen)
 include(XrplProto)
 include(XrplInstall)

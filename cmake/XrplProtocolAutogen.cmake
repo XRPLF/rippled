@@ -148,3 +148,5 @@ add_custom_target(
 # code_gen runs the Python scripts from the venv created by setup_code_gen, so
 # make sure the venv exists (and dependencies are installed) beforehand.
 add_dependencies(code_gen setup_code_gen)
+
+add_dependencies(generate code_gen)

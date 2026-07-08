@@ -38,15 +38,4 @@ add_custom_target(
     SOURCES ${PROTO_FILES}
 )
 
-# Single entry point to regenerate every committed generated source: the
-# protocol wrapper classes (code_gen) and the protobuf/gRPC sources (proto_gen).
-# Run with: cmake --build . --target generate
-add_custom_target(
-    generate
-    COMMENT "Regenerating all committed generated sources..."
-)
 add_dependencies(generate proto_gen)
-# code_gen is only defined when Python3 is available (see XrplProtocolAutogen).
-if(TARGET code_gen)
-    add_dependencies(generate code_gen)
-endif()
