@@ -44,7 +44,10 @@ work without `ca-certificates` being installed in the base image.
    - runs [`bin/check-tools.sh`](../../bin/check-tools.sh) to verify every
      expected tool is present and runnable, and
    - compiles the C++ test programs in
-     [`test_files/`](./test_files) with both `g++` and `clang++`, and sanitizers.
+     [`test_files/cpp_sources/`](./test_files/cpp_sources) with both `g++` and
+     `clang++`, and sanitizers, and
+   - compiles the Rust test programs in
+     [`test_files/rust_sources/`](./test_files/rust_sources) with `rustc`.
 3. **`tester`** — Start again from a clean `BASE_IMAGE` (no Nix toolchain),
    install only the sanitizer runtime libraries
    ([`install-sanitizer-libs.sh`](./install-sanitizer-libs.sh)), and run the
@@ -73,11 +76,12 @@ toolchain being present at runtime. Two pieces make that work:
   [`loader-path.sh`](./loader-path.sh) reports the expected loader path for the
   current architecture, so we can patch the binaries to use the correct loader.
 
-The build then verifies all of this end to end: the test programs in
-`test_files/` (a regular binary plus ASan/TSan/UBSan variants) are compiled in
-`final`, their `PT_INTERP` is patched to the target loader, and they are run in
-the clean `tester` stage to confirm each emits the expected sanitizer
-diagnostic on a stock base image.
+The build then verifies all of this end to end: the C++ test programs in
+`test_files/cpp_sources/` (a regular binary plus ASan/TSan/UBSan variants) and
+the Rust test programs in `test_files/rust_sources/` (a hello binary plus panic
+and overflow-check variants) are compiled in `final`, their `PT_INTERP` is
+patched to the target loader, and they are run in the clean `tester` stage to
+confirm each emits the expected diagnostic on a stock base image.
 
 ## Files
 
@@ -85,6 +89,8 @@ diagnostic on a stock base image.
 | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | [`./Dockerfile`](./Dockerfile)                                          | Multi-stage build described above.                                            |
 | [`./loader-path.sh`](./loader-path.sh)                                  | Print the dynamic-linker (`PT_INTERP`) path for the current architecture.     |
-| [`./test_files/`](./test_files)                                         | C++ sources and scripts to compile and run the sanitizer smoke tests.         |
+| [`./test_files/`](./test_files)                                         | Compile/run scripts for the C++ and Rust smoke tests.                         |
+| [`./test_files/cpp_sources/`](./test_files/cpp_sources)                 | C++ sources for the sanitizer smoke tests.                                    |
+| [`./test_files/rust_sources/`](./test_files/rust_sources)               | Rust sources for the rustc smoke tests.                                       |
 | [`/bin/check-tools.sh`](../../bin/check-tools.sh)                       | Verify every expected tools are present and runnable.                         |
 | [`/bin/install-sanitizer-libs.sh`](../../bin/install-sanitizer-libs.sh) | Install `libasan`/`libtsan`/`libubsan` runtimes on the supported base images. |
