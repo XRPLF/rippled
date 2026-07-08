@@ -814,6 +814,7 @@ def run_rule_d_dashboards(
         "service_version",
         "service_instance_id",
         "job",
+        "job_type",  # standard Prometheus label for job-queue metrics
         "instance",
     }
     # A dashboard label is valid if it is a span attribute (L1), a native-metric
