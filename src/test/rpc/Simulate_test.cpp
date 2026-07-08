@@ -420,6 +420,20 @@ class Simulate_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Transaction should not be signed.");
         }
+        {
+            // tfInnerBatchTxn flag on top-level transaction
+            json::Value params;
+            json::Value txJson{json::ValueType::Object};
+            txJson[jss::TransactionType] = jss::AccountSet;
+            txJson[jss::Account] = env.master.human();
+            txJson[jss::Flags] = tfInnerBatchTxn;
+            params[jss::tx_json] = txJson;
+
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "tfInnerBatchTxn flag is not allowed on top-level transactions.");
+        }
     }
 
     void
@@ -476,7 +490,7 @@ class Simulate_test : public beast::unit_test::Suite
         auto jt = env.jtnofill(
             batch::outer(alice, env.seq(alice), batchFee, tfAllOrNothing),
             batch::Inner(pay(alice, bob, XRP(10)), seq + 1),
-            batch::Inner(pay(alice, bob, XRP(10)), seq + 1));
+            batch::Inner(pay(alice, bob, XRP(10)), seq + 2));
 
         jt.jv.removeMember(jss::TxnSignature);
         json::Value params;

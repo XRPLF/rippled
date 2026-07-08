@@ -1,7 +1,14 @@
 #pragma once
 
+#include <xrpl/basics/contract.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/UintTypes.h>
+
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <variant>
 
 namespace xrpl {
 
