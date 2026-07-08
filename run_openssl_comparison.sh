@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# Compare SHA-512-half performance: OpenSSL 3.5.6 vs 3.6.2.
+# Compare SHA-512-half performance across OpenSSL versions.
 # Binaries are identical builds (GCC 13.3, Release, same locked deps),
 # differing only in the statically linked OpenSSL.
 set -euo pipefail
 
 cd "$(dirname "$0")/.build"
 
-OLD=./xrpl_tests-openssl-3.5.6
-NEW=./xrpl_tests-openssl-3.6.2
+V356=./xrpl_tests-openssl-3.5.6
+V362=./xrpl_tests-openssl-3.6.2
+V363=./xrpl_tests-openssl-3.6.3
 
 # Single hash of the full 100 KB buffer. Startup-dominated (~ms), kept for
 # parity with earlier result logs; expect near-identical numbers.
@@ -15,8 +16,9 @@ FILTER=OpenSSL.SingleHashFullSlice
 hyperfine -N \
     --warmup 5 \
     --min-runs 200 \
-    --command-name "openssl-3.5.6 singlehash" "$OLD --gtest_filter=$FILTER" \
-    --command-name "openssl-3.6.2 singlehash" "$NEW --gtest_filter=$FILTER" \
+    --command-name "openssl-3.5.6 singlehash" "$V356 --gtest_filter=$FILTER" \
+    --command-name "openssl-3.6.2 singlehash" "$V362 --gtest_filter=$FILTER" \
+    --command-name "openssl-3.6.3 singlehash" "$V363 --gtest_filter=$FILTER" \
     --export-markdown openssl_comparison_singlehash.md \
     --export-json openssl_comparison_singlehash.json
 
@@ -25,8 +27,9 @@ FILTER=OpenSSL.MultihashAllSlices
 hyperfine \
     --warmup 5 \
     --min-runs 20 \
-    --command-name "openssl-3.5.6 multihash" "$OLD --gtest_filter=$FILTER" \
-    --command-name "openssl-3.6.2 multihash" "$NEW --gtest_filter=$FILTER" \
+    --command-name "openssl-3.5.6 multihash" "$V356 --gtest_filter=$FILTER" \
+    --command-name "openssl-3.6.2 multihash" "$V362 --gtest_filter=$FILTER" \
+    --command-name "openssl-3.6.3 multihash" "$V363 --gtest_filter=$FILTER" \
     --export-markdown openssl_comparison.md \
     --export-json openssl_comparison.json
 
