@@ -40,7 +40,10 @@
 
 #include <xrpl/proto/xrpl.pb.h>
 #include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/telemetry/TraceContextValidation.h>
+
+#include <cstdint>
 
 namespace xrpl::telemetry {
 
