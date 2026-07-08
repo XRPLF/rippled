@@ -94,6 +94,20 @@ CredentialAccept::doApply()
     if (!sleSubject || !sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
+    auto txSponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
+    if (!txSponsorSle)
+        return txSponsorSle.error();  // LCOV_EXCL_LINE
+
+    if (auto const ret = checkReserve(
+            ctx_.getApplyViewContext(),
+            sleSubject,
+            preFeeBalance_,
+            *txSponsorSle,
+            {.ownerCountDelta = 1},
+            j_);
+        !isTesSuccess(ret))
+        return ret;
+
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const credentialKey = keylet::credential(accountID_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
@@ -115,14 +129,6 @@ CredentialAccept::doApply()
     // the credential reflects whoever is now covering the subject's reserve.
     decreaseOwnerCountForObject(view(), sleIssuer, sleCred, 1, j_);
     removeSponsorFromLedgerEntry(sleCred);
-
-    if (view().rules().enabled(featureSponsor) || view().rules().enabled(fixCleanup3_3_0))
-    {
-        if (auto const ret = checkReserve(
-                ctx_.getApplyViewContext(), sleSubject, preFeeBalance_, {.ownerCountDelta = 1}, j_);
-            !isTesSuccess(ret))
-            return ret;
-    }
 
     addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred);
     increaseOwnerCount(ctx_.getApplyViewContext(), sleSubject, 1, j_);

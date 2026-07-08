@@ -50,8 +50,9 @@ namespace xrpl {
 
 namespace STParsedJSONDetail {
 template <typename U, typename S>
-constexpr std::enable_if_t<std::is_unsigned_v<U> && std::is_signed_v<S>, U>
+constexpr U
 toUnsigned(S value)
+    requires(std::is_unsigned_v<U> && std::is_signed_v<S>)
 {
     if (value < 0 || std::numeric_limits<U>::max() < value)
         Throw<std::runtime_error>("Value out of range");
@@ -59,12 +60,24 @@ toUnsigned(S value)
 }
 
 template <typename U1, typename U2>
-constexpr std::enable_if_t<std::is_unsigned_v<U1> && std::is_unsigned_v<U2>, U1>
+constexpr U1
 toUnsigned(U2 value)
+    requires(std::is_unsigned_v<U1> && std::is_unsigned_v<U2>)
 {
     if (std::numeric_limits<U1>::max() < value)
         Throw<std::runtime_error>("Value out of range");
     return static_cast<U1>(value);
+}
+
+static std::string
+joinName(std::string const& jsonName, std::string const& fieldName)
+{
+    std::string result;
+    result.reserve(jsonName.size() + 1 + fieldName.size());
+    result += jsonName;
+    result += '.';
+    result += fieldName;
+    return result;
 }
 
 // LCOV_EXCL_START
@@ -74,7 +87,7 @@ makeName(std::string const& object, std::string const& field)
     if (field.empty())
         return object;
 
-    return object + "." + field;
+    return joinName(object, field);
 }
 
 static inline json::Value
@@ -1034,8 +1047,8 @@ parseObject(
 
                     try
                     {
-                        auto ret =
-                            parseObject(jsonName + "." + fieldName, value, field, depth + 1, error);
+                        auto ret = parseObject(
+                            joinName(jsonName, fieldName), value, field, depth + 1, error);
                         if (!ret)
                             return std::nullopt;
                         data.emplaceBack(std::move(*ret));
@@ -1052,8 +1065,8 @@ parseObject(
                 case STI_ARRAY:
                     try
                     {
-                        auto array =
-                            parseArray(jsonName + "." + fieldName, value, field, depth + 1, error);
+                        auto array = parseArray(
+                            joinName(jsonName, fieldName), value, field, depth + 1, error);
                         if (!array.has_value())
                             return std::nullopt;
                         data.emplaceBack(std::move(*array));

@@ -62,8 +62,8 @@ struct Adjustment
  *  @param view The ledger view to read from
  *  @param sle The ledger entry for the account
  *  @param j Journal for logging
- *  @param ownerCountAdj Adjustment to the owner count (default: 0)
- *  @param accountCountAdj Adjustment to the account count (default: 0)
+ *  @param adj Adjustment to the owner/account count (default: 0/0). Positive to add, negative to
+ * subtract.
  *  @return The account reserve amount in drops
  */
 [[nodiscard]] XRPAmount
@@ -74,8 +74,8 @@ accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjus
  *  @param view The ledger view to read from
  *  @param id The account ID
  *  @param j Journal for logging
- *  @param ownerCountAdj Adjustment to the owner count (default: 0)
- *  @param accountCountAdj Adjustment to the account count (default: 0)
+ *  @param adj Adjustment to the owner/account count (default: 0/0). Positive to add, negative to
+ * subtract.
  *  @return The account reserve amount in drops
  */
 [[nodiscard]] inline XRPAmount
@@ -91,8 +91,8 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
  *  @param accSle The account's ledger entry
  *  @param accBalance The account's balance
  *  @param sponsorSle The sponsor's ledger entry (if applicable)
- *  @param ownerCountAdj Adjustment to the owner count
- *  @param accountCountAdj Adjustment to the account count (default: 0)
+ *  @param adj Adjustment to the owner/account count (default: 0/0). Positive to add, negative to
+ * subtract.
  *  @param j Journal for logging (default: null sink)
  *  @return Transaction result code
  */
@@ -103,7 +103,7 @@ checkReserve(
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,
     Adjustment adj,
-    beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
+    beast::Journal j);
 
 /** The transaction's reserve sponsor for the given account, if applicable.
  *
