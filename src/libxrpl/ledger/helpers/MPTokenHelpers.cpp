@@ -191,7 +191,7 @@ authorizeMPToken(
         //      - create the MPToken object for the holder
 
         // A reserve sponsor only covers tx.Account's own objects.
-        auto const sponsorExp = txReserveSponsorFor(ctx, sleAcct);
+        auto const sponsorExp = getEffectiveTxReserveSponsor(ctx, sleAcct);
         if (!sponsorExp)
             return sponsorExp.error();  // LCOV_EXCL_LINE
         auto const sponsorSle = *sponsorExp;

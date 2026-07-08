@@ -292,7 +292,7 @@ increaseOwnerCount(
 void
 increaseOwnerCount(ApplyViewContext ctx, SLE::ref accountSle, std::uint32_t count, beast::Journal j)
 {
-    auto const sponsorSle = txReserveSponsorFor(ctx, accountSle);
+    auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, accountSle);
 
     // The sponsor's existence is validated by checkReserve/checkSponsor before
     // any owner-count mutation, so loading it here cannot fail.
@@ -398,15 +398,6 @@ checkReserve(
     return tesSUCCESS;
 }
 
-std::expected<SLE::pointer, TER>
-txReserveSponsorFor(ApplyViewContext ctx, SLE::const_ref accountSle)
-{
-    // A reserve sponsor only covers tx.Account's own objects.
-    if (isPseudoAccount(accountSle) || accountSle->getAccountID(sfAccount) != ctx.tx[sfAccount])
-        return SLE::pointer();
-    return getTxReserveSponsor(ctx);
-}
-
 TER
 checkReserve(
     ApplyViewContext ctx,
@@ -415,7 +406,7 @@ checkReserve(
     Adjustment adj,
     beast::Journal j)
 {
-    auto const sponsorSle = txReserveSponsorFor(ctx, accSle);
+    auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, accSle);
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
     return checkReserve(ctx, accSle, accBalance, *sponsorSle, adj, j);

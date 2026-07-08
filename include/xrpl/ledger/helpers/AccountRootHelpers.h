@@ -105,26 +105,10 @@ checkReserve(
     Adjustment adj,
     beast::Journal j);
 
-/** The transaction's reserve sponsor for the given account, if applicable.
- *
- *  A reserve sponsor only covers the transaction submitter's own objects, so
- *  this returns the tx reserve sponsor SLE only when accountSle is the tx's own
- *  (non-pseudo) account; otherwise it returns a null sponsor pointer. This is
- *  the single source of truth for the "sponsor applies to tx.Account only" rule
- *  that the sponsor-deriving helper overloads below rely on.
- *
- *  @param ctx The apply-view context (view + tx)
- *  @param accountSle The account whose sponsor is being resolved
- *  @return The sponsor SLE (nullptr if unsponsored), or tecINTERNAL if the
- *          sponsor account cannot be loaded (an already-checked invariant)
- */
-[[nodiscard]] std::expected<SLE::pointer, TER>
-txReserveSponsorFor(ApplyViewContext ctx, SLE::const_ref accountSle);
-
 /** Check if an account has sufficient reserve, deriving the sponsor internally.
  *
  *  Equivalent to the overload above, but resolves the sponsor via
- *  txReserveSponsorFor(ctx, accSle) instead of taking it explicitly. Use this
+ *  getEffectiveTxReserveSponsor(ctx, accSle) instead of taking it explicitly. Use this
  *  in the common case where the sponsor is simply the transaction's reserve
  *  sponsor for accSle. Callers that must force the account's-own-reserve branch
  *  (passing a null sponsor) or supply a different sponsor should use the
@@ -180,7 +164,7 @@ increaseOwnerCount(
 /** Increase owner-count fields, deriving the tx reserve sponsor internally.
  *
  *  Equivalent to the overload above, but resolves the sponsor via
- *  txReserveSponsorFor(ctx, accountSle) instead of taking it explicitly. Use
+ *  getEffectiveTxReserveSponsor(ctx, accountSle) instead of taking it explicitly. Use
  *  this when the sponsor is the transaction's reserve sponsor for accountSle
  *  (the common create path). Deletion paths, which derive the sponsor from an
  *  object's sfSponsor field, should keep using the explicit overload.

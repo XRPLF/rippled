@@ -664,7 +664,7 @@ addEmptyHolding(
         return tecDUPLICATE;
 
     // A reserve sponsor only covers tx.Account's own objects.
-    auto const sponsorExp = txReserveSponsorFor(ctx, sleDst);
+    auto const sponsorExp = getEffectiveTxReserveSponsor(ctx, sleDst);
     if (!sponsorExp)
         return sponsorExp.error();  // LCOV_EXCL_LINE
     auto const sponsorSle = *sponsorExp;

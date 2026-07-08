@@ -99,7 +99,7 @@ PaymentChannelFund::doApply()
         // when a sponsor is present and would ignore the source's post-lock
         // balance entirely. Funding an existing channel adds no owned object,
         // so there is no owner-count delta.
-        if (balance - ctx_.tx[sfAmount] < accountReserve(ctx_.view(), sle, j_))
+        if (balance < accountReserve(ctx_.view(), sle, j_) + ctx_.tx[sfAmount])
             return tecUNFUNDED;
     }
 

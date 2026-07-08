@@ -124,7 +124,7 @@ MPTokenIssuanceCreate::create(
         return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
     // A reserve sponsor only covers tx.Account's own objects.
-    auto const sponsorExp = txReserveSponsorFor(ctx, acct);
+    auto const sponsorExp = getEffectiveTxReserveSponsor(ctx, acct);
     if (!sponsorExp)
         return std::unexpected(sponsorExp.error());
     auto const sponsorSle = *sponsorExp;

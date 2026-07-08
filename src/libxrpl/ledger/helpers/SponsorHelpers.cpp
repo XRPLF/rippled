@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -56,6 +57,15 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx)
         return sle;
     }
     return SLE::pointer();
+}
+
+std::expected<SLE::pointer, TER>
+getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle)
+{
+    // A reserve sponsor only covers tx.Account's own objects.
+    if (isPseudoAccount(accountSle) || accountSle->getAccountID(sfAccount) != ctx.tx[sfAccount])
+        return SLE::pointer();
+    return getTxReserveSponsor(ctx);
 }
 
 std::optional<AccountID>

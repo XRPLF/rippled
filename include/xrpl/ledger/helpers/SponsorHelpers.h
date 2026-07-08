@@ -71,6 +71,22 @@ getTxReserveSponsor(ApplyViewContext ctx);
 std::expected<SLE::const_pointer, TER>
 getTxReserveSponsor(ReadView const& view, STTx const& tx);
 
+/** The transaction's reserve sponsor for the given account, if applicable.
+ *
+ *  A reserve sponsor only covers the transaction submitter's own objects, so
+ *  this returns the tx reserve sponsor SLE only when accountSle is the tx's own
+ *  (non-pseudo) account; otherwise it returns a null sponsor pointer. This is
+ *  the single source of truth for the "sponsor applies to tx.Account only" rule
+ *  that the sponsor-deriving helper overloads in AccountRootHelpers rely on.
+ *
+ *  @param ctx The apply-view context (view + tx)
+ *  @param accountSle The account whose sponsor is being resolved
+ *  @return The sponsor SLE (nullptr if unsponsored), or tecINTERNAL if the
+ *          sponsor account cannot be loaded (an already-checked invariant)
+ */
+[[nodiscard]] std::expected<SLE::pointer, TER>
+getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle);
+
 std::optional<AccountID>
 getLedgerEntryReserveSponsorAccountID(SLE::const_ref sle, SF_ACCOUNT const& field = sfSponsor);
 
