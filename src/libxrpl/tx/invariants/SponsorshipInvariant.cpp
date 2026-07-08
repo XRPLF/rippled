@@ -115,29 +115,23 @@ SponsorshipOwnerCountsMatch::finalize(
 {
     if (deltaSponsoredOwnerCount_ != deltaSponsoringOwnerCount_)
     {
-        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Invariant failed: SponsoredOwnerCount does not "
                            "equal SponsoringOwnerCount delta.";
         return false;
-        // LCOV_EXCL_STOP
     }
 
     if (ownerCountBelowSponsored_ > 0)
     {
-        // LCOV_EXCL_START
         JLOG(j.fatal())
             << "Invariant failed: OwnerCount must be greater than or equal to SponsoredOwnerCount.";
         return false;
-        // LCOV_EXCL_STOP
     }
 
     if (deltaSponsoredObjectOwnerCount_ != deltaSponsoredOwnerCount_)
     {
-        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Invariant failed: SponsoredObjectOwnerCount does not "
                            "equal SponsoredOwnerCount delta.";
         return false;
-        // LCOV_EXCL_STOP
     }
 
     return true;

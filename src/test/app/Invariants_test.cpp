@@ -5203,6 +5203,27 @@ class Invariants_test : public beast::unit_test::Suite
 
         {
             auto const expectMessage =
+                "SponsoredObjectOwnerCount does not "
+                "equal SponsoredOwnerCount delta.";
+
+            doInvariantCheck(
+                {{expectMessage}}, [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(a1.id()));
+                    if (!sle)
+                        return false;
+
+                    auto check = std::make_shared<SLE>(keylet::check(a1.id(), (*sle)[sfSequence]));
+                    check->setAccountID(sfAccount, a1.id());
+                    check->setAccountID(sfDestination, a2.id());
+                    check->setAccountID(sfSponsor, a2.id());
+                    check->setFieldAmount(sfSendMax, XRP(1));
+                    ac.view().insert(check);
+                    return true;
+                });
+        }
+
+        {
+            auto const expectMessage =
                 "Invariant failed: Net delta of SponsoringAccountCount does "
                 "not match net delta of sfSponsor presence.";
 
