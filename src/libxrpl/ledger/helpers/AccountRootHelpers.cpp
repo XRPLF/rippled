@@ -53,8 +53,8 @@ static std::uint32_t
 confineOwnerCount(
     std::uint32_t currentOwnerCount,
     std::int32_t ownerCountAdj,
-    std::optional<AccountID> const& id = std::nullopt,
-    beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+    std::optional<AccountID> const& id,
+    beast::Journal j)
 {
     std::uint32_t totalOwnerCount{currentOwnerCount + ownerCountAdj};
     if (ownerCountAdj > 0)
