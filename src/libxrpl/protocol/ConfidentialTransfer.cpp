@@ -71,13 +71,16 @@ getSendContextHash(
     std::uint32_t version)
 {
     uint256 result;
-    mpt_get_send_context_hash(
-        toAccountId(account),
-        toIssuanceId(issuanceID),
-        sequence,
-        toAccountId(destination),
-        version,
-        result.data());
+    if (mpt_get_send_context_hash(
+            toAccountId(account),
+            toIssuanceId(issuanceID),
+            sequence,
+            toAccountId(destination),
+            version,
+            result.data()) != 0)
+    {
+        Throw<std::runtime_error>("Failed to compute send context hash");
+    }
     return result;
 }
 
