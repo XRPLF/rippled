@@ -56,6 +56,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -490,8 +491,8 @@ public:
      * @param name  Raw metric name from beast::insight callers.
      * @return Fully-qualified metric name.
      */
-    std::string
-    formatName(std::string const& name) const;
+    static std::string
+    formatName(std::string const& name);
 
 private:
     /** Journal for log output. */
@@ -821,7 +822,7 @@ OTelCollectorImp::otelMeter() const
 }
 
 std::string
-OTelCollectorImp::formatName(std::string const& name) const
+OTelCollectorImp::formatName(std::string const& name)
 {
     // Produce a clean, lowercase, Prometheus-compatible metric name.
     // No prefix — the OTel resource (service.name) identifies the service.
@@ -831,9 +832,13 @@ OTelCollectorImp::formatName(std::string const& name) const
     for (char const c : name)
     {
         if (c == '.' || c == ' ')
+        {
             result += '_';
+        }
         else
+        {
             result += static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        }
     }
     return result;
 }

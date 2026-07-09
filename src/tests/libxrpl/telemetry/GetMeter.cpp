@@ -17,18 +17,18 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <gtest/gtest.h>
-#include <opentelemetry/metrics/meter.h>
 #include <opentelemetry/metrics/meter_provider.h>
 #include <opentelemetry/metrics/provider.h>
-#include <opentelemetry/metrics/sync_instruments.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/sdk/metrics/meter_provider.h>
 #include <opentelemetry/sdk/metrics/meter_provider_factory.h>
 
 #include <cstdint>
+#include <memory>
 #include <string>
 
 using namespace xrpl;
@@ -85,7 +85,7 @@ TEST(GetMeter, global_provider_meter_accepts_updown_counter)
     // A views-less SDK MeterProvider with no reader is sufficient to prove the
     // API contract: it hands out a real (non-noop) Meter that creates working
     // instruments. No exporter/reader means no background threads or network.
-    std::shared_ptr<metrics_sdk::MeterProvider> sdkProvider =
+    std::shared_ptr<metrics_sdk::MeterProvider> const sdkProvider =
         metrics_sdk::MeterProviderFactory::Create();
     metrics_api::Provider::SetMeterProvider(
         opentelemetry::nostd::shared_ptr<metrics_api::MeterProvider>(sdkProvider));
