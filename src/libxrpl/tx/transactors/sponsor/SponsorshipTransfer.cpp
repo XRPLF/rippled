@@ -354,8 +354,7 @@ SponsorshipTransfer::doApply()
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance).xrp(),
                     newSponsorSle,
-                    {.ownerCountDelta = ownerCountDelta},
-                    ctx_.journal);
+                    {.ownerCountDelta = ownerCountDelta});
                 !isTesSuccess(ter))
                 return ter;
 
@@ -420,8 +419,7 @@ SponsorshipTransfer::doApply()
                     ownerSle,
                     balanceBeforeFee(ownerSle),
                     SLE::pointer(),
-                    {.ownerCountDelta = ownerCountDelta},
-                    ctx_.journal);
+                    {.ownerCountDelta = ownerCountDelta});
                 !isTesSuccess(ter))
                 return ter;
 
@@ -465,8 +463,7 @@ SponsorshipTransfer::doApply()
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance).xrp(),
                     newSponsorSle,
-                    {.accountCountDelta = 1},
-                    ctx_.journal);
+                    {.accountCountDelta = 1});
                 !isTesSuccess(ter))
                 return ter;
 
@@ -513,8 +510,7 @@ SponsorshipTransfer::doApply()
                     sponseeSle,
                     balanceBeforeFee(sponseeSle),
                     SLE::pointer(),
-                    {.accountCountDelta = 1},
-                    ctx_.journal);
+                    {.accountCountDelta = 1});
                 !isTesSuccess(ter))
                 return ter;
 

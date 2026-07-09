@@ -302,7 +302,7 @@ increaseOwnerCount(
 }
 
 void
-increaseOwnerCount(ApplyViewContext ctx, SLE::ref accountSle, std::uint32_t count, beast::Journal j)
+increaseOwnerCount(ApplyViewContext ctx, SLE::ref accountSle, std::uint32_t count)
 {
     auto const sponsorExp = getEffectiveTxReserveSponsor(ctx, accountSle);
 
@@ -311,7 +311,8 @@ increaseOwnerCount(ApplyViewContext ctx, SLE::ref accountSle, std::uint32_t coun
     XRPL_ASSERT(
         sponsorExp.has_value(), "xrpl::increaseOwnerCount : sponsor validated before mutation");
 
-    increaseOwnerCount(ctx.view, accountSle, sponsorExp ? *sponsorExp : SLE::pointer(), count, j);
+    increaseOwnerCount(
+        ctx.view, accountSle, sponsorExp ? *sponsorExp : SLE::pointer(), count, ctx.j);
 }
 
 void
@@ -396,7 +397,6 @@ checkReserve(
     XRPAmount accBalance,
     SLE::const_ref sponsorSle,
     Adjustment adj,
-    beast::Journal j,
     TER insufReserveCode)
 {
     // TODO: swap to assert after fixCleanup3_2_0 is retired
@@ -430,14 +430,14 @@ checkReserve(
             }
 
             auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance).xrp();
-            XRPAmount const sponsorReserve = accountReserve(ctx.view, sponsorSle, j, adj);
+            XRPAmount const sponsorReserve = accountReserve(ctx.view, sponsorSle, ctx.j, adj);
 
             if (sponsorBalance < sponsorReserve)
                 return insufReserveCode;
         }
         else
         {
-            XRPAmount const reserve = accountReserve(ctx.view, accSle, j, adj);
+            XRPAmount const reserve = accountReserve(ctx.view, accSle, ctx.j, adj);
             if (accBalance < reserve)
                 return insufReserveCode;
         }
@@ -457,17 +457,12 @@ checkReserve(
 }
 
 TER
-checkReserve(
-    ApplyViewContext ctx,
-    SLE::const_ref accSle,
-    XRPAmount accBalance,
-    Adjustment adj,
-    beast::Journal j)
+checkReserve(ApplyViewContext ctx, SLE::const_ref accSle, XRPAmount accBalance, Adjustment adj)
 {
     auto const sponsorExp = getEffectiveTxReserveSponsor(ctx, accSle);
     if (!sponsorExp)
         return sponsorExp.error();  // LCOV_EXCL_LINE
-    return checkReserve(ctx, accSle, accBalance, *sponsorExp, adj, j);
+    return checkReserve(ctx, accSle, accBalance, *sponsorExp, adj);
 }
 
 // ----------------------------------------------------

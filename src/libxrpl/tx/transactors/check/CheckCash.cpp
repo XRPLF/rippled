@@ -389,7 +389,8 @@ CheckCash::doApply()
             STAmount const flowDeliver{
                 optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount)};
 
-            auto applyViewContext = ApplyViewContext({.view = psb, .tx = ctx_.tx});
+            auto applyViewContext =
+                ApplyViewContext({.view = psb, .tx = ctx_.tx, .j = ctx_.journal});
             auto const sponsorSle = getTxReserveSponsor(applyViewContext);
             if (!sponsorSle)
                 return sponsorSle.error();  // LCOV_EXCL_LINE
@@ -405,8 +406,7 @@ CheckCash::doApply()
                         sleDst,
                         preFeeBalance_,
                         *sponsorSle,
-                        {.ownerCountDelta = 1},
-                        j_);
+                        {.ownerCountDelta = 1});
                     !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "

@@ -36,8 +36,7 @@ escrowUnlockApplyHelper(
     AccountID const& issuer,
     AccountID const& sender,
     AccountID const& receiver,
-    bool createAsset,
-    beast::Journal journal);
+    bool createAsset);
 
 template <>
 inline TER
@@ -50,8 +49,7 @@ escrowUnlockApplyHelper<Issue>(
     AccountID const& issuer,
     AccountID const& sender,
     AccountID const& receiver,
-    bool createAsset,
-    beast::Journal journal)
+    bool createAsset)
 {
     auto const& issue = amount.get<Issue>();
     Keylet const trustLineKey = keylet::trustLine(receiver, issue);
@@ -78,12 +76,11 @@ escrowUnlockApplyHelper<Issue>(
                 xrpBalance,
                 *sponsorSle,
                 {.ownerCountDelta = 1},
-                journal,
                 tecNO_LINE_INSUF_RESERVE);
             !isTesSuccess(ret))
         {
-            JLOG(journal.trace()) << "Trust line does not exist. "
-                                     "Insufficient reserve to create line.";
+            JLOG(ctx.j.trace()) << "Trust line does not exist. "
+                                   "Insufficient reserve to create line.";
             return ret;
         }
 
@@ -107,7 +104,7 @@ escrowUnlockApplyHelper<Issue>(
                 0,                                   // quality in
                 0,                                   // quality out
                 *sponsorSle,                         // sponsor
-                journal);                            // journal
+                ctx.j);                              // journal
             !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
@@ -173,7 +170,7 @@ escrowUnlockApplyHelper<Issue>(
     // if destination is not the issuer then transfer funds
     if (!receiverIssuer)
     {
-        auto const ter = directSendNoFee(ctx.view, issuer, receiver, finalAmt, true, journal);
+        auto const ter = directSendNoFee(ctx.view, issuer, receiver, finalAmt, true, ctx.j);
         if (!isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
     }
@@ -191,8 +188,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     AccountID const& issuer,
     AccountID const& sender,
     AccountID const& receiver,
-    bool createAsset,
-    beast::Journal journal)
+    bool createAsset)
 {
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
@@ -206,8 +202,8 @@ escrowUnlockApplyHelper<MPTIssue>(
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
-        if (auto const ret = checkReserve(
-                ctx, sleDest, xrpBalance, *sponsorSle, {.ownerCountDelta = 1}, journal);
+        if (auto const ret =
+                checkReserve(ctx, sleDest, xrpBalance, *sponsorSle, {.ownerCountDelta = 1});
             !isTesSuccess(ret))
             return ret;
 
@@ -218,7 +214,7 @@ escrowUnlockApplyHelper<MPTIssue>(
         }
 
         // update owner count.
-        increaseOwnerCount(ctx.view, sleDest, *sponsorSle, 1, journal);
+        increaseOwnerCount(ctx.view, sleDest, *sponsorSle, 1, ctx.j);
     }
 
     if (!ctx.view.exists(mptKeylet) && !receiverIssuer)
@@ -252,7 +248,7 @@ escrowUnlockApplyHelper<MPTIssue>(
         receiver,
         finalAmt,
         ctx.view.rules().enabled(fixTokenEscrowV1) ? amount : finalAmt,
-        journal);
+        ctx.j);
 }
 
 }  // namespace xrpl

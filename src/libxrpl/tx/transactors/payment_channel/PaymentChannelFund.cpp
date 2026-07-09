@@ -89,7 +89,7 @@ PaymentChannelFund::doApply()
     {
         // Check reserve and funds availability
         STAmount const balance = (*sle)[sfBalance];
-        if (auto const ret = checkReserve(ctx_.getApplyViewContext(), sle, balance.xrp(), {}, j_);
+        if (auto const ret = checkReserve(ctx_.getApplyViewContext(), sle, balance.xrp(), {});
             !isTesSuccess(ret))
             return ret;
 

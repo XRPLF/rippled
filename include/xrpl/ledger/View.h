@@ -215,8 +215,7 @@ doWithdraw(
     AccountID const& dstAcct,
     AccountID const& sourceAcct,
     XRPAmount priorBalance,
-    STAmount const& amount,
-    beast::Journal j);
+    STAmount const& amount);
 
 /** Deleter function prototype. Returns the status of the entry deletion
  * (if should not be skipped) and if the entry should be skipped. The status

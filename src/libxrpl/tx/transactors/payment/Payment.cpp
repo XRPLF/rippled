@@ -546,8 +546,8 @@ Payment::doApply()
         //  1. If Account == Destination, or
         //  2. If Account is deposit preauthorized by destination.
 
-        if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst, ctx_.journal);
+        if (auto err =
+                verifyDepositPreauth(ctx_.getApplyViewContext(), accountID_, dstAccountID, sleDst);
             !isTesSuccess(err))
             return err;
 
@@ -616,8 +616,8 @@ Payment::doApply()
             !isTesSuccess(ter))
             return ter;
 
-        if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst, ctx_.journal);
+        if (auto err =
+                verifyDepositPreauth(ctx_.getApplyViewContext(), accountID_, dstAccountID, sleDst);
             !isTesSuccess(err))
             return err;
 
@@ -745,8 +745,8 @@ Payment::doApply()
 
     if (dstAmount > dstReserve || sleDst->getFieldAmount(sfBalance) > dstReserve)
     {
-        if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst, ctx_.journal);
+        if (auto err =
+                verifyDepositPreauth(ctx_.getApplyViewContext(), accountID_, dstAccountID, sleDst);
             !isTesSuccess(err))
             return err;
     }

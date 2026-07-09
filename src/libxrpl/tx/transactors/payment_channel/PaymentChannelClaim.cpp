@@ -163,8 +163,7 @@ PaymentChannelClaim::doApply()
         if (!sled)
             return tecNO_DST;
 
-        if (auto err =
-                verifyDepositPreauth(ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
+        if (auto err = verifyDepositPreauth(ctx_.getApplyViewContext(), txAccount, dst, sled);
             !isTesSuccess(err))
             return err;
 

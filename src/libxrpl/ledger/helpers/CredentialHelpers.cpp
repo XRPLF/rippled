@@ -378,12 +378,12 @@ checkDepositPreauth(
 }
 
 TER
-cleanupExpiredCredentials(STTx const& tx, ApplyView& view, beast::Journal j)
+cleanupExpiredCredentials(ApplyViewContext ctx)
 {
-    if (tx.isFieldPresent(sfCredentialIDs))
+    if (ctx.tx.isFieldPresent(sfCredentialIDs))
     {
         auto const foundExpired =
-            credentials::removeExpired(view, tx.getFieldV256(sfCredentialIDs), j);
+            credentials::removeExpired(ctx.view, ctx.tx.getFieldV256(sfCredentialIDs), ctx.j);
         if (!foundExpired.has_value())
             return foundExpired.error();
         if (*foundExpired)
@@ -395,17 +395,15 @@ cleanupExpiredCredentials(STTx const& tx, ApplyView& view, beast::Journal j)
 
 TER
 verifyDepositPreauth(
-    STTx const& tx,
-    ApplyView& view,
+    ApplyViewContext ctx,
     AccountID const& src,
     AccountID const& dst,
-    SLE::const_ref sleDst,
-    beast::Journal j)
+    SLE::const_ref sleDst)
 {
-    if (auto const err = cleanupExpiredCredentials(tx, view, j); !isTesSuccess(err))
+    if (auto const err = cleanupExpiredCredentials(ctx); !isTesSuccess(err))
         return err;
 
-    return checkDepositPreauth(tx, view, src, dst, sleDst, j);
+    return checkDepositPreauth(ctx.tx, ctx.view, src, dst, sleDst, ctx.j);
 }
 
 }  // namespace xrpl

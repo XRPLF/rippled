@@ -90,7 +90,6 @@ authorizeMPToken(
     XRPAmount const& priorBalance,
     MPTID const& mptIssuanceID,
     AccountID const& account,
-    beast::Journal journal,
     std::uint32_t flags = 0,
     std::optional<AccountID> holderID = std::nullopt);
 
@@ -120,8 +119,7 @@ enforceMPTokenAuthorization(
     ApplyViewContext ctx,
     MPTID const& mptIssuanceID,
     AccountID const& account,
-    XRPAmount const& priorBalance,
-    beast::Journal j);
+    XRPAmount const& priorBalance);
 
 /** Resolve the underlying asset of a vault share.
  *
@@ -206,15 +204,10 @@ addEmptyHolding(
     ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
-    MPTIssue const& mptIssue,
-    beast::Journal journal);
+    MPTIssue const& mptIssue);
 
 [[nodiscard]] TER
-removeEmptyHolding(
-    ApplyViewContext ctx,
-    AccountID const& accountID,
-    MPTIssue const& mptIssue,
-    beast::Journal journal);
+removeEmptyHolding(ApplyViewContext ctx, AccountID const& accountID, MPTIssue const& mptIssue);
 
 //------------------------------------------------------------------------------
 //

@@ -400,7 +400,7 @@ VaultClawback::doApply()
     if (holder != vault->at(sfOwner))
     {
         if (auto const ter =
-                removeEmptyHolding(ctx_.getApplyViewContext(), holder, sharesDestroyed.asset(), j_);
+                removeEmptyHolding(ctx_.getApplyViewContext(), holder, sharesDestroyed.asset());
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //

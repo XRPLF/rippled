@@ -189,8 +189,7 @@ EscrowCancel::doApply()
                         issuer,
                         account,  // sender and receiver are the same
                         account,
-                        createAsset,
-                        j_);
+                        createAsset);
                 },
                 amount.asset().value());
             !isTesSuccess(ret))

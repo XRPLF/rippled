@@ -128,8 +128,7 @@ addEmptyHolding(
     ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
-    MPTIssue const& mptIssue,
-    beast::Journal journal)
+    MPTIssue const& mptIssue)
 {
     auto const& mptID = mptIssue.getMptID();
     auto const mpt = ctx.view.peek(keylet::mptokenIssuance(mptID));
@@ -142,7 +141,7 @@ addEmptyHolding(
     if (accountID == mptIssue.getIssuer())
         return tesSUCCESS;
 
-    return authorizeMPToken(ctx, priorBalance, mptID, accountID, journal);
+    return authorizeMPToken(ctx, priorBalance, mptID, accountID);
 }
 
 [[nodiscard]] TER
@@ -151,7 +150,6 @@ authorizeMPToken(
     XRPAmount const& priorBalance,
     MPTID const& mptIssuanceID,
     AccountID const& account,
-    beast::Journal journal,
     std::uint32_t flags,
     std::optional<AccountID> holderID)
 {
@@ -180,7 +178,7 @@ authorizeMPToken(
                     keylet::ownerDir(account), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            decreaseOwnerCountForObject(ctx.view, sleAcct, sleMpt, 1, journal);
+            decreaseOwnerCountForObject(ctx.view, sleAcct, sleMpt, 1, ctx.j);
 
             ctx.view.erase(sleMpt);
             return tesSUCCESS;
@@ -204,10 +202,10 @@ authorizeMPToken(
         // The "free-tier" shortcut (ownerCount < 2) does not apply once a sponsor is on
         // the tx — the sponsor must always cover the reserve (via balance or prefunded
         // budget), so this check always runs for sponsored transactions.
-        if (sponsorSle || ownerCount(sleAcct, journal) >= 2)
+        if (sponsorSle || ownerCount(sleAcct, ctx.j) >= 2)
         {
-            if (auto const ret = checkReserve(
-                    ctx, sleAcct, priorBalance, sponsorSle, {.ownerCountDelta = 1}, journal);
+            if (auto const ret =
+                    checkReserve(ctx, sleAcct, priorBalance, sponsorSle, {.ownerCountDelta = 1});
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -234,7 +232,7 @@ authorizeMPToken(
         ctx.view.insert(mptoken);
 
         // Update owner count.
-        increaseOwnerCount(ctx.view, sleAcct, sponsorSle, 1, journal);
+        increaseOwnerCount(ctx.view, sleAcct, sponsorSle, 1, ctx.j);
         addSponsorToLedgerEntry(mptoken, sponsorSle);
 
         return tesSUCCESS;
@@ -278,11 +276,7 @@ authorizeMPToken(
 }
 
 [[nodiscard]] TER
-removeEmptyHolding(
-    ApplyViewContext ctx,
-    AccountID const& accountID,
-    MPTIssue const& mptIssue,
-    beast::Journal journal)
+removeEmptyHolding(ApplyViewContext ctx, AccountID const& accountID, MPTIssue const& mptIssue)
 {
     // If the account is the issuer, then no token should exist. MPTs do not
     // have the legacy ability to create such a situation, but check anyway. If
@@ -314,7 +308,6 @@ removeEmptyHolding(
         {},  // priorBalance
         mptID,
         accountID,
-        journal,
         tfMPTUnauthorize  // flags
     );
 }
@@ -432,8 +425,8 @@ enforceMPTokenAuthorization(
     ApplyViewContext ctx,
     MPTID const& mptIssuanceID,
     AccountID const& account,
-    XRPAmount const& priorBalance,  // for MPToken authorization
-    beast::Journal j)
+    XRPAmount const& priorBalance  // for MPToken authorization
+)
 {
     auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
@@ -455,7 +448,7 @@ enforceMPTokenAuthorization(
         if (!maybeDomainID.has_value())
             return false;  // LCOV_EXCL_LINE
 
-        auto const ter = verifyValidDomain(ctx.view, account, *maybeDomainID, j);
+        auto const ter = verifyValidDomain(ctx.view, account, *maybeDomainID, ctx.j);
         if (isTesSuccess(ter))
             return true;
         if (ter == tecEXPIRED)
@@ -509,12 +502,7 @@ enforceMPTokenAuthorization(
         XRPL_ASSERT(
             maybeDomainID.has_value() && sleToken == nullptr,
             "xrpl::enforceMPTokenAuthorization : new MPToken for domain");
-        if (auto const err = authorizeMPToken(
-                ctx,
-                priorBalance,   // priorBalance
-                mptIssuanceID,  // mptIssuanceID
-                account,        // account
-                j);
+        if (auto const err = authorizeMPToken(ctx, priorBalance, mptIssuanceID, account);
             !isTesSuccess(err))
             return err;
 

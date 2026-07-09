@@ -363,8 +363,7 @@ AccountDelete::doApply()
 
     if (ctx_.tx.isFieldPresent(sfCredentialIDs))
     {
-        if (auto err =
-                verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, dstID, dst, ctx_.journal);
+        if (auto err = verifyDepositPreauth(ctx_.getApplyViewContext(), accountID_, dstID, dst);
             !isTesSuccess(err))
             return err;
     }

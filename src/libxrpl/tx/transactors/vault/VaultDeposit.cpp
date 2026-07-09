@@ -232,7 +232,7 @@ VaultDeposit::doApply()
     if (vault->isFlag(lsfVaultPrivate) && accountID_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
-                applyViewContext, mptIssuanceID, accountID_, preFeeBalance_, j_);
+                applyViewContext, mptIssuanceID, accountID_, preFeeBalance_);
             !isTesSuccess(err))
             return err;
     }
@@ -242,11 +242,7 @@ VaultDeposit::doApply()
         if (!view().exists(keylet::mptoken(mptIssuanceID, accountID_)))
         {
             if (auto const err = authorizeMPToken(
-                    applyViewContext,
-                    preFeeBalance_,
-                    mptIssuanceID->value(),
-                    accountID_,
-                    ctx_.journal);
+                    applyViewContext, preFeeBalance_, mptIssuanceID->value(), accountID_);
                 !isTesSuccess(err))
                 return err;
         }
@@ -262,9 +258,8 @@ VaultDeposit::doApply()
                     preFeeBalance_,             // priorBalance
                     mptIssuanceID->value(),     // mptIssuanceID
                     sleIssuance->at(sfIssuer),  // account
-                    ctx_.journal,
-                    {},         // flags
-                    accountID_  // holderID
+                    0,                          // flags
+                    accountID_                  // holderID
                 );
                 !isTesSuccess(err))
                 return err;

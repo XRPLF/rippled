@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/ReadView.h>
@@ -428,6 +429,7 @@ struct ApplyViewContext
 {
     ApplyView& view;
     STTx const& tx;
+    beast::Journal const& j;
 };
 
 namespace directory {

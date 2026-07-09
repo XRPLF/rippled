@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -168,7 +169,6 @@ MPTokenAuthorize::doApply()
         preFeeBalance_,
         tx[sfMPTokenIssuanceID],
         accountID_,
-        ctx_.journal,
         tx.getFlags(),
         tx[~sfHolder]);
 }

@@ -101,16 +101,14 @@ checkDepositPreauth(
  *         were removed, or an error from credential deletion.
  */
 TER
-cleanupExpiredCredentials(STTx const& tx, ApplyView& view, beast::Journal j);
+cleanupExpiredCredentials(ApplyViewContext ctx);
 
 // Check expired credentials and for existing DepositPreauth ledger object
 TER
 verifyDepositPreauth(
-    STTx const& tx,
-    ApplyView& view,
+    ApplyViewContext ctx,
     AccountID const& src,
     AccountID const& dst,
-    SLE::const_ref sleDst,
-    beast::Journal j);
+    SLE::const_ref sleDst);
 
 }  // namespace xrpl

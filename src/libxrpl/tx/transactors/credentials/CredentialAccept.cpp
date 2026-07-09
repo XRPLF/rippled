@@ -102,8 +102,7 @@ CredentialAccept::doApply()
             sleSubject,
             preFeeBalance_,
             *txSponsorSle,
-            {.ownerCountDelta = 1},
-            j_);
+            {.ownerCountDelta = 1});
         !isTesSuccess(ret))
         return ret;
 
@@ -130,7 +129,7 @@ CredentialAccept::doApply()
     removeSponsorFromLedgerEntry(sleCred);
 
     addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred);
-    increaseOwnerCount(ctx_.getApplyViewContext(), sleSubject, 1, j_);
+    increaseOwnerCount(ctx_.getApplyViewContext(), sleSubject, 1);
     view().update(sleCred);
 
     return tesSUCCESS;

@@ -168,7 +168,7 @@ VaultCreate::doApply()
     AccountID const pseudoId = pseudo->at(sfAccount);
     auto const asset = tx[sfAsset];
 
-    if (auto ter = addEmptyHolding(applyViewContext, pseudoId, preFeeBalance_, asset, j_);
+    if (auto ter = addEmptyHolding(applyViewContext, pseudoId, preFeeBalance_, asset);
         !isTesSuccess(ter))
         return ter;
 
@@ -244,8 +244,8 @@ VaultCreate::doApply()
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner
-    if (auto const err = authorizeMPToken(
-            applyViewContext, preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
+    if (auto const err =
+            authorizeMPToken(applyViewContext, preFeeBalance_, mptIssuanceID, accountID_);
         !isTesSuccess(err))
         return err;
 
@@ -253,13 +253,7 @@ VaultCreate::doApply()
     if (tx.isFlag(tfVaultPrivate))
     {
         if (auto const err = authorizeMPToken(
-                applyViewContext,
-                preFeeBalance_,
-                mptIssuanceID,
-                pseudoId,
-                ctx_.journal,
-                {},
-                accountID_);
+                applyViewContext, preFeeBalance_, mptIssuanceID, pseudoId, {}, accountID_);
             !isTesSuccess(err))
             return err;
     }

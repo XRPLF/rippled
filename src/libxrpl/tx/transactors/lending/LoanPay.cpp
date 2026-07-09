@@ -628,8 +628,7 @@ LoanPay::doApply()
                     ctx_.getApplyViewContext(),
                     brokerPayee,
                     brokerPayeeSle->at(sfBalance).value().xrp(),
-                    asset,
-                    j_);
+                    asset);
                 ter && ter != tecDUPLICATE)
             {
                 // ignore tecDUPLICATE. That means the holding already exists,

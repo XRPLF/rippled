@@ -309,8 +309,7 @@ EscrowFinish::doApply()
     if (!sled)
         return tecNO_DST;
 
-    if (auto err =
-            verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, destID, sled, ctx_.journal);
+    if (auto err = verifyDepositPreauth(ctx_.getApplyViewContext(), accountID_, destID, sled);
         !isTesSuccess(err))
         return err;
 
@@ -377,8 +376,7 @@ EscrowFinish::doApply()
                         issuer,
                         account,
                         destID,
-                        createAsset,
-                        j_);
+                        createAsset);
                 },
                 amount.asset().value());
             !isTesSuccess(ret))

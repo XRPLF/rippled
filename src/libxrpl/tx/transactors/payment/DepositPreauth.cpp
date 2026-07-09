@@ -161,8 +161,8 @@ DepositPreauth::doApply()
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
-        if (auto const ret = checkReserve(
-                applyViewContext, sleOwner, preFeeBalance_, {.ownerCountDelta = 1}, j_);
+        if (auto const ret =
+                checkReserve(applyViewContext, sleOwner, preFeeBalance_, {.ownerCountDelta = 1});
             !isTesSuccess(ret))
             return ret;
 
@@ -188,7 +188,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        increaseOwnerCount(applyViewContext, sleOwner, 1, j_);
+        increaseOwnerCount(applyViewContext, sleOwner, 1);
         addSponsorToLedgerEntry(applyViewContext, slePreauth);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorize))
@@ -206,8 +206,8 @@ DepositPreauth::doApply()
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
-        if (auto const ret = checkReserve(
-                applyViewContext, sleOwner, preFeeBalance_, {.ownerCountDelta = 1}, j_);
+        if (auto const ret =
+                checkReserve(applyViewContext, sleOwner, preFeeBalance_, {.ownerCountDelta = 1});
             !isTesSuccess(ret))
             return ret;
 
@@ -247,7 +247,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        increaseOwnerCount(applyViewContext, sleOwner, 1, j_);
+        increaseOwnerCount(applyViewContext, sleOwner, 1);
         addSponsorToLedgerEntry(applyViewContext, slePreauth);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorizeCredentials))

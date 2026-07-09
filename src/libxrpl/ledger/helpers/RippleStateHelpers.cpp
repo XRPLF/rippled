@@ -637,8 +637,7 @@ addEmptyHolding(
     ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
-    Issue const& issue,
-    beast::Journal journal)
+    Issue const& issue)
 {
     // Every account can hold XRP. An issuer can issue directly.
     if (issue.native() || accountID == issue.getIssuer())
@@ -676,7 +675,6 @@ addEmptyHolding(
             priorBalance,
             sponsorSle,
             {.ownerCountDelta = 1},
-            journal,
             tecNO_LINE_INSUF_RESERVE);
         !isTesSuccess(ret))
     {
@@ -699,15 +697,11 @@ addEmptyHolding(
         /*uQualityIn=*/0,
         /*uQualityOut=*/0,
         sponsorSle,
-        journal);
+        ctx.j);
 }
 
 TER
-removeEmptyHolding(
-    ApplyViewContext ctx,
-    AccountID const& accountID,
-    Issue const& issue,
-    beast::Journal journal)
+removeEmptyHolding(ApplyViewContext ctx, AccountID const& accountID, Issue const& issue)
 {
     if (issue.native())
     {
@@ -742,7 +736,7 @@ removeEmptyHolding(
 
         auto const currentLowSponsor = getLedgerEntryReserveSponsor(ctx.view, line, sfLowSponsor);
 
-        decreaseOwnerCount(ctx.view, sleLowAccount, currentLowSponsor, 1, journal);
+        decreaseOwnerCount(ctx.view, sleLowAccount, currentLowSponsor, 1, ctx.j);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
@@ -759,7 +753,7 @@ removeEmptyHolding(
 
         auto const currentHighSponsor = getLedgerEntryReserveSponsor(ctx.view, line, sfHighSponsor);
 
-        decreaseOwnerCount(ctx.view, sleHighAccount, currentHighSponsor, 1, journal);
+        decreaseOwnerCount(ctx.view, sleHighAccount, currentHighSponsor, 1, ctx.j);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
@@ -772,7 +766,7 @@ removeEmptyHolding(
         line,
         line->at(sfLowLimit)->getIssuer(),
         line->at(sfHighLimit)->getIssuer(),
-        journal);
+        ctx.j);
 }
 
 TER

@@ -534,7 +534,6 @@ TrustSet::doApply()
                     preFeeBalance_,
                     lowSponsor,
                     {.ownerCountDelta = 1},
-                    j_,
                     tecINSUF_RESERVE_LINE);
                 lowSponsor && !isTesSuccess(ret))
             {
@@ -573,7 +572,6 @@ TrustSet::doApply()
                     preFeeBalance_,
                     highSponsor,
                     {.ownerCountDelta = 1},
-                    j_,
                     tecINSUF_RESERVE_LINE);
                 highSponsor && !isTesSuccess(ret))
             {
@@ -616,7 +614,6 @@ TrustSet::doApply()
                 preFeeBalance_,
                 sponsorSle,
                 {},
-                j_,
                 tecINSUF_RESERVE_LINE);
             !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
         {
@@ -653,7 +650,6 @@ TrustSet::doApply()
             preFeeBalance_,
             sponsorSle,
             {.ownerCountDelta = 1},
-            j_,
             tecNO_LINE_INSUF_RESERVE);
         !freeTrustLine && !isTesSuccess(ret))  // Reserve is not scaled by load.
     {

@@ -575,26 +575,21 @@ addEmptyHolding(
     ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
-    Asset const& asset,
-    beast::Journal journal)
+    Asset const& asset)
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return addEmptyHolding(ctx, accountID, priorBalance, issue, journal);
+            return addEmptyHolding(ctx, accountID, priorBalance, issue);
         },
         asset.value());
 }
 
 TER
-removeEmptyHolding(
-    ApplyViewContext ctx,
-    AccountID const& accountID,
-    Asset const& asset,
-    beast::Journal journal)
+removeEmptyHolding(ApplyViewContext ctx, AccountID const& accountID, Asset const& asset)
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return removeEmptyHolding(ctx, accountID, issue, journal);
+            return removeEmptyHolding(ctx, accountID, issue);
         },
         asset.value());
 }

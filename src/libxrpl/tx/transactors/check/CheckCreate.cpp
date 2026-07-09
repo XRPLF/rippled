@@ -195,8 +195,8 @@ CheckCreate::doApply()
     // A check counts against the reserve of the issuing account, but we
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
-    if (auto const ret = checkReserve(
-            ctx_.getApplyViewContext(), sle, preFeeBalance_, {.ownerCountDelta = 1}, ctx_.journal);
+    if (auto const ret =
+            checkReserve(ctx_.getApplyViewContext(), sle, preFeeBalance_, {.ownerCountDelta = 1});
         !isTesSuccess(ret))
         return ret;
     // Note that we use the value from the sequence or ticket as the
@@ -221,7 +221,6 @@ CheckCreate::doApply()
 
     view().insert(sleCheck);
 
-    auto viewJ = ctx_.registry.get().getJournal("View");
     // If it's not a self-send (and it shouldn't be), add Check to the
     // destination's owner directory.
     if (dstAccountId != accountID_)
@@ -252,7 +251,7 @@ CheckCreate::doApply()
     }
     // If we succeeded, the new entry counts against the creator's reserve.
 
-    increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, viewJ);
+    increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1);
     addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCheck);
     return tesSUCCESS;
 }

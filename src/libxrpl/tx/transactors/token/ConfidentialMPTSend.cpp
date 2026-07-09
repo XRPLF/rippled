@@ -290,8 +290,7 @@ ConfidentialMPTSend::doApply()
 
     // Deposit preauth authorization was already verified in preclaim.
     // Remove any expired credentials.
-    if (auto err = cleanupExpiredCredentials(ctx_.tx, ctx_.view(), ctx_.journal);
-        !isTesSuccess(err))
+    if (auto err = cleanupExpiredCredentials(ctx_.getApplyViewContext()); !isTesSuccess(err))
         return err;
 
     auto const senderEc = ctx_.tx[sfSenderEncryptedAmount];

@@ -437,21 +437,20 @@ doWithdraw(
     AccountID const& dstAcct,
     AccountID const& sourceAcct,
     XRPAmount priorBalance,
-    STAmount const& amount,
-    beast::Journal j)
+    STAmount const& amount)
 {
     auto const dstSle = ctx.view.read(keylet::account(dstAcct));
 
     // Create trust line or MPToken for the receiving account
     if (dstAcct == senderAcct)
     {
-        if (auto const ter = addEmptyHolding(ctx, senderAcct, priorBalance, amount.asset(), j);
+        if (auto const ter = addEmptyHolding(ctx, senderAcct, priorBalance, amount.asset());
             !isTesSuccess(ter) && ter != tecDUPLICATE)
             return ter;
     }
     else
     {
-        if (auto err = verifyDepositPreauth(ctx.tx, ctx.view, senderAcct, dstAcct, dstSle, j))
+        if (auto err = verifyDepositPreauth(ctx, senderAcct, dstAcct, dstSle))
             return err;
     }
 
@@ -462,10 +461,10 @@ doWithdraw(
             amount.asset(),
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
-            j) < amount)
+            ctx.j) < amount)
     {
         // LCOV_EXCL_START
-        JLOG(j.error()) << "doWithdraw: negative balance of broker cover assets.";
+        JLOG(ctx.j.error()) << "doWithdraw: negative balance of broker cover assets.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
     }
@@ -481,7 +480,7 @@ doWithdraw(
     // Move the funds directly from the broker's pseudo-account to the
     // dstAcct
     return accountSend(
-        ctx.view, sourceAcct, dstAcct, amount, j, *sponsorSle, WaiveTransferFee::Yes);
+        ctx.view, sourceAcct, dstAcct, amount, ctx.j, *sponsorSle, WaiveTransferFee::Yes);
 }
 
 TER

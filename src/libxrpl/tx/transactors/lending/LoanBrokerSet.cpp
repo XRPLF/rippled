@@ -249,7 +249,7 @@ LoanBrokerSet::doApply()
         auto pseudoId = pseudo->at(sfAccount);
 
         if (auto ter = addEmptyHolding(
-                ctx_.getApplyViewContext(), pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
+                ctx_.getApplyViewContext(), pseudoId, preFeeBalance_, sleVault->at(sfAsset)))
             return ter;
 
         // Initialize data fields:

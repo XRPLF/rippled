@@ -105,7 +105,6 @@ checkReserve(
     XRPAmount accBalance,
     SLE::const_ref sponsorSle,
     Adjustment adj,
-    beast::Journal j,
     TER insufReserveCode = tecINSUFFICIENT_RESERVE);
 
 /** Check if an account has sufficient reserve, deriving the sponsor internally.
@@ -125,12 +124,7 @@ checkReserve(
  *  @return Transaction result code
  */
 [[nodiscard]] TER
-checkReserve(
-    ApplyViewContext ctx,
-    SLE::const_ref accSle,
-    XRPAmount accBalance,
-    Adjustment adj,
-    beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
+checkReserve(ApplyViewContext ctx, SLE::const_ref accSle, XRPAmount accBalance, Adjustment adj);
 
 /** Return number of the objects which reserve is covered by the account(sle) (so called "owner
  *  count"). Actual owner count can be adjusted by delta in ownerCountAdj.
@@ -178,11 +172,7 @@ increaseOwnerCount(
  *  @param j Journal for logging
  */
 void
-increaseOwnerCount(
-    ApplyViewContext ctx,
-    SLE::ref accountSle,
-    std::uint32_t count,
-    beast::Journal j);
+increaseOwnerCount(ApplyViewContext ctx, SLE::ref accountSle, std::uint32_t count);
 
 /** Convenience overload that accepts AccountID instead of SLE references.
  *

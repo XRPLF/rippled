@@ -306,15 +306,10 @@ addEmptyHolding(
     ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
-    Asset const& asset,
-    beast::Journal journal);
+    Asset const& asset);
 
 [[nodiscard]] TER
-removeEmptyHolding(
-    ApplyViewContext ctx,
-    AccountID const& accountID,
-    Asset const& asset,
-    beast::Journal journal);
+removeEmptyHolding(ApplyViewContext ctx, AccountID const& accountID, Asset const& asset);
 
 //------------------------------------------------------------------------------
 //
