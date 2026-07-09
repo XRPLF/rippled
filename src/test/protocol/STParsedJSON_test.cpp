@@ -2165,7 +2165,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         {
             json::Value jv;
             json::Value entries(json::ValueType::Array);
-            for (std::size_t i = 0; i < 600; ++i)
+            for (std::size_t i = 0; i <= kMaxParsedJsonArraySize; ++i)
             {
                 json::Value entry;
                 entry["SignerEntry"]["Account"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
@@ -2187,7 +2187,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
             json::Value jv;
             json::Value amendments(json::ValueType::Array);
             std::string const hash(64, '0');
-            for (std::size_t i = 0; i < 600; ++i)
+            for (std::size_t i = 0; i <= kMaxParsedJsonArraySize; ++i)
                 amendments.append(hash);
             jv["Amendments"] = amendments;
 
@@ -2199,11 +2199,26 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 "Field 'test.Amendments' exceeds allowed JSON array size of " + limitStr);
         }
 
+        // parseObject accepts exactly kMaxParsedJsonArraySize STI_VECTOR256 (Amendments)
+        {
+            json::Value jv;
+            json::Value amendments(json::ValueType::Array);
+            std::string const hash(64, '0');
+            for (std::size_t i = 0; i < kMaxParsedJsonArraySize; ++i)
+                amendments.append(hash);
+            jv["Amendments"] = amendments;
+
+            STParsedJSONObject const parsed("test", jv);
+            BEAST_EXPECT(parsed.object);
+            BEAST_EXPECT(
+                parsed.object->getFieldV256(sfAmendments).size() == kMaxParsedJsonArraySize);
+        }
+
         // parseObject rejects oversized STI_PATHSET (outer array)
         {
             json::Value jv;
             json::Value paths(json::ValueType::Array);
-            for (std::size_t i = 0; i < 600; ++i)
+            for (std::size_t i = 0; i <= kMaxParsedJsonArraySize; ++i)
             {
                 json::Value path(json::ValueType::Array);
                 json::Value hop;
@@ -2221,6 +2236,25 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 "Field 'test.Paths' exceeds allowed JSON array size of " + limitStr);
         }
 
+        // parseObject accepts exactly kMaxParsedJsonArraySize STI_PATHSET (outer array)
+        {
+            json::Value jv;
+            json::Value paths(json::ValueType::Array);
+            for (std::size_t i = 0; i < kMaxParsedJsonArraySize; ++i)
+            {
+                json::Value path(json::ValueType::Array);
+                json::Value hop;
+                hop["account"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+                path.append(hop);
+                paths.append(path);
+            }
+            jv["Paths"] = paths;
+
+            STParsedJSONObject const parsed("test", jv);
+            BEAST_EXPECT(parsed.object);
+            BEAST_EXPECT(parsed.object->getFieldPathSet(sfPaths).size() == kMaxParsedJsonArraySize);
+        }
+
         // parseObject rejects oversized STI_PATHSET (inner path hop array)
         {
             json::Value jv;
@@ -2228,7 +2262,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
             json::Value path(json::ValueType::Array);
             json::Value hop;
             hop["account"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            for (std::size_t i = 0; i < 600; ++i)
+            for (std::size_t i = 0; i <= kMaxParsedJsonArraySize; ++i)
                 path.append(hop);
             paths.append(path);
             jv["Paths"] = paths;
@@ -2241,6 +2275,24 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 "Field 'test.Paths[0]' exceeds allowed JSON array size of " + limitStr);
         }
 
+        // parseObject accepts exactly kMaxParsedJsonArraySize hops in a single STI_PATHSET path
+        {
+            json::Value jv;
+            json::Value paths(json::ValueType::Array);
+            json::Value path(json::ValueType::Array);
+            json::Value hop;
+            hop["account"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            for (std::size_t i = 0; i < kMaxParsedJsonArraySize; ++i)
+                path.append(hop);
+            paths.append(path);
+            jv["Paths"] = paths;
+
+            STParsedJSONObject const parsed("test", jv);
+            BEAST_EXPECT(parsed.object);
+            BEAST_EXPECT(
+                parsed.object->getFieldPathSet(sfPaths)[0].size() == kMaxParsedJsonArraySize);
+        }
+
         // parseArray accepts exactly kMaxParsedJsonArraySize Memos (boundary)
         {
             json::Value jv;
@@ -2248,13 +2300,15 @@ class STParsedJSON_test : public beast::unit_test::Suite
             for (std::size_t i = 0; i < kMaxParsedJsonArraySize; ++i)
             {
                 json::Value memo;
-                memo["Memo"] = json::ValueType::Object;
+                memo["Memo"] = json::Value(json::ValueType::Object);
+                memo["Memo"]["MemoData"] = "00";
                 memos.append(memo);
             }
             jv["Memos"] = memos;
 
             STParsedJSONObject const parsed("test", jv);
             BEAST_EXPECT(parsed.object);
+            BEAST_EXPECT(parsed.object->getFieldArray(sfMemos).size() == kMaxParsedJsonArraySize);
         }
 
         // parseArray rejects one more than kMaxParsedJsonArraySize Memos
@@ -2264,7 +2318,8 @@ class STParsedJSON_test : public beast::unit_test::Suite
             for (std::size_t i = 0; i <= kMaxParsedJsonArraySize; ++i)
             {
                 json::Value memo;
-                memo["Memo"] = json::ValueType::Object;
+                memo["Memo"] = json::Value(json::ValueType::Object);
+                memo["Memo"]["MemoData"] = "00";
                 memos.append(memo);
             }
             jv["Memos"] = memos;
