@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
@@ -101,12 +102,10 @@ getAccountObjects(
 
         while (currentPage)
         {
-            std::optional<AccountID> const nftSponsor = currentPage->isFieldPresent(sfSponsor)
-                ? currentPage->getAccountID(sfSponsor)
-                : std::optional<AccountID>(std::nullopt);
+            std::optional<AccountID> const nftSponsor = currentPage->at(~sfSponsor);
             bool const canAppendNFT = sponsoredMatchesFilter(nftSponsor);
             if (canAppendNFT)
-                jvObjects.append(currentPage->getJson(JsonOptions::Values::None));
+                jvObjects.append(currentPage->getJson());
             auto const npm = (*currentPage)[~sfNextPageMin];
             if (npm)
             {
@@ -198,31 +197,17 @@ getAccountObjects(
                 !typeMatchesFilter(typeFilter.value(), sleNode->getType()))
                 canAppend = false;
 
-            auto const getSponsor = [&account, &sleNode]() -> std::optional<AccountID> {
-                if (sleNode->getType() == ltRIPPLE_STATE)
-                {
-                    if (sleNode->isFlag(lsfHighReserve) &&
-                        sleNode->getFieldAmount(sfHighLimit).getIssuer() == account &&
-                        sleNode->isFieldPresent(sfHighSponsor))
-                        return sleNode->getAccountID(sfHighSponsor);
-                    if (sleNode->isFlag(lsfLowReserve) &&
-                        sleNode->getFieldAmount(sfLowLimit).getIssuer() == account &&
-                        sleNode->isFieldPresent(sfLowSponsor))
-                        return sleNode->getAccountID(sfLowSponsor);
-
-                    return std::nullopt;
-                }
-
-                if (sleNode->getType() == ltSPONSORSHIP &&
-                    sleNode->getAccountID(sfOwner) != account)
-                    return std::nullopt;
-
-                if (sleNode->isFieldPresent(sfSponsor))
-                    return sleNode->getAccountID(sfSponsor);
-
-                return std::nullopt;
-            };
-            std::optional<AccountID> const sponsor = getSponsor();
+            std::optional<AccountID> sponsor;
+            if (sleNode->getType() == ltSPONSORSHIP)
+            {
+                // ltSPONSORSHIP is in both parties' directories; only the
+                // owner's side carries a sponsor.
+                if (sleNode->getAccountID(sfOwner) == account)
+                    sponsor = getLedgerEntryReserveSponsorAccountID(sleNode);
+            }
+            else if (getLedgerEntryOwner(ledger, sleNode, account).has_value())
+                sponsor = getLedgerEntryReserveSponsorAccountID(
+                    sleNode, getLedgerEntrySponsorField(sleNode, account));
 
             if (!sponsoredMatchesFilter(sponsor))
                 canAppend = false;
