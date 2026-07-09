@@ -12,7 +12,6 @@
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
-#include <cstddef>
 #include <functional>
 
 namespace xrpl::PeerFinder {

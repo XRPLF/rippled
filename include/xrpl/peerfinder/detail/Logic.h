@@ -10,8 +10,9 @@
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/peerfinder/PeerfinderManager.h>
+#include <xrpl/peerfinder/Config.h>
 #include <xrpl/peerfinder/Slot.h>
+#include <xrpl/peerfinder/Types.h>
 #include <xrpl/peerfinder/detail/Bootcache.h>
 #include <xrpl/peerfinder/detail/Counts.h>
 #include <xrpl/peerfinder/detail/Fixed.h>
@@ -25,11 +26,11 @@
 #include <boost/asio/error.hpp>
 
 #include <algorithm>
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <iomanip>
+#include <ios>
 #include <map>
 #include <memory>
 #include <mutex>

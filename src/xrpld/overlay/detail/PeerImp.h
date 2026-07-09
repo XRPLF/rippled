@@ -9,7 +9,6 @@
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
-#include <xrpld/peerfinder/PeerfinderManager.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
@@ -24,6 +23,7 @@
 #include <xrpl/core/LoadEvent.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/peerfinder/Slot.h>
+#include <xrpl/peerfinder/Types.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STTx.h>

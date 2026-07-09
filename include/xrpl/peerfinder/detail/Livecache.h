@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <functional>
 #include <iomanip>
+#include <ios>
 #include <iterator>
 #include <memory>
 #include <sstream>

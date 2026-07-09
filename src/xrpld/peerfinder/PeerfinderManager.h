@@ -2,7 +2,7 @@
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/peerfinder/PeerfinderManager.h>
+#include <xrpl/peerfinder/Config.h>
 
 #include <cstdint>
 

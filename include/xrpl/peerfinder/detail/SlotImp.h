@@ -2,8 +2,6 @@
 
 #include <xrpl/beast/container/aged_unordered_map.h>
 #include <xrpl/beast/net/IPEndpoint.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/peerfinder/Config.h>
 #include <xrpl/peerfinder/Slot.h>
 #include <xrpl/peerfinder/Types.h>
 #include <xrpl/protocol/PublicKey.h>

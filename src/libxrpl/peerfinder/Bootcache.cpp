@@ -211,8 +211,9 @@ Bootcache::prune()
     // Work backwards because bimap doesn't handle
     // erasing using a reverse iterator very well.
     //
-    for (auto iter(map_.right.end()); count-- > 0 && iter != map_.right.begin(); ++pruned)
+    for (auto iter(map_.right.end()); count > 0 && iter != map_.right.begin(); ++pruned)
     {
+        --count;
         --iter;
         beast::IP::Endpoint const& endpoint(iter->get_left());
         Entry const& entry(iter->get_right());

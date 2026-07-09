@@ -1,7 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/random.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/peerfinder/Config.h>
