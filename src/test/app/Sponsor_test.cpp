@@ -618,6 +618,19 @@ public:
             BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(100));
             BEAST_EXPECT(sle->at(sfMaxFee) == XRP(1));
 
+            // update sponsorship flags
+            env(sponsor::set(
+                    sponsor,
+                    tfSponsorshipSetRequireSignForFee | tfSponsorshipSetRequireSignForReserve),
+                sponsor::SponseeAcc(alice),
+                Fee(XRP(1)));
+            env.close();
+
+            sle = env.le(keylet::sponsorship(sponsor, alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(sle->isFlag(lsfSponsorshipRequireSignForFee));
+            BEAST_EXPECT(sle->isFlag(lsfSponsorshipRequireSignForReserve));
+
             // update sponsorship with zero value
             env(sponsor::set(sponsor, 0, 0, XRP(0), XRP(0)),
                 sponsor::SponseeAcc(alice),

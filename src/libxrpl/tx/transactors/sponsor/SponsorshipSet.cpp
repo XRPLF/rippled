@@ -361,13 +361,13 @@ SponsorshipSet::doApply()
     return tesSUCCESS;
 }
 
+// LCOV_EXCL_START
 void
 SponsorshipSet::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
-    // LCOV_EXCL_LINE
 }
 
 bool
@@ -378,7 +378,8 @@ SponsorshipSet::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    return true;  // LCOV_EXCL_LINE
+    return true;
 }
+// LCOV_EXCL_STOP
 
 }  // namespace xrpl
