@@ -411,7 +411,7 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
     if (tx.isFieldPresent(sfDelegate) && isReserveSponsored(tx))
         return temINVALID;
 
-    if (auto const sponsorSle = view.read(keylet::account(tx.getAccountID(sfSponsor))); !sponsorSle)
+    if (!view.exists(keylet::account(tx.getAccountID(sfSponsor))))
         return terNO_ACCOUNT;
 
     auto const hasSponsorSignature = tx.isFieldPresent(sfSponsorSignature);
