@@ -126,6 +126,9 @@ using BaseUintDeathTest = BaseUintTest;
 
 TEST_F(BaseUintDeathTest, fromRaw_size_mismatch)
 {
+    // ENABLE_VOIDSTAR is a debug build, but does not crash on failed asserts. Rather than twist
+    // these tests into knots to make them work, just skip them.
+#ifndef ENABLE_VOIDSTAR
     EXPECT_DEBUG_DEATH(
         ({
             // Container smaller than the base_uint (8 bytes vs 12 bytes for
@@ -185,6 +188,7 @@ TEST_F(BaseUintDeathTest, fromRaw_size_mismatch)
             EXPECT_EQ(resultText, "0102030405060708090A0B0C") << resultText;
         }),
         "input size match");
+#endif
 }
 
 TEST_F(BaseUintTest, base_uint)
