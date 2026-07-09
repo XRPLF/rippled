@@ -1,8 +1,7 @@
 #pragma once
 
-#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/SField.h>
 
-#include <concepts>
 #include <cstddef>
 #include <cstdint>
 
