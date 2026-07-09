@@ -1,9 +1,9 @@
 #pragma once
 
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <memory>
 #include <optional>

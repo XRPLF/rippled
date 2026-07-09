@@ -32,11 +32,11 @@ protected:
     }
 
 public:
-    using value_type = typename cont_type::value_type;
-    using size_type = typename cont_type::size_type;
-    using difference_type = typename cont_type::difference_type;
-    using iterator = typename cont_type::const_iterator;
-    using const_iterator = typename cont_type::const_iterator;
+    using value_type = cont_type::value_type;
+    using size_type = cont_type::size_type;
+    using difference_type = cont_type::difference_type;
+    using iterator = cont_type::const_iterator;
+    using const_iterator = cont_type::const_iterator;
 
     /** Returns `true` if the container is empty. */
     [[nodiscard]] bool

@@ -33,9 +33,10 @@ with a single command and without installing anything system-wide:
 nix --experimental-features 'nix-command flakes' develop
 ```
 
-On **Linux**, Nix also provides the compiler (GCC). On **macOS**, the shell uses
-your **system-wide Apple Clang** as the compiler, so you still need to manage
-its version (see below).
+On **Linux**, Nix also provides the compiler (GCC); on **macOS**, it provides
+Clang. If you instead opt to use your system-wide Apple Clang (via
+`nix develop .#apple-clang`), you need to manage its version yourself (see
+below).
 
 See [Using the Nix development shell](./nix.md) for installation and usage
 details, including how to select a different compiler.
@@ -48,10 +49,10 @@ details, including how to select a different compiler.
 
 ### macOS: managing the Apple Clang version
 
-Because the Nix shell uses the system-wide Apple Clang on macOS, the compiler
-version is whatever your installed Xcode (or Command Line Tools) provides. The
-following command should return a version greater than or equal to the
-[minimum required](#tested-compiler-versions):
+If you use your system-wide Apple Clang on macOS (via `nix develop .#apple-clang`),
+the compiler version is whatever your installed Xcode (or Command Line Tools)
+provides. The following command should return a version greater than or equal to
+the [minimum required](#tested-compiler-versions):
 
 ```bash
 clang --version

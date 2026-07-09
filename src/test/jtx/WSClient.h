@@ -4,9 +4,14 @@
 
 #include <xrpld/core/Config.h>
 
+#include <xrpl/json/json_value.h>
+
 #include <chrono>
+#include <functional>
 #include <memory>
 #include <optional>
+#include <string>
+#include <unordered_map>
 
 namespace xrpl::test {
 

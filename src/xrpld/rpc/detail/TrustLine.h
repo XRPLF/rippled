@@ -1,13 +1,18 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
 #include <cstdint>
 #include <optional>
+#include <vector>
 
 namespace xrpl {
 

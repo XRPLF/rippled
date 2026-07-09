@@ -187,6 +187,58 @@ public:
     {
         return this->tx_->isFieldPresent(sfMutableFlags);
     }
+
+    /**
+     * @brief Get sfIssuerEncryptionKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getIssuerEncryptionKey() const
+    {
+        if (hasIssuerEncryptionKey())
+        {
+            return this->tx_->at(sfIssuerEncryptionKey);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfIssuerEncryptionKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasIssuerEncryptionKey() const
+    {
+        return this->tx_->isFieldPresent(sfIssuerEncryptionKey);
+    }
+
+    /**
+     * @brief Get sfAuditorEncryptionKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getAuditorEncryptionKey() const
+    {
+        if (hasAuditorEncryptionKey())
+        {
+            return this->tx_->at(sfAuditorEncryptionKey);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAuditorEncryptionKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAuditorEncryptionKey() const
+    {
+        return this->tx_->isFieldPresent(sfAuditorEncryptionKey);
+    }
 };
 
 /**
@@ -294,6 +346,28 @@ public:
     setMutableFlags(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfMutableFlags] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfIssuerEncryptionKey (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceSetBuilder&
+    setIssuerEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfIssuerEncryptionKey] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAuditorEncryptionKey (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceSetBuilder&
+    setAuditorEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfAuditorEncryptionKey] = value;
         return *this;
     }
 

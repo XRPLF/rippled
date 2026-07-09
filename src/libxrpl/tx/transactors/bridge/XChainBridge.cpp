@@ -38,6 +38,7 @@
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <expected>
 #include <limits>
@@ -301,10 +302,8 @@ onNewAttestations(
         }
 
         auto const& claimSigningAccount = att->attestationSignerAccount;
-        if (auto i = std::find_if(
-                attestations.begin(),
-                attestations.end(),
-                [&](auto const& a) { return a.keyAccount == claimSigningAccount; });
+        if (auto i = std::ranges::find_if(
+                attestations, [&](auto const& a) { return a.keyAccount == claimSigningAccount; });
             i != attestations.end())
         {
             // existing attestation
@@ -759,7 +758,7 @@ getSignersListAndQuorum(ReadView const& view, SLE const& sleBridge, beast::Journ
         return {r, q, tecINTERNAL};
     }
 
-    auto const sleS = view.read(keylet::signers(sleBridge[sfAccount]));
+    auto const sleS = view.read(keylet::signerList(sleBridge[sfAccount]));
     if (!sleS)
     {
         return {r, q, tecXCHAIN_NO_SIGNERS_LIST};
@@ -1158,7 +1157,11 @@ toClaim(STTx const& tx)
 
     try
     {
-        STObject o{tx};
+        // Copy just the field bag out of the transaction (explicitly, via the
+        // STObject base) so it can be reinterpreted as a cross-chain attestation
+        // below, with sfAccount replaced by sfOtherChainSource. STTx-specific
+        // state (txType_, tid_) is intentionally not needed here.
+        STObject o{static_cast<STObject const&>(tx)};
         o.setAccountID(sfAccount, o[sfOtherChainSource]);
         return TAttestation(o);
     }
