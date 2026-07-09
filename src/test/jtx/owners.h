@@ -1,10 +1,11 @@
 #pragma once
 
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/UintTypes.h>
 
 #include <cstdint>
 #include <utility>

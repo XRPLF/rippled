@@ -56,3 +56,16 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
 else()
     message(FATAL_ERROR "Unknown architecture: ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
+
+# --------------------------------------------------------------------
+# Sanitizers
+# --------------------------------------------------------------------
+# SANITIZERS is injected by the Conan toolchain when a sanitizer build is
+# requested (see conan/profiles/sanitizers). The flags are applied to the
+# 'common' target in XrplSanitizers; this flag lets other modules know a
+# sanitizer build is active without depending on that module.
+if(DEFINED SANITIZERS)
+    set(SANITIZERS_ENABLED TRUE)
+else()
+    set(SANITIZERS_ENABLED FALSE)
+endif()

@@ -1,7 +1,11 @@
 #pragma once
 
-#include <xrpl/basics/IntrusivePointer.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/shamap/detail/TaggedPointer.h>
 
 #include <atomic>

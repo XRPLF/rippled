@@ -1,12 +1,19 @@
 #pragma once
 
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <mutex>
 #include <optional>
+#include <vector>
 
 namespace xrpl {
 

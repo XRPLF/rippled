@@ -1136,7 +1136,7 @@ trust-these-validators.gov
     testZeroPort()
     {
         auto const contents = std::regex_replace(
-            detail::configContents("", ""), std::regex("port\\s*=\\s*\\d+"), "port = 0");
+            detail::configContents("", ""), std::regex(R"(port\s*=\s*\d+)"), "port = 0");
 
         try
         {
@@ -1475,6 +1475,7 @@ r.ripple.com:51235
             std::string toLoad(R"xrpldConfig(
 [amendment_majority_time]
 )xrpldConfig");
+            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
             toLoad += std::to_string(val) + space + unit;
             space = space.empty() ? " " : "";
 

@@ -5,7 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/Rules.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
@@ -142,7 +142,7 @@ STNumber::isEquivalent(STBase const& t) const
 {
     XRPL_ASSERT(
         t.getSType() == this->getSType(), "xrpl::STNumber::isEquivalent : field type match");
-    STNumber const& v = dynamic_cast<STNumber const&>(t);
+    auto const& v = dynamic_cast<STNumber const&>(t);
     return value_ == v;
 }
 

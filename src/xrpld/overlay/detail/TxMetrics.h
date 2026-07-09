@@ -1,11 +1,13 @@
 #pragma once
 
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/messages.h>
 
 #include <boost/circular_buffer.hpp>
 
+#include <xrpl.pb.h>
+
 #include <chrono>
+#include <cstdint>
 #include <mutex>
 
 namespace xrpl::metrics {

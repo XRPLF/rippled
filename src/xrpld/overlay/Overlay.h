@@ -2,8 +2,12 @@
 
 #include <xrpld/overlay/Peer.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/net/IPAddress.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/server/Handoff.h>
 
 #include <boost/asio/ip/tcp.hpp>
@@ -11,8 +15,15 @@
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 
+#include <xrpl.pb.h>
+
+#include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
+#include <set>
+#include <vector>
 
 namespace boost::asio::ssl {
 class context;

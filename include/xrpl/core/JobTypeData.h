@@ -2,7 +2,10 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Event.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobTypeInfo.h>
+#include <xrpl/core/LoadMonitor.h>
 
 #include <utility>
 

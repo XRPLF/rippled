@@ -1,8 +1,15 @@
 #pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TER.h>
+
+#include <exception>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace xrpl::RPC {
 
@@ -26,9 +33,11 @@ public:
 
     Status() = default;
 
-    // The enable_if allows only integers (not enums).  Prevents enum narrowing.
-    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-    Status(T code, Strings d = {}) : code_(code), messages_(std::move(d))
+    // The constraint allows only integers (not enums).  Prevents enum narrowing.
+    template <typename T>
+    Status(T code, Strings d = {})
+        requires(std::is_integral_v<T>)
+        : code_(code), messages_(std::move(d))
     {
     }
 
