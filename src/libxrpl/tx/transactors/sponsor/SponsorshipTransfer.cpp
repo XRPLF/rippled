@@ -373,7 +373,7 @@ SponsorshipTransfer::doApply()
                 if (auto const ter = decrementSponsorCount(
                         view(), oldSponsorSle, sfSponsoringOwnerCount, ownerCountDelta);
                     !isTesSuccess(ter))
-                    return ter;
+                    return ter;  // LCOV_EXCL_LINE
             }
 
             // Increment new sponsor's sponsoring count
@@ -422,13 +422,13 @@ SponsorshipTransfer::doApply()
             if (auto const ter = decrementSponsorCount(
                     view(), sponseeSle, sfSponsoredOwnerCount, ownerCountDelta);
                 !isTesSuccess(ter))
-                return ter;
+                return ter;  // LCOV_EXCL_LINE
 
             // Decrement old sponsoring count
             if (auto const ter = decrementSponsorCount(
                     view(), oldSponsorSle, sfSponsoringOwnerCount, ownerCountDelta);
                 !isTesSuccess(ter))
-                return ter;
+                return ter;  // LCOV_EXCL_LINE
 
             // Remove sponsor from object
             objectSle->makeFieldAbsent(sponsorField);
@@ -476,7 +476,7 @@ SponsorshipTransfer::doApply()
                 if (auto const ter =
                         decrementSponsorCount(view(), oldSponsorSle, sfSponsoringAccountCount, 1);
                     !isTesSuccess(ter))
-                    return ter;
+                    return ter;  // LCOV_EXCL_LINE
             }
 
             // Increment new sponsoring count
@@ -518,7 +518,7 @@ SponsorshipTransfer::doApply()
             if (auto const ter =
                     decrementSponsorCount(view(), oldSponsorSle, sfSponsoringAccountCount, 1);
                 !isTesSuccess(ter))
-                return ter;
+                return ter;  // LCOV_EXCL_LINE
         }
     }
 
