@@ -15,8 +15,8 @@ namespace xrpl {
  * The field is only added to successful NFTokenCreateOffer transactions.
  *
  * Helper functions are not static because they can be used by Clio.
- * @{
  */
+/** @{ */
 bool
 canHaveNFTokenOfferID(
     std::shared_ptr<STTx const> const& serializedTx,

@@ -14,8 +14,8 @@ namespace xrpl::RPC {
  *
  * When apiVersion > 1 will also remove `Amount` field, forcing users
  * to access this value using new `DeliverMax` field only.
- * @{
  */
+/** @{ */
 
 void
 insertDeliverMax(json::Value& txJson, TxType txnType, unsigned int apiVersion);

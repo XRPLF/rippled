@@ -17,8 +17,8 @@ namespace xrpl {
  * and NFTokenCancelOffer transactions.
  *
  * Helper functions are not static because they can be used by Clio.
- * @{
  */
+/** @{ */
 bool
 canHaveNFTokenID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& transactionMeta);
 

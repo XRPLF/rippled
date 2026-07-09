@@ -15,9 +15,8 @@ namespace xrpl::RPC {
  * The field is only added to successful MPTokenIssuanceCreate transactions.
  * The mpt_issuance_id is parsed from the sequence and the issuer in the
  * MPTokenIssuance object.
- *
- * @{
  */
+/** @{ */
 bool
 canHaveMPTokenIssuanceID(
     std::shared_ptr<STTx const> const& serializedTx,

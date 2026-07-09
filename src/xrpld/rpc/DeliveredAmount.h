@@ -29,9 +29,8 @@ struct Context;
  * If a delivered amount field is available in the TxMeta parameter, that value
  * is used. Otherwise, the transaction's `Amount` field is used. If neither is
  * available, then the delivered amount is set to "unavailable".
- *
- * @{
  */
+/** @{ */
 void
 insertDeliveredAmount(
     json::Value& meta,
