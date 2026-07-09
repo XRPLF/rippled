@@ -1105,9 +1105,13 @@ BookStep<TIn, TOut, TDerived>::revImp(
         auto ofrAdjAmt = ofrAmt;
         auto stpAdjAmt = stpAmt;
         auto ownerGivesAdj = ownerGives;
-        // This reduction can overflow, but savedIns/savedOuts are not updated
-        // until after it succeeds. The outer execOffer() catch can therefore
-        // remove the offer without rolling back local state.
+        // This reduction can overflow via the transfer-rate mulRatio() on a
+        // 63-bit MPT amount (IOU rescales instead of throwing, and XRP stays
+        // under the int64 limit, so only MPT reaches it today), but
+        // savedIns/savedOuts are not updated until after it succeeds. The outer
+        // execOffer() catch can therefore remove the offer under
+        // featureMPTokensV2 (legacy propagate-the-exception behavior otherwise)
+        // without rolling back local state.
         limitStepOut(
             offer,
             ofrAdjAmt,
@@ -1209,11 +1213,15 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
         auto stpAdjAmt = stpAmt;
         auto ownerGivesAdj = ownerGives;
 
-        // limitStepIn()/limitStepOut() can throw std::overflow_error, which is
-        // handled by execOffer() by removing the offer. Keep candidate
-        // accumulator changes local until those calls succeed so the catch
-        // path does not observe partially updated state. Re-sum the staged
-        // sets to preserve historical flat_multiset summing behavior.
+        // limitStepIn()/limitStepOut() can throw std::overflow_error from the
+        // transfer-rate mulRatio() on a 63-bit MPT amount. (IOUAmount::mulRatio
+        // rescales rather than throwing, and XRP amounts/rates stay under the
+        // int64 limit, so in practice only MPT reaches this today.) execOffer()
+        // catches it: under featureMPTokensV2 the offending offer is removed;
+        // otherwise the legacy behavior (propagate the exception) is preserved.
+        // Keep candidate accumulator changes local until those calls succeed so
+        // the catch path does not observe partially updated state. Re-sum the
+        // staged sets to preserve historical flat_multiset summing behavior.
         auto savedInsAdj = savedIns;
         auto savedOutsAdj = savedOuts;
         auto resultAdj = result;
