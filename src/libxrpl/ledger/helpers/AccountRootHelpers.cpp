@@ -158,7 +158,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 
     // Return balance minus reserve
     std::uint32_t const currentOwnerCount =
-        confineOwnerCount(view.ownerCountHook(id, OwnerCounts(*sle)).count(), ownerCountAdj);
+        confineOwnerCount(view.ownerCountHook(id, OwnerCounts(sle)).count(), ownerCountAdj);
     std::uint32_t const currentAccountCount = accountCountImpl(sle, 0, j);
 
     // Pseudo-accounts have no reserve requirement
@@ -232,7 +232,7 @@ adjustOwnerCountSigned(
     XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
 
     OwnerCounts const currentOwnerCount(
-        sleType == ltACCOUNT_ROOT ? OwnerCounts(*accountSle) : OwnerCounts());
+        sleType == ltACCOUNT_ROOT ? OwnerCounts(accountSle) : OwnerCounts());
     OwnerCounts totalOwnerCount(currentOwnerCount);
 
     if (sponsorSle)
@@ -247,7 +247,7 @@ adjustOwnerCountSigned(
             adjustOwnerCountImpl(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
 
         {
-            OwnerCounts const sponsorCurrent(*sponsorSle);
+            OwnerCounts const sponsorCurrent(sponsorSle);
             OwnerCounts sponsorAdjustment(sponsorCurrent);
             sponsorAdjustment.sponsoring = adjustOwnerCountImpl(
                 view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
