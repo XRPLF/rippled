@@ -176,7 +176,7 @@ TEST_F(ValidationTrackerTest, MaxPendingEventsTrimming)
     for (std::size_t i = 0; i < kCount; ++i)
     {
         auto const hash = makeHash(i + 1);
-        LedgerIndex const seq = static_cast<LedgerIndex>(i + 1);
+        auto const seq = static_cast<LedgerIndex>(i + 1);
         tracker_.recordOurValidation(hash, seq);
         tracker_.recordNetworkValidation(hash, seq);
     }

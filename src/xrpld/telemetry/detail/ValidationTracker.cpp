@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <deque>
 #include <mutex>
+#include <ranges>
 
 namespace xrpl::telemetry {
 
@@ -255,11 +256,11 @@ void
 ValidationTracker::repairWindowEntry(std::deque<WindowEvent>& window, uint256 const& hash)
 {
     // Scan backwards since late repairs target recently added entries.
-    for (auto it = window.rbegin(); it != window.rend(); ++it)
+    for (auto& event : std::views::reverse(window))
     {
-        if (!it->agreed && it->ledgerHash == hash)
+        if (!event.agreed && event.ledgerHash == hash)
         {
-            it->agreed = true;
+            event.agreed = true;
             return;
         }
     }
