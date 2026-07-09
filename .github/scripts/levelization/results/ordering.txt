@@ -24,6 +24,7 @@ libxrpl.nodestore > xrpl.nodestore
 libxrpl.nodestore > xrpl.protocol
 libxrpl.peerfinder > xrpl.basics
 libxrpl.peerfinder > xrpl.peerfinder
+libxrpl.peerfinder > xrpl.protocol
 libxrpl.protocol > xrpl.basics
 libxrpl.protocol > xrpl.json
 libxrpl.protocol > xrpl.protocol
@@ -280,11 +281,9 @@ xrpld.overlay > xrpl.server
 xrpld.overlay > xrpl.shamap
 xrpld.overlay > xrpl.tx
 xrpld.peerfinder > xrpl.basics
-xrpld.peerfinder > xrpl.config
 xrpld.peerfinder > xrpld.app
 xrpld.peerfinder > xrpld.core
 xrpld.peerfinder > xrpl.peerfinder
-xrpld.peerfinder > xrpl.protocol
 xrpld.peerfinder > xrpl.rdb
 xrpld.perflog > xrpl.basics
 xrpld.perflog > xrpl.config
