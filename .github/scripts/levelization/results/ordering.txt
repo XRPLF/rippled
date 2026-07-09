@@ -279,6 +279,7 @@ xrpld.overlay > xrpl.resource
 xrpld.overlay > xrpl.server
 xrpld.overlay > xrpl.shamap
 xrpld.overlay > xrpl.tx
+xrpld.peerfinder > xrpl.basics
 xrpld.peerfinder > xrpl.config
 xrpld.peerfinder > xrpld.app
 xrpld.peerfinder > xrpld.core
