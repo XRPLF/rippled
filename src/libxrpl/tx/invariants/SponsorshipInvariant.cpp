@@ -61,8 +61,7 @@ SponsorshipOwnerCountsMatch::visitEntry(
             default:
                 // Every other supported type carries a single sfSponsor field
                 // and contributes its full owner-count magnitude only when it is
-                // sponsored. Reuse getLedgerEntryOwnerCount so the per-type
-                // magnitude stays in one place.
+                // sponsored.
                 if (!sle->isFieldPresent(sfSponsor))
                     return 0;
                 return getLedgerEntryOwnerCount(sle);
