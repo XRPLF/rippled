@@ -31,7 +31,7 @@ escrowUnlockApplyHelper(
     ApplyViewContext ctx,
     Rate lockedRate,
     SLE::ref sleDest,
-    STAmount const& xrpBalance,
+    XRPAmount xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
     AccountID const& sender,
@@ -45,7 +45,7 @@ escrowUnlockApplyHelper<Issue>(
     ApplyViewContext ctx,
     Rate lockedRate,
     SLE::ref sleDest,
-    STAmount const& xrpBalance,
+    XRPAmount xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
     AccountID const& sender,
@@ -79,9 +79,7 @@ escrowUnlockApplyHelper<Issue>(
             JLOG(journal.trace()) << "Trust line does not exist. "
                                      "Insufficient reserve to create line.";
             // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
-            if (ret == tecINSUFFICIENT_RESERVE)
-                return tecNO_LINE_INSUF_RESERVE;
-            return ret;
+            return (ret == tecINSUFFICIENT_RESERVE) ? tecNO_LINE_INSUF_RESERVE : ret;
         }
 
         Currency const currency = issue.currency;
@@ -183,7 +181,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     ApplyViewContext ctx,
     Rate lockedRate,
     SLE::ref sleDest,
-    STAmount const& xrpBalance,
+    XRPAmount xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
     AccountID const& sender,
