@@ -231,6 +231,52 @@ public:
 
             BEAST_EXPECT(found);
         }
+
+        // Reverse order: validatedLedger arrives first, then builtLedger
+        // detects the mismatch. Covers the mismatch branch in builtLedger.
+        {
+            bool found = false;
+            Env env{
+                *this,
+                envconfig(),
+                std::make_unique<CheckMessageLogs>("MISMATCH on close time", &found)};
+            LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
+            auto const genesis = makeLedger({}, env, lh, 0s);
+            auto const ledgerA = makeLedger(genesis, env, lh, 4s);
+            auto const ledgerB = makeLedger(genesis, env, lh, 40s);
+
+            uint256 const dummyTxHash{1};
+            lh.validatedLedger(ledgerB, dummyTxHash);
+            lh.builtLedger(ledgerA, dummyTxHash, {});
+
+            BEAST_EXPECT(found);
+        }
+    }
+
+    void
+    testFixIndex()
+    {
+        testcase("LedgerHistory fixIndex");
+        using namespace jtx;
+        using namespace std::chrono;
+
+        Env env{*this};
+        LedgerHistory lh{beast::insight::NullCollector::make(), env.app()};
+
+        auto const genesis = makeLedger({}, env, lh, 0s);
+        auto const ledger1 = makeLedger(genesis, env, lh, 4s);
+        lh.insert(ledger1, true);
+
+        // Unknown index: returns true, no repair.
+        BEAST_EXPECT(lh.fixIndex(999, ledger1->header().hash));
+
+        // Known index with the same hash: returns true, no repair.
+        BEAST_EXPECT(lh.fixIndex(ledger1->header().seq, ledger1->header().hash));
+
+        // Known index with a different hash: returns false and repairs.
+        uint256 const bogusHash{42};
+        BEAST_EXPECT(!lh.fixIndex(ledger1->header().seq, bogusHash));
+        BEAST_EXPECT(lh.getLedgerHash(ledger1->header().seq) == bogusHash);
     }
 
     void
@@ -238,6 +284,7 @@ public:
     {
         testHashIndexInvariant();
         testHandleMismatch();
+        testFixIndex();
     }
 };
 

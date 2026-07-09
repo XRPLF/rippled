@@ -339,8 +339,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         Callback&& replaceCallback)
 {
     std::scoped_lock<mutex_type> const lock(mutex_);
-    return canonicalizeImpl(
-        lock, key, data, policy, std::forward<Callback>(replaceCallback));
+    return canonicalizeImpl(lock, key, data, policy, std::forward<Callback>(replaceCallback));
 }
 
 template <
@@ -690,12 +689,9 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     std::scoped_lock<mutex_type> const lock(mutex_);
 
     auto entry = std::make_shared<T>();
-    canonicalizeImpl(
-        lock,
-        key,
-        entry,
-        detail::ReplaceDynamically{},
-        [](SharedPointerType const&) { return false; });
+    canonicalizeImpl(lock, key, entry, detail::ReplaceDynamically{}, [](SharedPointerType const&) {
+        return false;
+    });
 
     XRPL_ASSERT(
         entry != nullptr, "xrpl::TaggedCache::fetchAndModify : entry present after canonicalize");
