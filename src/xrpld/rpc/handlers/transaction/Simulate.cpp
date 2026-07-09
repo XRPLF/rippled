@@ -77,7 +77,7 @@ getAutofillSequence(json::Value const& txJson, RPC::JsonContext& context)
 }
 
 static std::optional<json::Value>
-autofillSignature(json::Value& sigObject)
+autofillSignature(json::Value& sigObject, std::string const& fieldPrefix = "tx")
 {
     if (!sigObject.isMember(jss::SigningPubKey))
     {
@@ -88,14 +88,15 @@ autofillSignature(json::Value& sigObject)
     if (sigObject.isMember(jss::Signers))
     {
         if (!sigObject[jss::Signers].isArray())
-            return RPC::invalidFieldError("tx.Signers");
+            return RPC::invalidFieldError(fieldPrefix + ".Signers");
         // check multisigned signers
         for (unsigned index = 0; index < sigObject[jss::Signers].size(); index++)
         {
             auto& signer = sigObject[jss::Signers][index];
             if (!signer.isObject() || !signer.isMember(jss::Signer) ||
                 !signer[jss::Signer].isObject())
-                return RPC::invalidFieldError("tx.Signers[" + std::to_string(index) + "]");
+                return RPC::invalidFieldError(
+                    fieldPrefix + ".Signers[" + std::to_string(index) + "]");
 
             if (!signer[jss::Signer].isMember(jss::SigningPubKey))
             {
@@ -141,7 +142,7 @@ autofillTx(json::Value& txJson, RPC::JsonContext& context)
         if (!sponsorSignature.isObject())
             return RPC::objectFieldError(sfSponsorSignature.jsonName);
 
-        if (auto const error = autofillSignature(sponsorSignature))
+        if (auto const error = autofillSignature(sponsorSignature, "tx.SponsorSignature"))
             return error;
     }
 

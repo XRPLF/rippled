@@ -379,6 +379,23 @@ class Simulate_test : public beast::unit_test::Suite
                 "Invalid field 'SponsorSignature', not object.");
         }
         {
+            // Invalid SponsorSignature.Signers field
+            json::Value params;
+            json::Value txJson = json::ValueType::Object;
+            txJson[jss::TransactionType] = jss::AccountSet;
+            txJson[jss::Account] = env.master.human();
+            json::Value sponsorSignature = json::ValueType::Object;
+            sponsorSignature[sfSigners] = "1";
+            txJson[sfSponsorSignature] = sponsorSignature;
+            params[jss::tx_json] = txJson;
+
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECTS(
+                resp[jss::result][jss::error_message] ==
+                    "Invalid field 'tx.SponsorSignature.Signers'.",
+                resp.toStyledString());
+        }
+        {
             // Invalid transaction
             json::Value params;
             json::Value txJson = json::ValueType::Object;
