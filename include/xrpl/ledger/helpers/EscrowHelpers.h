@@ -67,21 +67,32 @@ escrowUnlockApplyHelper<Issue>(
 
     if (!ctx.view.exists(trustLineKey) && createAsset)
     {
-        // Can the account cover the trust line's reserve?
-        auto const sponsorSle = getTxReserveSponsor(ctx);
-        if (!sponsorSle)
-            return sponsorSle.error();  // LCOV_EXCL_LINE
-
-        if (auto const ret = checkReserve(
-                ctx, sleDest, xrpBalance, *sponsorSle, {.ownerCountDelta = 1}, journal);
-            !isTesSuccess(ret))
+        if (!ctx.view.rules().enabled(featureSponsor))
         {
-            JLOG(journal.trace()) << "Trust line does not exist. "
-                                     "Insufficient reserve to create line.";
-            // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
-            if (ret == tecINSUFFICIENT_RESERVE)
+            // Can the account cover the trust line's reserve?
+            if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};
+                xrpBalance < ctx.view.fees().accountReserve(ownerCount + 1))
+            {
+                JLOG(journal.trace()) << "Trust line does not exist. "
+                                         "Insufficient reserve to create line.";
                 return tecNO_LINE_INSUF_RESERVE;
-            return ret;
+            }
+        }
+        else
+        {
+            auto const sponsorSle = getTxReserveSponsor(ctx);
+            if (!sponsorSle)
+                return sponsorSle.error();  // LCOV_EXCL_LINE
+
+            if (auto const ret = checkReserve(
+                    ctx, sleDest, xrpBalance, *sponsorSle, {.ownerCountDelta = 1}, journal);
+                !isTesSuccess(ret))
+            {
+                JLOG(journal.trace()) << "Trust line does not exist. "
+                                         "Insufficient reserve to create line.";
+                // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
+                return ret;
+            }
         }
 
         Currency const currency = issue.currency;
