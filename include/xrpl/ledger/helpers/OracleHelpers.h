@@ -9,8 +9,8 @@
 
 namespace xrpl {
 
-constexpr uint32_t kMinOracleReserveCount = 1;
-constexpr uint32_t kMaxOracleReserveCount = 2;
+constexpr std::uint32_t kMinOracleReserveCount = 1;
+constexpr std::uint32_t kMaxOracleReserveCount = 2;
 constexpr std::size_t kOracleReserveCountThreshold = 5;
 
 template <typename T>

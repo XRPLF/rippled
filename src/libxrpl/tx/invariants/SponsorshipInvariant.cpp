@@ -12,36 +12,31 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
-#include <memory>
 
 namespace xrpl {
 
 // Add new sponsorship-related invariants implementations
 void
-SponsorshipOwnerCountsMatch::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+SponsorshipOwnerCountsMatch::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    auto getSponsored = [](std::shared_ptr<SLE const> const& sle) -> std::uint32_t {
+    auto getSponsored = [](SLE::const_ref sle) -> std::uint32_t {
         if (sle && sle->getType() == ltACCOUNT_ROOT)
             return sle->getFieldU32(sfSponsoredOwnerCount);
         return 0;
     };
-    auto getSponsoring = [](std::shared_ptr<SLE const> const& sle) -> std::uint32_t {
+    auto getSponsoring = [](SLE::const_ref sle) -> std::uint32_t {
         if (sle && sle->getType() == ltACCOUNT_ROOT)
             return sle->getFieldU32(sfSponsoringOwnerCount);
         return 0;
     };
 
-    auto getOwnerCount = [](std::shared_ptr<SLE const> const& sle) -> std::uint32_t {
+    auto getOwnerCount = [](SLE::const_ref sle) -> std::uint32_t {
         if (sle && sle->getType() == ltACCOUNT_ROOT)
             return sle->getFieldU32(sfOwnerCount);
         return 0;
     };
 
-    auto getSponsoredObjectOwnerCount =
-        [&](std::shared_ptr<SLE const> const& sle) -> std::uint32_t {
+    auto getSponsoredObjectOwnerCount = [&](SLE::const_ref sle) -> std::uint32_t {
         if (!sle)
             return 0;
         switch (sle->getType())
@@ -120,18 +115,15 @@ SponsorshipOwnerCountsMatch::finalize(
 }
 
 void
-SponsorshipAccountCountMatchesField::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+SponsorshipAccountCountMatchesField::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
 {
-    auto getSponsoringAccountCount = [](std::shared_ptr<SLE const> const& sle) -> std::uint32_t {
+    auto getSponsoringAccountCount = [](SLE::const_ref sle) -> std::uint32_t {
         if (sle && sle->getType() == ltACCOUNT_ROOT)
             return sle->getFieldU32(sfSponsoringAccountCount);
         return 0;
     };
 
-    auto hasSponsorField = [](std::shared_ptr<SLE const> const& sle) -> bool {
+    auto hasSponsorField = [](SLE::const_ref sle) -> bool {
         return sle && sle->getType() == ltACCOUNT_ROOT && sle->isFieldPresent(sfSponsor);
     };
 
