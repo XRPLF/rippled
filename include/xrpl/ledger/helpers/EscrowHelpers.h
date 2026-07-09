@@ -79,9 +79,7 @@ escrowUnlockApplyHelper<Issue>(
             JLOG(journal.trace()) << "Trust line does not exist. "
                                      "Insufficient reserve to create line.";
             // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
-            if (ret == tecINSUFFICIENT_RESERVE)
-                return tecNO_LINE_INSUF_RESERVE;
-            return ret;
+            return (ret == tecINSUFFICIENT_RESERVE) ? tecNO_LINE_INSUF_RESERVE : ret;
         }
 
         Currency const currency = issue.currency;

@@ -4,7 +4,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/OracleHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
@@ -47,10 +47,11 @@ SponsorshipOwnerCountsMatch::visitEntry(
             return 0;
         switch (sle->getType())
         {
-            case ltACCOUNT_ROOT: {
+            case ltACCOUNT_ROOT:
                 return 0;
-            }
             case ltRIPPLE_STATE: {
+                // A trust line can be reserve-sponsored independently on each
+                // side, so it may contribute up to two sponsored owner counts.
                 uint32_t ownerCount = 0;
                 if (sle->isFieldPresent(sfHighSponsor))
                     ownerCount++;
@@ -58,31 +59,14 @@ SponsorshipOwnerCountsMatch::visitEntry(
                     ownerCount++;
                 return ownerCount;
             }
-            case ltORACLE: {
+            default:
+                // Every other supported type carries a single sfSponsor field
+                // and contributes its full owner-count magnitude only when it is
+                // sponsored. Reuse getLedgerEntryOwnerCount so the per-type
+                // magnitude stays in one place.
                 if (!sle->isFieldPresent(sfSponsor))
                     return 0;
-                auto const priceDataSeries = sle->getFieldArray(sfPriceDataSeries);
-                return calculateOracleReserve(priceDataSeries.size());
-            }
-            case ltVAULT: {
-                if (!sle->isFieldPresent(sfSponsor))
-                    return 0;
-                return 2;
-            }
-            case ltSIGNER_LIST: {
-                if (!sle->isFieldPresent(sfSponsor))
-                    return 0;
-                // Modern lists carry lsfOneOwnerCount and cost 1.
-                // Legacy (pre-MultiSignReserve) lists cost 2 + signer_count.
-                if (sle->isFlag(lsfOneOwnerCount))
-                    return 1;
-                return 2 + static_cast<std::uint32_t>(sle->getFieldArray(sfSignerEntries).size());
-            }
-            default: {
-                if (sle->isFieldPresent(sfSponsor))
-                    return 1;
-                return 0;
-            }
+                return getLedgerEntryOwnerCount(sle);
         }
     };
 

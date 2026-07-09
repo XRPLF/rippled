@@ -63,6 +63,7 @@ std::expected<SLE::pointer, TER>
 getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle)
 {
     // A reserve sponsor only covers tx.Account's own objects.
+    XRPL_ASSERT(!!accountSle, "getEffectiveTxReserveSponsor : accountSle exists");
     if (isPseudoAccount(accountSle) || accountSle->getAccountID(sfAccount) != ctx.tx[sfAccount])
         return SLE::pointer();
     return getTxReserveSponsor(ctx);

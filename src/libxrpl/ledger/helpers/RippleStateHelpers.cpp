@@ -675,9 +675,7 @@ addEmptyHolding(
         !isTesSuccess(ret))
     {
         // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
-        if (ret == tecINSUFFICIENT_RESERVE)
-            return tecNO_LINE_INSUF_RESERVE;
-        return ret;
+        return (ret == tecINSUFFICIENT_RESERVE) ? tecNO_LINE_INSUF_RESERVE : ret;
     }
 
     return trustCreate(
