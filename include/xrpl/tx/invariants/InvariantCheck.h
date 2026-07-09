@@ -71,10 +71,10 @@ public:
      * @brief called for each ledger entry in the current transaction.
      *
      * @param isDelete true if the SLE is being deleted.
-     * @param before ledger entry before modification by the
-     *  transaction.
+     * @param before ledger entry before modification by the transaction. `before` will be null if
+     * the entry is new.
      * @param after ledger entry after modification by the transaction.
-     *  `after` IS NEVER NULL. `isDelete` is the only correct way to check for deletions.
+     *  NOTE: `after` IS NEVER NULL. `isDelete` is the only correct way to check for deletions.
      *  Check for null defensively, but do not make any logic decisions based on whether `after` is
      *  set, because it will always be set.
      */
