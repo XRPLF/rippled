@@ -11,16 +11,18 @@
 #        docker compose -f docker/telemetry/docker-compose.yml \
 #                       -f docker/telemetry/docker-compose.grafanacloud.yaml up -d
 #   3. To go back to local-only, bring the stack up with just the base file.
+#
+# Log mount: inherited from the base compose (./data/logs -> /var/log/xrpld).
+# Both nodes' xrpld cfgs write to docker/telemetry/data/logs/<net>/debug.log,
+# so no per-box remap is needed here.
 
 services:
   otel-collector:
-    # Mount the Grafana Cloud variant over the default config path. This
-    # replaces the local-only config for this run only — the file on disk
-    # is untouched.
     volumes:
+      # Mount the Grafana Cloud collector config over the default path
+      # (replaces local-only config for this run; file on disk untouched).
       - ./otel-collector-config.grafanacloud.yaml:/etc/otel-collector-config.yaml:ro
-    # Secrets are read from the gitignored env file at compose time and
-    # passed into the container environment, where the collector resolves
-    # them via ${env:...}. Nothing is baked into the image or committed.
+    # Secrets from the env file, injected as container env and
+    # resolved by the collector via ${env:...}.
     env_file:
       - .env.grafanacloud
