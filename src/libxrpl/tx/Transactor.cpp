@@ -409,7 +409,7 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
 
     // Reserve sponsorship with permissioned delegation is disallowed.
     if (tx.isFieldPresent(sfDelegate) && isReserveSponsored(tx))
-        return terNO_PERMISSION;
+        return temINVALID;
 
     if (auto const sponsorSle = getTxReserveSponsor(view, tx); !sponsorSle)
         return terNO_ACCOUNT;

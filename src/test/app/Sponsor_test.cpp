@@ -4539,7 +4539,7 @@ public:
                 delegate::As(bob),
                 sponsor::As(sponsor, spfSponsorReserve),
                 Sig(sfSponsorSignature, sponsor),
-                Ter(terNO_PERMISSION));
+                Ter(temINVALID));
         }
 
         // Pre-funded reserve sponsorship is blocked for delegated transactions.
@@ -4555,7 +4555,7 @@ public:
             env(check::create(alice, carol, XRP(1)),
                 delegate::As(bob),
                 sponsor::As(sponsor, spfSponsorReserve),
-                Ter(terNO_PERMISSION));
+                Ter(temINVALID));
         }
     }
 
