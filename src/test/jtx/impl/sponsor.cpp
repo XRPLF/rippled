@@ -89,10 +89,4 @@ ledgerEntry(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& spon
     return env.rpc("json", "ledger_entry", to_string(jvParams));
 }
 
-STAmount
-sponsorFeeBalance(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee)
-{
-    return env.le(keylet::sponsorship(sponsor, sponsee))->getFieldAmount(sfFeeAmount).xrp();
-}
-
 }  // namespace xrpl::test::jtx::sponsor
