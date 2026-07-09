@@ -10,7 +10,6 @@
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Issue.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
@@ -22,7 +21,6 @@
 #include <xrpl/protocol/STTx.h>
 
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <unordered_set>

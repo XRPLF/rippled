@@ -1,5 +1,14 @@
 #pragma once
 
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STInteger.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STLedgerEntry.h>
+
+#include <cstdint>
+#include <limits>
+
 namespace xrpl {
 
 struct OwnerCounts
@@ -10,7 +19,7 @@ struct OwnerCounts
 
     OwnerCounts() = default;
     OwnerCounts(SLE::const_ref sle)
-        : owner(sle->at(sfOwnerCount))
+        : owner(sle->getFieldU32(sfOwnerCount))
         , sponsored(sle->at(~sfSponsoredOwnerCount).value_or(0))
         , sponsoring(sle->at(~sfSponsoringOwnerCount).value_or(0))
     {
