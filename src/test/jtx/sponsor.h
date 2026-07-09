@@ -6,6 +6,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 
 #include <cstdint>
@@ -99,6 +100,6 @@ json::Value
 ledgerEntry(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee);
 
 STAmount
-sponsorFeeBalance(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee);
+sponsorshipFeeBalance(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee);
 
 }  // namespace xrpl::test::jtx::sponsor

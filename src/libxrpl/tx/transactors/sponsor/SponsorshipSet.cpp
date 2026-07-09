@@ -22,6 +22,13 @@
 
 namespace xrpl {
 
+TxConsequences
+SponsorshipSet::makeTxConsequences(PreflightContext const& ctx)
+{
+    auto const feeAmount = ctx.tx[~sfFeeAmount];
+    return TxConsequences{ctx.tx, feeAmount.has_value() ? feeAmount->xrp() : beast::kZero};
+}
+
 std::uint32_t
 SponsorshipSet::getFlagsMask(PreflightContext const& ctx)
 {
