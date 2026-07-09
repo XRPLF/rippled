@@ -87,12 +87,7 @@ std::optional<AccountID>
 getLedgerEntryReserveSponsorID(SLE::const_ref sle, SF_ACCOUNT const& field)
 {
     if (sle->isFieldPresent(field))
-    {
-        XRPL_ASSERT(
-            getCurrentTransactionRules()->enabled(featureSponsor),
-            "xrpl::getEffectiveTxReserveSponsor : sponsor exists + Sponsor enabled");
         return sle->getAccountID(field);
-    }
     return {};
 }
 

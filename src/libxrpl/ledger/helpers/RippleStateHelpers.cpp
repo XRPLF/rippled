@@ -670,12 +670,17 @@ addEmptyHolding(
     auto const sponsorSle = *sponsorExp;
 
     // Can the account cover the trust line reserve ?
-    if (auto const ret =
-            checkReserve(ctx, sleDst, priorBalance, sponsorSle, {.ownerCountDelta = 1}, journal);
+    if (auto const ret = checkReserve(
+            ctx,
+            sleDst,
+            priorBalance,
+            sponsorSle,
+            {.ownerCountDelta = 1},
+            journal,
+            tecNO_LINE_INSUF_RESERVE);
         !isTesSuccess(ret))
     {
-        // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
-        return (ret == tecINSUFFICIENT_RESERVE) ? tecNO_LINE_INSUF_RESERVE : ret;
+        return ret;
     }
 
     return trustCreate(

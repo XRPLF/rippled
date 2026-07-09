@@ -84,7 +84,6 @@ escrowUnlockApplyHelper<Issue>(
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
                                      "Insufficient reserve to create line.";
-            // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
             return ret;
         }
 

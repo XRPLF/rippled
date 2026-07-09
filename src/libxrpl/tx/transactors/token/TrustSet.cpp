@@ -538,7 +538,6 @@ TrustSet::doApply()
                     tecINSUF_RESERVE_LINE);
                 lowSponsor && !isTesSuccess(ret))
             {
-                // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
                 return ret;
             }
 
@@ -578,7 +577,6 @@ TrustSet::doApply()
                     tecINSUF_RESERVE_LINE);
                 highSponsor && !isTesSuccess(ret))
             {
-                // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
                 return ret;
             }
 
@@ -612,8 +610,14 @@ TrustSet::doApply()
         }
         // Reserve is not scaled by load.
         else if (
-            auto const ret =
-                checkReserve(ctx_.getApplyViewContext(), sle, preFeeBalance_, sponsorSle, {}, j_);
+            auto const ret = checkReserve(
+                ctx_.getApplyViewContext(),
+                sle,
+                preFeeBalance_,
+                sponsorSle,
+                {},
+                j_,
+                tecINSUF_RESERVE_LINE);
             !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
         {
             JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
@@ -621,9 +625,7 @@ TrustSet::doApply()
 
             // Another transaction could provide XRP to the account and then
             // this transaction would succeed.
-            // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL;
-            // don't mask an internal error as a reserve shortfall.
-            terResult = ((ret == tecINSUFFICIENT_RESERVE) ? tecINSUF_RESERVE_LINE : ret);
+            terResult = ret;
         }
         else
         {
@@ -660,8 +662,6 @@ TrustSet::doApply()
 
         // Another transaction could create the account and then this
         // transaction would succeed.
-        // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL;
-        // don't mask an internal error as a reserve shortfall.
         terResult = ret;
     }
     else

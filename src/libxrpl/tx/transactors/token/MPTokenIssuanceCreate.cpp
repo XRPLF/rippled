@@ -134,7 +134,7 @@ MPTokenIssuanceCreate::create(
         if (auto const ret = checkReserve(
                 ctx, acct, *(args.priorBalance), sponsorSle, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
-            return std::unexpected(ret);  // tecINSUFFICIENT_RESERVE
+            return std::unexpected(ret);
     }
 
     auto const mptId = makeMptID(args.sequence, args.account);
