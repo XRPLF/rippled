@@ -205,13 +205,11 @@ getAccountObjects(
                 if (sleNode->getAccountID(sfOwner) == account)
                     sponsor = getLedgerEntryReserveSponsorAccountID(sleNode);
             }
-            else if (getLedgerEntryOwner(ledger, sleNode, account).has_value())
-            {
-                {
-                    sponsor = getLedgerEntryReserveSponsorAccountID(
-                        sleNode, getLedgerEntrySponsorField(sleNode, account));
-                }
-            }
+            else if (
+                isLedgerEntrySupportedBySponsorship(sleNode) &&
+                getLedgerEntryOwner(ledger, sleNode, account).has_value())
+                sponsor = getLedgerEntryReserveSponsorAccountID(
+                    sleNode, getLedgerEntrySponsorField(sleNode, account));
 
             if (!sponsoredMatchesFilter(sponsor))
                 canAppend = false;
