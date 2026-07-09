@@ -20,7 +20,9 @@ class LedgerMaster;
 
 namespace RPC {
 
-/** The context of information needed to call an RPC. */
+/**
+ * The context of information needed to call an RPC.
+ */
 struct Context
 {
     beast::Journal const j;

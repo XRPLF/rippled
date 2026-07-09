@@ -28,7 +28,9 @@ namespace xrpl {
  */
 struct ConfidentialRecipient
 {
-    /** @brief The recipient's ElGamal public key (size=xrpl::kEcPubKeyLength). */
+    /**
+     * @brief The recipient's ElGamal public key (size=xrpl::kEcPubKeyLength).
+     */
     Slice publicKey;
 
     /**
@@ -44,10 +46,14 @@ struct ConfidentialRecipient
  */
 struct EcPair
 {
-    /** @brief First ElGamal ciphertext component. */
+    /**
+     * @brief First ElGamal ciphertext component.
+     */
     secp256k1_pubkey c1;
 
-    /** @brief Second ElGamal ciphertext component. */
+    /**
+     * @brief Second ElGamal ciphertext component.
+     */
     secp256k1_pubkey c2;
 };
 

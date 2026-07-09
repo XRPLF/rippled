@@ -14,7 +14,9 @@
 
 #include <cstdint>
 
-/** Escrow operations. */
+/**
+ * Escrow operations.
+ */
 namespace xrpl::test::jtx::escrow {
 
 json::Value

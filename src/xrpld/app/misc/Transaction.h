@@ -400,7 +400,9 @@ private:
     */
     bool applying_ = false;
 
-    /** different ways for transaction to be accepted */
+    /**
+     * different ways for transaction to be accepted
+     */
     SubmitResult submitResult_;
 
     std::optional<CurrentLedgerState> currentLedgerState_;

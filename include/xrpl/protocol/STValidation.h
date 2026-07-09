@@ -54,30 +54,32 @@ class STValidation final : public STObject, public CountedObject<STValidation>
     NetClock::time_point seenTime_;
 
 public:
-    /** Construct a STValidation from a peer from serialized data.
-
-        @param sit Iterator over serialized data
-        @param lookupNodeID Invocable with signature
-                               NodeID(PublicKey const&)
-                            used to find the Node ID based on the public key
-                            that signed the validation. For manifest based
-                            validators, this should be the NodeID of the master
-                            public key.
-        @param checkSignature Whether to verify the data was signed properly
-
-        @note Throws if the object is not valid
-    */
+    /**
+     * Construct a STValidation from a peer from serialized data.
+     *
+     * @param sit Iterator over serialized data
+     * @param lookupNodeID Invocable with signature
+     *                        NodeID(PublicKey const&)
+     *                     used to find the Node ID based on the public key
+     *                     that signed the validation. For manifest based
+     *                     validators, this should be the NodeID of the master
+     *                     public key.
+     * @param checkSignature Whether to verify the data was signed properly
+     *
+     * @note Throws if the object is not valid
+     */
     template <class LookupNodeID>
     STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool checkSignature);
 
-    /** Construct, sign and trust a new STValidation issued by this node.
-
-        @param signTime When the validation is signed
-        @param publicKey The current signing public key
-        @param secretKey The current signing secret key
-        @param nodeID ID corresponding to node's public master key
-        @param f callback function to "fill" the validation with necessary data
-    */
+    /**
+     * Construct, sign and trust a new STValidation issued by this node.
+     *
+     * @param signTime When the validation is signed
+     * @param publicKey The current signing public key
+     * @param secretKey The current signing secret key
+     * @param nodeID ID corresponding to node's public master key
+     * @param f callback function to "fill" the validation with necessary data
+     */
     template <typename F>
     STValidation(
         NetClock::time_point signTime,
@@ -183,14 +185,15 @@ STValidation::STValidation(SerialIter& sit, LookupNodeID&& lookupNodeID, bool ch
     XRPL_ASSERT(nodeID_.isNonZero(), "xrpl::STValidation::STValidation(SerialIter) : nonzero node");
 }
 
-/** Construct, sign and trust a new STValidation issued by this node.
-
-    @param signTime When the validation is signed
-    @param publicKey The current signing public key
-    @param secretKey The current signing secret key
-    @param nodeID ID corresponding to node's public master key
-    @param f callback function to "fill" the validation with necessary data
-*/
+/**
+ * Construct, sign and trust a new STValidation issued by this node.
+ *
+ * @param signTime When the validation is signed
+ * @param publicKey The current signing public key
+ * @param secretKey The current signing secret key
+ * @param nodeID ID corresponding to node's public master key
+ * @param f callback function to "fill" the validation with necessary data
+ */
 template <typename F>
 STValidation::STValidation(
     NetClock::time_point signTime,

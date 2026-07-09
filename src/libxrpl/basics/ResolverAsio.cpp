@@ -33,10 +33,11 @@
 
 namespace xrpl {
 
-/** Mix-in to track when all pending I/O is complete.
-    Derived classes must be callable with this signature:
-        void asyncHandlersComplete()
-*/
+/**
+ * Mix-in to track when all pending I/O is complete.
+ * Derived classes must be callable with this signature:
+ *     void asyncHandlersComplete()
+ */
 template <class Derived>
 class AsyncObject
 {
@@ -51,10 +52,11 @@ public:
         XRPL_ASSERT(pending_.load() == 0, "xrpl::AsyncObject::~AsyncObject : nothing pending");
     }
 
-    /** RAII container that maintains the count of pending I/O.
-        Bind this into the argument list of every handler passed
-        to an initiating function.
-    */
+    /**
+     * RAII container that maintains the count of pending I/O.
+     * Bind this into the argument list of every handler passed
+     * to an initiating function.
+     */
     class CompletionCounter
     {
     public:

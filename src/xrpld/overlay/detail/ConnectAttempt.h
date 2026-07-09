@@ -19,7 +19,9 @@
 
 namespace xrpl {
 
-/** Manages an outbound connection attempt. */
+/**
+ * Manages an outbound connection attempt.
+ */
 class ConnectAttempt : public OverlayImpl::Child,
                        public std::enable_shared_from_this<ConnectAttempt>
 {

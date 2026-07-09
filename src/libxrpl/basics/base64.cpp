@@ -76,32 +76,37 @@ getInverse()
     return &kTab[0];
 }
 
-/// Returns max chars needed to encode a base64 string
+/**
+ * Returns max chars needed to encode a base64 string
+ */
 constexpr std::size_t
 encodedSize(std::size_t n)
 {
     return 4 * ((n + 2) / 3);
 }
 
-/// Returns max bytes needed to decode a base64 string
+/**
+ * Returns max bytes needed to decode a base64 string
+ */
 constexpr std::size_t
 decodedSize(std::size_t n)
 {
     return ((n / 4) * 3) + 2;
 }
 
-/** Encode a series of octets as a padded, base64 string.
-
-    The resulting string will not be null terminated.
-
-    @par Requires
-
-    The memory pointed to by `out` points to valid memory
-    of at least `encoded_size(len)` bytes.
-
-    @return The number of characters written to `out`. This
-    will exclude any null termination.
-*/
+/**
+ * Encode a series of octets as a padded, base64 string.
+ *
+ * The resulting string will not be null terminated.
+ *
+ * @par Requires
+ *
+ * The memory pointed to by `out` points to valid memory
+ * of at least `encoded_size(len)` bytes.
+ *
+ * @return The number of characters written to `out`. This
+ * will exclude any null termination.
+ */
 std::size_t
 encode(void* dest, void const* src, std::size_t len)
 {
@@ -142,17 +147,18 @@ encode(void* dest, void const* src, std::size_t len)
     return out - static_cast<char*>(dest);
 }
 
-/** Decode a padded base64 string into a series of octets.
-
-    @par Requires
-
-    The memory pointed to by `out` points to valid memory
-    of at least `decoded_size(len)` bytes.
-
-    @return The number of octets written to `out`, and
-    the number of characters read from the input string,
-    expressed as a pair.
-*/
+/**
+ * Decode a padded base64 string into a series of octets.
+ *
+ * @par Requires
+ *
+ * The memory pointed to by `out` points to valid memory
+ * of at least `decoded_size(len)` bytes.
+ *
+ * @return The number of octets written to `out`, and
+ * the number of characters read from the input string,
+ * expressed as a pair.
+ */
 std::pair<std::size_t, std::size_t>
 decode(void* dest, char const* src, std::size_t len)
 {

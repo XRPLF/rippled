@@ -26,9 +26,10 @@
 
 namespace xrpl {
 
-/** Get the current AssetCache, updating it if necessary.
-    Get the correct ledger to use.
-*/
+/**
+ * Get the current AssetCache, updating it if necessary.
+ * Get the correct ledger to use.
+ */
 std::shared_ptr<AssetCache>
 PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger, bool authoritative)
 {

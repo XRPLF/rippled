@@ -15,20 +15,23 @@ namespace xrpl {
     preconditions, postconditions, and invariants.
 */
 
-/** Generates and logs a call stack */
+/**
+ * Generates and logs a call stack
+ */
 void
 logThrow(std::string const& title);
 
-/** Rethrow the exception currently being handled.
-
-    When called from within a catch block, it will pass
-    control to the next matching exception handler, if any.
-    Otherwise, std::terminate will be called.
-
-    ASAN can't handle sudden jumps in control flow very well. This
-    function is marked as XRPL_NO_SANITIZE_ADDRESS to prevent it from
-    triggering false positives, since it throws.
-*/
+/**
+ * Rethrow the exception currently being handled.
+ *
+ * When called from within a catch block, it will pass
+ * control to the next matching exception handler, if any.
+ * Otherwise, std::terminate will be called.
+ *
+ * ASAN can't handle sudden jumps in control flow very well. This
+ * function is marked as XRPL_NO_SANITIZE_ADDRESS to prevent it from
+ * triggering false positives, since it throws.
+ */
 [[noreturn]] XRPL_NO_SANITIZE_ADDRESS inline void
 rethrow()
 {
@@ -56,7 +59,9 @@ Throw(Args&&... args)
     throw std::move(e);
 }
 
-/** Called when faulty logic causes a broken invariant. */
+/**
+ * Called when faulty logic causes a broken invariant.
+ */
 [[noreturn]] void
 logicError(std::string const& how) noexcept;
 

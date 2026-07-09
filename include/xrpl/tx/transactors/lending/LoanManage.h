@@ -36,7 +36,8 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     static TER
     defaultLoan(
@@ -47,7 +48,8 @@ public:
         Asset const& vaultAsset,
         beast::Journal j);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     static TER
     impairLoan(
@@ -57,7 +59,8 @@ public:
         Asset const& vaultAsset,
         beast::Journal j);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     [[nodiscard]] static TER
     unimpairLoan(

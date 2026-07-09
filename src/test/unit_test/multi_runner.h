@@ -199,7 +199,8 @@ namespace test {
 
 //------------------------------------------------------------------------------
 
-/** Manager for children running unit tests
+/**
+ * Manager for children running unit tests
  */
 class MultiRunnerParent : private detail::MultiRunnerBase</*IsParent*/ true>
 {
@@ -234,7 +235,8 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** A class to run a subset of unit tests
+/**
+ * A class to run a subset of unit tests
  */
 class MultiRunnerChild : public beast::unit_test::Runner,
                          private detail::MultiRunnerBase</*IsParent*/ false>

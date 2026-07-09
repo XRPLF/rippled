@@ -26,7 +26,9 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Attempt to delete the Permissioned Domain. */
+    /**
+     * Attempt to delete the Permissioned Domain.
+     */
     TER
     doApply() override;
 

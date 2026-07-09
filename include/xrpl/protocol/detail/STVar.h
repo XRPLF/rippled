@@ -120,7 +120,8 @@ private:
         }
     }
 
-    /** Construct requested Serializable Type according to id.
+    /**
+     * Construct requested Serializable Type according to id.
      * The variadic args are: (SField), or (SerialIter, SField).
      * depth is ignored in former case.
      */

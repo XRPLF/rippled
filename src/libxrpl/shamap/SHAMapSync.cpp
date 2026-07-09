@@ -300,10 +300,11 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
     mn.deferred = 0;
 }
 
-/** Get a list of node IDs and hashes for nodes that are part of this SHAMap
-    but not available locally.  The filter can hold alternate sources of
-    nodes that are not permanently stored locally
-*/
+/**
+ * Get a list of node IDs and hashes for nodes that are part of this SHAMap
+ * but not available locally.  The filter can hold alternate sources of
+ * nodes that are not permanently stored locally
+ */
 std::vector<std::pair<SHAMapNodeID, uint256>>
 SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
 {
@@ -720,7 +721,8 @@ SHAMap::deepCompare(SHAMap& other) const
     return true;
 }
 
-/** Does this map have this inner node?
+/**
+ * Does this map have this inner node?
  */
 bool
 SHAMap::hasInnerNode(SHAMapNodeID const& targetNodeID, SHAMapHash const& targetNodeHash) const
@@ -742,7 +744,8 @@ SHAMap::hasInnerNode(SHAMapNodeID const& targetNodeID, SHAMapHash const& targetN
     return (node->isInner()) && (node->getHash() == targetNodeHash);
 }
 
-/** Does this map have this leaf node?
+/**
+ * Does this map have this leaf node?
  */
 bool
 SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const

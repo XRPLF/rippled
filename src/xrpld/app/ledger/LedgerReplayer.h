@@ -78,7 +78,9 @@ public:
     void
     replay(InboundLedger::Reason r, uint256 const& finishLedgerHash, std::uint32_t totalNumLedgers);
 
-    /** Create LedgerDeltaAcquire subtasks for the LedgerReplayTask task */
+    /**
+     * Create LedgerDeltaAcquire subtasks for the LedgerReplayTask task
+     */
     void
     createDeltas(std::shared_ptr<LedgerReplayTask> task);
 
@@ -102,7 +104,9 @@ public:
         LedgerHeader const& info,
         std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns);
 
-    /** Remove completed tasks */
+    /**
+     * Remove completed tasks
+     */
     void
     sweep();
 

@@ -30,18 +30,19 @@ public:
         return ledger_;
     }
 
-    /** Find the trust lines associated with an account.
-
-       @param accountID The account
-       @param direction Whether the account is an "outgoing" link on the path.
-       "Outgoing" is defined as the source account, or an account found via a
-       trustline that has rippling enabled on the @accountID's side. If an
-       account is "outgoing", all trust lines will be returned. If an account is
-       not "outgoing", then any trust lines that don't have rippling enabled are
-       not usable, so only return trust lines that have rippling enabled on
-       @accountID's side.
-       @return Returns a vector of the usable trust lines.
-    */
+    /**
+     * Find the trust lines associated with an account.
+     *
+     * @param accountID The account
+     * @param direction Whether the account is an "outgoing" link on the path.
+     * "Outgoing" is defined as the source account, or an account found via a
+     * trustline that has rippling enabled on the @accountID's side. If an
+     * account is "outgoing", all trust lines will be returned. If an account is
+     * not "outgoing", then any trust lines that don't have rippling enabled are
+     * not usable, so only return trust lines that have rippling enabled on
+     * @accountID's side.
+     * @return Returns a vector of the usable trust lines.
+     */
     std::shared_ptr<std::vector<PathFindTrustLine>>
     getRippleLines(AccountID const& accountID, LineDirection direction);
 

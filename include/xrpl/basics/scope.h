@@ -156,41 +156,41 @@ template <class EF>
 ScopeSuccess(EF) -> ScopeSuccess<EF>;
 
 /**
-    Automatically unlocks and re-locks a unique_lock object.
-
-    This is the reverse of a std::unique_lock object - instead of locking the
-   mutex for the lifetime of this object, it unlocks it.
-
-    Make sure you don't try to unlock mutexes that aren't actually locked!
-
-    This is essentially a less-versatile boost::reverse_lock.
-
-    e.g. @code
-
-    std::mutex mut;
-
-    for (;;)
-    {
-        std::unique_lock myScopedLock{mut};
-        // mut is now locked
-
-        ... do some stuff with it locked ..
-
-        while (xyz)
-        {
-            ... do some stuff with it locked ..
-
-            scope_unlock unlocker{myScopedLock};
-
-            // mut is now unlocked for the remainder of this block,
-            // and re-locked at the end.
-
-            ...do some stuff with it unlocked ...
-        }  // mut gets locked here.
-
-    }  // mut gets unlocked here
-    @endcode
-*/
+ * Automatically unlocks and re-locks a unique_lock object.
+ *
+ * This is the reverse of a std::unique_lock object - instead of locking the
+ * mutex for the lifetime of this object, it unlocks it.
+ *
+ * Make sure you don't try to unlock mutexes that aren't actually locked!
+ *
+ * This is essentially a less-versatile boost::reverse_lock.
+ *
+ * e.g. @code
+ *
+ * std::mutex mut;
+ *
+ * for (;;)
+ * {
+ *     std::unique_lock myScopedLock{mut};
+ *     // mut is now locked
+ *
+ *     ... do some stuff with it locked ..
+ *
+ *     while (xyz)
+ *     {
+ *         ... do some stuff with it locked ..
+ *
+ *         scope_unlock unlocker{myScopedLock};
+ *
+ *         // mut is now unlocked for the remainder of this block,
+ *         // and re-locked at the end.
+ *
+ *         ...do some stuff with it unlocked ...
+ *     }  // mut gets locked here.
+ *
+ * }  // mut gets unlocked here
+ * @endcode
+ */
 
 template <class Mutex>
 class ScopeUnlock

@@ -23,7 +23,9 @@ requireArgs(test::jtx::requires_t& vec, Cond const& cond, Args const&... args)
 
 namespace test::jtx {
 
-/** Compose many condition functors into one */
+/**
+ * Compose many condition functors into one
+ */
 template <class... Args>
 require_t
 required(Args const&... args)
@@ -36,12 +38,13 @@ required(Args const&... args)
     };
 }
 
-/** Check a set of conditions.
-
-    The conditions are checked after a JTx is
-    applied, and only if the resulting TER
-    matches the expected TER.
-*/
+/**
+ * Check a set of conditions.
+ *
+ * The conditions are checked after a JTx is
+ * applied, and only if the resulting TER
+ * matches the expected TER.
+ */
 class Require
 {
 private:

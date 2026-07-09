@@ -20,11 +20,12 @@
 
 namespace xrpl::test {
 
-/** Test implementation of Family for unit tests.
-
-    Uses an in-memory NodeStore database and simple caches.
-    The missingNode methods throw since tests shouldn't encounter missing nodes.
-*/
+/**
+ * Test implementation of Family for unit tests.
+ *
+ * Uses an in-memory NodeStore database and simple caches.
+ * The missingNode methods throw since tests shouldn't encounter missing nodes.
+ */
 class TestFamily : public Family
 {
 private:
@@ -109,7 +110,9 @@ public:
         (*tnCache_).reset();
     }
 
-    /** Access the test clock for time manipulation in tests. */
+    /**
+     * Access the test clock for time manipulation in tests.
+     */
     TestStopwatch&
     clock()
     {

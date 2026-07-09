@@ -81,15 +81,16 @@ buildLedgerImpl(
     return built;
 }
 
-/** Apply a set of consensus transactions to a ledger.
-
-  @param app Handle to application
-  @param txns the set of transactions to apply,
-  @param failed set of transactions that failed to apply
-  @param view ledger to apply to
-  @param j Journal for logging
-  @return number of transactions applied; transactions to retry left in txns
-*/
+/**
+ * Apply a set of consensus transactions to a ledger.
+ *
+ * @param app Handle to application
+ * @param txns the set of transactions to apply,
+ * @param failed set of transactions that failed to apply
+ * @param view ledger to apply to
+ * @param j Journal for logging
+ * @return number of transactions applied; transactions to retry left in txns
+ */
 
 std::size_t
 applyTransactions(

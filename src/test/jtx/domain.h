@@ -7,7 +7,9 @@
 
 namespace xrpl::test::jtx {
 
-/** Set the domain on a JTx. */
+/**
+ * Set the domain on a JTx.
+ */
 class Domain
 {
 private:

@@ -5,7 +5,9 @@
 #include <chrono>
 #include <cstdint>
 
-/** Heuristically tuned constants. */
+/**
+ * Heuristically tuned constants.
+ */
 /** @{ */
 namespace xrpl::PeerFinder::Tuning {
 
@@ -15,32 +17,41 @@ namespace xrpl::PeerFinder::Tuning {
 //
 //---------------------------------------------------------
 
-/** Time to wait between making batches of connection attempts */
+/**
+ * Time to wait between making batches of connection attempts
+ */
 static constexpr auto kSecondsPerConnect = 10;
 
-/** Maximum number of simultaneous connection attempts. */
+/**
+ * Maximum number of simultaneous connection attempts.
+ */
 static constexpr auto kMaxConnectAttempts = 20;
 
-/** The percentage of total peer slots that are outbound.
-    The number of outbound peers will be the larger of the
-    minOutCount and outPercent * Config::maxPeers specially
-    rounded.
-*/
+/**
+ * The percentage of total peer slots that are outbound.
+ * The number of outbound peers will be the larger of the
+ * minOutCount and outPercent * Config::maxPeers specially
+ * rounded.
+ */
 static constexpr auto kOutPercent = 15;
 
-/** A hard minimum on the number of outgoing connections.
-    This is enforced outside the Logic, so that the unit test
-    can use any settings it wants.
-*/
+/**
+ * A hard minimum on the number of outgoing connections.
+ * This is enforced outside the Logic, so that the unit test
+ * can use any settings it wants.
+ */
 static constexpr auto kMinOutCount = 10;
 
-/** The default value of Config::maxPeers. */
+/**
+ * The default value of Config::maxPeers.
+ */
 static constexpr auto kDefaultMaxPeers = 21;
 
-/** Max redirects we will accept from one connection.
-    Redirects are limited for security purposes, to prevent
-    the address caches from getting flooded.
-*/
+/**
+ * Max redirects we will accept from one connection.
+ * Redirects are limited for security purposes, to prevent
+ * the address caches from getting flooded.
+ */
 static constexpr auto kMaxRedirects = 30;
 
 //------------------------------------------------------------------------------

@@ -131,18 +131,19 @@ private:
 
 //------------------------------------------------------------------------------
 
-/** A wrapper which makes credits unavailable to balances.
-
-    This is used for payments and pathfinding, so that consuming
-    liquidity from a path never causes portions of that path or
-    other paths to gain liquidity.
-
-    The behavior of certain free functions in the ApplyView API
-    will change via the balanceHook and creditHook overrides
-    of PaymentSandbox.
-
-    @note Presented as ApplyView to clients
-*/
+/**
+ * A wrapper which makes credits unavailable to balances.
+ *
+ * This is used for payments and pathfinding, so that consuming
+ * liquidity from a path never causes portions of that path or
+ * other paths to gain liquidity.
+ *
+ * The behavior of certain free functions in the ApplyView API
+ * will change via the balanceHook and creditHook overrides
+ * of PaymentSandbox.
+ *
+ * @note Presented as ApplyView to clients
+ */
 class PaymentSandbox final : public detail::ApplyViewBase
 {
 public:
@@ -163,16 +164,17 @@ public:
     {
     }
 
-    /** Construct on top of existing PaymentSandbox.
-
-        The changes are pushed to the parent when
-        apply() is called.
-
-        @param parent A non-null pointer to the parent.
-
-        @note A pointer is used to prevent confusion
-              with copy construction.
-    */
+    /**
+     * Construct on top of existing PaymentSandbox.
+     *
+     * The changes are pushed to the parent when
+     * apply() is called.
+     *
+     * @param parent A non-null pointer to the parent.
+     *
+     * @note A pointer is used to prevent confusion
+     *       with copy construction.
+     */
     // VFALCO If we are constructing on top of a PaymentSandbox,
     //        or a PaymentSandbox-derived class, we MUST go through
     //        one of these constructors or invariants will be broken.
@@ -223,12 +225,13 @@ public:
     [[nodiscard]] std::uint32_t
     ownerCountHook(AccountID const& account, std::uint32_t count) const override;
 
-    /** Apply changes to base view.
-
-        `to` must contain contents identical to the parent
-        view passed upon construction, else undefined
-        behavior will result.
-    */
+    /**
+     * Apply changes to base view.
+     *
+     * `to` must contain contents identical to the parent
+     * view passed upon construction, else undefined
+     * behavior will result.
+     */
     /** @{ */
     void
     apply(RawView& to);

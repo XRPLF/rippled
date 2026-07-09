@@ -131,7 +131,8 @@ struct ClawbackArg
     std::optional<Ter> err = std::nullopt;
 };
 
-/** Convenience class to test AMM functionality.
+/**
+ * Convenience class to test AMM functionality.
  */
 class AMM
 {
@@ -187,7 +188,8 @@ public:
         STAmount const& asset2,
         std::uint16_t const& tfee);
 
-    /** Send amm_info RPC command
+    /**
+     * Send amm_info RPC command
      */
     [[nodiscard]] json::Value
     ammRpcInfo(
@@ -209,7 +211,8 @@ public:
         bool ignoreParams,
         unsigned apiVersion) const;
 
-    /** Verify the AMM balances.
+    /**
+     * Verify the AMM balances.
      */
     [[nodiscard]] bool
     expectBalances(
@@ -218,7 +221,8 @@ public:
         IOUAmount const& lpt,
         std::optional<AccountID> const& account = std::nullopt) const;
 
-    /** Get AMM balances for the token pair.
+    /**
+     * Get AMM balances for the token pair.
      */
     [[nodiscard]] std::tuple<STAmount, STAmount, STAmount>
     balances(

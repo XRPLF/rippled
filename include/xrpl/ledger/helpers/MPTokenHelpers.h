@@ -29,7 +29,8 @@ namespace xrpl {
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 
-/** Returns true if @p account's MPToken for @p mptIssue carries the
+/**
+ * Returns true if @p account's MPToken for @p mptIssue carries the
  *  individual-lock flag (lsfMPTLocked).
  *
  *  @warning This checks only the raw per-holder lock bit.  It does **not**
@@ -37,7 +38,8 @@ isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
  *  vault share whose underlying asset is frozen, this function returns false.
  *  Call @ref isFrozen instead when determining whether an account may send or
  *  receive tokens — it combines isIndividualFrozen, isGlobalFrozen, and
- *  isVaultPseudoAccountFrozen into a single complete check. */
+ *  isVaultPseudoAccountFrozen into a single complete check.
+ */
 [[nodiscard]] bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
 
@@ -61,7 +63,8 @@ isAnyFrozen(
 //
 //------------------------------------------------------------------------------
 
-/** Returns MPT transfer fee as Rate. Rate specifies
+/**
+ * Returns MPT transfer fee as Rate. Rate specifies
  * the fee as fractions of 1 billion. For example, 1% transfer rate
  * is represented as 1,010,000,000.
  * @param issuanceID MPTokenIssuanceID of MPTTokenIssuance object
@@ -94,7 +97,8 @@ authorizeMPToken(
     std::uint32_t flags = 0,
     std::optional<AccountID> holderID = std::nullopt);
 
-/** Check if the account lacks required authorization for MPT.
+/**
+ * Check if the account lacks required authorization for MPT.
  *
  * requireAuth check is recursive for MPT shares in a vault, descending to
  * assets in the vault, up to maxAssetCheckDepth recursion depth. This is
@@ -109,7 +113,8 @@ requireAuth(
     AuthType authType = AuthType::Legacy,
     std::uint8_t depth = 0);
 
-/** Enforce account has MPToken to match its authorization.
+/**
+ * Enforce account has MPToken to match its authorization.
  *
  *   Called from doApply - it will check for expired (and delete if found any)
  *   credentials matching DomainID set in MPTokenIssuance. Must be called if
@@ -123,7 +128,8 @@ enforceMPTokenAuthorization(
     XRPAmount const& priorBalance,
     beast::Journal j);
 
-/** Resolve the underlying asset of a vault share.
+/**
+ * Resolve the underlying asset of a vault share.
  *
  *  Reads sfReferenceHolding from @p sleShareIssuance to determine which
  *  asset the vault wraps. @p sleHolding must be the SLE that
@@ -139,7 +145,8 @@ enforceMPTokenAuthorization(
 [[nodiscard]] Asset
 assetOfHolding(SLE const& sleShareIssuance, SLE const& sleHolding);
 
-/** Check whether @p to may receive the given MPT from @p from.
+/**
+ * Check whether @p to may receive the given MPT from @p from.
  *
  *  The check passes when any of the following is true:
  *  - @p waive is WaiveMPTCanTransfer::Yes (recovery-path exemption), or
@@ -171,7 +178,8 @@ canTransfer(
     WaiveMPTCanTransfer waive = WaiveMPTCanTransfer::No,
     std::uint8_t depth = 0);
 
-/** Check whether @p asset may be traded on the DEX.
+/**
+ * Check whether @p asset may be traded on the DEX.
  *
  *  For IOU assets the check delegates to the existing offer/AMM freeze
  *  logic. For MPT assets it checks lsfMPTCanTrade on the MPTokenIssuance.
@@ -186,7 +194,8 @@ canTransfer(
 [[nodiscard]] TER
 canTrade(ReadView const& view, Asset const& asset, std::uint8_t depth = 0);
 
-/** Convenience to combine canTrade/Transfer. Returns tesSUCCESS if Asset is Issue.
+/**
+ * Convenience to combine canTrade/Transfer. Returns tesSUCCESS if Asset is Issue.
  */
 [[nodiscard]] TER
 canMPTTradeAndTransfer(
@@ -270,7 +279,8 @@ availableMPTAmount(SLE const& sleIssuance);
 std::int64_t
 availableMPTAmount(ReadView const& view, MPTID const& mptID);
 
-/** Checks for two types of OutstandingAmount overflow during a send operation.
+/**
+ * Checks for two types of OutstandingAmount overflow during a send operation.
  * 1.  **Direct directSendNoFee (Overflow: No):** A true overflow check when
  * `OutstandingAmount > MaximumAmount`. This threshold is used for direct
  * directSendNoFee transactions that bypass the payment engine.
@@ -295,7 +305,8 @@ isMPTOverflow(
 [[nodiscard]] STAmount
 issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue);
 
-/** Facilitate tracking of MPT sold by an issuer owning MPT sell offer.
+/**
+ * Facilitate tracking of MPT sold by an issuer owning MPT sell offer.
  * See ApplyView::issuerSelfDebitHookMPT().
  */
 void

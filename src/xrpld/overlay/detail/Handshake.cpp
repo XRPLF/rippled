@@ -118,20 +118,21 @@ makeFeaturesResponseHeader(
     return str.str();
 }
 
-/** Hashes the latest finished message from an SSL stream.
-
-    @param ssl the session to get the message from.
-    @param get a pointer to the function to call to retrieve the finished
-               message. This can be either:
-               - `SSL_get_finished` or
-               - `SSL_get_peer_finished`.
-    @return `true` if successful, `false` otherwise.
-
-    @note This construct is non-standard. There are potential "standard"
-          alternatives that should be considered. For a discussion, on
-          this topic, see https://github.com/openssl/openssl/issues/5509 and
-          https://github.com/XRPLF/rippled/issues/2413.
-*/
+/**
+ * Hashes the latest finished message from an SSL stream.
+ *
+ * @param ssl the session to get the message from.
+ * @param get a pointer to the function to call to retrieve the finished
+ *            message. This can be either:
+ *            - `SSL_get_finished` or
+ *            - `SSL_get_peer_finished`.
+ * @return `true` if successful, `false` otherwise.
+ *
+ * @note This construct is non-standard. There are potential "standard"
+ *       alternatives that should be considered. For a discussion, on
+ *       this topic, see https://github.com/openssl/openssl/issues/5509 and
+ *       https://github.com/XRPLF/rippled/issues/2413.
+ */
 static std::optional<BaseUInt<512>>
 hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
 {

@@ -33,7 +33,9 @@ public:
         std::function<bool(std::shared_ptr<Peer> const&)> hasItem,
         std::function<void(std::shared_ptr<Peer> const&)> onPeerAdded) override;
 
-    /** Send a message to one or all peers. */
+    /**
+     * Send a message to one or all peers.
+     */
     void
     sendRequest(
         ::google::protobuf::Message const& message,
@@ -49,7 +51,9 @@ private:
     Application& app_;
     beast::Journal journal_;
 
-    /** The identifiers of the peers we are tracking. */
+    /**
+     * The identifiers of the peers we are tracking.
+     */
     std::set<Peer::id_t> peers_;
 };
 

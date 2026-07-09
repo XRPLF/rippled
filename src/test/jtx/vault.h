@@ -27,7 +27,9 @@ struct Vault
             std::nullopt;  // NOLINT(readability-redundant-member-init)
     };
 
-    /** Return a VaultCreate transaction and the Vault's expected keylet. */
+    /**
+     * Return a VaultCreate transaction and the Vault's expected keylet.
+     */
     [[nodiscard]] std::tuple<json::Value, Keylet>
     create(CreateArgs const& args) const;
 

@@ -1411,7 +1411,8 @@ class CheckMPT_test : public beast::unit_test::Suite
                 return acct.id();
             }
 
-            /** Create MPTTester if it doesn't exist for the given MPT.
+            /**
+             * Create MPTTester if it doesn't exist for the given MPT.
              * Increment owners if created since it creates MPTokenIssuance
              */
             MPT

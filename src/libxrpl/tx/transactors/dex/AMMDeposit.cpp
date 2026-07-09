@@ -673,7 +673,8 @@ adjustLPTokensOut(
     return adjustLPTokens(lptAMMBalance, lpTokensDeposit, IsDeposit::Yes);
 }
 
-/** Proportional deposit of pools assets in exchange for the specified
+/**
+ * Proportional deposit of pools assets in exchange for the specified
  * amount of LPTokens.
  */
 std::pair<TER, STAmount>
@@ -721,7 +722,8 @@ AMMDeposit::equalDepositTokens(
     }
 }
 
-/** Proportional deposit of pool assets with the constraints on the maximum
+/**
+ * Proportional deposit of pool assets with the constraints on the maximum
  * amount of each asset that the trader is willing to deposit.
  *      a = (t/T) * A (1)
  *      b = (t/T) * B (2)
@@ -822,7 +824,8 @@ AMMDeposit::equalDepositLimit(
     return {tecAMM_FAILED, STAmount{}};
 }
 
-/** Single asset deposit of the amount of asset specified by Asset1In.
+/**
+ * Single asset deposit of the amount of asset specified by Asset1In.
  *       t = T * (b / B - x) / (1 + x) (3)
  *      where
  *         f1 = (1 - 0.5 * tfee) / (1 - tfee)
@@ -870,7 +873,8 @@ AMMDeposit::singleDeposit(
         tfee);
 }
 
-/** Single asset asset1 is deposited to obtain some share of
+/**
+ * Single asset asset1 is deposited to obtain some share of
  * the AMM instance's pools represented by amount of LPTokens.
  * Use equation 4 to compute the amount of asset1 to be deposited,
  * given t represented by amount of LPTokens. Equation 4 solves
@@ -908,7 +912,8 @@ AMMDeposit::singleDepositTokens(
         tfee);
 }
 
-/** Single asset deposit with two constraints.
+/**
+ * Single asset deposit with two constraints.
  * a. Amount of asset1 if specified (not 0) in Asset1In specifies the maximum
  *     amount of asset1 that the trader is willing to deposit.
  * b. The effective-price of the LPToken traded out does not exceed

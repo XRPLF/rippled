@@ -11,7 +11,8 @@
 
 namespace xrpl {
 
-/** AMMBid implements AMM bid Transactor.
+/**
+ * AMMBid implements AMM bid Transactor.
  * This is a mechanism for an AMM instance to auction-off
  * the trading advantages to users (arbitrageurs) at a discounted
  * TradingFee for a 24 hour slot. Any account that owns corresponding

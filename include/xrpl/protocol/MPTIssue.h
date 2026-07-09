@@ -82,7 +82,8 @@ operator<=>(MPTIssue const& lhs, MPTIssue const& rhs)
     return lhs.mptID_ <=> rhs.mptID_;
 }
 
-/** MPT is a non-native token.
+/**
+ * MPT is a non-native token.
  */
 inline bool
 isXRP(MPTID const&)

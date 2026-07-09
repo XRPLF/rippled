@@ -14,7 +14,8 @@
 
 namespace xrpl {
 
-/** Provides an asynchronous HTTP client implementation with optional SSL.
+/**
+ * Provides an asynchronous HTTP client implementation with optional SSL.
  */
 class HTTPClient
 {
@@ -30,7 +31,8 @@ public:
         bool sslVerify,
         beast::Journal j);
 
-    /** Destroys the global SSL context created by initializeSSLContext().
+    /**
+     * Destroys the global SSL context created by initializeSSLContext().
      *
      *  This releases the underlying boost::asio::ssl::context and any
      *  associated OpenSSL resources. Must not be called while any

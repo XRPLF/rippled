@@ -17,19 +17,20 @@
 
 namespace xrpl {
 
-/** A transaction discovered to be in dispute during consensus.
-
-    During consensus, a @ref DisputedTx is created when a transaction
-    is discovered to be disputed. The object persists only as long as
-    the dispute.
-
-    Undisputed transactions have no corresponding @ref DisputedTx object.
-
-    Refer to @ref Consensus for details on the template type requirements.
-
-    @tparam Tx The type for a transaction
-    @tparam NodeId The type for a node identifier
-*/
+/**
+ * A transaction discovered to be in dispute during consensus.
+ *
+ * During consensus, a @ref DisputedTx is created when a transaction
+ * is discovered to be disputed. The object persists only as long as
+ * the dispute.
+ *
+ * Undisputed transactions have no corresponding @ref DisputedTx object.
+ *
+ * Refer to @ref Consensus for details on the template type requirements.
+ *
+ * @tparam Tx The type for a transaction
+ * @tparam NodeId The type for a node identifier
+ */
 
 template <class Tx, class NodeId>
 class DisputedTx
@@ -38,13 +39,14 @@ class DisputedTx
     using Map_t = boost::container::flat_map<NodeId, bool>;
 
 public:
-    /** Constructor
-
-        @param tx The transaction under dispute
-        @param ourVote Our vote on whether tx should be included
-        @param numPeers Anticipated number of peer votes
-        @param j Journal for debugging
-    */
+    /**
+     * Constructor
+     *
+     * @param tx The transaction under dispute
+     * @param ourVote Our vote on whether tx should be included
+     * @param numPeers Anticipated number of peer votes
+     * @param j Journal for debugging
+     */
     DisputedTx(Tx tx, bool ourVote, std::size_t numPeers, beast::Journal j)
         : ourVote_(ourVote), tx_(std::move(tx)), j_(j)
     {
@@ -145,35 +147,38 @@ public:
         ourVote_ = o;
     }
 
-    /** Change a peer's vote
-
-        @param peer Identifier of peer.
-        @param votesYes Whether peer votes to include the disputed transaction.
-
-        @return bool Whether the peer changed its vote. (A new vote counts as a
-       change.)
-    */
+    /**
+     * Change a peer's vote
+     *
+     *  @param peer Identifier of peer.
+     *  @param votesYes Whether peer votes to include the disputed transaction.
+     *
+     *  @return bool Whether the peer changed its vote. (A new vote counts as a
+     * change.)
+     */
     [[nodiscard]] bool
     setVote(NodeId const& peer, bool votesYes);
 
-    /** Remove a peer's vote
-
-        @param peer Identifier of peer.
-    */
+    /**
+     * Remove a peer's vote
+     *
+     * @param peer Identifier of peer.
+     */
     void
     unVote(NodeId const& peer);
 
-    /** Update our vote given progression of consensus.
-
-        Updates our vote on this disputed transaction based on our peers' votes
-        and how far along consensus has proceeded.
-
-        @param percentTime Percentage progress through consensus, e.g. 50%
-               through or 90%.
-        @param proposing Whether we are proposing to our peers in this round.
-        @param p Consensus parameters controlling thresholds for voting
-        @return Whether our vote changed
-    */
+    /**
+     * Update our vote given progression of consensus.
+     *
+     * Updates our vote on this disputed transaction based on our peers' votes
+     * and how far along consensus has proceeded.
+     *
+     * @param percentTime Percentage progress through consensus, e.g. 50%
+     *        through or 90%.
+     * @param proposing Whether we are proposing to our peers in this round.
+     * @param p Consensus parameters controlling thresholds for voting
+     * @return Whether our vote changed
+     */
     bool
     updateVote(int percentTime, bool proposing, ConsensusParms const& p);
 

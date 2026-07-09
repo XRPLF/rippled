@@ -10,11 +10,12 @@
 
 namespace xrpl {
 
-/** Consensus algorithm parameters
-
-    Parameters which control the consensus algorithm.  This are not
-    meant to be changed arbitrarily.
-*/
+/**
+ * Consensus algorithm parameters
+ *
+ * Parameters which control the consensus algorithm.  This are not
+ * meant to be changed arbitrarily.
+ */
 struct ConsensusParms
 {
     explicit ConsensusParms() = default;
@@ -22,27 +23,30 @@ struct ConsensusParms
     //-------------------------------------------------------------------------
     // Validation and proposal durations are relative to NetClock times, so use
     // second resolution
-    /** The duration a validation remains current after its ledger's
-       close time.
-
-        This is a safety to protect against very old validations and the time
-        it takes to adjust the close time accuracy window.
-    */
+    /**
+     * The duration a validation remains current after its ledger's
+     * close time.
+     *
+     *  This is a safety to protect against very old validations and the time
+     *  it takes to adjust the close time accuracy window.
+     */
     std::chrono::seconds const validationValidWall = std::chrono::minutes{5};
 
-    /** Duration a validation remains current after first observed.
-
-       The duration a validation remains current after the time we
-       first saw it. This provides faster recovery in very rare cases where the
-       number of validations produced by the network is lower than normal
-    */
+    /**
+     * Duration a validation remains current after first observed.
+     *
+     * The duration a validation remains current after the time we
+     * first saw it. This provides faster recovery in very rare cases where the
+     * number of validations produced by the network is lower than normal
+     */
     std::chrono::seconds const validationValidLocal = std::chrono::minutes{3};
 
-    /**  Duration pre-close in which validations are acceptable.
-
-        The number of seconds before a close time that we consider a validation
-        acceptable. This protects against extreme clock errors
-    */
+    /**
+     * Duration pre-close in which validations are acceptable.
+     *
+     * The number of seconds before a close time that we consider a validation
+     * acceptable. This protects against extreme clock errors
+     */
     std::chrono::seconds const validationValidEarly = std::chrono::minutes{3};
 
     //! How long we consider a proposal fresh
@@ -64,7 +68,8 @@ struct ConsensusParms
     //! The number of seconds we wait minimum to ensure participation
     std::chrono::milliseconds const ledgerMinConsensus = std::chrono::milliseconds{1950};
 
-    /** The maximum amount of time to spend pausing for laggards.
+    /**
+     * The maximum amount of time to spend pausing for laggards.
      *
      *  This should be sufficiently less than validationFRESHNESS so that
      *  validators don't appear to be offline that are merely waiting for
@@ -89,16 +94,17 @@ struct ConsensusParms
      */
     std::chrono::milliseconds const ledgerAbandonConsensus = std::chrono::seconds{120};
 
-    /** The minimum amount of time to consider the previous round
-        to have taken.
-
-        The minimum amount of time to consider the previous round
-        to have taken. This ensures that there is an opportunity
-        for a round at each avalanche threshold even if the
-        previous consensus was very fast. This should be at least
-        twice the interval between proposals (0.7s) divided by
-        the interval between mid and late consensus ([85-50]/100).
-    */
+    /**
+     * The minimum amount of time to consider the previous round
+     * to have taken.
+     *
+     * The minimum amount of time to consider the previous round
+     * to have taken. This ensures that there is an opportunity
+     * for a round at each avalanche threshold even if the
+     * previous consensus was very fast. This should be at least
+     * twice the interval between proposals (0.7s) divided by
+     * the interval between mid and late consensus ([85-50]/100).
+     */
     std::chrono::milliseconds const avMinConsensusTime = std::chrono::seconds{5};
 
     //------------------------------------------------------------------------------

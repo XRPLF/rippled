@@ -22,7 +22,9 @@ namespace xrpl {
 
 class Section;
 
-/** Configuration information for a Server listening port. */
+/**
+ * Configuration information for a Server listening port.
+ */
 struct Port
 {
     explicit Port() = default;

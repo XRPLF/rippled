@@ -47,9 +47,11 @@ namespace xrpl {
 
 class Ticket_test : public beast::unit_test::Suite
 {
-    /// @brief Validate metadata for a successful TicketCreate transaction.
-    ///
-    /// @param env current jtx env (tx and meta are extracted using it)
+    /**
+     * @brief Validate metadata for a successful TicketCreate transaction.
+     *
+     * @param env current jtx env (tx and meta are extracted using it)
+     */
     void
     checkTicketCreateMeta(test::jtx::Env& env)
     {
@@ -233,11 +235,13 @@ class Ticket_test : public beast::unit_test::Suite
         BEAST_EXPECT(*ticketSeqs.rbegin() == acctRootFinalSeq - 1);
     }
 
-    /// @brief Validate metadata for a ticket using transaction.
-    ///
-    /// The transaction may have been successful or failed with a tec.
-    ///
-    /// @param env current jtx env (tx and meta are extracted using it)
+    /**
+     * @brief Validate metadata for a ticket using transaction.
+     *
+     * The transaction may have been successful or failed with a tec.
+     *
+     * @param env current jtx env (tx and meta are extracted using it)
+     */
     void
     checkTicketConsumeMeta(test::jtx::Env& env)
     {

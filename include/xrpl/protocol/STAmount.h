@@ -190,7 +190,9 @@ public:
     [[nodiscard]] int
     signum() const noexcept;
 
-    /** Returns a zero value with the same issuer and currency. */
+    /**
+     * Returns a zero value with the same issuer and currency.
+     */
     [[nodiscard]] STAmount
     zeroed() const;
 
@@ -255,7 +257,9 @@ public:
     void
     clear(Asset const& asset);
 
-    /** Set the Issue for this amount. */
+    /**
+     * Set the Issue for this amount.
+     */
     void
     setIssue(Asset const& asset);
 
@@ -704,7 +708,8 @@ divRoundStrict(STAmount const& v1, STAmount const& v2, Asset const& asset, bool 
 std::uint64_t
 getRate(STAmount const& offerOut, STAmount const& offerIn);
 
-/** Round an arbitrary precision Amount to the precision of an STAmount that has
+/**
+ * Round an arbitrary precision Amount to the precision of an STAmount that has
  * a given exponent.
  *
  * This is used to ensure that calculations involving IOU amounts do not collect
@@ -714,7 +719,6 @@ getRate(STAmount const& offerOut, STAmount const& offerIn);
  * @param scale An exponent value to establish the precision limit of
  *     `value`. Should be larger than `value.exponent()`.
  * @param rounding Optional Number rounding mode
- *
  */
 [[nodiscard]] STAmount
 roundToScale(
@@ -722,7 +726,8 @@ roundToScale(
     std::int32_t scale,
     Number::RoundingMode rounding = Number::getround());
 
-/** Round an arbitrary precision Number IN PLACE to the precision of a given
+/**
+ * Round an arbitrary precision Number IN PLACE to the precision of a given
  * Asset.
  *
  * This is used to ensure that calculations do not collect dust for IOUs, or
@@ -738,7 +743,8 @@ roundToAsset(A const& asset, Number& value)
     value = STAmount{asset, value};
 }
 
-/** Round an arbitrary precision Number to the precision of a given Asset.
+/**
+ * Round an arbitrary precision Number to the precision of a given Asset.
  *
  * This is used to ensure that calculations do not collect dust beyond specified
  * scale for IOUs, or fractional amounts for the integral types XRP and MPT.
@@ -780,7 +786,8 @@ canAdd(STAmount const& amt1, STAmount const& amt2);
 bool
 canSubtract(STAmount const& amt1, STAmount const& amt2);
 
-/** Get the scale of a Number for a given asset.
+/**
+ * Get the scale of a Number for a given asset.
  *
  * "scale" is similar to "exponent", but from the perspective of STAmount, which has different rules
  * and mantissa ranges for determining the exponent than Number.

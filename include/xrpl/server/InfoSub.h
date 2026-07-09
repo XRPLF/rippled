@@ -35,7 +35,8 @@ public:
     doStatus(json::Value const&) = 0;
 };
 
-/** Manages a client's subscription to data feeds.
+/**
+ * Manages a client's subscription to data feeds.
  *
  *  An InfoSub holds a non-owning reference to its `Source` (typically the
  *  process-wide `NetworkOPsImp`). The destructor reaches back into the
@@ -64,7 +65,8 @@ public:
     using Consumer = Resource::Consumer;
 
 public:
-    /** Abstracts the source of subscription data.
+    /**
+     * Abstracts the source of subscription data.
      */
     class Source
     {
@@ -217,7 +219,8 @@ public:
         virtual bool
         tryRemoveRpcSub(std::string const& strUrl) = 0;
 
-        /** Journal used by InfoSub for diagnostics that occur after the
+        /**
+         * Journal used by InfoSub for diagnostics that occur after the
          *  owning subsystem (e.g. application-level Logs) is the only
          *  surviving sink — primarily destructor-time cleanup failures.
          */
@@ -249,7 +252,8 @@ public:
     void
     deleteSubAccountInfo(AccountID const& account, bool rt);
 
-    /** Record that this subscriber is following @p book.
+    /**
+     * Record that this subscriber is following @p book.
      *
      *  Called by NetworkOPsImp::subBook so that ~InfoSub() can issue a
      *  matching unsubBook for every book this subscriber is tracking,
@@ -262,7 +266,8 @@ public:
     void
     insertBookSubscription(Book const& book);
 
-    /** Stop tracking @p book for this subscriber.
+    /**
+     * Stop tracking @p book for this subscriber.
      *
      *  Called by the unsubscribe RPC handler so that the book is not
      *  re-unsubscribed by ~InfoSub(). Pairs with insertBookSubscription.

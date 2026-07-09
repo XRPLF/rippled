@@ -63,7 +63,9 @@ static constexpr std::uint32_t kSecondsInYear = 365 * 24 * 60 * 60;
 Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
 
-/// Ensure the periodic payment is always rounded consistently
+/**
+ * Ensure the periodic payment is always rounded consistently
+ */
 inline Number
 roundPeriodicPayment(Asset const& asset, Number const& periodicPayment, std::int32_t scale)
 {
@@ -127,7 +129,8 @@ struct LoanPaymentParts
     operator==(LoanPaymentParts const& other) const;
 };
 
-/** This structure captures the parts of a loan state.
+/**
+ * This structure captures the parts of a loan state.
  *
  *  Whether the values are theoretical (unrounded) or rounded will depend on how
  * it was computed.

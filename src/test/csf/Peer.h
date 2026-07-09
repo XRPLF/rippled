@@ -42,24 +42,26 @@ namespace xrpl::test::csf {
 
 namespace bc = boost::container;
 
-/** A single peer in the simulation.
-
-    This is the main work-horse of the consensus simulation framework and is
-    where many other components are integrated. The peer
-
-     - Implements the Callbacks required by Consensus
-     - Manages trust & network connections with other peers
-     - Issues events back to the simulation based on its actions for analysis
-       by Collectors
-     - Exposes most internal state for forcibly simulating arbitrary scenarios
-*/
+/**
+ * A single peer in the simulation.
+ *
+ * This is the main work-horse of the consensus simulation framework and is
+ * where many other components are integrated. The peer
+ *
+ *  - Implements the Callbacks required by Consensus
+ *  - Manages trust & network connections with other peers
+ *  - Issues events back to the simulation based on its actions for analysis
+ *    by Collectors
+ *  - Exposes most internal state for forcibly simulating arbitrary scenarios
+ */
 struct Peer
 {
-    /** Basic wrapper of a proposed position taken by a peer.
-
-        For real consensus, this would add additional data for serialization
-        and signing. For simulation, nothing extra is needed.
-    */
+    /**
+     * Basic wrapper of a proposed position taken by a peer.
+     *
+     * For real consensus, this would add additional data for serialization
+     * and signing. For simulation, nothing extra is needed.
+     */
     class Position
     {
     public:
@@ -89,7 +91,8 @@ struct Peer
         Proposal proposal_;
     };
 
-    /** Simulated delays in internal peer processing.
+    /**
+     * Simulated delays in internal peer processing.
      */
     struct ProcessingDelays
     {
@@ -122,7 +125,8 @@ struct Peer
     {
     };
 
-    /** Generic Validations adaptor that simply ignores recently stale
+    /**
+     * Generic Validations adaptor that simply ignores recently stale
      * validations
      */
     class ValAdaptor
@@ -262,17 +266,17 @@ struct Peer
     //! The collectors to report events to
     CollectorRefs& collectors;
 
-    /** Constructor
-
-        @param i Unique PeerID
-        @param s Simulation Scheduler
-        @param o Simulation Oracle
-        @param n Simulation network
-        @param tg Simulation trust graph
-        @param c Simulation collectors
-        @param jIn Simulation journal
-
-    */
+    /**
+     * Constructor
+     *
+     * @param i Unique PeerID
+     * @param s Simulation Scheduler
+     * @param o Simulation Oracle
+     * @param n Simulation network
+     * @param tg Simulation trust graph
+     * @param c Simulation collectors
+     * @param jIn Simulation journal
+     */
     Peer(
         PeerID i,
         Scheduler& s,
@@ -302,9 +306,10 @@ struct Peer
         trustGraph.trust(this, this);
     }
 
-    /**  Schedule the provided callback in `when` duration, but if
-        `when` is 0, call immediately
-    */
+    /**
+     * Schedule the provided callback in `when` duration, but if
+     * `when` is 0, call immediately
+     */
     template <class T>
     void
     schedule(std::chrono::nanoseconds when, T&& what)
@@ -368,14 +373,15 @@ struct Peer
         return false;
     }
 
-    /** Create network connection
-
-        Creates a new outbound connection to another Peer if none exists
-
-        @param o The peer with the inbound connection
-        @param dur The fixed delay for messages between the two Peers
-        @return Whether the connection was created.
-    */
+    /**
+     * Create network connection
+     *
+     * Creates a new outbound connection to another Peer if none exists
+     *
+     * @param o The peer with the inbound connection
+     * @param dur The fixed delay for messages between the two Peers
+     * @return Whether the connection was created.
+     */
 
     bool
     connect(Peer& o, SimDuration dur)
@@ -383,13 +389,14 @@ struct Peer
         return net.connect(this, &o, dur);
     }
 
-    /** Remove a network connection
-
-        Removes a connection between peers if one exists
-
-        @param o The peer we disconnect from
-        @return Whether the connection was removed
-    */
+    /**
+     * Remove a network connection
+     *
+     * Removes a connection between peers if one exists
+     *
+     * @param o The peer we disconnect from
+     * @return Whether the connection was removed
+     */
     bool
     disconnect(Peer& o)
     {
@@ -653,7 +660,9 @@ struct Peer
     //--------------------------------------------------------------------------
     // Validation members
 
-    /** Add a trusted validation and return true if it is worth forwarding */
+    /**
+     * Add a trusted validation and return true if it is worth forwarding
+     */
     bool
     addTrustedValidation(Validation v)
     {
@@ -670,7 +679,9 @@ struct Peer
         return true;
     }
 
-    /** Check if a new ledger can be deemed fully validated */
+    /**
+     * Check if a new ledger can be deemed fully validated
+     */
     void
     checkFullyValidated(Ledger const& ledger)
     {
@@ -939,16 +950,17 @@ struct Peer
     // TODO: Make this more robust
     hash_map<Ledger::Seq, Tx> txInjections;
 
-    /** Inject non-consensus Tx
-
-        Injects a transactionsinto the ledger following prevLedger's sequence
-        number.
-
-        @param prevLedger The ledger we are building the new ledger on top of
-        @param src The Consensus TxSet
-        @return Consensus TxSet with inject transactions added if prevLedger.seq
-                matches a previously registered Tx.
-    */
+    /**
+     * Inject non-consensus Tx
+     *
+     * Injects a transactionsinto the ledger following prevLedger's sequence
+     * number.
+     *
+     * @param prevLedger The ledger we are building the new ledger on top of
+     * @param src The Consensus TxSet
+     * @return Consensus TxSet with inject transactions added if prevLedger.seq
+     *         matches a previously registered Tx.
+     */
     TxSet
     injectTxs(Ledger prevLedger, TxSet const& src)
     {

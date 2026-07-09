@@ -48,7 +48,9 @@ public:
     }
 };
 
-/** Match the number of items in the account's owner directory */
+/**
+ * Match the number of items in the account's owner directory
+ */
 class Owners
 {
 private:
@@ -64,13 +66,19 @@ public:
     operator()(Env& env) const;
 };
 
-/** Match the number of trust lines in the account's owner directory */
+/**
+ * Match the number of trust lines in the account's owner directory
+ */
 using lines = OwnerCount<ltRIPPLE_STATE>;
 
-/** Match the number of offers in the account's owner directory */
+/**
+ * Match the number of offers in the account's owner directory
+ */
 using offers = OwnerCount<ltOFFER>;
 
-/** Match the number of MPToken in the account's owner directory */
+/**
+ * Match the number of MPToken in the account's owner directory
+ */
 using mptokens = OwnerCount<ltMPTOKEN>;
 
 }  // namespace test::jtx

@@ -21,7 +21,9 @@ namespace xrpl {
 
 namespace detail {
 
-/** Caches the base58 representations of AccountIDs */
+/**
+ * Caches the base58 representations of AccountIDs
+ */
 class AccountIdCache
 {
 private:

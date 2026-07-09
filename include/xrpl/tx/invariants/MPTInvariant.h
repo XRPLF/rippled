@@ -31,16 +31,22 @@ class ValidMPTIssuance
     // MPToken by an issuer
     bool mptCreatedByIssuer_ = false;
 
-    /// sfReferenceHolding is intended to be set exactly once at vault
-    /// creation and immutable thereafter; true when that rule was violated.
+    /**
+     * sfReferenceHolding is intended to be set exactly once at vault
+     * creation and immutable thereafter; true when that rule was violated.
+     */
     bool referenceHoldingSetOnCreate_ = false;
 
-    /// True when sfReferenceHolding was mutated on an existing MPTokenIssuance.
+    /**
+     * True when sfReferenceHolding was mutated on an existing MPTokenIssuance.
+     */
     bool referenceHoldingMutated_ = false;
 
-    /// MPTokens and RippleStates deleted during apply. finalize() checks each
-    /// holder's AccountRoot to detect vault pseudo-account holdings deleted
-    /// outside VaultDelete. All these checks are gated on fixCleanup3_2_0.
+    /**
+     * MPTokens and RippleStates deleted during apply. finalize() checks each
+     * holder's AccountRoot to detect vault pseudo-account holdings deleted
+     * outside VaultDelete. All these checks are gated on fixCleanup3_2_0.
+     */
     std::vector<std::shared_ptr<SLE const>> deletedHoldings_;
 
 public:

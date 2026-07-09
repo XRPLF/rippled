@@ -147,10 +147,11 @@ enum ErrorCodeI {
     RpcLast = RpcUnexpectedLedgerType  // rpcLAST should always equal the last code.
 };
 
-/** Codes returned in the `warnings` array of certain RPC commands.
-
-    These values need to remain stable.
-*/
+/**
+ * Codes returned in the `warnings` array of certain RPC commands.
+ *
+ * These values need to remain stable.
+ */
 // Protocol-wide, 50+ files
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum WarningCodeI {
@@ -168,7 +169,9 @@ enum WarningCodeI {
 
 namespace RPC {
 
-/** Maps an rpc error code to its token, default message, and HTTP status. */
+/**
+ * Maps an rpc error code to its token, default message, and HTTP status.
+ */
 struct ErrorInfo
 {
     // Default ctor needed to produce an empty std::array during constexpr eval.
@@ -193,11 +196,15 @@ struct ErrorInfo
     int httpStatus;
 };
 
-/** Returns an ErrorInfo that reflects the error code. */
+/**
+ * Returns an ErrorInfo that reflects the error code.
+ */
 ErrorInfo const&
 getErrorInfo(ErrorCodeI code);
 
-/** Add or update the json update to reflect the error code. */
+/**
+ * Add or update the json update to reflect the error code.
+ */
 /** @{ */
 void
 injectError(ErrorCodeI code, json::Value& json);
@@ -206,7 +213,9 @@ void
 injectError(ErrorCodeI code, std::string const& message, json::Value& json);
 /** @} */
 
-/** Returns a new json object that reflects the error code. */
+/**
+ * Returns a new json object that reflects the error code.
+ */
 /** @{ */
 json::Value
 makeError(ErrorCodeI code);
@@ -214,7 +223,9 @@ json::Value
 makeError(ErrorCodeI code, std::string const& message);
 /** @} */
 
-/** Returns a new json object that indicates invalid parameters. */
+/**
+ * Returns a new json object that indicates invalid parameters.
+ */
 /** @{ */
 inline json::Value
 makeParamError(std::string const& message)
@@ -314,17 +325,23 @@ notValidatorError()
 
 /** @} */
 
-/** Returns `true` if the json contains an rpc error specification. */
+/**
+ * Returns `true` if the json contains an rpc error specification.
+ */
 bool
 containsError(json::Value const& json);
 
-/** Returns http status that corresponds to the error code. */
+/**
+ * Returns http status that corresponds to the error code.
+ */
 int
 errorCodeHttpStatus(ErrorCodeI code);
 
 }  // namespace RPC
 
-/** Returns a single string with the contents of an RPC error. */
+/**
+ * Returns a single string with the contents of an RPC error.
+ */
 std::string
 rpcErrorString(json::Value const& jv);
 

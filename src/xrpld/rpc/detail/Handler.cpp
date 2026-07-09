@@ -21,7 +21,9 @@
 namespace xrpl::RPC {
 namespace {
 
-/** Adjust an old-style handler to be call-by-reference. */
+/**
+ * Adjust an old-style handler to be call-by-reference.
+ */
 template <typename Function>
 Handler::Method<json::Value>
 byRef(Function const& f)

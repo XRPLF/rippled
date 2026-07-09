@@ -38,35 +38,45 @@ public:
      */
     explicit Account(std::string_view name, KeyType type = KeyType::Secp256k1);
 
-    /** @brief Return the human-readable name. */
+    /**
+     * @brief Return the human-readable name.
+     */
     [[nodiscard]] std::string const&
     name() const noexcept
     {
         return name_;
     }
 
-    /** @brief Return the AccountID. */
+    /**
+     * @brief Return the AccountID.
+     */
     [[nodiscard]] AccountID const&
     id() const noexcept
     {
         return id_;
     }
 
-    /** @brief Return the public key. */
+    /**
+     * @brief Return the public key.
+     */
     [[nodiscard]] PublicKey const&
     pk() const noexcept
     {
         return keyPair_.first;
     }
 
-    /** @brief Return the secret key. */
+    /**
+     * @brief Return the secret key.
+     */
     [[nodiscard]] SecretKey const&
     sk() const noexcept
     {
         return keyPair_.second;
     }
 
-    /** @brief Implicit conversion to AccountID. */
+    /**
+     * @brief Implicit conversion to AccountID.
+     */
     operator AccountID const&() const noexcept
     {
         return id_;

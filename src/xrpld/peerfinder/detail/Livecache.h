@@ -55,10 +55,11 @@ protected:
         boost::intrusive::make_list<Element, boost::intrusive::constant_time_size<false>>::type;
 
 public:
-    /** A list of Endpoint at the same hops
-        This is a lightweight wrapper around a reference to the underlying
-        container.
-    */
+    /**
+     * A list of Endpoint at the same hops
+     * This is a lightweight wrapper around a reference to the underlying
+     * container.
+     */
     template <bool IsConst>
     class Hop
     {
@@ -169,18 +170,19 @@ protected:
 
 //------------------------------------------------------------------------------
 
-/** The Livecache holds the short-lived relayed Endpoint messages.
-
-    Since peers only advertise themselves when they have open slots,
-    we want these messages to expire rather quickly after the peer becomes
-    full.
-
-    Addresses added to the cache are not connection-tested to see if
-    they are connectable (with one small exception regarding neighbors).
-    Therefore, these addresses are not suitable for persisting across
-    launches or for bootstrapping, because they do not have verifiable
-    and locally observed uptime and connectability information.
-*/
+/**
+ * The Livecache holds the short-lived relayed Endpoint messages.
+ *
+ * Since peers only advertise themselves when they have open slots,
+ * we want these messages to expire rather quickly after the peer becomes
+ * full.
+ *
+ * Addresses added to the cache are not connection-tested to see if
+ * they are connectable (with one small exception regarding neighbors).
+ * Therefore, these addresses are not suitable for persisting across
+ * launches or for bootstrapping, because they do not have verifiable
+ * and locally observed uptime and connectability information.
+ */
 template <class Allocator = std::allocator<char>>
 class Livecache : protected detail::LivecacheBase
 {
@@ -198,7 +200,9 @@ private:
 public:
     using allocator_type = Allocator;
 
-    /** Create the cache. */
+    /**
+     * Create the cache.
+     */
     Livecache(clock_type& clock, beast::Journal journal, Allocator alloc = Allocator());
 
     //
@@ -318,7 +322,9 @@ public:
             return const_reverse_iterator(lists_.crend(), Transform<true>());
         }
 
-        /** Shuffle each hop list. */
+        /**
+         * Shuffle each hop list.
+         */
         void
         shuffle();
 
@@ -343,29 +349,39 @@ public:
         Histogram hist_{};
     } hops;
 
-    /** Returns `true` if the cache is empty. */
+    /**
+     * Returns `true` if the cache is empty.
+     */
     [[nodiscard]] bool
     empty() const
     {
         return cache_.empty();
     }
 
-    /** Returns the number of entries in the cache. */
+    /**
+     * Returns the number of entries in the cache.
+     */
     cache_type::size_type
     size() const
     {
         return cache_.size();
     }
 
-    /** Erase entries whose time has expired. */
+    /**
+     * Erase entries whose time has expired.
+     */
     void
     expire();
 
-    /** Creates or updates an existing Element based on a new message. */
+    /**
+     * Creates or updates an existing Element based on a new message.
+     */
     void
     insert(Endpoint const& ep);
 
-    /** Output statistics. */
+    /**
+     * Output statistics.
+     */
     void
     onWrite(beast::PropertyStream::Map& map);
 };

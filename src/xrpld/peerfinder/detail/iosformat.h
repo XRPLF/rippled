@@ -12,7 +12,9 @@ namespace beast {
 // A collection of handy stream manipulators and
 // functions to produce nice looking log output.
 
-/** Left justifies a field at the specified width. */
+/**
+ * Left justifies a field at the specified width.
+ */
 struct Leftw
 {
     explicit Leftw(int width) : width(width)
@@ -29,7 +31,9 @@ struct Leftw
     }
 };
 
-/** Produce a section heading and fill the rest of the line with dashes. */
+/**
+ * Produce a section heading and fill the rest of the line with dashes.
+ */
 template <class CharT, class Traits, class Allocator>
 std::basic_string<CharT, Traits, Allocator>
 heading(std::basic_string<CharT, Traits, Allocator> title, int width = 80, CharT fill = CharT('-'))
@@ -40,7 +44,9 @@ heading(std::basic_string<CharT, Traits, Allocator> title, int width = 80, CharT
     return title;
 }
 
-/** Produce a dashed line separator, with a specified or default size. */
+/**
+ * Produce a dashed line separator, with a specified or default size.
+ */
 struct Divider
 {
     using CharT = char;
@@ -58,7 +64,9 @@ struct Divider
     }
 };
 
-/** Creates a padded field with an optional fill character. */
+/**
+ * Creates a padded field with an optional fill character.
+ */
 struct Fpad
 {
     explicit Fpad(int width, int pad = 0, char fill = ' ') : width(width + pad), fill(fill)
@@ -90,7 +98,9 @@ to_string(T const& t)
 
 }  // namespace detail
 
-/** Justifies a field at the specified width. */
+/**
+ * Justifies a field at the specified width.
+ */
 /** @{ */
 template <
     class CharT,

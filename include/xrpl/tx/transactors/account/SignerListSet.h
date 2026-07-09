@@ -20,9 +20,9 @@
 namespace xrpl {
 
 /**
-See the README.md for an overview of the SignerListSet transaction that
-this class implements.
-*/
+ * See the README.md for an overview of the SignerListSet transaction that
+ * this class implements.
+ */
 class SignerListSet : public Transactor
 {
 private:

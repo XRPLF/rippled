@@ -10,13 +10,14 @@
 
 namespace xrpl::test::csf {
 
-/** Trust graph
-
-    Trust is a directed relationship from a node i to node j.
-    If node i trusts node j, then node i has node j in its UNL.
-    This class wraps a digraph representing the trust relationships for all
-   peers in the simulation.
-*/
+/**
+ * Trust graph
+ *
+ *  Trust is a directed relationship from a node i to node j.
+ *  If node i trusts node j, then node i has node j in its UNL.
+ *  This class wraps a digraph representing the trust relationships for all
+ * peers in the simulation.
+ */
 template <class Peer>
 class TrustGraph
 {
@@ -25,7 +26,8 @@ class TrustGraph
     Graph graph_;
 
 public:
-    /** Create an empty trust graph
+    /**
+     * Create an empty trust graph
      */
     TrustGraph() = default;
 
@@ -35,29 +37,30 @@ public:
         return graph_;
     }
 
-    /** Create trust
-
-        Establish trust between Peer `from` and Peer `to`; as if `from` put `to`
-        in its UNL.
-
-        @param from The peer granting trust
-        @param to The peer receiving trust
-
-    */
+    /**
+     * Create trust
+     *
+     * Establish trust between Peer `from` and Peer `to`; as if `from` put `to`
+     * in its UNL.
+     *
+     * @param from The peer granting trust
+     * @param to The peer receiving trust
+     */
     void
     trust(Peer const& from, Peer const& to)
     {
         graph_.connect(from, to);
     }
 
-    /** Remove trust
-
-        Revoke trust from Peer `from` to Peer `to`; as if `from` removed `to`
-        from its  UNL.
-
-        @param from The peer revoking trust
-        @param to The peer being revoked
-    */
+    /**
+     * Remove trust
+     *
+     * Revoke trust from Peer `from` to Peer `to`; as if `from` removed `to`
+     * from its  UNL.
+     *
+     * @param from The peer revoking trust
+     * @param to The peer being revoked
+     */
     void
     untrust(Peer const& from, Peer const& to)
     {
@@ -71,19 +74,21 @@ public:
         return graph_.connected(from, to);
     }
 
-    /** Range over trusted peers
-
-        @param a The node granting trust
-        @return boost transformed range over nodes `a` trusts, i.e. the nodes
-                in its UNL
-    */
+    /**
+     * Range over trusted peers
+     *
+     * @param a The node granting trust
+     * @return boost transformed range over nodes `a` trusts, i.e. the nodes
+     *         in its UNL
+     */
     [[nodiscard]] auto
     trustedPeers(Peer const& a) const
     {
         return graph_.outVertices(a);
     }
 
-    /** An example of nodes that fail the whitepaper no-forking condition
+    /**
+     * An example of nodes that fail the whitepaper no-forking condition
      */
     struct ForkInfo
     {
@@ -133,9 +138,10 @@ public:
         return res;
     }
 
-    /** Check whether this trust graph satisfies the whitepaper no-forking
-        condition
-    */
+    /**
+     * Check whether this trust graph satisfies the whitepaper no-forking
+     * condition
+     */
     [[nodiscard]] bool
     canFork(double quorum) const
     {

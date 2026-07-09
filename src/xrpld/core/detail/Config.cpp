@@ -793,7 +793,9 @@ Config::loadFromString(std::string const& fileContents)
     {
         auto sec = section(Sections::kReduceRelay);
 
-        /////////////////////  !!TEMPORARY CODE BLOCK!! ////////////////////////
+        /**
+         * //////////////////  !!TEMPORARY CODE BLOCK!! ////////////////////////
+         */
         // vp_enable config option is deprecated by vp_base_squelch_enable    //
         // This option is kept for backwards compatibility. When squelching   //
         // is the default algorithm, it must be replaced with:                //
@@ -821,9 +823,13 @@ Config::loadFromString(std::string const& fileContents)
         {
             vpReduceRelayBaseSquelchEnable = false;
         }
-        /////////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
+        /**
+         * //////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
+         */
 
-        /////////////////////  !!TEMPORARY CODE BLOCK!! ///////////////////////
+        /**
+         * //////////////////  !!TEMPORARY CODE BLOCK!! ///////////////////////
+         */
         // Temporary squelching config for the peers selected as a source of //
         // validator messages. The config must be removed once squelching is //
         // made the default routing algorithm.                               //
@@ -835,7 +841,9 @@ Config::loadFromString(std::string const& fileContents)
                 " vp_base_squelch_max_selected_peers must be "
                 "greater than or equal to 3");
         }
-        /////////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
+        /**
+         * //////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
+         */
 
         txReduceRelayEnable = sec.valueOr(Keys::kTxEnable, false);
         txReduceRelayMetrics = sec.valueOr(Keys::kTxMetrics, false);

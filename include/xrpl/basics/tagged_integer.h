@@ -12,17 +12,18 @@
 
 namespace xrpl {
 
-/** A type-safe wrap around standard integral types
-
-    The tag is used to implement type safety, catching mismatched types at
-    compile time. Multiple instantiations wrapping the same underlying integral
-    type are distinct types (distinguished by tag) and will not interoperate. A
-    tagged_integer supports all the usual assignment, arithmetic, comparison and
-    shifting operations defined for the underlying type
-
-    The tag is not meant as a unit, which would require restricting the set of
-    allowed arithmetic operations.
-*/
+/**
+ * A type-safe wrap around standard integral types
+ *
+ * The tag is used to implement type safety, catching mismatched types at
+ * compile time. Multiple instantiations wrapping the same underlying integral
+ * type are distinct types (distinguished by tag) and will not interoperate. A
+ * tagged_integer supports all the usual assignment, arithmetic, comparison and
+ * shifting operations defined for the underlying type
+ *
+ * The tag is not meant as a unit, which would require restricting the set of
+ * allowed arithmetic operations.
+ */
 template <class Int, class Tag>
 class TaggedInteger : boost::totally_ordered<
                           TaggedInteger<Int, Tag>,

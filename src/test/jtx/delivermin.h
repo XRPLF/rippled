@@ -9,7 +9,9 @@
 
 namespace xrpl::test::jtx {
 
-/** Sets the DeliverMin on a JTx. */
+/**
+ * Sets the DeliverMin on a JTx.
+ */
 class DeliverMin
 {
 private:

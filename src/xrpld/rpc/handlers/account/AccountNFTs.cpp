@@ -23,16 +23,17 @@
 
 namespace xrpl {
 
-/** General RPC command that can retrieve objects in the account root.
-    {
-      account: <account>
-      ledger_hash: <string> // optional
-      ledger_index: <string | unsigned integer> // optional
-      type: <string> // optional, defaults to all account objects types
-      limit: <integer> // optional
-      marker: <opaque> // optional, resume previous query
-    }
-*/
+/**
+ * General RPC command that can retrieve objects in the account root.
+ * {
+ *   account: <account>
+ *   ledger_hash: <string> // optional
+ *   ledger_index: <string | unsigned integer> // optional
+ *   type: <string> // optional, defaults to all account objects types
+ *   limit: <integer> // optional
+ *   marker: <opaque> // optional, resume previous query
+ * }
+ */
 json::Value
 doAccountNFTs(RPC::JsonContext& context)
 {

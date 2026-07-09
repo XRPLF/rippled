@@ -4,7 +4,9 @@
 
 namespace xrpl::Resource {
 
-/** Tunable constants. */
+/**
+ * Tunable constants.
+ */
 
 // balance at which a warning is issued
 static constexpr auto kWarningThreshold = 5000;

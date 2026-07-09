@@ -10,14 +10,20 @@
 #include <string>
 #include <vector>
 
-/** Deposit preauthorize operations */
+/**
+ * Deposit preauthorize operations
+ */
 namespace xrpl::test::jtx::deposit {
 
-/** Preauthorize for deposit.  Invoke as deposit::auth. */
+/**
+ * Preauthorize for deposit.  Invoke as deposit::auth.
+ */
 json::Value
 auth(Account const& account, Account const& auth);
 
-/** Remove pre-authorization for deposit.  Invoke as deposit::unauth. */
+/**
+ * Remove pre-authorization for deposit.  Invoke as deposit::unauth.
+ */
 json::Value
 unauth(Account const& account, Account const& unauth);
 

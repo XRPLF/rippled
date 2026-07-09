@@ -23,7 +23,9 @@
 
 namespace xrpl::test {
 
-/** Logs implementation that creates TestSink instances. */
+/**
+ * Logs implementation that creates TestSink instances.
+ */
 class TestLogs : public Logs
 {
 public:
@@ -38,7 +40,9 @@ public:
     }
 };
 
-/** Simple NetworkIDService implementation for tests. */
+/**
+ * Simple NetworkIDService implementation for tests.
+ */
 class TestNetworkIDService final : public NetworkIDService
 {
 public:
@@ -56,14 +60,15 @@ private:
     std::uint32_t networkID_;
 };
 
-/** Test implementation of ServiceRegistry for unit tests.
-
-    This class provides real implementations for services that can be
-    instantiated from libxrpl (such as Logs, io_context, caches), and
-    throws std::logic_error for services that require the full Application.
-
-    Tests can subclass this to provide additional services they need.
-*/
+/**
+ * Test implementation of ServiceRegistry for unit tests.
+ *
+ * This class provides real implementations for services that can be
+ * instantiated from libxrpl (such as Logs, io_context, caches), and
+ * throws std::logic_error for services that require the full Application.
+ *
+ * Tests can subclass this to provide additional services they need.
+ */
 class TestServiceRegistry : public ServiceRegistry
 {
     TestLogs logs_{beast::Severity::Warning};

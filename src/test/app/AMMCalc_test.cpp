@@ -31,7 +31,8 @@
 
 namespace xrpl::test {
 
-/** AMM Calculator. Uses AMM formulas to simulate the payment engine
+/**
+ * AMM Calculator. Uses AMM formulas to simulate the payment engine
  * expected results. Assuming the formulas are correct some unit-tests can
  * be verified. Currently supported operations are:
  *  - swapIn, find out given in. in can flow through multiple AMM/Offer steps.

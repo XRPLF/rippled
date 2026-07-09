@@ -59,14 +59,18 @@ public:
     void
     update(std::uint32_t seq);
 
-    /** Returns true if we got all the data. */
+    /**
+     * Returns true if we got all the data.
+     */
     bool
     isComplete() const
     {
         return complete_;
     }
 
-    /** Returns false if we failed to get the data. */
+    /**
+     * Returns false if we failed to get the data.
+     */
     bool
     isFailed() const
     {
@@ -95,7 +99,9 @@ public:
 
     using neededHash_t = std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
 
-    /** Return a json::ValueType::Object. */
+    /**
+     * Return a json::ValueType::Object.
+     */
     json::Value
     getJson(int);
 

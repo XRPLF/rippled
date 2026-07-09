@@ -12,7 +12,8 @@
 
 namespace xrpl {
 
-/** Close a payment channel and return its remaining funds to the channel owner.
+/**
+ * Close a payment channel and return its remaining funds to the channel owner.
  *
  *  @param slep  The SLE for the PayChannel object to close.
  *  @param view  The apply view in which ledger state modifications are made.
@@ -24,7 +25,8 @@ namespace xrpl {
 TER
 closeChannel(SLE::ref slep, ApplyView& view, uint256 const& key, beast::Journal j);
 
-/** Add two uint32_t values with saturation at UINT32_MAX.
+/**
+ * Add two uint32_t values with saturation at UINT32_MAX.
  *
  *  @param rules  The current ledger rules used to check amendment status.
  *  @param lhs    Left-hand operand.
@@ -35,7 +37,8 @@ closeChannel(SLE::ref slep, ApplyView& view, uint256 const& key, beast::Journal 
 uint32_t
 saturatingAdd(Rules const& rules, uint32_t const lhs, uint32_t const rhs);
 
-/** Determine whether a payment channel time field represents an expired time.
+/**
+ * Determine whether a payment channel time field represents an expired time.
  *
  *  @param view       The apply view providing the parent close time and rules.
  *  @param timeField  The optional expiry timestamp (seconds since the XRP

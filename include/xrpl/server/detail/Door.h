@@ -40,7 +40,9 @@
 
 namespace xrpl {
 
-/** A listening socket. */
+/**
+ * A listening socket.
+ */
 template <class Handler>
 class Door : public IOList::Work, public std::enable_shared_from_this<Door<Handler>>
 {
@@ -129,12 +131,13 @@ public:
     void
     run();
 
-    /** Close the Door listening socket and connections.
-        The listening socket is closed, and all open connections
-        belonging to the Door are closed.
-        Thread Safety:
-            May be called concurrently
-    */
+    /**
+     * Close the Door listening socket and connections.
+     * The listening socket is closed, and all open connections
+     * belonging to the Door are closed.
+     * Thread Safety:
+     *     May be called concurrently
+     */
     void
     close() override;
 

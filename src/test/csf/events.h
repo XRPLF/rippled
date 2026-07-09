@@ -29,7 +29,8 @@ namespace xrpl::test::csf {
 // CollectorRef.f defines a type-erased holder for arbitrary Collectors.  If
 // any new events are added, the interface there needs to be updated.
 
-/** A value to be flooded to all other peers starting from this peer.
+/**
+ * A value to be flooded to all other peers starting from this peer.
  */
 template <class V>
 struct Share
@@ -38,7 +39,8 @@ struct Share
     V val;
 };
 
-/** A value relayed to another peer as part of flooding
+/**
+ * A value relayed to another peer as part of flooding
  */
 template <class V>
 struct Relay
@@ -50,7 +52,8 @@ struct Relay
     V val;
 };
 
-/** A value received from another peer as part of flooding
+/**
+ * A value received from another peer as part of flooding
  */
 template <class V>
 struct Receive
@@ -62,14 +65,17 @@ struct Receive
     V val;
 };
 
-/** A transaction submitted to a peer */
+/**
+ * A transaction submitted to a peer
+ */
 struct SubmitTx
 {
     //! The submitted transaction
     Tx tx;
 };
 
-/** Peer starts a new consensus round
+/**
+ * Peer starts a new consensus round
  */
 struct StartRound
 {
@@ -80,7 +86,8 @@ struct StartRound
     Ledger prevLedger;
 };
 
-/** Peer closed the open ledger
+/**
+ * Peer closed the open ledger
  */
 struct CloseLedger
 {

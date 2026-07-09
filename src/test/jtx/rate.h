@@ -6,7 +6,9 @@
 
 namespace xrpl::test::jtx {
 
-/** Set a transfer rate. */
+/**
+ * Set a transfer rate.
+ */
 json::Value
 rate(Account const& account, double multiplier);
 

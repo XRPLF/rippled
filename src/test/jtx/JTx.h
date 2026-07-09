@@ -19,9 +19,10 @@ namespace xrpl::test::jtx {
 
 class Env;
 
-/** Execution context for applying a JSON transaction.
-    This augments the transaction with various settings.
-*/
+/**
+ * Execution context for applying a JSON transaction.
+ * This augments the transaction with various settings.
+ */
 struct JTx
 {
     json::Value jv;
@@ -63,10 +64,11 @@ struct JTx
         return jv[key];
     }
 
-    /** Return a property if it exists
-
-        @return nullptr if the Prop does not exist
-    */
+    /**
+     * Return a property if it exists
+     *
+     * @return nullptr if the Prop does not exist
+     */
     /** @{ */
     template <class Prop>
     Prop*
@@ -93,10 +95,11 @@ struct JTx
     }
     /** @} */
 
-    /** Set a property
-        If the property already exists,
-        it is replaced.
-    */
+    /**
+     * Set a property
+     * If the property already exists,
+     * it is replaced.
+     */
     /** @{ */
     void
     set(std::unique_ptr<BasicProp> p)

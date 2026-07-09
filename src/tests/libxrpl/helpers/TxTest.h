@@ -360,10 +360,14 @@ private:
     std::shared_ptr<Ledger const> closedLedger_;
     std::shared_ptr<OpenView> openLedger_;
 
-    /** Transactions submitted to the open ledger, for canonical reordering on close. */
+    /**
+     * Transactions submitted to the open ledger, for canonical reordering on close.
+     */
     std::vector<std::shared_ptr<STTx const>> pendingTxs_;
 
-    /** Current time (can be advanced arbitrarily for testing). */
+    /**
+     * Current time (can be advanced arbitrarily for testing).
+     */
     NetClock::time_point now_;
 };
 

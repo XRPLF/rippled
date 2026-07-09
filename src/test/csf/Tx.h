@@ -135,10 +135,11 @@ public:
         return id_;
     }
 
-    /** @return Map of Tx::ID that are missing. True means
-                    it was in this set and not other. False means
-                    it was in the other set and not this
-    */
+    /**
+     * @return Map of Tx::ID that are missing. True means
+     * it was in this set and not other. False means
+     * it was in the other set and not this
+     */
     [[nodiscard]] std::map<Tx::ID, bool>
     compare(TxSet const& other) const
     {

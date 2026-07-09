@@ -14,30 +14,31 @@
 
 namespace xrpl {
 
-/** Represents how a node currently participates in Consensus.
-
-    A node participates in consensus in varying modes, depending on how
-    the node was configured by its operator and how well it stays in sync
-    with the network during consensus.
-
-    @code
-      proposing               observing
-         \                       /
-          \---> wrongLedger <---/
-                     ^
-                     |
-                     |
-                     v
-                switchedLedger
-   @endcode
-
-   We enter the round proposing or observing. If we detect we are working
-   on the wrong prior ledger, we go to wrongLedger and attempt to acquire
-   the right one. Once we acquire the right one, we go to the switchedLedger
-   mode.  It is possible we fall behind again and find there is a new better
-   ledger, moving back and forth between wrongLedger and switchLedger as
-   we attempt to catch up.
-*/
+/**
+ * Represents how a node currently participates in Consensus.
+ *
+ *  A node participates in consensus in varying modes, depending on how
+ *  the node was configured by its operator and how well it stays in sync
+ *  with the network during consensus.
+ *
+ *  @code
+ *    proposing               observing
+ *       \                       /
+ *        \---> wrongLedger <---/
+ *                   ^
+ *                   |
+ *                   |
+ *                   v
+ *              switchedLedger
+ * @endcode
+ *
+ * We enter the round proposing or observing. If we detect we are working
+ * on the wrong prior ledger, we go to wrongLedger and attempt to acquire
+ * the right one. Once we acquire the right one, we go to the switchedLedger
+ * mode.  It is possible we fall behind again and find there is a new better
+ * ledger, moving back and forth between wrongLedger and switchLedger as
+ * we attempt to catch up.
+ */
 enum class ConsensusMode {
     //! We are normal participant in consensus and propose our position
     Proposing,
@@ -70,22 +71,23 @@ to_string(ConsensusMode m)
     }
 }
 
-/** Phases of consensus for a single ledger round.
-
-    @code
-          "close"             "accept"
-     open ------- > establish ---------> accepted
-       ^               |                    |
-       |---------------|                    |
-       ^                     "startRound"   |
-       |------------------------------------|
-   @endcode
-
-   The typical transition goes from open to establish to accepted and
-   then a call to startRound begins the process anew. However, if a wrong prior
-   ledger is detected and recovered during the establish or accept phase,
-   consensus will internally go back to open (see Consensus::handleWrongLedger).
-*/
+/**
+ * Phases of consensus for a single ledger round.
+ *
+ *  @code
+ *        "close"             "accept"
+ *   open ------- > establish ---------> accepted
+ *     ^               |                    |
+ *     |---------------|                    |
+ *     ^                     "startRound"   |
+ *     |------------------------------------|
+ * @endcode
+ *
+ * The typical transition goes from open to establish to accepted and
+ * then a call to startRound begins the process anew. However, if a wrong prior
+ * ledger is detected and recovered during the establish or accept phase,
+ * consensus will internally go back to open (see Consensus::handleWrongLedger).
+ */
 enum class ConsensusPhase {
     //! We haven't closed our ledger yet, but others might have
     Open,
@@ -115,7 +117,8 @@ to_string(ConsensusPhase p)
     }
 }
 
-/** Measures the duration of phases of consensus
+/**
+ * Measures the duration of phases of consensus
  */
 class ConsensusTimer
 {
@@ -151,12 +154,13 @@ public:
     }
 };
 
-/** Stores the set of initial close times
-
-    The initial consensus proposal from each peer has that peer's view of
-    when the ledger closed.  This object stores all those close times for
-    analysis of clock drift between peers.
-*/
+/**
+ * Stores the set of initial close times
+ *
+ * The initial consensus proposal from each peer has that peer's view of
+ * when the ledger closed.  This object stores all those close times for
+ * analysis of clock drift between peers.
+ */
 struct ConsensusCloseTimes
 {
     explicit ConsensusCloseTimes() = default;
@@ -168,7 +172,9 @@ struct ConsensusCloseTimes
     NetClock::time_point self;
 };
 
-/** Whether we have or don't have a consensus */
+/**
+ * Whether we have or don't have a consensus
+ */
 enum class ConsensusState {
     No,       //!< We do not have consensus
     MovedOn,  //!< The network has consensus without us
@@ -176,14 +182,15 @@ enum class ConsensusState {
     Yes       //!< We have consensus along with the network
 };
 
-/** Encapsulates the result of consensus.
-
-    Stores all relevant data for the outcome of consensus on a single
-   ledger.
-
-    @tparam Traits Traits class defining the concrete consensus types used
-                   by the application.
-*/
+/**
+ * Encapsulates the result of consensus.
+ *
+ *  Stores all relevant data for the outcome of consensus on a single
+ * ledger.
+ *
+ *  @tparam Traits Traits class defining the concrete consensus types used
+ *                 by the application.
+ */
 template <class Traits>
 struct ConsensusResult
 {

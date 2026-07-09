@@ -199,15 +199,21 @@ private:
     // JSON collections are either arrays, or objects.
     struct Collection
     {
-        /** What type of collection are we in? */
+        /**
+         * What type of collection are we in?
+         */
         Writer::CollectionType type = Writer::CollectionType::Array;
 
-        /** Is this the first entry in a collection?
-         *  If false, we have to emit a , before we write the next entry. */
+        /**
+         * Is this the first entry in a collection?
+         *  If false, we have to emit a , before we write the next entry.
+         */
         bool isFirst = true;
 
 #ifndef NDEBUG
-        /** What tags have we already seen in this collection? */
+        /**
+         * What tags have we already seen in this collection?
+         */
         std::set<std::string> tags{};  // NOLINT(readability-redundant-member-init)
 #endif
     };

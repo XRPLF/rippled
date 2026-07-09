@@ -12,7 +12,8 @@ namespace xrpl::test::csf {
 // Timers are classes that schedule repeated events and are mostly independent
 // of simulation-specific details.
 
-/** Gives heartbeat of simulation to signal simulation progression
+/**
+ * Gives heartbeat of simulation to signal simulation progression
  */
 class HeartbeatTimer
 {

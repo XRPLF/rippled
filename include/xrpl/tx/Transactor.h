@@ -29,7 +29,9 @@
 
 namespace xrpl {
 
-/** State information when preflighting a tx. */
+/**
+ * State information when preflighting a tx.
+ */
 struct PreflightContext
 {
 public:
@@ -72,7 +74,9 @@ public:
     operator=(PreflightContext const&) = delete;
 };
 
-/** State information when determining if a tx is likely to claim a fee. */
+/**
+ * State information when determining if a tx is likely to claim a fee.
+ */
 struct PreclaimContext
 {
 public:
@@ -144,7 +148,9 @@ public:
 
     enum class ConsequencesFactoryType { Normal, Blocker, Custom };
 
-    /** Process the transaction. */
+    /**
+     * Process the transaction.
+     */
     ApplyResult
     operator()();
 
@@ -160,7 +166,8 @@ public:
         return ctx_.view();
     }
 
-    /** Check all invariants for the current transaction.
+    /**
+     * Check all invariants for the current transaction.
      *
      *  Runs transaction-specific invariants first (visitInvariantEntry +
      *  finalizeInvariants), then protocol-level invariants.  Both layers
@@ -320,7 +327,8 @@ protected:
     virtual TER
     doApply() = 0;
 
-    /** Inspect a single ledger entry modified by this transaction.
+    /**
+     * Inspect a single ledger entry modified by this transaction.
      *
      *  Called once for every SLE created, modified, or deleted by the
      *  transaction, before finalizeInvariants.  Implementations should
@@ -339,7 +347,8 @@ protected:
     virtual void
     visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) = 0;
 
-    /** Check transaction-specific post-conditions after all entries have
+    /**
+     * Check transaction-specific post-conditions after all entries have
      *  been visited.
      *
      *  Called once after every modified ledger entry has been passed to
@@ -363,14 +372,15 @@ protected:
         ReadView const& view,
         beast::Journal const& j) = 0;
 
-    /** Compute the minimum fee required to process a transaction
-        with a given baseFee based on the current server load.
-
-        @param registry The service registry.
-        @param baseFee The base fee of a candidate transaction
-            @see xrpl::calculateBaseFee
-        @param fees Fee settings from the current ledger
-        @param flags Transaction processing fees
+    /**
+     * Compute the minimum fee required to process a transaction
+     * with a given baseFee based on the current server load.
+     *
+     * @param registry The service registry.
+     * @param baseFee The base fee of a candidate transaction
+     *     @see xrpl::calculateBaseFee
+     * @param fees Fee settings from the current ledger
+     * @param flags Transaction processing fees
      */
     static XRPAmount
     minimumFee(ServiceRegistry& registry, XRPAmount baseFee, Fees const& fees, ApplyFlags flags);
@@ -419,12 +429,16 @@ protected:
         unit::ValueUnit<Unit, T> max,
         unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
-    /// Minimum will usually be zero.
+    /**
+     * Minimum will usually be zero.
+     */
     template <class T>
     static bool
     validNumericMinimum(std::optional<T> value, T min = T{});
 
-    /// Minimum will usually be zero.
+    /**
+     * Minimum will usually be zero.
+     */
     template <class T, class Unit>
     static bool
     validNumericMinimum(
@@ -469,34 +483,38 @@ private:
 
     void trapTransaction(uint256) const;
 
-    /** Performs early sanity checks on the account and fee fields.
-
-        (And passes flagMask to preflight0)
-
-        Do not try to call preflight1 from preflight() in derived classes. See
-        the description of invokePreflight for details.
-    */
+    /**
+     * Performs early sanity checks on the account and fee fields.
+     *
+     * (And passes flagMask to preflight0)
+     *
+     * Do not try to call preflight1 from preflight() in derived classes. See
+     * the description of invokePreflight for details.
+     */
     static NotTEC
     preflight1(PreflightContext const& ctx, std::uint32_t flagMask);
 
-    /** Checks whether the signature appears valid
-
-        Do not try to call preflight2 from preflight() in derived classes. See
-        the description of invokePreflight for details.
-    */
+    /**
+     * Checks whether the signature appears valid
+     *
+     * Do not try to call preflight2 from preflight() in derived classes. See
+     * the description of invokePreflight for details.
+     */
     static NotTEC
     preflight2(PreflightContext const& ctx);
 
-    /** Universal validations
-       - Valid MPTAmount and XRPAmount
-
-        Do not try to call preflightUniversal from preflight() in derived classes. See
-        the description of invokePreflight for details.
-    */
+    /**
+     * Universal validations
+     * - Valid MPTAmount and XRPAmount
+     *
+     *  Do not try to call preflightUniversal from preflight() in derived classes. See
+     *  the description of invokePreflight for details.
+     */
     static NotTEC
     preflightUniversal(PreflightContext const& ctx);
 
-    /** Check transaction-specific invariants only.
+    /**
+     * Check transaction-specific invariants only.
      *
      *  Walks every modified ledger entry via visitInvariantEntry, then
      *  calls finalizeInvariants on the derived transactor.  Returns
@@ -518,20 +536,24 @@ Transactor::checkExtraFeatures(PreflightContext const& ctx)
     return true;
 }
 
-/** Performs early sanity checks on the txid and flags */
+/**
+ * Performs early sanity checks on the txid and flags
+ */
 NotTEC
 preflight0(PreflightContext const& ctx, std::uint32_t flagMask);
 
 namespace detail {
 
-/** Checks the validity of the transactor signing key.
+/**
+ * Checks the validity of the transactor signing key.
  *
  * Normally called from preflight1 with ctx.tx.
  */
 NotTEC
 preflightCheckSigningKey(STObject const& sigObject, beast::Journal j);
 
-/** Checks the special signing key state needed for simulation
+/**
+ * Checks the special signing key state needed for simulation
  *
  * Normally called from preflight2 with ctx.tx.
  */

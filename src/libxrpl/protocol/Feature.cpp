@@ -154,7 +154,9 @@ public:
     uint256
     registerFeature(std::string const& name, Supported support, VoteBehavior vote);
 
-    /** Tell FeatureCollections when registration is complete. */
+    /**
+     * Tell FeatureCollections when registration is complete.
+     */
     bool
     registrationIsDone();
 
@@ -167,30 +169,38 @@ public:
     std::string
     featureToName(uint256 const& f) const;
 
-    /** All amendments that are registered within the table. */
+    /**
+     * All amendments that are registered within the table.
+     */
     std::map<std::string, AmendmentSupport> const&
     allAmendments() const
     {
         return all_;
     }
 
-    /** Amendments that this server supports.
-    Whether they are enabled depends on the Rules defined in the validated
-    ledger */
+    /**
+     * Amendments that this server supports.
+     * Whether they are enabled depends on the Rules defined in the validated
+     * ledger
+     */
     std::map<std::string, VoteBehavior> const&
     supportedAmendments() const
     {
         return supported_;
     }
 
-    /** Amendments that this server WON'T vote for by default. */
+    /**
+     * Amendments that this server WON'T vote for by default.
+     */
     std::size_t
     numDownVotedAmendments() const
     {
         return downVotes_;
     }
 
-    /** Amendments that this server WILL vote for by default. */
+    /**
+     * Amendments that this server WILL vote for by default.
+     */
     std::size_t
     numUpVotedAmendments() const
     {
@@ -271,7 +281,9 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
     logicError("Duplicate feature registration");
 }
 
-/** Tell FeatureCollections when registration is complete. */
+/**
+ * Tell FeatureCollections when registration is complete.
+ */
 bool
 FeatureCollections::registrationIsDone()
 {
@@ -313,30 +325,38 @@ FeatureCollections gFeatureCollections;
 
 }  // namespace
 
-/** All amendments libxrpl knows of. */
+/**
+ * All amendments libxrpl knows of.
+ */
 std::map<std::string, AmendmentSupport> const&
 allAmendments()
 {
     return gFeatureCollections.allAmendments();
 }
 
-/** Amendments that this server supports.
-   Whether they are enabled depends on the Rules defined in the validated
-   ledger */
+/**
+ * Amendments that this server supports.
+ * Whether they are enabled depends on the Rules defined in the validated
+ * ledger
+ */
 std::map<std::string, VoteBehavior> const&
 detail::supportedAmendments()
 {
     return gFeatureCollections.supportedAmendments();
 }
 
-/** Amendments that this server won't vote for by default. */
+/**
+ * Amendments that this server won't vote for by default.
+ */
 std::size_t
 detail::numDownVotedAmendments()
 {
     return gFeatureCollections.numDownVotedAmendments();
 }
 
-/** Amendments that this server will vote for by default. */
+/**
+ * Amendments that this server will vote for by default.
+ */
 std::size_t
 detail::numUpVotedAmendments()
 {
@@ -365,7 +385,9 @@ retireFeature(std::string const& name)
     return registerFeature(name, Supported::Yes, VoteBehavior::Obsolete);
 }
 
-/** Tell FeatureCollections when registration is complete. */
+/**
+ * Tell FeatureCollections when registration is complete.
+ */
 bool
 registrationIsDone()
 {

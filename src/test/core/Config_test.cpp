@@ -124,7 +124,7 @@ backend=sqlite
 }
 
 /**
-   Write an xrpld config file and remove when done.
+ * Write an xrpld config file and remove when done.
  */
 class FileCfgGuard : public xrpl::detail::FileDirGuard
 {
@@ -235,7 +235,7 @@ more-xrpl-validators.net
 }
 
 /**
-   Write a validators.txt file and remove when done.
+ * Write a validators.txt file and remove when done.
  */
 class ValidatorsTxtGuard : public detail::FileDirGuard
 {

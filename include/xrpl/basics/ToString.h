@@ -5,10 +5,11 @@
 
 namespace xrpl {
 
-/** to_string() generalizes std::to_string to handle bools, chars, and strings.
-
-    It's also possible to provide implementation of to_string for a class
-    which needs a string implementation.
+/**
+ * to_string() generalizes std::to_string to handle bools, chars, and strings.
+ *
+ * It's also possible to provide implementation of to_string for a class
+ * which needs a string implementation.
  */
 
 template <class T>

@@ -73,7 +73,9 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-/** Attempt to create the Permissioned Domain. */
+/**
+ * Attempt to create the Permissioned Domain.
+ */
 TER
 PermissionedDomainSet::doApply()
 {

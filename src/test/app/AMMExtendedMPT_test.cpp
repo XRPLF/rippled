@@ -2296,8 +2296,10 @@ private:
             // 1,400e12 - 56.3368e12*1.25 = 1400e12 - 70.4210e12 =
             // 1329.5789e12GBP
             env.require(Balance(alice_, gbp(1'329'578'947'368'420)));
-            //// 25% on 56.3368e12ETH is paid in tr fee 56.3368e12*1.25
-            ///= 70.4210e12ETH
+            /**
+             * / 25% on 56.3368e12ETH is paid in tr fee 56.3368e12*1.25
+             * = 70.4210e12ETH
+             */
             // 56.3368e12GBP is swapped in for 53.3322e12ETH
             BEAST_EXPECT(amm.expectBalances(
                 gbp(1'056'336'842'105'264), eth(946'667'729'591'836), amm.tokens()));

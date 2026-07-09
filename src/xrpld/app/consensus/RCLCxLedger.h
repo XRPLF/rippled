@@ -14,10 +14,11 @@
 
 namespace xrpl {
 
-/** Represents a ledger in RCLConsensus.
-
-    RCLCxLedger is a thin wrapper over `std::shared_ptr<Ledger const>`.
-*/
+/**
+ * Represents a ledger in RCLConsensus.
+ *
+ * RCLCxLedger is a thin wrapper over `std::shared_ptr<Ledger const>`.
+ */
 class RCLCxLedger
 {
 public:
@@ -26,18 +27,20 @@ public:
     //! Sequence number of a ledger
     using Seq = LedgerIndex;
 
-    /** Default constructor
-
-        TODO: This may not be needed if we ensure RCLConsensus is handed a valid
-        ledger in its constructor.  Its bad now because other members are not
-        checking whether the ledger is valid.
-    */
+    /**
+     * Default constructor
+     *
+     * TODO: This may not be needed if we ensure RCLConsensus is handed a valid
+     * ledger in its constructor.  Its bad now because other members are not
+     * checking whether the ledger is valid.
+     */
     RCLCxLedger() = default;
 
-    /** Constructor
-
-        @param l The ledger to wrap.
-    */
+    /**
+     * Constructor
+     *
+     * @param l The ledger to wrap.
+     */
     RCLCxLedger(std::shared_ptr<Ledger const> l) : ledger{std::move(l)}
     {
     }
@@ -98,11 +101,12 @@ public:
         return xrpl::getJson({*ledger, {}});
     }
 
-    /** The ledger instance.
-
-        TODO: Make this shared_ptr<ReadView const> .. requires ability to create
-        a new ledger from a readView?
-    */
+    /**
+     * The ledger instance.
+     *
+     * TODO: Make this shared_ptr<ReadView const> .. requires ability to create
+     * a new ledger from a readView?
+     */
     std::shared_ptr<Ledger const> ledger;
 };
 }  // namespace xrpl

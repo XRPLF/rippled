@@ -19,43 +19,53 @@ namespace xrpl {
 
 // VFALCO TODO Rename to OldLedgers ?
 
-/** Retains historical ledgers. */
+/**
+ * Retains historical ledgers.
+ */
 class LedgerHistory
 {
 public:
     LedgerHistory(beast::insight::Collector::ptr const& collector, Application& app);
 
-    /** Track a ledger
-        @return `true` if the ledger was already tracked
-    */
+    /**
+     * Track a ledger
+     * @return `true` if the ledger was already tracked
+     */
     bool
     insert(std::shared_ptr<Ledger const> const& ledger, bool validated);
 
-    /** Get the ledgers_by_hash cache hit rate
-        @return the hit rate
-    */
+    /**
+     * Get the ledgers_by_hash cache hit rate
+     * @return the hit rate
+     */
     float
     getCacheHitRate()
     {
         return ledgersByHash_.getHitRate();
     }
 
-    /** Get a ledger given its sequence number */
+    /**
+     * Get a ledger given its sequence number
+     */
     std::shared_ptr<Ledger const>
     getLedgerBySeq(LedgerIndex ledgerIndex);
 
-    /** Retrieve a ledger given its hash */
+    /**
+     * Retrieve a ledger given its hash
+     */
     std::shared_ptr<Ledger const>
     getLedgerByHash(LedgerHash const& ledgerHash);
 
-    /** Get a ledger's hash given its sequence number
-        @param ledgerIndex The sequence number of the desired ledger
-        @return The hash of the specified ledger
-    */
+    /**
+     * Get a ledger's hash given its sequence number
+     * @param ledgerIndex The sequence number of the desired ledger
+     * @return The hash of the specified ledger
+     */
     LedgerHash
     getLedgerHash(LedgerIndex ledgerIndex);
 
-    /** Remove stale cache entries
+    /**
+     * Remove stale cache entries
      */
     void
     sweep()
@@ -64,21 +74,26 @@ public:
         consensusValidated_.sweep();
     }
 
-    /** Report that we have locally built a particular ledger */
+    /**
+     * Report that we have locally built a particular ledger
+     */
     void
     builtLedger(std::shared_ptr<Ledger const> const&, uint256 const& consensusHash, json::Value);
 
-    /** Report that we have validated a particular ledger */
+    /**
+     * Report that we have validated a particular ledger
+     */
     void
     validatedLedger(
         std::shared_ptr<Ledger const> const&,
         std::optional<uint256> const& consensusHash);
 
-    /** Repair a hash to index mapping
-        @param ledgerIndex The index whose mapping is to be repaired
-        @param ledgerHash The hash it is to be mapped to
-        @return `false` if the mapping was repaired
-    */
+    /**
+     * Repair a hash to index mapping
+     * @param ledgerIndex The index whose mapping is to be repaired
+     * @param ledgerHash The hash it is to be mapped to
+     * @return `false` if the mapping was repaired
+     */
     bool
     fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);
 
@@ -86,16 +101,17 @@ public:
     clearLedgerCachePrior(LedgerIndex seq);
 
 private:
-    /** Log details in the case where we build one ledger but
-        validate a different one.
-        @param built The hash of the ledger we built
-        @param valid The hash of the ledger we deemed fully valid
-        @param builtConsensusHash The hash of the consensus transaction for the
-        ledger we built
-        @param validatedConsensusHash The hash of the validated ledger's
-        consensus transaction set
-        @param consensus The status of the consensus round
-    */
+    /**
+     * Log details in the case where we build one ledger but
+     * validate a different one.
+     * @param built The hash of the ledger we built
+     * @param valid The hash of the ledger we deemed fully valid
+     * @param builtConsensusHash The hash of the consensus transaction for the
+     * ledger we built
+     * @param validatedConsensusHash The hash of the validated ledger's
+     * consensus transaction set
+     * @param consensus The status of the consensus round
+     */
     void
     handleMismatch(
         LedgerHash const& built,

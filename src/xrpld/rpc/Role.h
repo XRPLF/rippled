@@ -17,7 +17,8 @@
 
 namespace xrpl {
 
-/** Indicates the level of administrative permission to grant.
+/**
+ * Indicates the level of administrative permission to grant.
  * IDENTIFIED role has unlimited resources but cannot perform some
  *            RPC commands.
  * ADMIN role has unlimited resources and is able to perform all RPC
@@ -25,14 +26,15 @@ namespace xrpl {
  */
 enum class Role { GUEST, USER, IDENTIFIED, ADMIN, PROXY, FORBID };
 
-/** Return the allowed privilege role.
-    params must meet the requirements of the JSON-RPC
-    specification. It must be of type Object, containing the key params
-    which is an array with at least one object. Inside this object
-    are the optional keys 'admin_user' and 'admin_password' used to
-    validate the credentials. If user is non-blank, it's username
-    passed in the HTTP header by a secureGateway proxy.
-*/
+/**
+ * Return the allowed privilege role.
+ * params must meet the requirements of the JSON-RPC
+ * specification. It must be of type Object, containing the key params
+ * which is an array with at least one object. Inside this object
+ * are the optional keys 'admin_user' and 'admin_password' used to
+ * validate the credentials. If user is non-blank, it's username
+ * passed in the HTTP header by a secureGateway proxy.
+ */
 Role
 requestRole(
     Role const& required,

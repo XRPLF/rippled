@@ -20,10 +20,11 @@
 
 namespace xrpl {
 
-/** Manages the lifetime of inbound ledgers.
-
-    @see InboundLedger
-*/
+/**
+ * Manages the lifetime of inbound ledgers.
+ *
+ * @see InboundLedger
+ */
 class InboundLedgers
 {
 public:
@@ -68,11 +69,15 @@ public:
     virtual json::Value
     getInfo() = 0;
 
-    /** Returns the rate of historical ledger fetches per minute. */
+    /**
+     * Returns the rate of historical ledger fetches per minute.
+     */
     virtual std::size_t
     fetchRate() = 0;
 
-    /** Called when a complete ledger is obtained. */
+    /**
+     * Called when a complete ledger is obtained.
+     */
     virtual void
     onLedgerFetched() = 0;
 

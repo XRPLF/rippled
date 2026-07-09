@@ -18,26 +18,28 @@
 
 namespace xrpl {
 
-/** A peer's signed, proposed position for use in RCLConsensus.
-
-    Carries a ConsensusProposal signed by a peer. Provides value semantics
-    but manages shared storage of the peer position internally.
-*/
+/**
+ * A peer's signed, proposed position for use in RCLConsensus.
+ *
+ * Carries a ConsensusProposal signed by a peer. Provides value semantics
+ * but manages shared storage of the peer position internally.
+ */
 class RCLCxPeerPos
 {
 public:
     //< The type of the proposed position
     using Proposal = ConsensusProposal<NodeID, uint256, uint256>;
 
-    /** Constructor
-
-        Constructs a signed peer position.
-
-        @param publicKey Public key of the peer
-        @param signature Signature provided with the proposal
-        @param suppress Unique id used for hash router suppression
-        @param proposal The consensus proposal
-    */
+    /**
+     * Constructor
+     *
+     * Constructs a signed peer position.
+     *
+     * @param publicKey Public key of the peer
+     * @param signature Signature provided with the proposal
+     * @param suppress Unique id used for hash router suppression
+     * @param proposal The consensus proposal
+     */
 
     RCLCxPeerPos(
         PublicKey const& publicKey,
@@ -105,22 +107,23 @@ private:
     }
 };
 
-/** Calculate a unique identifier for a signed proposal.
-
-    The identifier is based on all the fields that contribute to the signature,
-    as well as the signature itself. The "last closed ledger" field may be
-    omitted, but the signer will compute the signature as if this field was
-    present. Recipients of the proposal will inject the last closed ledger in
-    order to validate the signature. If the last closed ledger is left out, then
-    it is considered as all zeroes for the purposes of signing.
-
-    @param proposeHash The hash of the proposed position
-    @param previousLedger The hash of the ledger the proposal is based upon
-    @param proposeSeq Sequence number of the proposal
-    @param closeTime Close time of the proposal
-    @param publicKey Signer's public key
-    @param signature Proposal signature
-*/
+/**
+ * Calculate a unique identifier for a signed proposal.
+ *
+ * The identifier is based on all the fields that contribute to the signature,
+ * as well as the signature itself. The "last closed ledger" field may be
+ * omitted, but the signer will compute the signature as if this field was
+ * present. Recipients of the proposal will inject the last closed ledger in
+ * order to validate the signature. If the last closed ledger is left out, then
+ * it is considered as all zeroes for the purposes of signing.
+ *
+ * @param proposeHash The hash of the proposed position
+ * @param previousLedger The hash of the ledger the proposal is based upon
+ * @param proposeSeq Sequence number of the proposal
+ * @param closeTime Close time of the proposal
+ * @param publicKey Signer's public key
+ * @param signature Proposal signature
+ */
 uint256
 proposalUniqueId(
     uint256 const& proposeHash,

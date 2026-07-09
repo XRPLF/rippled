@@ -9,12 +9,13 @@ namespace xrpl {
 // Forward declaration
 class Config;
 
-/** Implementation of NetworkIDService that reads from Config.
-
-    This class provides a NetworkIDService interface that wraps
-    the network ID from the application Config. It caches the
-    network ID at construction time.
-*/
+/**
+ * Implementation of NetworkIDService that reads from Config.
+ *
+ * This class provides a NetworkIDService interface that wraps
+ * the network ID from the application Config. It caches the
+ * network ID at construction time.
+ */
 class NetworkIDServiceImpl final : public NetworkIDService
 {
 public:

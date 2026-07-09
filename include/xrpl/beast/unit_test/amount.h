@@ -10,7 +10,9 @@
 
 namespace beast::unit_test {
 
-/** Utility for producing nicely composed output of amounts with units. */
+/**
+ * Utility for producing nicely composed output of amounts with units.
+ */
 class Amount
 {
 private:

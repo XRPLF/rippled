@@ -11,7 +11,8 @@
 
 namespace xrpl {
 
-/** AMMCreate implements Automatic Market Maker(AMM) creation Transactor.
+/**
+ * AMMCreate implements Automatic Market Maker(AMM) creation Transactor.
  *  It creates a new AMM instance with two tokens. Any trader, or Liquidity
  *  Provider (LP), can create the AMM instance and receive in return shares
  *  of the AMM pool in the form of LPTokens. The number of tokens that LP gets
@@ -62,7 +63,9 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Attempt to create the AMM instance. */
+    /**
+     * Attempt to create the AMM instance.
+     */
     TER
     doApply() override;
 

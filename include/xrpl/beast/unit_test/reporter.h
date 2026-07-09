@@ -25,9 +25,10 @@ namespace beast::unit_test {
 
 namespace detail {
 
-/** A simple test runner that writes everything to a stream in real time.
-    The totals are output when the object is destroyed.
-*/
+/**
+ * A simple test runner that writes everything to a stream in real time.
+ * The totals are output when the object is destroyed.
+ */
 template <class = void>
 class Reporter : public Runner
 {

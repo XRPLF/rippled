@@ -16,7 +16,9 @@
 
 namespace xrpl::PeerFinder {
 
-/** Database persistence for PeerFinder using SQLite */
+/**
+ * Database persistence for PeerFinder using SQLite
+ */
 class StoreSqdb : public Store
 {
 private:

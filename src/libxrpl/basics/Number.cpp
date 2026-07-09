@@ -194,13 +194,14 @@ public:
     unsigned
     pop() noexcept;
 
-    /** Drop a digit from the mantissa, and increment the exponent, storing the dropped digit in
-     * this Guard.
-     *
-     * Substitute for:
-                push(mantissa % 10);
-                mantissa /= 10;
-                ++exponent;
+    /**
+     * Drop a digit from the mantissa, and increment the exponent, storing the dropped digit in
+     * * this Guard.
+     * *
+     * * Substitute for:
+     *            push(mantissa % 10);
+     *            mantissa /= 10;
+     *            ++exponent;
      */
     template <class T>
     void
