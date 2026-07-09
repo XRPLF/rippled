@@ -8,7 +8,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -201,7 +200,7 @@ getLedgerEntryOwnerCount(T const& sle)
     switch (sle->getType())
     {
         case ltORACLE: {
-            return calculateOracleReserve(sle->getFieldArray(sfPriceDataSeries).size());
+            return calculateOracleReserve(sle);
         }
         // Vaults require 2 owner counts (the vault and a pseudo-account)
         case ltVAULT:
