@@ -4,7 +4,6 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/envconfig.h>
-#include <test/jtx/fee.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>  // IWYU pragma: keep
