@@ -358,6 +358,10 @@ accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjus
 {
     XRPL_ASSERT(sle && sle->getType() == ltACCOUNT_ROOT, "xrpl::accountReserve : valid sle");
 
+    if (!view.rules().enabled(featureSponsor))
+    {
+        return view.fees().accountReserve(sle->getFieldU32(sfOwnerCount), 1);
+    }
     std::uint32_t const currentOwnerCount = ownerCount(sle, j, adj.ownerCountDelta);
     std::uint32_t const currentAccountCount = accountCountImpl(sle, adj.accountCountDelta, j);
 
@@ -408,9 +412,19 @@ checkReserve(
     }
     else
     {
-        XRPAmount const reserve = accountReserve(ctx.view, accSle, j, adj);
-        if (accBalance < reserve)
-            return insufReserveCode;
+        if (ctx.view.rules().enabled(featureSponsor))
+        {
+            XRPAmount const reserve = accountReserve(ctx.view, accSle, j, adj);
+            if (accBalance < reserve)
+                return insufReserveCode;
+        }
+        else
+        {
+            auto const ownerCount = accSle->getFieldU32(sfOwnerCount);
+            XRPAmount const reserve = ctx.view.fees().accountReserve(ownerCount, 1);
+            if (accBalance < reserve)
+                return insufReserveCode;
+        }
     }
     return tesSUCCESS;
 }
