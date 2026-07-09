@@ -51,7 +51,7 @@ parseDelegateFilter(json::Value const& delegateNode)
 
     auto const& delegateFilterStr = delegateNode[jss::delegate_filter].asString();
 
-    auto typeResult = [&]() -> std::expected<DelegateType, json::Value> {
+    auto typeResult = [&] -> std::expected<DelegateType, json::Value> {
         if (delegateFilterStr == "actor")
             return DelegateType::Actor;
 
