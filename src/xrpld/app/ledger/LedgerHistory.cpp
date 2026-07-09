@@ -156,6 +156,19 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
     return ret;
 }
 
+namespace {
+
+// Captures the sibling's contribution when builtLedger or validatedLedger
+// detects a hash mismatch, so handleMismatch can run outside the cache lock.
+struct MismatchInputs
+{
+    LedgerHash otherHash;
+    std::optional<uint256> otherConsensusHash;
+    json::Value consensus;
+};
+
+}  // namespace
+
 static void
 logOne(ReadView const& ledger, uint256 const& tx, char const* msg, beast::Journal& j)
 {
@@ -435,12 +448,6 @@ LedgerHistory::builtLedger(
     LedgerHash const hash = ledger->header().hash;
     XRPL_ASSERT(!hash.isZero(), "xrpl::LedgerHistory::builtLedger : nonzero hash");
 
-    struct MismatchInputs
-    {
-        LedgerHash valid;
-        std::optional<uint256> validatedConsensusHash;
-        json::Value consensus;
-    };
     std::optional<MismatchInputs> mismatch;
 
     consensusValidated_.fetchAndModify(index, [&](CvEntry& entry) {
@@ -451,8 +458,8 @@ LedgerHistory::builtLedger(
                 JLOG(j_.error()) << "MISMATCH: seq=" << index
                                  << " validated:" << entry.validated.value() << " then:" << hash;
                 mismatch = MismatchInputs{
-                    .valid = entry.validated.value(),
-                    .validatedConsensusHash = entry.validatedConsensusHash,
+                    .otherHash = entry.validated.value(),
+                    .otherConsensusHash = entry.validatedConsensusHash,
                     .consensus = consensus};
             }
             else
@@ -471,9 +478,9 @@ LedgerHistory::builtLedger(
     {
         handleMismatch(
             hash,
-            mismatch->valid,
+            mismatch->otherHash,
             consensusHash,
-            mismatch->validatedConsensusHash,
+            mismatch->otherConsensusHash,
             mismatch->consensus);
     }
 }
@@ -487,12 +494,6 @@ LedgerHistory::validatedLedger(
     LedgerHash const hash = ledger->header().hash;
     XRPL_ASSERT(!hash.isZero(), "xrpl::LedgerHistory::validatedLedger : nonzero hash");
 
-    struct MismatchInputs
-    {
-        LedgerHash built;
-        std::optional<uint256> builtConsensusHash;
-        json::Value consensus;
-    };
     std::optional<MismatchInputs> mismatch;
 
     consensusValidated_.fetchAndModify(index, [&](CvEntry& entry) {
@@ -506,8 +507,8 @@ LedgerHistory::validatedLedger(
                 JLOG(j_.error()) << "MISMATCH: seq=" << index << " built:" << entry.built.value()
                                  << " then:" << hash;
                 mismatch = MismatchInputs{
-                    .built = entry.built.value(),
-                    .builtConsensusHash = entry.builtConsensusHash,
+                    .otherHash = entry.built.value(),
+                    .otherConsensusHash = entry.builtConsensusHash,
                     .consensus =
                         entry.consensus.value()};  // NOLINT(bugprone-unchecked-optional-access)
                                                    // consensus always emplaced with built
@@ -526,9 +527,9 @@ LedgerHistory::validatedLedger(
     if (mismatch)
     {
         handleMismatch(
-            mismatch->built,
+            mismatch->otherHash,
             hash,
-            mismatch->builtConsensusHash,
+            mismatch->otherConsensusHash,
             consensusHash,
             mismatch->consensus);
     }
