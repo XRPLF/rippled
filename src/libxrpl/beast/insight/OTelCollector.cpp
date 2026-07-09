@@ -55,6 +55,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -473,13 +474,6 @@ public:
     /** @} */
 
     /**
-     * @brief Get the OTel Meter instance for creating instruments.
-     * @return Shared pointer to the OTel Meter.
-     */
-    opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
-    otelMeter() const;
-
-    /**
      * @brief Format a metric name with the configured prefix.
      *
      * Replaces dots with underscores to match StatsD->Prometheus naming.
@@ -811,12 +805,6 @@ OTelCollectorImp::removeGauge(OTelGaugeImpl* gauge)
 {
     std::scoped_lock const lock(mutex_);
     std::erase(gauges_, gauge);
-}
-
-opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
-OTelCollectorImp::otelMeter() const
-{
-    return otelMeter_;
 }
 
 std::string

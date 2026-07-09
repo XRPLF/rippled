@@ -628,22 +628,22 @@ check_otel_metric() {
 }
 
 # Node health gauges (ObservableGauge — no _total suffix)
-check_otel_metric "rippled_LedgerMaster_Validated_Ledger_Age"
-check_otel_metric "rippled_LedgerMaster_Published_Ledger_Age"
-check_otel_metric "rippled_job_count"
+check_otel_metric "ledgermaster_validated_ledger_age"
+check_otel_metric "ledgermaster_published_ledger_age"
+check_otel_metric "job_count"
 
 # State accounting
-check_otel_metric "rippled_State_Accounting_Full_duration"
+check_otel_metric "state_accounting_full_duration"
 
 # Peer finder
-check_otel_metric "rippled_Peer_Finder_Active_Inbound_Peers"
-check_otel_metric "rippled_Peer_Finder_Active_Outbound_Peers"
+check_otel_metric "peer_finder_active_inbound_peers"
+check_otel_metric "peer_finder_active_outbound_peers"
 
 # RPC counters (Counter — Prometheus adds _total suffix automatically)
-check_otel_metric "rippled_rpc_requests_total"
+check_otel_metric "rpc_requests_total"
 
 # Overlay traffic
-check_otel_metric "rippled_total_Bytes_In"
+check_otel_metric "total_bytes_in"
 
 # Verify StatsD receiver is NOT required (no statsd receiver in pipeline)
 log ""

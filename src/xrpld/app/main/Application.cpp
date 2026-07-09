@@ -1549,22 +1549,16 @@ ApplicationImp::start(bool withTimers)
         setEntropyTimer();
     }
 
-    io_latency_sampler_.start();
-    resolver_->start();
-    loadManager_->start();
-    shaMapStore_->start();
-    if (overlay_)
-        overlay_->start();
-
-    if (grpcServer_->start())
-        fixConfigPorts(*config_, {{Sections::kPortGrpc, grpcServer_->getEndpoint()}});
-
-    ledgerCleaner_->start();
-    perfLog_->start();
+    // Start telemetry before the other services so the tracer is live and
+    // their startup/early activity can be traced. (The metrics MeterProvider
+    // is already published in the Telemetry constructor — before subsystems
+    // create their beast::insight instruments during ApplicationImp init — so
+    // start() ordering does not affect metrics; only tracing benefits here.)
     telemetry_->start();
 
-    // Start the metrics pipeline after telemetry; the endpoint uses the
-    // same base URL but the /v1/metrics path.
+    // Start the metrics pipeline right after telemetry, before subsystems
+    // begin recording; the endpoint uses the same base URL with the
+    // /v1/metrics path.
     if (metricsRegistry_)
     {
         auto const& section = config_->section("telemetry");
@@ -1580,6 +1574,19 @@ ApplicationImp::start(bool withTimers)
 
         metricsRegistry_->start(endpoint, instanceId);
     }
+
+    io_latency_sampler_.start();
+    resolver_->start();
+    loadManager_->start();
+    shaMapStore_->start();
+    if (overlay_)
+        overlay_->start();
+
+    if (grpcServer_->start())
+        fixConfigPorts(*config_, {{Sections::kPortGrpc, grpcServer_->getEndpoint()}});
+
+    ledgerCleaner_->start();
+    perfLog_->start();
 }
 
 void

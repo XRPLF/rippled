@@ -388,8 +388,12 @@ MetricsRegistry::recordJobStarted(std::string_view jobType, std::int64_t queuedD
     if (!enabled_ || !jobStartedCounter_)
         return;
     jobStartedCounter_->Add(1, {{"job_type", std::string(jobType)}});
-    if (jobQueuedDurationHistogram_)
+    if (jobQueuedDurationHistogram_ && queuedDurUs >= 0)
     {
+        // Guard against negative queued durations: the caller derives this
+        // from a steady-clock delta that can go slightly negative under clock
+        // skew or reordering. The OTel SDK rejects negative histogram values
+        // (logging a warning per call), so skip them rather than spam.
         jobQueuedDurationHistogram_->Record(
             static_cast<double>(queuedDurUs),
             {{"job_type", std::string(jobType)}},
