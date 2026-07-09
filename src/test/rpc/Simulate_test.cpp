@@ -11,6 +11,7 @@
 #include <test/jtx/pay.h>
 #include <test/jtx/regkey.h>
 #include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/token.h>
 
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
@@ -393,6 +394,48 @@ class Simulate_test : public beast::unit_test::Suite
             BEAST_EXPECTS(
                 resp[jss::result][jss::error_message] ==
                     "Invalid field 'tx.SponsorSignature.Signers'.",
+                resp.toStyledString());
+        }
+        {
+            // Signed SponsorSignature (non-empty TxnSignature)
+            json::Value params;
+            json::Value txJson = json::ValueType::Object;
+            txJson[jss::TransactionType] = jss::AccountSet;
+            txJson[jss::Account] = env.master.human();
+            json::Value sponsorSignature = json::ValueType::Object;
+            sponsorSignature[jss::TxnSignature] = "1200ABCD";
+            txJson[sfSponsorSignature] = sponsorSignature;
+            params[jss::tx_json] = txJson;
+
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECTS(
+                resp[jss::result][jss::error_message] == "Transaction should not be signed.",
+                resp.toStyledString());
+        }
+        {
+            // Signed SponsorSignature (non-empty TxnSignature in the nested
+            // Signers array)
+            json::Value params;
+            json::Value txJson = json::ValueType::Object;
+            txJson[jss::TransactionType] = jss::AccountSet;
+            txJson[jss::Account] = env.master.human();
+            json::Value sponsorSignature = json::ValueType::Object;
+            sponsorSignature[sfSigners] = json::ValueType::Array;
+            {
+                json::Value signer;
+                signer[jss::Account] = alice.human();
+                signer[jss::SigningPubKey] = "";
+                signer[jss::TxnSignature] = "1200ABCD";
+                json::Value signerOuter;
+                signerOuter[sfSigner] = signer;
+                sponsorSignature[sfSigners].append(signerOuter);
+            }
+            txJson[sfSponsorSignature] = sponsorSignature;
+            params[jss::tx_json] = txJson;
+
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECTS(
+                resp[jss::result][jss::error_message] == "Transaction should not be signed.",
                 resp.toStyledString());
         }
         {
@@ -916,6 +959,104 @@ class Simulate_test : public beast::unit_test::Suite
     }
 
     void
+    testSuccessfulPreFundedSponsoredTransaction()
+    {
+        testcase("Successful pre-funded sponsored transaction");
+
+        using namespace jtx;
+        Env env(*this);
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        env.fund(XRP(10000), alice, sponsor);
+        env.close();
+
+        // Create the Sponsorship ledger object that pre-funds alice's fees.
+        env(sponsor::set_fee(sponsor, 0, XRP(100)), sponsor::SponseeAcc(alice));
+        env.close();
+
+        auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+            auto const result = resp[jss::result];
+            checkBasicReturnValidity(result, tx, env.seq(alice), env.current()->fees().base);
+
+            BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
+            BEAST_EXPECT(result[jss::engine_result_code] == 0);
+            BEAST_EXPECT(
+                result[jss::engine_result_message] ==
+                "The simulated transaction would have been applied.");
+
+            // A pre-funded sponsored transaction needs no sponsor signature,
+            // so no SponsorSignature field should be autofilled.
+            json::Value txJson;
+            if (result.isMember(jss::tx_json))
+            {
+                txJson = result[jss::tx_json];
+            }
+            else
+            {
+                auto const unHexed = strUnHex(result[jss::tx_blob].asString());
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                SerialIter sitTrans(makeSlice(*unHexed));
+                txJson = STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::Values::None);
+            }
+            BEAST_EXPECT(!txJson.isMember(sfSponsorSignature.jsonName));
+
+            if (BEAST_EXPECT(result.isMember(jss::meta) || result.isMember(jss::meta_blob)))
+            {
+                json::Value const metadata = getJsonMetadata(result);
+                BEAST_EXPECT(metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
+
+                // The fee is drawn from the Sponsorship ledger object, not
+                // from alice's balance.
+                if (BEAST_EXPECT(metadata.isMember(sfAffectedNodes.jsonName)))
+                {
+                    bool foundSponsorship = false;
+                    for (auto const& node : metadata[sfAffectedNodes.jsonName])
+                    {
+                        if (node.isMember(sfModifiedNode.jsonName) &&
+                            node[sfModifiedNode.jsonName][sfLedgerEntryType.jsonName] ==
+                                "Sponsorship")
+                        {
+                            foundSponsorship = true;
+                            auto const& finalFields =
+                                node[sfModifiedNode.jsonName][sfFinalFields.jsonName];
+                            BEAST_EXPECT(
+                                finalFields[sfFeeAmount.jsonName] ==
+                                (XRPAmount(100'000'000) - env.current()->fees().base)
+                                    .jsonClipped()
+                                    .asString());
+                        }
+                    }
+                    BEAST_EXPECT(foundSponsorship);
+                }
+            }
+        };
+
+        json::Value tx;
+        tx[jss::Account] = alice.human();
+        tx[jss::TransactionType] = jss::AccountSet;
+        tx[sfDomain] = "123ABC";
+        tx[sfSponsor.jsonName] = sponsor.human();
+        tx[sfSponsorFlags.jsonName] = spfSponsorFee;
+        // Deliberately no SponsorSignature: pre-funded mode needs no
+        // sponsor signature.
+        BEAST_EXPECT(!tx.isMember(sfSponsorSignature.jsonName));
+
+        // test with autofill
+        testTx(env, tx, validateOutput);
+
+        tx[sfSigningPubKey] = "";
+        tx[sfTxnSignature] = "";
+        tx[sfSequence] = env.seq(alice);
+        tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
+
+        // test without autofill
+        testTx(env, tx, validateOutput);
+
+        // Nothing was applied: the pre-funded fee balance is untouched.
+        BEAST_EXPECT(sponsor::sponsorshipFeeBalance(env, sponsor, alice) == XRP(100));
+    }
+
+    void
     testTransactionSigningFailure()
     {
         testcase("Transaction with a key-related failure");
@@ -1348,6 +1489,7 @@ public:
         testTransactionTecFailure();
         testSuccessfulTransactionMultisigned();
         testSuccessfulSponsoredTransactionMultisigned();
+        testSuccessfulPreFundedSponsoredTransaction();
         testTransactionSigningFailure();
         testInvalidSingleAndMultiSigningTransaction();
         testMultisignedBadPubKey();

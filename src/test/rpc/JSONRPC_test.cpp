@@ -10,12 +10,14 @@
 #include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/trust.h>
+#include <test/jtx/utility.h>
 
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/json/json_reader.h>
@@ -23,6 +25,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/LoadFeeTrack.h>
@@ -2718,6 +2721,143 @@ public:
         }
     }
 
+    void
+    testSponsoredMultiSign()
+    {
+        testcase("sign_for/submit_multisigned with a sponsored transaction");
+
+        using namespace test::jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->loadFromString(std::string("[") + Sections::kSigningSupport + "]\ntrue");
+            return cfg;
+        }));
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const sponsor{"sponsor"};
+        env.fund(XRP(10000), alice, bob, carol, sponsor);
+        env.close();
+
+        // alice's signer list includes the sponsor: the sponsor is a valid
+        // multisigner for alice's transactions even when it is also the fee
+        // payer.
+        env(signers(alice, 2, {{bob, 1}, {carol, 1}, {sponsor, 1}}));
+        env.close();
+
+        auto const baseFee = env.current()->fees().base;
+
+        // Build a fee-sponsored transaction co-signed by the sponsor, the
+        // way an offline sponsor co-signature is produced. The signing
+        // fields (Sequence, Fee, ...) must be fixed before the sponsor
+        // signs; SponsorSignature and Signers are not signing fields, so
+        // later sign_for calls don't invalidate the sponsor's signature.
+        auto setupTx = [&]() {
+            json::Value tx;
+            tx[jss::Account] = alice.human();
+            tx[jss::TransactionType] = jss::AccountSet;
+            tx[jss::Fee] = (3 * baseFee).jsonClipped();
+            tx[jss::Sequence] = env.seq(alice);
+            tx[jss::SigningPubKey] = "";
+            tx[sfSponsor.jsonName] = sponsor.human();
+            tx[sfSponsorFlags.jsonName] = spfSponsorFee;
+            // Fills SponsorSignature.SigningPubKey and
+            // SponsorSignature.TxnSignature.
+            tx[sfSponsorSignature.jsonName] = json::Value(json::ValueType::Object);
+            test::jtx::sign(tx, sponsor, tx[sfSponsorSignature.jsonName]);
+            return tx;
+        };
+
+        {
+            // Success: bob and the sponsor multisign for alice via sign_for,
+            // then the transaction is applied via submit_multisigned. The
+            // Signers array must be validated against alice (the initiator),
+            // not against the fee payer (the sponsor).
+            auto const aliceSeq = env.seq(alice);
+            auto const aliceBalance = env.balance(alice);
+            auto const sponsorBalance = env.balance(sponsor);
+
+            json::Value jvOne;
+            jvOne[jss::tx_json] = setupTx();
+            jvOne[jss::account] = bob.human();
+            jvOne[jss::secret] = bob.name();
+            auto jrr = env.rpc("json", "sign_for", to_string(jvOne))[jss::result];
+            BEAST_EXPECTS(jrr[jss::status] == "success", to_string(jrr));
+
+            // The sponsor itself signs for alice. If signer validation were
+            // keyed to the fee payer, this would be rejected as the sponsor
+            // "signing for itself".
+            json::Value jvTwo;
+            jvTwo[jss::tx_json] = jrr[jss::tx_json];
+            jvTwo[jss::account] = sponsor.human();
+            jvTwo[jss::secret] = sponsor.name();
+            jrr = env.rpc("json", "sign_for", to_string(jvTwo))[jss::result];
+            BEAST_EXPECTS(jrr[jss::status] == "success", to_string(jrr));
+
+            json::Value jvSubmit;
+            jvSubmit[jss::tx_json] = jrr[jss::tx_json];
+            jrr = env.rpc("json", "submit_multisigned", to_string(jvSubmit))[jss::result];
+            BEAST_EXPECTS(jrr[jss::status] == "success", to_string(jrr));
+            BEAST_EXPECTS(jrr[jss::engine_result] == "tesSUCCESS", to_string(jrr));
+            env.close();
+
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+            // The sponsor paid the fee; alice paid nothing.
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalance - drops(3 * baseFee));
+            BEAST_EXPECT(env.balance(alice) == aliceBalance);
+        }
+
+        {
+            // sign_for: alice may not multisign for her own sponsored
+            // transaction, even though the fee payer is the sponsor.
+            json::Value jv;
+            jv[jss::tx_json] = setupTx();
+            jv[jss::account] = alice.human();
+            jv[jss::secret] = alice.name();
+            auto const jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
+            BEAST_EXPECTS(jrr[jss::status] == "error", to_string(jrr));
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                jrr[jss::error_message].asString() ==
+                "A Signer may not be the transaction's Account (" + alice.human() + ").");
+        }
+
+        {
+            // submit_multisigned: a Signers array containing alice is
+            // rejected for alice's sponsored transaction, even though the
+            // fee payer is the sponsor.
+            auto const aliceSeq = env.seq(alice);
+
+            json::Value jvOne;
+            jvOne[jss::tx_json] = setupTx();
+            jvOne[jss::account] = bob.human();
+            jvOne[jss::secret] = bob.name();
+            auto jrr = env.rpc("json", "sign_for", to_string(jvOne))[jss::result];
+            BEAST_EXPECTS(jrr[jss::status] == "success", to_string(jrr));
+
+            json::Value jvSubmit;
+            jvSubmit[jss::tx_json] = jrr[jss::tx_json];
+            {
+                // Manually inject alice into her own Signers array.
+                json::Value signer;
+                signer[jss::Account] = alice.human();
+                signer[jss::SigningPubKey] = strHex(alice.pk().slice());
+                signer[jss::TxnSignature] = "1200ABCD";
+                json::Value signerOuter;
+                signerOuter[sfSigner.jsonName] = signer;
+                jvSubmit[jss::tx_json][sfSigners.jsonName].append(signerOuter);
+            }
+            jrr = env.rpc("json", "submit_multisigned", to_string(jvSubmit))[jss::result];
+            BEAST_EXPECTS(jrr[jss::status] == "error", to_string(jrr));
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                jrr[jss::error_message].asString() ==
+                "A Signer may not be the transaction's Account (" + alice.human() + ").");
+            env.close();
+            BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        }
+    }
+
     // A function that can be called as though it would process a transaction.
     static void
     fakeProcessTransaction(std::shared_ptr<Transaction>&, bool, bool, NetworkOPs::FailHard)
@@ -2842,6 +2982,7 @@ public:
         testAutoFillFees();
         testAutoFillEscalatedFees();
         testAutoFillNetworkID();
+        testSponsoredMultiSign();
         testTransactionRPC();
     }
 };

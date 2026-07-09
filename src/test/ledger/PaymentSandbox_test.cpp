@@ -40,6 +40,16 @@ namespace xrpl::test {
 
 class PaymentSandbox_test : public beast::unit_test::Suite
 {
+    static OwnerCounts
+    makeCounts(std::uint32_t owner, std::uint32_t sponsored, std::uint32_t sponsoring)
+    {
+        OwnerCounts counts;
+        counts.owner = owner;
+        counts.sponsored = sponsored;
+        counts.sponsoring = sponsoring;
+        return counts;
+    }
+
     /*
       Create paths so one path funds another path.
 
@@ -484,6 +494,96 @@ class PaymentSandbox_test : public beast::unit_test::Suite
     }
 
     void
+    testOwnerCountApply(FeatureBitset features)
+    {
+        // Test that applying a nested PaymentSandbox to its parent merges
+        // the deferred owner counts, keeping the max for each account.
+        testcase("ownerCountApply");
+
+        using namespace jtx;
+        Env env(*this, features);
+        Account const alice("alice");
+        Account const bob("bob");
+
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        // Merge into a parent with no entry for the account: the child's
+        // value is inserted as-is.
+        {
+            ApplyViewImpl av(&*env.current(), TapNone);
+            PaymentSandbox sb(&av);
+
+            auto const counts = makeCounts(4, 1, 2);
+            {
+                PaymentSandbox sb2(&sb);
+                sb2.adjustOwnerCountHook(alice, OwnerCounts(), counts);
+
+                // The parent has no entry for alice yet
+                BEAST_EXPECT(sb.ownerCountHook(alice, OwnerCounts()) == OwnerCounts());
+
+                sb2.apply(sb);
+            }
+            BEAST_EXPECT(sb.ownerCountHook(alice, OwnerCounts()) == counts);
+        }
+
+        // Merge into a parent that already has a lower entry: the child's
+        // higher value wins.
+        {
+            ApplyViewImpl av(&*env.current(), TapNone);
+            PaymentSandbox sb(&av);
+
+            auto const lower = makeCounts(2, 0, 0);   // count() == 2
+            auto const higher = makeCounts(5, 0, 0);  // count() == 5
+
+            sb.adjustOwnerCountHook(bob, OwnerCounts(), lower);
+            {
+                PaymentSandbox sb2(&sb);
+                sb2.adjustOwnerCountHook(bob, OwnerCounts(), higher);
+                sb2.apply(sb);
+            }
+            BEAST_EXPECT(sb.ownerCountHook(bob, OwnerCounts()) == higher);
+        }
+
+        // The reverse: the parent already has the higher entry; a lower
+        // value merged from the child does not lower it.
+        {
+            ApplyViewImpl av(&*env.current(), TapNone);
+            PaymentSandbox sb(&av);
+
+            auto const lower = makeCounts(2, 0, 0);
+            auto const higher = makeCounts(5, 0, 0);
+
+            sb.adjustOwnerCountHook(bob, OwnerCounts(), higher);
+            {
+                PaymentSandbox sb2(&sb);
+                sb2.adjustOwnerCountHook(bob, OwnerCounts(), lower);
+                sb2.apply(sb);
+            }
+            BEAST_EXPECT(sb.ownerCountHook(bob, OwnerCounts()) == higher);
+        }
+
+        // Merge with equal count() but different composition: the
+        // operator<=> tie-break (higher owner) decides which one survives.
+        // a: 2 - 1 + 0 == 1, b: 1 - 0 + 0 == 1
+        {
+            ApplyViewImpl av(&*env.current(), TapNone);
+            PaymentSandbox sb(&av);
+
+            auto const a = makeCounts(2, 1, 0);
+            auto const b = makeCounts(1, 0, 0);
+
+            sb.adjustOwnerCountHook(alice, OwnerCounts(), b);
+            {
+                PaymentSandbox sb2(&sb);
+                sb2.adjustOwnerCountHook(alice, OwnerCounts(), a);
+                sb2.apply(sb);
+            }
+            BEAST_EXPECT(sb.ownerCountHook(alice, OwnerCounts()) == a);
+        }
+    }
+
+    void
     testOwnerCountWithTransaction(FeatureBitset features)
     {
         // Test that owner count hooks work correctly during actual transactions.
@@ -619,6 +719,7 @@ public:
             testReserve(features);
             testBalanceHook(features);
             testOwnerCountHook(features);
+            testOwnerCountApply(features);
         };
         using namespace jtx;
         auto const sa = testableAmendments();

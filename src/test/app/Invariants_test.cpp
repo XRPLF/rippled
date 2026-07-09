@@ -7,6 +7,8 @@
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
@@ -5768,6 +5770,139 @@ class Invariants_test : public beast::unit_test::Suite
                     ac.view().update(sle);
                     return true;
                 });
+        }
+
+        {
+            // XRPNotCreated: the sfFeeAmount escrowed in a Sponsorship entry
+            // counts toward the XRP total. Creating a Sponsorship holding a
+            // FeeAmount without debiting any account manufactures XRP.
+            doInvariantCheck(
+                {{"XRP net change was positive: 100000000"}},
+                [](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto const sleNew =
+                        std::make_shared<SLE>(keylet::sponsorship(a1.id(), a2.id()));
+                    sleNew->setAccountID(sfOwner, a1.id());
+                    sleNew->setAccountID(sfSponsee, a2.id());
+                    sleNew->setFieldAmount(sfFeeAmount, XRP(100));
+                    ac.view().insert(sleNew);
+                    return true;
+                });
+
+            // ... and deleting a Sponsorship entry without refunding its
+            // escrowed FeeAmount destroys XRP beyond the transaction fee.
+            doInvariantCheck(
+                {{"XRP net change of -100000000 doesn't match fee 0"}},
+                [](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::sponsorship(a2.id(), a1.id()));
+                    if (!sle)
+                        return false;
+                    ac.view().erase(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [](Account const& a1, Account const& a2, Env& env) {
+                    // a2 sponsors a1's fees with a pre-funded XRP(100)
+                    env(sponsor::set_fee(a2, 0, XRP(100)), sponsor::SponseeAcc(a1));
+                    env.close();
+                    return env.le(keylet::sponsorship(a2.id(), a1.id())) != nullptr;
+                });
+        }
+
+        {
+            // Deleting a sponsored object without adjusting the accounts'
+            // Sponsored/SponsoringOwnerCount fields must be caught (the
+            // isDelete path of SponsorshipOwnerCountsMatch::visitEntry: the
+            // sponsored-object delta is -1 while the account deltas are 0).
+            auto const expectMessage =
+                "SponsoredObjectOwnerCount does not equal SponsoredOwnerCount delta.";
+            uint256 checkID;
+
+            doInvariantCheck(
+                {{expectMessage}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto const check = ac.view().peek(keylet::check(checkID));
+                    if (!check)
+                        return false;
+                    ac.view().erase(check);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&checkID](Account const& a1, Account const& a2, Env& env) {
+                    // a2 reserve-sponsors a1's check by co-signing its creation
+                    checkID = keylet::check(a1.id(), env.seq(a1)).key;
+                    env(check::create(a1, a2, XRP(1)),
+                        sponsor::As(a2, spfSponsorReserve),
+                        Sig(sfSponsorSignature, a2),
+                        Fee(XRP(1)));
+                    env.close();
+                    auto const sle = env.le(keylet::check(checkID));
+                    return sle && sle->isFieldPresent(sfSponsor);
+                });
+        }
+
+        {
+            // Trust lines use sfLowSponsor/sfHighSponsor instead of sfSponsor
+            // and can be reserve-sponsored independently on each side.
+            auto const expectMessage =
+                "SponsoredObjectOwnerCount does not equal SponsoredOwnerCount delta.";
+
+            auto const preclose = [](Account const& a1, Account const& a2, Env& env) {
+                env(trust(a1, a2["USD"](100)));
+                return true;
+            };
+
+            // Marking one side of an existing trust line as sponsored without
+            // touching any account counts (object delta 1, account deltas 0).
+            doInvariantCheck(
+                {{expectMessage}},
+                [](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto const line = ac.view().peek(keylet::trustLine(a1, a2, a2["USD"].currency));
+                    if (!line)
+                        return false;
+                    line->setAccountID(sfLowSponsor, a2.id());
+                    ac.view().update(line);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                preclose);
+
+            // A trust line sponsored on both sides contributes two sponsored
+            // owner counts, so bumping the account fields by only one each is
+            // caught (object delta 2, account deltas 1).
+            doInvariantCheck(
+                {{expectMessage}},
+                [](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto const line = ac.view().peek(keylet::trustLine(a1, a2, a2["USD"].currency));
+                    if (!line)
+                        return false;
+                    line->setAccountID(sfLowSponsor, a2.id());
+                    line->setAccountID(sfHighSponsor, a2.id());
+                    ac.view().update(line);
+
+                    // a1 owns the trust line, so its OwnerCount is already 1.
+                    auto const sponsee = ac.view().peek(keylet::account(a1.id()));
+                    if (!sponsee)
+                        return false;
+                    sponsee->setFieldU32(sfSponsoredOwnerCount, 1);
+                    ac.view().update(sponsee);
+
+                    auto const sponsoring = ac.view().peek(keylet::account(a2.id()));
+                    if (!sponsoring)
+                        return false;
+                    sponsoring->setFieldU32(sfSponsoringOwnerCount, 1);
+                    ac.view().update(sponsoring);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                preclose);
         }
     }
 
