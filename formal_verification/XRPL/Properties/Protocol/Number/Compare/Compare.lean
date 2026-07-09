@@ -4,8 +4,7 @@ import XRPL.Properties.Protocol.Number.Compare.Common.Proofs
 namespace XRPL.Model.Protocol
 
 /-- Top-level comparison theorem for normalized numbers.
-`x.operator_lt y` is `true` exactly when the value of `x` is below the value of `y` as rationals.
-In other words, the C++ comparison algorithm implements the true order on the values the numbers represent. -/
+`x.operator_lt y` is `true` exactly when the value of `x` is below the value of `y` as rationals. -/
 theorem operator_lt_iff (x y : Number)
     (hx : x.isNormalized) (hy : y.isNormalized) :
     x.operator_lt y = true ↔ x.toRat < y.toRat :=

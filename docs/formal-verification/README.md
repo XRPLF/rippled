@@ -384,7 +384,7 @@ not where the inputs sit. Two techniques place it there:
 
 #### The operators
 
-Each operator is tested by the shape that fits where it can break.
+Each operator is tested by aiming at the targets that are likely to break it.
 
 | Operator                      | Test case targets                                                                          |
 | ----------------------------- | ------------------------------------------------------------------------------------------ |
