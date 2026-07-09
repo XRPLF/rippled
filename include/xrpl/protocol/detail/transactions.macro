@@ -1163,8 +1163,9 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
     {sfHolder, SoeRequired},
     {sfMPTAmount, SoeRequired},
     {sfZKProof, SoeRequired},
-}))/** This transaction transfer sponsorship */
+}))
 
+/** This transaction transfers sponsorship on an object/account. */
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/sponsor/SponsorshipTransfer.h>
 #endif
@@ -1177,7 +1178,7 @@ TRANSACTION(ttSPONSORSHIP_TRANSFER, 90, SponsorshipTransfer,
     {sfSponsee, SoeOptional},
 }))
 
-/** This transaction create sponsorship object */
+/** This transaction creates a Sponsorship object. */
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
 #endif
