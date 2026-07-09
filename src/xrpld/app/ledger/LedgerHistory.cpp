@@ -85,13 +85,7 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
     {
         auto lock = ledgerMaps_.lock();
         if (auto it = lock->byIndex.find(index); it != lock->byIndex.end())
-        {
             hash = it->second;
-        }
-        else
-        {
-            hash = {};
-        }
     }
 
     if (!hash.isZero())
@@ -437,8 +431,8 @@ LedgerHistory::builtLedger(
     uint256 const& consensusHash,
     json::Value consensus)
 {
-    LedgerIndex index = ledger->header().seq;
-    LedgerHash hash = ledger->header().hash;
+    LedgerIndex const index = ledger->header().seq;
+    LedgerHash const hash = ledger->header().hash;
     XRPL_ASSERT(!hash.isZero(), "xrpl::LedgerHistory::builtLedger : nonzero hash");
 
     struct MismatchInputs
@@ -489,8 +483,8 @@ LedgerHistory::validatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
     std::optional<uint256> const& consensusHash)
 {
-    LedgerIndex index = ledger->header().seq;
-    LedgerHash hash = ledger->header().hash;
+    LedgerIndex const index = ledger->header().seq;
+    LedgerHash const hash = ledger->header().hash;
     XRPL_ASSERT(!hash.isZero(), "xrpl::LedgerHistory::validatedLedger : nonzero hash");
 
     struct MismatchInputs
@@ -550,7 +544,7 @@ LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
     {
         if (it->second != ledgerHash)
         {
-            lock->byIndex[ledgerIndex] = ledgerHash;
+            it->second = ledgerHash;
             return false;
         }
     }
@@ -565,11 +559,10 @@ LedgerHistory::clearLedgerCachePrior(LedgerIndex seq)
     std::size_t cacheSize = 0;
     std::size_t indexSize = 0;
 
-    std::vector<LedgerHash> keys;
-    {
+    std::vector<LedgerHash> const keys = [this] {
         auto lock = ledgerMaps_.lock();
-        keys = lock->byHash->getKeys();
-    }
+        return lock->byHash->getKeys();
+    }();
 
     for (LedgerHash const& it : keys)
     {
@@ -586,19 +579,8 @@ LedgerHistory::clearLedgerCachePrior(LedgerIndex seq)
         auto lock = ledgerMaps_.lock();
         cacheSize = lock->byHash->size();
 
-        auto it = lock->byIndex.begin();
-        while (it != lock->byIndex.end())
-        {
-            if (it->first < seq)
-            {
-                it = lock->byIndex.erase(it);
-                ++indexesCleared;
-            }
-            else
-            {
-                ++it;
-            }
-        }
+        indexesCleared = std::erase_if(
+            lock->byIndex, [seq](auto const& kv) { return kv.first < seq; });
         indexSize = lock->byIndex.size();
 
         XRPL_ASSERT(
