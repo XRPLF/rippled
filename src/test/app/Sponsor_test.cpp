@@ -5010,6 +5010,106 @@ public:
     }
 
     void
+    testCoSignedSponsorFeeReserve()
+    {
+        // A sponsored fee must never push the fee-payer below its reserve. For a
+        // co-signed sponsor the fee comes from the sponsor's own
+        // AccountRoot.Balance, so checkFee/payFee/reset must all cap the spend at
+        // balance-minus-reserve. This differs from an ordinary (non-sponsored)
+        // fee, which may draw the paying account below its reserve.
+        testcase("Co-signed sponsor fee is bounded by the sponsor's reserve");
+
+        using namespace jtx;
+        Env env{*this, testableAmendments()};
+
+        auto const baseFee = env.current()->fees().base;
+        // Account reserve (as an STAmount) for an account owning no objects.
+        auto const baseReserve = reserve(env, 0);
+
+        // Each sub-case uses its own accounts and funds exact starting balances
+        // directly. A `ter` result (the reject case) is kept and retried on the
+        // next close; dedicated accounts stop that held tx from perturbing the
+        // other cases, and the reject case is run last.
+
+        // --- Accepted at the boundary (payFee): the sponsor starts with exactly
+        // reserve + fee, so the fee brings it to exactly its reserve, never
+        // below. Exercises payFee's spendable computation on the accepting path.
+        {
+            Account const alice("alice_ok");
+            Account const sponsor("sponsor_ok");
+            env.fund(XRP(10000), alice);
+            env.fund(baseReserve + XRP(1), sponsor);
+            env.close();
+            BEAST_EXPECT(env.balance(sponsor) == baseReserve + XRP(1));
+
+            env(noop(alice),
+                Fee(XRP(1)),
+                sponsor::As(sponsor, spfSponsorFee),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.balance(sponsor) == baseReserve);
+        }
+
+        // --- reset() path: a hard-fail tec still claims the fee from the
+        // co-signed sponsor, and the reset cap is likewise reserve-aware. An
+        // unfillable tfFillOrKill OfferCreate returns tecKILLED, which routes
+        // through processPersistentChanges -> reset().
+        {
+            Account const alice("alice_reset");
+            Account const sponsor("sponsor_reset");
+            Account const gw("gw_reset");
+            env.fund(XRP(10000), alice, sponsor, gw);
+            env.close();
+
+            auto const preReset = env.balance(sponsor);
+            env(offer(alice, gw["USD"](100), XRP(100)),
+                Txflags(tfFillOrKill),
+                Fee(XRP(1)),
+                sponsor::As(sponsor, spfSponsorFee),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(tecKILLED));
+            env.close();
+            // Sponsor was charged the claim fee via reset(), still above reserve.
+            BEAST_EXPECT(env.balance(sponsor) == preReset - XRP(1));
+        }
+
+        // --- Contrast: an ordinary, non-sponsored fee IS allowed to draw the
+        // paying account below its reserve (the pre-existing paradigm).
+        {
+            Account const ordinary("ordinary");
+            env.fund(baseReserve, ordinary);
+            env.close();
+            BEAST_EXPECT(env.balance(ordinary) == baseReserve);
+            env(noop(ordinary), Fee(baseFee), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.balance(ordinary) == baseReserve - baseFee);
+            BEAST_EXPECT(env.balance(ordinary) < baseReserve);
+        }
+
+        // --- Rejected (checkFee gate): the sponsor's spendable balance
+        // (balance - reserve = XRP(1) - 1 drop) is below the fee (XRP(1)), so the
+        // fee cannot be charged and nothing is applied. Run last: the kept `ter`
+        // tx retries on close but its sponsor never has enough, so it stays held
+        // and harmless.
+        {
+            Account const alice("alice_reject");
+            Account const sponsor("sponsor_reject");
+            env.fund(XRP(10000), alice);
+            env.fund(baseReserve + XRP(1) - drops(1), sponsor);
+            env.close();
+
+            auto const preReject = env.balance(sponsor);
+            env(noop(alice),
+                Fee(XRP(1)),
+                sponsor::As(sponsor, spfSponsorFee),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(terINSUF_FEE_B));
+            BEAST_EXPECT(env.balance(sponsor) == preReject);
+        }
+    }
+
+    void
     testTrustSetCounterpartySponsorMisroute()
     {
         // TrustSet's modify path applies the tx-level reserve sponsor to whichever
@@ -5353,6 +5453,7 @@ protected:
         testReserveSponsorGate();
 
         testZeroBalanceSponsoredPaymentFeePayerCheck();
+        testCoSignedSponsorFeeReserve();
         testTrustSetCounterpartySponsorMisroute();
         testSelfEscrowFinishReserveGate();
 

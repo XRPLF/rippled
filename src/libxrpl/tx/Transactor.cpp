@@ -640,16 +640,27 @@ Transactor::payFee()
         return tefINTERNAL;  // LCOV_EXCL_LINE
     }
 
+    // A co-signed sponsor pays the fee out of its own account balance, but must
+    // never be charged into its account reserve. Mirror the spendable amount
+    // computed in checkFee() so the reserve is protected on the apply path too.
+    XRPAmount spendable = balance;
+    if (feePayer.type == FeePayerType::SponsorCoSigned)
+    {
+        auto const sponsorReserve = accountReserve(view(), sle, j_);
+        // max(balance - reserve, 0) with overflow handling
+        spendable = balance > sponsorReserve ? balance - sponsorReserve : beast::kZero;
+    }
+
     // Only sponsor fee-payers reject here on insufficient funds. For an
     // ordinary account, the fee falls through and is capped by reset(), which
     // caps to the account's balance. That capping is wrong for sponsors: a
     // co-signed sponsor would be charged into its own reserve, and a prefunded
     // sponsorship's fee amount should be rejected rather than partially spent.
-    if (feePaid > balance &&
+    if (feePaid > spendable &&
         (feePayer.type == FeePayerType::SponsorPreFunded ||
          feePayer.type == FeePayerType::SponsorCoSigned))
     {
-        if ((balance > beast::kZero) && !view().open())
+        if ((spendable > beast::kZero) && !view().open())
             return tecINSUFF_FEE;
 
         return terINSUF_FEE_B;
@@ -1301,6 +1312,17 @@ Transactor::reset(XRPAmount fee)
         fee = std::min(fee, cap);
     }
 
+    // A co-signed sponsor must never be charged into its own account reserve,
+    // so the fee is capped to the balance above the reserve rather than to the
+    // full balance.
+    XRPAmount spendable = balance;
+    if (feePayer.type == FeePayerType::SponsorCoSigned)
+    {
+        auto const sponsorReserve = accountReserve(view(), payerSle, j_);
+        // max(balance - reserve, 0) with overflow handling
+        spendable = balance > sponsorReserve ? balance - sponsorReserve : beast::kZero;
+    }
+
     // balance should have already been checked in checkFee / preFlight.
     XRPL_ASSERT(
         (fee == beast::kZero || balance != beast::kZero) && (!view().open() || balance >= fee),
@@ -1309,8 +1331,8 @@ Transactor::reset(XRPAmount fee)
     // We retry/reject the transaction if the account balance is zero or
     // we're applying against an open ledger and the balance is less than
     // the fee
-    if (fee > balance)
-        fee = balance;
+    if (fee > spendable)
+        fee = spendable;
 
     // Since we reset the context, we need to charge the fee and update
     // the account's sequence number (or consume the Ticket) again.
