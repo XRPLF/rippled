@@ -1,8 +1,22 @@
 #pragma once
 
 #include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Peer.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
+
+#include <xrpl.pb.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 
 namespace xrpl {
 

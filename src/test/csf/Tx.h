@@ -7,6 +7,7 @@
 #include <boost/iterator/function_output_iterator.hpp>
 
 #include <algorithm>
+#include <cstdint>
 #include <map>
 #include <ostream>
 #include <sstream>
@@ -26,8 +27,10 @@ public:
     {
     }
 
-    template <typename T, typename = std::enable_if_t<std::is_same_v<T, Tx>>>
-    Tx(T const* t) : id_{t->id_}
+    template <typename T>
+    Tx(T const* t)
+        requires(std::is_same_v<T, Tx>)
+        : id_{t->id_}
     {
     }
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chrono>
+
 /** Tuned constants. */
 /** @{ */
 namespace xrpl::RPC::Tuning {

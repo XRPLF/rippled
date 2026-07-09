@@ -4,11 +4,17 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <cstdint>
 #include <initializer_list>
 #include <optional>
 
@@ -23,18 +29,31 @@ namespace xrpl {
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 
+/** Returns true if @p account's MPToken for @p mptIssue carries the
+ *  individual-lock flag (lsfMPTLocked).
+ *
+ *  @warning This checks only the raw per-holder lock bit.  It does **not**
+ *  perform the transitive vault pseudo-account check: if @p mptIssue is a
+ *  vault share whose underlying asset is frozen, this function returns false.
+ *  Call @ref isFrozen instead when determining whether an account may send or
+ *  receive tokens — it combines isIndividualFrozen, isGlobalFrozen, and
+ *  isVaultPseudoAccountFrozen into a single complete check. */
 [[nodiscard]] bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
 
 [[nodiscard]] bool
-isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth = 0);
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue,
+    std::uint8_t depth = 0);
 
 [[nodiscard]] bool
 isAnyFrozen(
     ReadView const& view,
     std::initializer_list<AccountID> const& accounts,
     MPTIssue const& mptIssue,
-    int depth = 0);
+    std::uint8_t depth = 0);
 
 //------------------------------------------------------------------------------
 //
@@ -88,7 +107,7 @@ requireAuth(
     MPTIssue const& mptIssue,
     AccountID const& account,
     AuthType authType = AuthType::Legacy,
-    int depth = 0);
+    std::uint8_t depth = 0);
 
 /** Enforce account has MPToken to match its authorization.
  *
@@ -104,22 +123,77 @@ enforceMPTokenAuthorization(
     XRPAmount const& priorBalance,
     beast::Journal j);
 
-/** Check if the destination account is allowed
- *  to receive MPT. Return tecNO_AUTH if it doesn't
- *  and tesSUCCESS otherwise.
+/** Resolve the underlying asset of a vault share.
+ *
+ *  Reads sfReferenceHolding from @p sleShareIssuance to determine which
+ *  asset the vault wraps. @p sleHolding must be the SLE that
+ *  sfReferenceHolding points to — either an ltMPTOKEN (returns its
+ *  MPTIssue) or an ltRIPPLE_STATE (returns its low/high Issue).
+ *
+ *  @pre Both SLEs must exist and @p sleHolding must be of type ltMPTOKEN
+ *       or ltRIPPLE_STATE. Passing any other type is undefined behaviour.
+ *  @param sleShareIssuance  MPTokenIssuance SLE for the vault share token.
+ *  @param sleHolding        SLE referenced by sfReferenceHolding.
+ *  @return The underlying Asset (MPTIssue or Issue).
+ */
+[[nodiscard]] Asset
+assetOfHolding(SLE const& sleShareIssuance, SLE const& sleHolding);
+
+/** Check whether @p to may receive the given MPT from @p from.
+ *
+ *  The check passes when any of the following is true:
+ *  - @p waive is WaiveMPTCanTransfer::Yes (recovery-path exemption), or
+ *  - @p from or @p to is the issuer, or
+ *  - lsfMPTCanTransfer is set on the MPTokenIssuance.
+ *
+ *  For vault shares (MPTokenIssuances that carry sfReferenceHolding) the
+ *  check recurses into the underlying asset's transferability. This
+ *  recursion is defensive; vault-of-vault-shares is rejected at vault
+ *  creation, so in practice depth never exceeds 1.
+ *
+ *  @param view      Ledger state to read from.
+ *  @param mptIssue  The MPT issuance being transferred.
+ *  @param from      Sending account.
+ *  @param to        Receiving account.
+ *  @param waive     WaiveMPTCanTransfer::Yes skips the lsfMPTCanTransfer
+ *                   check. Use for recovery paths (e.g. unwinding SAV or
+ *                   Lending Protocol positions after an issuer revokes
+ *                   transferability).
+ *  @param depth     Recursion depth; bounded at kMaxAssetCheckDepth.
+ *  @return tesSUCCESS if the transfer is allowed, tecNO_AUTH otherwise.
  */
 [[nodiscard]] TER
 canTransfer(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& from,
-    AccountID const& to);
+    AccountID const& to,
+    WaiveMPTCanTransfer waive = WaiveMPTCanTransfer::No,
+    std::uint8_t depth = 0);
 
-/** Check if Asset can be traded on DEX. return tecNO_PERMISSION
- * if it doesn't and tesSUCCESS otherwise.
+/** Check whether @p asset may be traded on the DEX.
+ *
+ *  For IOU assets the check delegates to the existing offer/AMM freeze
+ *  logic. For MPT assets it checks lsfMPTCanTrade on the MPTokenIssuance.
+ *  Vault shares recurse into the underlying asset's tradability via
+ *  sfReferenceHolding; depth is bounded at kMaxAssetCheckDepth.
+ *
+ *  @param view   Ledger state to read from.
+ *  @param asset  The asset to check.
+ *  @param depth  Recursion depth; bounded at kMaxAssetCheckDepth.
+ *  @return tesSUCCESS if trading is allowed, tecNO_PERMISSION otherwise.
  */
 [[nodiscard]] TER
-canTrade(ReadView const& view, Asset const& asset);
+canTrade(ReadView const& view, Asset const& asset, std::uint8_t depth = 0);
+
+/** Convenience to combine canTrade/Transfer. Returns tesSUCCESS if Asset is Issue.
+ */
+[[nodiscard]] TER
+canMPTTradeAndTransfer(
+    ReadView const& v,
+    Asset const& asset,
+    AccountID const& from,
+    AccountID const& to);
 
 //------------------------------------------------------------------------------
 //
@@ -226,18 +300,5 @@ issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue);
  */
 void
 issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amount);
-
-//------------------------------------------------------------------------------
-//
-// MPT DEX
-//
-//------------------------------------------------------------------------------
-
-/* Return true if a transaction is allowed for the specified MPT/account. The
- * function checks MPTokenIssuance and MPToken objects flags to determine if the
- * transaction is allowed.
- */
-TER
-checkMPTTxAllowed(ReadView const& v, TxType tx, Asset const& asset, AccountID const& accountID);
 
 }  // namespace xrpl

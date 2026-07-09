@@ -3,6 +3,9 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <memory>
 
 namespace xrpl {
 
@@ -25,7 +28,7 @@ public:
         can calculate metadata.
     */
     virtual void
-    rawErase(std::shared_ptr<SLE> const& sle) = 0;
+    rawErase(SLE::ref sle) = 0;
 
     /** Unconditionally insert a state item.
 
@@ -39,7 +42,7 @@ public:
         @note The key is taken from the SLE
     */
     virtual void
-    rawInsert(std::shared_ptr<SLE> const& sle) = 0;
+    rawInsert(SLE::ref sle) = 0;
 
     /** Unconditionally replace a state item.
 
@@ -54,7 +57,7 @@ public:
         @note The key is taken from the SLE
     */
     virtual void
-    rawReplace(std::shared_ptr<SLE> const& sle) = 0;
+    rawReplace(SLE::ref sle) = 0;
 
     /** Destroy XRP.
 

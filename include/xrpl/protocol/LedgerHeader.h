@@ -3,9 +3,12 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/XRPAmount.h>
+
+#include <cstdint>
 
 namespace xrpl {
 

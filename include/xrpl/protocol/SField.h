@@ -2,10 +2,11 @@
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/Units.h>
 
 #include <cstdint>
 #include <map>
+#include <string>
+#include <unordered_map>
 
 namespace xrpl {
 
@@ -365,8 +366,8 @@ using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 #define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) extern SField const sfName;
 #define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) extern SF_##stiSuffix const sfName;
 
-extern SField const kSfInvalid;
-extern SField const kSfGeneric;
+extern SField const sfInvalid;  // NOLINT(readability-identifier-naming)
+extern SField const sfGeneric;  // NOLINT(readability-identifier-naming)
 
 #include <xrpl/protocol/detail/sfields.macro>
 

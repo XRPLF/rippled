@@ -21,11 +21,11 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
@@ -109,7 +109,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
     JLOG(journal_.debug()) << "Acquiring ledger we already have in "
                            << " local store. " << hash_;
     XRPL_ASSERT(
-        ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::fees()),
+        ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
         "xrpl::InboundLedger::init : valid ledger fees");
     ledger_->setImmutable();
 
@@ -127,9 +127,8 @@ std::size_t
 InboundLedger::getPeerCount() const
 {
     auto const& peerIds = peerSet_->getPeerIds();
-    return std::count_if(peerIds.begin(), peerIds.end(), [this](auto id) {
-        return (app_.getOverlay().findPeerByShortID(id) != nullptr);
-    });
+    return std::ranges::count_if(
+        peerIds, [this](auto id) { return (app_.getOverlay().findPeerByShortID(id) != nullptr); });
 }
 
 void
@@ -188,7 +187,7 @@ InboundLedger::~InboundLedger()
 }
 
 static std::vector<uint256>
-neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter* filter)
+neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter const* filter)
 {
     std::vector<uint256> ret;
 
@@ -211,13 +210,13 @@ neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter* filter
 }
 
 std::vector<uint256>
-InboundLedger::neededTxHashes(int max, SHAMapSyncFilter* filter) const
+InboundLedger::neededTxHashes(int max, SHAMapSyncFilter const* filter) const
 {
     return neededHashes(ledger_->header().txHash, ledger_->txMap(), max, filter);
 }
 
 std::vector<uint256>
-InboundLedger::neededStateHashes(int max, SHAMapSyncFilter* filter) const
+InboundLedger::neededStateHashes(int max, SHAMapSyncFilter const* filter) const
 {
     return neededHashes(ledger_->header().accountHash, ledger_->stateMap(), max, filter);
 }
@@ -331,7 +330,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
         JLOG(journal_.debug()) << "Had everything locally";
         complete_ = true;
         XRPL_ASSERT(
-            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::fees()),
+            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::tryDB : valid ledger fees");
         ledger_->setImmutable();
     }
@@ -434,7 +433,7 @@ InboundLedger::done()
     if (complete_ && !failed_ && ledger_)
     {
         XRPL_ASSERT(
-            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::fees()),
+            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::done : valid ledger fees");
         ledger_->setImmutable();
         switch (reason_)
@@ -827,7 +826,7 @@ InboundLedger::takeHeader(std::string const& data)
     Call with a lock
 */
 void
-InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
+InboundLedger::receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode& san)
 {
     if (!haveHeader_)
     {
@@ -1033,7 +1032,7 @@ InboundLedger::gotData(
 //        TODO Change peer to Consumer
 //
 int
-InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& packet)
+InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData const& packet)
 {
     if (packet.type() == protocol::liBASE)
     {

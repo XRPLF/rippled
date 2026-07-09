@@ -1,16 +1,24 @@
 #pragma once
 
-#include <xrpl/core/JobQueue.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/messages.h>
 #include <xrpl/server/InfoSub.h>
-#include <xrpl/shamap/SHAMap.h>
 
 #include <boost/asio.hpp>
 
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <optional>
+#include <sstream>
+#include <string>
 
 namespace xrpl {
 
@@ -25,6 +33,7 @@ class Transaction;
 class ValidatorKeys;
 class CanonicalTXSet;
 class RCLCxPeerPos;
+class SHAMap;
 
 // This is the primary interface into the "client" portion of the program.
 // Code that wants to do normal operations on the network such as
@@ -249,6 +258,19 @@ public:
 
     virtual void
     stateAccounting(json::Value& obj) = 0;
+
+    /** Total number of (book, subscriber) entries currently tracked.
+     *
+     *  Counts every weak_ptr stored across every book in subBook_, NOT the
+     *  number of distinct subscribers and NOT the number of distinct
+     *  books: a single subscriber following N books contributes N entries.
+     *
+     *  @note Diagnostic accessor; intended for tests and operator visibility
+     *        into per-book subscription state. The returned value is a
+     *        snapshot under the subscription lock.
+     */
+    virtual std::size_t
+    getBookSubscribersCount() = 0;
 };
 
 }  // namespace xrpl

@@ -15,8 +15,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
-
 namespace xrpl {
 
 bool
@@ -77,7 +75,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     }
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -132,7 +130,7 @@ VaultSet::doApply()
     auto const vaultAsset = vault->at(sfAsset);
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -180,10 +178,7 @@ VaultSet::doApply()
 }
 
 void
-VaultSet::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+VaultSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

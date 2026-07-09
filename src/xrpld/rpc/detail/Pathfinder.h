@@ -4,11 +4,25 @@
 #include <xrpld/rpc/detail/AssetCache.h>
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/LoadEvent.h>
-#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <optional>
+#include <vector>
 
 namespace xrpl {
 
@@ -178,7 +192,7 @@ private:
     /** The amount remaining from srcAccount_ after the default liquidity has
         been removed. */
     STAmount remainingAmount_;
-    bool convert_all_;
+    bool convertAll_;
     std::optional<uint256> domain_;
 
     std::shared_ptr<ReadView const> ledger_;

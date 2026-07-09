@@ -52,8 +52,12 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.exists(keylet::account(ctx.tx[sfAccount])))
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
-    if (!ctx.view.exists(keylet::account(ctx.tx[sfAuthorize])))
+    auto const sleAuthorize = ctx.view.read(keylet::account(ctx.tx[sfAuthorize]));
+    if (!sleAuthorize)
         return tecNO_TARGET;
+
+    if (isPseudoAccount(sleAuthorize))
+        return tecNO_PERMISSION;
 
     // Deleting the delegate object is invalid if it doesn’t exist.
     if (ctx.tx.getFieldArray(sfPermissions).empty() &&
@@ -132,7 +136,7 @@ DelegateSet::doApply()
 }
 
 TER
-DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
+DelegateSet::deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j)
 {
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -174,10 +178,7 @@ DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, be
 }
 
 void
-DelegateSet::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+DelegateSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

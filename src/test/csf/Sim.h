@@ -2,16 +2,22 @@
 
 #include <test/csf/BasicNetwork.h>
 #include <test/csf/CollectorRef.h>
-#include <test/csf/Digraph.h>
 #include <test/csf/Peer.h>
 #include <test/csf/PeerGroup.h>
 #include <test/csf/Scheduler.h>
 #include <test/csf/SimTime.h>
 #include <test/csf/TrustGraph.h>
+#include <test/csf/ledgers.h>
 
+#include <xrpl/beast/utility/Journal.h>
+
+#include <cstddef>
+#include <cstdint>
 #include <deque>
 #include <iostream>
 #include <random>
+#include <string>
+#include <vector>
 
 namespace xrpl::test::csf {
 
@@ -65,6 +71,7 @@ public:
         and no network connections.
 
     */
+    // NOLINTNEXTLINE(bugprone-random-generator-seed): fixed seed for reproducible test
     Sim() : sink{scheduler.clock()}, j{sink}, net{scheduler}
     {
     }
