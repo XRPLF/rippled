@@ -73,13 +73,18 @@ escrowUnlockApplyHelper<Issue>(
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
         if (auto const ret = checkReserve(
-                ctx, sleDest, xrpBalance, *sponsorSle, {.ownerCountDelta = 1}, journal);
+                ctx,
+                sleDest,
+                xrpBalance,
+                *sponsorSle,
+                {.ownerCountDelta = 1},
+                journal,
+                tecNO_LINE_INSUF_RESERVE);
             !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
                                      "Insufficient reserve to create line.";
-            // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
-            return (ret == tecINSUFFICIENT_RESERVE) ? tecNO_LINE_INSUF_RESERVE : ret;
+            return ret;
         }
 
         Currency const currency = issue.currency;

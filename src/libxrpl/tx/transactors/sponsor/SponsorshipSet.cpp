@@ -238,12 +238,11 @@ SponsorshipSet::doApply()
                 sponsorBalanceAfterFee.xrp(),
                 *reserveSponsorAccSle,
                 {.ownerCountDelta = 1},
-                ctx_.journal);
+                ctx_.journal,
+                tecUNFUNDED);
             !isTesSuccess(ret))
         {
-            // checkReserve can return tecINSUFFICIENT_RESERVE, tecINTERNAL, or
-            // tefINTERNAL
-            return (ret == tecINSUFFICIENT_RESERVE) ? tecUNFUNDED : ret;
+            return ret;
         }
 
         if (hasPositiveFeeAmount)
@@ -309,12 +308,11 @@ SponsorshipSet::doApply()
                     sponsorBalanceAfterFee.xrp(),
                     *reserveSponsorAccSle,
                     {},
-                    ctx_.journal);
+                    ctx_.journal,
+                    tecUNFUNDED);
                 !isTesSuccess(ret))
             {
-                // checkReserve can return tecINSUFFICIENT_RESERVE, tecINTERNAL,
-                // or tefINTERNAL
-                return (ret == tecINSUFFICIENT_RESERVE) ? tecUNFUNDED : ret;
+                return ret;
             }
 
             (*sponsorAccSle)[sfBalance] -= feeAmountDelta;

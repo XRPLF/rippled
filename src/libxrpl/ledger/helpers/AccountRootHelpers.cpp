@@ -161,6 +161,9 @@ adjustOwnerCountSigned(
 
     if (sponsorSle)
     {
+        XRPL_ASSERT(
+            view.rules().enabled(featureSponsor),
+            "xrpl::getTxReserveSponsor : sponsor exists + Sponsor enabled");
         bool const validSponsorType = sponsorSle->getType() == ltACCOUNT_ROOT;
         XRPL_ASSERT(validSponsorType, "xrpl::adjustOwnerCountSigned : valid sponsor sle type");
         if (!validSponsorType)
@@ -375,6 +378,11 @@ accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjus
 {
     XRPL_ASSERT(sle && sle->getType() == ltACCOUNT_ROOT, "xrpl::accountReserve : valid sle");
 
+    if (!view.rules().enabled(featureSponsor))
+    {
+        XRPL_ASSERT(adj.accountCountDelta == 0, "xrpl::accountReserve : no account count delta");
+        return view.fees().accountReserve(sle->getFieldU32(sfOwnerCount) + adj.ownerCountDelta, 1);
+    }
     std::uint32_t const currentOwnerCount = ownerCount(sle, j, adj.ownerCountDelta);
     std::uint32_t const currentAccountCount = accountCountImpl(sle, adj.accountCountDelta, j);
 
@@ -388,45 +396,62 @@ checkReserve(
     XRPAmount accBalance,
     SLE::const_ref sponsorSle,
     Adjustment adj,
-    beast::Journal j)
+    beast::Journal j,
+    TER insufReserveCode)
 {
     // TODO: swap to assert after fixCleanup3_2_0 is retired
     if (!accSle || accSle->getType() != ltACCOUNT_ROOT)
         return tefINTERNAL;  // LCOV_EXCL_LINE
-    if (sponsorSle)
+    XRPL_ASSERT(
+        !isTesSuccess(insufReserveCode), "xrpl::checkReserve : insufReserveCode is not tesSUCCESS");
+    if (ctx.view.rules().enabled(featureSponsor))
     {
-        if (sponsorSle->getType() != ltACCOUNT_ROOT)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-
-        auto const sle = ctx.view.read(
-            keylet::sponsorship(
-                sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
-
-        // A reserve-sponsored tx must carry a sponsor signature
-        // (cosigning path) and/or have a pre-existing sponsorship SLE
-        // (prefunded path). Absence of both is an internal invariant break.
-        if (isReserveSponsored(ctx.tx) && !sle && !ctx.tx.isFieldPresent(sfSponsorSignature))
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-
-        if (sle)
+        if (sponsorSle)
         {
-            auto const ownerCountAllowed = sle->getFieldU32(sfRemainingOwnerCount);
-            if (adj.ownerCountDelta > 0 &&
-                ownerCountAllowed < static_cast<std::uint32_t>(adj.ownerCountDelta))
-                return tecINSUFFICIENT_RESERVE;
+            if (sponsorSle->getType() != ltACCOUNT_ROOT)
+                return tefINTERNAL;  // LCOV_EXCL_LINE
+
+            auto const sle = ctx.view.read(
+                keylet::sponsorship(
+                    sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
+
+            // A reserve-sponsored tx must carry a sponsor signature
+            // (cosigning path) and/or have a pre-existing sponsorship SLE
+            // (prefunded path). Absence of both is an internal invariant break.
+            if (isReserveSponsored(ctx.tx) && !sle && !ctx.tx.isFieldPresent(sfSponsorSignature))
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+
+            if (sle)
+            {
+                auto const ownerCountAllowed = sle->getFieldU32(sfRemainingOwnerCount);
+                if (adj.ownerCountDelta > 0 &&
+                    ownerCountAllowed < static_cast<std::uint32_t>(adj.ownerCountDelta))
+                    return insufReserveCode;
+            }
+
+            auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance).xrp();
+            XRPAmount const sponsorReserve = accountReserve(ctx.view, sponsorSle, j, adj);
+
+            if (sponsorBalance < sponsorReserve)
+                return insufReserveCode;
         }
-
-        auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance).xrp();
-        XRPAmount const sponsorReserve = accountReserve(ctx.view, sponsorSle, j, adj);
-
-        if (sponsorBalance < sponsorReserve)
-            return tecINSUFFICIENT_RESERVE;
+        else
+        {
+            XRPAmount const reserve = accountReserve(ctx.view, accSle, j, adj);
+            if (accBalance < reserve)
+                return insufReserveCode;
+        }
     }
     else
     {
-        XRPAmount const reserve = accountReserve(ctx.view, accSle, j, adj);
+        XRPL_ASSERT(
+            !sponsorSle,
+            "xrpl::checkReserve : featureSponsor disabled and sponsorSle not provided");
+        XRPL_ASSERT(adj.accountCountDelta == 0, "xrpl::checkReserve : accountCountDelta is 0");
+        auto const reserve = ctx.view.fees().accountReserve(
+            accSle->getFieldU32(sfOwnerCount) + adj.ownerCountDelta, 1);
         if (accBalance < reserve)
-            return tecINSUFFICIENT_RESERVE;
+            return insufReserveCode;
     }
     return tesSUCCESS;
 }

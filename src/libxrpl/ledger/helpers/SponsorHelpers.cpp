@@ -6,8 +6,10 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -25,6 +27,10 @@ getTxReserveSponsorID(STTx const& tx)
 {
     if (tx.isFieldPresent(sfSponsor) && isReserveSponsored(tx))
     {
+        XRPL_ASSERT(
+            getCurrentTransactionRules()->enabled(  // NOLINT(bugprone-unchecked-optional-access)
+                featureSponsor),
+            "xrpl::getTxReserveSponsorID : sponsor exists + Sponsor enabled");
         return tx.getAccountID(sfSponsor);
     }
     return {};
@@ -36,6 +42,9 @@ getTxReserveSponsor(ApplyViewContext ctx)
     auto const sponsorID = getTxReserveSponsorID(ctx.tx);
     if (sponsorID)
     {
+        XRPL_ASSERT(
+            ctx.view.rules().enabled(featureSponsor),
+            "xrpl::getTxReserveSponsor : sponsor exists + Sponsor enabled");
         auto sle = ctx.view.peek(keylet::account(*sponsorID));
 
         // already checked in Transactor::checkSponsor
@@ -52,6 +61,9 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx)
     auto const sponsorID = getTxReserveSponsorID(tx);
     if (sponsorID)
     {
+        XRPL_ASSERT(
+            view.rules().enabled(featureSponsor),
+            "xrpl::getTxReserveSponsor : sponsor exists + Sponsor enabled");
         auto sle = view.read(keylet::account(*sponsorID));
 
         // already checked in Transactor::checkSponsor
@@ -85,7 +97,12 @@ getLedgerEntryReserveSponsor(ApplyView& view, SLE::const_ref sle, SF_ACCOUNT con
 {
     auto const sponsorID = getLedgerEntryReserveSponsorID(sle, field);
     if (sponsorID)
+    {
+        XRPL_ASSERT(
+            view.rules().enabled(featureSponsor),
+            "xrpl::getLedgerEntryReserveSponsor : sponsor exists + Sponsor enabled");
         return view.peek(keylet::account(*sponsorID));
+    }
     return {};
 }
 
@@ -97,7 +114,13 @@ addSponsorToLedgerEntry(SLE::ref sle, SLE::const_ref sponsorSle, SF_ACCOUNT cons
             (sle->getType() != ltRIPPLE_STATE && field == sfSponsor),
         "addSponsorToLedgerEntry : Invalid field to the LedgerEntry");
     if (sponsorSle)
+    {
+        XRPL_ASSERT(
+            getCurrentTransactionRules()->enabled(  // NOLINT(bugprone-unchecked-optional-access)
+                featureSponsor),
+            "xrpl::addSponsorToLedgerEntry : sponsor exists + Sponsor enabled");
         sle->setAccountID(field, sponsorSle->getAccountID(sfAccount));
+    }
 }
 
 void
@@ -108,7 +131,12 @@ addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& fi
     // error case (tecINTERNAL) is an already-checked invariant; skip stamping.
     auto const sponsorSle = getTxReserveSponsor(ctx);
     if (sponsorSle && *sponsorSle)
+    {
+        XRPL_ASSERT(
+            ctx.view.rules().enabled(featureSponsor),
+            "xrpl::addSponsorToLedgerEntry : sponsor exists + Sponsor enabled");
         addSponsorToLedgerEntry(sle, *sponsorSle, field);
+    }
 }
 
 void
@@ -119,7 +147,13 @@ removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field)
             (sle->getType() != ltRIPPLE_STATE && field == sfSponsor),
         "removeSponsorFromLedgerEntry : Invalid field to the LedgerEntry");
     if (sle->isFieldPresent(field))
+    {
+        XRPL_ASSERT(
+            getCurrentTransactionRules()->enabled(  // NOLINT(bugprone-unchecked-optional-access)
+                featureSponsor),
+            "xrpl::removeSponsorFromLedgerEntry : sponsor exists + Sponsor enabled");
         sle->makeFieldAbsent(field);
+    }
 }
 
 std::optional<AccountID>
