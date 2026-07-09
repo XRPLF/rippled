@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include <cstring>
 #include <functional>
 #include <string>
+#include <tuple>
 #include <utility>
 
 namespace beast::unit_test {

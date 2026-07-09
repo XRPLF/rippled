@@ -2,8 +2,17 @@
 
 #include <xrpld/app/rdb/PeerFinder.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/peerfinder/detail/Store.h>
 #include <xrpl/rdb/SociDB.h>
+
+#include <soci/session.h>
+
+#include <cstddef>
+#include <string>
+#include <vector>
 
 namespace xrpl::PeerFinder {
 

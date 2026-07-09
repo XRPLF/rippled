@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/IntrusivePointer.ipp>
+#include <xrpl/basics/Log.h>  // IWYU pragma: keep
 #include <xrpl/basics/TaggedCache.h>
 
 namespace xrpl {
@@ -56,7 +57,10 @@ inline TaggedCache<
         beast::insight::Collector::ptr const& collector)
     : journal_(journal)
     , clock_(clock)
-    , stats_(name, std::bind(&TaggedCache::collectMetrics, this), collector)
+    , stats_(
+          name,
+          [this] { collectMetrics(); },
+          collector)
     , name_(name)
     , targetSize_(size)
     , targetAge_(expiration)
@@ -499,7 +503,8 @@ template <
 template <class ReturnType>
 inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    insert(key_type const& key, T const& value) -> std::enable_if_t<!IsKeyCache, ReturnType>
+    insert(key_type const& key, T const& value) -> ReturnType
+    requires(!IsKeyCache)
 {
     static_assert(
         std::is_same_v<std::shared_ptr<T>, SharedPointerType> ||
@@ -529,7 +534,8 @@ template <
 template <class ReturnType>
 inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    insert(key_type const& key) -> std::enable_if_t<IsKeyCache, ReturnType>
+    insert(key_type const& key) -> ReturnType
+    requires IsKeyCache
 {
     std::scoped_lock const lock(mutex_);
     clock_type::time_point const now(clock_.now());
@@ -735,7 +741,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     sweepHelper(
         clock_type::time_point const& whenExpire,
         [[maybe_unused]] clock_type::time_point const& now,
-        typename KeyValueCacheType::map_type& partition,
+        KeyValueCacheType::map_type& partition,
         SweptPointersVector& stuffToSweep,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&)
@@ -815,7 +821,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     sweepHelper(
         clock_type::time_point const& whenExpire,
         clock_type::time_point const& now,
-        typename KeyOnlyCacheType::map_type& partition,
+        KeyOnlyCacheType::map_type& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&)

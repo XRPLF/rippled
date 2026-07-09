@@ -1,8 +1,10 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/tags.h>
 
+#include <cstdint>
 #include <optional>
 
 namespace xrpl::test::jtx {

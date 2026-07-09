@@ -1,6 +1,7 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
@@ -20,6 +21,9 @@
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/jss.h>
 
+#include <org/xrpl/rpc/v1/get_ledger.pb.h>        // IWYU pragma: keep
+#include <org/xrpl/rpc/v1/get_ledger_data.pb.h>   // IWYU pragma: keep
+#include <org/xrpl/rpc/v1/get_ledger_entry.pb.h>  // IWYU pragma: keep
 #include <org/xrpl/rpc/v1/ledger.pb.h>
 
 #include <cstdint>

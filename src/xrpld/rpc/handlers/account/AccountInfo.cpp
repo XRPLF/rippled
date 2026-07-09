@@ -169,11 +169,8 @@ doAccountInfo(RPC::JsonContext& context)
         for (auto const& lsf : kDisallowIncomingFlags)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
-        if (ledger->rules().enabled(featureClawback))
-        {
-            acctFlags[kAllowTrustLineClawbackFlag.first.data()] =
-                sleAccepted->isFlag(kAllowTrustLineClawbackFlag.second);
-        }
+        acctFlags[kAllowTrustLineClawbackFlag.first.data()] =
+            sleAccepted->isFlag(kAllowTrustLineClawbackFlag.second);
 
         if (ledger->rules().enabled(featureTokenEscrow))
         {
@@ -222,7 +219,7 @@ doAccountInfo(RPC::JsonContext& context)
 
             // This code will need to be revisited if in the future we support
             // multiple SignerLists on one account.
-            auto const sleSigners = ledger->read(keylet::signers(accountID));
+            auto const sleSigners = ledger->read(keylet::signerList(accountID));
             if (sleSigners)
                 jvSignerList.append(sleSigners->getJson(JsonOptions::Values::None));
 

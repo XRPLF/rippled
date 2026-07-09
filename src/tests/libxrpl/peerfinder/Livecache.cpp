@@ -263,10 +263,9 @@ TEST_F(LivecacheTest, shuffle_preserves_bucket_contents)
     for (auto i = std::make_pair(0, cache_.hops.begin()); i.second != cache_.hops.end();
          ++i.first, ++i.second)
     {
-        std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(before[i.first]));
-        std::copy(
-            (*i.second).begin(), (*i.second).end(), std::back_inserter(beforeSorted[i.first]));
-        std::sort(beforeSorted[i.first].begin(), beforeSorted[i.first].end(), compareEndpoint);
+        std::ranges::copy(*i.second, std::back_inserter(before[i.first]));
+        std::ranges::copy(*i.second, std::back_inserter(beforeSorted[i.first]));
+        std::ranges::sort(beforeSorted[i.first], compareEndpoint);
     }
 
     cache_.hops.shuffle();
@@ -276,9 +275,9 @@ TEST_F(LivecacheTest, shuffle_preserves_bucket_contents)
     for (auto i = std::make_pair(0, cache_.hops.begin()); i.second != cache_.hops.end();
          ++i.first, ++i.second)
     {
-        std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(after[i.first]));
-        std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(afterSorted[i.first]));
-        std::sort(afterSorted[i.first].begin(), afterSorted[i.first].end(), compareEndpoint);
+        std::ranges::copy(*i.second, std::back_inserter(after[i.first]));
+        std::ranges::copy(*i.second, std::back_inserter(afterSorted[i.first]));
+        std::ranges::sort(afterSorted[i.first], compareEndpoint);
     }
 
     auto allBucketsKeptOriginalOrder = true;

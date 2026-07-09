@@ -1,5 +1,6 @@
 include(GoogleTest)
 include(isolate_headers)
+include(verify_headers)
 
 # Test requirements.
 find_package(GTest REQUIRED)
@@ -29,6 +30,8 @@ set(test_modules
     crypto
     json
     peerfinder
+    resource
+    shamap
     tx
     protocol_autogen
 )
@@ -54,5 +57,11 @@ foreach(module IN LISTS test_modules)
         PRIVATE
     )
 endforeach()
+
+# The test helpers and per-module test headers are not built with add_module,
+# so verify them against the test binary's own compile environment.
+if(verify_headers)
+    verify_target_headers(xrpl_tests "${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
 
 gtest_discover_tests(xrpl_tests DISCOVERY_TIMEOUT 60)

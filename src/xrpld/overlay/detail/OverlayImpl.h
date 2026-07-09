@@ -3,6 +3,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/Slot.h>
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
@@ -12,11 +13,20 @@
 
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/basics/UnorderedContainers.h>
-#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/UptimeClock.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Gauge.h>
+#include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/Job.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/peerfinder/Slot.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
+#include <xrpl/server/Writer.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
@@ -25,14 +35,22 @@
 #include <boost/asio/strand.hpp>
 #include <boost/container/flat_map.hpp>
 
+#include <xrpl.pb.h>
+
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <set>
+#include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -409,7 +427,7 @@ public:
     addTxMetrics(Args... args)
     {
         if (!strand_.running_in_this_thread())
-            return post(strand_, std::bind(&OverlayImpl::addTxMetrics<Args...>, this, args...));
+            return post(strand_, [this, args...] { addTxMetrics(args...); });
 
         txMetrics_.addMetrics(args...);
     }

@@ -72,7 +72,6 @@ jobs:
       issues: write
       contents: read
     with:
-      check_only_changed: false
       create_issue_on_failure: ${{ github.event_name == 'schedule' }}
 
   build-test:
@@ -98,8 +97,8 @@ jobs:
     if: ${{ github.repository == 'XRPLF/rippled' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
     uses: ./.github/workflows/reusable-upload-recipe.yml
     secrets:
-      remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+      remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
+      remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
 
   package:
     needs: build-test

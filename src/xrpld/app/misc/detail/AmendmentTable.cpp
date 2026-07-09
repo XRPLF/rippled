@@ -643,6 +643,7 @@ AmendmentState*
 AmendmentTableImpl::get(uint256 const& amendmentHash, std::scoped_lock<std::mutex> const& lock)
 {
     // Forward to the const version of get.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     return const_cast<AmendmentState*>(std::as_const(*this).get(amendmentHash, lock));
 }
 

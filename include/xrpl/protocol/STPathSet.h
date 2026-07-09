@@ -3,14 +3,17 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <cstddef>
 #include <optional>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -237,6 +240,9 @@ private:
 
 inline STPathElement::STPathElement() : type_(TypeNone), isOffer_(true)
 {
+    // hashValue_ is derived from the whole object, so it is computed in the body
+    // once every other member is initialized (as in the other constructors).
+    // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
     hashValue_ = getHash(*this);
 }
 
@@ -312,6 +318,9 @@ inline STPathElement::STPathElement(
     assetID_.visit(
         [&](Currency const&) { type_ = type_ & (~Type::TypeMpt); },
         [&](MPTID const&) { type_ = type_ & (~Type::TypeCurrency); });
+    // hashValue_ must be computed after type_ is adjusted above, so this cannot
+    // be a member initializer.
+    // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
     hashValue_ = getHash(*this);
 }
 

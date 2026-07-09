@@ -3,6 +3,8 @@
 #include <xrpl/peerfinder/detail/Source.h>
 
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace xrpl::PeerFinder {
 

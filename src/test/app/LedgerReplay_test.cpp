@@ -1,15 +1,18 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
 
 #include <xrpld/app/ledger/BuildLedger.h>
 #include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/LedgerReplayTask.h>
@@ -25,6 +28,7 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/random.h>
 #include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -36,6 +40,8 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/resource/Charge.h>
 #include <xrpl/server/Handoff.h>
 #include <xrpl/shamap/SHAMapItem.h>
@@ -68,7 +74,7 @@ namespace xrpl::test {
 struct LedgerReplay_test : public beast::unit_test::Suite
 {
     void
-    run() override
+    testReplayLedger()
     {
         testcase("Replay ledger");
 
@@ -90,6 +96,45 @@ struct LedgerReplay_test : public beast::unit_test::Suite
             LedgerReplay(lastClosedParent, lastClosed), TapNone, env.app(), env.journal);
 
         BEAST_EXPECT(replayed->header().hash == lastClosed->header().hash);
+    }
+
+    void
+    testReplayBatchLedger()
+    {
+        testcase("Replay ledger with batch transactions");
+
+        using namespace jtx;
+
+        Env env(*this, testableAmendments());
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(100000), alice, bob);
+        env.close();
+
+        auto const seq = env.seq(alice);
+        auto const batchFee = batch::calcBatchFee(env, 0, 2);
+        env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+            batch::Inner(pay(alice, bob, XRP(1)), seq + 1),
+            batch::Inner(pay(alice, bob, XRP(2)), seq + 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        LedgerMaster& ledgerMaster = env.app().getLedgerMaster();
+        auto const lastClosed = ledgerMaster.getClosedLedger();
+        auto const lastClosedParent = ledgerMaster.getLedgerByHash(lastClosed->header().parentHash);
+
+        auto const replayed = buildLedger(
+            LedgerReplay(lastClosedParent, lastClosed), TapNone, env.app(), env.journal);
+
+        BEAST_EXPECT(replayed->header().hash == lastClosed->header().hash);
+    }
+
+    void
+    run() override
+    {
+        testReplayLedger();
+        testReplayBatchLedger();
     }
 };
 
@@ -408,7 +453,7 @@ struct TestPeerSet : public PeerSet
             dropRate = 100;
         }
 
-        if (((rand() % 100) + 1) <= dropRate)
+        if (randInt(1, 100) <= dropRate)
             return;
 
         switch (type)
@@ -940,6 +985,46 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             BEAST_EXPECT(server.msgHandler.processProofPathResponse(reply));
 
             {
+                // bad reply: invalid hash/key sizes
+                {
+                    // reply with undersized ledgerhash (31 bytes)
+                    auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
+                    bad->set_ledgerhash(std::string(31, '\x01'));
+                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                }
+                {
+                    // reply with oversized ledgerhash (33 bytes)
+                    auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
+                    bad->set_ledgerhash(std::string(33, '\x01'));
+                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                }
+                {
+                    // reply with empty ledgerhash
+                    auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
+                    bad->set_ledgerhash(std::string());
+                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                }
+                {
+                    // reply with undersized key (31 bytes)
+                    auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
+                    bad->set_key(std::string(31, '\x01'));
+                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                }
+                {
+                    // reply with oversized key (33 bytes)
+                    auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
+                    bad->set_key(std::string(33, '\x01'));
+                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                }
+                {
+                    // reply with empty key
+                    auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
+                    bad->set_key(std::string());
+                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                }
+            }
+
+            {
                 // bad reply
                 // bad header
                 std::string r(reply->ledgerheader());
@@ -987,6 +1072,28 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
                 server.msgHandler.processReplayDeltaRequest(request));
             BEAST_EXPECT(!reply->has_error());
             BEAST_EXPECT(server.msgHandler.processReplayDeltaResponse(reply));
+
+            {
+                // bad reply: invalid hash sizes
+                {
+                    // reply with undersized ledgerhash (31 bytes)
+                    auto bad = std::make_shared<protocol::TMReplayDeltaResponse>(*reply);
+                    bad->set_ledgerhash(std::string(31, '\x01'));
+                    BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(bad));
+                }
+                {
+                    // reply with oversized ledgerhash (33 bytes)
+                    auto bad = std::make_shared<protocol::TMReplayDeltaResponse>(*reply);
+                    bad->set_ledgerhash(std::string(33, '\x01'));
+                    BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(bad));
+                }
+                {
+                    // reply with empty ledgerhash
+                    auto bad = std::make_shared<protocol::TMReplayDeltaResponse>(*reply);
+                    bad->set_ledgerhash(std::string());
+                    BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(bad));
+                }
+            }
 
             {
                 // bad reply
@@ -1077,10 +1184,10 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
 
         {
             Config c;
-            std::string const toLoad = (R"xrpldConfig(
+            std::string const toLoad = R"xrpldConfig(
 [ledger_replay]
 0
-)xrpldConfig");
+)xrpldConfig";
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.ledgerReplay == false);
         }

@@ -1,17 +1,24 @@
 #pragma once
 
-#include <xrpl/basics/IntrusivePointer.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/SharedWeakCachePointer.ipp>
+#include <xrpl/basics/SharedWeakCachePointer.h>
+#include <xrpl/basics/SharedWeakCachePointer.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/clock/abstract_clock.h>
-#include <xrpl/beast/insight/Insight.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Gauge.h>
+#include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/insight/NullCollector.h>
+#include <xrpl/beast/utility/Journal.h>
 
 #include <atomic>
+#include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <memory>
 #include <mutex>
+#include <string>
 #include <thread>
 #include <type_traits>
 #include <vector>
@@ -205,11 +212,13 @@ public:
     */
     template <class ReturnType = bool>
     auto
-    insert(key_type const& key, T const& value) -> std::enable_if_t<!IsKeyCache, ReturnType>;
+    insert(key_type const& key, T const& value) -> ReturnType
+        requires(!IsKeyCache);
 
     template <class ReturnType = bool>
     auto
-    insert(key_type const& key) -> std::enable_if_t<IsKeyCache, ReturnType>;
+    insert(key_type const& key) -> ReturnType
+        requires IsKeyCache;
 
     // VFALCO NOTE It looks like this returns a copy of the data in
     //             the output parameter 'data'. This could be expensive.
@@ -338,7 +347,7 @@ private:
     sweepHelper(
         clock_type::time_point const& whenExpire,
         [[maybe_unused]] clock_type::time_point const& now,
-        typename KeyValueCacheType::map_type& partition,
+        KeyValueCacheType::map_type& partition,
         SweptPointersVector& stuffToSweep,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&);
@@ -347,7 +356,7 @@ private:
     sweepHelper(
         clock_type::time_point const& whenExpire,
         clock_type::time_point const& now,
-        typename KeyOnlyCacheType::map_type& partition,
+        KeyOnlyCacheType::map_type& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&);
