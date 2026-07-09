@@ -21,7 +21,7 @@
 
 namespace xrpl {
 
-/*
+/**
  * @brief Invariants: Vault object and MPTokenIssuance for vault shares
  *
  * - vault deleted and vault created is empty

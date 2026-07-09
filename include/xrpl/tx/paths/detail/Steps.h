@@ -345,19 +345,19 @@ operator==(Strand const& lhs, Strand const& rhs)
 }
 /** @endcond */
 
-/*
-   Normalize a path by inserting implied accounts and offers
-
-   @param src Account that is sending assets
-   @param dst Account that is receiving assets
-   @param deliver Asset the dst account will receive
-   (if issuer of deliver == dst, then accept any issuer)
-   @param sendMax Optional asset to send.
-   @param path Liquidity sources to use for this strand of the payment. The path
-               contains an ordered collection of the offer books to use and
-               accounts to ripple through.
-   @return error code and normalized path
-*/
+/**
+ * Normalize a path by inserting implied accounts and offers
+ *
+ * @param src Account that is sending assets
+ * @param dst Account that is receiving assets
+ * @param deliver Asset the dst account will receive
+ * (if issuer of deliver == dst, then accept any issuer)
+ * @param sendMax Optional asset to send.
+ * @param path Liquidity sources to use for this strand of the payment. The path
+ *             contains an ordered collection of the offer books to use and
+ *             accounts to ripple through.
+ * @return error code and normalized path
+ */
 std::pair<TER, STPath>
 normalizePath(
     AccountID const& src,

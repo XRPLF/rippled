@@ -404,7 +404,8 @@ struct LoanStateDeltas
     // The difference in management fee outstanding between two loan states.
     Number managementFee;
 
-    /* Calculates the total change across all components.
+    /**
+     * Calculates the total change across all components.
      * @return The sum of principal, interest, and management fee deltas.
      */
     [[nodiscard]] Number

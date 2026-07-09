@@ -469,15 +469,16 @@ public:
         std::string siteUri,
         std::optional<uint256> const& hash = {});
 
-    /* Attempt to read previously stored list files. Expected to only be
-       called when loading from URL fails.
-
-       @return A list of valid file:// URLs, if any.
-
-       @par Thread Safety
-
-       May be called concurrently
-    */
+    /**
+     * Attempt to read previously stored list files. Expected to only be
+     * called when loading from URL fails.
+     *
+     * @return A list of valid file:// URLs, if any.
+     *
+     * @par Thread Safety
+     *
+     * May be called concurrently
+     */
     std::vector<std::string>
     loadLists();
 
