@@ -1029,6 +1029,15 @@ public:
             BEAST_EXPECT(sle2->isFieldPresent(sfSponsor));
             BEAST_EXPECT(sle2->getAccountID(sfSponsor) == sponsor2.id());
 
+            // Reassign to the current sponsor is a no-op and is rejected
+            env(sponsor::transfer(alice, tfSponsorshipReassign),
+                sponsor::As(sponsor2, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor2),
+                Ter(tecNO_PERMISSION));
+            env.close();
+
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 1);
+
             // sponsor 2 accounts
             adjustAccountXRPBalance(env, sponsor2, accountReserve(env, 3));
             env(sponsor::transfer(bob, tfSponsorshipCreate),
@@ -1178,6 +1187,15 @@ public:
                 Ter(tecNO_PERMISSION));
             env.close();
 
+            // Reassign to the current sponsor is a no-op and is rejected
+            env(sponsor::transfer(alice, tfSponsorshipReassign, checkId),
+                sponsor::As(sponsor1, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor1),
+                Ter(tecNO_PERMISSION));
+            env.close();
+
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 1);
+
             // transfer sponsor
             env(sponsor::transfer(alice, tfSponsorshipReassign, checkId),
                 sponsor::As(sponsor2, spfSponsorReserve),
@@ -1321,6 +1339,17 @@ public:
             BEAST_EXPECT(checkSle->getAccountID(sfSponsor) == sponsor1.id());
             auto sponsor1Sle = env.le(keylet::sponsorship(sponsor1, alice));
             BEAST_EXPECT(sponsor1Sle->getFieldU32(sfRemainingOwnerCount) == 99);
+
+            // Reassign to the current sponsor is rejected and must not draw
+            // down the pre-funded reserve budget
+            env(sponsor::transfer(alice, tfSponsorshipReassign, checkId),
+                sponsor::As(sponsor1, spfSponsorReserve),
+                Ter(tecNO_PERMISSION));
+            env.close();
+
+            sponsor1Sle = env.le(keylet::sponsorship(sponsor1, alice));
+            BEAST_EXPECT(sponsor1Sle->getFieldU32(sfRemainingOwnerCount) == 99);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 1);
 
             // transfer sponsor
             env(sponsor::set_reserve(sponsor2, 0, 100), sponsor::SponseeAcc(alice));

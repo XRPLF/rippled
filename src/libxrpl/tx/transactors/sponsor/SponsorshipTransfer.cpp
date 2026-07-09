@@ -273,6 +273,12 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         // be sponsored
         if (!newSponsorSle || !isSponsored)
             return tecNO_PERMISSION;
+
+        // Reassigning to the current sponsor would change no state, but would
+        // still draw down the sponsor's pre-funded reserve budget (and its
+        // reserve headroom would be double-counted in checkReserve).
+        if (targetSle->getAccountID(*sponsorField) == ctx.tx.getAccountID(sfSponsor))
+            return tecNO_PERMISSION;
     }
     else if (ctx.tx.isFlag(tfSponsorshipEnd))
     {
