@@ -641,14 +641,20 @@ Transactor::payFee()
     }
 
     // A co-signed sponsor pays the fee out of its own account balance, but must
-    // never be charged into its account reserve. Mirror the spendable amount
-    // computed in checkFee() so the reserve is protected on the apply path too.
+    // never be charged into its account reserve, and a pre-funded sponsorship's
+    // fee is capped by sfMaxFee. Mirror the spendable amount computed in
+    // checkFee() so both limits are enforced on the apply path too.
     XRPAmount spendable = balance;
     if (feePayer.type == FeePayerType::SponsorCoSigned)
     {
         auto const sponsorReserve = accountReserve(view(), sle, j_);
         // max(balance - reserve, 0) with overflow handling
         spendable = balance > sponsorReserve ? balance - sponsorReserve : beast::kZero;
+    }
+    else if (feePayer.type == FeePayerType::SponsorPreFunded && sle->isFieldPresent(sfMaxFee))
+    {
+        auto const cap = sle->getFieldAmount(sfMaxFee).xrp();
+        spendable = std::min(spendable, cap);
     }
 
     // Only sponsor fee-payers reject here on insufficient funds. For an
