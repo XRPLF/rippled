@@ -153,14 +153,14 @@ buffersEnd(BufferSequence const& bufs)
 }
 
 /**
- * Parse a message header
- * @return a seated optional if the message header was successfully
- *         parsed. An unseated optional otherwise, in which case
- *         @param ec contains more information:
- *         - set to `errc::success` if not enough bytes were present
- *         - set to `errc::no_message` if a valid header was not present
- *         @bufs - sequence of input buffers, can't be empty
- *         @size input data size
+ * Parse a message header.
+ *
+ * @param ec On failure, set to `errc::success` if not enough bytes were
+ *           present, or `errc::no_message` if a valid header was not present.
+ * @param bufs Sequence of input buffers; can't be empty.
+ * @param size Input data size.
+ * @return A seated optional if the message header was successfully parsed, or
+ *         an unseated optional otherwise (see @p ec).
  */
 template <class BufferSequence>
 std::optional<MessageHeader>
