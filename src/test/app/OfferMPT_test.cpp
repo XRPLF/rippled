@@ -3696,9 +3696,7 @@ public:
                 BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
                 BEAST_EXPECT(env.le(keylet::offer(taker.id(), takerSeq)) != nullptr);
             }
-            BEAST_EXPECT(
-                logs.find("Removing offer with overflowing amount calculation") !=
-                std::string::npos);
+            BEAST_EXPECT(logs.contains("Removing offer with overflowing amount calculation"));
         }
     }
 
