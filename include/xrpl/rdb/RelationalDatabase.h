@@ -1,17 +1,33 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/LedgerShortcut.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/TxSearched.h>
-#include <xrpl/rdb/DatabaseCon.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/variant.hpp>
+
+#include <concepts>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <map>
+#include <memory>
+#include <optional>
+#include <tuple>
+#include <utility>
+#include <variant>
+#include <vector>
 
 namespace xrpl {
 

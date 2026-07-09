@@ -2,10 +2,17 @@
 
 #include <xrpld/app/main/Application.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Counter.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 
+#include <map>
+#include <memory>
 #include <optional>
 
 namespace xrpl {

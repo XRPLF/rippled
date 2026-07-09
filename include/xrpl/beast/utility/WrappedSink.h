@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
+#include <string>
 #include <utility>
 
 namespace beast {

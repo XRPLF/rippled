@@ -31,8 +31,7 @@ MPTIssue::getIssuer() const
     // MPTID is concatenation of sequence + account
     static_assert(sizeof(MPTID) == (sizeof(std::uint32_t) + sizeof(AccountID)));
     // copy from id skipping the sequence
-    AccountID const* account =
-        reinterpret_cast<AccountID const*>(mptID_.data() + sizeof(std::uint32_t));
+    auto const* account = reinterpret_cast<AccountID const*>(mptID_.data() + sizeof(std::uint32_t));
 
     return *account;
 }

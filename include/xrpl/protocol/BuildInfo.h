@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <string_view>
 
 /** Versioning information for this build. */
 // VFALCO The namespace is deprecated

@@ -3,6 +3,7 @@
 #include <boost/container/flat_map.hpp>
 
 #include <condition_variable>
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <mutex>

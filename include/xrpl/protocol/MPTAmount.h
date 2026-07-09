@@ -2,13 +2,15 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Zero.h>
 
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/operators.hpp>
 
 #include <cstdint>
+#include <limits>
+#include <ostream>
+#include <stdexcept>
 #include <string>
 
 namespace xrpl {

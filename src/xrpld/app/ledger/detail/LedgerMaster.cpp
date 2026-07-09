@@ -2,6 +2,7 @@
 
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
@@ -136,7 +137,7 @@ LedgerMaster::LedgerMaster(
           std::chrono::seconds{45},
           stopwatch,
           app_.getJournal("TaggedCache"))
-    , stats_(std::bind(&LedgerMaster::collectMetrics, this), collector)
+    , stats_([this] { collectMetrics(); }, collector)
 {
 }
 
@@ -755,7 +756,9 @@ LedgerMaster::getFetchPack(LedgerIndex missing, InboundLedger::Reason reason)
         JLOG(journal_.trace()) << "Requested fetch pack for " << missing;
     }
     else
+    {
         JLOG(journal_.debug()) << "No peer for fetch pack";
+    }
 }
 
 void
@@ -1798,10 +1801,14 @@ LedgerMaster::fetchForHistory(
                     getFetchPack(missing, reason);
                 }
                 else
+                {
                     JLOG(journal_.trace()) << "fetchForHistory no fetch pack for " << missing;
+                }
             }
             else
+            {
                 JLOG(journal_.debug()) << "fetchForHistory found failed acquire";
+            }
         }
         if (ledger)
         {

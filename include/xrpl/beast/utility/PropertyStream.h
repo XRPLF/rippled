@@ -3,8 +3,10 @@
 #include <xrpl/beast/core/List.h>
 
 #include <mutex>
+#include <ostream>
 #include <sstream>
 #include <string>
+#include <utility>
 
 namespace beast {
 

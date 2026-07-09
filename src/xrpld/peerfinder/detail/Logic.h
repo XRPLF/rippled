@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/Slot.h>
 #include <xrpld/peerfinder/detail/Bootcache.h>
 #include <xrpld/peerfinder/detail/Counts.h>
 #include <xrpld/peerfinder/detail/Fixed.h>
@@ -14,14 +15,29 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/PublicKey.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <set>
+#include <stdexcept>
+#include <string_view>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl::PeerFinder {
 
@@ -573,19 +589,17 @@ public:
                 // build list of active slots
                 std::vector<SlotImp::ptr> activeSlots;
                 activeSlots.reserve(slots.size());
-                std::for_each(
-                    slots.cbegin(), slots.cend(), [&activeSlots](Slots::value_type const& value) {
-                        if (value.second->state() == Slot::State::Active)
-                            activeSlots.emplace_back(value.second);
-                    });
+                std::ranges::for_each(slots, [&activeSlots](Slots::value_type const& value) {
+                    if (value.second->state() == Slot::State::Active)
+                        activeSlots.emplace_back(value.second);
+                });
                 std::shuffle(activeSlots.begin(), activeSlots.end(), defaultPrng());
 
                 // build target vector
                 targets.reserve(activeSlots.size());
-                std::for_each(
-                    activeSlots.cbegin(), activeSlots.cend(), [&targets](SlotImp::ptr const& slot) {
-                        targets.emplace_back(slot);
-                    });
+                std::ranges::for_each(activeSlots, [&targets](SlotImp::ptr const& slot) {
+                    targets.emplace_back(slot);
+                });
             }
 
             /* VFALCO NOTE
@@ -788,12 +802,10 @@ public:
                     //
                     checker.asyncConnect(
                         ep.address,
-                        std::bind(
-                            &Logic::checkComplete,
-                            this,
-                            slot->remoteEndpoint(),
-                            ep.address,
-                            std::placeholders::_1));
+                        [this, remoteAddress = slot->remoteEndpoint(), checkedAddress = ep.address](
+                            boost::system::error_code const& ec) {
+                            checkComplete(remoteAddress, checkedAddress, ec);
+                        });
 
                     // Note that we simply discard the first Endpoint
                     // that the neighbor sends when we perform the
@@ -980,14 +992,14 @@ public:
     /** Adds eligible Fixed addresses for outbound attempts. */
     template <class Container>
     void
-    getFixed(std::size_t needed, Container& c, typename ConnectHandouts::Squelches& squelches)
+    getFixed(std::size_t needed, Container& c, ConnectHandouts::Squelches& squelches)
     {
         auto const now(clock.now());
         for (auto iter = fixed_.begin(); needed && iter != fixed_.end(); ++iter)
         {
             auto const& address(iter->first.address());
             if (iter->second.when() <= now && squelches.find(address) == squelches.end() &&
-                std::none_of(slots.cbegin(), slots.cend(), [address](Slots::value_type const& v) {
+                std::ranges::none_of(slots, [address](Slots::value_type const& v) {
                     return address == v.first.address();
                 }))
             {

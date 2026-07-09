@@ -331,7 +331,7 @@ public:
         , jobQueue_(jobQueue)
         , standalone_(standalone)
         , minPeerCount_(startValid ? 0 : minPeerCount)
-        , stats_(std::bind(&NetworkOPsImp::collectMetrics, this), collector)
+        , stats_([this] { collectMetrics(); }, collector)
     {
     }
 
@@ -1254,8 +1254,9 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
         return;
     }
 
-    // Enforce Network bar for batch txn
-    if (iTrans->isFlag(tfInnerBatchTxn) && ledgerMaster_.getValidatedRules().enabled(featureBatch))
+    // Reject any transaction with the tfInnerBatchTxn flag at the network
+    // boundary, regardless of amendment state.
+    if (iTrans->isFlag(tfInnerBatchTxn))
     {
         JLOG(journal_.error()) << "Submitted transaction invalid: tfInnerBatchTxn flag present.";
         return;
@@ -1321,7 +1322,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     // under no circumstances will we ever accept an inner txn within a batch
     // txn from the network.
     auto const sttx = *transaction->getSTransaction();
-    if (sttx.isFlag(tfInnerBatchTxn) && view->rules().enabled(featureBatch))
+    if (sttx.isFlag(tfInnerBatchTxn))
     {
         transaction->setStatus(TransStatus::INVALID);
         transaction->setResult(temINVALID_FLAG);
@@ -1688,11 +1689,13 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                         e.transaction->setKept();
                     }
                     else
+                    {
                         JLOG(journal_.debug())
                             << "Not holding transaction " << e.transaction->getID() << ": "
                             << (e.local ? "local" : "network") << ", "
                             << "result: " << e.result << " ledgers left: "
                             << (ledgersLeft ? to_string(*ledgersLeft) : "unspecified");
+                    }
                 }
             }
             else
@@ -4379,7 +4382,7 @@ NetworkOPsImp::findRpcSub(std::string const& strUrl)
 {
     std::scoped_lock const sl(subLock_);
 
-    subRpcMapType::iterator const it = rpcSubMap_.find(strUrl);
+    auto const it = rpcSubMap_.find(strUrl);
 
     if (it != rpcSubMap_.end())
         return it->second;
@@ -4814,7 +4817,7 @@ NetworkOPsImp::StateAccounting::json(json::Value& obj) const
     counters[static_cast<std::size_t>(mode)].dur += current;
 
     obj[jss::state_accounting] = json::ValueType::Object;
-    for (std::size_t i = static_cast<std::size_t>(OperatingMode::DISCONNECTED);
+    for (auto i = static_cast<std::size_t>(OperatingMode::DISCONNECTED);
          i <= static_cast<std::size_t>(OperatingMode::FULL);
          ++i)
     {
