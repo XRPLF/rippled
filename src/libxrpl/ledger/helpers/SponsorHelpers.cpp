@@ -174,8 +174,10 @@ getSLEOwner(ReadView const& view, SLE const& sle, AccountID const& account)
             return std::nullopt;
         }
         default:
+            // LCOV_EXCL_START
             UNREACHABLE("xrpl::getSLEOwner : object is not supported by sponsorship.");
             return std::nullopt;
+            // LCOV_EXCL_STOP
     };
 }
 

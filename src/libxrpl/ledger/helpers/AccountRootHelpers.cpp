@@ -65,11 +65,13 @@ confineOwnerCount(
         // Overflow is well defined on unsigned
         if (totalOwnerCount < currentOwnerCount)
         {
+            // LCOV_EXCL_START
             if (id)
             {
                 JLOG(j.fatal()) << "Account " << *id << " owner count exceeds max!";
             }
             totalOwnerCount = std::numeric_limits<std::uint32_t>::max();
+            // LCOV_EXCL_STOP
         }
     }
     else
@@ -100,8 +102,10 @@ accountCountImpl(SLE::const_ref sle, std::int32_t accountCountAdj, beast::Journa
     std::int64_t totalAccountCount{currentAccountCount + accountCountAdj};
     if (totalAccountCount > std::numeric_limits<std::uint32_t>::max())
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Reserve count exceeds max!";
         totalAccountCount = std::numeric_limits<std::uint32_t>::max();
+        // LCOV_EXCL_STOP
     }
     else if (totalAccountCount < 0)
     {
@@ -216,19 +220,23 @@ ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj)
 
     if (deltaCount > std::numeric_limits<std::int32_t>::max())
     {
+        // LCOV_EXCL_START
         deltaCount = std::numeric_limits<std::int32_t>::max();
         JLOG(j.fatal()) << "Account " << id << " delta count exceeds max, "
                         << "adjustment: " << ownerCountAdj
                         << ", sponsoredCount: " << sponsoredOwnerCount
                         << ", sponsoringOwnerCount: " << sponsoringOwnerCount;
+        // LCOV_EXCL_STOP
     }
     else if (deltaCount < std::numeric_limits<std::int32_t>::min())
     {
+        // LCOV_EXCL_START
         deltaCount = std::numeric_limits<std::int32_t>::min();
         JLOG(j.fatal()) << "Account " << id << " delta count is below min, "
                         << "adjustment: " << ownerCountAdj
                         << ", sponsoredCount: " << sponsoredOwnerCount
                         << ", sponsoringCount: " << sponsoringOwnerCount;
+        // LCOV_EXCL_STOP
     }
 
     return confineOwnerCount(currentOwnerCount, deltaCount);

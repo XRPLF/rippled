@@ -5203,6 +5203,31 @@ class Invariants_test : public beast::unit_test::Suite
 
         {
             auto const expectMessage =
+                "SponsoredObjectOwnerCount does not equal SponsoredOwnerCount delta.";
+            uint256 checkID;
+
+            doInvariantCheck(
+                {{expectMessage}},
+                [&](Account const&, Account const& a2, ApplyContext& ac) {
+                    auto const check = ac.view().peek(keylet::check(checkID));
+                    if (!check)
+                        return false;
+                    check->setAccountID(sfSponsor, a2.id());
+                    ac.view().update(check);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&checkID](Account const& a1, Account const& a2, Env& env) {
+                    checkID = keylet::check(a1.id(), env.seq(a1)).key;
+                    env(check::create(a1, a2, XRP(1)));
+                    return true;
+                });
+        }
+
+        {
+            auto const expectMessage =
                 "Invariant failed: Net delta of SponsoringAccountCount does "
                 "not match net delta of sfSponsor presence.";
 
