@@ -8,7 +8,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
-#include <memory>
 
 namespace xrpl {
 
