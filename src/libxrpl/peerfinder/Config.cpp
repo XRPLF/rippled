@@ -84,10 +84,10 @@ Config::makeConfig(
             throw std::runtime_error("Both inbound and outbound peer limits must be configured");
 
         if (limits.inPeers && *limits.inPeers > 1000)
-            throw std::runtime_error("Inbound peer limit must be less or equal than 1000");
+            throw std::runtime_error("Inbound peer limit must be less than or equal to 1000");
 
         if (limits.outPeers && (*limits.outPeers < 10 || *limits.outPeers > 1000))
-            throw std::runtime_error("Outbound peer limit must be in range 10-1000");
+            throw std::runtime_error("Outbound peer limit must be in the range 10-1000");
     }
 
     config.peerPrivate = peerPrivate;
