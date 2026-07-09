@@ -3,8 +3,11 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
 
+#include <cstddef>
 #include <optional>
+#include <ostream>
 #include <string>
+#include <string_view>
 #include <tuple>
 
 namespace xrpl {
@@ -127,7 +130,7 @@ operator<<(std::ostream& out, SHAMapNodeID const& node)
 deserializeSHAMapNodeID(void const* data, std::size_t size);
 
 [[nodiscard]] inline std::optional<SHAMapNodeID>
-deserializeSHAMapNodeID(std::string const& s)
+deserializeSHAMapNodeID(std::string_view s)
 {
     return deserializeSHAMapNodeID(s.data(), s.size());
 }

@@ -1,8 +1,11 @@
 #pragma once
 
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 
 namespace xrpl {
 
@@ -21,7 +24,7 @@ private:
     uint256 end_;
     uint256 dir_;
     uint256 index_;
-    std::shared_ptr<SLE> entry_;
+    SLE::pointer entry_;
     Quality quality_{};
 
 public:

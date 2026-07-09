@@ -14,7 +14,6 @@
 
 #include <cstdint>
 #include <cstring>
-#include <functional>
 #include <initializer_list>
 #include <memory>
 #include <string>
@@ -5843,7 +5842,7 @@ makeNetworkConfig(uint32_t networkID)
 {
     using namespace test::jtx;
     return envconfig([&](std::unique_ptr<Config> cfg) {
-        cfg->NETWORK_ID = networkID;
+        cfg->networkId = networkID;
         return cfg;
     });
 }
@@ -5927,7 +5926,7 @@ public:
     void
     run() override
     {
-        forAllApiVersions(std::bind_front(&RPCCall_test::testRPCCall, this));
+        forAllApiVersions([this](unsigned apiVersion) { testRPCCall(apiVersion); });
     }
 };
 

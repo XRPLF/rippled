@@ -1,7 +1,6 @@
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
@@ -12,6 +11,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
@@ -56,7 +57,7 @@ template <class Generator>
 static void
 rngcpy(void* buffer, std::size_t bytes, Generator& g)
 {
-    using result_type = typename Generator::result_type;
+    using result_type = Generator::result_type;
     while (bytes >= sizeof(result_type))
     {
         auto const v = g();
@@ -84,16 +85,16 @@ private:
 
     beast::xor_shift_engine gen_;
     std::uint8_t prefix_;
-    std::discrete_distribution<std::uint32_t> d_type_;
-    std::uniform_int_distribution<std::uint32_t> d_size_;
+    std::discrete_distribution<std::uint32_t> dType_;
+    std::uniform_int_distribution<std::uint32_t> dSize_;
 
 public:
     explicit Sequence(std::uint8_t prefix)
         : prefix_(prefix)
         // uniform distribution over hotLEDGER - hotTRANSACTION_NODE
         // but exclude  hotTRANSACTION = 2 (removed)
-        , d_type_({1, 1, 0, 1, 1})
-        , d_size_(kMinSize, kMaxSize)
+        , dType_({1, 1, 0, 1, 1})
+        , dSize_(kMinSize, kMaxSize)
     {
     }
 
@@ -116,10 +117,10 @@ public:
         auto const data = static_cast<std::uint8_t*>(&*key.begin());
         *data = prefix_;
         rngcpy(data + 1, key.size() - 1, gen_);
-        Blob value(d_size_(gen_));
+        Blob value(dSize_(gen_));
         rngcpy(&value[0], value.size(), gen_);
         return NodeObject::createObject(
-            safeCast<NodeObjectType>(d_type_(gen_)), std::move(value), key);
+            safeCast<NodeObjectType>(dType_(gen_)), std::move(value), key);
     }
 
     // returns a batch of NodeObjects starting at n
@@ -140,11 +141,11 @@ class Timing_test : public beast::unit_test::Suite
 public:
     static constexpr auto kMissingNodePercent = 20;  // percent of fetches for missing nodes
 
-    std::size_t const default_repeat = 3;
+    std::size_t const defaultRepeat = 3;
 #ifndef NDEBUG
-    std::size_t const default_items = 10000;
+    std::size_t const defaultItems = 10000;
 #else
-    std::size_t const default_items = 100000;  // release
+    std::size_t const defaultItems = 100000;  // release
 #endif
 
     using clock_type = std::chrono::steady_clock;
@@ -563,10 +564,10 @@ public:
                     char p[2];
                     p[0] = rand_(gen_) < 50 ? 0 : 1;
                     p[1] = 1 - p[0];
-                    for (int q = 0; q < 2; ++q)
+                    for (char const op : p)
                     {
                         // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
-                        switch (p[q])
+                        switch (op)
                         {
                             case 0: {
                                 // fetch recent
@@ -639,7 +640,7 @@ public:
         {
             w = std::max<std::basic_string<char>::size_type>(w, test.first.size());
         }
-        log << threads << " Thread" << (threads > 1 ? "s" : "") << ", " << default_items
+        log << threads << " Thread" << (threads > 1 ? "s" : "") << ", " << defaultItems
             << " Objects" << std::endl;
         {
             std::stringstream ss;
@@ -655,15 +656,16 @@ public:
         for (auto const& configString : configStrings)
         {
             Params params{};
-            params.items = default_items;
+            params.items = defaultItems;
             params.threads = threads;
-            for (auto i = default_repeat; (i--) != 0u;)
+            for (auto i = defaultRepeat; (i--) != 0u;)
             {
                 beast::TempDir const tempDir;
                 Section config = parse(configString);
-                config.set("path", tempDir.path());
+                config.set(Keys::kPath, tempDir.path());
                 std::stringstream ss;
-                ss << std::left << setw(10) << get(config, "type", std::string()) << std::right;
+                ss << std::left << setw(10) << get(config, Keys::kType, std::string())
+                   << std::right;
                 for (auto const& test : tests)
                 {
                     ss << " " << setw(w) << toString(doTest(test.second, config, params, journal));

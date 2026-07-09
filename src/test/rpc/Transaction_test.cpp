@@ -31,7 +31,6 @@
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -47,7 +46,7 @@ class Transaction_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
         return envconfig([&](std::unique_ptr<Config> cfg) {
-            cfg->NETWORK_ID = networkID;
+            cfg->networkId = networkID;
             return cfg;
         });
     }
@@ -749,7 +748,7 @@ class Transaction_test : public beast::unit_test::Suite
         using std::to_string;
 
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
+                    cfg->fees.referenceFee = 10;
                     return cfg;
                 })};
         Account const alice{"alice"};
@@ -827,7 +826,7 @@ class Transaction_test : public beast::unit_test::Suite
         using std::to_string;
 
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
+                    cfg->fees.referenceFee = 10;
                     return cfg;
                 })};
         Account const alice{"alice"};
@@ -886,7 +885,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        forAllApiVersions(std::bind_front(&Transaction_test::testBinaryRequest, this));
+        forAllApiVersions([this](unsigned apiVersion) { testBinaryRequest(apiVersion); });
 
         FeatureBitset const all{testableAmendments()};
         testWithFeats(all);
@@ -899,7 +898,8 @@ public:
         testRangeCTIDRequest(features);
         testCTIDValidation(features);
         testRPCsForCTID(features);
-        forAllApiVersions(std::bind_front(&Transaction_test::testRequest, this, features));
+        forAllApiVersions(
+            [this, features](unsigned apiVersion) { testRequest(features, apiVersion); });
     }
 };
 

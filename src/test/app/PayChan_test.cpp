@@ -19,7 +19,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/Zero.h>  // IWYU pragma: keep
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -45,7 +45,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
-#include <memory>
 #include <optional>
 #include <set>
 #include <string>
@@ -57,13 +56,13 @@ using namespace jtx::paychan;
 
 struct PayChan_test : public beast::unit_test::Suite
 {
-    static std::pair<uint256, std::shared_ptr<SLE const>>
+    static std::pair<uint256, SLE::const_pointer>
     channelKeyAndSle(ReadView const& view, jtx::Account const& account, jtx::Account const& dst)
     {
         auto const sle = view.read(keylet::account(account));
         if (!sle)
             return {};
-        auto const k = keylet::payChan(account, dst, (*sle)[sfSequence] - 1);
+        auto const k = keylet::payChannel(account, dst, (*sle)[sfSequence] - 1);
         return {k.key, view.read(k)};
     }
 
@@ -869,7 +868,7 @@ struct PayChan_test : public beast::unit_test::Suite
             env.close();
 
             // Setup deposit authorization
-            env(deposit::authCredentials(bob, {{carol, credType}}));
+            env(deposit::authCredentials(bob, {{.issuer = carol, .credType = credType}}));
             env.close();
 
             // Fail, credentials doesn’t belong to root account
@@ -1324,10 +1323,10 @@ struct PayChan_test : public beast::unit_test::Suite
         auto sliceToHex = [](Slice const& slice) {
             std::string s;
             s.reserve(2 * slice.size());
-            for (int i = 0; i < slice.size(); ++i)
+            for (std::uint8_t const byte : slice)
             {
-                s += "0123456789ABCDEF"[((slice[i] & 0xf0) >> 4)];
-                s += "0123456789ABCDEF"[((slice[i] & 0x0f) >> 0)];
+                s += "0123456789ABCDEF"[((byte & 0xf0) >> 4)];
+                s += "0123456789ABCDEF"[((byte & 0x0f) >> 0)];
             }
             return s;
         };
@@ -1665,9 +1664,8 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const settleDelay = 100s;
         auto const pk = alice.pk();
 
-        auto inOwnerDir = [](ReadView const& view,
-                             Account const& acc,
-                             std::shared_ptr<SLE const> const& chan) -> bool {
+        auto inOwnerDir =
+            [](ReadView const& view, Account const& acc, SLE::const_ref chan) -> bool {
             xrpl::Dir const ownerDir(view, keylet::ownerDir(acc.id()));
             // NOLINTNEXTLINE(modernize-use-ranges)
             return std::find(ownerDir.begin(), ownerDir.end(), chan) != ownerDir.end();
@@ -1992,7 +1990,10 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testableAmendments()};
+        // fixCleanup3_2_0 changes payment-channel error codes (tem* -> tec*)
+        // and channel-closing semantics. This suite asserts the
+        // pre-amendment behavior, so run it with the amendment disabled.
+        FeatureBitset const all{testableAmendments() - fixCleanup3_2_0};
         testWithFeats(all);
         testDepositAuthCreds();
         testMetaAndOwnership(all - fixIncludeKeyletFields);

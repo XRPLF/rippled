@@ -1,6 +1,15 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -9,6 +18,7 @@ class LedgerStateFix : public Transactor
 public:
     enum class FixType : std::uint16_t {
         NfTokenPageLink = 1,
+        BookExchangeRate = 2,
     };
 
     static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
@@ -30,10 +40,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

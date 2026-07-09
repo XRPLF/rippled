@@ -3,6 +3,7 @@
 #include <xrpl/beast/insight/MeterImpl.h>
 
 #include <memory>
+#include <utility>
 
 namespace beast::insight {
 
@@ -28,7 +29,7 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Meter(std::shared_ptr<MeterImpl> const& impl) : impl_(impl)
+    explicit Meter(std::shared_ptr<MeterImpl> impl) : impl_(std::move(impl))
     {
     }
 

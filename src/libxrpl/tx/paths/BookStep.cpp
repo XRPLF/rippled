@@ -905,6 +905,11 @@ BookStep<TIn, TOut, TDerived>::getAMMOffer(
     ReadView const& view,
     std::optional<Quality> const& clobQuality) const
 {
+    // AMM doesn't support domain books. When fixCleanup3_3_0 is enabled, exclude
+    // AMM liquidity so quality estimation matches actual crossing (tryAMM skips
+    // AMM for domain books).
+    if (book_.domain && view.rules().enabled(fixCleanup3_3_0))
+        return std::nullopt;
     if (ammLiquidity_)
         return ammLiquidity_->getOffer(view, clobQuality);
     return std::nullopt;
@@ -1354,25 +1359,24 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
 
             auto const err = book_.in.visit(
                 [&](Issue const& issue) -> std::optional<TER> {
-                    auto sle = view.read(keylet::line(*prev, cur, issue.currency));
+                    auto sle = view.read(keylet::trustLine(*prev, cur, issue.currency));
                     if (!sle)
                         return terNO_LINE;
                     if (sle->isFlag((cur > *prev) ? lsfHighNoRipple : lsfLowNoRipple))
                         return terNO_RIPPLE;
                     return std::nullopt;
                 },
-                [&](MPTIssue const& issue) -> std::optional<TER> {
-                    // Check if can trade on DEX.
-                    if (auto const ter = canTrade(view, book_.in); !isTesSuccess(ter))
-                        return ter;
-                    if (auto const ter = canTrade(view, book_.out); !isTesSuccess(ter))
-                        return ter;
-                    return std::nullopt;
-                });
+                [&](MPTIssue const& issue) -> std::optional<TER> { return std::nullopt; });
             if (err)
                 return *err;
         }
     }
+
+    // Check if the offer can be traded on DEX.
+    if (auto const ter = canTrade(ctx.view, book_.in); !isTesSuccess(ter))
+        return ter;
+    if (auto const ter = canTrade(ctx.view, book_.out); !isTesSuccess(ter))
+        return ter;
 
     return tesSUCCESS;
 }
@@ -1384,12 +1388,22 @@ BookStep<TIn, TOut, TDerived>::rate(
     Asset const& asset,
     AccountID const& dstAccount) const
 {
-    auto const& issuer = asset.getIssuer();
-    if (isXRP(issuer) || issuer == dstAccount)
-        return kParityRate;
     return asset.visit(
-        [&](Issue const&) { return transferRate(view, issuer); },
-        [&](MPTIssue const& issue) { return transferRate(view, issue.getMptID()); });
+        [&](Issue const& issue) -> Rate {
+            if (isXRP(issue.account) || issue.account == dstAccount)
+                return kParityRate;
+            return transferRate(view, issue.account);
+        },
+        [&](MPTIssue const& mptIssue) -> Rate {
+            // For MPT, parity applies only when this asset is the final strand
+            // delivery AND the destination is the MPT issuer (holder → issuer,
+            // which is fee-free). Using strandDst_ alone is wrong because it
+            // incorrectly suppresses the fee when MPT is an intermediate or
+            // the in-side of a book that precedes the issuer's XRP receipt.
+            if (asset == strandDeliver_ && mptIssue.getIssuer() == dstAccount)
+                return kParityRate;
+            return transferRate(view, mptIssue.getMptID());
+        });
 };
 
 template <class TIn, class TOut, class TDerived>
@@ -1463,8 +1477,8 @@ bookStepEqual(Step const& step, xrpl::Book const& book)
 {
     return std::visit(
         [&]<typename TIn, typename TOut>(TIn const&, TOut const&) {
-            using TIn_ = typename TIn::amount_type;
-            using TOut_ = typename TOut::amount_type;
+            using TIn_ = TIn::amount_type;
+            using TOut_ = TOut::amount_type;
 
             if constexpr (ValidTaker<TIn_, TOut_>)
             {

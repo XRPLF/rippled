@@ -3,6 +3,7 @@
 #include <xrpl/beast/insight/GaugeImpl.h>
 
 #include <memory>
+#include <utility>
 
 namespace beast::insight {
 
@@ -31,7 +32,7 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Gauge(std::shared_ptr<GaugeImpl> const& impl) : impl_(impl)
+    explicit Gauge(std::shared_ptr<GaugeImpl> impl) : impl_(std::move(impl))
     {
     }
 
@@ -48,6 +49,11 @@ public:
             impl_->set(value);
     }
 
+    // This is a write-through handle: assignment sets the value of the
+    // referenced metric.  It is const-qualified and returns Gauge const&
+    // (a non-const Gauge& would require a const_cast), so it does not follow
+    // the conventional assignment-operator signature.
+    // NOLINTNEXTLINE(misc-unconventional-assign-operator)
     Gauge const&
     operator=(value_type value) const
     {

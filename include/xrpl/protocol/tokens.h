@@ -1,19 +1,20 @@
 #pragma once
 
-#include <xrpl/basics/Expected.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/protocol/detail/token_errors.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <optional>
 #include <span>
 #include <string>
 #include <string_view>
+#include <system_error>
 
 namespace xrpl {
 
 template <class T>
-using B58Result = Expected<T, std::error_code>;
+using B58Result = std::expected<T, std::error_code>;
 
 enum class TokenType : std::uint8_t {
     None = 1,  // unused

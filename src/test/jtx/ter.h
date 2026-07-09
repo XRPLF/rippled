@@ -1,7 +1,11 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 
+#include <xrpl/protocol/TER.h>
+
+#include <optional>
 #include <tuple>
 
 namespace xrpl::test::jtx {
