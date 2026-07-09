@@ -51,6 +51,13 @@ constexpr auto kDecreaseLedgerTimeResolutionEvery = 1;
  * The time resolution (i.e. the size of the intervals) is adjusted dynamically
  * based on what happened in the last ledger, to try to avoid disagreements.
  *
+ * @tparam Rep Type representing number of ticks in std::chrono::duration
+ * @tparam Period An std::ratio representing tick period in
+ *                std::chrono::duration
+ * @tparam Seq Unsigned integer-like type corresponding to the ledger sequence
+ *             number. It should be comparable to 0 and support modular
+ *             division. Built-in and tagged_integers are supported.
+ *
  * @param previousResolution the resolution used for the prior ledger
  * @param previousAgree whether consensus agreed on the close time of the prior
  * ledger
@@ -58,13 +65,6 @@ constexpr auto kDecreaseLedgerTimeResolutionEvery = 1;
  *
  * @pre previousResolution must be a valid bin
  *      from @ref kLedgerPossibleTimeResolutions
- *
- * @tparam Rep Type representing number of ticks in std::chrono::duration
- * @tparam Period An std::ratio representing tick period in
- *                std::chrono::duration
- * @tparam Seq Unsigned integer-like type corresponding to the ledger sequence
- *             number. It should be comparable to 0 and support modular
- *             division. Built-in and tagged_integers are supported.
  */
 template <class Rep, class Period, class Seq>
 std::chrono::duration<Rep, Period>

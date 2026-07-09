@@ -80,8 +80,8 @@ lpTokensOut(
 /**
  * Calculate asset deposit given LP Tokens.
  * @param asset1Balance current AMM asset1 balance
- * @param lpTokens LP Tokens
  * @param lptAMMBalance AMM LPT balance
+ * @param lpTokens LP Tokens
  * @param tfee trading fee in basis points
  * @return
  */

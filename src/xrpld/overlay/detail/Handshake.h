@@ -170,11 +170,11 @@ featureEnabled(boost::beast::http::fields const& headers, std::string const& fea
  * Check if a feature should be enabled for a peer. The feature
  *  is enabled if its configured value is true and the http header
  *  has the specified feature value.
- * @tparam headers request (inbound) or response (outbound) header
+ * @tparam Headers request (inbound) or response (outbound) header
  * @param request http headers
  * @param feature to check
- * @param config feature's configuration value
  * @param value feature's value to check in the headers
+ * @param config feature's configuration value
  * @return true if the feature is enabled
  */
 template <typename Headers>

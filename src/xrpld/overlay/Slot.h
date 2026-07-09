@@ -111,8 +111,8 @@ private:
 
     /**
      * Constructor
-     * @param journal Journal for logging
      * @param handler Squelch/Unsquelch implementation
+     * @param journal Journal for logging
      * @param maxSelectedPeers the maximum number of peers to be selected as
      * validator message source
      */
