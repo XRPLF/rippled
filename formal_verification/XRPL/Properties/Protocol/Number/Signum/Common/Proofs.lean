@@ -1,5 +1,8 @@
 import XRPL.Properties.Protocol.Number.Common.ToRatLemmas
 
+/-!
+What normalization implies about the sign flag and the mantissa.
+-/
 
 namespace XRPL.Model.Protocol
 
