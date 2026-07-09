@@ -525,13 +525,13 @@ SponsorshipTransfer::doApply()
     return tesSUCCESS;
 }
 
+// LCOV_EXCL_START
 void
 SponsorshipTransfer::visitInvariantEntry(
     bool,
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
-    // LCOV_EXCL_LINE
 }
 
 bool
@@ -542,7 +542,8 @@ SponsorshipTransfer::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    return true;  // LCOV_EXCL_LINE
+    return true;
 }
+// LCOV_EXCL_STOP
 
 }  // namespace xrpl
