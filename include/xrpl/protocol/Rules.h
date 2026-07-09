@@ -4,7 +4,10 @@
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/protocol/STVector256.h>
 
+#include <memory>
+#include <optional>
 #include <unordered_set>
+#include <utility>
 
 namespace xrpl {
 
@@ -121,5 +124,16 @@ public:
 private:
     std::optional<Rules> saved_;
 };
+
+class NumberMantissaScaleGuard;
+
+bool
+useRulesGuards(Rules const& rules);
+
+void
+createGuards(
+    Rules const& rules,
+    std::optional<CurrentTransactionRulesGuard>& rulesGuard,
+    std::optional<NumberMantissaScaleGuard>& mantissaScaleGuard);
 
 }  // namespace xrpl

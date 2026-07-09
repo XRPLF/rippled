@@ -2,15 +2,16 @@
 
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/WSSession.h>
 #include <xrpl/server/Writer.h>
 
 #include <boost/beast/http/message.hpp>
 
-#include <functional>
+#include <cstddef>
 #include <memory>
-#include <ostream>
-#include <vector>
+#include <string_view>
 
 namespace xrpl {
 
@@ -53,10 +54,10 @@ public:
     /** Send a copy of data asynchronously. */
     /** @{ */
     void
-    write(std::string const& s)
+    write(std::string_view s)
     {
         if (!s.empty())
-            write(&s[0], std::distance(s.begin(), s.end()));
+            write(s.data(), s.size());
     }
 
     template <typename BufferSequence>

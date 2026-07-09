@@ -7,6 +7,7 @@
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -16,8 +17,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-
-#include <memory>
 
 namespace xrpl {
 
@@ -44,7 +43,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     auto const account = tx[sfAccount];
     auto const brokerID = tx[sfLoanBrokerID];
 
-    auto const sleBroker = ctx.view.read(keylet::loanbroker(brokerID));
+    auto const sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
     if (!sleBroker)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -106,6 +105,19 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    if (ctx.view.rules().enabled(fixCleanup3_2_0))
+    {
+        if (coverAvailable > beast::kZero)
+        {
+            auto const brokerPseudo = sleBroker->at(sfAccount);
+            if (auto const ret = checkFrozen(ctx.view, brokerPseudo, asset))
+            {
+                JLOG(ctx.j.warn()) << "Broker pseudo-account is frozen/locked.";
+                return ret;
+            }
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -117,7 +129,7 @@ LoanBrokerDelete::doApply()
     auto const brokerID = tx[sfLoanBrokerID];
 
     // Delete the loan broker
-    auto broker = view().peek(keylet::loanbroker(brokerID));
+    auto broker = view().peek(keylet::loanBroker(brokerID));
     if (!broker)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultID = broker->at(sfVaultID);
@@ -192,10 +204,7 @@ LoanBrokerDelete::doApply()
 }
 
 void
-LoanBrokerDelete::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+LoanBrokerDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

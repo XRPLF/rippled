@@ -195,7 +195,7 @@ AttestationClaim::message(
     std::uint64_t claimID,
     std::optional<AccountID> const& dst)
 {
-    STObject o{kSfGeneric};
+    STObject o{sfGeneric};
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainClaimID] = claimID;
     o[sfAmount] = sendingAmount;
@@ -332,7 +332,7 @@ AttestationCreateAccount::message(
     std::uint64_t createCount,
     AccountID const& dst)
 {
-    STObject o{kSfGeneric};
+    STObject o{sfGeneric};
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainAccountCreateCount] = createCount;
     o[sfAmount] = sendingAmount;
@@ -628,28 +628,28 @@ XChainAttestationsBase<TAttestation>::XChainAttestationsBase(
 }
 
 template <class TAttestation>
-typename XChainAttestationsBase<TAttestation>::AttCollection::const_iterator
+XChainAttestationsBase<TAttestation>::AttCollection::const_iterator
 XChainAttestationsBase<TAttestation>::begin() const
 {
     return attestations_.begin();
 }
 
 template <class TAttestation>
-typename XChainAttestationsBase<TAttestation>::AttCollection::const_iterator
+XChainAttestationsBase<TAttestation>::AttCollection::const_iterator
 XChainAttestationsBase<TAttestation>::end() const
 {
     return attestations_.end();
 }
 
 template <class TAttestation>
-typename XChainAttestationsBase<TAttestation>::AttCollection::iterator
+XChainAttestationsBase<TAttestation>::AttCollection::iterator
 XChainAttestationsBase<TAttestation>::begin()
 {
     return attestations_.begin();
 }
 
 template <class TAttestation>
-typename XChainAttestationsBase<TAttestation>::AttCollection::iterator
+XChainAttestationsBase<TAttestation>::AttCollection::iterator
 XChainAttestationsBase<TAttestation>::end()
 {
     return attestations_.end();

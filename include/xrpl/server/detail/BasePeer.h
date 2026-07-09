@@ -1,7 +1,7 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/server/Port.h>
 #include <xrpl/server/detail/LowestLayer.h>
 #include <xrpl/server/detail/io_list.h>
@@ -9,7 +9,7 @@
 #include <boost/asio.hpp>
 
 #include <atomic>
-#include <functional>
+#include <chrono>
 #include <string>
 #include <utility>
 
@@ -27,7 +27,7 @@ protected:
 
     Port const& port_;
     Handler& handler_;
-    endpoint_type remote_address_;
+    endpoint_type remoteAddress_;
     beast::WrappedSink sink_;
     beast::Journal const j_;
 
@@ -65,7 +65,7 @@ BasePeer<Handler, Impl>::BasePeer(
     beast::Journal journal)
     : port_(port)
     , handler_(handler)
-    , remote_address_(std::move(remoteAddress))
+    , remoteAddress_(std::move(remoteAddress))
     , sink_(
           journal.sink(),
           [] {
@@ -83,7 +83,7 @@ void
 BasePeer<Handler, Impl>::close()
 {
     if (!strand_.running_in_this_thread())
-        return post(strand_, std::bind(&BasePeer::close, impl().shared_from_this()));
+        return post(strand_, [self = impl().shared_from_this()] { self->close(); });
     error_code ec;
     xrpl::getLowestLayer(impl().ws_).socket().close(ec);
 }

@@ -1,6 +1,5 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
@@ -22,6 +21,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <expected>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -125,11 +125,7 @@ transferRate(ReadView const& view, AccountID const& issuer)
 }
 
 void
-adjustOwnerCount(
-    ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
-    std::int32_t amount,
-    beast::Journal j)
+adjustOwnerCount(ApplyView& view, SLE::ref sle, std::int32_t amount, beast::Journal j)
 {
     if (!sle)
         return;
@@ -192,9 +188,7 @@ getPseudoAccountFields()
 }
 
 [[nodiscard]] bool
-isPseudoAccount(
-    std::shared_ptr<SLE const> sleAcct,
-    std::set<SField const*> const& pseudoFieldFilter)
+isPseudoAccount(SLE::const_pointer sleAcct, std::set<SField const*> const& pseudoFieldFilter)
 {
     auto const& fields = getPseudoAccountFields();
 
@@ -208,7 +202,7 @@ isPseudoAccount(
             }) > 0;
 }
 
-Expected<std::shared_ptr<SLE>, TER>
+std::expected<SLE::pointer, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField)
 {
     [[maybe_unused]]
@@ -222,7 +216,7 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
 
     auto const accountId = pseudoAccountAddress(view, pseudoOwnerKey);
     if (accountId == beast::kZero)
-        return Unexpected(tecDUPLICATE);
+        return std::unexpected(tecDUPLICATE);
 
     // Create pseudo-account.
     auto account = std::make_shared<SLE>(keylet::account(accountId));

@@ -11,7 +11,7 @@ using RealDuration = RealClock::duration;
 using RealTime = RealClock::time_point;
 
 using SimClock = beast::ManualClock<std::chrono::steady_clock>;
-using SimDuration = typename SimClock::duration;
-using SimTime = typename SimClock::time_point;
+using SimDuration = SimClock::duration;
+using SimTime = SimClock::time_point;
 
 }  // namespace xrpl::test::csf

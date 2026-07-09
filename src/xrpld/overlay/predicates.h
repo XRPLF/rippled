@@ -3,6 +3,7 @@
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Peer.h>
 
+#include <memory>
 #include <set>
 
 namespace xrpl {

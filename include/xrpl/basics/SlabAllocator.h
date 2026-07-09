@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <cstring>
 #include <mutex>
+#include <stdexcept>
 #include <vector>
 
 #if BOOST_OS_LINUX
