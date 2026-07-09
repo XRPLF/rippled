@@ -17,6 +17,8 @@
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/TraceContextValidation.h>
 
+#include <cstdint>
+
 namespace xrpl::telemetry {
 
 /** Create a "tx.receive" span for a transaction received from a peer.

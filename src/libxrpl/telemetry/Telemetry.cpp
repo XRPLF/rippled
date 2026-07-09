@@ -535,8 +535,10 @@ public:
     getMeter(std::string_view name = kMeterName) override
     {
         if (!meterProvider_)
+        {
             return metrics_api::Provider::GetMeterProvider()->GetMeter(
                 std::string(name), std::string(kMeterVersion));
+        }
         return meterProvider_->GetMeter(std::string(name), std::string(kMeterVersion));
     }
 

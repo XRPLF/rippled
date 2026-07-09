@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <cctype>
-#include <ranges>
 #include <string>
 #include <string_view>
 
