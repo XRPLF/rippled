@@ -22,9 +22,13 @@ namespace xrpl {
 class RCLCxLedger
 {
 public:
-    //! Unique identifier of a ledger
+    /**
+     * Unique identifier of a ledger
+     */
     using ID = LedgerHash;
-    //! Sequence number of a ledger
+    /**
+     * Sequence number of a ledger
+     */
     using Seq = LedgerIndex;
 
     /**
@@ -45,56 +49,72 @@ public:
     {
     }
 
-    //! Sequence number of the ledger.
+    /**
+     * Sequence number of the ledger.
+     */
     [[nodiscard]] Seq const&
     seq() const
     {
         return ledger->header().seq;
     }
 
-    //! Unique identifier (hash) of this ledger.
+    /**
+     * Unique identifier (hash) of this ledger.
+     */
     [[nodiscard]] ID const&
     id() const
     {
         return ledger->header().hash;
     }
 
-    //! Unique identifier (hash) of this ledger's parent.
+    /**
+     * Unique identifier (hash) of this ledger's parent.
+     */
     [[nodiscard]] ID const&
     parentID() const
     {
         return ledger->header().parentHash;
     }
 
-    //! Resolution used when calculating this ledger's close time.
+    /**
+     * Resolution used when calculating this ledger's close time.
+     */
     [[nodiscard]] NetClock::duration
     closeTimeResolution() const
     {
         return ledger->header().closeTimeResolution;
     }
 
-    //! Whether consensus process agreed on close time of the ledger.
+    /**
+     * Whether consensus process agreed on close time of the ledger.
+     */
     [[nodiscard]] bool
     closeAgree() const
     {
         return xrpl::getCloseAgree(ledger->header());
     }
 
-    //! The close time of this ledger
+    /**
+     * The close time of this ledger
+     */
     [[nodiscard]] NetClock::time_point
     closeTime() const
     {
         return ledger->header().closeTime;
     }
 
-    //! The close time of this ledger's parent.
+    /**
+     * The close time of this ledger's parent.
+     */
     [[nodiscard]] NetClock::time_point
     parentCloseTime() const
     {
         return ledger->header().parentCloseTime;
     }
 
-    //! JSON representation of this ledger.
+    /**
+     * JSON representation of this ledger.
+     */
     [[nodiscard]] json::Value
     getJson() const
     {

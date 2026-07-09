@@ -321,7 +321,9 @@ class Validations
     // Sequence of the largest validation received from each node
     hash_map<NodeID, SeqEnforcer<Seq>> seqEnforcers_;
 
-    //! Validations from listed nodes, indexed by ledger id (partial and full)
+    /**
+     * Validations from listed nodes, indexed by ledger id (partial and full)
+     */
     beast::aged_unordered_map<
         ID,
         hash_map<NodeID, Validation>,

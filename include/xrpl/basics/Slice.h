@@ -173,7 +173,7 @@ public:
      * @param pos position of the first character
      * @count requested length
      *
-     * @returns The requested subslice, if the request is valid.
+     * @return The requested subslice, if the request is valid.
      * @throws std::out_of_range if pos > size()
      */
     [[nodiscard]] Slice

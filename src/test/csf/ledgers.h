@@ -75,21 +75,31 @@ private:
         // Resolution used to determine close time
         NetClock::duration closeTimeResolution = kLedgerDefaultTimeResolution;
 
-        //! When the ledger closed (up to closeTimeResolution)
+        /**
+         * When the ledger closed (up to closeTimeResolution)
+         */
         NetClock::time_point closeTime;
 
-        //! Whether consensus agreed on the close time
+        /**
+         * Whether consensus agreed on the close time
+         */
         bool closeTimeAgree = true;
 
-        //! Parent ledger id
+        /**
+         * Parent ledger id
+         */
         ID parentID{0};
 
-        //! Parent ledger close time
+        /**
+         * Parent ledger close time
+         */
         NetClock::time_point parentCloseTime;
 
-        //! IDs of this ledgers ancestors. Since each ledger already has unique
-        //! ancestors based on the parentID, this member is not needed for any
-        //! of the operators below.
+        /**
+         * IDs of this ledgers ancestors. Since each ledger already has unique
+         * ancestors based on the parentID, this member is not needed for any
+         * of the operators below.
+         */
         std::vector<Ledger::ID> ancestors;
 
         [[nodiscard]] auto

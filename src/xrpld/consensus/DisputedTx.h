@@ -53,22 +53,28 @@ public:
         votes_.reserve(numPeers);
     }
 
-    //! The unique id/hash of the disputed transaction.
+    /**
+     * The unique id/hash of the disputed transaction.
+     */
     [[nodiscard]] TxID_t const&
     id() const
     {
         return tx_.id();
     }
 
-    //! Our vote on whether the transaction should be included.
+    /**
+     * Our vote on whether the transaction should be included.
+     */
     [[nodiscard]] bool
     getOurVote() const
     {
         return ourVote_;
     }
 
-    //! Are we and our peers "stalled" where we probably won't change
-    //! our vote?
+    /**
+     * Are we and our peers "stalled" where we probably won't change
+     * our vote?
+     */
     [[nodiscard]] bool
     stalled(
         ConsensusParms const& p,
@@ -133,14 +139,18 @@ public:
         return stalled;
     }
 
-    //! The disputed transaction.
+    /**
+     * The disputed transaction.
+     */
     [[nodiscard]] Tx const&
     tx() const
     {
         return tx_;
     }
 
-    //! Change our vote
+    /**
+     * Change our vote
+     */
     void
     setOurVote(bool o)
     {
@@ -182,7 +192,9 @@ public:
     bool
     updateVote(int percentTime, bool proposing, ConsensusParms const& p);
 
-    //! JSON representation of dispute, used for debugging
+    /**
+     * JSON representation of dispute, used for debugging
+     */
     [[nodiscard]] json::Value
     getJson() const;
 
@@ -192,11 +204,17 @@ private:
     bool ourVote_;  //< Our vote (true is yes)
     Tx tx_;         //< Transaction under dispute
     Map_t votes_;   //< Map from NodeID to vote
-    //! The number of rounds we've gone without changing our vote
+    /**
+     * The number of rounds we've gone without changing our vote
+     */
     std::size_t currentVoteCounter_ = 0;
-    //! Which minimum acceptance percentage phase we are currently in
+    /**
+     * Which minimum acceptance percentage phase we are currently in
+     */
     ConsensusParms::AvalancheState avalancheState_ = ConsensusParms::AvalancheState::Init;
-    //! How long we have been in the current acceptance phase
+    /**
+     * How long we have been in the current acceptance phase
+     */
     std::size_t avalancheCounter_ = 0;
     beast::Journal const j_;
 };

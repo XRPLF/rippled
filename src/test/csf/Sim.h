@@ -112,7 +112,9 @@ public:
         return res;
     }
 
-    //! The number of peers in the simulation
+    /**
+     * The number of peers in the simulation
+     */
     std::size_t
     size() const
     {

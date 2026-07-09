@@ -262,7 +262,9 @@ public:
     std::size_t
     getFetchPackCacheSize() const;
 
-    //! Whether we have ever fully validated a ledger.
+    /**
+     * Whether we have ever fully validated a ledger.
+     */
     bool
     haveValidated()
     {

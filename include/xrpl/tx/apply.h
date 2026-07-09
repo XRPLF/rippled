@@ -73,7 +73,7 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity);
  * to a ledger. It rolls the validation and application
  * steps into one function. To do the steps manually, the
  * correct calling order is:
- * @code{.cpp}
+ * @code
  * preflight -> preclaim -> doApply
  * @endcode
  * The result of one function must be passed to the next.

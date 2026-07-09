@@ -47,25 +47,33 @@ public:
         uint256 const& suppress,
         Proposal const& proposal);  // trivially copyable
 
-    //! Verify the signing hash of the proposal
+    /**
+     * Verify the signing hash of the proposal
+     */
     bool
     checkSign() const;
 
-    //! Signature of the proposal (not necessarily verified)
+    /**
+     * Signature of the proposal (not necessarily verified)
+     */
     Slice
     signature() const
     {
         return {signature_.data(), signature_.size()};
     }
 
-    //! Public key of peer that sent the proposal
+    /**
+     * Public key of peer that sent the proposal
+     */
     PublicKey const&
     publicKey() const
     {
         return publicKey_;
     }
 
-    //! Unique id used by hash router to suppress duplicates
+    /**
+     * Unique id used by hash router to suppress duplicates
+     */
     uint256 const&
     suppressionID() const
     {
@@ -78,7 +86,9 @@ public:
         return proposal_;
     }
 
-    //! JSON representation of proposal
+    /**
+     * JSON representation of proposal
+     */
     json::Value
     getJson() const;
 

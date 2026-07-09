@@ -75,21 +75,27 @@ public:
     {
     }
 
-    //! Identifying which peer took this position.
+    /**
+     * Identifying which peer took this position.
+     */
     NodeId const&
     nodeID() const
     {
         return nodeID_;
     }
 
-    //! Get the proposed position.
+    /**
+     * Get the proposed position.
+     */
     Position const&
     position() const
     {
         return position_;
     }
 
-    //! Get the prior accepted ledger this position is based on.
+    /**
+     * Get the prior accepted ledger this position is based on.
+     */
     LedgerId const&
     prevLedger() const
     {
@@ -110,14 +116,18 @@ public:
         return proposeSeq_;
     }
 
-    //! The current position on the consensus close time.
+    /**
+     * The current position on the consensus close time.
+     */
     NetClock::time_point const&
     closeTime() const
     {
         return closeTime_;
     }
 
-    //! Get when this position was taken.
+    /**
+     * Get when this position was taken.
+     */
     NetClock::time_point const&
     seenTime() const
     {
@@ -134,14 +144,18 @@ public:
         return proposeSeq_ == kSeqJoin;
     }
 
-    //! Get whether this node left the consensus process
+    /**
+     * Get whether this node left the consensus process
+     */
     bool
     isBowOut() const
     {
         return proposeSeq_ == kSeqLeave;
     }
 
-    //! Get whether this position is stale relative to the provided cutoff
+    /**
+     * Get whether this position is stale relative to the provided cutoff
+     */
     bool
     isStale(NetClock::time_point cutoff) const
     {
@@ -196,7 +210,9 @@ public:
         return ss.str();
     }
 
-    //! Get JSON representation for debugging
+    /**
+     * Get JSON representation for debugging
+     */
     json::Value
     getJson() const
     {
@@ -216,7 +232,9 @@ public:
         return ret;
     }
 
-    //! The digest for this proposal, used for signing purposes.
+    /**
+     * The digest for this proposal, used for signing purposes.
+     */
     uint256 const&
     signingHash() const
     {
@@ -234,25 +252,37 @@ public:
     }
 
 private:
-    //! Unique identifier of prior ledger this proposal is based on
+    /**
+     * Unique identifier of prior ledger this proposal is based on
+     */
     LedgerId previousLedger_;
 
-    //! Unique identifier of the position this proposal is taking
+    /**
+     * Unique identifier of the position this proposal is taking
+     */
     Position position_;
 
-    //! The ledger close time this position is taking
+    /**
+     * The ledger close time this position is taking
+     */
     NetClock::time_point closeTime_;
 
     // !The time this position was last updated
     NetClock::time_point time_;
 
-    //! The sequence number of these positions taken by this node
+    /**
+     * The sequence number of these positions taken by this node
+     */
     std::uint32_t proposeSeq_;
 
-    //! The identifier of the node taking this position
+    /**
+     * The identifier of the node taking this position
+     */
     NodeId nodeID_;
 
-    //! The signing hash for this proposal
+    /**
+     * The signing hash for this proposal
+     */
     mutable std::optional<uint256> signingHash_;
 };
 

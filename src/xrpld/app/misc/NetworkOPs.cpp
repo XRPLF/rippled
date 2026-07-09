@@ -266,7 +266,9 @@ class NetworkOPsImp final : public NetworkOPs
         }
     };
 
-    //! Server fees published on `server` subscription
+    /**
+     * Server fees published on `server` subscription
+     */
     struct ServerFeeSummary
     {
         ServerFeeSummary() = default;

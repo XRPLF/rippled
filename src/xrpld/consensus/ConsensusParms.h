@@ -49,23 +49,33 @@ struct ConsensusParms
      */
     std::chrono::seconds const validationValidEarly = std::chrono::minutes{3};
 
-    //! How long we consider a proposal fresh
+    /**
+     * How long we consider a proposal fresh
+     */
     std::chrono::seconds const proposeFRESHNESS = std::chrono::seconds{20};
 
-    //! How often we force generating a new proposal to keep ours fresh
+    /**
+     * How often we force generating a new proposal to keep ours fresh
+     */
     std::chrono::seconds const proposeINTERVAL = std::chrono::seconds{12};
 
     //-------------------------------------------------------------------------
     // Consensus durations are relative to the internal Consensus clock and use
     // millisecond resolution.
 
-    //! The percentage threshold above which we can declare consensus.
+    /**
+     * The percentage threshold above which we can declare consensus.
+     */
     std::size_t const minConsensusPct = 80;
 
-    //! The duration a ledger may remain idle before closing
+    /**
+     * The duration a ledger may remain idle before closing
+     */
     std::chrono::milliseconds const ledgerIdleInterval = std::chrono::seconds{15};
 
-    //! The number of seconds we wait minimum to ensure participation
+    /**
+     * The number of seconds we wait minimum to ensure participation
+     */
     std::chrono::milliseconds const ledgerMinConsensus = std::chrono::milliseconds{1950};
 
     /**
@@ -77,13 +87,19 @@ struct ConsensusParms
      */
     std::chrono::milliseconds const ledgerMaxConsensus = std::chrono::seconds{15};
 
-    //! Minimum number of seconds to wait to ensure others have computed the LCL
+    /**
+     * Minimum number of seconds to wait to ensure others have computed the LCL
+     */
     std::chrono::milliseconds const ledgerMinClose = std::chrono::seconds{2};
 
-    //! How often we check state or change positions
+    /**
+     * How often we check state or change positions
+     */
     std::chrono::milliseconds const ledgerGRANULARITY = std::chrono::seconds{1};
 
-    //! How long to wait before completely abandoning consensus
+    /**
+     * How long to wait before completely abandoning consensus
+     */
     std::size_t const ledgerAbandonConsensusFactor = 10;
 
     /**
@@ -119,11 +135,13 @@ struct ConsensusParms
         std::size_t const consensusPct;
         AvalancheState const next;
     };
-    //! Map the consensus requirement avalanche state to the amount of time that
-    //! must pass before moving to that state, the agreement percentage required
-    //! at that state, and the next state. "stuck" loops back on itself because
-    //! once we're stuck, we're stuck.
-    //! This structure allows for "looping" of states if needed.
+    /**
+     * Map the consensus requirement avalanche state to the amount of time that
+     * must pass before moving to that state, the agreement percentage required
+     * at that state, and the next state. "stuck" loops back on itself because
+     * once we're stuck, we're stuck.
+     * This structure allows for "looping" of states if needed.
+     */
     std::map<AvalancheState, AvalancheCutoff> const avalancheCutoffs{
         // {state, {time, percent, nextState}},
         // Initial state: 50% of nodes must vote yes
@@ -141,16 +159,22 @@ struct ConsensusParms
          {.consensusTime = 200, .consensusPct = 95, .next = AvalancheState::Stuck}},
     };
 
-    //! Percentage of nodes required to reach agreement on ledger close time
+    /**
+     * Percentage of nodes required to reach agreement on ledger close time
+     */
     std::size_t const avCtConsensusPct = 75;
 
-    //! Number of rounds before certain actions can happen.
+    /**
+     * Number of rounds before certain actions can happen.
+     */
     // (Moving to the next avalanche level, considering that votes are stalled
     // without consensus.)
     std::size_t const avMinRounds = 2;
 
-    //! Number of rounds before a stuck vote is considered unlikely to change
-    //! because voting stalled
+    /**
+     * Number of rounds before a stuck vote is considered unlikely to change
+     * because voting stalled
+     */
     std::size_t const avStalledRounds = 4;
 };
 

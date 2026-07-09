@@ -30,7 +30,7 @@ public:
  *
  * The JSON document is written in a single line. It is not intended for 'human'
  * consumption, but may be useful to support feature such as RPC where bandwidth
- * is limited. @sa Reader, Value
+ * is limited. @see Reader, Value
  */
 
 class FastWriter : public WriterBase
@@ -67,7 +67,7 @@ private:
  *     - otherwise, it the values do not fit on one line, or the array contains
  *       object or non empty array, then print one value per line.
  *
- * @sa Reader, Value
+ * @see Reader, Value
  */
 class StyledWriter : public WriterBase
 {
@@ -132,7 +132,7 @@ private:
  * *       object or non empty array, then print one value per line.
  * *
  * * @param indentation Each level will be indented by this amount extra.
- * * @sa Reader, Value
+ * * @see Reader, Value
  */
 class StyledStreamWriter
 {

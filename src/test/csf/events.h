@@ -35,7 +35,9 @@ namespace xrpl::test::csf {
 template <class V>
 struct Share
 {
-    //! Event that is shared
+    /**
+     * Event that is shared
+     */
     V val;
 };
 
@@ -45,10 +47,14 @@ struct Share
 template <class V>
 struct Relay
 {
-    //! Peer relaying to
+    /**
+     * Peer relaying to
+     */
     PeerID to;
 
-    //! The value to relay
+    /**
+     * The value to relay
+     */
     V val;
 };
 
@@ -58,10 +64,14 @@ struct Relay
 template <class V>
 struct Receive
 {
-    //! Peer that sent the value
+    /**
+     * Peer that sent the value
+     */
     PeerID from;
 
-    //! The received value
+    /**
+     * The received value
+     */
     V val;
 };
 
@@ -70,7 +80,9 @@ struct Receive
  */
 struct SubmitTx
 {
-    //! The submitted transaction
+    /**
+     * The submitted transaction
+     */
     Tx tx;
 };
 
@@ -79,10 +91,14 @@ struct SubmitTx
  */
 struct StartRound
 {
-    //! The preferred ledger for the start of consensus
+    /**
+     * The preferred ledger for the start of consensus
+     */
     Ledger::ID bestLedger{};
 
-    //! The prior ledger on hand
+    /**
+     * The prior ledger on hand
+     */
     Ledger prevLedger;
 };
 
@@ -98,7 +114,9 @@ struct CloseLedger
     TxSetType txs;
 };
 
-//! Peer accepted consensus results
+/**
+ * Peer accepted consensus results
+ */
 struct AcceptLedger
 {
     // The newly created ledger
@@ -108,7 +126,9 @@ struct AcceptLedger
     Ledger prior;
 };
 
-//! Peer detected a wrong prior ledger during consensus
+/**
+ * Peer detected a wrong prior ledger during consensus
+ */
 struct WrongPrevLedger
 {
     // ID of wrong ledger we had
@@ -117,14 +137,20 @@ struct WrongPrevLedger
     Ledger::ID right;
 };
 
-//! Peer fully validated a new ledger
+/**
+ * Peer fully validated a new ledger
+ */
 struct FullyValidateLedger
 {
-    //! The new fully validated ledger
+    /**
+     * The new fully validated ledger
+     */
     Ledger ledger;
 
-    //! The prior fully validated ledger
-    //! This is a jump if prior.id() != ledger.parentID()
+    /**
+     * The prior fully validated ledger
+     * This is a jump if prior.id() != ledger.parentID()
+     */
     Ledger prior;
 };
 

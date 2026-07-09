@@ -322,7 +322,9 @@ class Consensus
     };
 
 public:
-    //! Clock type for measuring time within the consensus code
+    /**
+     * Clock type for measuring time within the consensus code
+     */
     using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
     Consensus(Consensus&&) noexcept = default;

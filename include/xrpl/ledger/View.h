@@ -55,7 +55,7 @@ enum class SkipEntry : bool { No = false, Yes };
  * @param view The ledger whose parent time is used as the clock.
  * @param exp The optional expiration time we want to check.
  *
- * @returns `true` if `exp` is in the past; `false` otherwise.
+ * @return `true` if `exp` is in the past; `false` otherwise.
  */
 [[nodiscard]] bool
 hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp);

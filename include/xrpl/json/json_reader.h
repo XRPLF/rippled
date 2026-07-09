@@ -224,7 +224,7 @@ Reader::parse(Value& root, BufferSequence const& bs)
  * }
  * }
  * @endverbatim
- * @throw std::exception on parse error.
+ * @throws std::exception on parse error.
  * @see json::operator<<()
  */
 std::istream&

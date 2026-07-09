@@ -425,7 +425,9 @@ class RCLConsensus
     };
 
 public:
-    //! Constructor
+    /**
+     * Constructor
+     */
     RCLConsensus(
         Application& app,
         std::unique_ptr<FeeVote>&& feeVote,
@@ -441,15 +443,19 @@ public:
     RCLConsensus&
     operator=(RCLConsensus const&) = delete;
 
-    //! Whether we are validating consensus ledgers.
+    /**
+     * Whether we are validating consensus ledgers.
+     */
     bool
     validating() const
     {
         return adaptor_.validating();
     }
 
-    //! Get the number of proposing peers that participated in the previous
-    //! round.
+    /**
+     * Get the number of proposing peers that participated in the previous
+     * round.
+     */
     std::size_t
     prevProposers() const
     {
@@ -470,7 +476,9 @@ public:
         return adaptor_.prevRoundTime();
     }
 
-    //! @see Consensus::mode
+    /**
+     * @see Consensus::mode
+     */
     ConsensusMode
     mode() const
     {
@@ -483,7 +491,9 @@ public:
         return consensus_.phase();
     }
 
-    //! @see Consensus::getJson
+    /**
+     * @see Consensus::getJson
+     */
     json::Value
     getJson(bool full) const;
 
@@ -500,13 +510,17 @@ public:
         hash_set<NodeID> const& nowTrusted,
         std::unique_ptr<std::stringstream> const& clog);
 
-    //! @see Consensus::timerEntry
+    /**
+     * @see Consensus::timerEntry
+     */
     void
     timerEntry(
         NetClock::time_point const& now,
         std::unique_ptr<std::stringstream> const& clog = {});
 
-    //! @see Consensus::gotTxSet
+    /**
+     * @see Consensus::gotTxSet
+     */
     void
     gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet);
 
@@ -518,13 +532,17 @@ public:
         return consensus_.prevLedgerID();
     }
 
-    //! @see Consensus::simulate
+    /**
+     * @see Consensus::simulate
+     */
     void
     simulate(
         NetClock::time_point const& now,
         std::optional<std::chrono::milliseconds> consensusDelay);
 
-    //! @see Consensus::proposal
+    /**
+     * @see Consensus::proposal
+     */
     bool
     peerProposal(NetClock::time_point const& now, RCLCxPeerPos const& newProposal);
 

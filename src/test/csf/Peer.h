@@ -96,12 +96,16 @@ struct Peer
      */
     struct ProcessingDelays
     {
-        //! Delay in consensus calling doAccept to accepting and issuing
-        //! validation
-        //! TODO: This should be a function of the number of transactions
+        /**
+         * Delay in consensus calling doAccept to accepting and issuing
+         * validation
+         * TODO: This should be a function of the number of transactions
+         */
         std::chrono::milliseconds ledgerAccept{0};
 
-        //! Delay in processing validations from remote peers
+        /**
+         * Delay in processing validations from remote peers
+         */
         std::chrono::milliseconds recvValidation{0};
 
         // Return the receive delay for message type M, default is no delay
@@ -169,7 +173,9 @@ struct Peer
         }
     };
 
-    //! Type definitions for generic consensus
+    /**
+     * Type definitions for generic consensus
+     */
     using Ledger_t = Ledger;
     using NodeID_t = PeerID;
     using NodeKey_t = PeerKey;
@@ -178,74 +184,114 @@ struct Peer
     using Result = ConsensusResult<Peer>;
     using NodeKey = Validation::NodeKey;
 
-    //! Logging support that prefixes messages with the peer ID
+    /**
+     * Logging support that prefixes messages with the peer ID
+     */
     beast::WrappedSink sink;
     beast::Journal j;
 
-    //! Generic consensus
+    /**
+     * Generic consensus
+     */
     Consensus<Peer> consensus;
 
-    //! Our unique ID
+    /**
+     * Our unique ID
+     */
     PeerID id;
 
-    //! Current signing key
+    /**
+     * Current signing key
+     */
     PeerKey key;
 
-    //! The oracle that manages unique ledgers
+    /**
+     * The oracle that manages unique ledgers
+     */
     LedgerOracle& oracle;
 
-    //! Scheduler of events
+    /**
+     * Scheduler of events
+     */
     Scheduler& scheduler;
 
-    //! Handle to network for sending messages
+    /**
+     * Handle to network for sending messages
+     */
     BasicNetwork<Peer*>& net;
 
-    //! Handle to Trust graph of network
+    /**
+     * Handle to Trust graph of network
+     */
     TrustGraph<Peer*>& trustGraph;
 
-    //! openTxs that haven't been closed in a ledger yet
+    /**
+     * openTxs that haven't been closed in a ledger yet
+     */
     TxSetType openTxs;
 
-    //! The last ledger closed by this node
+    /**
+     * The last ledger closed by this node
+     */
     Ledger lastClosedLedger;
 
-    //! Ledgers this node has closed or loaded from the network
+    /**
+     * Ledgers this node has closed or loaded from the network
+     */
     hash_map<Ledger::ID, Ledger> ledgers;
 
-    //! Validations from trusted nodes
+    /**
+     * Validations from trusted nodes
+     */
     Validations<ValAdaptor> validations;
 
-    //! The most recent ledger that has been fully validated by the network from
-    //! the perspective of this Peer
+    /**
+     * The most recent ledger that has been fully validated by the network from
+     * the perspective of this Peer
+     */
     Ledger fullyValidatedLedger;
 
     //-------------------------------------------------------------------------
     // Store most network messages; these could be purged if memory use ever
     // becomes problematic
 
-    //! Map from Ledger::ID to vector of Positions with that ledger
-    //! as the prior ledger
+    /**
+     * Map from Ledger::ID to vector of Positions with that ledger
+     * as the prior ledger
+     */
     bc::flat_map<Ledger::ID, std::vector<Proposal>> peerPositions;
-    //! TxSet associated with a TxSet::ID
+    /**
+     * TxSet associated with a TxSet::ID
+     */
     bc::flat_map<TxSet::ID, TxSet> txSets;
 
     // Ledgers/TxSets we are acquiring and when that request times out
     bc::flat_map<Ledger::ID, SimTime> acquiringLedgers;
     bc::flat_map<TxSet::ID, SimTime> acquiringTxSets;
 
-    //! The number of ledgers this peer has completed
+    /**
+     * The number of ledgers this peer has completed
+     */
     int completedLedgers = 0;
 
-    //! The number of ledgers this peer should complete before stopping to run
+    /**
+     * The number of ledgers this peer should complete before stopping to run
+     */
     int targetLedgers = std::numeric_limits<int>::max();
 
-    //! Skew of time relative to the common scheduler clock
+    /**
+     * Skew of time relative to the common scheduler clock
+     */
     std::chrono::seconds clockSkew{0};
 
-    //! Simulated delays to use for internal processing
+    /**
+     * Simulated delays to use for internal processing
+     */
     ProcessingDelays delays;
 
-    //! Whether to simulate running as validator or a tracking node
+    /**
+     * Whether to simulate running as validator or a tracking node
+     */
     bool runAsValidator = true;
 
     // TODO: Consider removing these two, they are only a convenience for tests
@@ -263,7 +309,9 @@ struct Peer
     // Simulation parameters
     ConsensusParms consensusParms;
 
-    //! The collectors to report events to
+    /**
+     * The collectors to report events to
+     */
     CollectorRefs& collectors;
 
     /**
@@ -883,7 +931,9 @@ struct Peer
     //--------------------------------------------------------------------------
     // Simulation "driver" members
 
-    //! Heartbeat timer call
+    /**
+     * Heartbeat timer call
+     */
     void
     timerEntry()
     {

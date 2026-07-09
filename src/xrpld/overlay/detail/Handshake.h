@@ -61,7 +61,7 @@ buildHandshake(
  * claims.
  *
  * @return The public key of the remote peer.
- * @throw A class derived from std::exception.
+ * @throws A class derived from std::exception.
  */
 PublicKey
 verifyHandshake(

@@ -40,16 +40,24 @@ namespace xrpl {
  * we attempt to catch up.
  */
 enum class ConsensusMode {
-    //! We are normal participant in consensus and propose our position
+    /**
+     * We are normal participant in consensus and propose our position
+     */
     Proposing,
-    //! We are observing peer positions, but not proposing our position
+    /**
+     * We are observing peer positions, but not proposing our position
+     */
     Observing,
-    //! We have the wrong ledger and are attempting to acquire it
+    /**
+     * We have the wrong ledger and are attempting to acquire it
+     */
     WrongLedger,
-    //! We switched ledgers since we started this consensus round but are now
-    //! running on what we believe is the correct ledger.  This mode is as
-    //! if we entered the round observing, but is used to indicate we did
-    //! have the wrongLedger at some point.
+    /**
+     * We switched ledgers since we started this consensus round but are now
+     * running on what we believe is the correct ledger.  This mode is as
+     * if we entered the round observing, but is used to indicate we did
+     * have the wrongLedger at some point.
+     */
     SwitchedLedger
 };
 
@@ -89,15 +97,21 @@ to_string(ConsensusMode m)
  * consensus will internally go back to open (see Consensus::handleWrongLedger).
  */
 enum class ConsensusPhase {
-    //! We haven't closed our ledger yet, but others might have
+    /**
+     * We haven't closed our ledger yet, but others might have
+     */
     Open,
 
-    //! Establishing consensus by exchanging proposals with our peers
+    /**
+     * Establishing consensus by exchanging proposals with our peers
+     */
     Establish,
 
-    //! We have accepted a new last closed ledger and are waiting on a call
-    //! to startRound to begin the next consensus round.  No changes
-    //! to consensus phase occur while in this phase.
+    /**
+     * We have accepted a new last closed ledger and are waiting on a call
+     * to startRound to begin the next consensus round.  No changes
+     * to consensus phase occur while in this phase.
+     */
     Accepted,
 };
 
@@ -165,10 +179,14 @@ struct ConsensusCloseTimes
 {
     explicit ConsensusCloseTimes() = default;
 
-    //! Close time estimates, keep ordered for predictable traverse
+    /**
+     * Close time estimates, keep ordered for predictable traverse
+     */
     std::map<NetClock::time_point, int> peers;
 
-    //! Our close time estimate
+    /**
+     * Our close time estimate
+     */
     NetClock::time_point self;
 };
 
@@ -176,10 +194,10 @@ struct ConsensusCloseTimes
  * Whether we have or don't have a consensus
  */
 enum class ConsensusState {
-    No,       //!< We do not have consensus
-    MovedOn,  //!< The network has consensus without us
-    Expired,  //!< Consensus time limit has hard-expired
-    Yes       //!< We have consensus along with the network
+    No,       ///< We do not have consensus
+    MovedOn,  ///< The network has consensus without us
+    Expired,  ///< Consensus time limit has hard-expired
+    Yes       ///< We have consensus along with the network
 };
 
 /**
@@ -207,13 +225,19 @@ struct ConsensusResult
         XRPL_ASSERT(txns.id() == position.position(), "xrpl::ConsensusResult : valid inputs");
     }
 
-    //! The set of transactions consensus agrees go in the ledger
+    /**
+     * The set of transactions consensus agrees go in the ledger
+     */
     TxSet_t txns;
 
-    //! Our proposed position on transactions/close time
+    /**
+     * Our proposed position on transactions/close time
+     */
     Proposal_t position;
 
-    //! Transactions which are under dispute with our peers
+    /**
+     * Transactions which are under dispute with our peers
+     */
     hash_map<typename Tx_t::ID, Dispute_t> disputes;
 
     // Set of TxSet ids we have already compared/created disputes

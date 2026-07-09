@@ -22,16 +22,24 @@ constexpr std::chrono::seconds kLedgerPossibleTimeResolutions[] = {
     std::chrono::seconds{90},
     std::chrono::seconds{120}};
 
-//! Initial resolution of ledger close time.
+/**
+ * Initial resolution of ledger close time.
+ */
 constexpr auto kLedgerDefaultTimeResolution = kLedgerPossibleTimeResolutions[2];
 
-//! Close time resolution in genesis ledger
+/**
+ * Close time resolution in genesis ledger
+ */
 constexpr auto kLedgerGenesisTimeResolution = kLedgerPossibleTimeResolutions[0];
 
-//! How often we increase the close time resolution (in numbers of ledgers)
+/**
+ * How often we increase the close time resolution (in numbers of ledgers)
+ */
 constexpr auto kIncreaseLedgerTimeResolutionEvery = 8;
 
-//! How often we decrease the close time resolution (in numbers of ledgers)
+/**
+ * How often we decrease the close time resolution (in numbers of ledgers)
+ */
 constexpr auto kDecreaseLedgerTimeResolutionEvery = 1;
 
 /**

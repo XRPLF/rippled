@@ -955,7 +955,9 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
     }
 }
 
-//! @see Consensus::simulate
+/**
+ * @see Consensus::simulate
+ */
 
 void
 RCLConsensus::simulate(

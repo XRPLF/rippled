@@ -400,7 +400,7 @@ public:
      * Returns information about the transactions currently
      * in the queue for the account.
      *
-     * @returns Empty `vector` if the account has no transactions
+     * @return Empty `vector` if the account has no transactions
      * in the queue.
      */
     std::vector<TxDetails>
@@ -410,7 +410,7 @@ public:
      * Returns information about all transactions currently
      * in the queue.
      *
-     * @returns Empty `vector` if there are no transactions
+     * @return Empty `vector` if there are no transactions
      * in the queue.
      */
     std::vector<TxDetails>
@@ -419,7 +419,7 @@ public:
     /**
      * Summarize current fee metrics for the `fee` RPC command.
      *
-     * @returns a `Json objectvalue`
+     * @return a `Json objectvalue`
      */
     json::Value
     doRPC(Application& app) const;

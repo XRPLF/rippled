@@ -359,7 +359,7 @@ public:
      *             size of a node (0: tiny, ..., 4: huge). If unseated,
      *             uses the configured size (NODE_SIZE).
      *
-     * @throw This method can throw std::out_of_range if you ask for values
+     * @throws This method can throw std::out_of_range if you ask for values
      *        that it does not recognize or request a non-default node-size.
      *
      * @return The value for the requested item.

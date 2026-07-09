@@ -21,7 +21,9 @@ namespace xrpl {
 class RCLCxTx
 {
 public:
-    //! Unique identifier/hash of transaction
+    /**
+     * Unique identifier/hash of transaction
+     */
     using ID = uint256;
 
     /**
@@ -33,14 +35,18 @@ public:
     {
     }
 
-    //! The unique identifier/hash of the transaction
+    /**
+     * The unique identifier/hash of the transaction
+     */
     [[nodiscard]] ID const&
     id() const
     {
         return tx->key();
     }
 
-    //! The SHAMapItem that represents the transaction.
+    /**
+     * The SHAMapItem that represents the transaction.
+     */
     boost::intrusive_ptr<SHAMapItem const> tx;
 };
 
@@ -53,16 +59,22 @@ public:
 class RCLTxSet
 {
 public:
-    //! Unique identifier/hash of the set of transactions
+    /**
+     * Unique identifier/hash of the set of transactions
+     */
     using ID = uint256;
-    //! The type that corresponds to a single transaction
+    /**
+     * The type that corresponds to a single transaction
+     */
     using Tx = RCLCxTx;
 
     //< Provide a mutable view of a TxSet
     class MutableTxSet
     {
         friend class RCLTxSet;
-        //! The SHAMap representing the transactions.
+        /**
+         * The SHAMap representing the transactions.
+         */
         std::shared_ptr<SHAMap> map_;
 
     public:
@@ -144,7 +156,9 @@ public:
         return map->peekItem(entry);
     }
 
-    //! The unique ID/hash of the transaction set
+    /**
+     * The unique ID/hash of the transaction set
+     */
     [[nodiscard]] ID
     id() const
     {
@@ -181,7 +195,9 @@ public:
         return ret;
     }
 
-    //! The SHAMap representing the transactions.
+    /**
+     * The SHAMap representing the transactions.
+     */
     std::shared_ptr<SHAMap> map;
 };
 }  // namespace xrpl

@@ -400,7 +400,7 @@ private:
      *
      * @param item The SHAMapItem to deserialize.
      * @return A shared pointer to the deserialized transaction.
-     * @throw May throw on deserialization error.
+     * @throws May throw on deserialization error.
      */
     static std::shared_ptr<STTx const>
     deserializeTx(SHAMapItem const& item);
@@ -413,7 +413,7 @@ private:
      * @param item The SHAMapItem to deserialize.
      * @return A pair containing shared pointers to the deserialized transaction
      *         and metadata.
-     * @throw May throw on deserialization error.
+     * @throws May throw on deserialization error.
      */
     static std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
     deserializeTxPlusMeta(SHAMapItem const& item);

@@ -58,7 +58,7 @@ enum LedgerEntryType : std::uint16_t {
      *
      * Objects with this special type cannot be created or stored on the ledger.
      *
-     * @sa keylet::unchecked
+     * @see keylet::unchecked
      */
     ltANY = 0,
 
@@ -71,7 +71,7 @@ enum LedgerEntryType : std::uint16_t {
      *
      * Objects with this special type cannot be created or stored on the ledger.
      *
-     * @sa keylet::child
+     * @see keylet::child
      */
     ltCHILD = 0x1CD2,
 
