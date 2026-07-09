@@ -164,6 +164,9 @@ adjustOwnerCountSigned(
 
     if (sponsorSle)
     {
+        XRPL_ASSERT(
+            view.rules().enabled(featureSponsor),
+            "xrpl::getTxReserveSponsor : sponsor exists + Sponsor enabled");
         bool const validSponsorType = sponsorSle->getType() == ltACCOUNT_ROOT;
         XRPL_ASSERT(validSponsorType, "xrpl::adjustOwnerCountSigned : valid sponsor sle type");
         if (!validSponsorType)
@@ -383,6 +386,9 @@ checkReserve(
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (sponsorSle)
     {
+        XRPL_ASSERT(
+            ctx.view.rules().enabled(featureSponsor),
+            "xrpl::checkReserve : sponsorSLE provided and sponsor feature enabled");
         if (sponsorSle->getType() != ltACCOUNT_ROOT)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
