@@ -298,7 +298,7 @@ private:
      * This is usually called during import.
      *
      * @note This routine will not be called concurrently with itself
-     *         or other methods.
+     *       or other methods.
      * @see import
      */
     virtual void

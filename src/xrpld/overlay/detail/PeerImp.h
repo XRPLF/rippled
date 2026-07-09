@@ -718,10 +718,10 @@ protected:
      * (at most 8 objects) is unaffected.
      *
      * @param requested Number of objects requested by the message. This
-     *                   value is used for request-size pricing and may
-     *                   exceed `Tuning::kHardMaxReplyNodes` when this
-     *                   helper is called directly, even though processing
-     *                   caps the iterations to `Tuning::kHardMaxReplyNodes`.
+     *                  value is used for request-size pricing and may
+     *                  exceed `Tuning::kHardMaxReplyNodes` when this
+     *                  helper is called directly, even though processing
+     *                  caps the iterations to `Tuning::kHardMaxReplyNodes`.
      * @param found     Number of objects successfully returned in the
      *                  reply.
      * @return A `Resource::Charge` whose cost reflects the work performed.

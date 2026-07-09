@@ -35,7 +35,7 @@ namespace xrpl {
  * @tparam NodeId Type used to uniquely identify nodes/peers
  * @tparam LedgerId Type used to uniquely identify ledgers
  * @tparam Position Type used to represent the position taken on transactions
- *                    under consideration during this round of consensus
+ *                  under consideration during this round of consensus
  */
 template <class NodeId, class LedgerId, class Position>
 class ConsensusProposal

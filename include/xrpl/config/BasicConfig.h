@@ -91,7 +91,7 @@ public:
      * Get the legacy value for this section.
      *
      * @return The retrieved value. A section with an empty legacy value returns
-     *           an empty string.
+     *         an empty string.
      */
     [[nodiscard]] std::string
     legacy() const

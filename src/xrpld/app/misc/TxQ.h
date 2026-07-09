@@ -391,7 +391,7 @@ public:
      * @param view current open ledger
      * @param tx the transaction
      * @return minimum required fee, first sequence in the ledger
-     *        and first available sequence
+     *         and first available sequence
      */
     FeeAndSeq
     getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> const& tx) const;
