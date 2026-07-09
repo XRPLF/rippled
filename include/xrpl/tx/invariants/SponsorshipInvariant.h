@@ -18,6 +18,9 @@ namespace xrpl {
  *  - The sum of all per-account deltas of `sfSponsoredOwnerCount` equals
  *    the sum of all per-account deltas of `sfSponsoringOwnerCount`.
  *  - Account OwnerCount must be greater than or equal to SponsoredOwnerCount.
+ *  - The net delta of sponsored object owner counts (the owner-count
+ *    magnitude of sponsored ledger entries) equals the net delta of
+ *    `sfSponsoredOwnerCount`.
  */
 class SponsorshipOwnerCountsMatch
 {
