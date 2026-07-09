@@ -427,7 +427,9 @@ checkReserve(
         else
         {
             auto const ownerCount = accSle->getFieldU32(sfOwnerCount);
-            XRPAmount const reserve = ctx.view.fees().accountReserve(ownerCount, 1);
+            XRPL_ASSERT(adj.accountCountDelta == 0, "xrpl::checkReserve : accountCountDelta is 0");
+            XRPAmount const reserve = ctx.view.fees().accountReserve(
+                static_cast<std::uint32_t>(ownerCount + adj.ownerCountDelta), 1);
             if (accBalance < reserve)
                 return insufReserveCode;
         }
