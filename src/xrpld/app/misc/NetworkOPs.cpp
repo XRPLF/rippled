@@ -330,7 +330,7 @@ public:
         , jobQueue_(jobQueue)
         , standalone_(standalone)
         , minPeerCount_(startValid ? 0 : minPeerCount)
-        , stats_(std::bind(&NetworkOPsImp::collectMetrics, this), collector)
+        , stats_([this] { collectMetrics(); }, collector)
     {
     }
 
@@ -4392,7 +4392,7 @@ NetworkOPsImp::findRpcSub(std::string const& strUrl)
 {
     std::scoped_lock const sl(subLock_);
 
-    subRpcMapType::iterator const it = rpcSubMap_.find(strUrl);
+    auto const it = rpcSubMap_.find(strUrl);
 
     if (it != rpcSubMap_.end())
         return it->second;
@@ -4827,7 +4827,7 @@ NetworkOPsImp::StateAccounting::json(json::Value& obj) const
     counters[static_cast<std::size_t>(mode)].dur += current;
 
     obj[jss::state_accounting] = json::ValueType::Object;
-    for (std::size_t i = static_cast<std::size_t>(OperatingMode::DISCONNECTED);
+    for (auto i = static_cast<std::size_t>(OperatingMode::DISCONNECTED);
          i <= static_cast<std::size_t>(OperatingMode::FULL);
          ++i)
     {

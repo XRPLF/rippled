@@ -2,9 +2,16 @@
 
 #include <xrpld/overlay/Peer.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/beast/insight/Collector.h>
 #include <xrpl/shamap/SHAMap.h>
 
+#include <xrpl.pb.h>
+
+#include <chrono>
+#include <cstdint>
+#include <functional>
 #include <memory>
 
 namespace xrpl {

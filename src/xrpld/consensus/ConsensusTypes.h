@@ -3,10 +3,14 @@
 #include <xrpld/consensus/ConsensusProposal.h>
 #include <xrpld/consensus/DisputedTx.h>
 
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <chrono>
+#include <cstddef>
 #include <map>
+#include <string>
 
 namespace xrpl {
 

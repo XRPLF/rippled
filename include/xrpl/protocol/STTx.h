@@ -1,18 +1,30 @@
 #pragma once
 
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFormats.h>
 
 #include <boost/container/flat_set.hpp>
 
+#include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <functional>
+#include <memory>
 #include <optional>
+#include <string>
+#include <vector>
 
 namespace xrpl {
 

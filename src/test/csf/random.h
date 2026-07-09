@@ -1,5 +1,8 @@
 #pragma once
 
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
 #include <random>
 #include <vector>
 
@@ -132,9 +135,8 @@ class PowerLawDistribution
 public:
     using result_type = double;
 
-    PowerLawDistribution(double xmin, double a) : xmin_{xmin}, a_{a}
+    PowerLawDistribution(double xmin, double a) : xmin_{xmin}, a_{a}, inv_(1.0 / (1.0 - a_))
     {
-        inv_ = 1.0 / (1.0 - a_);
     }
 
     template <class Generator>

@@ -2,9 +2,14 @@
 
 #include <xrpld/app/main/Application.h>
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/Ledger.h>
-#include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/protocol/Protocol.h>
 
+#include <cstdint>
+#include <memory>
 #include <optional>
 
 namespace xrpl {
