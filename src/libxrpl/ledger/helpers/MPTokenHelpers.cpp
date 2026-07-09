@@ -942,8 +942,7 @@ createMPToken(
     (*mptoken)[sfFlags] = flags;
     (*mptoken)[sfOwnerNode] = *ownerNode;
 
-    if (sponsorSle)
-        addSponsorToLedgerEntry(mptoken, sponsorSle);
+    addSponsorToLedgerEntry(mptoken, sponsorSle);
 
     view.insert(mptoken);
 
