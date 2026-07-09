@@ -1,8 +1,13 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 
-#include <tuple>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/TER.h>
+
+#include <optional>
+#include <string>
 #include <utility>
 
 namespace xrpl::test::jtx {

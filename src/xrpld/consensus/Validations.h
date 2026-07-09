@@ -5,12 +5,21 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/container/aged_container_utility.h>
 #include <xrpl/beast/container/aged_unordered_map.h>
-#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
 
+#include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <mutex>
 #include <optional>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>

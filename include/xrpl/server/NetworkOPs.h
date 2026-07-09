@@ -1,16 +1,24 @@
 #pragma once
 
-#include <xrpl/core/JobQueue.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/messages.h>
 #include <xrpl/server/InfoSub.h>
-#include <xrpl/shamap/SHAMap.h>
 
 #include <boost/asio.hpp>
 
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <optional>
+#include <sstream>
+#include <string>
 
 namespace xrpl {
 
@@ -25,6 +33,7 @@ class Transaction;
 class ValidatorKeys;
 class CanonicalTXSet;
 class RCLCxPeerPos;
+class SHAMap;
 
 // This is the primary interface into the "client" portion of the program.
 // Code that wants to do normal operations on the network such as

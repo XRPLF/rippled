@@ -3,7 +3,9 @@
 #include <boost/filesystem.hpp>
 #include <boost/system/error_code.hpp>
 
+#include <cstddef>
 #include <optional>
+#include <string>
 
 namespace xrpl {
 

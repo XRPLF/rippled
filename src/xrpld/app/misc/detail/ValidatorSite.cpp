@@ -8,7 +8,6 @@
 #include <xrpld/app/misc/detail/WorkSSL.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/SlabAllocator.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>

@@ -1,14 +1,30 @@
 #pragma once
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <optional>
 #include <tuple>
+#include <unordered_set>
 #include <utility>
 
 namespace xrpl {
@@ -179,9 +195,6 @@ public:
 
     static NotTEC
     checkSign(PreclaimContext const& ctx);
-
-    static NotTEC
-    checkBatchSign(PreclaimContext const& ctx);
 
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
@@ -373,7 +386,12 @@ protected:
         std::optional<uint256 const> const& parentBatchId,
         AccountID const& idAccount,
         STObject const& sigObject,
-        beast::Journal const j);
+        beast::Journal const j,
+        // A batch may carry an inner from an account that an earlier inner
+        // creates, so the signer account need not exist yet; when it does not,
+        // only its own master key may authorize it. Normal transactions require
+        // the account to already exist.
+        bool permitUncreatedAccount = false);
 
     // Base class always returns true
     static bool
@@ -413,25 +431,8 @@ protected:
         std::optional<T> value,
         unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
-private:
-    static NotTEC
-    checkPermission(
-        ReadView const& view,
-        STTx const& tx,
-        std::unordered_set<GranularPermissionType>& heldGranularPermissions);
-
-    std::pair<TER, XRPAmount>
-    reset(XRPAmount fee);
-
-    TER
-    consumeSeqProxy(SLE::pointer const& sleAccount);
-
-    TER
-    payFee();
-
-    std::tuple<TER, XRPAmount, bool>
-    processPersistentChanges(TER result, XRPAmount fee);
-
+    // Signature-authorization helpers. protected so the Batch transactor can
+    // reuse them when validating each BatchSigner in Batch::checkBatchSign.
     static NotTEC
     checkSingleSign(
         ReadView const& view,
@@ -447,6 +448,24 @@ private:
         AccountID const& id,
         STObject const& sigObject,
         beast::Journal const j);
+
+private:
+    static NotTEC
+    checkPermission(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType>& heldGranularPermissions);
+
+    std::pair<TER, XRPAmount>
+    reset(XRPAmount fee);
+
+    TER
+    consumeSeqProxy(SLE::pointer const& sleAccount);
+    TER
+    payFee();
+
+    std::tuple<TER, XRPAmount, bool>
+    processPersistentChanges(TER result, XRPAmount fee);
 
     void trapTransaction(uint256) const;
 

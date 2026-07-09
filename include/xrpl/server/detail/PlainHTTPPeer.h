@@ -1,12 +1,16 @@
 #pragma once
 
 #include <xrpl/beast/rfc2616.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Port.h>
+#include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/BaseHTTPPeer.h>
 #include <xrpl/server/detail/PlainWSPeer.h>
 
 #include <boost/beast/core/tcp_stream.hpp>
 
 #include <memory>
+#include <utility>
 
 namespace xrpl {
 
@@ -84,7 +88,9 @@ PlainHTTPPeer<Handler>::run()
 {
     if (!this->handler_.onAccept(this->session(), this->remoteAddress_))
     {
-        util::spawn(this->strand_, std::bind(&PlainHTTPPeer::doClose, this->shared_from_this()));
+        util::spawn(this->strand_, [self = this->shared_from_this()](boost::asio::yield_context) {
+            self->doClose();
+        });
         return;
     }
 
@@ -92,8 +98,9 @@ PlainHTTPPeer<Handler>::run()
         return;
 
     util::spawn(
-        this->strand_,
-        std::bind(&PlainHTTPPeer::doRead, this->shared_from_this(), std::placeholders::_1));
+        this->strand_, [self = this->shared_from_this()](boost::asio::yield_context doYield) {
+            self->doRead(doYield);
+        });
 }
 
 template <class Handler>
