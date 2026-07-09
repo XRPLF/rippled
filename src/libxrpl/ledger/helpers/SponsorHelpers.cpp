@@ -6,8 +6,10 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -26,8 +28,8 @@ getTxReserveSponsorID(STTx const& tx)
     if (tx.isFieldPresent(sfSponsor) && isReserveSponsored(tx))
     {
         XRPL_ASSERT(
-            view.rules().enabled(featureSponsor),
-            "xrpl::getTxReserveSponsor : sponsor exists + Sponsor enabled");
+            getCurrentTransactionRules()->enabled(featureSponsor),
+            "xrpl::getTxReserveSponsorID : sponsor exists + Sponsor enabled");
         return tx.getAccountID(sfSponsor);
     }
     return {};
@@ -40,7 +42,7 @@ getTxReserveSponsor(ApplyViewContext ctx)
     if (sponsorID)
     {
         XRPL_ASSERT(
-            view.rules().enabled(featureSponsor),
+            ctx.view.rules().enabled(featureSponsor),
             "xrpl::getTxReserveSponsor : sponsor exists + Sponsor enabled");
         auto sle = ctx.view.peek(keylet::account(*sponsorID));
 
@@ -87,8 +89,8 @@ getLedgerEntryReserveSponsorID(SLE::const_ref sle, SF_ACCOUNT const& field)
     if (sle->isFieldPresent(field))
     {
         XRPL_ASSERT(
-            view.rules().enabled(featureSponsor),
-            "xrpl::getTxReserveSponsor : sponsor exists + Sponsor enabled");
+            getCurrentTransactionRules()->enabled(featureSponsor),
+            "xrpl::getEffectiveTxReserveSponsor : sponsor exists + Sponsor enabled");
         return sle->getAccountID(field);
     }
     return {};
@@ -102,7 +104,7 @@ getLedgerEntryReserveSponsor(ApplyView& view, SLE::const_ref sle, SF_ACCOUNT con
     {
         XRPL_ASSERT(
             view.rules().enabled(featureSponsor),
-            "xrpl::getTxReserveSponsor : sponsor exists + Sponsor enabled");
+            "xrpl::getLedgerEntryReserveSponsor : sponsor exists + Sponsor enabled");
         return view.peek(keylet::account(*sponsorID));
     }
     return {};
@@ -116,7 +118,7 @@ getLedgerEntryReserveSponsor(ReadView const& view, SLE::const_ref sle, SF_ACCOUN
     {
         XRPL_ASSERT(
             view.rules().enabled(featureSponsor),
-            "xrpl::getTxReserveSponsor : sponsor exists + Sponsor enabled");
+            "xrpl::getLedgerEntryReserveSponsor : sponsor exists + Sponsor enabled");
         return view.read(keylet::account(*sponsorID));
     }
     return {};
@@ -132,8 +134,8 @@ addSponsorToLedgerEntry(SLE::ref sle, SLE::const_ref sponsorSle, SF_ACCOUNT cons
     if (sponsorSle)
     {
         XRPL_ASSERT(
-            view.rules().enabled(featureSponsor),
-            "xrpl::getTxReserveSponsor : sponsor exists + Sponsor enabled");
+            getCurrentTransactionRules()->enabled(featureSponsor),
+            "xrpl::addSponsorToLedgerEntry : sponsor exists + Sponsor enabled");
         sle->setAccountID(field, sponsorSle->getAccountID(sfAccount));
     }
 }
@@ -148,8 +150,8 @@ addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& fi
     if (sponsorSle && *sponsorSle)
     {
         XRPL_ASSERT(
-            view.rules().enabled(featureSponsor),
-            "xrpl::getTxReserveSponsor : sponsor exists + Sponsor enabled");
+            ctx.view.rules().enabled(featureSponsor),
+            "xrpl::addSponsorToLedgerEntry : sponsor exists + Sponsor enabled");
         addSponsorToLedgerEntry(sle, *sponsorSle, field);
     }
 }
@@ -164,8 +166,8 @@ removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field)
     if (sle->isFieldPresent(field))
     {
         XRPL_ASSERT(
-            view.rules().enabled(featureSponsor),
-            "xrpl::getTxReserveSponsor : sponsor exists + Sponsor enabled");
+            getCurrentTransactionRules()->enabled(featureSponsor),
+            "xrpl::removeSponsorFromLedgerEntry : sponsor exists + Sponsor enabled");
         sle->makeFieldAbsent(field);
     }
 }
