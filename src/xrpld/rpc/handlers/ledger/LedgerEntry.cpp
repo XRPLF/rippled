@@ -726,9 +726,7 @@ parseSponsorship(
     [[maybe_unused]] unsigned const apiVersion)
 {
     if (!params.isObject())
-    {
         return parseObjectID(params, fieldName);
-    }
 
     auto const sponsorID =
         LedgerEntryHelpers::requiredAccountID(params, jss::sponsor, "malformedSponsor");

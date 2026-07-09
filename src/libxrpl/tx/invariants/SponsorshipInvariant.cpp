@@ -63,14 +63,16 @@ SponsorshipOwnerCountsMatch::visitEntry(bool isDelete, SLE::const_ref before, SL
         }
     };
 
-    std::int64_t const beforeSponsored = getSponsored(before);
-    std::int64_t const afterSponsored = getSponsored(after);
-    std::int64_t const beforeSponsoring = getSponsoring(before);
-    std::int64_t const afterSponsoring = getSponsoring(after);
+    // Cast to signed 64-bit integers to calculate deltas
+    auto const beforeSponsored = static_cast<std::int64_t>(getSponsored(before));
+    auto const afterSponsored = static_cast<std::int64_t>(getSponsored(after));
+    auto const beforeSponsoring = static_cast<std::int64_t>(getSponsoring(before));
+    auto const afterSponsoring = static_cast<std::int64_t>(getSponsoring(after));
 
-    std::int64_t const beforeSponsoredObjectOwnerCount = getSponsoredObjectOwnerCount(before);
-    std::int64_t const afterSponsoredObjectOwnerCount =
-        isDelete ? 0 : getSponsoredObjectOwnerCount(after);
+    auto const beforeSponsoredObjectOwnerCount =
+        static_cast<std::int64_t>(getSponsoredObjectOwnerCount(before));
+    auto const afterSponsoredObjectOwnerCount =
+        isDelete ? std::int64_t{0} : static_cast<std::int64_t>(getSponsoredObjectOwnerCount(after));
 
     deltaSponsoredOwnerCount_ += (afterSponsored - beforeSponsored);
     deltaSponsoringOwnerCount_ += (afterSponsoring - beforeSponsoring);
