@@ -447,7 +447,7 @@ checkReserve(
         XRPL_ASSERT(
             !sponsorSle,
             "xrpl::checkReserve : featureSponsor disabled and sponsorSle not provided");
-        XRPL_ASSERT(adj.accountCountDelta == 0, "xrpl::accountReserve : accountCountDelta is 0");
+        XRPL_ASSERT(adj.accountCountDelta == 0, "xrpl::checkReserve : accountCountDelta is 0");
         auto const reserve = ctx.view.fees().accountReserve(
             accSle->getFieldU32(sfOwnerCount) + adj.ownerCountDelta, 1);
         if (accBalance < reserve)
