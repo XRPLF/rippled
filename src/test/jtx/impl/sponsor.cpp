@@ -21,9 +21,9 @@ namespace xrpl::test::jtx::sponsor {
 json::Value
 set(jtx::Account const& account,
     uint32_t flags,
-    std::optional<uint32_t> reserveCount,
-    std::optional<STAmount> feeAmount,
-    std::optional<STAmount> maxFee)
+    std::optional<uint32_t> const reserveCount,
+    std::optional<STAmount> const feeAmount,
+    std::optional<STAmount> const maxFee)
 {
     json::Value jv;
     jv[jss::TransactionType] = jss::SponsorshipSet;
@@ -35,45 +35,6 @@ set(jtx::Account const& account,
         jv[sfFeeAmount.jsonName] = feeAmount->getJson(JsonOptions::Values::None);
     if (maxFee)
         jv[sfMaxFee.jsonName] = maxFee->getJson(JsonOptions::Values::None);
-    return jv;
-}
-
-json::Value
-set_fee(
-    jtx::Account const& account,
-    uint32_t flags,
-    STAmount feeAmount,
-    std::optional<STAmount> maxFee)
-{
-    json::Value jv;
-    jv[jss::TransactionType] = jss::SponsorshipSet;
-    jv[jss::Account] = account.human();
-    jv[sfFlags.jsonName] = flags;
-    jv[sfFeeAmount.jsonName] = feeAmount.getJson(JsonOptions::Values::None);
-    if (maxFee)
-        jv[sfMaxFee.jsonName] = maxFee->getJson(JsonOptions::Values::None);
-    return jv;
-}
-
-json::Value
-set_reserve(jtx::Account const& account, uint32_t flags, uint32_t reserveCount)
-{
-    json::Value jv;
-    jv[jss::TransactionType] = jss::SponsorshipSet;
-    jv[jss::Account] = account.human();
-    jv[sfFlags.jsonName] = flags;
-    jv[sfRemainingOwnerCount.jsonName] = reserveCount;
-    return jv;
-}
-
-json::Value
-set_max_fee(jtx::Account const& account, uint32_t flags, STAmount maxFee)
-{
-    json::Value jv;
-    jv[jss::TransactionType] = jss::SponsorshipSet;
-    jv[jss::Account] = account.human();
-    jv[sfFlags.jsonName] = flags;
-    jv[sfMaxFee.jsonName] = maxFee.getJson(JsonOptions::Values::None);
     return jv;
 }
 
