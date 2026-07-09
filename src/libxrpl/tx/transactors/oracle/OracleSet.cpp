@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/oracle/OracleSet.h>
 
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -23,6 +24,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <memory>
 #include <set>
@@ -183,6 +185,8 @@ OracleSet::preclaim(PreclaimContext const& ctx)
 static bool
 adjustOracleOwnerCount(ApplyContext& ctx, int count)
 {
+    XRPL_ASSERT(std::abs(count) <= 2, "xrpl::adjustOracleOwnerCount abs(counter) <= 2");
+
     if (auto const sleAccount = ctx.view().peek(keylet::account(ctx.tx[sfAccount])))
     {
         if (count > 0)

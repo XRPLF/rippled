@@ -50,11 +50,11 @@ struct OwnerCounts
     auto
     operator<=>(OwnerCounts const& o) const
     {
-        if (auto cmp = count() <=> o.count(); cmp != 0)
+        if (auto cmp = count() <=> o.count(); cmp != 0)  // NOLINT
             return cmp;
-        if (auto cmp = owner <=> o.owner; cmp != 0)
+        if (auto cmp = owner <=> o.owner; cmp != 0)  // NOLINT
             return cmp;
-        if (auto cmp = sponsored <=> o.sponsored; cmp != 0)
+        if (auto cmp = sponsored <=> o.sponsored; cmp != 0)  // NOLINT
             return cmp;
         return sponsoring <=> o.sponsoring;
     }
