@@ -344,6 +344,27 @@ decreaseOwnerCountForObject(
     decreaseOwnerCount(view, accountSle, sponsorSle, count, j);
 }
 
+void
+adjustLoanBrokerOwnerCount(
+    ApplyView& view,
+    SLE::ref brokerSle,
+    std::int32_t delta,
+    beast::Journal j)
+{
+    XRPL_ASSERT(
+        brokerSle && brokerSle->getType() == ltLOAN_BROKER,
+        "xrpl::adjustLoanBrokerOwnerCount : valid loan broker sle");
+    if (!brokerSle || brokerSle->getType() != ltLOAN_BROKER)
+        return;  // LCOV_EXCL_LINE
+
+    XRPL_ASSERT(delta != 0, "xrpl::adjustLoanBrokerOwnerCount : nonzero delta input");
+    if (delta == 0)
+        return;  // LCOV_EXCL_LINE
+
+    adjustOwnerCountImpl(
+        view, brokerSle, sfOwnerCount, brokerSle->getAccountID(sfAccount), delta, j);
+}
+
 XRPAmount
 accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjustment adj)
 {

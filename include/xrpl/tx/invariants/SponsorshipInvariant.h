@@ -14,10 +14,16 @@ namespace xrpl {
 /**
  * @brief Invariant: Sponsored owner counts are balanced.
  *
- * The following check is made for every transaction:
+ * The following checks are made for every transaction:
  *  - The sum of all per-account deltas of `sfSponsoredOwnerCount` equals
  *    the sum of all per-account deltas of `sfSponsoringOwnerCount`.
  *  - Account OwnerCount must be greater than or equal to SponsoredOwnerCount.
+ *  - The sum of all per-account deltas of `sfSponsoredOwnerCount` equals the
+ *    sum of all per-object deltas of owner-count contributed by sponsored
+ *    objects (independently recomputed from `sfSponsor`, or from
+ *    `sfHighSponsor`/`sfLowSponsor` on a RippleState, which may be
+ *    sponsored on each side). This cross-checks the account-side counter
+ *    against the actual sponsored objects on the ledger.
  */
 class SponsorshipOwnerCountsMatch
 {
