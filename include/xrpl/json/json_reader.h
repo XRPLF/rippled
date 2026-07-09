@@ -205,27 +205,27 @@ Reader::parse(Value& root, BufferSequence const& bs)
 /**
  * @brief Read from 'sin' into 'root'.
  *
- *  Always keep comments from the input JSON.
+ * Always keep comments from the input JSON.
  *
- *  This can be used to read a file into a particular sub-object.
- *  For example:
- *  @code
- *  json::Value root;
- *  cin >> root["dir"]["file"];
- *  cout << root;
- *  @endcode
- *  Result:
- *  @verbatim
- *  {
+ * This can be used to read a file into a particular sub-object.
+ * For example:
+ * @code
+ * json::Value root;
+ * cin >> root["dir"]["file"];
+ * cout << root;
+ * @endcode
+ * Result:
+ * @verbatim
+ * {
  * "dir": {
- *     "file": {
- *  // The input stream JSON would be nested here.
- *     }
+ *    "file": {
+ * // The input stream JSON would be nested here.
+ *    }
  * }
- *  }
- *  @endverbatim
- *  @throw std::exception on parse error.
- *  @see json::operator<<()
+ * }
+ * @endverbatim
+ * @throw std::exception on parse error.
+ * @see json::operator<<()
  */
 std::istream&
 operator>>(std::istream&, Value&);

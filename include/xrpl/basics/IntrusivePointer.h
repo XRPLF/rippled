@@ -432,8 +432,8 @@ public:
      * If this is a weak pointer, attempt to convert it to a strong
      * pointer.
      *
-     *  @return true if successfully converted to a strong pointer (or was
-     *          already a strong pointer). Otherwise false.
+     * @return true if successfully converted to a strong pointer (or was
+     *         already a strong pointer). Otherwise false.
      */
     bool
     convertToStrong();
@@ -442,7 +442,7 @@ public:
      * If this is a strong pointer, attempt to convert it to a weak
      * pointer.
      *
-     *  @return false if the pointer is null. Otherwise return true.
+     * @return false if the pointer is null. Otherwise return true.
      */
     bool
     convertToWeak();

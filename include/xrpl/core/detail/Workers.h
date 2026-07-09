@@ -105,11 +105,11 @@ public:
     /**
      * Retrieve the desired number of threads.
      *
-     *  This just returns the number of active threads that were requested. If
-     *  there was a recent call to setNumberOfThreads, the actual number of
+     * This just returns the number of active threads that were requested. If
+     * there was a recent call to setNumberOfThreads, the actual number of
      * active threads may be temporarily different from what was last requested.
      *
-     *  @note This function is not thread-safe.
+     * @note This function is not thread-safe.
      */
     [[nodiscard]] int
     getNumberOfThreads() const noexcept;

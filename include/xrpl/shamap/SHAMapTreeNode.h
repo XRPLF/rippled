@@ -98,7 +98,7 @@ public:
     /**
      * Returns the SHAMap that owns this node.
      *
-     *  @return the ID of the SHAMap that owns this node, or 0 if the
+     * @return the ID of the SHAMap that owns this node, or 0 if the
      * node is not owned by any SHAMap and is a candidate for sharing.
      */
     std::uint32_t

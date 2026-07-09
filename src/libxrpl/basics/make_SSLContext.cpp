@@ -44,8 +44,8 @@ namespace openssl::detail {
  * - There should not be any truly secure information (e.g. seeds or private
  *   keys) that gets relayed to the server anyways over these RPCs.
  *
- *   @note If you increase the number of bits you need to generate new
- *         default DH parameters and update defaultDH  accordingly.
+ * @note If you increase the number of bits you need to generate new
+ *       default DH parameters and update defaultDH  accordingly.
  */
 int gDefaultRsaKeyBits = 2048;
 

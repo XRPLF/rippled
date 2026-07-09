@@ -38,18 +38,18 @@ public:
 /**
  * Manages a client's subscription to data feeds.
  *
- *  An InfoSub holds a non-owning reference to its `Source` (typically the
- *  process-wide `NetworkOPsImp`). The destructor reaches back into the
- *  `Source` to remove this subscriber from every server-side subscription
- *  map.
+ * An InfoSub holds a non-owning reference to its `Source` (typically the
+ * process-wide `NetworkOPsImp`). The destructor reaches back into the
+ * `Source` to remove this subscriber from every server-side subscription
+ * map.
  *
- *  @note Lifetime contract: every `InfoSub` instance MUST be destroyed
- *        before the backing `Source`. NetworkOPsImp shutdown drops all
- *        subscriber strong refs before its own teardown to satisfy this.
- *  @note Thread-safety: per-instance state is guarded by `lock_`. The
- *        destructor reads tracking sets without taking `lock_` because
- *        the strong-pointer ref-count is zero at destruction time, so
- *        no other thread can be calling the public mutators.
+ * @note Lifetime contract: every `InfoSub` instance MUST be destroyed
+ *       before the backing `Source`. NetworkOPsImp shutdown drops all
+ *       subscriber strong refs before its own teardown to satisfy this.
+ * @note Thread-safety: per-instance state is guarded by `lock_`. The
+ *       destructor reads tracking sets without taking `lock_` because
+ *       the strong-pointer ref-count is zero at destruction time, so
+ *       no other thread can be calling the public mutators.
  */
 class InfoSub : public CountedObject<InfoSub>
 {

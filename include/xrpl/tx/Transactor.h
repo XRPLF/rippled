@@ -378,7 +378,7 @@ protected:
      *
      * @param registry The service registry.
      * @param baseFee The base fee of a candidate transaction
-     *     @see xrpl::calculateBaseFee
+     * @see xrpl::calculateBaseFee
      * @param fees Fee settings from the current ledger
      * @param flags Transaction processing fees
      */

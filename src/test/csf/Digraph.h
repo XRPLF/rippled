@@ -125,7 +125,7 @@ public:
     /**
      * Range over vertices in the graph
      *
-     *  @return A boost transformed range over the vertices with out edges in
+     * @return A boost transformed range over the vertices with out edges in
      * the graph
      */
     [[nodiscard]] auto

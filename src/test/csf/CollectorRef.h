@@ -15,41 +15,41 @@ namespace xrpl::test::csf {
 /**
  * Holds a type-erased reference to an arbitrary collector.
  *
- *  A collector is any class that implements
+ * A collector is any class that implements
  *
- *      on(NodeID, SimTime, Event)
+ *     on(NodeID, SimTime, Event)
  *
- *  for all events emitted by a Peer.
+ * for all events emitted by a Peer.
  *
- *  This class is used to type-erase the actual collector used by each peer in
- *  the simulation. The idea is to compose complicated and typed collectors
+ * This class is used to type-erase the actual collector used by each peer in
+ * the simulation. The idea is to compose complicated and typed collectors
  * using the helpers in collectors.h, then only type erase at the higher-most
  * level when adding to the simulation.
  *
- *  The example code below demonstrates the reason for storing the collector
- *  as a reference.  The collector's lifetime will generally be longer than
- *  the simulation; perhaps several simulations are run for a single collector
- *  instance.  The collector potentially stores lots of data as well, so the
- *  simulation needs to point to the single instance, rather than requiring
- *  collectors to manage copying that data efficiently in their design.
+ * The example code below demonstrates the reason for storing the collector
+ * as a reference.  The collector's lifetime will generally be longer than
+ * the simulation; perhaps several simulations are run for a single collector
+ * instance.  The collector potentially stores lots of data as well, so the
+ * simulation needs to point to the single instance, rather than requiring
+ * collectors to manage copying that data efficiently in their design.
  *
- *  @code
- *      // Initialize a specific collector that might write to a file.
- *      SomeFancyCollector collector{"out.file"};
+ * @code
+ *     // Initialize a specific collector that might write to a file.
+ *     SomeFancyCollector collector{"out.file"};
  *
- *      // Setup your simulation
- *      Sim sim(trustgraph, topology, collector);
+ *     // Setup your simulation
+ *     Sim sim(trustgraph, topology, collector);
  *
- *      // Run the simulation
- *      sim.run(100);
+ *     // Run the simulation
+ *     sim.run(100);
  *
- *      // do any reported related to the collector
- *      collector.report();
+ *     // do any reported related to the collector
+ *     collector.report();
  *
- *  @endcode
+ * @endcode
  *
- *  @note If a new event type is added, it needs to be added to the interfaces
- *  below.
+ * @note If a new event type is added, it needs to be added to the interfaces
+ * below.
  */
 class CollectorRef
 {

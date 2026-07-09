@@ -15,25 +15,25 @@ namespace xrpl {
 /**
  * Identifiers for on-ledger objects.
  *
- *  Each ledger object requires a unique type identifier, which is stored within the object itself;
+ * Each ledger object requires a unique type identifier, which is stored within the object itself;
  * this makes it possible to iterate the entire ledger and determine each object's type and verify
  * that the object you retrieved from a given hash matches the expected type.
  *
- *  @warning Since these values are stored inside objects stored on the ledger they are part of the
+ * @warning Since these values are stored inside objects stored on the ledger they are part of the
  * protocol.
  * **Changing them should be avoided because without special handling, this will result in a hard
  * fork.**
  *
- *  @note Values outside this range may be used internally by the code for various purposes, but
+ * @note Values outside this range may be used internally by the code for various purposes, but
  * attempting to use such values to identify on-ledger objects will result in an invariant failure.
  *
- *  @note When retiring types, the specific values should not be removed but should be marked as
+ * @note When retiring types, the specific values should not be removed but should be marked as
  * [[deprecated]]. This is to avoid accidental reuse of identifiers.
  *
- *  @todo The C++ language does not enable checking for duplicate values here.
- *        If it becomes possible then we should do this.
+ * @todo The C++ language does not enable checking for duplicate values here.
+ *       If it becomes possible then we should do this.
  *
- *  @ingroup protocol
+ * @ingroup protocol
  */
 // Protocol-critical, hundreds of usages
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
@@ -53,25 +53,25 @@ enum LedgerEntryType : std::uint16_t {
     /**
      * A special type, matching any ledger entry type.
      *
-     *  The value does not represent a concrete type, but rather is used in contexts where the
+     * The value does not represent a concrete type, but rather is used in contexts where the
      * specific type of a ledger object is unimportant, unknown or unavailable.
      *
-     *  Objects with this special type cannot be created or stored on the ledger.
+     * Objects with this special type cannot be created or stored on the ledger.
      *
-     *  @sa keylet::unchecked
+     * @sa keylet::unchecked
      */
     ltANY = 0,
 
     /**
      * A special type, matching any ledger type except directory nodes.
      *
-     *  The value does not represent a concrete type, but rather is used in contexts where the
+     * The value does not represent a concrete type, but rather is used in contexts where the
      * ledger object must not be a directory node but its specific type is otherwise unimportant,
      * unknown or unavailable.
      *
-     *  Objects with this special type cannot be created or stored on the ledger.
+     * Objects with this special type cannot be created or stored on the ledger.
      *
-     *  @sa keylet::child
+     * @sa keylet::child
      */
     ltCHILD = 0x1CD2,
 
@@ -108,13 +108,13 @@ enum LedgerEntryType : std::uint16_t {
 /**
  * Ledger object flags.
  *
- *  These flags are specified in ledger objects and modify their behavior.
+ * These flags are specified in ledger objects and modify their behavior.
  *
- *  @warning Ledger object flags form part of the protocol.
- *  **Changing them should be avoided because without special handling, this will result in a hard
+ * @warning Ledger object flags form part of the protocol.
+ * **Changing them should be avoided because without special handling, this will result in a hard
  * fork.**
  *
- *  @ingroup protocol
+ * @ingroup protocol
  */
 #pragma push_macro("XMACRO")
 #pragma push_macro("TO_VALUE")

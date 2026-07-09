@@ -105,17 +105,17 @@ public:
 
         /**
          * Schedule coroutine execution.
-         *  Effects:
-         *    Returns immediately.
-         *    A new job is scheduled to resume the execution of the coroutine.
-         *    When the job runs, the coroutine's stack is restored and execution
-         *      continues at the beginning of coroutine function or the
+         * Effects:
+         *   Returns immediately.
+         *   A new job is scheduled to resume the execution of the coroutine.
+         *   When the job runs, the coroutine's stack is restored and execution
+         *     continues at the beginning of coroutine function or the
          * statement after the previous call to yield. Undefined behavior if
          * called after the coroutine has completed with a return (as opposed to
          * a yield()). Undefined behavior if post() or resume() called
          * consecutively without a corresponding yield.
          *
-         *  @return true if the Coro's job is added to the JobQueue.
+         * @return true if the Coro's job is added to the JobQueue.
          */
         bool
         post();

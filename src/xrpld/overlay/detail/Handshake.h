@@ -55,13 +55,13 @@ buildHandshake(
  * Validate header fields necessary for upgrading the link to the peer
  * protocol.
  *
- *  This performs critical security checks that ensure that prevent
- *  MITM attacks on our peer-to-peer links and that the remote peer
- *  has the private keys that correspond to the public identity it
- *  claims.
+ * This performs critical security checks that ensure that prevent
+ * MITM attacks on our peer-to-peer links and that the remote peer
+ * has the private keys that correspond to the public identity it
+ * claims.
  *
- *  @return The public key of the remote peer.
- *  @throw A class derived from std::exception.
+ * @return The public key of the remote peer.
+ * @throw A class derived from std::exception.
  */
 PublicKey
 verifyHandshake(
