@@ -618,7 +618,9 @@ TrustSet::doApply()
 
             // Another transaction could provide XRP to the account and then
             // this transaction would succeed.
-            terResult = tecINSUF_RESERVE_LINE;
+            // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL;
+            // don't mask an internal error as a reserve shortfall.
+            terResult = ((ret == tecINSUFFICIENT_RESERVE) ? tecINSUF_RESERVE_LINE : ret);
         }
         else
         {
@@ -654,7 +656,9 @@ TrustSet::doApply()
 
         // Another transaction could create the account and then this
         // transaction would succeed.
-        terResult = tecNO_LINE_INSUF_RESERVE;
+        // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL;
+        // don't mask an internal error as a reserve shortfall.
+        terResult = ((ret == tecINSUFFICIENT_RESERVE) ? tecNO_LINE_INSUF_RESERVE : ret);
     }
     else
     {

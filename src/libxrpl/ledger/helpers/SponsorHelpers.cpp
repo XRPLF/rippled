@@ -66,6 +66,7 @@ std::expected<SLE::pointer, TER>
 getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle)
 {
     // A reserve sponsor only covers tx.Account's own objects.
+    XRPL_ASSERT(!!accountSle, "getEffectiveTxReserveSponsor : accountSle exists");
     if (isPseudoAccount(accountSle) || accountSle->getAccountID(sfAccount) != ctx.tx[sfAccount])
         return SLE::pointer();
     return getTxReserveSponsor(ctx);
@@ -205,7 +206,7 @@ getLedgerEntryOwnerCount(SLE const& sle)
     switch (sle.getType())
     {
         case ltORACLE: {
-            return calculateOracleReserve(sle.getFieldArray(sfPriceDataSeries).size());
+            return calculateOracleReserve(sle.getFieldArray(sfPriceDataSeries));
         }
         // Vaults require 2 owner counts (the vault and a pseudo-account)
         case ltVAULT:
@@ -219,6 +220,9 @@ getLedgerEntryOwnerCount(SLE const& sle)
                 return 1;
             return 2 + static_cast<std::uint32_t>(sle.getFieldArray(sfSignerEntries).size());
         }
+        case ltACCOUNT_ROOT:
+            UNREACHABLE("AccountRoots are not supported by object sponsorship.");
+            return 0;
         default:
             return 1;
     }

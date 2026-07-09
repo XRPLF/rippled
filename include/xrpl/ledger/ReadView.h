@@ -36,16 +36,16 @@ struct OwnerCounts
     std::uint32_t sponsoring = 0;
 
     OwnerCounts() = default;
-    OwnerCounts(SLE const& sle)
-        : owner(sle[sfOwnerCount])
-        , sponsored(sle[sfSponsoredOwnerCount])
-        , sponsoring(sle[sfSponsoringOwnerCount])
+    OwnerCounts(SLE::const_ref sle)
+        : owner(sle->at(sfOwnerCount))
+        , sponsored(sle->at(~sfSponsoredOwnerCount).value_or(0))
+        , sponsoring(sle->at(~sfSponsoringOwnerCount).value_or(0))
     {
         XRPL_ASSERT(
             owner >= sponsored,
             "xrpl::OwnerCounts : OwnerCount must be greater than or equal to "
             "SponsoredOwnerCount");
-        XRPL_ASSERT(sle.getType() == ltACCOUNT_ROOT, "xrpl::OwnerCounts : sle is AccountRoot");
+        XRPL_ASSERT(sle->getType() == ltACCOUNT_ROOT, "xrpl::OwnerCounts : sle is AccountRoot");
     }
 
     [[nodiscard]] std::uint32_t
