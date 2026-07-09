@@ -49,7 +49,7 @@ getTxReserveSponsor(ApplyViewContext ctx)
 
         // already checked in Transactor::checkSponsor
         if (!sle)
-            return std::unexpected(tecINTERNAL);
+            return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
         return sle;
     }
     return SLE::pointer();
@@ -102,20 +102,6 @@ getLedgerEntryReserveSponsor(ApplyView& view, SLE::const_ref sle, SF_ACCOUNT con
             view.rules().enabled(featureSponsor),
             "xrpl::getLedgerEntryReserveSponsor : sponsor exists + Sponsor enabled");
         return view.peek(keylet::account(*sponsorID));
-    }
-    return {};
-}
-
-SLE::const_pointer
-getLedgerEntryReserveSponsor(ReadView const& view, SLE::const_ref sle, SF_ACCOUNT const& field)
-{
-    auto const sponsorID = getLedgerEntryReserveSponsorID(sle, field);
-    if (sponsorID)
-    {
-        XRPL_ASSERT(
-            view.rules().enabled(featureSponsor),
-            "xrpl::getLedgerEntryReserveSponsor : sponsor exists + Sponsor enabled");
-        return view.read(keylet::account(*sponsorID));
     }
     return {};
 }

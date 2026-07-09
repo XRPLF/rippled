@@ -68,7 +68,7 @@ escrowUnlockApplyHelper<Issue>(
     if (!ctx.view.exists(trustLineKey) && createAsset)
     {
         // Can the account cover the trust line's reserve?
-        auto const sponsorSle = getTxReserveSponsor(ctx);
+        auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, sleDest);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
@@ -202,7 +202,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto const mptKeylet = keylet::mptoken(issuanceKey.key, receiver);
     if (!ctx.view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {
-        auto const sponsorSle = getTxReserveSponsor(ctx);
+        auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, sleDest);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 

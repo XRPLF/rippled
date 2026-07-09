@@ -43,7 +43,7 @@ struct OwnerCounts
         }
 
         if (x > std::numeric_limits<std::uint32_t>::max())
-            return std::numeric_limits<std::uint32_t>::max();
+            return std::numeric_limits<std::uint32_t>::max();  // LCOV_EXCL_LINE
         return static_cast<std::uint32_t>(x);
     }
 
@@ -64,15 +64,6 @@ struct OwnerCounts
     {
         return this == &o ||
             (owner == o.owner && sponsored == o.sponsored && sponsoring == o.sponsoring);
-    }
-
-    [[nodiscard]] bool
-    valid() const
-    {
-        int64_t const x = static_cast<int64_t>(owner) - sponsored + sponsoring;
-        if (x < 0 || x > std::numeric_limits<std::uint32_t>::max())
-            return false;
-        return owner >= sponsored;
     }
 };
 

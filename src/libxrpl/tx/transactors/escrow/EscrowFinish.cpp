@@ -222,7 +222,6 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
                 return ret;
         }
     }
-
     return tesSUCCESS;
 }
 
