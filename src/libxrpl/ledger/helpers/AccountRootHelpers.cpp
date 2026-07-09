@@ -371,7 +371,8 @@ checkReserve(
     XRPAmount accBalance,
     SLE::const_ref sponsorSle,
     Adjustment adj,
-    beast::Journal j)
+    beast::Journal j,
+    TER insufReserveCode)
 {
     // TODO: swap to assert after fixCleanup3_2_0 is retired
     if (!accSle || accSle->getType() != ltACCOUNT_ROOT)
@@ -396,20 +397,20 @@ checkReserve(
             auto const ownerCountAllowed = sle->getFieldU32(sfRemainingOwnerCount);
             if (adj.ownerCountDelta > 0 &&
                 ownerCountAllowed < static_cast<std::uint32_t>(adj.ownerCountDelta))
-                return tecINSUFFICIENT_RESERVE;
+                return insufReserveCode;
         }
 
         auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance).xrp();
         XRPAmount const sponsorReserve = accountReserve(ctx.view, sponsorSle, j, adj);
 
         if (sponsorBalance < sponsorReserve)
-            return tecINSUFFICIENT_RESERVE;
+            return insufReserveCode;
     }
     else
     {
         XRPAmount const reserve = accountReserve(ctx.view, accSle, j, adj);
         if (accBalance < reserve)
-            return tecINSUFFICIENT_RESERVE;
+            return insufReserveCode;
     }
     return tesSUCCESS;
 }

@@ -94,6 +94,8 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
  *  @param adj Adjustment to the owner/account count (default: 0/0). Positive to add, negative to
  * subtract.
  *  @param j Journal for logging (default: null sink)
+ *  @param insufReserveCode The transaction result code to return if the reserve is insufficient
+ *  (default: tecINSUFFICIENT_RESERVE).
  *  @return Transaction result code
  */
 [[nodiscard]] TER
@@ -103,7 +105,8 @@ checkReserve(
     XRPAmount accBalance,
     SLE::const_ref sponsorSle,
     Adjustment adj,
-    beast::Journal j);
+    beast::Journal j,
+    TER insufReserveCode = tecINSUFFICIENT_RESERVE);
 
 /** Check if an account has sufficient reserve, deriving the sponsor internally.
  *
