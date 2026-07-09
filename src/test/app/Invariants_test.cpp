@@ -5155,8 +5155,7 @@ class Invariants_test : public beast::unit_test::Suite
         testcase("Sponsorship");
         {
             auto const expectMessage =
-                "SponsoredOwnerCount does not equal "
-                "SponsoringOwnerCount delta.";
+                "SponsoredOwnerCount does not equal SponsoringOwnerCount delta.";
 
             doInvariantCheck(
                 {{expectMessage}}, [&](Account const& a1, Account const& a2, ApplyContext& ac) {
