@@ -68,7 +68,7 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx)
 
         // already checked in Transactor::checkSponsor
         if (!sle)
-            return std::unexpected(tecINTERNAL);
+            return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
         return sle;
     }
     return SLE::pointer();
@@ -196,6 +196,9 @@ getLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& accou
                 if (lowAccount == account)
                     return lowAccount;
             }
+            // Reachable: the sponsee may be a third party or the side of the
+            // line that holds no reserve (e.g. the issuer). Callers map this
+            // to tecNO_PERMISSION.
             return std::nullopt;
         }
         default:
@@ -248,8 +251,10 @@ getLedgerEntryOwnerCount(SLE const& sle)
             return 2 + static_cast<std::uint32_t>(sle.getFieldArray(sfSignerEntries).size());
         }
         case ltACCOUNT_ROOT:
+            // LCOV_EXCL_START
             UNREACHABLE("AccountRoots are not supported by object sponsorship.");
             return 0;
+            // LCOV_EXCL_STOP
         default:
             return 1;
     }
