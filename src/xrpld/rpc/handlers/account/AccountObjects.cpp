@@ -207,7 +207,7 @@ getAccountObjects(
             }
             else if (
                 isLedgerEntrySupportedBySponsorship(*sleNode) &&
-                getLedgerEntryOwner(ledger, *sleNode, account).has_value())
+                getLedgerEntryOwner(ledger, *sleNode, account) == account)
             {
                 sponsor = getLedgerEntryReserveSponsorID(
                     sleNode, getLedgerEntrySponsorField(*sleNode, account));
