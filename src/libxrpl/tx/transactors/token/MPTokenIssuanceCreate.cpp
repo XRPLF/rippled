@@ -189,7 +189,7 @@ MPTokenIssuanceCreate::create(
             (*mptIssuance)[sfReferenceHolding] = *args.referenceHolding;
         }
 
-        addSponsorToSLE(mptIssuance, sponsorSle);
+        addSponsorToLedgerEntry(mptIssuance, sponsorSle);
 
         ctx.view.insert(mptIssuance);
     }

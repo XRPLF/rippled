@@ -349,7 +349,7 @@ SignerListSet::replaceSignerList()
     // If we succeeded, the new entry counts against the
     // creator's reserve.
     increaseOwnerCount(ctx_.getApplyViewContext(), sle, kAddedOwnerCount, viewJ);
-    addSponsorToSLE(ctx_.getApplyViewContext(), signerList);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), signerList);
     return tesSUCCESS;
 }
 

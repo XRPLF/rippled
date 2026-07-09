@@ -309,7 +309,7 @@ CheckCash::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto const sponsorCheckSle = getSLEReserveSponsor(psb, sleCheck);
+    auto const sponsorCheckSle = getLedgerEntryReserveSponsor(psb, sleCheck);
 
     // Preclaim already checked that source has at least the requested
     // funds.

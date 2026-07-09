@@ -134,7 +134,7 @@ DelegateSet::doApply()
 
     ctx_.view().insert(sle);
     increaseOwnerCount(ctx_.getApplyViewContext(), sleOwner, 1, ctx_.journal);
-    addSponsorToSLE(ctx_.getApplyViewContext(), sle);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sle);
 
     return tesSUCCESS;
 }

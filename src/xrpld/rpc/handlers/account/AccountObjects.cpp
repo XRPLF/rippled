@@ -203,13 +203,14 @@ getAccountObjects(
                 // ltSPONSORSHIP is in both parties' directories; only the
                 // owner's side carries a sponsor.
                 if (sleNode->getAccountID(sfOwner) == account)
-                    sponsor = getSLEReserveSponsorID(sleNode);
+                    sponsor = getLedgerEntryReserveSponsorID(sleNode);
             }
             else if (
-                isSLESupportedBySponsorship(*sleNode) &&
-                getSLEOwner(ledger, *sleNode, account).has_value())
+                isLedgerEntrySupportedBySponsorship(*sleNode) &&
+                getLedgerEntryOwner(ledger, *sleNode, account).has_value())
             {
-                sponsor = getSLEReserveSponsorID(sleNode, getSLESponsorField(*sleNode, account));
+                sponsor = getLedgerEntryReserveSponsorID(
+                    sleNode, getLedgerEntrySponsorField(*sleNode, account));
             }
 
             if (!sponsoredMatchesFilter(sponsor))

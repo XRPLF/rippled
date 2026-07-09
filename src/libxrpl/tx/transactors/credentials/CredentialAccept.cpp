@@ -127,9 +127,9 @@ CredentialAccept::doApply()
     // the issuer's reserve), then assign the accept tx's sponsor (if any) so
     // the credential reflects whoever is now covering the subject's reserve.
     decreaseOwnerCountForObject(view(), sleIssuer, sleCred, 1, j_);
-    removeSponsorFromSLE(sleCred);
+    removeSponsorFromLedgerEntry(sleCred);
 
-    addSponsorToSLE(ctx_.getApplyViewContext(), sleCred);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred);
     increaseOwnerCount(ctx_.getApplyViewContext(), sleSubject, 1, j_);
     view().update(sleCred);
 
