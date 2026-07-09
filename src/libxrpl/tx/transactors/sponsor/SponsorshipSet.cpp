@@ -236,9 +236,7 @@ SponsorshipSet::doApply()
         {
             // checkReserve can return tecINSUFFICIENT_RESERVE, tecINTERNAL, or
             // tefINTERNAL
-            if (ret == tecINSUFFICIENT_RESERVE)
-                return tecUNFUNDED;
-            return ret;
+            return (ret == tecINSUFFICIENT_RESERVE) ? tecUNFUNDED : ret;
         }
 
         if (hasPositiveFeeAmount)
@@ -309,9 +307,7 @@ SponsorshipSet::doApply()
             {
                 // checkReserve can return tecINSUFFICIENT_RESERVE, tecINTERNAL,
                 // or tefINTERNAL
-                if (ret == tecINSUFFICIENT_RESERVE)
-                    return tecUNFUNDED;
-                return ret;
+                return (ret == tecINSUFFICIENT_RESERVE) ? tecUNFUNDED : ret;
             }
 
             (*sponsorAccSle)[sfBalance] -= feeAmountDelta;

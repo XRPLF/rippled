@@ -59,7 +59,8 @@ isFeeSponsored(STTx const& tx)
 inline bool
 isReserveSponsored(STTx const& tx)
 {
-    return (tx.getFieldU32(sfSponsorFlags) & spfSponsorReserve) != 0u;
+    return tx.isFieldPresent(sfSponsor) &&
+        ((tx.getFieldU32(sfSponsorFlags) & spfSponsorReserve) != 0u);
 }
 
 std::optional<AccountID>

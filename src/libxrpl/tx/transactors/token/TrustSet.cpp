@@ -537,9 +537,7 @@ TrustSet::doApply()
                 lowSponsor && !isTesSuccess(ret))
             {
                 // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
-                if (ret == tecINSUFFICIENT_RESERVE)
-                    return tecINSUF_RESERVE_LINE;
-                return ret;
+                return (ret == tecINSUFFICIENT_RESERVE) ? tecINSUF_RESERVE_LINE : ret;
             }
 
             // Set reserve for low account.
@@ -578,9 +576,7 @@ TrustSet::doApply()
                 highSponsor && !isTesSuccess(ret))
             {
                 // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
-                if (ret == tecINSUFFICIENT_RESERVE)
-                    return tecINSUF_RESERVE_LINE;
-                return ret;
+                return (ret == tecINSUFFICIENT_RESERVE) ? tecINSUF_RESERVE_LINE : ret;
             }
 
             // Set reserve for high account.
