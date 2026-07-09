@@ -18,12 +18,9 @@ namespace xrpl {
  *  - The sum of all per-account deltas of `sfSponsoredOwnerCount` equals
  *    the sum of all per-account deltas of `sfSponsoringOwnerCount`.
  *  - Account OwnerCount must be greater than or equal to SponsoredOwnerCount.
- *  - The sum of all per-account deltas of `sfSponsoredOwnerCount` equals the
- *    sum of all per-object deltas of owner-count contributed by sponsored
- *    objects (independently recomputed from `sfSponsor`, or from
- *    `sfHighSponsor`/`sfLowSponsor` on a RippleState, which may be
- *    sponsored on each side). This cross-checks the account-side counter
- *    against the actual sponsored objects on the ledger.
+ *  - The net delta of sponsored object owner counts (the owner-count
+ *    magnitude of sponsored ledger entries) equals the net delta of
+ *    `sfSponsoredOwnerCount`.
  */
 class SponsorshipOwnerCountsMatch
 {

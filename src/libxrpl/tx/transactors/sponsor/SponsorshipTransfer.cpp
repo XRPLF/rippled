@@ -359,7 +359,7 @@ SponsorshipTransfer::doApply()
                 if (auto const ter = incrementSponsorCount(
                         view(), ownerSle, sfSponsoredOwnerCount, ownerCountDelta);
                     !isTesSuccess(ter))
-                    return ter;
+                    return ter;  // LCOV_EXCL_LINE
             }
             else if (isReassign)
             {
@@ -374,14 +374,14 @@ SponsorshipTransfer::doApply()
                 if (auto const ter = decrementSponsorCount(
                         view(), oldSponsorSle, sfSponsoringOwnerCount, ownerCountDelta);
                     !isTesSuccess(ter))
-                    return ter;
+                    return ter;  // LCOV_EXCL_LINE
             }
 
             // Increment new sponsor's sponsoring count
             if (auto const ter = incrementSponsorCount(
                     view(), newSponsorSle, sfSponsoringOwnerCount, ownerCountDelta);
                 !isTesSuccess(ter))
-                return ter;
+                return ter;  // LCOV_EXCL_LINE
 
             // Object is now sponsored by new sponsor
             objectSle->setAccountID(sponsorField, newSponsorID);
@@ -394,7 +394,7 @@ SponsorshipTransfer::doApply()
                 if (auto const ter =
                         decrementPrefundedReserveCount(view(), sponsorshipSle, ownerCountDelta);
                     !isTesSuccess(ter))
-                    return ter;
+                    return ter;  // LCOV_EXCL_LINE
             }
         }
         else if (ctx_.tx.isFlag(tfSponsorshipEnd))
@@ -423,13 +423,13 @@ SponsorshipTransfer::doApply()
             if (auto const ter = decrementSponsorCount(
                     view(), sponseeSle, sfSponsoredOwnerCount, ownerCountDelta);
                 !isTesSuccess(ter))
-                return ter;
+                return ter;  // LCOV_EXCL_LINE
 
             // Decrement old sponsoring count
             if (auto const ter = decrementSponsorCount(
                     view(), oldSponsorSle, sfSponsoringOwnerCount, ownerCountDelta);
                 !isTesSuccess(ter))
-                return ter;
+                return ter;  // LCOV_EXCL_LINE
 
             // Remove sponsor from object
             objectSle->makeFieldAbsent(sponsorField);
@@ -477,14 +477,14 @@ SponsorshipTransfer::doApply()
                 if (auto const ter =
                         decrementSponsorCount(view(), oldSponsorSle, sfSponsoringAccountCount, 1);
                     !isTesSuccess(ter))
-                    return ter;
+                    return ter;  // LCOV_EXCL_LINE
             }
 
             // Increment new sponsoring count
             if (auto const ter =
                     incrementSponsorCount(view(), newSponsorSle, sfSponsoringAccountCount, 1);
                 !isTesSuccess(ter))
-                return ter;
+                return ter;  // LCOV_EXCL_LINE
 
             // Account is now sponsored by new sponsor
             sponseeSle->setAccountID(sfSponsor, newSponsorID);
@@ -519,7 +519,7 @@ SponsorshipTransfer::doApply()
             if (auto const ter =
                     decrementSponsorCount(view(), oldSponsorSle, sfSponsoringAccountCount, 1);
                 !isTesSuccess(ter))
-                return ter;
+                return ter;  // LCOV_EXCL_LINE
         }
     }
 

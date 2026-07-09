@@ -4,7 +4,6 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/envconfig.h>
-#include <test/jtx/fee.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>  // IWYU pragma: keep
@@ -204,6 +203,15 @@ public:
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Invalid field 'limit', not unsigned integer.");
+        }
+        // test error on sponsored param not a boolean
+        {
+            json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::sponsored] = "true";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] == "Invalid field 'sponsored', not boolean.");
         }
         // test errors on marker
         {
@@ -1411,10 +1419,6 @@ public:
             return testEnv.rpc("json", "account_objects", to_string(params));
         };
 
-        // Create a sponsorship (alice sponsors bob)
-        env(sponsor::set(alice, 0, 100, XRP(100)), sponsor::SponseeAcc(bob), Fee(XRP(1)));
-        env.close();
-
         // Create a trust line for bob (not sponsored)
         env(trust(bob, usd(1000)));
         env.close();
@@ -1460,17 +1464,7 @@ public:
         // sponsored=false on bob should NOT include the sponsored trust line
         {
             auto const resp = acctObjsSponsored(env, bob.id(), false);
-            auto const& objs = resp[jss::result][jss::account_objects];
-            bool foundSponsoredTrustLine = false;
-            for (auto const& obj : objs)
-            {
-                if (obj[sfLedgerEntryType.jsonName] == jss::RippleState)
-                {
-                    if (obj.isMember(sfHighSponsor.jsonName) || obj.isMember(sfLowSponsor.jsonName))
-                        foundSponsoredTrustLine = true;
-                }
-            }
-            BEAST_EXPECT(!foundSponsoredTrustLine);
+            BEAST_EXPECT(resp[jss::result][jss::account_objects].size() == 0);
         }
 
         // Only the queried side of a shared trust line should determine

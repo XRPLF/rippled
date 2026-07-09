@@ -17,6 +17,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>

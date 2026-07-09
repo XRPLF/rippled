@@ -174,8 +174,10 @@ getLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& accou
             return std::nullopt;
         }
         default:
+            // LCOV_EXCL_START
             UNREACHABLE("xrpl::getLedgerEntryOwner : object is not supported by sponsorship.");
             return std::nullopt;
+            // LCOV_EXCL_STOP
     };
 }
 
