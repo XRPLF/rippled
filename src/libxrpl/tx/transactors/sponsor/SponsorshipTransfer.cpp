@@ -525,7 +525,6 @@ SponsorshipTransfer::doApply()
     return tesSUCCESS;
 }
 
-// LCOV_EXCL_START
 void
 SponsorshipTransfer::visitInvariantEntry(
     bool,
@@ -544,6 +543,5 @@ SponsorshipTransfer::finalizeInvariants(
 {
     return true;
 }
-// LCOV_EXCL_STOP
 
 }  // namespace xrpl

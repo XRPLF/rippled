@@ -361,7 +361,6 @@ SponsorshipSet::doApply()
     return tesSUCCESS;
 }
 
-// LCOV_EXCL_START
 void
 SponsorshipSet::visitInvariantEntry(
     bool,
@@ -380,6 +379,5 @@ SponsorshipSet::finalizeInvariants(
 {
     return true;
 }
-// LCOV_EXCL_STOP
 
 }  // namespace xrpl
