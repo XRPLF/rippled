@@ -341,7 +341,7 @@ decreaseOwnerCountForObject(
     if (!validObjectType)
         return;  // LCOV_EXCL_LINE
 
-    SLE::ref sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
+    SLE::ref sponsorSle = getSLEReserveSponsor(view, objectSle);
     decreaseOwnerCount(view, accountSle, sponsorSle, count, j);
 }
 

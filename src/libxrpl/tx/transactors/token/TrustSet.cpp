@@ -513,10 +513,8 @@ TrustSet::doApply()
 
         bool bReserveIncrease = false;
 
-        auto const currentHighSponsor =
-            getLedgerEntryReserveSponsor(view(), sleRippleState, sfHighSponsor);
-        auto const currentLowSponsor =
-            getLedgerEntryReserveSponsor(view(), sleRippleState, sfLowSponsor);
+        auto const currentHighSponsor = getSLEReserveSponsor(view(), sleRippleState, sfHighSponsor);
+        auto const currentLowSponsor = getSLEReserveSponsor(view(), sleRippleState, sfLowSponsor);
 
         if (bSetAuth)
         {
@@ -544,7 +542,7 @@ TrustSet::doApply()
             increaseOwnerCount(view(), sleLowAccount, lowSponsor, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
-            addSponsorToLedgerEntry(sleRippleState, lowSponsor, sfLowSponsor);
+            addSponsorToSLE(sleRippleState, lowSponsor, sfLowSponsor);
 
             if (!bHigh)
                 bReserveIncrease = true;
@@ -556,7 +554,7 @@ TrustSet::doApply()
             decreaseOwnerCount(view(), sleLowAccount, currentLowSponsor, 1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
 
-            removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsor);
+            removeSponsorFromSLE(sleRippleState, sfLowSponsor);
         }
 
         if (bHighReserveSet && !bHighReserved)
@@ -583,7 +581,7 @@ TrustSet::doApply()
             increaseOwnerCount(view(), sleHighAccount, highSponsor, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
-            addSponsorToLedgerEntry(sleRippleState, highSponsor, sfHighSponsor);
+            addSponsorToSLE(sleRippleState, highSponsor, sfHighSponsor);
 
             if (bHigh)
                 bReserveIncrease = true;
@@ -595,7 +593,7 @@ TrustSet::doApply()
             decreaseOwnerCount(view(), sleHighAccount, currentHighSponsor, 1, viewJ);
             uFlagsOut &= ~lsfHighReserve;
 
-            removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsor);
+            removeSponsorFromSLE(sleRippleState, sfHighSponsor);
         }
 
         if (uFlagsIn != uFlagsOut)

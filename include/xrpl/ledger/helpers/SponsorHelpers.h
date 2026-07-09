@@ -85,25 +85,16 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx);
 getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle);
 
 std::optional<AccountID>
-getLedgerEntryReserveSponsorID(SLE::const_ref sle, SF_ACCOUNT const& field = sfSponsor);
+getSLEReserveSponsorID(SLE::const_ref sle, SF_ACCOUNT const& field = sfSponsor);
 
 SLE::pointer
-getLedgerEntryReserveSponsor(
-    ApplyView& view,
-    SLE::const_ref sle,
-    SF_ACCOUNT const& field = sfSponsor);
+getSLEReserveSponsor(ApplyView& view, SLE::const_ref sle, SF_ACCOUNT const& field = sfSponsor);
 
 SLE::const_pointer
-getLedgerEntryReserveSponsor(
-    ReadView const& view,
-    SLE::const_ref sle,
-    SF_ACCOUNT const& field = sfSponsor);
+getSLEReserveSponsor(ReadView const& view, SLE::const_ref sle, SF_ACCOUNT const& field = sfSponsor);
 
 void
-addSponsorToLedgerEntry(
-    SLE::ref sle,
-    SLE::const_ref sponsorSle,
-    SF_ACCOUNT const& field = sfSponsor);
+addSponsorToSLE(SLE::ref sle, SLE::const_ref sponsorSle, SF_ACCOUNT const& field = sfSponsor);
 
 /** Stamp the transaction's reserve sponsor onto a newly-created ledger entry.
  *
@@ -114,21 +105,21 @@ addSponsorToLedgerEntry(
  *  can cover.
  */
 void
-addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& field = sfSponsor);
+addSponsorToSLE(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& field = sfSponsor);
 
 void
-removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field = sfSponsor);
+removeSponsorFromSLE(SLE::ref sle, SF_ACCOUNT const& field = sfSponsor);
 
 std::optional<AccountID>
-getLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& account);
+getSLEOwner(ReadView const& view, SLE const& sle, AccountID const& account);
 
 bool
-isLedgerEntrySupportedBySponsorship(SLE const& sle);
+isSLESupportedBySponsorship(SLE const& sle);
 
 std::uint32_t
-getLedgerEntryOwnerCount(SLE const& sle);
+getSLEOwnerCount(SLE const& sle);
 
 SF_ACCOUNT const&
-getLedgerEntrySponsorField(SLE const& sle, AccountID const& owner);
+getSLESponsorField(SLE const& sle, AccountID const& owner);
 
 }  // namespace xrpl

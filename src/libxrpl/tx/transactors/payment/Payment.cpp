@@ -515,7 +515,7 @@ Payment::doApply()
             }
             sponsor->setFieldU32(sfSponsoringAccountCount, currentSponsoringAccountCount + 1);
 
-            addSponsorToLedgerEntry(sleDst, sponsor);
+            addSponsorToSLE(sleDst, sponsor);
             view().update(sponsor);
         }
 

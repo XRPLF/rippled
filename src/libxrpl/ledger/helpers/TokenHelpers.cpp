@@ -719,12 +719,11 @@ directSendNoFeeIOU(
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
-            auto const currentSponsor = getLedgerEntryReserveSponsor(
+            auto const currentSponsor = getSLEReserveSponsor(
                 view, sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
             decreaseOwnerCount(view, view.peek(keylet::account(uSenderID)), currentSponsor, 1, j);
 
-            removeSponsorFromLedgerEntry(
-                sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
+            removeSponsorFromSLE(sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
 
             // Clear reserve flag.
             sleRippleState->clearFlag(senderReserveFlag);

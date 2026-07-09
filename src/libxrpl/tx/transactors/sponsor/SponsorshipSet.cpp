@@ -274,7 +274,7 @@ SponsorshipSet::doApply()
 
         // NOLINTNEXTLINE(readability-suspicious-call-argument)
         increaseOwnerCount(view(), sponsorAccSle, *reserveSponsorAccSle, 1, ctx_.journal);
-        addSponsorToLedgerEntry(newSle, *reserveSponsorAccSle);
+        addSponsorToSLE(newSle, *reserveSponsorAccSle);
 
         ctx_.view().insert(newSle);
         return tesSUCCESS;

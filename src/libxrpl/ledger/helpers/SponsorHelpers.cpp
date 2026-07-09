@@ -73,7 +73,7 @@ getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle)
 }
 
 std::optional<AccountID>
-getLedgerEntryReserveSponsorID(SLE::const_ref sle, SF_ACCOUNT const& field)
+getSLEReserveSponsorID(SLE::const_ref sle, SF_ACCOUNT const& field)
 {
     if (sle->isFieldPresent(field))
         return sle->getAccountID(field);
@@ -81,58 +81,58 @@ getLedgerEntryReserveSponsorID(SLE::const_ref sle, SF_ACCOUNT const& field)
 }
 
 SLE::pointer
-getLedgerEntryReserveSponsor(ApplyView& view, SLE::const_ref sle, SF_ACCOUNT const& field)
+getSLEReserveSponsor(ApplyView& view, SLE::const_ref sle, SF_ACCOUNT const& field)
 {
-    auto const sponsorID = getLedgerEntryReserveSponsorID(sle, field);
+    auto const sponsorID = getSLEReserveSponsorID(sle, field);
     if (sponsorID)
         return view.peek(keylet::account(*sponsorID));
     return {};
 }
 
 SLE::const_pointer
-getLedgerEntryReserveSponsor(ReadView const& view, SLE::const_ref sle, SF_ACCOUNT const& field)
+getSLEReserveSponsor(ReadView const& view, SLE::const_ref sle, SF_ACCOUNT const& field)
 {
-    auto const sponsorID = getLedgerEntryReserveSponsorID(sle, field);
+    auto const sponsorID = getSLEReserveSponsorID(sle, field);
     if (sponsorID)
         return view.read(keylet::account(*sponsorID));
     return {};
 }
 
 void
-addSponsorToLedgerEntry(SLE::ref sle, SLE::const_ref sponsorSle, SF_ACCOUNT const& field)
+addSponsorToSLE(SLE::ref sle, SLE::const_ref sponsorSle, SF_ACCOUNT const& field)
 {
     XRPL_ASSERT(
         (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
             (sle->getType() != ltRIPPLE_STATE && field == sfSponsor),
-        "addSponsorToLedgerEntry : Invalid field to the LedgerEntry");
+        "addSponsorToSLE : Invalid field to the LedgerEntry");
     if (sponsorSle)
         sle->setAccountID(field, sponsorSle->getAccountID(sfAccount));
 }
 
 void
-addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& field)
+addSponsorToSLE(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& field)
 {
     // getTxReserveSponsor yields a null pointer when the tx is not
-    // reserve-sponsored, so addSponsorToLedgerEntry becomes a no-op then. The
+    // reserve-sponsored, so addSponsorToSLE becomes a no-op then. The
     // error case (tecINTERNAL) is an already-checked invariant; skip stamping.
     auto const sponsorSle = getTxReserveSponsor(ctx);
     if (sponsorSle && *sponsorSle)
-        addSponsorToLedgerEntry(sle, *sponsorSle, field);
+        addSponsorToSLE(sle, *sponsorSle, field);
 }
 
 void
-removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field)
+removeSponsorFromSLE(SLE::ref sle, SF_ACCOUNT const& field)
 {
     XRPL_ASSERT(
         (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
             (sle->getType() != ltRIPPLE_STATE && field == sfSponsor),
-        "removeSponsorFromLedgerEntry : Invalid field to the LedgerEntry");
+        "removeSponsorFromSLE : Invalid field to the LedgerEntry");
     if (sle->isFieldPresent(field))
         sle->makeFieldAbsent(field);
 }
 
 std::optional<AccountID>
-getLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& account)
+getSLEOwner(ReadView const& view, SLE const& sle, AccountID const& account)
 {
     switch (sle.getType())
     {
@@ -174,13 +174,13 @@ getLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& accou
             return std::nullopt;
         }
         default:
-            UNREACHABLE("xrpl::getLedgerEntryOwner : object is not supported by sponsorship.");
+            UNREACHABLE("xrpl::getSLEOwner : object is not supported by sponsorship.");
             return std::nullopt;
     };
 }
 
 bool
-isLedgerEntrySupportedBySponsorship(SLE const& sle)
+isSLESupportedBySponsorship(SLE const& sle)
 {
     switch (sle.getType())
     {
@@ -201,7 +201,7 @@ isLedgerEntrySupportedBySponsorship(SLE const& sle)
 }
 
 std::uint32_t
-getLedgerEntryOwnerCount(SLE const& sle)
+getSLEOwnerCount(SLE const& sle)
 {
     switch (sle.getType())
     {
@@ -229,7 +229,7 @@ getLedgerEntryOwnerCount(SLE const& sle)
 }
 
 SF_ACCOUNT const&
-getLedgerEntrySponsorField(SLE const& sle, AccountID const& owner)
+getSLESponsorField(SLE const& sle, AccountID const& owner)
 {
     switch (sle.getType())
     {
@@ -247,7 +247,7 @@ getLedgerEntrySponsorField(SLE const& sle, AccountID const& owner)
                     return sfLowSponsor;
             }
             // LCOV_EXCL_START
-            UNREACHABLE("xrpl::getLedgerEntrySponsorField : unknown owner for RippleState");
+            UNREACHABLE("xrpl::getSLESponsorField : unknown owner for RippleState");
             return sfSponsor;
             // LCOV_EXCL_STOP
         }

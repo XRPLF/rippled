@@ -152,7 +152,7 @@ CredentialCreate::doApply()
         sleCred->setFieldU64(sfIssuerNode, *page);
 
         increaseOwnerCount(ctx_.getApplyViewContext(), sleIssuer, 1, j_);
-        addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred);
+        addSponsorToSLE(ctx_.getApplyViewContext(), sleCred);
     }
 
     if (subject == accountID_)

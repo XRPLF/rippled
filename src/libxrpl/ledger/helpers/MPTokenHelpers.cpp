@@ -235,7 +235,7 @@ authorizeMPToken(
 
         // Update owner count.
         increaseOwnerCount(ctx.view, sleAcct, sponsorSle, 1, journal);
-        addSponsorToLedgerEntry(mptoken, sponsorSle);
+        addSponsorToSLE(mptoken, sponsorSle);
 
         return tesSUCCESS;
     }
@@ -943,7 +943,7 @@ createMPToken(
     (*mptoken)[sfOwnerNode] = *ownerNode;
 
     if (sponsorSle)
-        addSponsorToLedgerEntry(mptoken, sponsorSle);
+        addSponsorToSLE(mptoken, sponsorSle);
 
     view.insert(mptoken);
 
