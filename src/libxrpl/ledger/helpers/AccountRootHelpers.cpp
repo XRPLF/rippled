@@ -149,17 +149,14 @@ adjustOwnerCountSigned(
         return;  // LCOV_EXCL_LINE
 
     auto const accountID = accountSle->getAccountID(sfAccount);
-    auto const sleType = accountSle->getType();
-    bool const validType = sponsorSle ? sleType == ltACCOUNT_ROOT
-                                      : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
+    bool const validType = accountSle->getType() == ltACCOUNT_ROOT;
     XRPL_ASSERT(validType, "xrpl::adjustOwnerCountSigned : valid account sle type");
     if (!validType)
         return;  // LCOV_EXCL_LINE
 
     XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
 
-    OwnerCounts const currentOwnerCount(
-        sleType == ltACCOUNT_ROOT ? OwnerCounts(accountSle) : OwnerCounts());
+    OwnerCounts const currentOwnerCount(accountSle);
     OwnerCounts totalOwnerCount(currentOwnerCount);
 
     if (sponsorSle)
@@ -195,8 +192,7 @@ adjustOwnerCountSigned(
 
     totalOwnerCount.owner =
         adjustOwnerCountImpl(view, accountSle, sfOwnerCount, accountID, adjustment, j);
-    if (sleType == ltACCOUNT_ROOT)
-        view.adjustOwnerCountHook(accountID, currentOwnerCount, totalOwnerCount);
+    view.adjustOwnerCountHook(accountID, currentOwnerCount, totalOwnerCount);
 }
 
 }  // namespace
