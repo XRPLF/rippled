@@ -5045,7 +5045,7 @@ public:
 
         using namespace test::jtx;
 
-        Env env(*this);
+        Env env{*this, testableAmendments()};
         Account const alice{"alice_t2178"};
         Account const bob{"bob_t2178"};
         Account const carol{"carol_t2178"};

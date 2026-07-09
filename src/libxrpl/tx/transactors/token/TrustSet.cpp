@@ -576,7 +576,7 @@ TrustSet::doApply()
                 highSponsor && !isTesSuccess(ret))
             {
                 // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
-                return ret == tecINSUFFICIENT_RESERVE ? tecINSUF_RESERVE_LINE : ret;
+                return (ret == tecINSUFFICIENT_RESERVE) ? tecINSUF_RESERVE_LINE : ret;
             }
 
             // Set reserve for high account.
