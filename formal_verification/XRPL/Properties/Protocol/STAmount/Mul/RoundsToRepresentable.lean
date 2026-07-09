@@ -1,3 +1,5 @@
+-- Multiplication rounding errors, denominated in the ideal product as a rational number
+
 import XRPL.Properties.Protocol.STAmount.Mul.Common.Native
 import XRPL.Properties.Protocol.STAmount.Mul.Common.MPT
 import XRPL.Properties.Protocol.STAmount.Mul.Common.RoundsToRepresentableProofs

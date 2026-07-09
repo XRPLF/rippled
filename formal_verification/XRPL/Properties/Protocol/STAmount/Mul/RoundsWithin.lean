@@ -1,3 +1,5 @@
+-- Multiplication rounding errors, denominated in computed-value ULP increments
+
 import XRPL.Properties.Protocol.STAmount.Mul.Common.Native
 import XRPL.Properties.Protocol.STAmount.Mul.Common.MPT
 import XRPL.Properties.Protocol.STAmount.Mul.Common.IOU
