@@ -413,6 +413,17 @@ public:
     emptyDirDelete(Keylet const& directory);
 };
 
+/** Bundles the mutable ledger view and the transaction being applied.
+
+    Passed together to avoid threading two separate parameters through every
+    helper that needs both the view (for state reads/writes) and the
+    transaction (for field inspection and metadata).
+
+    Both members are non-owning references; the caller is responsible for
+    ensuring that the referenced objects outlive the ApplyViewContext.
+
+    TODO: replace with ApplyContext after it's untangled with xrpl/tx
+*/
 struct ApplyViewContext
 {
     ApplyView& view;

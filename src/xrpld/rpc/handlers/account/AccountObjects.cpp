@@ -197,20 +197,19 @@ getAccountObjects(
                 !typeMatchesFilter(typeFilter.value(), sleNode->getType()))
                 canAppend = false;
 
+            // An object counts as sponsored no matter which party's directory
+            // it was found through; the sponsorship need not belong to
+            // `account`'s side.
             std::optional<AccountID> sponsor;
-            if (sleNode->getType() == ltSPONSORSHIP)
+            if (sleNode->getType() == ltRIPPLE_STATE)
             {
-                // ltSPONSORSHIP is in both parties' directories; only the
-                // owner's side carries a sponsor.
-                if (sleNode->getAccountID(sfOwner) == account)
-                    sponsor = getLedgerEntryReserveSponsorID(sleNode);
+                sponsor = getLedgerEntryReserveSponsorID(sleNode, sfHighSponsor);
+                if (!sponsor)
+                    sponsor = getLedgerEntryReserveSponsorID(sleNode, sfLowSponsor);
             }
-            else if (
-                isLedgerEntrySupportedBySponsorship(*sleNode) &&
-                getLedgerEntryOwner(ledger, *sleNode, account).has_value())
+            else if (isLedgerEntrySupportedBySponsorship(*sleNode))
             {
-                sponsor = getLedgerEntryReserveSponsorID(
-                    sleNode, getLedgerEntrySponsorField(*sleNode, account));
+                sponsor = getLedgerEntryReserveSponsorID(sleNode);
             }
 
             if (!sponsoredMatchesFilter(sponsor))

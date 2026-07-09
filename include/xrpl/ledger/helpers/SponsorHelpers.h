@@ -93,12 +93,6 @@ getLedgerEntryReserveSponsor(
     SLE::const_ref sle,
     SF_ACCOUNT const& field = sfSponsor);
 
-SLE::const_pointer
-getLedgerEntryReserveSponsor(
-    ReadView const& view,
-    SLE::const_ref sle,
-    SF_ACCOUNT const& field = sfSponsor);
-
 void
 addSponsorToLedgerEntry(
     SLE::ref sle,
