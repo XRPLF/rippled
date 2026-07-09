@@ -28,7 +28,8 @@ getTxReserveSponsorID(STTx const& tx)
     if (tx.isFieldPresent(sfSponsor) && isReserveSponsored(tx))
     {
         XRPL_ASSERT(
-            getCurrentTransactionRules()->enabled(featureSponsor),
+            getCurrentTransactionRules()->enabled(
+                featureSponsor),  // NOLINT(bugprone-unchecked-optional-access)
             "xrpl::getTxReserveSponsorID : sponsor exists + Sponsor enabled");
         return tx.getAccountID(sfSponsor);
     }
@@ -129,7 +130,8 @@ addSponsorToLedgerEntry(SLE::ref sle, SLE::const_ref sponsorSle, SF_ACCOUNT cons
     if (sponsorSle)
     {
         XRPL_ASSERT(
-            getCurrentTransactionRules()->enabled(featureSponsor),
+            getCurrentTransactionRules()->enabled(
+                featureSponsor),  // NOLINT(bugprone-unchecked-optional-access)
             "xrpl::addSponsorToLedgerEntry : sponsor exists + Sponsor enabled");
         sle->setAccountID(field, sponsorSle->getAccountID(sfAccount));
     }
@@ -161,7 +163,8 @@ removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field)
     if (sle->isFieldPresent(field))
     {
         XRPL_ASSERT(
-            getCurrentTransactionRules()->enabled(featureSponsor),
+            getCurrentTransactionRules()->enabled(
+                featureSponsor),  // NOLINT(bugprone-unchecked-optional-access)
             "xrpl::removeSponsorFromLedgerEntry : sponsor exists + Sponsor enabled");
         sle->makeFieldAbsent(field);
     }
