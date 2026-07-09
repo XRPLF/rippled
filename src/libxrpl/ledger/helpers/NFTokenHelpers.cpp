@@ -726,9 +726,11 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
             auto const newPrev = view.peek(Keylet(ltNFTOKEN_PAGE, *prevLink));
             if (!newPrev)
             {
+                // LCOV_EXCL_START
                 Throw<std::runtime_error>(
                     "NFTokenPage directory for " + to_string(owner) +
                     " cannot be repaired. Unexpected link problem.");
+                // LCOV_EXCL_STOP
             }
             newPrev->at(sfNextPageMin) = nextPage->key();
             view.update(newPrev);

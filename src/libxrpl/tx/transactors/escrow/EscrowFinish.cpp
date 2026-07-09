@@ -226,7 +226,7 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
 
     auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
     if (!sponsorSle)
-        return sponsorSle.error();
+        return sponsorSle.error();  // LCOV_EXCL_LINE
 
     return tesSUCCESS;
 }

@@ -205,6 +205,15 @@ public:
                 resp[jss::result][jss::error_message] ==
                 "Invalid field 'limit', not unsigned integer.");
         }
+        // test error on sponsored param not a boolean
+        {
+            json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::sponsored] = "true";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] == "Invalid field 'sponsored', not boolean.");
+        }
         // test errors on marker
         {
             Account const gw{"G"};
