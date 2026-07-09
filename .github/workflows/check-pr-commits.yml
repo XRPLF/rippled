@@ -10,4 +10,5 @@ permissions:
 
 jobs:
   check_commits:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'IgnoreConflicts') }}
     uses: XRPLF/actions/.github/workflows/check-pr-commits.yml@e2c7f400d1e85ae65dad552fd425169fbacca4a3
