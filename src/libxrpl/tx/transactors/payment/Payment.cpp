@@ -406,7 +406,7 @@ Payment::preclaim(PreclaimContext const& ctx)
                 // Since the reserve is covered by the sponsor, you don't need to hold the
                 // 1-increment reserve yourself.
                 JLOG(ctx.j.trace()) << "Delay transaction: Destination account does not exist. "
-                                    << "Insufficent payment to create account.";
+                                    << "Insufficient payment to create account.";
 
                 // TODO: de-dupe
                 // Another transaction could create the account and then this

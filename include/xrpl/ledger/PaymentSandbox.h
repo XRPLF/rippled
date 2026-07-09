@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
