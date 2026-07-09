@@ -142,7 +142,7 @@ addEmptyHolding(
     if (accountID == mptIssue.getIssuer())
         return tesSUCCESS;
 
-    return authorizeMPToken(ctx, priorBalance, mptID, accountID, journal, 0, std::nullopt);
+    return authorizeMPToken(ctx, priorBalance, mptID, accountID, journal);
 }
 
 [[nodiscard]] TER

@@ -1708,6 +1708,26 @@ public:
             }
 
             {
+                // A co-signed sponsor pays the fee from its own balance, but
+                // must never be charged into its own account reserve. With a
+                // balance of exactly reserve + fee the fee is still payable,
+                // charging the sponsor down to precisely its reserve.
+                auto const feeAmt = XRP(10);
+                adjustAccountXRPBalance(env, sponsor, reserve(env, 0) + feeAmt);
+                auto const sponsorBalance = env.balance(sponsor);
+
+                env(noop(alice),
+                    Fee(feeAmt),
+                    sponsor::As(sponsor, spfSponsorFee),
+                    Sig(sfSponsorSignature, sponsor),
+                    Ter(tesSUCCESS));
+                env.close();
+
+                BEAST_EXPECT(env.balance(sponsor) == sponsorBalance - feeAmt);
+                BEAST_EXPECT(env.balance(sponsor) == reserve(env, 0));
+            }
+
+            {
                 // below reserve
                 adjustAccountXRPBalance(env, sponsor, env.current()->fees().reserve);
 
@@ -5051,7 +5071,7 @@ public:
 
         using namespace test::jtx;
 
-        Env env(*this);
+        Env env{*this, testableAmendments()};
         Account const alice{"alice_t2178"};
         Account const bob{"bob_t2178"};
         Account const carol{"carol_t2178"};

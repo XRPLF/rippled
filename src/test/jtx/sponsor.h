@@ -17,22 +17,31 @@ namespace xrpl::test::jtx::sponsor {
 json::Value
 set(jtx::Account const& account,
     std::uint32_t flags,
-    std::optional<std::uint32_t> reserveCount = std::nullopt,
-    std::optional<STAmount> feeAmount = std::nullopt,
-    std::optional<STAmount> maxFee = std::nullopt);
+    std::optional<std::uint32_t> const reserveCount = std::nullopt,
+    std::optional<STAmount> const feeAmount = std::nullopt,
+    std::optional<STAmount> const maxFee = std::nullopt);
 
-json::Value
+inline json::Value
 set_fee(
     jtx::Account const& account,
     std::uint32_t flags,
     STAmount feeAmount,
-    std::optional<STAmount> maxFee = std::nullopt);
+    std::optional<STAmount> maxFee = std::nullopt)
+{
+    return set(account, flags, std::nullopt, std::move(feeAmount), std::move(maxFee));
+}
 
-json::Value
-set_reserve(jtx::Account const& account, std::uint32_t flags, std::uint32_t reserveCount);
+inline json::Value
+set_reserve(jtx::Account const& account, std::uint32_t flags, std::uint32_t reserveCount)
+{
+    return set(account, flags, reserveCount);
+}
 
-json::Value
-set_max_fee(jtx::Account const& account, std::uint32_t flags, STAmount maxFee);
+inline json::Value
+set_max_fee(jtx::Account const& account, std::uint32_t flags, STAmount maxFee)
+{
+    return set(account, flags, std::nullopt, std::nullopt, std::move(maxFee));
+}
 
 json::Value
 del(jtx::Account const& account);

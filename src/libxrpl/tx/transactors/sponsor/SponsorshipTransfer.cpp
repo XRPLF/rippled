@@ -195,7 +195,7 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
     // sponsorship may use pre-funded reserve sponsorship instead.
     bool const isCreateOrReassign =
         ctx.tx.isFlag(tfSponsorshipCreate) || ctx.tx.isFlag(tfSponsorshipReassign);
-    auto const reserveSponsor = getTxReserveSponsorAccountID(ctx.tx);
+    auto const reserveSponsor = getTxReserveSponsorID(ctx.tx);
     bool const isAccountReserveSponsorship =
         isCreateOrReassign && reserveSponsor && !ctx.tx.isFieldPresent(sfObjectID);
 
@@ -244,10 +244,10 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         if (!objectSle)
             return tecNO_ENTRY;
 
-        if (!isLedgerEntrySupportedBySponsorship(objectSle))
+        if (!isLedgerEntrySupportedBySponsorship(*objectSle))
             return tecNO_PERMISSION;
 
-        auto const owner = getLedgerEntryOwner(ctx.view, objectSle, sponseeID);
+        auto const owner = getLedgerEntryOwner(ctx.view, *objectSle, sponseeID);
         if (!owner.has_value() || owner.value() != sponseeID)
             return tecNO_PERMISSION;
 
@@ -255,7 +255,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         // depends on the object type, a RippleState stores the sponsor in
         // sfHighSponsor/sfLowSponsor, while other object type uses sfSponsor.
         targetSle = objectSle;
-        sponsorField = &getLedgerEntrySponsorField(objectSle, owner.value());
+        sponsorField = &getLedgerEntrySponsorField(*objectSle, owner.value());
     }
 
     bool const isSponsored = targetSle->isFieldPresent(*sponsorField);
@@ -299,10 +299,10 @@ SponsorshipTransfer::doApply()
     if (!sponseeSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const balanceBeforeFee = [&](SLE::const_ref sle) -> STAmount {
+    auto const balanceBeforeFee = [&](SLE::const_ref sle) -> XRPAmount {
         if (sle->getAccountID(sfAccount) == accountID_)
-            return STAmount{preFeeBalance_};
-        return sle->getFieldAmount(sfBalance);
+            return preFeeBalance_;
+        return sle->getFieldAmount(sfBalance).xrp();
     };
 
     bool const isCreate = ctx_.tx.isFlag(tfSponsorshipCreate);
@@ -315,7 +315,7 @@ SponsorshipTransfer::doApply()
         if (!objectSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const ownerID = getLedgerEntryOwner(view(), objectSle, sponseeID);
+        auto const ownerID = getLedgerEntryOwner(view(), *objectSle, sponseeID);
         if (!ownerID)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -323,8 +323,9 @@ SponsorshipTransfer::doApply()
         if (!ownerSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const ownerCountDelta = static_cast<std::int32_t>(getLedgerEntryOwnerCount(objectSle));
-        auto const& sponsorField = getLedgerEntrySponsorField(objectSle, *ownerID);
+        auto const ownerCountDelta =
+            static_cast<std::int32_t>(getLedgerEntryOwnerCount(*objectSle));
+        auto const& sponsorField = getLedgerEntrySponsorField(*objectSle, *ownerID);
 
         if (isCreate || isReassign)
         {
@@ -345,7 +346,7 @@ SponsorshipTransfer::doApply()
             if (auto const ter = checkReserve(
                     ctx_.getApplyViewContext(),
                     sponseeSle,
-                    sponseeSle->getFieldAmount(sfBalance),
+                    sponseeSle->getFieldAmount(sfBalance).xrp(),
                     newSponsorSle,
                     {.ownerCountDelta = ownerCountDelta},
                     ctx_.journal);
@@ -456,7 +457,7 @@ SponsorshipTransfer::doApply()
             if (auto const ter = checkReserve(
                     ctx_.getApplyViewContext(),
                     sponseeSle,
-                    sponseeSle->getFieldAmount(sfBalance),
+                    sponseeSle->getFieldAmount(sfBalance).xrp(),
                     newSponsorSle,
                     {.accountCountDelta = 1},
                     ctx_.journal);
@@ -526,10 +527,7 @@ SponsorshipTransfer::doApply()
 }
 
 void
-SponsorshipTransfer::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+SponsorshipTransfer::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
 }
 

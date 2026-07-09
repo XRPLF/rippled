@@ -71,8 +71,7 @@ OracleDelete::deleteOracle(
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    std::uint32_t const count =
-        calculateOracleReserve(sle->getFieldArray(sfPriceDataSeries).size());
+    std::uint32_t const count = calculateOracleReserve(sle);
     decreaseOwnerCountForObject(view, sleOwner, sle, count, j);
     view.erase(sle);
 

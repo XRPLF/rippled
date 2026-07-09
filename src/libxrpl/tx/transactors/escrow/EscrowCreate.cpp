@@ -460,10 +460,7 @@ EscrowCreate::doApply()
         //                source only owes reserve for its current owners.
         // - unsponsored: 1  — source owes reserve including the new increment.
         auto const sourceReserve = accountReserve(
-            ctx_.view(),
-            sle,
-            j_,
-            {.ownerCountDelta = getTxReserveSponsorAccountID(ctx_.tx) ? 0 : 1});
+            ctx_.view(), sle, j_, {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : 1});
         if (balance - STAmount(amount).xrp() < sourceReserve)
             return tecUNFUNDED;
     }

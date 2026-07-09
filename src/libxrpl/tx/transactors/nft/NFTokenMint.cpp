@@ -333,7 +333,7 @@ NFTokenMint::doApply()
     // requiring the reserve to be met each time.  The reserve is
     // only managed when a new NFT page or sell offer is added.
     auto const sleAccount = view().read(keylet::account(accountID_));
-    if (!sleAccount && view().rules().enabled(featureSponsor))
+    if (!sleAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (auto const ownerCountAfter = sleAccount->getFieldU32(sfOwnerCount);

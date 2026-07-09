@@ -233,7 +233,11 @@ SponsorshipSet::doApply()
                 {.ownerCountDelta = 1},
                 ctx_.journal);
             !isTesSuccess(ret))
-            return tecUNFUNDED;
+        {
+            // checkReserve can return tecINSUFFICIENT_RESERVE, tecINTERNAL, or
+            // tefINTERNAL
+            return (ret == tecINSUFFICIENT_RESERVE) ? tecUNFUNDED : ret;
+        }
 
         if (hasPositiveFeeAmount)
         {
@@ -300,7 +304,11 @@ SponsorshipSet::doApply()
                     {},
                     ctx_.journal);
                 !isTesSuccess(ret))
-                return tecUNFUNDED;
+            {
+                // checkReserve can return tecINSUFFICIENT_RESERVE, tecINTERNAL,
+                // or tefINTERNAL
+                return (ret == tecINSUFFICIENT_RESERVE) ? tecUNFUNDED : ret;
+            }
 
             (*sponsorAccSle)[sfBalance] -= feeAmountDelta;
             if (*feeAmount == beast::kZero)
@@ -362,10 +370,7 @@ SponsorshipSet::doApply()
 }
 
 void
-SponsorshipSet::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+SponsorshipSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
 }
 

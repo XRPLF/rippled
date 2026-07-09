@@ -4,53 +4,48 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/OracleHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
-#include <memory>
 
 namespace xrpl {
 
 // Add new sponsorship-related invariants implementations
 void
-SponsorshipOwnerCountsMatch::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+SponsorshipOwnerCountsMatch::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    auto getSponsored = [](std::shared_ptr<SLE const> const& sle) -> std::uint32_t {
+    auto getSponsored = [](SLE::const_ref sle) -> std::uint32_t {
         if (sle && sle->getType() == ltACCOUNT_ROOT)
             return sle->getFieldU32(sfSponsoredOwnerCount);
         return 0;
     };
-    auto getSponsoring = [](std::shared_ptr<SLE const> const& sle) -> std::uint32_t {
+    auto getSponsoring = [](SLE::const_ref sle) -> std::uint32_t {
         if (sle && sle->getType() == ltACCOUNT_ROOT)
             return sle->getFieldU32(sfSponsoringOwnerCount);
         return 0;
     };
 
-    auto getOwnerCount = [](std::shared_ptr<SLE const> const& sle) -> std::uint32_t {
+    auto getOwnerCount = [](SLE::const_ref sle) -> std::uint32_t {
         if (sle && sle->getType() == ltACCOUNT_ROOT)
             return sle->getFieldU32(sfOwnerCount);
         return 0;
     };
 
-    auto getSponsoredObjectOwnerCount =
-        [&](std::shared_ptr<SLE const> const& sle) -> std::uint32_t {
+    auto getSponsoredObjectOwnerCount = [&](SLE::const_ref sle) -> std::uint32_t {
         if (!sle)
             return 0;
         switch (sle->getType())
         {
-            case ltACCOUNT_ROOT: {
+            case ltACCOUNT_ROOT:
                 return 0;
-            }
             case ltRIPPLE_STATE: {
+                // A trust line can be reserve-sponsored independently on each
+                // side, so it may contribute up to two sponsored owner counts.
                 uint32_t ownerCount = 0;
                 if (sle->isFieldPresent(sfHighSponsor))
                     ownerCount++;
@@ -58,31 +53,13 @@ SponsorshipOwnerCountsMatch::visitEntry(
                     ownerCount++;
                 return ownerCount;
             }
-            case ltORACLE: {
+            default:
+                // Every other supported type carries a single sfSponsor field
+                // and contributes its full owner-count magnitude only when it is
+                // sponsored.
                 if (!sle->isFieldPresent(sfSponsor))
                     return 0;
-                auto const priceDataSeries = sle->getFieldArray(sfPriceDataSeries);
-                return calculateOracleReserve(priceDataSeries.size());
-            }
-            case ltVAULT: {
-                if (!sle->isFieldPresent(sfSponsor))
-                    return 0;
-                return 2;
-            }
-            case ltSIGNER_LIST: {
-                if (!sle->isFieldPresent(sfSponsor))
-                    return 0;
-                // Modern lists carry lsfOneOwnerCount and cost 1.
-                // Legacy (pre-MultiSignReserve) lists cost 2 + signer_count.
-                if (sle->isFlag(lsfOneOwnerCount))
-                    return 1;
-                return 2 + static_cast<std::uint32_t>(sle->getFieldArray(sfSignerEntries).size());
-            }
-            default: {
-                if (sle->isFieldPresent(sfSponsor))
-                    return 1;
-                return 0;
-            }
+                return getLedgerEntryOwnerCount(*sle);
         }
     };
 
@@ -138,18 +115,15 @@ SponsorshipOwnerCountsMatch::finalize(
 }
 
 void
-SponsorshipAccountCountMatchesField::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+SponsorshipAccountCountMatchesField::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
 {
-    auto getSponsoringAccountCount = [](std::shared_ptr<SLE const> const& sle) -> std::uint32_t {
+    auto getSponsoringAccountCount = [](SLE::const_ref sle) -> std::uint32_t {
         if (sle && sle->getType() == ltACCOUNT_ROOT)
             return sle->getFieldU32(sfSponsoringAccountCount);
         return 0;
     };
 
-    auto hasSponsorField = [](std::shared_ptr<SLE const> const& sle) -> bool {
+    auto hasSponsorField = [](SLE::const_ref sle) -> bool {
         return sle && sle->getType() == ltACCOUNT_ROOT && sle->isFieldPresent(sfSponsor);
     };
 

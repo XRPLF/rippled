@@ -537,9 +537,7 @@ TrustSet::doApply()
                 lowSponsor && !isTesSuccess(ret))
             {
                 // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
-                if (ret == tecINSUFFICIENT_RESERVE)
-                    return tecINSUF_RESERVE_LINE;
-                return ret;
+                return (ret == tecINSUFFICIENT_RESERVE) ? tecINSUF_RESERVE_LINE : ret;
             }
 
             // Set reserve for low account.
@@ -576,7 +574,10 @@ TrustSet::doApply()
                     {.ownerCountDelta = 1},
                     j_);
                 highSponsor && !isTesSuccess(ret))
-                return tecINSUF_RESERVE_LINE;
+            {
+                // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL
+                return (ret == tecINSUFFICIENT_RESERVE) ? tecINSUF_RESERVE_LINE : ret;
+            }
 
             // Set reserve for high account.
             increaseOwnerCount(view(), sleHighAccount, highSponsor, 1, viewJ);
@@ -617,7 +618,9 @@ TrustSet::doApply()
 
             // Another transaction could provide XRP to the account and then
             // this transaction would succeed.
-            terResult = tecINSUF_RESERVE_LINE;
+            // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL;
+            // don't mask an internal error as a reserve shortfall.
+            terResult = ((ret == tecINSUFFICIENT_RESERVE) ? tecINSUF_RESERVE_LINE : ret);
         }
         else
         {
@@ -653,7 +656,9 @@ TrustSet::doApply()
 
         // Another transaction could create the account and then this
         // transaction would succeed.
-        terResult = tecNO_LINE_INSUF_RESERVE;
+        // checkReserve can return tecINSUFFICIENT_RESERVE or tecINTERNAL;
+        // don't mask an internal error as a reserve shortfall.
+        terResult = ((ret == tecINSUFFICIENT_RESERVE) ? tecNO_LINE_INSUF_RESERVE : ret);
     }
     else
     {

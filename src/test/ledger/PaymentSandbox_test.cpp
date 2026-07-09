@@ -419,7 +419,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
             auto const aliceSle = sb.peek(keylet::account(alice));
             BEAST_EXPECT(aliceSle);
 
-            OwnerCounts const initial(*aliceSle);
+            OwnerCounts const initial(aliceSle);
             OwnerCounts updated = initial;
             updated.owner = initial.owner + 2;
 
@@ -438,7 +438,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
             auto const sponsorSle = sb.peek(keylet::account(sponsor));
             BEAST_EXPECT(sponsorSle);
 
-            OwnerCounts const sponsorInitial(*sponsorSle);
+            OwnerCounts const sponsorInitial(sponsorSle);
             OwnerCounts sponsorUpdated = sponsorInitial;
             sponsorUpdated.owner = sponsorInitial.owner + 1;
             sponsorUpdated.sponsoring = sponsorInitial.sponsoring + 1;
@@ -455,7 +455,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
             PaymentSandbox sb2(&sb);
 
             auto const aliceSle = sb2.peek(keylet::account(alice));
-            OwnerCounts const current(*aliceSle);
+            OwnerCounts const current(aliceSle);
             OwnerCounts further = current;
             further.owner = current.owner + 3;
 
@@ -469,7 +469,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
         // Test that max logic works correctly
         {
             auto const aliceSle = sb.peek(keylet::account(alice));
-            OwnerCounts const current(*aliceSle);
+            OwnerCounts const current(aliceSle);
             OwnerCounts lower = current;
             lower.owner = (current.owner > 0) ? current.owner - 1 : 0;
 
