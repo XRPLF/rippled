@@ -206,7 +206,7 @@ getLedgerEntryOwnerCount(SLE const& sle)
     switch (sle.getType())
     {
         case ltORACLE: {
-            return calculateOracleReserve(sle);
+            return calculateOracleReserve(sle.getFieldArray(sfPriceDataSeries));
         }
         // Vaults require 2 owner counts (the vault and a pseudo-account)
         case ltVAULT:

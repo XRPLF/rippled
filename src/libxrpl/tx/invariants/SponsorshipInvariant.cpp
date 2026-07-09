@@ -59,7 +59,7 @@ SponsorshipOwnerCountsMatch::visitEntry(bool isDelete, SLE::const_ref before, SL
                 // sponsored.
                 if (!sle->isFieldPresent(sfSponsor))
                     return 0;
-                return getLedgerEntryOwnerCount(sle);
+                return getLedgerEntryOwnerCount(*sle);
         }
     };
 
