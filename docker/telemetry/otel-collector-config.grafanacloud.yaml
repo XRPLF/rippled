@@ -98,11 +98,16 @@ processors:
   # is Prometheus-exporter-only). Copy them onto datapoint labels so the
   # dashboards' $node / $deployment_environment / $xrpl_network_type filters
   # resolve on Cloud exactly as they do locally.
+  #
+  # NOTE: service.name is intentionally NOT copied here. Cloud's OTLP ingest
+  # already promotes service.name to the `service_name` label, and adding a
+  # datapoint attribute with the same name causes Mimir to concatenate both
+  # values as `xrpld;xrpld`. service.instance.id does not exhibit the same
+  # doubling, so the copy for $node is kept.
   transform/cloudlabels:
     metric_statements:
       - context: datapoint
         statements:
-          - set(attributes["service_name"], resource.attributes["service.name"])
           - set(attributes["service_instance_id"], resource.attributes["service.instance.id"])
           - set(attributes["deployment_environment"], resource.attributes["deployment.environment"])
           - set(attributes["xrpl_network_type"], resource.attributes["xrpl.network.type"])
