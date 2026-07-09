@@ -110,8 +110,6 @@ private:
     beast::Journal const journal_;
     ServerHandler& serverHandler_;
     Resource::Manager& resourceManager_;
-    // Owns the SQLite-backed PeerFinder persistence; must outlive peerFinder_,
-    // which holds a reference to it. Declared (and thus constructed) first.
     PeerFinder::StoreSqdb store_;
     std::unique_ptr<PeerFinder::Manager> peerFinder_;
     TrafficCount traffic_;

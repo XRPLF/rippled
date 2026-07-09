@@ -203,8 +203,6 @@ OverlayImpl::OverlayImpl(
               return ret;
           }())
 {
-    // Open the PeerFinder persistence before the manager is started, since
-    // Manager::start() loads the bootstrap cache from it.
     store_.open(config);
     beast::PropertyStream::Source::add(peerFinder_.get());
 }

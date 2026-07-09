@@ -12,12 +12,19 @@
 
 namespace xrpl::PeerFinder {
 
-/** Create a new Manager.
-
-    The caller retains ownership of @p store and must keep it alive (and opened)
-    for the lifetime of the returned Manager. This lets consumers supply their
-    own Store implementation (e.g. the SQLite-backed StoreSqdb in xrpld).
-*/
+/**
+ * @brief Create a new Manager.
+ *
+ * @param ioContext The io_context used to schedule asynchronous work.
+ * @param clock The clock used for timekeeping.
+ * @param journal The journal used for logging.
+ * @param store The persistence backend for the bootstrap cache. The caller
+ *     retains ownership and must keep it alive (and opened) for the lifetime of
+ *     the returned Manager. This lets consumers supply their own Store
+ *     implementation (e.g. the SQLite-backed StoreSqdb in xrpld).
+ * @param collector The collector used to report metrics.
+ * @return The newly created Manager.
+ */
 std::unique_ptr<Manager>
 makeManager(
     boost::asio::io_context& ioContext,
