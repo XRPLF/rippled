@@ -316,18 +316,19 @@ TrustSet::doApply()
     // well. A person with no intention of using the gateway
     // could use the extra XRP for their own purposes.
 
-    auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
+    auto const sponsorExp = getTxReserveSponsor(ctx_.getApplyViewContext());
+    if (!sponsorExp)
+        return sponsorExp.error();  // LCOV_EXCL_LINE
+    auto const sponsorSle = *sponsorExp;
 
-    auto getSponsor = [&sponsorSle = *sponsorSle, this](AccountID const& account) {
+    auto getSponsor = [&sponsorSle, this](AccountID const& account) {
         return (sponsorSle && account == accountID_) ? sponsorSle : SLE::pointer();
     };
 
     // The "free-tier" shortcut (ownerCount < 2) only applies when there is no sponsor.
     // With any sponsor on the tx, the sponsor must cover the reserve (via balance or
     // prefunded budget), so the reserve check always runs.
-    bool const freeTrustLine = !*sponsorSle && (ownerCount(sle, j_) < 2);
+    bool const freeTrustLine = !sponsorSle && (ownerCount(sle, j_) < 2);
 
     std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
