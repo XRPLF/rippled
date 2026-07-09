@@ -2,6 +2,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/check.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/multisign.h>
@@ -1467,8 +1468,8 @@ public:
             BEAST_EXPECT(resp[jss::result][jss::account_objects].size() == 0);
         }
 
-        // Only the queried side of a shared trust line should determine
-        // sponsorship classification.
+        // A trust line sponsored on either side is classified as sponsored
+        // for both parties.
         {
             Env env(*this, testableAmendments());
             Account const issuer("issuer");
@@ -1519,13 +1520,59 @@ public:
             {
                 auto const resp = acctObjsSponsored(env, issuer.id(), true, jss::state);
                 auto const& objs = resp[jss::result][jss::account_objects];
-                BEAST_EXPECT(objs.size() == 0);
+                if (BEAST_EXPECT(objs.size() == 1))
+                    BEAST_EXPECT(objs[0u][sfLedgerEntryType.jsonName] == jss::RippleState);
             }
             {
                 auto const resp = acctObjsSponsored(env, issuer.id(), false, jss::state);
                 auto const& objs = resp[jss::result][jss::account_objects];
-                if (BEAST_EXPECT(objs.size() == 1))
-                    BEAST_EXPECT(objs[0u][sfLedgerEntryType.jsonName] == jss::RippleState);
+                BEAST_EXPECT(objs.size() == 0);
+            }
+        }
+
+        // A sponsored Check is classified as sponsored in both the writer's
+        // and the destination's results.
+        {
+            Env env(*this, testableAmendments());
+            Account const owner("owner");
+            Account const dest("dest");
+            Account const sponsor("sponsor");
+
+            env.fund(XRP(10000), owner, dest, sponsor);
+            env.close();
+
+            auto const checkSeq = env.seq(owner);
+            env(check::create(owner, dest, XRP(1)));
+            env.close();
+
+            auto const checkId = keylet::check(owner, checkSeq);
+            if (!BEAST_EXPECT(env.le(checkId)))
+                return;
+
+            env(sponsor::transfer(owner, tfSponsorshipCreate, checkId.key),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            {
+                auto const sle = env.le(checkId);
+                if (!BEAST_EXPECT(sle))
+                    return;
+                BEAST_EXPECT(sle->isFieldPresent(sfSponsor));
+            }
+
+            for (auto const& acct : {owner.id(), dest.id()})
+            {
+                {
+                    auto const resp = acctObjsSponsored(env, acct, true, jss::check);
+                    auto const& objs = resp[jss::result][jss::account_objects];
+                    if (BEAST_EXPECT(objs.size() == 1))
+                        BEAST_EXPECT(objs[0u][sfLedgerEntryType.jsonName] == jss::Check);
+                }
+                {
+                    auto const resp = acctObjsSponsored(env, acct, false, jss::check);
+                    BEAST_EXPECT(resp[jss::result][jss::account_objects].size() == 0);
+                }
             }
         }
 
