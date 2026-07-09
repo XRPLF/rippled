@@ -362,7 +362,7 @@ SponsorshipSet::doApply()
 }
 
 void
-SponsorshipSet::visitInvariantEntry(bool, SLE::const_ref&, SLE::const_ref&)
+SponsorshipSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
 }
 

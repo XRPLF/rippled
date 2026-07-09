@@ -527,7 +527,7 @@ SponsorshipTransfer::doApply()
 }
 
 void
-SponsorshipTransfer::visitInvariantEntry(bool, SLE::const_ref&, SLE::const_ref&)
+SponsorshipTransfer::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
 }
 
