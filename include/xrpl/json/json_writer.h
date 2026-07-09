@@ -115,24 +115,24 @@ private:
 /**
  * @brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a
  * human friendly way, to a stream rather than to a string.
- * *
- * * The rules for line break and indent are as follow:
- * * - Object value:
- * *     - if empty then print {} without indent and line break
- * *     - if not empty the print '{', line break & indent, print one value per
+ *
+ * The rules for line break and indent are as follow:
+ * - Object value:
+ *     - if empty then print {} without indent and line break
+ *     - if not empty the print '{', line break & indent, print one value per
  * line
- * *       and then unindent and line break and print '}'.
- * * - Array value:
- * *     - if empty then print [] without indent and line break
- * *     - if the array contains no object value, empty array or some other value
+ *       and then unindent and line break and print '}'.
+ * - Array value:
+ *     - if empty then print [] without indent and line break
+ *     - if the array contains no object value, empty array or some other value
  * types,
- * *       and all the values fit on one lines, then print the array on a single
+ *       and all the values fit on one lines, then print the array on a single
  * line.
- * *     - otherwise, it the values do not fit on one line, or the array contains
- * *       object or non empty array, then print one value per line.
- * *
- * * @param indentation Each level will be indented by this amount extra.
- * * @see Reader, Value
+ *     - otherwise, it the values do not fit on one line, or the array contains
+ *       object or non empty array, then print one value per line.
+ *
+ * @param indentation Each level will be indented by this amount extra.
+ * @see Reader, Value
  */
 class StyledStreamWriter
 {

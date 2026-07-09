@@ -204,14 +204,14 @@ public:
     /**
      * @brief Constructs a value from a static string.
      *
-     * * Like other value string constructor but do not duplicate the string for
-     * * internal storage. The given string must remain alive after the call to
+     * Like other value string constructor but do not duplicate the string for
+     * internal storage. The given string must remain alive after the call to
      * this
-     * * constructor.
-     * * Example of usage:
-     * * @code
-     * * json::Value aValue( StaticString("some text") );
-     * * @endcode
+     * constructor.
+     * Example of usage:
+     * @code
+     * json::Value aValue( StaticString("some text") );
+     * @endcode
      */
     Value(StaticString const& value);
     Value(std::string const& value);
@@ -376,15 +376,15 @@ public:
      * @brief Access an object value by name, create a null member if it does
      * not exist.
      *
-     * * If the object as no entry for that name, then the member name used to
+     * If the object as no entry for that name, then the member name used to
      * store
-     * * the new entry is not duplicated.
-     * * Example of use:
-     * * @code
-     * * json::Value object;
-     * * static const StaticString code("code");
-     * * object[code] = 1234;
-     * * @endcode
+     * the new entry is not duplicated.
+     * Example of use:
+     * @code
+     * json::Value object;
+     * static const StaticString code("code");
+     * object[code] = 1234;
+     * @endcode
      */
     Value&
     operator[](StaticString const& key);

@@ -592,7 +592,7 @@ public:
 
     /**
      * This function returns the local validator public key
-     * * or a std::nullopt
+     * or a std::nullopt
      *
      *    @par Thread Safety
      *

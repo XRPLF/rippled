@@ -196,9 +196,9 @@ public:
 
     /**
      * Drop a digit from the mantissa, and increment the exponent, storing the dropped digit in
-     * * this Guard.
-     * *
-     * * Substitute for:
+     * this Guard.
+     *
+     * Substitute for:
      *            push(mantissa % 10);
      *            mantissa /= 10;
      *            ++exponent;

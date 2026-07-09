@@ -159,8 +159,8 @@ static_assert(kMaxCoverRate == TenthBips32(100'000u));
 
 /**
  * The maximum overpayment fee on a loan in 1/10 bips.
- * *
- *     Valid values are between 0 and 100% inclusive.
+ *
+ * Valid values are between 0 and 100% inclusive.
  */
 constexpr TenthBips32 kMaxOverpaymentFee = percentageToTenthBips(100);
 static_assert(kMaxOverpaymentFee == TenthBips32(100'000u));
