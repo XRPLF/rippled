@@ -146,6 +146,23 @@ private:
         Policy policy,
         Callback&& replaceCallback = nullptr);
 
+    /** canonicalizeImpl variant for callers that already hold `mutex_`.
+
+        The unnamed `scoped_lock<mutex_type> const&` parameter is proof of
+        ownership; this overload does not acquire the lock. Use it from other
+        methods (e.g. fetchAndModify) that need to compose canonicalize with
+        additional work under a single critical section, without relying on
+        recursive-mutex re-entry.
+    */
+    template <class Policy, class Callback = std::nullptr_t>
+    bool
+    canonicalizeImpl(
+        std::scoped_lock<mutex_type> const&,
+        key_type const& key,
+        CanonicalizeClientPointerType<Policy> data,
+        Policy policy,
+        Callback&& replaceCallback = nullptr);
+
 public:
     /** Replace aliased objects with originals.
 

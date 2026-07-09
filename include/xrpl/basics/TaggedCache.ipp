@@ -335,6 +335,30 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     canonicalizeImpl(
         key_type const& key,
         CanonicalizeClientPointerType<Policy> data,
+        Policy policy,
+        Callback&& replaceCallback)
+{
+    std::scoped_lock<mutex_type> const lock(mutex_);
+    return canonicalizeImpl(
+        lock, key, data, policy, std::forward<Callback>(replaceCallback));
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+template <class Policy, class Callback>
+inline bool
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    canonicalizeImpl(
+        std::scoped_lock<mutex_type> const&,
+        key_type const& key,
+        CanonicalizeClientPointerType<Policy> data,
         [[maybe_unused]] Policy policy,
         [[maybe_unused]] Callback&& replaceCallback)
 {
@@ -351,8 +375,6 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     // For the latter two the write-back below requires a mutable `data`, so
     // passing a const argument is a compile error.
     constexpr bool replaceCached = std::is_same_v<Policy, detail::ReplaceCached>;
-
-    std::scoped_lock const lock(mutex_);
 
     auto cit = cache_.find(key);
 
@@ -664,15 +686,16 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 {
     static_assert(
         !IsKeyCache, "fetchAndModify is only supported for value caches, not key-only caches");
-    static_assert(
-        std::is_same_v<Mutex, std::recursive_mutex>,
-        "fetchAndModify requires a recursive mutex because canonicalize re-acquires mutex_ "
-        "internally");
 
-    std::scoped_lock const lock(mutex_);
+    std::scoped_lock<mutex_type> const lock(mutex_);
 
     auto entry = std::make_shared<T>();
-    canonicalize(key, entry, [](SharedPointerType const&) { return false; });
+    canonicalizeImpl(
+        lock,
+        key,
+        entry,
+        detail::ReplaceDynamically{},
+        [](SharedPointerType const&) { return false; });
 
     XRPL_ASSERT(
         entry != nullptr, "xrpl::TaggedCache::fetchAndModify : entry present after canonicalize");
