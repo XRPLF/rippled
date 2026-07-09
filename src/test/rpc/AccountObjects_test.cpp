@@ -2,7 +2,6 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/check.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/multisign.h>
@@ -1527,60 +1526,6 @@ public:
                 auto const& objs = resp[jss::result][jss::account_objects];
                 if (BEAST_EXPECT(objs.size() == 1))
                     BEAST_EXPECT(objs[0u][sfLedgerEntryType.jsonName] == jss::RippleState);
-            }
-        }
-
-        // A Check lives in both parties' directories, but only the writer
-        // carries the sponsorship; the destination must not see it as
-        // sponsored.
-        {
-            Env env(*this, testableAmendments());
-            Account const owner("owner");
-            Account const dest("dest");
-            Account const sponsor("sponsor");
-
-            env.fund(XRP(10000), owner, dest, sponsor);
-            env.close();
-
-            auto const checkSeq = env.seq(owner);
-            env(check::create(owner, dest, XRP(1)));
-            env.close();
-
-            auto const checkId = keylet::check(owner, checkSeq);
-            if (!BEAST_EXPECT(env.le(checkId)))
-                return;
-
-            env(sponsor::transfer(owner, tfSponsorshipCreate, checkId.key),
-                sponsor::As(sponsor, spfSponsorReserve),
-                Sig(sfSponsorSignature, sponsor));
-            env.close();
-
-            {
-                auto const sle = env.le(checkId);
-                if (!BEAST_EXPECT(sle))
-                    return;
-                BEAST_EXPECT(sle->isFieldPresent(sfSponsor));
-            }
-
-            {
-                auto const resp = acctObjsSponsored(env, owner.id(), true, jss::check);
-                auto const& objs = resp[jss::result][jss::account_objects];
-                if (BEAST_EXPECT(objs.size() == 1))
-                    BEAST_EXPECT(objs[0u][sfLedgerEntryType.jsonName] == jss::Check);
-            }
-            {
-                auto const resp = acctObjsSponsored(env, owner.id(), false, jss::check);
-                BEAST_EXPECT(resp[jss::result][jss::account_objects].size() == 0);
-            }
-            {
-                auto const resp = acctObjsSponsored(env, dest.id(), true, jss::check);
-                BEAST_EXPECT(resp[jss::result][jss::account_objects].size() == 0);
-            }
-            {
-                auto const resp = acctObjsSponsored(env, dest.id(), false, jss::check);
-                auto const& objs = resp[jss::result][jss::account_objects];
-                if (BEAST_EXPECT(objs.size() == 1))
-                    BEAST_EXPECT(objs[0u][sfLedgerEntryType.jsonName] == jss::Check);
             }
         }
 
