@@ -149,17 +149,14 @@ adjustOwnerCountSigned(
         return;  // LCOV_EXCL_LINE
 
     auto const accountID = accountSle->getAccountID(sfAccount);
-    auto const sleType = accountSle->getType();
-    bool const validType = sponsorSle ? sleType == ltACCOUNT_ROOT
-                                      : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
+    bool const validType = accountSle->getType() == ltACCOUNT_ROOT;
     XRPL_ASSERT(validType, "xrpl::adjustOwnerCountSigned : valid account sle type");
     if (!validType)
         return;  // LCOV_EXCL_LINE
 
     XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
 
-    OwnerCounts const currentOwnerCount(
-        sleType == ltACCOUNT_ROOT ? OwnerCounts(accountSle) : OwnerCounts());
+    OwnerCounts const currentOwnerCount(accountSle);
     OwnerCounts totalOwnerCount(currentOwnerCount);
 
     if (sponsorSle)
@@ -195,8 +192,7 @@ adjustOwnerCountSigned(
 
     totalOwnerCount.owner =
         adjustOwnerCountImpl(view, accountSle, sfOwnerCount, accountID, adjustment, j);
-    if (sleType == ltACCOUNT_ROOT)
-        view.adjustOwnerCountHook(accountID, currentOwnerCount, totalOwnerCount);
+    view.adjustOwnerCountHook(accountID, currentOwnerCount, totalOwnerCount);
 }
 
 }  // namespace
@@ -351,6 +347,27 @@ decreaseOwnerCountForObject(
 
     SLE::ref sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
     decreaseOwnerCount(view, accountSle, sponsorSle, count, j);
+}
+
+void
+adjustLoanBrokerOwnerCount(
+    ApplyView& view,
+    SLE::ref brokerSle,
+    std::int32_t delta,
+    beast::Journal j)
+{
+    XRPL_ASSERT(
+        brokerSle && brokerSle->getType() == ltLOAN_BROKER,
+        "xrpl::adjustLoanBrokerOwnerCount : valid loan broker sle");
+    if (!brokerSle || brokerSle->getType() != ltLOAN_BROKER)
+        return;  // LCOV_EXCL_LINE
+
+    XRPL_ASSERT(delta != 0, "xrpl::adjustLoanBrokerOwnerCount : nonzero delta input");
+    if (delta == 0)
+        return;  // LCOV_EXCL_LINE
+
+    adjustOwnerCountImpl(
+        view, brokerSle, sfOwnerCount, brokerSle->getAccountID(sfAccount), delta, j);
 }
 
 XRPAmount

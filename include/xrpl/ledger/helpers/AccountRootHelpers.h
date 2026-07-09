@@ -291,6 +291,27 @@ decreaseOwnerCountForObject(
     decreaseOwnerCountForObject(view, accountSle, objectSle, count, j);
 }
 
+/** Adjust a LoanBroker's owner count.
+ *
+ *  A LoanBroker's sfOwnerCount tracks the number of outstanding loans on
+ *  that broker; it is not a reserve-backed owner count and is distinct
+ *  from the broker's pseudo-account's owner count. Loans can never carry a
+ *  reserve sponsor (LoanSet rejects reserve sponsorship at preflight), so
+ *  this never involves sponsor accounting and never invokes the
+ *  ownerCountHook used for ACCOUNT_ROOT reserve tracking.
+ *
+ *  @param view The apply view for making changes
+ *  @param brokerSle The LoanBroker's ledger entry
+ *  @param delta Amount to add (positive) or remove (negative) from the count
+ *  @param j Journal for logging
+ */
+void
+adjustLoanBrokerOwnerCount(
+    ApplyView& view,
+    SLE::ref brokerSle,
+    std::int32_t delta,
+    beast::Journal j);
+
 /** Returns IOU issuer transfer fee as Rate. Rate specifies
  * the fee as fractions of 1 billion. For example, 1% transfer rate
  * is represented as 1,010,000,000.
