@@ -95,8 +95,10 @@ autofillSignature(json::Value& sigObject, std::string const& fieldPrefix = "tx")
             auto& signer = sigObject[jss::Signers][index];
             if (!signer.isObject() || !signer.isMember(jss::Signer) ||
                 !signer[jss::Signer].isObject())
+            {
                 return RPC::invalidFieldError(
                     fieldPrefix + ".Signers[" + std::to_string(index) + "]");
+            }
 
             if (!signer[jss::Signer].isMember(jss::SigningPubKey))
             {

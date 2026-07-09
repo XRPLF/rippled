@@ -208,7 +208,11 @@ getAccountObjects(
                     sponsor = getLedgerEntryReserveSponsorID(sleNode, sfLowSponsor);
             }
             else if (isLedgerEntrySupportedBySponsorship(*sleNode))
-                sponsor = getLedgerEntryReserveSponsorID(sleNode);
+            {
+                {
+                    sponsor = getLedgerEntryReserveSponsorID(sleNode);
+                }
+            }
 
             if (!sponsoredMatchesFilter(sponsor))
                 canAppend = false;
