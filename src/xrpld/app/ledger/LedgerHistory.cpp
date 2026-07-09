@@ -579,8 +579,8 @@ LedgerHistory::clearLedgerCachePrior(LedgerIndex seq)
         auto lock = ledgerMaps_.lock();
         cacheSize = lock->byHash->size();
 
-        indexesCleared = std::erase_if(
-            lock->byIndex, [seq](auto const& kv) { return kv.first < seq; });
+        indexesCleared =
+            std::erase_if(lock->byIndex, [seq](auto const& kv) { return kv.first < seq; });
         indexSize = lock->byIndex.size();
 
         XRPL_ASSERT(
