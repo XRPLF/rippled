@@ -155,10 +155,10 @@ public:
      * Find transactions not in common between this and another transaction
      * set.
      *
-     *  @param j The set to compare with
-     *  @return Map of transactions in this set and `j` but not both. The key
-     *          is the transaction ID and the value is a bool of the transaction
-     *          exists in this set.
+     * @param j The set to compare with
+     * @return Map of transactions in this set and `j` but not both. The key
+     *         is the transaction ID and the value is a bool of the transaction
+     *         exists in this set.
      */
     [[nodiscard]] std::map<Tx::ID, bool>
     compare(RCLTxSet const& j) const

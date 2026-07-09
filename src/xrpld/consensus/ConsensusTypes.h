@@ -185,11 +185,11 @@ enum class ConsensusState {
 /**
  * Encapsulates the result of consensus.
  *
- *  Stores all relevant data for the outcome of consensus on a single
+ * Stores all relevant data for the outcome of consensus on a single
  * ledger.
  *
- *  @tparam Traits Traits class defining the concrete consensus types used
- *                 by the application.
+ * @tparam Traits Traits class defining the concrete consensus types used
+ *                by the application.
  */
 template <class Traits>
 struct ConsensusResult

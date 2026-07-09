@@ -31,22 +31,22 @@ namespace xrpl {
 /**
  * Determines whether the current ledger should close at this time.
  *
- *  This function should be called when a ledger is open and there is no close
- *  in progress, or when a transaction is received and no close is in progress.
+ * This function should be called when a ledger is open and there is no close
+ * in progress, or when a transaction is received and no close is in progress.
  *
- *  @param anyTransactions indicates whether any transactions have been received
- *  @param prevProposers proposers in the last closing
- *  @param proposersClosed proposers who have currently closed this ledger
- *  @param proposersValidated proposers who have validated the last closed
- *                            ledger
- *  @param prevRoundTime time for the previous ledger to reach consensus
- *  @param timeSincePrevClose  time since the previous ledger's (possibly
+ * @param anyTransactions indicates whether any transactions have been received
+ * @param prevProposers proposers in the last closing
+ * @param proposersClosed proposers who have currently closed this ledger
+ * @param proposersValidated proposers who have validated the last closed
+ *                           ledger
+ * @param prevRoundTime time for the previous ledger to reach consensus
+ * @param timeSincePrevClose  time since the previous ledger's (possibly
  * rounded) close time
- *  @param openTime     duration this ledger has been open
- *  @param idleInterval the network's desired idle interval
- *  @param parms        Consensus constant parameters
- *  @param j            journal for logging
- *  @param clog         log object to which to append
+ * @param openTime     duration this ledger has been open
+ * @param idleInterval the network's desired idle interval
+ * @param parms        Consensus constant parameters
+ * @param j            journal for logging
+ * @param clog         log object to which to append
  */
 bool
 shouldCloseLedger(
@@ -339,18 +339,18 @@ public:
     /**
      * Kick-off the next round of consensus.
      *
-     *  Called by the client code to start each round of consensus.
+     * Called by the client code to start each round of consensus.
      *
-     *  @param now          The network adjusted time
-     *  @param prevLedgerID the ID of the last ledger
-     *  @param prevLedger   The last ledger
-     *  @param nowUntrusted ID of nodes that are newly untrusted this round
-     *  @param proposing    Whether we want to send proposals to peers this
+     * @param now          The network adjusted time
+     * @param prevLedgerID the ID of the last ledger
+     * @param prevLedger   The last ledger
+     * @param nowUntrusted ID of nodes that are newly untrusted this round
+     * @param proposing    Whether we want to send proposals to peers this
      * round.
-     *  @param clog         log object to which to append
+     * @param clog         log object to which to append
      *
-     *  @note @b prevLedgerID is not required to the ID of @b prevLedger since
-     *  the ID may be known locally before the contents of the ledger arrive
+     * @note @b prevLedgerID is not required to the ID of @b prevLedger since
+     * the ID may be known locally before the contents of the ledger arrive
      */
     void
     startRound(

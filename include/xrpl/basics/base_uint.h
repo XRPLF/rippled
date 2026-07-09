@@ -71,11 +71,11 @@ struct AlwaysFalseT : std::bool_constant<false>
  *       binary protocol of the XRP Ledger and cannot be changed
  *       arbitrarily without causing breakage.
  *
- *       @tparam Bits The number of bits this integer should have; must
- *                    be at least 64 and a multiple of 32.
- *       @tparam Tag An arbitrary type that functions as a tag and allows
- *                   the instantiation of "distinct" types that the same
- *                   number of bits.
+ * @tparam Bits The number of bits this integer should have; must
+ *              be at least 64 and a multiple of 32.
+ * @tparam Tag An arbitrary type that functions as a tag and allows
+ *             the instantiation of "distinct" types that the same
+ *             number of bits.
  */
 template <std::size_t Bits, class Tag = void>
 class BaseUInt

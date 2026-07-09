@@ -158,107 +158,107 @@ private:
 /**
  * Intrusive doubly linked list.
  *
- *  This intrusive List is a container similar in operation to std::list in the
- *  Standard Template Library (STL). Like all @ref intrusive containers, List
- *  requires you to first derive your class from List<>::Node:
+ * This intrusive List is a container similar in operation to std::list in the
+ * Standard Template Library (STL). Like all @ref intrusive containers, List
+ * requires you to first derive your class from List<>::Node:
  *
- *  @code
+ * @code
  *
- *  struct Object : List <Object>::Node
- *  {
- *      explicit Object (int value) : value_ (value)
- *      {
- *      }
+ * struct Object : List <Object>::Node
+ * {
+ *     explicit Object (int value) : value_ (value)
+ *     {
+ *     }
  *
- *      int value_;
- *  };
+ *     int value_;
+ * };
  *
- *  @endcode
+ * @endcode
  *
- *  Now we define the list, and add a couple of items.
+ * Now we define the list, and add a couple of items.
  *
- *  @code
+ * @code
  *
- *  List <Object> list;
+ * List <Object> list;
  *
- *  list.push_back (* (new Object (1)));
- *  list.push_back (* (new Object (2)));
+ * list.push_back (* (new Object (1)));
+ * list.push_back (* (new Object (2)));
  *
- *  @endcode
+ * @endcode
  *
- *  For compatibility with the standard containers, push_back() expects a
- *  reference to the object. Unlike the standard container, however, push_back()
- *  places the actual object in the list and not a copy-constructed duplicate.
+ * For compatibility with the standard containers, push_back() expects a
+ * reference to the object. Unlike the standard container, however, push_back()
+ * places the actual object in the list and not a copy-constructed duplicate.
  *
- *  Iterating over the list follows the same idiom as the STL:
+ * Iterating over the list follows the same idiom as the STL:
  *
- *  @code
+ * @code
  *
- *  for (List <Object>::iterator iter = list.begin(); iter != list.end; ++iter)
- *      std::cout << iter->value_;
+ * for (List <Object>::iterator iter = list.begin(); iter != list.end; ++iter)
+ *     std::cout << iter->value_;
  *
- *  @endcode
+ * @endcode
  *
- *  You can even use BOOST_FOREACH, or range based for loops:
+ * You can even use BOOST_FOREACH, or range based for loops:
  *
- *  @code
+ * @code
  *
- *  BOOST_FOREACH (Object& object, list)  // boost only
- *      std::cout << object.value_;
+ * BOOST_FOREACH (Object& object, list)  // boost only
+ *     std::cout << object.value_;
  *
- *  for (Object& object : list)           // C++11 only
- *      std::cout << object.value_;
+ * for (Object& object : list)           // C++11 only
+ *     std::cout << object.value_;
  *
- *  @endcode
+ * @endcode
  *
- *  Because List is mostly STL compliant, it can be passed into STL algorithms:
- *  e.g. `std::for_each()` or `std::find_first_of()`.
+ * Because List is mostly STL compliant, it can be passed into STL algorithms:
+ * e.g. `std::for_each()` or `std::find_first_of()`.
  *
- *  In general, objects placed into a List should be dynamically allocated
- *  although this cannot be enforced at compile time. Since the caller provides
- *  the storage for the object, the caller is also responsible for deleting the
- *  object. An object still exists after being removed from a List, until the
- *  caller deletes it. This means an element can be moved from one List to
- *  another with practically no overhead.
+ * In general, objects placed into a List should be dynamically allocated
+ * although this cannot be enforced at compile time. Since the caller provides
+ * the storage for the object, the caller is also responsible for deleting the
+ * object. An object still exists after being removed from a List, until the
+ * caller deletes it. This means an element can be moved from one List to
+ * another with practically no overhead.
  *
- *  Unlike the standard containers, an object may only exist in one list at a
- *  time, unless special preparations are made. The Tag template parameter is
- *  used to distinguish between different list types for the same object,
- *  allowing the object to exist in more than one list simultaneously.
+ * Unlike the standard containers, an object may only exist in one list at a
+ * time, unless special preparations are made. The Tag template parameter is
+ * used to distinguish between different list types for the same object,
+ * allowing the object to exist in more than one list simultaneously.
  *
- *  For example, consider an actor system where a global list of actors is
- *  maintained, so that they can each be periodically receive processing
- *  time. We wish to also maintain a list of the subset of actors that require
- *  a domain-dependent update. To achieve this, we declare two tags, the
- *  associated list types, and the list element thusly:
+ * For example, consider an actor system where a global list of actors is
+ * maintained, so that they can each be periodically receive processing
+ * time. We wish to also maintain a list of the subset of actors that require
+ * a domain-dependent update. To achieve this, we declare two tags, the
+ * associated list types, and the list element thusly:
  *
- *  @code
+ * @code
  *
- *  struct Actor;         // Forward declaration required
+ * struct Actor;         // Forward declaration required
  *
- *  struct ProcessTag { };
- *  struct UpdateTag { };
+ * struct ProcessTag { };
+ * struct UpdateTag { };
  *
- *  using ProcessList = List <Actor, ProcessTag>;
- *  using UpdateList = List <Actor, UpdateTag>;
+ * using ProcessList = List <Actor, ProcessTag>;
+ * using UpdateList = List <Actor, UpdateTag>;
  *
- *  // Derive from both node types so we can be in each list at once.
- *  //
- *  struct Actor : ProcessList::Node, UpdateList::Node
- *  {
- *      bool process ();    // returns true if we need an update
- *      void update ();
- *  };
+ * // Derive from both node types so we can be in each list at once.
+ * //
+ * struct Actor : ProcessList::Node, UpdateList::Node
+ * {
+ *     bool process ();    // returns true if we need an update
+ *     void update ();
+ * };
  *
- *  @endcode
+ * @endcode
  *
- *  @tparam T The base type of element which the list will store
- *                  pointers to.
+ * @tparam T The base type of element which the list will store
+ *                 pointers to.
  *
- *  @tparam Tag An optional unique type name used to distinguish lists and
+ * @tparam Tag An optional unique type name used to distinguish lists and
  * nodes, when the object can exist in multiple lists simultaneously.
  *
- *  @ingroup beast_core intrusive
+ * @ingroup beast_core intrusive
  */
 template <typename T, typename Tag = void>
 class List

@@ -150,10 +150,10 @@ public:
     /**
      * Change a peer's vote
      *
-     *  @param peer Identifier of peer.
-     *  @param votesYes Whether peer votes to include the disputed transaction.
+     * @param peer Identifier of peer.
+     * @param votesYes Whether peer votes to include the disputed transaction.
      *
-     *  @return bool Whether the peer changed its vote. (A new vote counts as a
+     * @return bool Whether the peer changed its vote. (A new vote counts as a
      * change.)
      */
     [[nodiscard]] bool

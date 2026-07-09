@@ -252,10 +252,10 @@ class RCLConsensus
          * Number of proposers that have validated a ledger descended from
          * requested ledger.
          *
-         *  @param ledger The current working ledger
-         *  @param h The hash of the preferred working ledger
-         *  @return The number of validating peers that have validated a ledger
-         *          descended from the preferred working ledger.
+         * @param ledger The current working ledger
+         * @param h The hash of the preferred working ledger
+         * @return The number of validating peers that have validated a ledger
+         *         descended from the preferred working ledger.
          */
         std::size_t
         proposersFinished(RCLCxLedger const& ledger, LedgerHash const& h) const;
@@ -280,13 +280,13 @@ class RCLConsensus
          * Get the ID of the previous ledger/last closed ledger(LCL) on the
          * network
          *
-         *  @param ledgerID ID of previous ledger used by consensus
-         *  @param ledger Previous ledger consensus has available
-         *  @param mode Current consensus mode
-         *  @return The id of the last closed network
+         * @param ledgerID ID of previous ledger used by consensus
+         * @param ledger Previous ledger consensus has available
+         * @param mode Current consensus mode
+         * @return The id of the last closed network
          *
-         *  @note ledgerID may not match ledger.id() if we haven't acquired
-         *        the ledger matching ledgerID from the network
+         * @note ledgerID may not match ledger.id() if we haven't acquired
+         *       the ledger matching ledgerID from the network
          */
         uint256
         getPrevLedger(uint256 ledgerID, RCLCxLedger const& ledger, ConsensusMode mode);

@@ -255,13 +255,13 @@ public:
     /**
      * Record that this subscriber is following @p book.
      *
-     *  Called by NetworkOPsImp::subBook so that ~InfoSub() can issue a
-     *  matching unsubBook for every book this subscriber is tracking,
-     *  keeping per-subscriber state symmetric with the server-side map.
+     * Called by NetworkOPsImp::subBook so that ~InfoSub() can issue a
+     * matching unsubBook for every book this subscriber is tracking,
+     * keeping per-subscriber state symmetric with the server-side map.
      *
-     *  @param book The order book this subscriber has just subscribed to.
-     *  @note Idempotent: re-inserting an already-tracked book is a no-op.
-     *  @note Thread-safe: takes InfoSub::lock_.
+     * @param book The order book this subscriber has just subscribed to.
+     * @note Idempotent: re-inserting an already-tracked book is a no-op.
+     * @note Thread-safe: takes InfoSub::lock_.
      */
     void
     insertBookSubscription(Book const& book);
@@ -269,12 +269,12 @@ public:
     /**
      * Stop tracking @p book for this subscriber.
      *
-     *  Called by the unsubscribe RPC handler so that the book is not
-     *  re-unsubscribed by ~InfoSub(). Pairs with insertBookSubscription.
+     * Called by the unsubscribe RPC handler so that the book is not
+     * re-unsubscribed by ~InfoSub(). Pairs with insertBookSubscription.
      *
-     *  @param book The order book to forget.
-     *  @note No-op if @p book was not previously inserted.
-     *  @note Thread-safe: takes InfoSub::lock_.
+     * @param book The order book to forget.
+     * @note No-op if @p book was not previously inserted.
+     * @note Thread-safe: takes InfoSub::lock_.
      */
     void
     deleteBookSubscription(Book const& book);

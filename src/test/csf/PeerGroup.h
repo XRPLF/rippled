@@ -144,11 +144,11 @@ public:
     /**
      * Establish network connection
      *
-     *  Establish outbound connections from all peers in this group to all peers
+     * Establish outbound connections from all peers in this group to all peers
      * in o. If a connection already exists, no new connection is established.
      *
-     *  @param o The group of peers to connect to (will get inbound connections)
-     *  @param delay The fixed messaging delay for all established connections
+     * @param o The group of peers to connect to (will get inbound connections)
+     * @param delay The fixed messaging delay for all established connections
      */
     void
     connect(PeerGroup const& o, SimDuration delay)

@@ -13,8 +13,8 @@ namespace xrpl {
 
 /**
  * Implements ZeroCopyInputStream around a buffer sequence.
- *  @tparam Buffers A type meeting the requirements of ConstBufferSequence.
- *  @see
+ * @tparam Buffers A type meeting the requirements of ConstBufferSequence.
+ * @see
  * https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.io.zero_copy_stream
  */
 template <class Buffers>

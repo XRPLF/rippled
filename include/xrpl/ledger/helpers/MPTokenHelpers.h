@@ -131,16 +131,16 @@ enforceMPTokenAuthorization(
 /**
  * Resolve the underlying asset of a vault share.
  *
- *  Reads sfReferenceHolding from @p sleShareIssuance to determine which
- *  asset the vault wraps. @p sleHolding must be the SLE that
- *  sfReferenceHolding points to — either an ltMPTOKEN (returns its
- *  MPTIssue) or an ltRIPPLE_STATE (returns its low/high Issue).
+ * Reads sfReferenceHolding from @p sleShareIssuance to determine which
+ * asset the vault wraps. @p sleHolding must be the SLE that
+ * sfReferenceHolding points to — either an ltMPTOKEN (returns its
+ * MPTIssue) or an ltRIPPLE_STATE (returns its low/high Issue).
  *
- *  @pre Both SLEs must exist and @p sleHolding must be of type ltMPTOKEN
- *       or ltRIPPLE_STATE. Passing any other type is undefined behaviour.
- *  @param sleShareIssuance  MPTokenIssuance SLE for the vault share token.
- *  @param sleHolding        SLE referenced by sfReferenceHolding.
- *  @return The underlying Asset (MPTIssue or Issue).
+ * @pre Both SLEs must exist and @p sleHolding must be of type ltMPTOKEN
+ *      or ltRIPPLE_STATE. Passing any other type is undefined behaviour.
+ * @param sleShareIssuance  MPTokenIssuance SLE for the vault share token.
+ * @param sleHolding        SLE referenced by sfReferenceHolding.
+ * @return The underlying Asset (MPTIssue or Issue).
  */
 [[nodiscard]] Asset
 assetOfHolding(SLE const& sleShareIssuance, SLE const& sleHolding);
@@ -148,26 +148,26 @@ assetOfHolding(SLE const& sleShareIssuance, SLE const& sleHolding);
 /**
  * Check whether @p to may receive the given MPT from @p from.
  *
- *  The check passes when any of the following is true:
- *  - @p waive is WaiveMPTCanTransfer::Yes (recovery-path exemption), or
- *  - @p from or @p to is the issuer, or
- *  - lsfMPTCanTransfer is set on the MPTokenIssuance.
+ * The check passes when any of the following is true:
+ * - @p waive is WaiveMPTCanTransfer::Yes (recovery-path exemption), or
+ * - @p from or @p to is the issuer, or
+ * - lsfMPTCanTransfer is set on the MPTokenIssuance.
  *
- *  For vault shares (MPTokenIssuances that carry sfReferenceHolding) the
- *  check recurses into the underlying asset's transferability. This
- *  recursion is defensive; vault-of-vault-shares is rejected at vault
- *  creation, so in practice depth never exceeds 1.
+ * For vault shares (MPTokenIssuances that carry sfReferenceHolding) the
+ * check recurses into the underlying asset's transferability. This
+ * recursion is defensive; vault-of-vault-shares is rejected at vault
+ * creation, so in practice depth never exceeds 1.
  *
- *  @param view      Ledger state to read from.
- *  @param mptIssue  The MPT issuance being transferred.
- *  @param from      Sending account.
- *  @param to        Receiving account.
- *  @param waive     WaiveMPTCanTransfer::Yes skips the lsfMPTCanTransfer
- *                   check. Use for recovery paths (e.g. unwinding SAV or
- *                   Lending Protocol positions after an issuer revokes
- *                   transferability).
- *  @param depth     Recursion depth; bounded at kMaxAssetCheckDepth.
- *  @return tesSUCCESS if the transfer is allowed, tecNO_AUTH otherwise.
+ * @param view      Ledger state to read from.
+ * @param mptIssue  The MPT issuance being transferred.
+ * @param from      Sending account.
+ * @param to        Receiving account.
+ * @param waive     WaiveMPTCanTransfer::Yes skips the lsfMPTCanTransfer
+ *                  check. Use for recovery paths (e.g. unwinding SAV or
+ *                  Lending Protocol positions after an issuer revokes
+ *                  transferability).
+ * @param depth     Recursion depth; bounded at kMaxAssetCheckDepth.
+ * @return tesSUCCESS if the transfer is allowed, tecNO_AUTH otherwise.
  */
 [[nodiscard]] TER
 canTransfer(
@@ -181,15 +181,15 @@ canTransfer(
 /**
  * Check whether @p asset may be traded on the DEX.
  *
- *  For IOU assets the check delegates to the existing offer/AMM freeze
- *  logic. For MPT assets it checks lsfMPTCanTrade on the MPTokenIssuance.
- *  Vault shares recurse into the underlying asset's tradability via
- *  sfReferenceHolding; depth is bounded at kMaxAssetCheckDepth.
+ * For IOU assets the check delegates to the existing offer/AMM freeze
+ * logic. For MPT assets it checks lsfMPTCanTrade on the MPTokenIssuance.
+ * Vault shares recurse into the underlying asset's tradability via
+ * sfReferenceHolding; depth is bounded at kMaxAssetCheckDepth.
  *
- *  @param view   Ledger state to read from.
- *  @param asset  The asset to check.
- *  @param depth  Recursion depth; bounded at kMaxAssetCheckDepth.
- *  @return tesSUCCESS if trading is allowed, tecNO_PERMISSION otherwise.
+ * @param view   Ledger state to read from.
+ * @param asset  The asset to check.
+ * @param depth  Recursion depth; bounded at kMaxAssetCheckDepth.
+ * @return tesSUCCESS if trading is allowed, tecNO_PERMISSION otherwise.
  */
 [[nodiscard]] TER
 canTrade(ReadView const& view, Asset const& asset, std::uint8_t depth = 0);

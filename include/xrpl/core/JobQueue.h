@@ -186,12 +186,12 @@ public:
     /**
      * Creates a coroutine and adds a job to the queue which will run it.
      *
-     *  @param t The type of job.
-     *  @param name Name of the job.
-     *  @param f Has a signature of void(std::shared_ptr<Coro>). Called when the
+     * @param t The type of job.
+     * @param name Name of the job.
+     * @param f Has a signature of void(std::shared_ptr<Coro>). Called when the
      * job executes.
      *
-     *  @return shared_ptr to posted Coro.  nullptr if post was not successful.
+     * @return shared_ptr to posted Coro.  nullptr if post was not successful.
      */
     template <class F>
     std::shared_ptr<Coro>

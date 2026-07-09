@@ -542,14 +542,14 @@ private:
     /**
      * Iterate the set of validations associated with a given ledger id
      *
-     *  @param lock Existing lock on mutex_
-     *  @param ledgerID The identifier of the ledger
-     *  @param pre Invocable with signature(std::size_t)
-     *  @param f Invocable with signature (NodeID const &, Validation const &)
+     * @param lock Existing lock on mutex_
+     * @param ledgerID The identifier of the ledger
+     * @param pre Invocable with signature(std::size_t)
+     * @param f Invocable with signature (NodeID const &, Validation const &)
      *
-     *  @note The invocable `pre` is called prior to iterating validations. The
-     *        argument is the number of times `f` will be called.
-     *  @warning The invocable f is expected to be a simple transformation of
+     * @note The invocable `pre` is called prior to iterating validations. The
+     *       argument is the number of times `f` will be called.
+     * @warning The invocable f is expected to be a simple transformation of
      * its arguments and will be called with mutex_ under lock.
      */
     template <class Pre, class F>
@@ -606,9 +606,9 @@ public:
      * Return whether the local node can issue a validation for the given
      * sequence number
      *
-     *  @param s The sequence number of the ledger the node wants to validate
-     *  @return Whether the validation satisfies the invariant, updating the
-     *          largest sequence number seen accordingly
+     * @param s The sequence number of the ledger the node wants to validate
+     * @return Whether the validation satisfies the invariant, updating the
+     *         largest sequence number seen accordingly
      */
     bool
     canValidateSeq(Seq const s)

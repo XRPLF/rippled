@@ -45,8 +45,8 @@ public:
     /**
      * Constructor
      *
-     *  @param msg The message string to search for
-     *  @param pFound Pointer to the variable to set to true if the message is
+     * @param msg The message string to search for
+     * @param pFound Pointer to the variable to set to true if the message is
      * found
      */
     CheckMessageLogs(std::string msg, bool* pFound)

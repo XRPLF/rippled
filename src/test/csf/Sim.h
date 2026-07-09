@@ -81,14 +81,14 @@ public:
     /**
      * Create a new group of peers.
      *
-     *  Creates a new group of peers. The peers do not have any trust relations
-     *  or network connections by default. Those must be configured by the
+     * Creates a new group of peers. The peers do not have any trust relations
+     * or network connections by default. Those must be configured by the
      * client.
      *
-     *  @param numPeers The number of peers in the group
-     *  @return PeerGroup representing these new peers
+     * @param numPeers The number of peers in the group
+     * @return PeerGroup representing these new peers
      *
-     *  @note This increases the number of peers in the simulation by numPeers.
+     * @note This increases the number of peers in the simulation by numPeers.
      */
     PeerGroup
     createGroup(std::size_t numPeers)

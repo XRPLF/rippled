@@ -63,31 +63,31 @@ public:
     /**
      * Construct a NodeStore database.
      *
-     *  The parameters are key value pairs passed to the backend. The
-     *  'type' key must exist, it defines the choice of backend. Most
-     *  backends also require a 'path' field.
+     * The parameters are key value pairs passed to the backend. The
+     * 'type' key must exist, it defines the choice of backend. Most
+     * backends also require a 'path' field.
      *
-     *  Some choices for 'type' are:
-     *      HyperLevelDB, LevelDBFactory, SQLite, MDB
+     * Some choices for 'type' are:
+     *     HyperLevelDB, LevelDBFactory, SQLite, MDB
      *
-     *  If the fastBackendParameter is omitted or empty, no ephemeral database
-     *  is used. If the scheduler parameter is omitted or unspecified, a
-     *  synchronous scheduler is used which performs all tasks immediately on
-     *  the caller's thread.
+     * If the fastBackendParameter is omitted or empty, no ephemeral database
+     * is used. If the scheduler parameter is omitted or unspecified, a
+     * synchronous scheduler is used which performs all tasks immediately on
+     * the caller's thread.
      *
-     *  @note If the database cannot be opened or created, an exception is
+     * @note If the database cannot be opened or created, an exception is
      * thrown.
      *
-     *  @param name A diagnostic label for the database.
-     *  @param burstSize Backend burst size in bytes.
-     *  @param scheduler The scheduler to use for performing asynchronous tasks.
-     *  @param readThreads The number of async read threads to create
-     *  @param backendParameters The parameter string for the persistent
+     * @param name A diagnostic label for the database.
+     * @param burstSize Backend burst size in bytes.
+     * @param scheduler The scheduler to use for performing asynchronous tasks.
+     * @param readThreads The number of async read threads to create
+     * @param backendParameters The parameter string for the persistent
      * backend.
-     *  @param fastBackendParameters [optional] The parameter string for the
+     * @param fastBackendParameters [optional] The parameter string for the
      * ephemeral backend.
      *
-     *  @return The opened database.
+     * @return The opened database.
      */
     virtual std::unique_ptr<Database>
     makeDatabase(

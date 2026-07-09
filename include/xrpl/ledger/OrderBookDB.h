@@ -88,18 +88,18 @@ public:
 /**
  * Extract the set of books affected by a transaction.
  *
- *  Walks the transaction's metadata nodes and collects every order book
- *  whose offers were created, modified, or deleted. Used by NetworkOPs to
- *  fan transaction notifications out to book subscribers.
+ * Walks the transaction's metadata nodes and collects every order book
+ * whose offers were created, modified, or deleted. Used by NetworkOPs to
+ * fan transaction notifications out to book subscribers.
  *
- *  @param alTx The accepted ledger transaction to inspect.
- *  @param j Journal used to log per-node parsing failures. Inspecting an
- *           offer node can throw if a required field is missing; in that
- *           case the bad node is skipped and a warn-level message is
- *           emitted via @p j. Other affected books in the same transaction
- *           are still returned.
- *  @return The set of books whose offers were created, modified, or
- *          deleted. May be empty for non-offer transactions.
+ * @param alTx The accepted ledger transaction to inspect.
+ * @param j Journal used to log per-node parsing failures. Inspecting an
+ *          offer node can throw if a required field is missing; in that
+ *          case the bad node is skipped and a warn-level message is
+ *          emitted via @p j. Other affected books in the same transaction
+ *          are still returned.
+ * @return The set of books whose offers were created, modified, or
+ *         deleted. May be empty for non-offer transactions.
  */
 hash_set<Book>
 affectedBooks(AcceptedLedgerTx const& alTx, beast::Journal const& j);

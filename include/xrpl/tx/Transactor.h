@@ -169,14 +169,14 @@ public:
     /**
      * Check all invariants for the current transaction.
      *
-     *  Runs transaction-specific invariants first (visitInvariantEntry +
-     *  finalizeInvariants), then protocol-level invariants.  Both layers
-     *  always run; the worst failure code is returned.
+     * Runs transaction-specific invariants first (visitInvariantEntry +
+     * finalizeInvariants), then protocol-level invariants.  Both layers
+     * always run; the worst failure code is returned.
      *
-     *  @param result  the tentative TER from transaction processing.
-     *  @param fee     the fee consumed by the transaction.
+     * @param result  the tentative TER from transaction processing.
+     * @param fee     the fee consumed by the transaction.
      *
-     *  @return the final TER after all invariant checks.
+     * @return the final TER after all invariant checks.
      */
     [[nodiscard]] TER
     checkInvariants(TER result, XRPAmount fee);
@@ -330,39 +330,39 @@ protected:
     /**
      * Inspect a single ledger entry modified by this transaction.
      *
-     *  Called once for every SLE created, modified, or deleted by the
-     *  transaction, before finalizeInvariants.  Implementations should
-     *  accumulate whatever state they need to verify transaction-specific
-     *  post-conditions.
+     * Called once for every SLE created, modified, or deleted by the
+     * transaction, before finalizeInvariants.  Implementations should
+     * accumulate whatever state they need to verify transaction-specific
+     * post-conditions.
      *
-     *  @param isDelete  true if the entry was erased from the ledger.
-     *  @param before    the entry's state before the transaction (nullptr
-     *                   for newly created entries).
-     *  @param after     the entry's state as supplied by the apply logic
-     *                   for this transaction. For deletions, this is the
-     *                   SLE being erased and is not guaranteed to be null;
-     *                   callers must use isDelete rather than after == nullptr
-     *                   to detect deletions.
+     * @param isDelete  true if the entry was erased from the ledger.
+     * @param before    the entry's state before the transaction (nullptr
+     *                  for newly created entries).
+     * @param after     the entry's state as supplied by the apply logic
+     *                  for this transaction. For deletions, this is the
+     *                  SLE being erased and is not guaranteed to be null;
+     *                  callers must use isDelete rather than after == nullptr
+     *                  to detect deletions.
      */
     virtual void
     visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) = 0;
 
     /**
      * Check transaction-specific post-conditions after all entries have
-     *  been visited.
+     * been visited.
      *
-     *  Called once after every modified ledger entry has been passed to
-     *  visitInvariantEntry.  Returns true if all transaction-specific
-     *  invariants hold, or false to fail the transaction with
-     *  tecINVARIANT_FAILED.
+     * Called once after every modified ledger entry has been passed to
+     * visitInvariantEntry.  Returns true if all transaction-specific
+     * invariants hold, or false to fail the transaction with
+     * tecINVARIANT_FAILED.
      *
-     *  @param tx    the transaction being applied.
-     *  @param result the tentative TER result so far.
-     *  @param fee   the fee consumed by the transaction.
-     *  @param view  read-only view of the ledger after the transaction.
-     *  @param j     journal for logging invariant failures.
+     * @param tx    the transaction being applied.
+     * @param result the tentative TER result so far.
+     * @param fee   the fee consumed by the transaction.
+     * @param view  read-only view of the ledger after the transaction.
+     * @param j     journal for logging invariant failures.
      *
-     *  @return true if all invariants pass; false otherwise.
+     * @return true if all invariants pass; false otherwise.
      */
     [[nodiscard]] virtual bool
     finalizeInvariants(
@@ -516,15 +516,15 @@ private:
     /**
      * Check transaction-specific invariants only.
      *
-     *  Walks every modified ledger entry via visitInvariantEntry, then
-     *  calls finalizeInvariants on the derived transactor.  Returns
-     *  tecINVARIANT_FAILED if any transaction invariant is violated.
+     * Walks every modified ledger entry via visitInvariantEntry, then
+     * calls finalizeInvariants on the derived transactor.  Returns
+     * tecINVARIANT_FAILED if any transaction invariant is violated.
      *
-     *  @param result  the tentative TER from transaction processing.
-     *  @param fee     the fee consumed by the transaction.
+     * @param result  the tentative TER from transaction processing.
+     * @param fee     the fee consumed by the transaction.
      *
-     *  @return the original result if all invariants pass, or
-     *          tecINVARIANT_FAILED otherwise.
+     * @return the original result if all invariants pass, or
+     *         tecINVARIANT_FAILED otherwise.
      */
     [[nodiscard]] TER
     checkTransactionInvariants(TER result, XRPAmount fee);
