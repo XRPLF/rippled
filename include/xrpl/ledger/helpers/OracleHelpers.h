@@ -1,6 +1,8 @@
 #pragma once
 
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STLedgerEntry.h>
 
 #include <cstddef>
 #include <cstdint>
