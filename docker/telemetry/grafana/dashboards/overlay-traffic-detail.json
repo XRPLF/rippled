@@ -558,7 +558,7 @@
     "list": [
       {
         "name": "service_name",
-        "label": "Service",
+        "label": "Service Name",
         "description": "Filter by service.name (e.g. xrpld, xrpld-validator)",
         "type": "query",
         "query": "label_values(service_name)",
