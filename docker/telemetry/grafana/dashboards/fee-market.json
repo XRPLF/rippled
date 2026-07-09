@@ -507,8 +507,8 @@
         "includeAll": true,
         "allValue": ".*",
         "current": {
-          "text": "All",
-          "value": "$__all"
+          "text": "xrpld",
+          "value": "xrpld"
         },
         "multi": true,
         "refresh": 2,
