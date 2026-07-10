@@ -10,15 +10,16 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <expected>
 #include <optional>
-#include <unordered_set>
 
 namespace xrpl {
 
-inline std::unordered_set<TxType> const kReserveSponsorAllowed = {
-    // Explicitly allow-listed for v1.
+// Transaction types explicitly allow-listed for reserve sponsorship, for v1.
+inline constexpr std::array kReserveSponsorAllowed = {
     ttDELEGATE_SET,
     ttDEPOSIT_PREAUTH,
     ttPAYMENT,
@@ -45,6 +46,13 @@ inline std::unordered_set<TxType> const kReserveSponsorAllowed = {
     ttREGULAR_KEY_SET,
     ttSPONSORSHIP_TRANSFER,
 };
+
+/** Whether the given transaction type may use reserve sponsorship (v1). */
+inline constexpr bool
+isReserveSponsorAllowed(TxType txType)
+{
+    return std::ranges::find(kReserveSponsorAllowed, txType) != kReserveSponsorAllowed.end();
+}
 
 inline bool
 isFeeSponsored(STTx const& tx)
