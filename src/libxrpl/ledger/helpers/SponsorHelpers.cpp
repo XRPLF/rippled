@@ -156,8 +156,8 @@ removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field)
     }
 }
 
-std::optional<AccountID>
-getLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& account)
+bool
+isLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& account)
 {
     switch (sle.getType())
     {
@@ -167,44 +167,41 @@ getLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& accou
         case ltMPTOKEN:
         case ltDELEGATE:
         case ltDEPOSIT_PREAUTH:
-            return sle.getAccountID(sfAccount);
+            return sle.getAccountID(sfAccount) == account;
         case ltMPTOKEN_ISSUANCE:
-            return sle.getAccountID(sfIssuer);
+            return sle.getAccountID(sfIssuer) == account;
         case ltSIGNER_LIST: {
             auto const signerList = view.read(keylet::signerList(account));
             if (!signerList)
-                return std::nullopt;
-            if (signerList->key() == sle.key())
-                return account;
-            return std::nullopt;
+                return false;
+            return signerList->key() == sle.key();
         }
         case ltCREDENTIAL: {
-            if (sle.isFlag(lsfAccepted))
-                return sle.getAccountID(sfSubject);
-            return sle.getAccountID(sfIssuer);
+            auto const& ownerField = sle.isFlag(lsfAccepted) ? sfSubject : sfIssuer;
+            return sle.getAccountID(ownerField) == account;
         }
         case ltRIPPLE_STATE: {
             if (sle.isFlag(lsfHighReserve))
             {
                 auto const highAccount = sle.getFieldAmount(sfHighLimit).getIssuer();
                 if (highAccount == account)
-                    return highAccount;
+                    return true;
             }
             if (sle.isFlag(lsfLowReserve))
             {
                 auto const lowAccount = sle.getFieldAmount(sfLowLimit).getIssuer();
                 if (lowAccount == account)
-                    return lowAccount;
+                    return true;
             }
             // Reachable: the sponsee may be a third party or the side of the
             // line that holds no reserve (e.g. the issuer). Callers map this
             // to tecNO_PERMISSION.
-            return std::nullopt;
+            return false;
         }
         default:
             // LCOV_EXCL_START
-            UNREACHABLE("xrpl::getLedgerEntryOwner : object is not supported by sponsorship.");
-            return std::nullopt;
+            UNREACHABLE("xrpl::isLedgerEntryOwner : object is not supported by sponsorship.");
+            return false;
             // LCOV_EXCL_STOP
     };
 }

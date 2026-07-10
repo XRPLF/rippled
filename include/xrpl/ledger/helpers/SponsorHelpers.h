@@ -171,20 +171,19 @@ addSponsorToLedgerEntry(ApplyViewContext ctx, SLE::ref sle, SF_ACCOUNT const& fi
 void
 removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field = sfSponsor);
 
-/** Resolve the owner AccountID of a ledger entry for sponsorship purposes.
+/** Whether @p account is the owner of a ledger entry for sponsorship purposes.
  *
  *  Ownership rules vary by entry type. For RippleState entries the owner is
- *  whichever side of the trust line holds the reserve and matches @p account.
- *  For credentials, the owner is the subject once accepted and the issuer
- *  before acceptance.
+ *  whichever side of the trust line holds the reserve. For credentials, the
+ *  owner is the subject once accepted and the issuer before acceptance.
  *
  *  @param view    The ledger read view (used for SignerList lookup)
- *  @param sle     The ledger entry whose owner is resolved
+ *  @param sle     The ledger entry whose owner is checked
  *  @param account The candidate account to match against
- *  @return The owning AccountID, or nullopt if @p account does not own @p sle.
+ *  @return true if @p account owns @p sle, false otherwise.
  */
-std::optional<AccountID>
-getLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& account);
+bool
+isLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& account);
 
 /** Whether this ledger entry type can have a reserve sponsor attached to it. */
 bool
