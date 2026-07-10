@@ -1129,7 +1129,8 @@ public:
                                    << "; size after: " << cachedSLEs_.size();
         }
 
-        mallocTrim("doSweep", journal_);
+        // Disabled for allocator benchmark: no proactive malloc_trim on sweep.
+        // mallocTrim("doSweep", journal_);
 
         // Set timer to do another sweep later.
         setSweepTimer();

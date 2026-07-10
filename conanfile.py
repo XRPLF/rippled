@@ -3,6 +3,7 @@ import re
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 
 from conan import ConanFile
+from conan.errors import ConanInvalidConfiguration
 
 
 class Xrpl(ConanFile):
@@ -21,6 +22,7 @@ class Xrpl(ConanFile):
         "rocksdb": [True, False],
         "shared": [True, False],
         "static": [True, False],
+        "tcmalloc": [True, False],
         "telemetry": [True, False],
         "tests": [True, False],
         "unity": [True, False],
@@ -53,6 +55,7 @@ class Xrpl(ConanFile):
         "rocksdb": True,
         "shared": False,
         "static": True,
+        "tcmalloc": False,
         "telemetry": True,
         "tests": False,
         "unity": False,
@@ -125,6 +128,10 @@ class Xrpl(ConanFile):
                 self.version = match.group(1)
 
     def configure(self):
+        if self.options.tcmalloc and self.options.jemalloc:
+            raise ConanInvalidConfiguration(
+                "jemalloc and tcmalloc cannot both be enabled"
+            )
         if self.settings.compiler == "apple-clang":
             self.options["boost"].visibility = "global"
         if self.settings.compiler in ["clang", "gcc"]:
@@ -135,6 +142,8 @@ class Xrpl(ConanFile):
         self.requires("date/3.0.4", transitive_headers=True)
         if self.options.jemalloc:
             self.requires("jemalloc/5.3.1")
+        if self.options.tcmalloc:
+            self.requires("gperftools/2.16")
         self.requires("lz4/1.10.0", force=True)
         self.requires("mpt-crypto/0.4.0-rc2", transitive_headers=True)
         self.requires("protobuf/6.33.5", force=True)
@@ -171,6 +180,7 @@ class Xrpl(ConanFile):
         tc.variables["assert"] = self.options.assertions
         tc.variables["coverage"] = self.options.coverage
         tc.variables["jemalloc"] = self.options.jemalloc
+        tc.variables["tcmalloc"] = self.options.tcmalloc
         tc.variables["rocksdb"] = self.options.rocksdb
         tc.variables["BUILD_SHARED_LIBS"] = self.options.shared
         tc.variables["static"] = self.options.static

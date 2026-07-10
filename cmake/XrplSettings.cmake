@@ -125,6 +125,10 @@ else()
 endif()
 
 option(jemalloc "Enables jemalloc for heap profiling" OFF)
+option(tcmalloc "Link xrpld against tcmalloc (gperftools) as the global allocator" OFF)
+if(jemalloc AND tcmalloc)
+    message(FATAL_ERROR "jemalloc and tcmalloc are mutually exclusive")
+endif()
 option(werr "treat warnings as errors" OFF)
 option(
     local_protobuf

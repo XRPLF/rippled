@@ -54,6 +54,11 @@ if(jemalloc)
     target_link_libraries(opts INTERFACE jemalloc::jemalloc)
 endif()
 
+if(tcmalloc)
+    find_package(gperftools REQUIRED)
+    target_link_libraries(opts INTERFACE gperftools::gperftools)
+endif()
+
 #[===================================================================[
    xrpld transitive library deps via an interface library
 #]===================================================================]

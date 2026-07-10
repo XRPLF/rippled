@@ -242,7 +242,7 @@ elseif(use_gold AND is_gcc)
        disabling would be to figure out all the settings
        required to make gold play nicely with jemalloc.
     #]=========================================================]
-    if(("${LD_VERSION}" MATCHES "GNU gold") AND (NOT jemalloc))
+    if(("${LD_VERSION}" MATCHES "GNU gold") AND (NOT jemalloc) AND (NOT tcmalloc))
         target_link_libraries(
             common
             INTERFACE
