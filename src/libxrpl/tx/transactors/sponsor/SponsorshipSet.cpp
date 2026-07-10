@@ -159,7 +159,7 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
     // Such an object is unusable yet still consumes the sponsor's reserve.
     if (!ctx.tx.isFlag(tfDeleteObject) &&
         !hasSponsorshipBudget(sponsorshipSle, ctx.tx[~sfFeeAmount], ctx.tx[~sfRemainingOwnerCount]))
-        return temMALFORMED;
+        return tecNO_PERMISSION;
 
     return tesSUCCESS;
 }
