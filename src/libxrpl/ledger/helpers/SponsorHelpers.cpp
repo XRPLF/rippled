@@ -78,7 +78,20 @@ std::expected<SLE::pointer, TER>
 getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle)
 {
     // A reserve sponsor only covers tx.Account's own objects.
-    XRPL_ASSERT(!!accountSle, "getEffectiveTxReserveSponsor : accountSle exists");
+    if (ctx.view.rules().enabled(fixCleanup3_2_0))
+    {
+        XRPL_ASSERT(
+            accountSle && accountSle->getType() == ltACCOUNT_ROOT,
+            "xrpl::getEffectiveTxReserveSponsor : accountSle exists and is account type");
+    }
+    else
+    {
+        XRPL_ASSERT(
+            accountSle &&
+                ((accountSle->getType() == ltACCOUNT_ROOT) || (accountSle->getType() == ltESCROW)),
+            "xrpl::getEffectiveTxReserveSponsor : accountSle exists and is account type");
+    }
+
     if (isPseudoAccount(accountSle) || accountSle->getAccountID(sfAccount) != ctx.tx[sfAccount])
         return SLE::pointer();
     return getTxReserveSponsor(ctx);
@@ -87,6 +100,12 @@ getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::const_ref accountSle)
 std::optional<AccountID>
 getLedgerEntryReserveSponsorID(SLE::const_ref sle, SF_ACCOUNT const& field)
 {
+    XRPL_ASSERT(
+        (sle &&
+         ((sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
+          (sle->getType() != ltRIPPLE_STATE && field == sfSponsor))),
+        "xrpl::getLedgerEntryReserveSponsorID : correct sfield");
+
     if (sle->isFieldPresent(field))
         return sle->getAccountID(field);
     return {};
