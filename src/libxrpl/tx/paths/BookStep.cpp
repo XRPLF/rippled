@@ -920,10 +920,8 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
         if constexpr (std::is_same_v<TIn, MPTAmount>)
         {
             // If the offer's TakerPays asset is an MPT, the offer owner must
-            // hold an MPToken to receive it. Create one here, after the
-            // consumption decision has been made, so the +1 to ownerCount is
-            // paired atomically with the -1 that follows when the offer SLE is
-            // deleted by BookTip::step().
+            // hold an MPToken to receive it. Create one here if it doesn't
+            // already exist.
             if (auto const err = checkCreateMPT(sb, book_.in.get<MPTIssue>(), offer.owner(), j_);
                 !isTesSuccess(err))
             {
