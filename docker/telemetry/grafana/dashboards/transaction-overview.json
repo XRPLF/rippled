@@ -10,7 +10,7 @@
   "panels": [
     {
       "title": "Transaction Apply Failed Rate",
-      "description": "###### What this is:\n*Transactions flagged with an error status during application into a ledger, per second.*\n\n###### How it's computed:\n*Per-second rate of transaction-apply operations that carry an error status, over 5 minutes, per node.*\n\n###### Reading it:\n*This view stays near zero: the count of failed transactions is recorded separately as a per-ledger attribute rather than as an apply-phase error status, so apply operations rarely report an error here.*\n\n###### Healthy range:\n*Effectively zero under normal operation, since apply-phase errors are seldom emitted.*\n\n###### Watch for:\n*Any sustained non-zero rate, which would flag an unusual apply-phase error rather than ordinary transaction failures.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`applyTransactions`",
+      "description": "###### What this is:\n*Transactions that fail during the apply (transactor) stage, per second — i.e. the transactor ran but the result was not tesSUCCESS.*\n\n###### How it's computed:\n*Per-second rate of tx.transactor spans at the apply stage whose ter_result is not tesSUCCESS, over the dashboard rate interval, per node.*\n\n###### Reading it:\n*A steady low background is normal (tefPAST_SEQ, tecUNFUNDED, etc.); the transactor legitimately rejects many transactions.*\n\n###### Healthy range:\n*A low, stable rate; workload-dependent.*\n\n###### Watch for:\n*A sharp rise above baseline, which points to a submission pattern that is systematically failing at apply.*\n\n###### Source:\n[Transactor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/tx/detail/Transactor.cpp)\n\n###### Function:\n`Transactor::operator()`",
       "type": "stat",
       "gridPos": {
         "h": 4,
@@ -31,7 +31,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.apply\", status_code=\"STATUS_CODE_ERROR\"}[$__rate_interval]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.transactor\", stage=\"apply\", ter_result!~\"tesSUCCESS|\"}[$__rate_interval]))",
           "legendFormat": "Failed / Sec [{{service_instance_id}}]"
         }
       ],
@@ -46,11 +46,11 @@
               },
               {
                 "color": "yellow",
-                "value": 0.1
+                "value": 1
               },
               {
                 "color": "red",
-                "value": 1
+                "value": 5
               }
             ]
           }
