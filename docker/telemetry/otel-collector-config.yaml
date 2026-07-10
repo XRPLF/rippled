@@ -63,6 +63,7 @@ processors:
 
 connectors:
   spanmetrics:
+    namespace: "span"
     # Resource attributes that define the resource-metrics grouping key.
     # All resource attributes are propagated onto the output metrics
     # regardless; promotion to Prometheus labels is handled by the

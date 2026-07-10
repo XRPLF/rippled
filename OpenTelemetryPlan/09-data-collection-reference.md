@@ -418,12 +418,12 @@ the parent `ledger.build` carries `ledger_seq` and the close-time attributes.
 
 The OTel Collector's SpanMetrics connector automatically generates RED (Rate, Errors, Duration) metrics from every span. No custom metrics code in xrpld is needed.
 
-| Prometheus Metric                                  | Type      | Description                                                                    |
-| -------------------------------------------------- | --------- | ------------------------------------------------------------------------------ |
-| `traces_span_metrics_calls_total`                  | Counter   | Total span invocations                                                         |
-| `traces_span_metrics_duration_milliseconds_bucket` | Histogram | Latency distribution (buckets: 1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000 ms) |
-| `traces_span_metrics_duration_milliseconds_count`  | Histogram | Observation count                                                              |
-| `traces_span_metrics_duration_milliseconds_sum`    | Histogram | Cumulative latency                                                             |
+| Prometheus Metric                   | Type      | Description                                                                    |
+| ----------------------------------- | --------- | ------------------------------------------------------------------------------ |
+| `span_calls_total`                  | Counter   | Total span invocations                                                         |
+| `span_duration_milliseconds_bucket` | Histogram | Latency distribution (buckets: 1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000 ms) |
+| `span_duration_milliseconds_count`  | Histogram | Observation count                                                              |
+| `span_duration_milliseconds_sum`    | Histogram | Cumulative latency                                                             |
 
 **Standard labels on every metric**: `span_name`, `status_code`, `service_name`, `span_kind`
 
@@ -466,7 +466,7 @@ _Transaction Overview_ dashboard charts rate, p95 latency, and failure rate by s
 > the retained traces, whereas native StatsD/meter metrics do not sample.
 > Account for any collector-side tail sampling when reading absolute stage rates.
 
-**Where to query**: Prometheus → `traces_span_metrics_calls_total{span_name="rpc.command.server_info"}`
+**Where to query**: Prometheus → `span_calls_total{span_name="rpc.command.server_info"}`
 
 ---
 
@@ -687,19 +687,19 @@ ledger.store                       (persist to DB)
 
 ```promql
 # RPC request rate by command (last 5 minutes)
-sum by (command) (rate(traces_span_metrics_calls_total{span_name=~"rpc.command.*"}[5m]))
+sum by (command) (rate(span_calls_total{span_name=~"rpc.command.*"}[5m]))
 
 # RPC p95 latency by command
-histogram_quantile(0.95, sum by (le, command) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))
+histogram_quantile(0.95, sum by (le, command) (rate(span_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))
 
 # Consensus round duration p95
-histogram_quantile(0.95, sum by (le) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name="consensus.round"}[5m])))
+histogram_quantile(0.95, sum by (le) (rate(span_duration_milliseconds_bucket{span_name="consensus.round"}[5m])))
 
 # Transaction processing rate (local vs relay)
-sum by (local) (rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))
+sum by (local) (rate(span_calls_total{span_name="tx.process"}[5m]))
 
 # Trusted vs untrusted proposal rate
-sum by (proposal_trusted) (rate(traces_span_metrics_calls_total{span_name="peer.proposal.receive"}[5m]))
+sum by (proposal_trusted) (rate(span_calls_total{span_name="peer.proposal.receive"}[5m]))
 ```
 
 ### StatsD Metrics
