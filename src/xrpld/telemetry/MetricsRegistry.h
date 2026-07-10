@@ -36,7 +36,6 @@
                     |       +-- validations_sent_total
                     |       +-- validations_checked_total
                     |       +-- state_changes_total
-                    |       +-- jq_trans_overflow_total
                     |       +-- ledger_history_mismatch_total{reason}
                     |       +-- txq_expired_total
                     |       +-- txq_dropped_total{reason}
@@ -61,6 +60,7 @@
                             +-- State tracking (mode value, time in state)
                             +-- Storage detail (NuDB sizes)
                             +-- Validation agreement (1h/24h pct, counts)
+                            +-- jq_trans_overflow_total (observed from Overlay)
 
     Control-flow for async gauges:
 
@@ -347,13 +347,6 @@ public:
     void
     incrementStateChanges();
 
-    /** Increment the jq_trans_overflow_total counter.
-        Called when the job queue transaction limit overflows (mirrors
-        Overlay::incJqTransOverflow()).
-    */
-    void
-    incrementJqTransOverflow();
-
     /** Increment the ledger_history_mismatch_total counter for a reason.
         Called from LedgerHistory::handleMismatch() once the mismatch has
         been classified. The reason label turns fork diagnosis from a
@@ -517,9 +510,10 @@ private:
     /// Counter: state_changes_total — incremented on operating mode transitions.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         stateChangesCounter_;
-    /// Counter: jq_trans_overflow_total — incremented on job queue transaction overflows.
-    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
-        jqTransOverflowCounter_;
+    /// ObservableCounter: jq_trans_overflow_total — observed from
+    /// Overlay::getJqTransOverflow() (cumulative overflow tally owned by the overlay).
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        jqTransOverflowObservable_;
     /// Counter: ledger_history_mismatch_total{reason} — incremented per classified
     /// built-vs-validated ledger mismatch.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>

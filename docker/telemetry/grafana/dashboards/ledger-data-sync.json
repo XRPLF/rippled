@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Ledger Data Exchange (Bytes In)",
-      "description": "###### What this is:\n*Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.*\n\n###### How it's computed:\n*Per-category inbound byte counters, shown at their latest cumulative value per node.*\n\n###### Reading it:\n*Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.*\n\n###### Healthy range:\n*workload-dependent; low and steady on a synced node.*\n\n###### Watch for:\n*Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.*\n\n###### Healthy range:\n*workload-dependent; low and steady on a synced node.*\n\n###### Watch for:\n*Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -31,7 +31,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "ledger_data_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(ledger_data_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Ledger Data Get [{{service_instance_id}}]"
         },
         {
@@ -39,7 +39,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "ledger_data_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(ledger_data_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Ledger Data Share [{{service_instance_id}}]"
         },
         {
@@ -47,7 +47,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "ledger_data_transaction_set_candidate_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(ledger_data_transaction_set_candidate_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "TX Set Candidate Get [{{service_instance_id}}]"
         },
         {
@@ -55,7 +55,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "ledger_data_transaction_set_candidate_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(ledger_data_transaction_set_candidate_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "TX Set Candidate Share [{{service_instance_id}}]"
         },
         {
@@ -63,7 +63,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "ledger_data_transaction_node_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(ledger_data_transaction_node_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "TX Node Get [{{service_instance_id}}]"
         },
         {
@@ -71,7 +71,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "ledger_data_transaction_node_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(ledger_data_transaction_node_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "TX Node Share [{{service_instance_id}}]"
         },
         {
@@ -79,7 +79,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "ledger_data_account_state_node_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(ledger_data_account_state_node_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Account State Node Get [{{service_instance_id}}]"
         },
         {
@@ -87,13 +87,13 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "ledger_data_account_state_node_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(ledger_data_account_state_node_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Account State Node Share [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "decbytes",
+          "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes In",
             "spanNulls": true,
@@ -107,7 +107,7 @@
     },
     {
       "title": "Ledger Share/Get Traffic (Bytes)",
-      "description": "###### What this is:\n*Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.*\n\n###### How it's computed:\n*Per-category inbound byte counters at their latest value per node.*\n\n###### Reading it:\n*Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.*\n\n###### Healthy range:\n*workload-dependent; low on a synced node.*\n\n###### Watch for:\n*Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.*\n\n###### Healthy range:\n*workload-dependent; low on a synced node.*\n\n###### Watch for:\n*Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -127,7 +127,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "ledger_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(ledger_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Ledger Share In [{{service_instance_id}}]"
         },
         {
@@ -135,7 +135,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "ledger_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(ledger_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Ledger Get In [{{service_instance_id}}]"
         },
         {
@@ -143,7 +143,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "ledger_transaction_set_candidate_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(ledger_transaction_set_candidate_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "TX Set Candidate Share [{{service_instance_id}}]"
         },
         {
@@ -151,7 +151,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "ledger_transaction_set_candidate_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(ledger_transaction_set_candidate_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "TX Set Candidate Get [{{service_instance_id}}]"
         },
         {
@@ -159,7 +159,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "ledger_transaction_node_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(ledger_transaction_node_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "TX Node Share [{{service_instance_id}}]"
         },
         {
@@ -167,7 +167,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "ledger_transaction_node_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(ledger_transaction_node_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "TX Node Get [{{service_instance_id}}]"
         },
         {
@@ -175,7 +175,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "ledger_account_state_node_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(ledger_account_state_node_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Account State Share [{{service_instance_id}}]"
         },
         {
@@ -183,13 +183,13 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "ledger_account_state_node_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(ledger_account_state_node_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Account State Get [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "decbytes",
+          "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes In",
             "spanNulls": true,
@@ -203,7 +203,7 @@
     },
     {
       "title": "GetObject Traffic by Type (Bytes In)",
-      "description": "###### What this is:\n*Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.*\n\n###### How it's computed:\n*Per-type inbound byte counters at their latest value per node.*\n\n###### Reading it:\n*Small during steady state; grows when the node fetches missing tree nodes.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.*\n\n###### How it's computed:\n*Per-type inbound byte rate per node.*\n\n###### Reading it:\n*Small during steady state; grows when the node fetches missing tree nodes.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -223,7 +223,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_ledger_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_ledger_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Ledger Get [{{service_instance_id}}]"
         },
         {
@@ -231,7 +231,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_ledger_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_ledger_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Ledger Share [{{service_instance_id}}]"
         },
         {
@@ -239,7 +239,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_transaction_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_transaction_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Transaction Get [{{service_instance_id}}]"
         },
         {
@@ -247,7 +247,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_transaction_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_transaction_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Transaction Share [{{service_instance_id}}]"
         },
         {
@@ -255,7 +255,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_transaction_node_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_transaction_node_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "TX Node Get [{{service_instance_id}}]"
         },
         {
@@ -263,7 +263,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_transaction_node_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_transaction_node_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "TX Node Share [{{service_instance_id}}]"
         },
         {
@@ -271,7 +271,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_account_state_node_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_account_state_node_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Account State Get [{{service_instance_id}}]"
         },
         {
@@ -279,13 +279,13 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_account_state_node_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_account_state_node_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Account State Share [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "decbytes",
+          "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes In",
             "spanNulls": true,
@@ -299,7 +299,7 @@
     },
     {
       "title": "GetObject Aggregate & Special Types (Bytes In)",
-      "description": "###### What this is:\n*Aggregate object-fetch inbound bytes plus special buckets: content-addressed storage fetches, bulk fetch-pack downloads used during catch-up, and bulk transaction fetches.*\n\n###### How it's computed:\n*Per-category inbound byte counters at their latest value per node.*\n\n###### Reading it:\n*Fetch-pack rises sharply while catching up a range of ledgers; near zero when fully synced.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*Continuous fetch-pack traffic (node never fully catches up) or unexpectedly high content-store volume.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Aggregate object-fetch inbound bytes plus special buckets: content-addressed storage fetches, bulk fetch-pack downloads used during catch-up, and bulk transaction fetches.*\n\n###### How it's computed:\n*Per-category inbound byte rate per node.*\n\n###### Reading it:\n*Fetch-pack rises sharply while catching up a range of ledgers; near zero when fully synced.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*Continuous fetch-pack traffic (node never fully catches up) or unexpectedly high content-store volume.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -319,7 +319,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_cas_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_cas_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "CAS Get [{{service_instance_id}}]"
         },
         {
@@ -327,7 +327,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_cas_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_cas_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "CAS Share [{{service_instance_id}}]"
         },
         {
@@ -335,7 +335,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_fetch_pack_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_fetch_pack_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Fetch Pack Share [{{service_instance_id}}]"
         },
         {
@@ -343,7 +343,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_fetch_pack_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_fetch_pack_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Fetch Pack Get [{{service_instance_id}}]"
         },
         {
@@ -351,7 +351,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_transactions_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_transactions_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Transactions Get [{{service_instance_id}}]"
         },
         {
@@ -359,7 +359,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Aggregate Get [{{service_instance_id}}]"
         },
         {
@@ -367,13 +367,13 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Aggregate Share [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "decbytes",
+          "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes In",
             "spanNulls": true,
@@ -387,7 +387,7 @@
     },
     {
       "title": "GetObject Messages by Type",
-      "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message counters at their latest value per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Count of individual object-fetch request/response messages per object type.*\n\n###### How it's computed:\n*Per-type inbound message rate per node.*\n\n###### Reading it:\n*Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High message counts with tiny payloads sustained over time (inefficient per-node fetching).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -407,7 +407,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_ledger_get_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_ledger_get_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Ledger Get [{{service_instance_id}}]"
         },
         {
@@ -415,7 +415,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_transaction_get_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_transaction_get_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Transaction Get [{{service_instance_id}}]"
         },
         {
@@ -423,7 +423,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_transaction_node_get_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_transaction_node_get_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "TX Node Get [{{service_instance_id}}]"
         },
         {
@@ -431,7 +431,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_account_state_node_get_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_account_state_node_get_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Account State Get [{{service_instance_id}}]"
         },
         {
@@ -439,7 +439,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_cas_get_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_cas_get_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "CAS Get [{{service_instance_id}}]"
         },
         {
@@ -447,7 +447,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_fetch_pack_get_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_fetch_pack_get_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Fetch Pack Get [{{service_instance_id}}]"
         },
         {
@@ -455,13 +455,13 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "getobject_transactions_get_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(getobject_transactions_get_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Transactions Get [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "cps",
           "custom": {
             "axisLabel": "Messages In",
             "spanNulls": true,

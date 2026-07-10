@@ -31,7 +31,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(rpc_requests_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(rpc_requests_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Requests / Sec [{{service_instance_id}}]"
         }
       ],
@@ -84,7 +84,7 @@
     },
     {
       "title": "RPC Response Size",
-      "description": "###### What this is:\n*The 95th-percentile size of RPC response payloads in bytes.*\n\n###### How it's computed:\n*95th-percentile of response payload sizes over 5 minutes, per node.*\n\n###### Reading it:\n*Smaller is cheaper; large responses cost bandwidth and memory.*\n\n###### Healthy range:\n*Workload-dependent; small for status queries, large for bulk data queries.*\n\n###### Watch for:\n*Growth in large responses, consistent with expensive queries or API misuse.*\n\n###### Source:\n[ServerHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/ServerHandler.cpp)\n\n###### Function:\n`ServerHandler ctor`",
+      "description": "⚠ Instrument mismatch — values unreliable. Response size is recorded through the millisecond-scaled event histogram (rpc_size_milliseconds_bucket), so byte values saturate at the top time bucket (5000) and the percentiles are not true byte sizes. A dedicated byte-unit histogram is needed to fix this; tracked separately. Treat this panel as indicative only until then.\n\n###### What this is:\n*The 95th-percentile size of RPC response payloads in bytes.*\n\n###### How it's computed:\n*95th-percentile of response payload sizes over the dashboard rate interval, per node.*\n\n###### Reading it:\n*Smaller is cheaper; large responses cost bandwidth and memory.*\n\n###### Healthy range:\n*Workload-dependent; small for status queries, large for bulk data queries.*\n\n###### Watch for:\n*Growth in large responses, consistent with expensive queries or API misuse.*\n\n###### Source:\n[ServerHandler.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/rpc/detail/ServerHandler.cpp)\n\n###### Function:\n`ServerHandler ctor`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -280,7 +280,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(warn_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(warn_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Warnings / Sec [{{service_instance_id}}]"
         }
       ],
@@ -329,7 +329,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(drop_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(drop_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Drops / Sec [{{service_instance_id}}]"
         }
       ],
@@ -378,7 +378,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (method, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m]))",
+          "expr": "sum by (method, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[$__rate_interval]))",
           "legendFormat": "{{method}} [{{service_instance_id}}]"
         }
       ],
@@ -458,7 +458,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (grpc_status, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"grpc\\\\..*\", grpc_status!=\"\"}[5m]))",
+          "expr": "sum by (grpc_status, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"grpc\\\\..*\", grpc_status!=\"\"}[$__rate_interval]))",
           "legendFormat": "{{grpc_status}} [{{service_instance_id}}]"
         }
       ],
@@ -538,7 +538,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.request\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.request\"}[$__rate_interval]))",
           "legendFormat": "Requests / Sec [{{service_instance_id}}]"
         },
         {
@@ -546,7 +546,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.discover\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.discover\"}[$__rate_interval]))",
           "legendFormat": "Discoveries / Sec [{{service_instance_id}}]"
         }
       ],

@@ -254,8 +254,30 @@ MetricsRegistry::initSyncInstruments()
         "validations_checked_total", "Total network validations received and checked");
     stateChangesCounter_ =
         meter_->CreateUInt64Counter("state_changes_total", "Total operating mode changes");
-    jqTransOverflowCounter_ = meter_->CreateUInt64Counter(
+    // jq_trans_overflow_total is observed from Overlay's existing cumulative
+    // atomic (Overlay::getJqTransOverflow()) rather than pushed. The overlay
+    // owns the only increment site (PeerImp), so an ObservableCounter reads the
+    // live total each collection cycle without threading a push path through
+    // develop-owned overlay code.
+    jqTransOverflowObservable_ = meter_->CreateInt64ObservableCounter(
         "jq_trans_overflow_total", "Total job queue transaction overflows");
+    jqTransOverflowObservable_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            try
+            {
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                    ->Observe(static_cast<int64_t>(self->app_.getOverlay().getJqTransOverflow()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip on error.
+            }
+        },
+        this);
     ledgerHistoryMismatchCounter_ = meter_->CreateUInt64Counter(
         "ledger_history_mismatch_total", "Total built-vs-validated ledger mismatches by reason");
     txqExpiredCounter_ = meter_->CreateUInt64Counter(
@@ -1455,15 +1477,6 @@ MetricsRegistry::incrementStateChanges()
 #ifdef XRPL_ENABLE_TELEMETRY
     if (enabled_ && stateChangesCounter_)
         stateChangesCounter_->Add(1);
-#endif
-}
-
-void
-MetricsRegistry::incrementJqTransOverflow()
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (enabled_ && jqTransOverflowCounter_)
-        jqTransOverflowCounter_->Add(1);
 #endif
 }
 
