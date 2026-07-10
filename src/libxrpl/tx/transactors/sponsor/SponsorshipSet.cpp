@@ -19,8 +19,28 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 
 namespace xrpl {
+
+static bool
+hasSponsorshipBudget(
+    SLE::const_ref sponsorshipSle,
+    std::optional<STAmount> const& feeAmount,
+    std::optional<std::uint32_t> const& remainingOwnerCount)
+{
+    bool const hasFeeAmount = feeAmount
+        ? *feeAmount > beast::kZero
+        : sponsorshipSle && sponsorshipSle->isFieldPresent(sfFeeAmount) &&
+            sponsorshipSle->getFieldAmount(sfFeeAmount) > beast::kZero;
+
+    bool const hasRemainingOwnerCount = remainingOwnerCount
+        ? *remainingOwnerCount > 0
+        : sponsorshipSle && sponsorshipSle->isFieldPresent(sfRemainingOwnerCount) &&
+            sponsorshipSle->getFieldU32(sfRemainingOwnerCount) > 0;
+
+    return hasFeeAmount || hasRemainingOwnerCount;
+}
 
 TxConsequences
 SponsorshipSet::makeTxConsequences(PreflightContext const& ctx)
@@ -134,6 +154,10 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
     if (ctx.tx.isFlag(tfDeleteObject) && !sponsorshipSle)
         return tecNO_ENTRY;
 
+    if (!ctx.tx.isFlag(tfDeleteObject) &&
+        !hasSponsorshipBudget(sponsorshipSle, ctx.tx[~sfFeeAmount], ctx.tx[~sfRemainingOwnerCount]))
+        return temMALFORMED;
+
     return tesSUCCESS;
 }
 
@@ -213,6 +237,9 @@ SponsorshipSet::doApply()
     auto const remainingOwnerCount = ctx_.tx[~sfRemainingOwnerCount];
 
     bool const hasPositiveFeeAmount = feeAmount.has_value() && *feeAmount > beast::kZero;
+
+    if (!hasSponsorshipBudget(sponsorshipSle, feeAmount, remainingOwnerCount))
+        return temMALFORMED;
 
     auto reserveSponsorAccSle = getTxReserveSponsor(ctx_.getApplyViewContext());
     if (!reserveSponsorAccSle)
