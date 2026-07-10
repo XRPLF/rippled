@@ -630,16 +630,17 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ### Transaction Overview (`transaction-overview`)
 
-| Panel                             | Type       | PromQL                                                                                       | Labels Used           |
-| --------------------------------- | ---------- | -------------------------------------------------------------------------------------------- | --------------------- |
-| Transaction Processing Rate       | timeseries | `rate(span_calls_total{span_name="tx.process"}[5m])` and `tx.receive`                        | `span_name`           |
-| Transaction Processing Latency    | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                              | —                     |
-| Transaction Path Distribution     | piechart   | `sum by (local) (rate(span_calls_total{span_name="tx.process"}[5m]))`                        | `local`               |
-| Transaction Receive vs Suppressed | timeseries | `rate(span_calls_total{span_name="tx.receive"}[5m])`                                         | —                     |
-| TX Processing Duration Heatmap    | heatmap    | `tx.process` histogram buckets                                                               | `le`                  |
-| TX Apply Duration per Ledger      | timeseries | p95/p50 of `tx.apply`                                                                        | —                     |
-| Peer TX Receive Rate              | timeseries | `tx.receive` rate                                                                            | —                     |
-| TX Apply Failed Rate              | stat       | `rate(span_calls_total{span_name="tx.transactor",stage="apply",ter_result!~"tesSUCCESS\|"})` | `stage`, `ter_result` |
+| Panel                              | Type           | PromQL                                                                                       | Labels Used                         |
+| ---------------------------------- | -------------- | -------------------------------------------------------------------------------------------- | ----------------------------------- |
+| Transaction Processing Rate        | timeseries     | `rate(span_calls_total{span_name="tx.process"}[5m])` and `tx.receive`                        | `span_name`                         |
+| Transaction Processing Latency     | timeseries     | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                              | —                                   |
+| Transaction Path Distribution      | piechart       | `sum by (local) (rate(span_calls_total{span_name="tx.process"}[5m]))`                        | `local`                             |
+| Transaction Receive vs Suppressed  | timeseries     | `rate(span_calls_total{span_name="tx.receive"}[5m])`                                         | —                                   |
+| TX Processing Duration Heatmap     | heatmap        | `tx.process` histogram buckets                                                               | `le`                                |
+| TX Apply Duration per Ledger       | timeseries     | p95/p50 of `tx.apply`                                                                        | —                                   |
+| Peer TX Receive Rate               | timeseries     | `tx.receive` rate                                                                            | —                                   |
+| TX Apply Failed Rate               | stat           | `rate(span_calls_total{span_name="tx.transactor",stage="apply",ter_result!~"tesSUCCESS\|"})` | `stage`, `ter_result`               |
+| TxQ Accept: Applied Ratio per Node | state-timeline | applied / (applied+failed) of `span_calls_total{span_name="txq.accept_tx"}` per node         | `txq_status`, `service_instance_id` |
 
 ### Consensus Health (`consensus-health`)
 
