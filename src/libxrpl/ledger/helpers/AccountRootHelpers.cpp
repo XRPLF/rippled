@@ -146,58 +146,81 @@ adjustOwnerCountSigned(
     std::int32_t adjustment,
     beast::Journal j)
 {
-    XRPL_ASSERT(accountSle, "xrpl::adjustOwnerCountSigned : valid account sle");
-    if (!accountSle)
-        return;  // LCOV_EXCL_LINE
-
-    auto const accountID = accountSle->getAccountID(sfAccount);
-    bool const validType = accountSle->getType() == ltACCOUNT_ROOT;
-    XRPL_ASSERT(validType, "xrpl::adjustOwnerCountSigned : valid account sle type");
-    if (!validType)
-        return;  // LCOV_EXCL_LINE
-
-    XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
-
-    OwnerCounts const currentOwnerCount(accountSle);
-    OwnerCounts totalOwnerCount(currentOwnerCount);
-
-    if (sponsorSle)
+    if (view.rules().enabled(featureSponsor))
     {
-        XRPL_ASSERT(
-            view.rules().enabled(featureSponsor),
-            "xrpl::getTxReserveSponsor : sponsor exists + Sponsor enabled");
-        bool const validSponsorType = sponsorSle->getType() == ltACCOUNT_ROOT;
-        XRPL_ASSERT(validSponsorType, "xrpl::adjustOwnerCountSigned : valid sponsor sle type");
-        if (!validSponsorType)
+        XRPL_ASSERT(accountSle, "xrpl::adjustOwnerCountSigned : valid account sle");
+        if (!accountSle)
             return;  // LCOV_EXCL_LINE
-        auto const sponsorID = sponsorSle->getAccountID(sfAccount);
 
-        totalOwnerCount.sponsored =
-            adjustOwnerCountImpl(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
+        auto const accountID = accountSle->getAccountID(sfAccount);
+        bool const validType = accountSle->getType() == ltACCOUNT_ROOT;
+        XRPL_ASSERT(validType, "xrpl::adjustOwnerCountSigned : valid account sle type");
+        if (!validType)
+            return;  // LCOV_EXCL_LINE
 
+        XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
+
+        OwnerCounts const currentOwnerCount(accountSle);
+        OwnerCounts totalOwnerCount(currentOwnerCount);
+
+        if (sponsorSle)
         {
-            OwnerCounts const sponsorCurrent(sponsorSle);
-            OwnerCounts sponsorAdjustment(sponsorCurrent);
-            sponsorAdjustment.sponsoring = adjustOwnerCountImpl(
-                view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
-            view.adjustOwnerCountHook(sponsorID, sponsorCurrent, sponsorAdjustment);
+            bool const validSponsorType = sponsorSle->getType() == ltACCOUNT_ROOT;
+            XRPL_ASSERT(validSponsorType, "xrpl::adjustOwnerCountSigned : valid sponsor sle type");
+            if (!validSponsorType)
+                return;  // LCOV_EXCL_LINE
+            auto const sponsorID = sponsorSle->getAccountID(sfAccount);
+
+            totalOwnerCount.sponsored = adjustOwnerCountImpl(
+                view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
+
+            {
+                OwnerCounts const sponsorCurrent(sponsorSle);
+                OwnerCounts sponsorAdjustment(sponsorCurrent);
+                sponsorAdjustment.sponsoring = adjustOwnerCountImpl(
+                    view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
+                view.adjustOwnerCountHook(sponsorID, sponsorCurrent, sponsorAdjustment);
+            }
+
+            auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
+            if (sponsorshipSle && adjustment > 0)
+            {
+                // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new
+                // objects. Removing/reassigning ownership of the object doesn't increase
+                // RemainingOwnerCount back. Don't call hook because this counter is not something
+                // that requires reserve (like other sf...OwnerCounts do).
+                adjustOwnerCountImpl(
+                    view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j);
+            }
         }
 
-        auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
-        if (sponsorshipSle && adjustment > 0)
-        {
-            // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new objects.
-            // Removing/reassigning ownership of the object doesn't increase RemainingOwnerCount
-            // back. Don't call hook because this counter is not something that requires reserve
-            // (like other sf...OwnerCounts do).
-            adjustOwnerCountImpl(
-                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j);
-        }
+        totalOwnerCount.owner =
+            adjustOwnerCountImpl(view, accountSle, sfOwnerCount, accountID, adjustment, j);
+        view.adjustOwnerCountHook(accountID, currentOwnerCount, totalOwnerCount);
     }
+    else
+    {
+        XRPL_ASSERT(accountSle, "xrpl::adjustOwnerCountSigned : valid account sle");
+        if (!accountSle)
+            return;
+        // the remaining are only asserts to preserve existing behavior
+        XRPL_ASSERT(sponsorSle == nullptr, "xrpl::adjustOwnerCountSigned : sponsor not enabled");
+        XRPL_ASSERT(
+            accountSle->getType() == ltACCOUNT_ROOT,
+            "xrpl::adjustOwnerCountSigned : valid account sle type");
+        XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCount : nonzero adjustment input");
+        std::uint32_t const current{accountSle->getFieldU32(sfOwnerCount)};
+        AccountID const id = (*accountSle)[sfAccount];
+        std::uint32_t const adjusted = confineOwnerCount(current, adjustment, id, j);
 
-    totalOwnerCount.owner =
-        adjustOwnerCountImpl(view, accountSle, sfOwnerCount, accountID, adjustment, j);
-    view.adjustOwnerCountHook(accountID, currentOwnerCount, totalOwnerCount);
+        OwnerCounts const currentOwnerCount(accountSle);
+        OwnerCounts finalOwnerCount(currentOwnerCount);
+        finalOwnerCount.owner = adjusted;
+
+        view.adjustOwnerCountHook(id, currentOwnerCount, finalOwnerCount);
+        accountSle->at(sfOwnerCount) = adjusted;
+        view.update(accountSle);
+    }
 }
 
 }  // namespace
@@ -524,7 +547,7 @@ getPseudoAccountFields()
 }
 
 [[nodiscard]] bool
-isPseudoAccount(SLE::const_ref sleAcct, std::set<SField const*> const& pseudoFieldFilter)
+isPseudoAccount(SLE::const_pointer sleAcct, std::set<SField const*> const& pseudoFieldFilter)
 {
     auto const& fields = getPseudoAccountFields();
 

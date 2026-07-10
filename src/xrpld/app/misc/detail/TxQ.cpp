@@ -409,8 +409,8 @@ TxQ::canBeHeld(
     // Disallow delegated transactions from being queued.
     if (tx.isFieldPresent(sfDelegate))
         return telCAN_NOT_QUEUE;
-    // Disallow sponsored transactions from being queued.
-    if (tx.isFieldPresent(sfSponsor) && isFeeSponsored(tx))
+    // Disallow fee-sponsored transactions from being queued.
+    if (isFeeSponsored(tx))
         return telCAN_NOT_QUEUE;
 
     {

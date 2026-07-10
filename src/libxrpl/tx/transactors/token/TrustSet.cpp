@@ -329,6 +329,10 @@ TrustSet::doApply()
     // With any sponsor on the tx, the sponsor must cover the reserve (via balance or
     // prefunded budget), so the reserve check always runs.
     bool const freeTrustLine = !sponsorSle && (ownerCount(sle, j_) < 2);
+    std::uint32_t const uOwnerCount = ownerCount(sle, j_);
+    XRPAmount const reserveCreate(
+        (uOwnerCount < 2) ? XRPAmount(beast::kZero)
+                          : accountReserve(view(), sle, j_, {.ownerCountDelta = 1}));
 
     std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
@@ -608,36 +612,66 @@ TrustSet::doApply()
         if (uFlagsIn != uFlagsOut)
             sleRippleState->setFieldU32(sfFlags, uFlagsOut);
 
-        if (bDefault || badCurrency() == currency)
+        if (view().rules().enabled(featureSponsor))
         {
-            // Delete.
+            if (bDefault || badCurrency() == currency)
+            {
+                // Delete.
 
-            terResult = trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
-        }
-        // Reserve is not scaled by load.
-        else if (
-            auto const ret = checkReserve(
-                ctx_.getApplyViewContext(),
-                sle,
-                preFeeBalance_,
-                sponsorSle,
-                {},
-                j_,
-                tecINSUF_RESERVE_LINE);
-            !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
-        {
-            JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
-                                "add trust line.";
+                terResult =
+                    trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
+            }
+            // Reserve is not scaled by load
+            else if (
+                auto const ret = checkReserve(
+                    ctx_.getApplyViewContext(),
+                    sle,
+                    preFeeBalance_,
+                    sponsorSle,
+                    {},
+                    j_,
+                    tecINSUF_RESERVE_LINE);
+                !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
+            {
+                JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
+                                    "add trust line.";
 
-            // Another transaction could provide XRP to the account and then
-            // this transaction would succeed.
-            terResult = ret;
+                // Another transaction could provide XRP to the account and then
+                // this transaction would succeed.
+                terResult = ret;
+            }
+            else
+            {
+                view().update(sleRippleState);
+
+                JLOG(j_.trace()) << "Modify ripple line";
+            }
         }
         else
         {
-            view().update(sleRippleState);
+            if (bDefault || badCurrency() == currency)
+            {
+                // Delete.
 
-            JLOG(j_.trace()) << "Modify ripple line";
+                terResult =
+                    trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
+            }
+            // Reserve is not scaled by load.
+            else if (bReserveIncrease && preFeeBalance_ < reserveCreate)
+            {
+                JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
+                                    "add trust line.";
+
+                // Another transaction could provide XRP to the account and then
+                // this transaction would succeed.
+                terResult = tecINSUF_RESERVE_LINE;
+            }
+            else
+            {
+                view().update(sleRippleState);
+
+                JLOG(j_.trace()) << "Modify ripple line";
+            }
         }
     }
     // Line does not exist.
@@ -652,6 +686,16 @@ TrustSet::doApply()
         JLOG(j_.trace()) << "Redundant: Setting non-existent ripple line to defaults.";
         return tecNO_LINE_REDUNDANT;
     }
+    // reserve is not scaled by load
+    else if (!view().rules().enabled(featureSponsor) && preFeeBalance_ < reserveCreate)
+    {
+        JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
+                            "Insufficent reserve to create line.";
+
+        // Another transaction could create the account and then this
+        // transaction would succeed.
+        terResult = tecNO_LINE_INSUF_RESERVE;
+    }
     else if (
         auto const ret = checkReserve(
             ctx_.getApplyViewContext(),
@@ -661,7 +705,8 @@ TrustSet::doApply()
             {.ownerCountDelta = 1},
             j_,
             tecNO_LINE_INSUF_RESERVE);
-        !freeTrustLine && !isTesSuccess(ret))  // Reserve is not scaled by load.
+        view().rules().enabled(featureSponsor) && !freeTrustLine &&
+        !isTesSuccess(ret))  // Reserve is not scaled by load.
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
                             "Insufficent reserve to create line.";

@@ -333,25 +333,25 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey);
 /** Returns the list of fields that define an ACCOUNT_ROOT as a pseudo-account
     if set.
 
- The list is constructed during initialization and is const after that.
- Pseudo-account designator fields MUST be maintained by including the
- SField::sMD_PseudoAccount flag in the SField definition.
+    The list is constructed during initialization and is const after that.
+    Pseudo-account designator fields MUST be maintained by including the
+    SField::sMD_PseudoAccount flag in the SField definition.
 */
 [[nodiscard]] std::vector<SField const*> const&
 getPseudoAccountFields();
 
-/** Convenience overload that reads the account from the view. */
-[[nodiscard]] bool
-isPseudoAccount(SLE::const_ref sleAcct, std::set<SField const*> const& pseudoFieldFilter = {});
+/** Returns true if and only if sleAcct is a pseudo-account or specific
+    pseudo-accounts in pseudoFieldFilter.
 
-/** Convenience overload that reads the account from the view.
- *
- *  @param view The ledger view to read from
- *  @param accountId The account ID to check
- *  @param pseudoFieldFilter Optional set of specific pseudo-account fields to filter (default:
- * empty)
- *  @return true if the account is a pseudo-account (or matches the filter), false otherwise
- */
+    Returns false if sleAcct is:
+    - NOT a pseudo-account OR
+    - NOT a ltACCOUNT_ROOT OR
+    - null pointer
+*/
+[[nodiscard]] bool
+isPseudoAccount(SLE::const_pointer sleAcct, std::set<SField const*> const& pseudoFieldFilter = {});
+
+/** Convenience overload that reads the account from the view. */
 [[nodiscard]] inline bool
 isPseudoAccount(
     ReadView const& view,
@@ -374,8 +374,8 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
 
 /** Checks the destination and tag.
 
-- Checks that the SLE is not null.
-- If the SLE requires a destination tag, checks that there is a tag.
+   - Checks that the SLE is not null.
+   - If the SLE requires a destination tag, checks that there is a tag.
 */
 [[nodiscard]] TER
 checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag);

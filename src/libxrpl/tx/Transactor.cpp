@@ -203,7 +203,7 @@ preflight1Sponsor(PreflightContext const& ctx)
         // transaction types, for v1. All other tx types reject spfSponsorReserve here.
         if (isReserveSponsored(ctx.tx))
         {
-            if (!kReserveSponsorAllowed.contains(ctx.tx.getTxnType()))
+            if (!isReserveSponsorAllowed(ctx.tx.getTxnType()))
             {
                 JLOG(ctx.j.debug())
                     << "preflight1: spfSponsorReserve not allowed for this transaction type";
@@ -214,7 +214,7 @@ preflight1Sponsor(PreflightContext const& ctx)
 
     if (hasSponsor && ctx.tx.getAccountID(sfSponsor) == ctx.tx.getAccountID(sfAccount))
     {
-        JLOG(ctx.j.debug()) << "preflight1: Sponsor account should be the same as the account";
+        JLOG(ctx.j.debug()) << "preflight1: Sponsor account cannot be the same as the account";
         return temMALFORMED;
     }
 

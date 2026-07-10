@@ -247,15 +247,14 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         if (!isLedgerEntrySupportedBySponsorship(*objectSle))
             return tecNO_PERMISSION;
 
-        auto const owner = getLedgerEntryOwner(ctx.view, *objectSle, sponseeID);
-        if (!owner.has_value() || owner.value() != sponseeID)
+        if (!isLedgerEntryOwner(ctx.view, *objectSle, sponseeID))
             return tecNO_PERMISSION;
 
         // Object transfer: the target is the object, and its sponsor field
         // depends on the object type, a RippleState stores the sponsor in
         // sfHighSponsor/sfLowSponsor, while other object type uses sfSponsor.
         targetSle = objectSle;
-        sponsorField = &getLedgerEntrySponsorField(*objectSle, owner.value());
+        sponsorField = &getLedgerEntrySponsorField(*objectSle, sponseeID);
     }
 
     bool const isSponsored = targetSle->isFieldPresent(*sponsorField);
@@ -321,17 +320,17 @@ SponsorshipTransfer::doApply()
         if (!objectSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const ownerID = getLedgerEntryOwner(view(), *objectSle, sponseeID);
-        if (!ownerID)
+        // preclaim established that the sponsee owns the object.
+        if (!isLedgerEntryOwner(view(), *objectSle, sponseeID))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const ownerSle = view().peek(keylet::account(*ownerID));
+        auto const ownerSle = view().peek(keylet::account(sponseeID));
         if (!ownerSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
         auto const ownerCountDelta =
             static_cast<std::int32_t>(getLedgerEntryOwnerCount(*objectSle));
-        auto const& sponsorField = getLedgerEntrySponsorField(*objectSle, *ownerID);
+        auto const& sponsorField = getLedgerEntrySponsorField(*objectSle, sponseeID);
 
         if (isCreate || isReassign)
         {
@@ -413,17 +412,9 @@ SponsorshipTransfer::doApply()
             if (!oldSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
-            // The owner takes the reserve burden back when the object is
-            // no longer sponsored.
-            if (auto const ter = checkReserve(
-                    ctx_.getApplyViewContext(),
-                    ownerSle,
-                    balanceBeforeFee(ownerSle),
-                    SLE::pointer(),
-                    {.ownerCountDelta = ownerCountDelta},
-                    ctx_.journal);
-                !isTesSuccess(ter))
-                return ter;
+            // The owner reclaims the reserve burden when the object is no longer sponsored.
+            // We do not check the sponsee's reserve here (via `checkReserve`) so that a sponsor can
+            // always end a sponsorship, even if the sponsee lacks sufficient reserve.
 
             // Decrement sponsored count
             if (auto const ter = decrementSponsorCount(
