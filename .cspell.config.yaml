@@ -303,6 +303,7 @@ words:
   - statsd
   - STATSDCOLLECTOR
   - stissue
+  - stledgerentry
   - stnum
   - stobj
   - stobject
