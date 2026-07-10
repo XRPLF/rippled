@@ -612,48 +612,66 @@ TrustSet::doApply()
         if (uFlagsIn != uFlagsOut)
             sleRippleState->setFieldU32(sfFlags, uFlagsOut);
 
-        if (bDefault || badCurrency() == currency)
+        if (view().rules().enabled(featureSponsor))
         {
-            // Delete.
+            if (bDefault || badCurrency() == currency)
+            {
+                // Delete.
 
-            terResult = trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
-        }
-        // Reserve is not scaled by load.
-        else if (
-            !view().rules().enabled(featureSponsor) && bReserveIncrease &&
-            preFeeBalance_ < reserveCreate)
-        {
-            JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
-                                "add trust line.";
+                terResult =
+                    trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
+            }
+            // Reserve is not scaled by load
+            else if (
+                auto const ret = checkReserve(
+                    ctx_.getApplyViewContext(),
+                    sle,
+                    preFeeBalance_,
+                    sponsorSle,
+                    {},
+                    j_,
+                    tecINSUF_RESERVE_LINE);
+                !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
+            {
+                JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
+                                    "add trust line.";
 
-            // Another transaction could provide XRP to the account and then
-            // this transaction would succeed.
-            terResult = tecINSUF_RESERVE_LINE;
-        }
-        else if (
-            auto const ret = checkReserve(
-                ctx_.getApplyViewContext(),
-                sle,
-                preFeeBalance_,
-                sponsorSle,
-                {},
-                j_,
-                tecINSUF_RESERVE_LINE);
-            view().rules().enabled(featureSponsor) && !freeTrustLine && bReserveIncrease &&
-            !isTesSuccess(ret))
-        {
-            JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
-                                "add trust line.";
+                // Another transaction could provide XRP to the account and then
+                // this transaction would succeed.
+                terResult = ret;
+            }
+            else
+            {
+                view().update(sleRippleState);
 
-            // Another transaction could provide XRP to the account and then
-            // this transaction would succeed.
-            terResult = ret;
+                JLOG(j_.trace()) << "Modify ripple line";
+            }
         }
         else
         {
-            view().update(sleRippleState);
+            if (bDefault || badCurrency() == currency)
+            {
+                // Delete.
 
-            JLOG(j_.trace()) << "Modify ripple line";
+                terResult =
+                    trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
+            }
+            // Reserve is not scaled by load.
+            else if (bReserveIncrease && preFeeBalance_ < reserveCreate)
+            {
+                JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
+                                    "add trust line.";
+
+                // Another transaction could provide XRP to the account and then
+                // this transaction would succeed.
+                terResult = tecINSUF_RESERVE_LINE;
+            }
+            else
+            {
+                view().update(sleRippleState);
+
+                JLOG(j_.trace()) << "Modify ripple line";
+            }
         }
     }
     // Line does not exist.
