@@ -60,6 +60,7 @@ public:
 
     /**
      * @brief Get sfAmount (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -153,6 +154,7 @@ public:
 
     /**
      * @brief Set sfAmount (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelFundBuilder&

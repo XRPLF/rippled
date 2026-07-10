@@ -1,7 +1,6 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
@@ -9,6 +8,7 @@
 #include <test/jtx/deposit.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
+#include <test/jtx/paychan.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/txflags.h>
@@ -78,15 +78,6 @@ struct PayChan_test : public beast::unit_test::Suite
         return sign(pk, sk, msg.slice());
     }
 
-    static STAmount
-    channelAmount(ReadView const& view, uint256 const& chan)
-    {
-        auto const slep = view.read({ltPAYCHAN, chan});
-        if (!slep)
-            return XRPAmount{-1};
-        return (*slep)[sfAmount];
-    }
-
     static std::optional<std::int64_t>
     channelExpiration(ReadView const& view, uint256 const& chan)
     {
@@ -111,26 +102,30 @@ struct PayChan_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice, bob);
         auto const pk = alice.pk();
         auto const settleDelay = 100s;
-        auto const chan = channel(alice, bob, env.seq(alice));
-        env(create(alice, bob, XRP(1000), settleDelay, pk));
-        BEAST_EXPECT(channelBalance(*env.current(), chan) == XRP(0));
-        BEAST_EXPECT(channelAmount(*env.current(), chan) == XRP(1000));
+        auto const chan = paychan::channel(alice, bob, env.seq(alice));
+        env(paychan::create(alice, bob, XRP(1000), settleDelay, pk));
+        BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == XRP(0));
+        BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == XRP(1000));
 
         {
             auto const preAlice = env.balance(alice);
-            env(fund(alice, chan, XRP(1000)));
+            env(paychan::fund(alice, chan, XRP(1000)));
             auto const feeDrops = env.current()->fees().base;
             BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1000) - feeDrops);
         }
 
-        auto chanBal = channelBalance(*env.current(), chan);
-        auto chanAmt = channelAmount(*env.current(), chan);
+        auto chanBal = paychan::channelBalance(*env.current(), chan);
+        auto chanAmt = paychan::channelAmount(*env.current(), chan);
         BEAST_EXPECT(chanBal == XRP(0));
         BEAST_EXPECT(chanAmt == XRP(2000));
 
         {
             // bad amounts (non-xrp, negative amounts)
-            env(create(alice, bob, usda(1000), settleDelay, pk), Ter(temBAD_AMOUNT));
+            // With TokenPaychan enabled the IOU amount passes preflight but
+            // fails preclaim: alice is the issuer and has not enabled
+            // asfAllowTrustLineLocking, either of which is tecNO_PERMISSION.
+            env(create(alice, bob, usda(1000), settleDelay, pk),
+                Ter(features[featureTokenPaychan] ? TER(tecNO_PERMISSION) : TER(temBAD_AMOUNT)));
             env(fund(alice, chan, usda(1000)), Ter(temBAD_AMOUNT));
             env(create(alice, bob, XRP(-1000), settleDelay, pk), Ter(temBAD_AMOUNT));
             env(fund(alice, chan, XRP(-1000)), Ter(temBAD_AMOUNT));
@@ -174,9 +169,9 @@ struct PayChan_test : public beast::unit_test::Suite
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + XRP(100);
             assert(reqBal <= chanAmt);
-            env(claim(alice, chan, reqBal, authAmt));
-            BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
-            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+            env(paychan::claim(alice, chan, reqBal, authAmt));
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == reqBal);
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == chanAmt);
             BEAST_EXPECT(env.balance(bob) == preBob + delta);
             chanBal = reqBal;
         }
@@ -336,14 +331,14 @@ struct PayChan_test : public beast::unit_test::Suite
             NetClock::time_point const cancelAfter =
                 env.current()->header().parentCloseTime + 3600s;
             auto const channelFunds = XRP(1000);
-            auto const chan = channel(alice, bob, env.seq(alice));
-            env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
-            BEAST_EXPECT(channelExists(*env.current(), chan));
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
             env.close(cancelAfter);
             {
                 // dst cannot claim after cancelAfter
-                auto const chanBal = channelBalance(*env.current(), chan);
-                auto const chanAmt = channelAmount(*env.current(), chan);
+                auto const chanBal = paychan::channelBalance(*env.current(), chan);
+                auto const chanAmt = paychan::channelAmount(*env.current(), chan);
                 auto preAlice = env.balance(alice);
                 auto preBob = env.balance(bob);
                 auto const delta = XRP(500);
@@ -353,7 +348,7 @@ struct PayChan_test : public beast::unit_test::Suite
                 auto const sig = signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
                 env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
                 auto const feeDrops = env.current()->fees().base;
-                BEAST_EXPECT(!channelExists(*env.current(), chan));
+                BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
                 BEAST_EXPECT(env.balance(bob) == preBob - feeDrops);
                 BEAST_EXPECT(env.balance(alice) == preAlice + channelFunds);
             }
@@ -367,9 +362,9 @@ struct PayChan_test : public beast::unit_test::Suite
             NetClock::time_point const cancelAfter =
                 env.current()->header().parentCloseTime + 3600s;
             auto const channelFunds = XRP(1000);
-            auto const chan = channel(alice, bob, env.seq(alice));
-            env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
-            BEAST_EXPECT(channelExists(*env.current(), chan));
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
             // third party close before cancelAfter
             env(claim(carol, chan), Txflags(tfClose), Ter(tecNO_PERMISSION));
             BEAST_EXPECT(channelExists(*env.current(), chan));
@@ -436,9 +431,9 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const minExpiration = closeTime + settleDelay;
         NetClock::time_point const cancelAfter = closeTime + 7200s;
         auto const channelFunds = XRP(1000);
-        auto const chan = channel(alice, bob, env.seq(alice));
-        env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
-        BEAST_EXPECT(channelExists(*env.current(), chan));
+        auto const chan = paychan::channel(alice, bob, env.seq(alice));
+        env(paychan::create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
+        BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
         BEAST_EXPECT(!channelExpiration(*env.current(), chan));
         // Owner closes, will close after settleDelay
         env(claim(alice, chan), Txflags(tfClose));
@@ -467,7 +462,7 @@ struct PayChan_test : public beast::unit_test::Suite
         env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration - 50s}),
             Ter(temBAD_EXPIRATION));
         BEAST_EXPECT(!channelExpiration(*env.current(), chan));
-        env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration}));
+        env(paychan::fund(alice, chan, XRP(1), NetClock::time_point{minExpiration}));
         env.close(minExpiration);
         // Try to extend the expiration after the expiration has already passed
         env(fund(alice, chan, XRP(1), NetClock::time_point{minExpiration + 1000s}));
@@ -489,17 +484,17 @@ struct PayChan_test : public beast::unit_test::Suite
         NetClock::time_point const settleTimepoint =
             env.current()->header().parentCloseTime + settleDelay;
         auto const channelFunds = XRP(1000);
-        auto const chan = channel(alice, bob, env.seq(alice));
-        env(create(alice, bob, channelFunds, settleDelay, pk));
-        BEAST_EXPECT(channelExists(*env.current(), chan));
+        auto const chan = paychan::channel(alice, bob, env.seq(alice));
+        env(paychan::create(alice, bob, channelFunds, settleDelay, pk));
+        BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
         // Owner closes, will close after settleDelay
         env(claim(alice, chan), Txflags(tfClose));
         BEAST_EXPECT(channelExists(*env.current(), chan));
         env.close(settleTimepoint - settleDelay / 2);
         {
             // receiver can still claim
-            auto const chanBal = channelBalance(*env.current(), chan);
-            auto const chanAmt = channelAmount(*env.current(), chan);
+            auto const chanBal = paychan::channelBalance(*env.current(), chan);
+            auto const chanAmt = paychan::channelAmount(*env.current(), chan);
             auto preBob = env.balance(bob);
             auto const delta = XRP(500);
             auto const reqBal = chanBal + delta;
@@ -515,8 +510,8 @@ struct PayChan_test : public beast::unit_test::Suite
         env.close(settleTimepoint);
         {
             // past settleTime, channel will close
-            auto const chanBal = channelBalance(*env.current(), chan);
-            auto const chanAmt = channelAmount(*env.current(), chan);
+            auto const chanBal = paychan::channelBalance(*env.current(), chan);
+            auto const chanAmt = paychan::channelAmount(*env.current(), chan);
             auto const preAlice = env.balance(alice);
             auto preBob = env.balance(bob);
             auto const delta = XRP(500);
@@ -545,17 +540,17 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const pk = alice.pk();
         auto const settleDelay = 3600s;
         auto const channelFunds = XRP(1000);
-        auto const chan = channel(alice, bob, env.seq(alice));
-        env(create(alice, bob, channelFunds, settleDelay, pk));
-        BEAST_EXPECT(channelExists(*env.current(), chan));
+        auto const chan = paychan::channel(alice, bob, env.seq(alice));
+        env(paychan::create(alice, bob, channelFunds, settleDelay, pk));
+        BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
         // Owner tries to close channel, but it will remain open (settle delay)
         env(claim(alice, chan), Txflags(tfClose));
         BEAST_EXPECT(channelExists(*env.current(), chan));
         {
             // claim the entire amount
             auto const preBob = env.balance(bob);
-            env(claim(alice, chan, channelFunds.value(), channelFunds.value()));
-            BEAST_EXPECT(channelBalance(*env.current(), chan) == channelFunds);
+            env(paychan::claim(alice, chan, channelFunds.value(), channelFunds.value()));
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == channelFunds);
             BEAST_EXPECT(env.balance(bob) == preBob + channelFunds);
         }
         auto const preAlice = env.balance(alice);
@@ -580,15 +575,15 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const pk = alice.pk();
         auto const settleDelay = 3600s;
         auto const channelFunds = XRP(1000);
-        auto const chan = channel(alice, bob, env.seq(alice));
-        env(create(alice, bob, channelFunds, settleDelay, pk));
-        BEAST_EXPECT(channelExists(*env.current(), chan));
+        auto const chan = paychan::channel(alice, bob, env.seq(alice));
+        env(paychan::create(alice, bob, channelFunds, settleDelay, pk));
+        BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
         // Owner tries to close channel, but it will remain open (settle delay)
         env(claim(alice, chan), Txflags(tfClose));
         BEAST_EXPECT(channelExists(*env.current(), chan));
         {
-            auto chanBal = channelBalance(*env.current(), chan);
-            auto chanAmt = channelAmount(*env.current(), chan);
+            auto chanBal = paychan::channelBalance(*env.current(), chan);
+            auto chanAmt = paychan::channelAmount(*env.current(), chan);
             auto const preBob = env.balance(bob);
 
             auto const delta = XRP(500);
@@ -603,8 +598,8 @@ struct PayChan_test : public beast::unit_test::Suite
         }
         {
             // Claim again
-            auto chanBal = channelBalance(*env.current(), chan);
-            auto chanAmt = channelAmount(*env.current(), chan);
+            auto chanBal = paychan::channelBalance(*env.current(), chan);
+            auto chanAmt = paychan::channelAmount(*env.current(), chan);
             auto const preBob = env.balance(bob);
 
             auto const delta = XRP(500);
@@ -635,9 +630,9 @@ struct PayChan_test : public beast::unit_test::Suite
             Env env{*this, features};
             env.fund(XRP(10000), alice, bob);
             env(fset(bob, asfDisallowXRP));
-            auto const chan = channel(alice, bob, env.seq(alice));
-            env(create(alice, bob, XRP(1000), 3600s, alice.pk()));
-            BEAST_EXPECT(channelExists(*env.current(), chan));
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, XRP(1000), 3600s, alice.pk()));
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
         }
 
         {
@@ -646,13 +641,13 @@ struct PayChan_test : public beast::unit_test::Suite
             // since it is just advisory.
             Env env{*this, features};
             env.fund(XRP(10000), alice, bob);
-            auto const chan = channel(alice, bob, env.seq(alice));
-            env(create(alice, bob, XRP(1000), 3600s, alice.pk()));
-            BEAST_EXPECT(channelExists(*env.current(), chan));
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, XRP(1000), 3600s, alice.pk()));
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
 
             env(fset(bob, asfDisallowXRP));
             auto const reqBal = XRP(500).value();
-            env(claim(alice, chan, reqBal, reqBal));
+            env(paychan::claim(alice, chan, reqBal, reqBal));
         }
     }
 
@@ -704,16 +699,16 @@ struct PayChan_test : public beast::unit_test::Suite
 
             auto const pk = alice.pk();
             auto const settleDelay = 100s;
-            auto const chan = channel(alice, bob, env.seq(alice));
-            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, XRP(1000), settleDelay, pk));
             env.close();
 
-            BEAST_EXPECT(channelBalance(*env.current(), chan) == XRP(0));
-            BEAST_EXPECT(channelAmount(*env.current(), chan) == XRP(1000));
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == XRP(0));
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == XRP(1000));
 
             // alice can add more funds to the channel even though bob has
             // asfDepositAuth set.
-            env(fund(alice, chan, XRP(1000)));
+            env(paychan::fund(alice, chan, XRP(1000)));
             env.close();
 
             // alice claims. Fails because bob's lsfDepositAuth flag is set.
@@ -741,7 +736,7 @@ struct PayChan_test : public beast::unit_test::Suite
                 // bob claims with signature.  Succeeds even though bob's
                 // lsfDepositAuth flag is set since bob submitted the
                 // transaction.
-                env(claim(bob, chan, delta, delta, Slice(sig), pk));
+                env(paychan::claim(bob, chan, delta, delta, Slice(sig), pk));
                 env.close();
                 BEAST_EXPECT(env.balance(bob) == preBob + delta - baseFee);
             }
@@ -772,7 +767,7 @@ struct PayChan_test : public beast::unit_test::Suite
                 env(deposit::auth(bob, alice));
                 env.close();
 
-                env(claim(alice, chan, delta, delta, Slice(sig), pk));
+                env(paychan::claim(alice, chan, delta, delta, Slice(sig), pk));
                 env.close();
 
                 BEAST_EXPECT(env.balance(bob) == preBob + delta - (3 * baseFee));
@@ -794,7 +789,7 @@ struct PayChan_test : public beast::unit_test::Suite
                 env.close();
 
                 // alice claims successfully.
-                env(claim(alice, chan, delta, delta));
+                env(paychan::claim(alice, chan, delta, delta));
                 env.close();
                 BEAST_EXPECT(env.balance(bob) == preBob + XRP(800) - (5 * baseFee));
             }
@@ -822,12 +817,12 @@ struct PayChan_test : public beast::unit_test::Suite
 
             auto const pk = alice.pk();
             auto const settleDelay = 100s;
-            auto const chan = channel(alice, bob, env.seq(alice));
-            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, XRP(1000), settleDelay, pk));
             env.close();
 
             // alice add funds to the channel
-            env(fund(alice, chan, XRP(1000)));
+            env(paychan::fund(alice, chan, XRP(1000)));
             env.close();
 
             std::string const credBadIdx =
@@ -918,12 +913,12 @@ struct PayChan_test : public beast::unit_test::Suite
 
             auto const pk = alice.pk();
             auto const settleDelay = 100s;
-            auto const chan = channel(alice, bob, env.seq(alice));
-            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, XRP(1000), settleDelay, pk));
             env.close();
 
             // alice add funds to the channel
-            env(fund(alice, chan, XRP(1000)));
+            env(paychan::fund(alice, chan, XRP(1000)));
             env.close();
 
             auto const delta = XRP(500).value();
@@ -951,11 +946,11 @@ struct PayChan_test : public beast::unit_test::Suite
 
             auto const pk = alice.pk();
             auto const settleDelay = 100s;
-            auto const chan = channel(alice, bob, env.seq(alice));
-            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, XRP(1000), settleDelay, pk));
             env.close();
 
-            env(fund(alice, chan, XRP(1000)));
+            env(paychan::fund(alice, chan, XRP(1000)));
             env.close();
             std::string const credIdx =
                 "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
@@ -987,12 +982,12 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const pk = alice.pk();
         auto const settleDelay = 3600s;
         auto const channelFunds = XRP(1000);
-        auto const chan1 = channel(alice, bob, env.seq(alice));
-        env(create(alice, bob, channelFunds, settleDelay, pk));
-        BEAST_EXPECT(channelExists(*env.current(), chan1));
-        auto const chan2 = channel(alice, bob, env.seq(alice));
-        env(create(alice, bob, channelFunds, settleDelay, pk));
-        BEAST_EXPECT(channelExists(*env.current(), chan2));
+        auto const chan1 = paychan::channel(alice, bob, env.seq(alice));
+        env(paychan::create(alice, bob, channelFunds, settleDelay, pk));
+        BEAST_EXPECT(paychan::channelExists(*env.current(), chan1));
+        auto const chan2 = paychan::channel(alice, bob, env.seq(alice));
+        env(paychan::create(alice, bob, channelFunds, settleDelay, pk));
+        BEAST_EXPECT(paychan::channelExists(*env.current(), chan2));
         BEAST_EXPECT(chan1 != chan2);
     }
 
@@ -1011,8 +1006,8 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const pk = alice.pk();
         auto const settleDelay = 3600s;
         auto const channelFunds = XRP(1000);
-        auto const chan1Str = to_string(channel(alice, bob, env.seq(alice)));
-        env(create(alice, bob, channelFunds, settleDelay, pk));
+        auto const chan1Str = to_string(paychan::channel(alice, bob, env.seq(alice)));
+        env(paychan::create(alice, bob, channelFunds, settleDelay, pk));
         env.close();
         {
             // test account non-string
@@ -1068,8 +1063,8 @@ struct PayChan_test : public beast::unit_test::Suite
             BEAST_EXPECT(r[jss::result][jss::channels].size() == 0);
             BEAST_EXPECT(r[jss::result][jss::validated]);
         }
-        auto const chan2Str = to_string(channel(alice, bob, env.seq(alice)));
-        env(create(alice, bob, channelFunds, settleDelay, pk));
+        auto const chan2Str = to_string(paychan::channel(alice, bob, env.seq(alice)));
+        env(paychan::create(alice, bob, channelFunds, settleDelay, pk));
         env.close();
         {
             auto const r = env.rpc("account_channels", alice.human(), bob.human());
@@ -1119,7 +1114,7 @@ struct PayChan_test : public beast::unit_test::Suite
             auto const channelFunds = XRP(1);
             for (auto const& b : bobs)
             {
-                env(create(alice, b, channelFunds, settleDelay, alice.pk()));
+                env(paychan::create(alice, b, channelFunds, settleDelay, alice.pk()));
             }
         }
 
@@ -1218,8 +1213,8 @@ struct PayChan_test : public beast::unit_test::Suite
         // channels where alice is the source, not the destination
         auto const settleDelay = 3600s;
         auto const channelFunds = XRP(1000);
-        env(create(alice, bob, channelFunds, settleDelay, alice.pk()));
-        env(create(bob, alice, channelFunds, settleDelay, bob.pk()));
+        env(paychan::create(alice, bob, channelFunds, settleDelay, alice.pk()));
+        env(paychan::create(bob, alice, channelFunds, settleDelay, bob.pk()));
 
         auto const r = [&] {
             json::Value jvc;
@@ -1246,8 +1241,8 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const pk = alice.pk();
         auto const settleDelay = 3600s;
         auto const channelFunds = XRP(1000);
-        auto const chan1Str = to_string(channel(alice, bob, env.seq(alice)));
-        env(create(alice, bob, channelFunds, settleDelay, pk));
+        auto const chan1Str = to_string(paychan::channel(alice, bob, env.seq(alice)));
+        env(paychan::create(alice, bob, channelFunds, settleDelay, pk));
         env.close();
 
         json::Value args{json::ValueType::Object};
@@ -1281,8 +1276,8 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const pk = alice.pk();
         auto const settleDelay = 3600s;
         auto const channelFunds = XRP(1000);
-        auto const chan1Str = to_string(channel(alice, bob, env.seq(alice)));
-        env(create(alice, bob, channelFunds, settleDelay, pk));
+        auto const chan1Str = to_string(paychan::channel(alice, bob, env.seq(alice)));
+        env(paychan::create(alice, bob, channelFunds, settleDelay, pk));
         env.close();
         std::string chan1PkStr;
         {
@@ -1304,8 +1299,8 @@ struct PayChan_test : public beast::unit_test::Suite
             BEAST_EXPECT(r[jss::result][jss::channels].size() == 0);
             BEAST_EXPECT(r[jss::result][jss::validated]);
         }
-        auto const chan2Str = to_string(channel(alice, bob, env.seq(alice)));
-        env(create(alice, bob, channelFunds, settleDelay, pk));
+        auto const chan2Str = to_string(paychan::channel(alice, bob, env.seq(alice)));
+        env(paychan::create(alice, bob, channelFunds, settleDelay, pk));
         env.close();
         {
             auto const r = env.rpc("account_channels", alice.human(), bob.human());
@@ -1601,8 +1596,8 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const pk = alice.pk();
         auto const settleDelay = 100s;
 
-        auto const chan = channel(alice, bob, env.seq(alice));
-        auto jv = create(alice, bob, XRP(1000), settleDelay, pk);
+        auto const chan = paychan::channel(alice, bob, env.seq(alice));
+        auto jv = paychan::create(alice, bob, XRP(1000), settleDelay, pk);
         auto const pkHex = strHex(pk.slice());
         jv["PublicKey"] = pkHex.substr(2, pkHex.size() - 2);
         env(jv, Ter(temMALFORMED));
@@ -1680,7 +1675,7 @@ struct PayChan_test : public beast::unit_test::Suite
             // Test with adding the paychan to the recipient's owner directory
             Env env{*this, features};
             env.fund(XRP(10000), alice, bob);
-            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env(paychan::create(alice, bob, XRP(1000), settleDelay, pk));
             env.close();
             auto const [chan, chanSle] = channelKeyAndSle(*env.current(), alice, bob);
             BEAST_EXPECT(inOwnerDir(*env.current(), alice, chanSle));
@@ -1702,7 +1697,7 @@ struct PayChan_test : public beast::unit_test::Suite
             Env env(*this, features);
             env.fund(XRP(10000), alice, bob);
             // create the channel before the amendment activates
-            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env(paychan::create(alice, bob, XRP(1000), settleDelay, pk));
             env.close();
             auto const [chan, chanSle] = channelKeyAndSle(*env.current(), alice, bob);
             BEAST_EXPECT(inOwnerDir(*env.current(), alice, chanSle));
@@ -1755,18 +1750,18 @@ struct PayChan_test : public beast::unit_test::Suite
             // Create a channel from alice to bob
             auto const pk = alice.pk();
             auto const settleDelay = 100s;
-            auto const chan = channel(alice, bob, env.seq(alice));
-            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, XRP(1000), settleDelay, pk));
             env.close();
-            BEAST_EXPECT(channelBalance(*env.current(), chan) == XRP(0));
-            BEAST_EXPECT(channelAmount(*env.current(), chan) == XRP(1000));
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == XRP(0));
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == XRP(1000));
 
             rmAccount(env, alice, carol, tecHAS_OBLIGATIONS);
             rmAccount(env, bob, carol, TER(tecHAS_OBLIGATIONS));
 
             auto const feeDrops = env.current()->fees().base;
-            auto chanBal = channelBalance(*env.current(), chan);
-            auto chanAmt = channelAmount(*env.current(), chan);
+            auto chanBal = paychan::channelBalance(*env.current(), chan);
+            auto chanAmt = paychan::channelAmount(*env.current(), chan);
             BEAST_EXPECT(chanBal == XRP(0));
             BEAST_EXPECT(chanAmt == XRP(1000));
 
@@ -1830,15 +1825,15 @@ struct PayChan_test : public beast::unit_test::Suite
 
         auto const pk = alice.pk();
         auto const settleDelay = 100s;
-        auto const chan = channel(alice, bob, aliceTicketSeq);
+        auto const chan = paychan::channel(alice, bob, aliceTicketSeq);
 
         env(create(alice, bob, XRP(1000), settleDelay, pk), ticket::Use(aliceTicketSeq++));
 
         env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
-        BEAST_EXPECT(channelBalance(*env.current(), chan) == XRP(0));
-        BEAST_EXPECT(channelAmount(*env.current(), chan) == XRP(1000));
+        BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == XRP(0));
+        BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == XRP(1000));
 
         {
             auto const preAlice = env.balance(alice);
@@ -1851,8 +1846,8 @@ struct PayChan_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1000) - feeDrops);
         }
 
-        auto chanBal = channelBalance(*env.current(), chan);
-        auto chanAmt = channelAmount(*env.current(), chan);
+        auto chanBal = paychan::channelBalance(*env.current(), chan);
+        auto chanAmt = paychan::channelAmount(*env.current(), chan);
         BEAST_EXPECT(chanBal == XRP(0));
         BEAST_EXPECT(chanAmt == XRP(2000));
 
@@ -1868,8 +1863,8 @@ struct PayChan_test : public beast::unit_test::Suite
             env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
-            BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
-            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == reqBal);
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == chanAmt);
             BEAST_EXPECT(env.balance(bob) == preBob + delta);
             chanBal = reqBal;
         }
@@ -1887,8 +1882,8 @@ struct PayChan_test : public beast::unit_test::Suite
             env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
             BEAST_EXPECT(env.seq(bob) == bobSeq);
 
-            BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
-            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == reqBal);
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == chanAmt);
             auto const feeDrops = env.current()->fees().base;
             BEAST_EXPECT(env.balance(bob) == preBob + delta - feeDrops);
             chanBal = reqBal;
@@ -1903,8 +1898,8 @@ struct PayChan_test : public beast::unit_test::Suite
             env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
             BEAST_EXPECT(env.seq(bob) == bobSeq);
 
-            BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
-            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == chanBal);
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == chanAmt);
             BEAST_EXPECT(env.balance(bob) == preBob - feeDrops);
         }
         {
@@ -1923,8 +1918,8 @@ struct PayChan_test : public beast::unit_test::Suite
             env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
             BEAST_EXPECT(env.seq(bob) == bobSeq);
 
-            BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
-            BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == chanBal);
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == chanAmt);
             BEAST_EXPECT(env.balance(bob) == preBob);
         }
 
@@ -1934,8 +1929,8 @@ struct PayChan_test : public beast::unit_test::Suite
         env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
         BEAST_EXPECT(env.seq(bob) == bobSeq);
 
-        BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
-        BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
+        BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == chanBal);
+        BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == chanAmt);
 
         {
             // Dst closes channel
@@ -1946,7 +1941,7 @@ struct PayChan_test : public beast::unit_test::Suite
             env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
             BEAST_EXPECT(env.seq(bob) == bobSeq);
 
-            BEAST_EXPECT(!channelExists(*env.current(), chan));
+            BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
             auto const feeDrops = env.current()->fees().base;
             auto const delta = chanAmt - chanBal;
             assert(delta > beast::kZero);
@@ -1995,6 +1990,7 @@ public:
         // pre-amendment behavior, so run it with the amendment disabled.
         FeatureBitset const all{testableAmendments() - fixCleanup3_2_0};
         testWithFeats(all);
+        testWithFeats(all - featureTokenPaychan);
         testDepositAuthCreds();
         testMetaAndOwnership(all - fixIncludeKeyletFields);
     }

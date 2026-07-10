@@ -375,6 +375,13 @@ ValidMPTIssuance::finalize(
             return true;
         }
 
+        if (tx.getTxnType() == ttPAYCHAN_CLAIM)
+        {
+            if (mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 && mptokensDeleted_ == 0 &&
+                mptokensCreated_ <= 1)
+                return true;
+        }
+
         if (hasPrivilege(tx, MayDeleteMpt) &&
             ((txnType == ttAMM_DELETE && mptokensDeleted_ <= 2) || mptokensDeleted_ == 1) &&
             mptokensCreated_ == 0 && mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0)

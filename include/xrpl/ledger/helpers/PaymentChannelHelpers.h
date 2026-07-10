@@ -3,6 +3,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
@@ -17,12 +18,19 @@ namespace xrpl {
  *  @param slep  The SLE for the PayChannel object to close.
  *  @param view  The apply view in which ledger state modifications are made.
  *  @param key   The ledger key identifying the PayChannel entry.
+ *  @param txAccount  The account submitting the transaction that closes the
+ *                    channel.
  *  @param j     Journal used for fatal-level diagnostic messages.
  *  @return      tesSUCCESS on success; tefBAD_LEDGER if a directory removal
  *               fails; tefINTERNAL if the source account SLE cannot be found.
  */
 TER
-closeChannel(SLE::ref slep, ApplyView& view, uint256 const& key, beast::Journal j);
+closeChannel(
+    SLE::ref slep,
+    ApplyView& view,
+    uint256 const& key,
+    AccountID const& txAccount,
+    beast::Journal j);
 
 /** Add two uint32_t values with saturation at UINT32_MAX.
  *
