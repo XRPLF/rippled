@@ -13,6 +13,21 @@ if(DEFINED CMAKE_MODULE_PATH)
 endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+# Default the macOS deployment target so it does not have to be passed on the
+# command line. Must be set before project() because project() consumes it when
+# configuring the compiler and SDK. A user-provided -DCMAKE_OSX_DEPLOYMENT_TARGET
+# still takes precedence.
+if(
+    CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin"
+    AND NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET
+)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET
+        "26.0"
+        CACHE STRING
+        "Minimum macOS deployment version"
+    )
+endif()
+
 project(xrpl)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 23)
