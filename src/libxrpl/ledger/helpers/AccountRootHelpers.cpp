@@ -524,7 +524,7 @@ getPseudoAccountFields()
 }
 
 [[nodiscard]] bool
-isPseudoAccount(SLE::const_ref sleAcct, std::set<SField const*> const& pseudoFieldFilter)
+isPseudoAccount(SLE::const_pointer sleAcct, std::set<SField const*> const& pseudoFieldFilter)
 {
     auto const& fields = getPseudoAccountFields();
 
