@@ -2172,7 +2172,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 entry["SignerEntry"]["SignerWeight"] = 1;
                 entries.append(entry);
             }
-            jv["SignerEntries"] = entries;
+            jv[sfSignerEntries] = entries;
 
             STParsedJSONObject parsed("test", jv);
             BEAST_EXPECT(!parsed.object);
@@ -2189,7 +2189,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
             std::string const hash(64, '0');
             for (std::size_t i = 0; i <= kMaxParsedJsonArraySize; ++i)
                 amendments.append(hash);
-            jv["Amendments"] = amendments;
+            jv[sfAmendments] = amendments;
 
             STParsedJSONObject parsed("test", jv);
             BEAST_EXPECT(!parsed.object);
@@ -2206,12 +2206,13 @@ class STParsedJSON_test : public beast::unit_test::Suite
             std::string const hash(64, '0');
             for (std::size_t i = 0; i < kMaxParsedJsonArraySize; ++i)
                 amendments.append(hash);
-            jv["Amendments"] = amendments;
+            jv[sfAmendments] = amendments;
 
             STParsedJSONObject const parsed("test", jv);
             BEAST_EXPECT(parsed.object);
-            BEAST_EXPECT(
-                parsed.object->getFieldV256(sfAmendments).size() == kMaxParsedJsonArraySize);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            auto const arrSize = parsed.object->getFieldV256(sfAmendments).size();
+            BEAST_EXPECT(arrSize == kMaxParsedJsonArraySize);
         }
 
         // parseObject rejects oversized STI_PATHSET (outer array)
@@ -2226,7 +2227,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 path.append(hop);
                 paths.append(path);
             }
-            jv["Paths"] = paths;
+            jv[sfPaths] = paths;
 
             STParsedJSONObject parsed("test", jv);
             BEAST_EXPECT(!parsed.object);
@@ -2248,11 +2249,13 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 path.append(hop);
                 paths.append(path);
             }
-            jv["Paths"] = paths;
+            jv[sfPaths] = paths;
 
             STParsedJSONObject const parsed("test", jv);
             BEAST_EXPECT(parsed.object);
-            BEAST_EXPECT(parsed.object->getFieldPathSet(sfPaths).size() == kMaxParsedJsonArraySize);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            auto const arrSize = parsed.object->getFieldPathSet(sfPaths).size();
+            BEAST_EXPECT(arrSize == kMaxParsedJsonArraySize);
         }
 
         // parseObject rejects oversized STI_PATHSET (inner path hop array)
@@ -2265,7 +2268,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
             for (std::size_t i = 0; i <= kMaxParsedJsonArraySize; ++i)
                 path.append(hop);
             paths.append(path);
-            jv["Paths"] = paths;
+            jv[sfPaths] = paths;
 
             STParsedJSONObject parsed("test", jv);
             BEAST_EXPECT(!parsed.object);
@@ -2285,12 +2288,13 @@ class STParsedJSON_test : public beast::unit_test::Suite
             for (std::size_t i = 0; i < kMaxParsedJsonArraySize; ++i)
                 path.append(hop);
             paths.append(path);
-            jv["Paths"] = paths;
+            jv[sfPaths] = paths;
 
             STParsedJSONObject const parsed("test", jv);
             BEAST_EXPECT(parsed.object);
-            BEAST_EXPECT(
-                parsed.object->getFieldPathSet(sfPaths)[0].size() == kMaxParsedJsonArraySize);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            auto const arrSize = parsed.object->getFieldPathSet(sfPaths)[0].size();
+            BEAST_EXPECT(arrSize == kMaxParsedJsonArraySize);
         }
 
         // parseArray accepts exactly kMaxParsedJsonArraySize Memos (boundary)
@@ -2304,11 +2308,13 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 memo["Memo"]["MemoData"] = "00";
                 memos.append(memo);
             }
-            jv["Memos"] = memos;
+            jv[sfMemos] = memos;
 
             STParsedJSONObject const parsed("test", jv);
             BEAST_EXPECT(parsed.object);
-            BEAST_EXPECT(parsed.object->getFieldArray(sfMemos).size() == kMaxParsedJsonArraySize);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            auto const arrSize = parsed.object->getFieldArray(sfMemos).size();
+            BEAST_EXPECT(arrSize == kMaxParsedJsonArraySize);
         }
 
         // parseArray rejects one more than kMaxParsedJsonArraySize Memos
@@ -2322,7 +2328,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 memo["Memo"]["MemoData"] = "00";
                 memos.append(memo);
             }
-            jv["Memos"] = memos;
+            jv[sfMemos] = memos;
 
             STParsedJSONObject parsed("test", jv);
             BEAST_EXPECT(!parsed.object);
