@@ -593,24 +593,19 @@ public:
 
             // Cannot create sponsorship with no fee or reserve budget. MaxFee
             // and flags do not make a sponsorship object useful by themselves.
-            env(sponsor::set(sponsor, 0),
-                sponsor::SponseeAcc(alice),
-                Fee(XRP(1)),
-                Ter(temMALFORMED));
+            env(sponsor::set(sponsor, 0), sponsor::SponseeAcc(alice), Ter(tecNO_PERMISSION));
             env.close();
             BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, alice)));
 
             env(sponsor::set_max_fee(sponsor, 0, XRP(1)),
                 sponsor::SponseeAcc(alice),
-                Fee(XRP(1)),
-                Ter(temMALFORMED));
+                Ter(tecNO_PERMISSION));
             env.close();
             BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, alice)));
 
             env(sponsor::set(sponsor, 0, 0, XRP(0), XRP(0)),
                 sponsor::SponseeAcc(alice),
-                Fee(XRP(1)),
-                Ter(temMALFORMED));
+                Ter(tecNO_PERMISSION));
             env.close();
             BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, alice)));
 
@@ -656,7 +651,7 @@ public:
             env(sponsor::set(sponsor, 0, 0, XRP(0), XRP(0)),
                 sponsor::SponseeAcc(alice),
                 Fee(XRP(1)),
-                Ter(temMALFORMED));
+                Ter(tecNO_PERMISSION));
             env.close();
 
             sle = env.le(keylet::sponsorship(sponsor, alice));
