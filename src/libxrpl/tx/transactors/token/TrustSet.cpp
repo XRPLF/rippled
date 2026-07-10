@@ -639,7 +639,8 @@ TrustSet::doApply()
                 {},
                 j_,
                 tecINSUF_RESERVE_LINE);
-            !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
+            view().rules().enabled(featureSponsor) && !freeTrustLine && bReserveIncrease &&
+            !isTesSuccess(ret))
         {
             JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
                                 "add trust line.";
@@ -686,7 +687,8 @@ TrustSet::doApply()
             {.ownerCountDelta = 1},
             j_,
             tecNO_LINE_INSUF_RESERVE);
-        !freeTrustLine && !isTesSuccess(ret))  // Reserve is not scaled by load.
+        view().rules().enabled(featureSponsor) && !freeTrustLine &&
+        !isTesSuccess(ret))  // Reserve is not scaled by load.
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
                             "Insufficent reserve to create line.";
