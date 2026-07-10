@@ -590,8 +590,8 @@ The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTe
 | `peer_finder_active_outbound_peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
 | `overlay_peer_disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
 | `job_count`                           | JobQueue.cpp:26           | Current job queue depth                                                    |
-| `{category}_bytes_in/Out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
-| `{category}_messages_in/Out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
+| `{category}_bytes_in/out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
+| `{category}_messages_in/out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
 
 #### OTel MetricsRegistry Gauges
 
@@ -742,16 +742,16 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ### Transaction Overview (`transaction-overview`)
 
-| Panel                             | Type       | PromQL                                                                | Labels Used   |
-| --------------------------------- | ---------- | --------------------------------------------------------------------- | ------------- |
-| Transaction Processing Rate       | timeseries | `rate(span_calls_total{span_name="tx.process"}[5m])` and `tx.receive` | `span_name`   |
-| Transaction Processing Latency    | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`       | —             |
-| Transaction Path Distribution     | piechart   | `sum by (local) (rate(span_calls_total{span_name="tx.process"}[5m]))` | `local`       |
-| Transaction Receive vs Suppressed | timeseries | `rate(span_calls_total{span_name="tx.receive"}[5m])`                  | —             |
-| TX Processing Duration Heatmap    | heatmap    | `tx.process` histogram buckets                                        | `le`          |
-| TX Apply Duration per Ledger      | timeseries | p95/p50 of `tx.apply`                                                 | —             |
-| Peer TX Receive Rate              | timeseries | `tx.receive` rate                                                     | —             |
-| TX Apply Failed Rate              | stat       | `tx.apply` with `STATUS_CODE_ERROR`                                   | `status_code` |
+| Panel                             | Type       | PromQL                                                                                       | Labels Used           |
+| --------------------------------- | ---------- | -------------------------------------------------------------------------------------------- | --------------------- |
+| Transaction Processing Rate       | timeseries | `rate(span_calls_total{span_name="tx.process"}[5m])` and `tx.receive`                        | `span_name`           |
+| Transaction Processing Latency    | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                              | —                     |
+| Transaction Path Distribution     | piechart   | `sum by (local) (rate(span_calls_total{span_name="tx.process"}[5m]))`                        | `local`               |
+| Transaction Receive vs Suppressed | timeseries | `rate(span_calls_total{span_name="tx.receive"}[5m])`                                         | —                     |
+| TX Processing Duration Heatmap    | heatmap    | `tx.process` histogram buckets                                                               | `le`                  |
+| TX Apply Duration per Ledger      | timeseries | p95/p50 of `tx.apply`                                                                        | —                     |
+| Peer TX Receive Rate              | timeseries | `tx.receive` rate                                                                            | —                     |
+| TX Apply Failed Rate              | stat       | `rate(span_calls_total{span_name="tx.transactor",stage="apply",ter_result!~"tesSUCCESS\|"})` | `stage`, `ter_result` |
 
 ### Consensus Health (`consensus-health`)
 
@@ -794,47 +794,47 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 ### Node Health -- System Metrics (`node-health`)
 
-| Panel                                  | Type       | PromQL                                                    | Labels Used      |
-| -------------------------------------- | ---------- | --------------------------------------------------------- | ---------------- |
-| Validated Ledger Age                   | stat       | `ledgermaster_validated_ledger_age`                       | —                |
-| Published Ledger Age                   | stat       | `ledgermaster_published_ledger_age`                       | —                |
-| Operating Mode Duration                | timeseries | `state_accounting_*_duration`                             | —                |
-| Operating Mode Transitions             | timeseries | `state_accounting_*_transitions`                          | —                |
-| I/O Latency                            | timeseries | `histogram_quantile(0.95, ios_latency_bucket)`            | —                |
-| Job Queue Depth                        | timeseries | `job_count`                                               | —                |
-| Ledger Fetch Rate                      | stat       | `rate(ledger_fetches[5m])`                                | —                |
-| Ledger History Mismatches              | stat       | `rate(ledger_history_mismatch[5m])`                       | —                |
-| Key Jobs Execution Time                | timeseries | `acceptledger{quantile="$quantile"}` (+ 10 more key jobs) | `quantile`       |
-| Key Jobs Dequeue Wait Time             | timeseries | `acceptledger_q{quantile="$quantile"}` (+ 10 more)        | `quantile`       |
-| FullBelowCache Size                    | timeseries | `node_family_full_below_cache_size`                       | —                |
-| FullBelowCache Hit Rate                | gauge      | `node_family_full_below_cache_hit_rate`                   | —                |
-| Ledger Publish Gap                     | stat       | `Published_Ledger_Age - Validated_Ledger_Age`             | —                |
-| State Duration Rate (Full vs Tracking) | timeseries | `rate(state_accounting_full_duration[5m]) / 1000000`      | —                |
-| All Jobs Execution Time (Detail)       | timeseries | `{__name__=~"<all_jobs>", quantile="$quantile"}`          | `quantile`       |
-| All Jobs Dequeue Wait (Detail)         | timeseries | `{__name__=~"<all_jobs>_q", quantile="$quantile"}`        | `quantile`       |
-| Server State                           | stat       | `server_info{metric="server_state"}`                      | `metric`         |
-| Uptime                                 | stat       | `server_info{metric="uptime"}`                            | `metric`         |
-| Peer Count                             | stat       | `server_info{metric="peers"}`                             | `metric`         |
-| Validated Ledger Seq                   | stat       | `server_info{metric="validated_ledger_seq"}`              | `metric`         |
-| Build Version                          | stat       | `build_info`                                              | `version`        |
-| Complete Ledger Ranges                 | table      | `complete_ledgers`                                        | `bound`, `index` |
-| Database Sizes                         | timeseries | `db_metrics{metric=~"db_kb_.*"}`                          | `metric`         |
-| Historical Fetch Rate                  | stat       | `db_metrics{metric="historical_perminute"}`               | `metric`         |
+| Panel                                  | Type       | PromQL                                                     | Labels Used      |
+| -------------------------------------- | ---------- | ---------------------------------------------------------- | ---------------- |
+| Validated Ledger Age                   | stat       | `ledgermaster_validated_ledger_age`                        | —                |
+| Published Ledger Age                   | stat       | `ledgermaster_published_ledger_age`                        | —                |
+| Operating Mode (Time Share)            | timeseries | `rate(state_accounting_X_duration) / sum(rate(all modes))` | —                |
+| Operating Mode Transitions             | timeseries | `state_accounting_*_transitions`                           | —                |
+| I/O Latency                            | timeseries | `histogram_quantile(0.95, ios_latency_bucket)`             | —                |
+| Job Queue Depth                        | timeseries | `job_count`                                                | —                |
+| Ledger Fetch Rate                      | stat       | `rate(ledger_fetches[5m])`                                 | —                |
+| Ledger History Mismatches              | stat       | `rate(ledger_history_mismatch[5m])`                        | —                |
+| Key Jobs Execution Time                | timeseries | `acceptledger{quantile="$quantile"}` (+ 10 more key jobs)  | `quantile`       |
+| Key Jobs Dequeue Wait Time             | timeseries | `acceptledger_q{quantile="$quantile"}` (+ 10 more)         | `quantile`       |
+| FullBelowCache Size                    | timeseries | `node_family_full_below_cache_size`                        | —                |
+| FullBelowCache Hit Rate                | gauge      | `node_family_full_below_cache_hit_rate`                    | —                |
+| Ledger Publish Gap                     | stat       | `Published_Ledger_Age - Validated_Ledger_Age`              | —                |
+| State Duration Rate (Full vs Tracking) | timeseries | `rate(state_accounting_full_duration[5m]) / 1000000`       | —                |
+| All Jobs Execution Time (Detail)       | timeseries | `{__name__=~"<all_jobs>", quantile="$quantile"}`           | `quantile`       |
+| All Jobs Dequeue Wait (Detail)         | timeseries | `{__name__=~"<all_jobs>_q", quantile="$quantile"}`         | `quantile`       |
+| Server State                           | stat       | `server_info{metric="server_state"}`                       | `metric`         |
+| Uptime                                 | stat       | `server_info{metric="uptime"}`                             | `metric`         |
+| Peer Count                             | stat       | `server_info{metric="peers"}`                              | `metric`         |
+| Validated Ledger Seq                   | stat       | `server_info{metric="validated_ledger_seq"}`               | `metric`         |
+| Build Version                          | stat       | `build_info`                                               | `version`        |
+| Complete Ledger Ranges                 | table      | `complete_ledgers`                                         | `bound`, `index` |
+| Database Sizes                         | timeseries | `db_metrics{metric=~"db_kb_.*"}`                           | `metric`         |
+| Historical Fetch Rate                  | stat       | `db_metrics{metric="historical_perminute"}`                | `metric`         |
 
 ### Network Traffic -- System Metrics (`network-traffic`)
 
-| Panel                                | Type       | PromQL                               | Labels Used |
-| ------------------------------------ | ---------- | ------------------------------------ | ----------- |
-| Active Peers                         | timeseries | `peer_finder_active_*_Peers`         | —           |
-| Peer Disconnects                     | timeseries | `overlay_peer_disconnects`           | —           |
-| Total Network Bytes                  | timeseries | `rate(total_bytes_in/Out[5m])`       | —           |
-| Total Network Messages               | timeseries | `total_messages_in/Out`              | —           |
-| Transaction Traffic                  | timeseries | `transactions_messages_in/Out`       | —           |
-| Proposal Traffic                     | timeseries | `proposals_messages_in/Out`          | —           |
-| Validation Traffic                   | timeseries | `validations_messages_in/Out`        | —           |
-| Traffic by Category                  | bargauge   | `topk(10, *_bytes_in)`               | —           |
-| Duplicate Traffic (Wasted Bandwidth) | timeseries | `rate(*_duplicate_bytes_in/out[5m])` | —           |
-| All Traffic Categories (Detail)      | timeseries | `topk(15, rate(*_bytes_in[5m]))`     | —           |
+| Panel                                | Type       | PromQL                                                 | Labels Used |
+| ------------------------------------ | ---------- | ------------------------------------------------------ | ----------- |
+| Active Peers                         | timeseries | `peer_finder_active_*_peers`                           | —           |
+| Peer Disconnects                     | timeseries | `increase(overlay_peer_disconnects[$__rate_interval])` | —           |
+| Total Network Bytes                  | timeseries | `rate(total_bytes_in/out[$__rate_interval])`           | —           |
+| Total Network Messages               | timeseries | `rate(total_messages_in/out[$__rate_interval])`        | —           |
+| Transaction Traffic                  | timeseries | `rate(transactions_messages_in/out[$__rate_interval])` | —           |
+| Proposal Traffic                     | timeseries | `rate(proposals_messages_in/out[$__rate_interval])`    | —           |
+| Validation Traffic                   | timeseries | `rate(validations_messages_in/out[$__rate_interval])`  | —           |
+| Traffic by Category                  | bargauge   | `topk(10, rate(*_bytes_in[$__rate_interval]))`         | —           |
+| Duplicate Traffic (Wasted Bandwidth) | timeseries | `rate(*_duplicate_bytes_in/out[$__rate_interval])`     | —           |
+| All Traffic Categories (Detail)      | timeseries | `topk(15, rate(*_bytes_in[$__rate_interval]))`         | —           |
 
 ### RPC & Pathfinding -- System Metrics (`rpc-pathfinding`)
 
