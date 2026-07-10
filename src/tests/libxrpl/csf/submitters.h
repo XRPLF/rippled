@@ -1,10 +1,11 @@
 #pragma once
 
-#include <csf/Peer.h>
 #include <csf/Scheduler.h>
 #include <csf/SimTime.h>
 #include <csf/Tx.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <type_traits>
 
 namespace xrpl::test::csf {
@@ -60,8 +61,9 @@ class Submitter
     }
 
     template <class T>
-    static std::enable_if_t<std::is_arithmetic_v<T>, SimDuration>
+    static SimDuration
     asDuration(T t)
+        requires(std::is_arithmetic_v<T>)
     {
         return SimDuration{static_cast<SimDuration::rep>(t)};
     }

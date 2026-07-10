@@ -3,11 +3,9 @@
 #include <boost/container/flat_set.hpp>
 
 #include <csf/Digraph.h>
-#include <csf/random.h>
 
-#include <chrono>
-#include <numeric>
-#include <random>
+#include <algorithm>
+#include <set>
 #include <vector>
 
 namespace xrpl::test::csf {

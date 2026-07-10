@@ -60,13 +60,16 @@ endforeach()
 
 # The consensus tests use the CSF (Consensus Simulation Framework) helpers and
 # exercise server-side consensus code that is not part of libxrpl, so compile
-# those translation units into the test binary and expose the xrpld headers.
+# the CSF sources (its own tests and impl) into the test binary and expose the
+# xrpld headers.
+file(
+    GLOB_RECURSE csf_sources
+    CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/csf/*.cpp"
+)
 target_sources(
     xrpl_tests
-    PRIVATE
-        csf/impl/Sim.cpp
-        csf/impl/ledgers.cpp
-        ${CMAKE_SOURCE_DIR}/src/xrpld/consensus/Consensus.cpp
+    PRIVATE ${csf_sources} ${CMAKE_SOURCE_DIR}/src/xrpld/consensus/Consensus.cpp
 )
 target_include_directories(xrpl_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 

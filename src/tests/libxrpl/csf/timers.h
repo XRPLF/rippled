@@ -4,6 +4,7 @@
 #include <csf/SimTime.h>
 
 #include <chrono>
+#include <iostream>
 #include <ostream>
 
 namespace xrpl::test::csf {

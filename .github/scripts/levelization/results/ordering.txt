@@ -97,10 +97,6 @@ test.core > xrpl.json
 test.core > xrpl.protocol
 test.core > xrpl.rdb
 test.core > xrpl.server
-test.csf > xrpl.basics
-test.csf > xrpld.consensus
-test.csf > xrpl.json
-test.csf > xrpl.ledger
 test.json > test.jtx
 test.json > xrpl.json
 test.jtx > test.unit_test

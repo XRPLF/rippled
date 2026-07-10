@@ -4,12 +4,22 @@
 
 #include <csf/Histogram.h>
 #include <csf/SimTime.h>
+#include <csf/Tx.h>
+#include <csf/Validation.h>
 #include <csf/events.h>
 
+#include <algorithm>
+#include <cassert>
 #include <chrono>
+#include <cstddef>
+#include <iomanip>
+#include <ios>
+#include <map>
 #include <optional>
 #include <ostream>
 #include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl::test::csf {
 

@@ -1,11 +1,8 @@
 #pragma once
 
-#include <csf/Proposal.h>
 #include <csf/Tx.h>
 #include <csf/Validation.h>
 #include <csf/ledgers.h>
-
-#include <chrono>
 
 namespace xrpl::test::csf {
 
@@ -77,7 +74,7 @@ struct SubmitTx
 struct StartRound
 {
     //! The preferred ledger for the start of consensus
-    Ledger::ID bestLedger;
+    Ledger::ID bestLedger{};
 
     //! The prior ledger on hand
     Ledger prevLedger;

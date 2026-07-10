@@ -1,17 +1,23 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+
 #include <csf/BasicNetwork.h>
 #include <csf/CollectorRef.h>
-#include <csf/Digraph.h>
 #include <csf/Peer.h>
 #include <csf/PeerGroup.h>
 #include <csf/Scheduler.h>
 #include <csf/SimTime.h>
 #include <csf/TrustGraph.h>
+#include <csf/ledgers.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <deque>
 #include <iostream>
 #include <random>
+#include <string>
+#include <vector>
 
 namespace xrpl::test::csf {
 
@@ -65,6 +71,7 @@ public:
         and no network connections.
 
     */
+    // NOLINTNEXTLINE(bugprone-random-generator-seed): fixed seed for reproducible test
     Sim() : sink{scheduler.clock()}, j{sink}, net{scheduler}
     {
     }

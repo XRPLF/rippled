@@ -1,17 +1,27 @@
 #pragma once
 
 #include <xrpld/consensus/Consensus.h>
+#include <xrpld/consensus/ConsensusParms.h>
+#include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/consensus/Validations.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/tagged_integer.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
-#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
 
 #include <csf/BasicNetwork.h>
 #include <csf/CollectorRef.h>
+#include <csf/Proposal.h>
 #include <csf/Scheduler.h>
+#include <csf/SimTime.h>
 #include <csf/TrustGraph.h>
 #include <csf/Tx.h>
 #include <csf/Validation.h>
@@ -19,6 +29,14 @@
 #include <csf/ledgers.h>
 
 #include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <limits>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl::test::csf {
 
