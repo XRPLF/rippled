@@ -591,20 +591,28 @@ public:
             env.close();
             BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, alice)));
 
-            // create sponsorship with zero value
+            // Cannot create sponsorship with no fee or reserve budget. MaxFee
+            // and flags do not make a sponsorship object useful by themselves.
+            env(sponsor::set(sponsor, 0),
+                sponsor::SponseeAcc(alice),
+                Fee(XRP(1)),
+                Ter(temMALFORMED));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, alice)));
+
+            env(sponsor::set_max_fee(sponsor, 0, XRP(1)),
+                sponsor::SponseeAcc(alice),
+                Fee(XRP(1)),
+                Ter(temMALFORMED));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, alice)));
+
             env(sponsor::set(sponsor, 0, 0, XRP(0), XRP(0)),
                 sponsor::SponseeAcc(alice),
-                Fee(XRP(1)));
+                Fee(XRP(1)),
+                Ter(temMALFORMED));
             env.close();
-
-            sle = env.le(keylet::sponsorship(sponsor, alice));
-            BEAST_EXPECT(sle);
-            BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
-            BEAST_EXPECT(!sle->isFieldPresent(sfFeeAmount));
-            BEAST_EXPECT(!sle->isFieldPresent(sfMaxFee));
-            // verify flags from previous sponsorship are not carried over
-            BEAST_EXPECT(!sle->isFlag(lsfSponsorshipRequireSignForFee));
-            BEAST_EXPECT(!sle->isFlag(lsfSponsorshipRequireSignForReserve));
+            BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, alice)));
 
             // update sponsorship with non-zero value
             env(sponsor::set(sponsor, 0, 100, XRP(100), XRP(1)),
@@ -644,17 +652,55 @@ public:
                 tfSponsorshipClearRequireSignForReserve,
                 lsfSponsorshipRequireSignForReserve);
 
-            // update sponsorship with zero value
+            // Cannot update sponsorship so both fee and reserve budgets are absent.
             env(sponsor::set(sponsor, 0, 0, XRP(0), XRP(0)),
                 sponsor::SponseeAcc(alice),
-                Fee(XRP(1)));
+                Fee(XRP(1)),
+                Ter(temMALFORMED));
+            env.close();
+
+            sle = env.le(keylet::sponsorship(sponsor, alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(sle->at(sfRemainingOwnerCount) == 100);
+            BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(100));
+            BEAST_EXPECT(sle->at(sfMaxFee) == XRP(1));
+        }
+
+        {
+            // Removing one budget field while the other remains keeps the
+            // Sponsorship valid. Starting state (from above):
+            // RemainingOwnerCount = 100, FeeAmount = XRP(100).
+
+            // Remove only FeeAmount (set to 0); RemainingOwnerCount remains.
+            env(sponsor::set_fee(sponsor, 0, XRP(0)),
+                sponsor::SponseeAcc(alice),
+                Fee(XRP(1)),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto sle = env.le(keylet::sponsorship(sponsor, alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(!sle->isFieldPresent(sfFeeAmount));
+            BEAST_EXPECT(sle->at(sfRemainingOwnerCount) == 100);
+
+            // Re-add FeeAmount, then remove only RemainingOwnerCount;
+            // FeeAmount remains.
+            env(sponsor::set_fee(sponsor, 0, XRP(100)),
+                sponsor::SponseeAcc(alice),
+                Fee(XRP(1)),
+                Ter(tesSUCCESS));
+            env.close();
+
+            env(sponsor::set_reserve(sponsor, 0, 0),
+                sponsor::SponseeAcc(alice),
+                Fee(XRP(1)),
+                Ter(tesSUCCESS));
             env.close();
 
             sle = env.le(keylet::sponsorship(sponsor, alice));
             BEAST_EXPECT(sle);
             BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
-            BEAST_EXPECT(!sle->isFieldPresent(sfFeeAmount));
-            BEAST_EXPECT(!sle->isFieldPresent(sfMaxFee));
+            BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(100));
         }
 
         {
