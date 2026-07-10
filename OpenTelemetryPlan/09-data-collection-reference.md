@@ -553,10 +553,10 @@ Quantiles collected: 0th, 50th, 90th, 95th, 99th, 100th percentile.
 
 For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), four gauges are emitted:
 
-- `xrpld_{category}_Bytes_In`
-- `xrpld_{category}_Bytes_Out`
-- `xrpld_{category}_Messages_In`
-- `xrpld_{category}_Messages_Out`
+- `{category}_bytes_in`
+- `{category}_bytes_out`
+- `{category}_messages_in`
+- `{category}_messages_out`
 
 **Key categories**:
 
