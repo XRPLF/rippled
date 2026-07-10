@@ -63,58 +63,6 @@ InnerObjectFormats::InnerObjectFormats()
          {sfPrice, SoeRequired},
          {sfAuthAccounts, SoeOptional}});
 
-    add(sfXChainClaimAttestationCollectionElement.jsonName,
-        sfXChainClaimAttestationCollectionElement.getCode(),
-        {
-            {sfAttestationSignerAccount, SoeRequired},
-            {sfPublicKey, SoeRequired},
-            {sfSignature, SoeRequired},
-            {sfAmount, SoeRequired},
-            {sfAccount, SoeRequired},
-            {sfAttestationRewardAccount, SoeRequired},
-            {sfWasLockingChainSend, SoeRequired},
-            {sfXChainClaimID, SoeRequired},
-            {sfDestination, SoeOptional},
-        });
-
-    add(sfXChainCreateAccountAttestationCollectionElement.jsonName,
-        sfXChainCreateAccountAttestationCollectionElement.getCode(),
-        {
-            {sfAttestationSignerAccount, SoeRequired},
-            {sfPublicKey, SoeRequired},
-            {sfSignature, SoeRequired},
-            {sfAmount, SoeRequired},
-            {sfAccount, SoeRequired},
-            {sfAttestationRewardAccount, SoeRequired},
-            {sfWasLockingChainSend, SoeRequired},
-            {sfXChainAccountCreateCount, SoeRequired},
-            {sfDestination, SoeRequired},
-            {sfSignatureReward, SoeRequired},
-        });
-
-    add(sfXChainClaimProofSig.jsonName,
-        sfXChainClaimProofSig.getCode(),
-        {
-            {sfAttestationSignerAccount, SoeRequired},
-            {sfPublicKey, SoeRequired},
-            {sfAmount, SoeRequired},
-            {sfAttestationRewardAccount, SoeRequired},
-            {sfWasLockingChainSend, SoeRequired},
-            {sfDestination, SoeOptional},
-        });
-
-    add(sfXChainCreateAccountProofSig.jsonName,
-        sfXChainCreateAccountProofSig.getCode(),
-        {
-            {sfAttestationSignerAccount, SoeRequired},
-            {sfPublicKey, SoeRequired},
-            {sfAmount, SoeRequired},
-            {sfSignatureReward, SoeRequired},
-            {sfAttestationRewardAccount, SoeRequired},
-            {sfWasLockingChainSend, SoeRequired},
-            {sfDestination, SoeRequired},
-        });
-
     add(sfAuthAccount.jsonName,
         sfAuthAccount.getCode(),
         {

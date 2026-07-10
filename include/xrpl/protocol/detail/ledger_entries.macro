@@ -206,23 +206,6 @@ LEDGER_ENTRY(ltLEDGER_HASHES, 0x0068, LedgerHashes, hashes, ({
     {sfHashes,               SoeRequired},
 }))
 
-/** The ledger object which lists details about sidechains.
-
-    \sa keylet::bridge
-*/
-LEDGER_ENTRY(ltBRIDGE, 0x0069, Bridge, bridge, ({
-    {sfAccount,                  SoeRequired},
-    {sfSignatureReward,          SoeRequired},
-    {sfMinAccountCreateAmount,   SoeOptional},
-    {sfXChainBridge,             SoeRequired},
-    {sfXChainClaimID,            SoeRequired},
-    {sfXChainAccountCreateCount, SoeRequired},
-    {sfXChainAccountClaimCount,  SoeRequired},
-    {sfOwnerNode,                SoeRequired},
-    {sfPreviousTxnID,            SoeRequired},
-    {sfPreviousTxnLgrSeq,        SoeRequired},
-}))
-
 /** A ledger object which describes an offer on the DEX.
 
     \sa keylet::offer
@@ -253,22 +236,6 @@ LEDGER_ENTRY_DUPLICATE(ltDEPOSIT_PREAUTH, 0x0070, DepositPreauth, deposit_preaut
     {sfPreviousTxnID,        SoeRequired},
     {sfPreviousTxnLgrSeq,    SoeRequired},
     {sfAuthorizeCredentials, SoeOptional},
-}))
-
-/** A claim id for a cross chain transaction.
-
-    \sa keylet::xChainClaimID
-*/
-LEDGER_ENTRY(ltXCHAIN_OWNED_CLAIM_ID, 0x0071, XChainOwnedClaimID, xchain_owned_claim_id, ({
-    {sfAccount,                 SoeRequired},
-    {sfXChainBridge,            SoeRequired},
-    {sfXChainClaimID,           SoeRequired},
-    {sfOtherChainSource,        SoeRequired},
-    {sfXChainClaimAttestations, SoeRequired},
-    {sfSignatureReward,         SoeRequired},
-    {sfOwnerNode,               SoeRequired},
-    {sfPreviousTxnID,           SoeRequired},
-    {sfPreviousTxnLgrSeq,       SoeRequired},
 }))
 
 /** A ledger object which describes a bidirectional trust line.
@@ -311,20 +278,6 @@ LEDGER_ENTRY(ltFEE_SETTINGS, 0x0073, FeeSettings, fee, ({
     {sfReserveIncrementDrops,  SoeOptional},
     {sfPreviousTxnID,          SoeOptional},
     {sfPreviousTxnLgrSeq,      SoeOptional},
-}))
-
-/** A claim id for a cross chain create account transaction.
-
-    \sa keylet::xChainCreateAccountClaimID
-*/
-LEDGER_ENTRY(ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID, 0x0074, XChainOwnedCreateAccountClaimID, xchain_owned_create_account_claim_id, ({
-    {sfAccount,                         SoeRequired},
-    {sfXChainBridge,                    SoeRequired},
-    {sfXChainAccountCreateCount,        SoeRequired},
-    {sfXChainCreateAccountAttestations, SoeRequired},
-    {sfOwnerNode,                       SoeRequired},
-    {sfPreviousTxnID,                   SoeRequired},
-    {sfPreviousTxnLgrSeq,               SoeRequired},
 }))
 
 /** A ledger object describing a single escrow.

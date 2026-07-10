@@ -31,7 +31,6 @@ class STBitString;
 template <class>
 class STInteger;
 class STNumber;
-class STXChainBridge;
 class STVector256;
 class STCurrency;
 
@@ -71,7 +70,7 @@ class STCurrency;
     STYPE(STI_UINT384, 22)                        \
     STYPE(STI_UINT512, 23)                        \
     STYPE(STI_ISSUE, 24)                          \
-    STYPE(STI_XCHAIN_BRIDGE, 25)                  \
+    /* 25 is unused */                            \
     STYPE(STI_CURRENCY, 26)                       \
                                                   \
     /* high-level types */                        \
@@ -353,7 +352,6 @@ using SF_CURRENCY = TypedField<STCurrency>;
 using SF_NUMBER = TypedField<STNumber>;
 using SF_VL = TypedField<STBlob>;
 using SF_VECTOR256 = TypedField<STVector256>;
-using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 
 //------------------------------------------------------------------------------
 

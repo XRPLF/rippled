@@ -26,7 +26,6 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
-#include <test/jtx/xchain_bridge.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
@@ -1898,7 +1897,6 @@ class MPToken_test : public beast::unit_test::Suite
         Account const carol("carol");
         MPTIssue const issue(makeMptID(1, alice));
         STAmount mpt{issue, UINT64_C(100)};
-        auto const jvb = bridge(alice, usd, alice, usd);
         for (auto const& feature : {features, features - featureMPTokensV1})
         {
             Env env{*this, feature};
@@ -2044,70 +2042,6 @@ class MPToken_test : public beast::unit_test::Suite
             };
             trustSet(sfLimitAmount);
             trustSet(sfFee);
-            // XChainCommit
-            {
-                json::Value const jv = xchainCommit(alice, jvb, 1, mpt);
-                test(jv, jss::Amount.cStr());
-            }
-            // XChainClaim
-            {
-                json::Value const jv = xchainClaim(alice, jvb, 1, mpt, alice);
-                test(jv, jss::Amount.cStr());
-            }
-            // XChainCreateClaimID
-            {
-                json::Value const jv = xchainCreateClaimId(alice, jvb, mpt, alice);
-                test(jv, sfSignatureReward.fieldName);
-            }
-            // XChainAddClaimAttestation
-            {
-                json::Value const jv =
-                    claimAttestation(alice, jvb, alice, mpt, alice, true, 1, alice, Signer(alice));
-                test(jv, jss::Amount.cStr());
-            }
-            // XChainAddAccountCreateAttestation
-            {
-                json::Value jv = createAccountAttestation(
-                    alice, jvb, alice, mpt, XRP(10), alice, false, 1, alice, Signer(alice));
-                for (auto const& field : {sfAmount.fieldName, sfSignatureReward.fieldName})
-                {
-                    jv[field] = mpt.getJson(JsonOptions::Values::None);
-                    test(jv, field);
-                }
-            }
-            // XChainAccountCreateCommit
-            {
-                json::Value jv = sidechainXchainAccountCreate(alice, jvb, alice, mpt, XRP(10));
-                for (auto const& field : {sfAmount.fieldName, sfSignatureReward.fieldName})
-                {
-                    jv[field] = mpt.getJson(JsonOptions::Values::None);
-                    test(jv, field);
-                }
-            }
-            // XChain[Create|Modify]Bridge
-            auto bridgeTx = [&](json::StaticString const& tt,
-                                STAmount const& rewardAmount,
-                                STAmount const& minAccountAmount,
-                                std::string const& field) {
-                json::Value jv;
-                jv[jss::TransactionType] = tt;
-                jv[jss::Account] = alice.human();
-                jv[sfXChainBridge.fieldName] = jvb;
-                jv[sfSignatureReward.fieldName] = rewardAmount.getJson(JsonOptions::Values::None);
-                jv[sfMinAccountCreateAmount.fieldName] =
-                    minAccountAmount.getJson(JsonOptions::Values::None);
-                test(jv, field);
-            };
-            auto reward = STAmount{sfSignatureReward, mpt};
-            auto minAmount = STAmount{sfMinAccountCreateAmount, usd(10)};
-            for (SField const& field :
-                 {std::ref(sfSignatureReward), std::ref(sfMinAccountCreateAmount)})
-            {
-                bridgeTx(jss::XChainCreateBridge, reward, minAmount, field.fieldName);
-                bridgeTx(jss::XChainModifyBridge, reward, minAmount, field.fieldName);
-                reward = STAmount{sfSignatureReward, usd(10)};
-                minAmount = STAmount{sfMinAccountCreateAmount, mpt};
-            }
             // SponsorshipSet
             {
                 json::Value jv;

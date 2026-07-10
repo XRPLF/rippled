@@ -11,7 +11,6 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstddef>
@@ -237,58 +236,6 @@ inline std::expected<Asset, json::Value>
 requiredAsset(json::Value const& params, json::StaticString const fieldName, std::string const& err)
 {
     return required<Asset>(params, fieldName, err, "Asset");
-}
-
-inline std::expected<STXChainBridge, json::Value>
-parseBridgeFields(json::Value const& params)
-{
-    if (auto const value = hasRequired(
-            params,
-            {jss::LockingChainDoor,
-             jss::LockingChainIssue,
-             jss::IssuingChainDoor,
-             jss::IssuingChainIssue});
-        !value)
-    {
-        return std::unexpected(value.error());
-    }
-
-    auto const lockingChainDoor =
-        requiredAccountID(params, jss::LockingChainDoor, "malformedLockingChainDoor");
-    if (!lockingChainDoor)
-    {
-        return std::unexpected(lockingChainDoor.error());
-    }
-
-    auto const issuingChainDoor =
-        requiredAccountID(params, jss::IssuingChainDoor, "malformedIssuingChainDoor");
-    if (!issuingChainDoor)
-    {
-        return std::unexpected(issuingChainDoor.error());
-    }
-
-    Issue lockingChainIssue;
-    try
-    {
-        lockingChainIssue = issueFromJson(params[jss::LockingChainIssue]);
-    }
-    catch (std::runtime_error const& ex)
-    {
-        return invalidFieldError("malformedIssue", jss::LockingChainIssue, "Issue");
-    }
-
-    Issue issuingChainIssue;
-    try
-    {
-        issuingChainIssue = issueFromJson(params[jss::IssuingChainIssue]);
-    }
-    catch (std::runtime_error const& ex)
-    {
-        return invalidFieldError("malformedIssue", jss::IssuingChainIssue, "Issue");
-    }
-
-    return STXChainBridge(
-        *lockingChainDoor, lockingChainIssue, *issuingChainDoor, issuingChainIssue);
 }
 
 }  // namespace xrpl::LedgerEntryHelpers

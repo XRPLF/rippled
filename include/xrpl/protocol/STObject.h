@@ -12,6 +12,7 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STBitString.h>

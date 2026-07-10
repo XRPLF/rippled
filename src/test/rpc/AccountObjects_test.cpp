@@ -15,7 +15,6 @@
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
-#include <test/jtx/xchain_bridge.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
@@ -566,8 +565,7 @@ public:
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
 
-        auto const features =
-            testableAmendments() | featureXChainBridge | featurePermissionedDomains;
+        auto const features = testableAmendments() | featurePermissionedDomains;
         Env env(*this, features);
 
         // Make a lambda we can use to get "account_objects" easily.
@@ -737,120 +735,6 @@ public:
                 BEAST_EXPECT(
                     credential.isMember(sfCredentialType.jsonName) &&
                     (credential[sfCredentialType.jsonName] == strHex(credentialType1)));
-            }
-        }
-
-        {
-            // Create a bridge
-            test::jtx::XChainBridgeObjects x;
-            Env scEnv(*this, envconfig(), features);
-            x.createScBridgeObjects(scEnv);
-
-            auto scEnvAcctObjs = [&](Account const& acct, char const* type) {
-                json::Value params;
-                params[jss::account] = acct.human();
-                params[jss::type] = type;
-                params[jss::ledger_index] = "validated";
-                return scEnv.rpc("json", "account_objects", to_string(params));
-            };
-
-            json::Value const resp = scEnvAcctObjs(Account::kMaster, jss::bridge);
-
-            BEAST_EXPECT(acctObjsIsSize(resp, 1));
-            auto const& acctBridge = resp[jss::result][jss::account_objects][0u];
-            BEAST_EXPECT(acctBridge[sfAccount.jsonName] == Account::kMaster.human());
-            BEAST_EXPECT(acctBridge[sfLedgerEntryType.getJsonName()] == "Bridge");
-            BEAST_EXPECT(acctBridge[sfXChainClaimID.getJsonName()].asUInt() == 0);
-            BEAST_EXPECT(acctBridge[sfXChainAccountClaimCount.getJsonName()].asUInt() == 0);
-            BEAST_EXPECT(acctBridge[sfXChainAccountCreateCount.getJsonName()].asUInt() == 0);
-            BEAST_EXPECT(acctBridge[sfMinAccountCreateAmount.getJsonName()].asUInt() == 20000000);
-            BEAST_EXPECT(acctBridge[sfSignatureReward.getJsonName()].asUInt() == 1000000);
-            BEAST_EXPECT(acctBridge[sfXChainBridge.getJsonName()] == x.jvb);
-        }
-        {
-            // Alice and Bob create a xchain sequence number that we can look
-            // for in the ledger.
-            test::jtx::XChainBridgeObjects x;
-            Env scEnv(*this, envconfig(), features);
-            x.createScBridgeObjects(scEnv);
-
-            scEnv(xchainCreateClaimId(x.scAlice, x.jvb, x.reward, x.mcAlice));
-            scEnv.close();
-            scEnv(xchainCreateClaimId(x.scBob, x.jvb, x.reward, x.mcBob));
-            scEnv.close();
-
-            auto scEnvAcctObjs = [&](Account const& acct, char const* type) {
-                json::Value params;
-                params[jss::account] = acct.human();
-                params[jss::type] = type;
-                params[jss::ledger_index] = "validated";
-                return scEnv.rpc("json", "account_objects", to_string(params));
-            };
-
-            {
-                // Find the xchain sequence number for Andrea.
-                json::Value const resp = scEnvAcctObjs(x.scAlice, jss::xchain_owned_claim_id);
-                BEAST_EXPECT(acctObjsIsSize(resp, 1));
-
-                auto const& xchainSeq = resp[jss::result][jss::account_objects][0u];
-                BEAST_EXPECT(xchainSeq[sfAccount.jsonName] == x.scAlice.human());
-                BEAST_EXPECT(xchainSeq[sfXChainClaimID.getJsonName()].asUInt() == 1);
-            }
-            {
-                // and the one for Bob
-                json::Value const resp = scEnvAcctObjs(x.scBob, jss::xchain_owned_claim_id);
-                BEAST_EXPECT(acctObjsIsSize(resp, 1));
-
-                auto const& xchainSeq = resp[jss::result][jss::account_objects][0u];
-                BEAST_EXPECT(xchainSeq[sfAccount.jsonName] == x.scBob.human());
-                BEAST_EXPECT(xchainSeq[sfXChainClaimID.getJsonName()].asUInt() == 2);
-            }
-        }
-        {
-            test::jtx::XChainBridgeObjects x;
-            Env scEnv(*this, envconfig(), features);
-            x.createScBridgeObjects(scEnv);
-            auto const amt = XRP(1000);
-
-            // send first batch of account create attestations, so the
-            // xchain_create_account_claim_id_ should be present on the door
-            // account (Account::kMaster) to collect the signatures until a
-            // quorum is reached
-            scEnv(
-                test::jtx::createAccountAttestation(
-                    x.scAttester,
-                    x.jvb,
-                    x.mcCarol,
-                    amt,
-                    x.reward,
-                    x.payees[0],
-                    true,
-                    1,
-                    x.scuAlice,
-                    x.signers[0]));
-            scEnv.close();
-
-            auto scEnvAcctObjs = [&](Account const& acct, char const* type) {
-                json::Value params;
-                params[jss::account] = acct.human();
-                params[jss::type] = type;
-                params[jss::ledger_index] = "validated";
-                return scEnv.rpc("json", "account_objects", to_string(params));
-            };
-
-            {
-                // Find the xchain_create_account_claim_id_
-                json::Value const resp =
-                    scEnvAcctObjs(Account::kMaster, jss::xchain_owned_create_account_claim_id);
-                BEAST_EXPECT(acctObjsIsSize(resp, 1));
-
-                auto const& xchainCreateAccountClaimId =
-                    resp[jss::result][jss::account_objects][0u];
-                BEAST_EXPECT(
-                    xchainCreateAccountClaimId[sfAccount.jsonName] == Account::kMaster.human());
-                BEAST_EXPECT(
-                    xchainCreateAccountClaimId[sfXChainAccountCreateCount.getJsonName()].asUInt() ==
-                    1);
             }
         }
 

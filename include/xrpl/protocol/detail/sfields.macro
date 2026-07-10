@@ -23,7 +23,7 @@ TYPED_SFIELD(sfAssetScale,               UINT8,      5)
 TYPED_SFIELD(sfTickSize,                 UINT8,     16)
 TYPED_SFIELD(sfUNLModifyDisabling,       UINT8,     17)
 TYPED_SFIELD(sfHookResult,               UINT8,     18)
-TYPED_SFIELD(sfWasLockingChainSend,      UINT8,     19)
+// 19 unused
 TYPED_SFIELD(sfWithdrawalPolicy,         UINT8,     20)
 
 // 16-bit integers (common)
@@ -140,9 +140,7 @@ TYPED_SFIELD(sfHookOn,                   UINT64,    16)
 TYPED_SFIELD(sfHookInstructionCount,     UINT64,    17)
 TYPED_SFIELD(sfHookReturnCode,           UINT64,    18)
 TYPED_SFIELD(sfReferenceCount,           UINT64,    19)
-TYPED_SFIELD(sfXChainClaimID,            UINT64,    20)
-TYPED_SFIELD(sfXChainAccountCreateCount, UINT64,    21)
-TYPED_SFIELD(sfXChainAccountClaimCount,  UINT64,    22)
+// 20-22 unused
 TYPED_SFIELD(sfAssetPrice,               UINT64,    23)
 TYPED_SFIELD(sfMaximumAmount,            UINT64,    24, SField::kSmdBaseTen|SField::kSmdDefault)
 TYPED_SFIELD(sfOutstandingAmount,        UINT64,    25, SField::kSmdBaseTen|SField::kSmdDefault)
@@ -343,12 +341,7 @@ TYPED_SFIELD(sfDelegate,                 ACCOUNT,   12)
 
 // account (uncommon)
 TYPED_SFIELD(sfHookAccount,              ACCOUNT,   16)
-TYPED_SFIELD(sfOtherChainSource,         ACCOUNT,   18)
-TYPED_SFIELD(sfOtherChainDestination,    ACCOUNT,   19)
-TYPED_SFIELD(sfAttestationSignerAccount, ACCOUNT,   20)
-TYPED_SFIELD(sfAttestationRewardAccount, ACCOUNT,   21)
-TYPED_SFIELD(sfLockingChainDoor,         ACCOUNT,   22)
-TYPED_SFIELD(sfIssuingChainDoor,         ACCOUNT,   23)
+// 17-23 are unused
 TYPED_SFIELD(sfSubject,                  ACCOUNT,   24)
 TYPED_SFIELD(sfBorrower,                 ACCOUNT,   25)
 TYPED_SFIELD(sfCounterparty,             ACCOUNT,   26)
@@ -373,13 +366,9 @@ TYPED_SFIELD(sfBaseAsset,                CURRENCY,   1)
 TYPED_SFIELD(sfQuoteAsset,               CURRENCY,   2)
 
 // issue
-TYPED_SFIELD(sfLockingChainIssue,        ISSUE,      1)
-TYPED_SFIELD(sfIssuingChainIssue,        ISSUE,      2)
+// 1 and 2 are unused
 TYPED_SFIELD(sfAsset,                    ISSUE,      3)
 TYPED_SFIELD(sfAsset2,                   ISSUE,      4)
-
-// bridge
-TYPED_SFIELD(sfXChainBridge,             XCHAIN_BRIDGE, 1)
 
 // inner object
 // OBJECT/1 is reserved for end of object
@@ -411,10 +400,7 @@ UNTYPED_SFIELD(sfHookGrant,              OBJECT,    24)
 UNTYPED_SFIELD(sfVoteEntry,              OBJECT,    25)
 UNTYPED_SFIELD(sfAuctionSlot,            OBJECT,    26)
 UNTYPED_SFIELD(sfAuthAccount,            OBJECT,    27)
-UNTYPED_SFIELD(sfXChainClaimProofSig,    OBJECT,    28)
-UNTYPED_SFIELD(sfXChainCreateAccountProofSig, OBJECT, 29)
-UNTYPED_SFIELD(sfXChainClaimAttestationCollectionElement, OBJECT, 30)
-UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement, OBJECT, 31)
+// 28 to 31 unused
 UNTYPED_SFIELD(sfPriceData,              OBJECT,    32)
 UNTYPED_SFIELD(sfCredential,             OBJECT,    33)
 UNTYPED_SFIELD(sfRawTransaction,         OBJECT,    34)
@@ -445,9 +431,7 @@ UNTYPED_SFIELD(sfDisabledValidators,     ARRAY,     17)
 UNTYPED_SFIELD(sfHookExecutions,         ARRAY,     18)
 UNTYPED_SFIELD(sfHookParameters,         ARRAY,     19)
 UNTYPED_SFIELD(sfHookGrants,             ARRAY,     20)
-UNTYPED_SFIELD(sfXChainClaimAttestations, ARRAY,    21)
-UNTYPED_SFIELD(sfXChainCreateAccountAttestations, ARRAY, 22)
-//                                                  23 unused
+// 21-23 unused
 UNTYPED_SFIELD(sfPriceDataSeries,        ARRAY,     24)
 UNTYPED_SFIELD(sfAuthAccounts,           ARRAY,     25)
 UNTYPED_SFIELD(sfAuthorizeCredentials,   ARRAY,     26)

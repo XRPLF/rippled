@@ -86,7 +86,6 @@ ServerDefinitions::translate(std::string const& inp)
         {"NOTPRESENT", "NotPresent"},
         {"PATHSET", "PathSet"},
         {"VL", "Blob"},
-        {"XCHAIN_BRIDGE", "XChainBridge"},
     };
 
     if (auto const& it = kReplacements.find(inp); it != kReplacements.end())

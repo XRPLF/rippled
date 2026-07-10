@@ -157,7 +157,6 @@ JSS(both);                        // in: Subscribe, Unsubscribe
 JSS(both_sides);                  // in: Subscribe, Unsubscribe
 JSS(branch);                      // out: server_info
 JSS(broadcast);                   // out: SubmitTransaction
-JSS(bridge_account);              // in: LedgerEntry
 JSS(build_path);                  // in: TransactionSign
 JSS(build_version);               // out: NetworkOPs
 JSS(cancel_after);                // out: AccountChannels

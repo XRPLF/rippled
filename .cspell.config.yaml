@@ -294,7 +294,6 @@ words:
   - sttx
   - stvar
   - stvector
-  - stxchainattestations
   - summands
   - superpeer
   - superpeers
@@ -348,8 +347,6 @@ words:
   - writeme
   - wsrch
   - wthread
-  - xbridge
-  - xchain
   - ximinez
   - XMACRO
   - xrpkuwait

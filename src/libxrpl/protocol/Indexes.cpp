@@ -13,7 +13,6 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
@@ -71,9 +70,6 @@ enum class LedgerNameSpace : std::uint16_t {
     NftokenBuyOffers = 'h',
     NftokenSellOffers = 'i',
     Amm = 'A',
-    Bridge = 'H',
-    XchainClaimId = 'Q',
-    XchainCreateAccountClaimId = 'K',
     Did = 'I',
     Oracle = 'R',
     MPTokenIssuance = '~',
@@ -480,44 +476,6 @@ Keylet
 delegate(AccountID const& account, AccountID const& authorizedAccount) noexcept
 {
     return {ltDELEGATE, indexHash(LedgerNameSpace::Delegate, account, authorizedAccount)};
-}
-
-Keylet
-bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType)
-{
-    // A door account can support multiple bridges. On the locking chain
-    // there can only be one bridge per lockingChainCurrency. On the issuing
-    // chain there can only be one bridge per issuingChainCurrency.
-    auto const& issue = bridge.issue(chainType);
-    return {ltBRIDGE, indexHash(LedgerNameSpace::Bridge, bridge.door(chainType), issue.currency)};
-}
-
-Keylet
-xChainClaimID(STXChainBridge const& bridge, std::uint64_t seq)
-{
-    return {
-        ltXCHAIN_OWNED_CLAIM_ID,
-        indexHash(
-            LedgerNameSpace::XchainClaimId,
-            bridge.lockingChainDoor(),
-            bridge.lockingChainIssue(),
-            bridge.issuingChainDoor(),
-            bridge.issuingChainIssue(),
-            seq)};
-}
-
-Keylet
-xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t seq)
-{
-    return {
-        ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID,
-        indexHash(
-            LedgerNameSpace::XchainCreateAccountClaimId,
-            bridge.lockingChainDoor(),
-            bridge.lockingChainIssue(),
-            bridge.issuingChainDoor(),
-            bridge.issuingChainIssue(),
-            seq)};
 }
 
 Keylet

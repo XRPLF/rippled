@@ -11,7 +11,6 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
@@ -254,17 +253,6 @@ amm(uint256 const& amm) noexcept;
 /** A keylet for Delegate object */
 Keylet
 delegate(AccountID const& account, AccountID const& authorizedAccount) noexcept;
-
-Keylet
-bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType);
-
-// `seq` is stored as `sfXChainClaimID` in the object
-Keylet
-xChainClaimID(STXChainBridge const& bridge, std::uint64_t seq);
-
-// `seq` is stored as `sfXChainAccountCreateCount` in the object
-Keylet
-xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t seq);
 
 Keylet
 did(AccountID const& account) noexcept;

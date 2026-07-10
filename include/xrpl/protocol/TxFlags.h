@@ -181,10 +181,6 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfClawTwoAssets, 0x00000001),                                                                                                                  \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
-    TRANSACTION(XChainModifyBridge,                                                                                                                            \
-        TF_FLAG(tfClearAccountCreateAmount, 0x00010000),                                                                                                       \
-        MASK_ADJ(0))                                                                                                                                           \
-                                                                                                                                                               \
     TRANSACTION(VaultCreate,                                                                                                                                   \
         TF_FLAG(tfVaultPrivate, lsfVaultPrivate)                                                                                                               \
         TF_FLAG(tfVaultShareNonTransferable, 0x00020000),                                                                                                      \
