@@ -667,6 +667,43 @@ public:
         }
 
         {
+            // Removing one budget field while the other remains keeps the
+            // Sponsorship valid. Starting state (from above):
+            // RemainingOwnerCount = 100, FeeAmount = XRP(100).
+
+            // Remove only FeeAmount (set to 0); RemainingOwnerCount remains.
+            env(sponsor::set_fee(sponsor, 0, XRP(0)),
+                sponsor::SponseeAcc(alice),
+                Fee(XRP(1)),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto sle = env.le(keylet::sponsorship(sponsor, alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(!sle->isFieldPresent(sfFeeAmount));
+            BEAST_EXPECT(sle->at(sfRemainingOwnerCount) == 100);
+
+            // Re-add FeeAmount, then remove only RemainingOwnerCount;
+            // FeeAmount remains.
+            env(sponsor::set_fee(sponsor, 0, XRP(100)),
+                sponsor::SponseeAcc(alice),
+                Fee(XRP(1)),
+                Ter(tesSUCCESS));
+            env.close();
+
+            env(sponsor::set_reserve(sponsor, 0, 0),
+                sponsor::SponseeAcc(alice),
+                Fee(XRP(1)),
+                Ter(tesSUCCESS));
+            env.close();
+
+            sle = env.le(keylet::sponsorship(sponsor, alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
+            BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(100));
+        }
+
+        {
             // Update Sponsorship (FeeAmount)
             // set empty FeeAmount
             env(sponsor::set_reserve(sponsor, 0, 100), sponsor::SponseeAcc(alice), Ter(tesSUCCESS));
