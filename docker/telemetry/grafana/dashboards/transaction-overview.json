@@ -682,44 +682,6 @@
       "id": 16
     },
     {
-      "title": "TxQ Accept Status",
-      "description": "###### What this is:\n*The outcome of queued transactions when the queue drains into a ledger: applied, failed, or retried.*\n\n###### How it's computed:\n*Counts of queue-accept outcomes over the window, split by status and shown as proportions.*\n\n###### Reading it:\n*A high applied share is healthy; retries indicate the transaction stayed queued.*\n\n###### Healthy range:\n*Workload-dependent; applied should dominate when not congested.*\n\n###### Watch for:\n*A rising failed or retried share, indicating queue pressure or under-bidding.*\n\n###### Source:\n[TxQ.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/TxQ.cpp)\n\n###### Function:\n`TxQ::accept`",
-      "type": "piechart",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 100
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "values": ["value", "percent"]
-        },
-        "tooltip": {
-          "mode": "multi",
-          "maxHeight": 500
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (txq_status, service_instance_id) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.accept_tx\", txq_status=~\"$txq_status\"}[$__rate_interval]))",
-          "legendFormat": "{{txq_status}} [{{service_instance_id}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "id": 17
-    },
-    {
       "title": "Queue Bypass Ratio (Direct Apply vs Enqueue)",
       "description": "###### What this is:\n*The fraction of transactions that applied straight to the open ledger instead of being queued.*\n\n###### How it's computed:\n*Direct-apply rate divided by direct-apply plus enqueue rate over 5 minutes, per node.*\n\n###### Reading it:\n*Higher is better; near 1.0 means the network is not congested.*\n\n###### Healthy range:\n*Close to 1.0 when not congested; falls as demand exceeds capacity.*\n\n###### Watch for:\n*A falling ratio, the cleanest single signal the network has entered sustained fee escalation.*\n\n###### Source:\n[TxQ.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/TxQ.cpp)\n\n###### Function:\n`TxQ::tryDirectApply ; TxQ::apply`",
       "type": "timeseries",
