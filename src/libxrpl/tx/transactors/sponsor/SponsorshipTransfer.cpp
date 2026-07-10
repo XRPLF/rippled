@@ -413,8 +413,8 @@ SponsorshipTransfer::doApply()
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
             // The owner reclaims the reserve burden when the object is no longer sponsored.
-            // We do not check the sponsee's reserve here so that a sponsor can always
-            // end a sponsorship, even if the sponsee lacks sufficient reserve.
+            // We do not check the sponsee's reserve here (via `checkReserve`) so that a sponsor can
+            // always end a sponsorship, even if the sponsee lacks sufficient reserve.
 
             // Decrement sponsored count
             if (auto const ter = decrementSponsorCount(
