@@ -129,28 +129,16 @@ LoanBrokerDelete::doApply()
     auto const brokerID = tx[sfLoanBrokerID];
 
     // Delete the loan broker
-    auto broker = view().peek(keylet::loanBroker(brokerID));
+    LoanBrokerEntry<ApplyView> broker{keylet::loanBroker(brokerID), view(), j_};
     if (!broker)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultID = broker->at(sfVaultID);
     auto const sleVault = view().read(keylet::vault(vaultID));
     if (!sleVault)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    auto const vaultPseudoID = sleVault->at(sfAccount);
     auto const vaultAsset = sleVault->at(sfAsset);
 
     auto const brokerPseudoID = broker->at(sfAccount);
-
-    if (!view().dirRemove(
-            keylet::ownerDir(accountID_), broker->at(sfOwnerNode), broker->key(), false))
-    {
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    }
-    if (!view().dirRemove(
-            keylet::ownerDir(vaultPseudoID), broker->at(sfVaultNode), broker->key(), false))
-    {
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    }
 
     {
         auto const coverAvailable = STAmount{vaultAsset, broker->at(sfCoverAvailable)};
@@ -186,17 +174,11 @@ LoanBrokerDelete::doApply()
 
     view().erase(brokerPseudoSLE);
 
-    view().erase(broker);
-
-    {
-        auto owner = view().peek(keylet::account(accountID_));
-        if (!owner)
-            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-
-        // Decreases the owner count by two: one for the LoanBroker object, and
-        // one for the pseudo-account.
-        adjustOwnerCount(view(), owner, -2, j_);
-    }
+    // Unlink the broker from its owner's directory and the vault pseudo-account's
+    // directory, decrement the owner's OwnerCount by 2 (broker + pseudo-account),
+    // and erase it. See LoanBrokerEntry.
+    if (auto const ter = broker.destroy(); !isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
 
     associateAsset(*broker, vaultAsset);
 

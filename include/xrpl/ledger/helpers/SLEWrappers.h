@@ -38,6 +38,88 @@ public:
         : SLEBase<ViewT>(keylet::nftokenOffer(owner, seq), view, j)
     {
     }
+
+    /** Create an NFToken offer.
+     *
+     *  An NFToken offer lives in its owner's directory (sfOwnerNode) and in the
+     *  NFToken's buy or sell offer directory (sfNFTokenOfferNode), the latter
+     *  keyed by the NFToken id rather than an account, so this shadows
+     *  SLEBase::create(). The caller must have populated sfOwner, sfNFTokenID
+     *  and sfFlags (the lsfSellNFToken bit selects the buy/sell directory).
+     *  Mirrors the former createTokenOffer() helper.
+     */
+    [[nodiscard]] TER
+    create(std::optional<XRPAmount> ownerReserveBalance)
+        requires SLEBase<ViewT>::kIsWritable
+    {
+        auto& view = this->applyView();
+        auto const& offer = this->mutableSle();
+        AccountID const owner = (*offer)[sfOwner];
+        auto const acctKeylet = keylet::account(owner);
+
+        if (ownerReserveBalance)
+        {
+            auto const acct = view.peek(acctKeylet);
+            if (!acct)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            if (*ownerReserveBalance < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
+                return tecINSUFFICIENT_RESERVE;
+        }
+
+        // Always added to the owner's owner directory.
+        auto const ownerNode =
+            view.dirInsert(keylet::ownerDir(owner), offer->key(), describeOwnerDir(owner));
+        if (!ownerNode)
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+        bool const isSellOffer = offer->isFlag(lsfSellNFToken);
+        uint256 const nftokenID = (*offer)[sfNFTokenID];
+
+        // Also added to the token's buy or sell offer directory.
+        auto const offerNode = view.dirInsert(
+            isSellOffer ? keylet::nftSells(nftokenID) : keylet::nftBuys(nftokenID),
+            offer->key(),
+            [&nftokenID, isSellOffer](SLE::ref sle) {
+                (*sle)[sfFlags] = isSellOffer ? lsfNFTokenSellOffers : lsfNFTokenBuyOffers;
+                (*sle)[sfNFTokenID] = nftokenID;
+            });
+        if (!offerNode)
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+        (*offer)[sfOwnerNode] = *ownerNode;
+        (*offer)[sfNFTokenOfferNode] = *offerNode;
+
+        view.insert(offer);
+        adjustOwnerCount(view, view.peek(acctKeylet), 1, this->journal());
+        return tesSUCCESS;
+    }
+
+    /** Remove an NFToken offer from the ledger (inverse of create()). Mirrors
+     *  the former deleteTokenOffer() helper. */
+    [[nodiscard]] TER
+    destroy()
+        requires SLEBase<ViewT>::kIsWritable
+    {
+        auto& view = this->applyView();
+        auto const& offer = this->mutableSle();
+        AccountID const owner = (*offer)[sfOwner];
+
+        if (!view.dirRemove(keylet::ownerDir(owner), (*offer)[sfOwnerNode], offer->key(), false))
+            return tefBAD_LEDGER;
+
+        uint256 const nftokenID = (*offer)[sfNFTokenID];
+        if (!view.dirRemove(
+                offer->isFlag(lsfSellNFToken) ? keylet::nftSells(nftokenID)
+                                              : keylet::nftBuys(nftokenID),
+                (*offer)[sfNFTokenOfferNode],
+                offer->key(),
+                false))
+            return tefBAD_LEDGER;
+
+        adjustOwnerCount(view, view.peek(keylet::account(owner)), -1, this->journal());
+        view.erase(offer);
+        return tesSUCCESS;
+    }
 };
 
 template <typename ViewT>
@@ -251,6 +333,12 @@ public:
         : SLEBase<ViewT>(keylet::bridge(bridge, chainType), view, j)
     {
     }
+
+    [[nodiscard]] SField const&
+    ownerField() const override
+    {
+        return sfAccount;
+    }
 };
 
 template <typename ViewT>
@@ -268,6 +356,57 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::offer(id, seq), view, j)
     {
+    }
+
+    /** Remove an offer from the ledger.
+     *
+     *  An offer lives in its owner's directory (sfOwnerNode) and in one or more
+     *  order-book page directories (sfBookDirectory/sfBookNode, plus the
+     *  sfAdditionalBooks of a hybrid domain offer). Those book pages are keyed
+     *  by keylet::page rather than keylet::ownerDir, so this shadows
+     *  SLEBase::destroy() instead of using the OwnerDirLink model. Mirrors the
+     *  former free-function offerDelete().
+     */
+    [[nodiscard]] TER
+    destroy()
+        requires SLEBase<ViewT>::kIsWritable
+    {
+        auto& view = this->applyView();
+        auto const& sle = this->mutableSle();
+        auto const offerIndex = sle->key();
+        auto const owner = sle->getAccountID(sfAccount);
+
+        // Detect legacy directories.
+        uint256 const uDirectory = sle->getFieldH256(sfBookDirectory);
+
+        if (!view.dirRemove(
+                keylet::ownerDir(owner), sle->getFieldU64(sfOwnerNode), offerIndex, false))
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+        if (!view.dirRemove(
+                keylet::page(uDirectory), sle->getFieldU64(sfBookNode), offerIndex, false))
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+        if (sle->isFieldPresent(sfAdditionalBooks))
+        {
+            XRPL_ASSERT(
+                sle->isFlag(lsfHybrid) && sle->isFieldPresent(sfDomainID),
+                "xrpl::OfferEntry::destroy : should be a hybrid domain offer");
+
+            for (auto const& bookDir : sle->getFieldArray(sfAdditionalBooks))
+            {
+                if (!view.dirRemove(
+                        keylet::page(bookDir.getFieldH256(sfBookDirectory)),
+                        bookDir.getFieldU64(sfBookNode),
+                        offerIndex,
+                        false))
+                    return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+            }
+        }
+
+        adjustOwnerCount(view, view.peek(keylet::account(owner)), -1, this->journal());
+        view.erase(sle);
+        return tesSUCCESS;
     }
 };
 
@@ -311,6 +450,12 @@ public:
         : SLEBase<ViewT>(keylet::xChainClaimID(bridge, seq), view, j)
     {
     }
+
+    [[nodiscard]] SField const&
+    ownerField() const override
+    {
+        return sfAccount;
+    }
 };
 
 template <typename ViewT>
@@ -329,6 +474,33 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::trustLine(id0, id1, currency), view, j)
     {
+    }
+
+    /** Remove a trust line from the ledger.
+     *
+     *  A trust line sits in both endpoints' directories (sfLowNode/sfHighNode,
+     *  not sfOwnerNode) and, unlike single-owner entries, does not adjust
+     *  OwnerCount here — trust-line reserve ownership is tracked by the
+     *  lsfLow/HighReserve flags and reconciled by the balance-update path. The
+     *  low/high accounts are the issuers recorded in sfLowLimit/sfHighLimit.
+     *  This shadows SLEBase::destroy(); mirrors the former trustDelete() helper.
+     */
+    [[nodiscard]] TER
+    destroy()
+        requires SLEBase<ViewT>::kIsWritable
+    {
+        auto const& sle = this->mutableSle();
+        AccountID const low = sle->getFieldAmount(sfLowLimit).getIssuer();
+        AccountID const high = sle->getFieldAmount(sfHighLimit).getIssuer();
+
+        if (auto const ter = this->unlinkOwnerDirs(
+                {{low, &sfLowNode, /*countsToward=*/false},
+                 {high, &sfHighNode, /*countsToward=*/false}});
+            !isTesSuccess(ter))
+            return ter;  // LCOV_EXCL_LINE
+
+        this->applyView().erase(sle);
+        return tesSUCCESS;
     }
 };
 
@@ -363,6 +535,12 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::xChainCreateAccountClaimID(bridge, seq), view, j)
     {
+    }
+
+    [[nodiscard]] SField const&
+    ownerField() const override
+    {
+        return sfAccount;
     }
 };
 
@@ -452,6 +630,42 @@ public:
         : SLEBase<ViewT>(keylet::amm(issue1, issue2), view, j)
     {
     }
+
+    // The AMM object lives in its own pseudo-account's directory and does not
+    // count toward any reserve (pseudo-accounts hold no reserve). The default
+    // create() therefore links the directory and inserts without touching an
+    // OwnerCount. Mirrors AMMCreate.
+    [[nodiscard]] std::vector<OwnerDirLink>
+    ownerDirs() const override
+    {
+        return {{this->sle()->getAccountID(sfAccount), &sfOwnerNode, /*countsToward=*/false}};
+    }
+
+    /** Remove the AMM object from its pseudo-account's directory.
+     *
+     *  Unlike the default destroy(), this also collapses the pseudo-account's
+     *  now-empty owner directory root and reports tecINTERNAL on failure. The
+     *  pseudo-account (AccountRoot) itself is erased by the caller. Mirrors
+     *  deleteAMMAccountIfEmpty().
+     */
+    [[nodiscard]] TER
+    destroy()
+        requires SLEBase<ViewT>::kIsWritable
+    {
+        auto& view = this->applyView();
+        auto const& ammSle = this->mutableSle();
+        AccountID const ammAccountID = (*ammSle)[sfAccount];
+        auto const ownerDirKeylet = keylet::ownerDir(ammAccountID);
+
+        if (!view.dirRemove(ownerDirKeylet, (*ammSle)[sfOwnerNode], ammSle->key(), false))
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        if (view.exists(ownerDirKeylet) && !view.emptyDirDelete(ownerDirKeylet))
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        view.erase(ammSle);
+        return tesSUCCESS;
+    }
 };
 
 template <typename ViewT>
@@ -493,6 +707,40 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::mptoken(issuanceID, holder), view, j)
     {
+    }
+
+    [[nodiscard]] SField const&
+    ownerField() const override
+    {
+        return sfAccount;
+    }
+
+    /** Create an MPToken for its holder.
+     *
+     *  Like a trust line, an MPToken is free of reserve until the holder owns
+     *  two or more objects; only then is a reserve slot enforced. This shadows
+     *  SLEBase::create() to apply that rule, then defers the directory link,
+     *  OwnerCount bump, and insert to the base. Pass std::nullopt to skip the
+     *  reserve check (internal callers on a settled account).
+     */
+    [[nodiscard]] TER
+    create(std::optional<XRPAmount> ownerReserveBalance)
+        requires SLEBase<ViewT>::kIsWritable
+    {
+        if (ownerReserveBalance)
+        {
+            auto const owner = this->sle()->getAccountID(sfAccount);
+            auto const ownerSle = this->applyView().peek(keylet::account(owner));
+            if (!ownerSle)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            std::uint32_t const ownerCount = (*ownerSle)[sfOwnerCount];
+            XRPAmount const reserve = ownerCount < 2
+                ? XRPAmount{0}
+                : this->applyView().fees().accountReserve(ownerCount + 1);
+            if (*ownerReserveBalance < reserve)
+                return tecINSUFFICIENT_RESERVE;
+        }
+        return SLEBase<ViewT>::create(std::nullopt);
     }
 };
 
@@ -634,6 +882,22 @@ public:
         : SLEBase<ViewT>(keylet::vault(owner, seq), view, j)
     {
     }
+
+    [[nodiscard]] SField const&
+    ownerField() const override
+    {
+        return sfOwner;
+    }
+
+    // A vault charges its owner for two reserve slots: the Vault object itself
+    // and the pseudo-account it owns (the pseudo-account is created/destroyed by
+    // the transactor around create()/destroy()). Only the Vault object lives in
+    // the owner's directory. Mirrors VaultCreate / VaultDelete.
+    [[nodiscard]] std::uint32_t
+    reserveCount() const override
+    {
+        return 2;
+    }
 };
 
 template <typename ViewT>
@@ -652,6 +916,29 @@ public:
         : SLEBase<ViewT>(keylet::loanBroker(owner, seq), view, j)
     {
     }
+
+    // A loan broker lives in its owner's directory (counts toward the owner's
+    // reserve) and, for tracking, in its backing vault's pseudo-account
+    // directory (does not count). The owner is charged two reserve slots: the
+    // broker object and its own pseudo-account (created/destroyed by the
+    // transactor around create()/destroy()). Mirrors LoanBrokerSet/Delete.
+    [[nodiscard]] std::vector<OwnerDirLink>
+    ownerDirs() const override
+    {
+        auto const& sle = *this->sle();
+        std::vector<OwnerDirLink> dirs{
+            {sle.getAccountID(sfOwner), &sfOwnerNode, /*countsToward=*/true}};
+        if (auto const sleVault = this->readView().read(keylet::vault(sle.getFieldH256(sfVaultID))))
+            dirs.push_back(
+                {sleVault->getAccountID(sfAccount), &sfVaultNode, /*countsToward=*/false});
+        return dirs;
+    }
+
+    [[nodiscard]] std::uint32_t
+    reserveCount() const override
+    {
+        return 2;
+    }
 };
 
 template <typename ViewT>
@@ -669,6 +956,65 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::loan(loanBrokerID, loanSeq), view, j)
     {
+    }
+
+    /** Materialize the loan and link it into both directories it lives in: its
+     *  LoanBroker's pseudo-account directory (sfLoanBrokerNode) and its
+     *  borrower's directory (sfOwnerNode).
+     *
+     *  A loan carries no reserve of its own, and its two OwnerCount effects — on
+     *  the borrower's account and on the LoanBroker *object* (which counts
+     *  outstanding loans) — are managed by the transactor, not here, because
+     *  they must be sequenced against other borrower-account changes. This
+     *  therefore shadows SLEBase::create() to only insert and link. Requires
+     *  sfBorrower and sfLoanBrokerID to be populated. Mirrors LoanSet.
+     */
+    [[nodiscard]] TER
+    create()
+        requires SLEBase<ViewT>::kIsWritable
+    {
+        auto const dirs = loanDirs();
+        if (dirs.empty())
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+        this->applyView().insert(this->mutableSle());
+        return this->linkOwnerDirs(dirs);
+    }
+
+    /** Unlink the loan from both directories and erase it (inverse of the
+     *  directory work in create()). OwnerCount decrements on the borrower and
+     *  LoanBroker object are handled by the transactor. Mirrors LoanDelete. */
+    [[nodiscard]] TER
+    destroy()
+        requires SLEBase<ViewT>::kIsWritable
+    {
+        auto const dirs = loanDirs();
+        if (dirs.empty())
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+        if (auto const ter = this->unlinkOwnerDirs(dirs); !isTesSuccess(ter))
+            return ter;  // LCOV_EXCL_LINE
+
+        this->applyView().erase(this->mutableSle());
+        return tesSUCCESS;
+    }
+
+private:
+    // The two owner directories a loan lives in: its LoanBroker's pseudo-account
+    // directory (sfLoanBrokerNode) and its borrower's directory (sfOwnerNode).
+    // Empty if the backing broker cannot be resolved.
+    [[nodiscard]] std::vector<OwnerDirLink>
+    loanDirs() const
+        requires SLEBase<ViewT>::kIsWritable
+    {
+        auto const& loan = *this->sle();
+        auto const broker =
+            this->readView().read(keylet::loanBroker(loan.getFieldH256(sfLoanBrokerID)));
+        if (!broker)
+            return {};  // LCOV_EXCL_LINE
+        return {
+            {broker->getAccountID(sfAccount), &sfLoanBrokerNode, /*countsToward=*/false},
+            {loan.getAccountID(sfBorrower), &sfOwnerNode, /*countsToward=*/false}};
     }
 };
 

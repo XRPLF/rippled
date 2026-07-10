@@ -152,15 +152,8 @@ VaultCreate::doApply()
     if (!owner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
-
-    if (auto ter = dirLink(view(), accountID_, vault))
-        return ter;
-    // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    adjustOwnerCount(view(), owner.mutableSle(), 2, j_);
-    auto const ownerCount = owner->at(sfOwnerCount);
-    if (preFeeBalance_ < view().fees().accountReserve(ownerCount))
-        return tecINSUFFICIENT_RESERVE;
+    VaultEntry<ApplyView> vault{keylet::vault(accountID_, sequence), view(), j_};
+    vault.newSLE();
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
     if (!maybePseudo)
@@ -241,7 +234,12 @@ VaultCreate::doApply()
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
-    view().insert(vault);
+
+    // Reserve check (owner's pre-fee balance, charging two slots for the vault
+    // and its pseudo-account) + link into the owner's directory + bump the
+    // owner's OwnerCount by 2 + insert. See VaultEntry.
+    if (auto const ter = vault.create(preFeeBalance_); !isTesSuccess(ter))
+        return ter;
 
     // Explicitly create MPToken for the vault owner
     if (auto const err =

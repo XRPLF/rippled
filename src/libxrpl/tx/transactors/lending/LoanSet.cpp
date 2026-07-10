@@ -581,7 +581,8 @@ LoanSet::doApply()
     auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
 
     // Create the loan
-    auto loan = std::make_shared<SLE>(keylet::loan(brokerID, *loanSequenceProxy));
+    LoanEntry<ApplyView> loan{keylet::loan(brokerID, *loanSequenceProxy), view, j_};
+    loan.newSLE();
 
     // Prevent copy/paste errors
     auto setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
@@ -618,7 +619,6 @@ LoanSet::doApply()
     loan->at(sfPreviousPaymentDueDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
-    view.insert(loan);
 
     // Update the balances in the vault
     vaultAvailableProxy -= principalRequested;
@@ -641,11 +641,11 @@ LoanSet::doApply()
         return tecMAX_SEQUENCE_REACHED;
     view.update(brokerSle);
 
-    // Put the loan into the pseudo-account's directory
-    if (auto const ter = dirLink(view, brokerPseudo, loan, sfLoanBrokerNode))
-        return ter;
-    // Borrower is the owner of the loan
-    if (auto const ter = dirLink(view, borrower, loan, sfOwnerNode))
+    // Insert the loan and link it into the broker pseudo-account's directory
+    // (sfLoanBrokerNode) and the borrower's directory (sfOwnerNode). The
+    // OwnerCount bumps (borrower account, LoanBroker object) were applied above.
+    // See LoanEntry::create().
+    if (auto const ter = loan.create(); !isTesSuccess(ter))
         return ter;
 
     associateAsset(*vaultSle, vaultAsset);

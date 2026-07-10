@@ -192,32 +192,10 @@ VaultDelete::doApply()
 
     vaultPseudoSLE.erase();
 
-    // Remove the vault from its owner's directory.
-    auto const ownerID = vault->at(sfOwner);
-    if (!view().dirRemove(keylet::ownerDir(ownerID), vault->at(sfOwnerNode), vault->key(), false))
-    {
-        // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultDelete: failed to delete vault object.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    AccountRootEntry<ApplyView> owner{keylet::account(ownerID), view()};
-    if (!owner)
-    {
-        // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultDelete: missing vault owner account.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    // We are destroying Vault and PseudoAccount, hence decrease by 2
-    adjustOwnerCount(view(), owner.mutableSle(), -2, j_);
-
-    // Destroy the vault.
-    vault.erase();
-
-    return tesSUCCESS;
+    // Unlink the vault from its owner's directory, decrement the owner's
+    // OwnerCount by 2 (the vault and its now-destroyed pseudo-account), and
+    // erase it. See VaultEntry.
+    return vault.destroy();
 }
 
 void

@@ -237,6 +237,47 @@ public:
         return 1;
     }
 
+    /** Link this entry into each listed owner directory (keylet::ownerDir), and
+     *  record the assigned page in the link's node field.
+     *
+     *  This is the shared directory-linking primitive used by create() and by
+     *  the bespoke create() overrides of entries that live in several owner
+     *  directories. The OwnerDirLink::countsToward flag is ignored here —
+     *  reserve and OwnerCount accounting is the caller's responsibility. Returns
+     *  tecDIR_FULL if any directory is full.
+     */
+    [[nodiscard]] TER
+    linkOwnerDirs(std::vector<OwnerDirLink> const& dirs)
+        requires kIsWritable
+    {
+        for (auto const& d : dirs)
+        {
+            auto const page =
+                view_.dirInsert(keylet::ownerDir(d.owner), sle_->key(), describeOwnerDir(d.owner));
+            if (!page)
+                return tecDIR_FULL;  // LCOV_EXCL_LINE
+            sle_->setFieldU64(*d.node, *page);
+        }
+        return tesSUCCESS;
+    }
+
+    /** Unlink this entry from each listed owner directory, using the page stored
+     *  in each link's node field. Inverse of linkOwnerDirs(). Returns
+     *  tefBAD_LEDGER if any removal fails. */
+    [[nodiscard]] TER
+    unlinkOwnerDirs(std::vector<OwnerDirLink> const& dirs)
+        requires kIsWritable
+    {
+        for (auto const& d : dirs)
+            if (!view_.dirRemove(
+                    keylet::ownerDir(d.owner),
+                    sle_->getFieldU64(*d.node),
+                    sle_->key(),
+                    /*keepRoot=*/false))
+                return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        return tesSUCCESS;
+    }
+
     /** Link a freshly-populated entry into its owner directories and insert it.
      *
      *  Handles the create-time boilerplate shared by owned ledger entries:
@@ -273,16 +314,12 @@ public:
                 return tecINSUFFICIENT_RESERVE;
         }
 
+        if (auto const ter = linkOwnerDirs(dirs); !isTesSuccess(ter))
+            return ter;  // LCOV_EXCL_LINE
+
         for (auto const& d : dirs)
-        {
-            auto const page =
-                view_.dirInsert(keylet::ownerDir(d.owner), key_.key, describeOwnerDir(d.owner));
-            if (!page)
-                return tecDIR_FULL;  // LCOV_EXCL_LINE
-            sle_->setFieldU64(*d.node, *page);
             if (d.countsToward)
                 adjustOwnerCount(view_, view_.peek(keylet::account(d.owner)), reserveCount(), j_);
-        }
 
         view_.insert(sle_);
         return tesSUCCESS;
@@ -299,20 +336,16 @@ public:
         requires kIsWritable
     {
         XRPL_ASSERT(canModify(), "xrpl::SLEBase::destroy : can modify");
+        auto const dirs = ownerDirs();
 
-        for (auto const& d : ownerDirs())
-        {
-            if (!view_.dirRemove(
-                    keylet::ownerDir(d.owner),
-                    sle_->getFieldU64(*d.node),
-                    key_.key,
-                    /*keepRoot=*/false))
-                return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        if (auto const ter = unlinkOwnerDirs(dirs); !isTesSuccess(ter))
+            return ter;  // LCOV_EXCL_LINE
+
+        for (auto const& d : dirs)
             if (d.countsToward)
                 if (auto ownerSle = view_.peek(keylet::account(d.owner)))
                     adjustOwnerCount(
                         view_, ownerSle, -static_cast<std::int32_t>(reserveCount()), j_);
-        }
 
         view_.erase(sle_);
         return tesSUCCESS;

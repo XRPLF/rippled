@@ -172,38 +172,24 @@ authorizeMPToken(
         if ((flags & tfMPTUnauthorize) != 0u)
         {
             auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
-            MPTokenEntry<ApplyView> sleMpt{mptokenKey, view};
+            MPTokenEntry<ApplyView> sleMpt{mptokenKey, view, journal};
             if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0 ||
                 (view.rules().enabled(fixCleanup3_1_3) &&
                  (*sleMpt)[~sfLockedAmount].valueOr(0) != 0))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            if (!view.dirRemove(
-                    keylet::ownerDir(account), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-
-            adjustOwnerCount(view, sleAcct.mutableSle(), -1, journal);
-
-            sleMpt.erase();
-            return tesSUCCESS;
+            // Unlink from the holder's owner directory, decrement its
+            // OwnerCount, and erase. See MPTokenEntry.
+            return sleMpt.destroy();
         }
 
         // A potential holder wants to authorize/hold a mpt, the ledger must:
         //      - add the new mptokenKey to the owner directory
         //      - create the MPToken object for the holder
 
-        // The reserve that is required to create the MPToken. Note
-        // that although the reserve increases with every item
-        // an account owns, in the case of MPTokens we only
-        // *enforce* a reserve if the user owns more than two
-        // items. This is similar to the reserve requirements of trust lines.
-        std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
-        XRPAmount const reserveCreate(
-            (uOwnerCount < 2) ? XRPAmount(beast::kZero)
-                              : view.fees().accountReserve(uOwnerCount + 1));
-
-        if (priorBalance < reserveCreate)
-            return tecINSUFFICIENT_RESERVE;
+        // A potential holder wants to authorize/hold a mpt. The reserve is only
+        // enforced once the holder owns two or more items (like trust lines);
+        // MPTokenEntry::create() applies that rule.
 
         // Defensive check before we attempt to create MPToken for the issuer
         MPTokenIssuanceEntry<ReadView> const mpt{keylet::mptokenIssuance(mptIssuanceID), view};
@@ -217,19 +203,15 @@ authorizeMPToken(
         }
 
         auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
-        auto mptoken = std::make_shared<SLE>(mptokenKey);
-        if (auto ter = dirLink(view, account, mptoken))
-            return ter;  // LCOV_EXCL_LINE
-
+        MPTokenEntry<ApplyView> mptoken{mptokenKey, view, journal};
+        mptoken.newSLE();
         (*mptoken)[sfAccount] = account;
         (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
         (*mptoken)[sfFlags] = 0;
-        view.insert(mptoken);
 
-        // Update owner count.
-        adjustOwnerCount(view, sleAcct.mutableSle(), 1, journal);
-
-        return tesSUCCESS;
+        // Reserve check (trust-line style) + link into the holder's owner
+        // directory + bump the holder's OwnerCount + insert. See MPTokenEntry.
+        return mptoken.create(priorBalance);
     }
 
     MPTokenIssuanceEntry<ReadView> const sleMptIssuance{

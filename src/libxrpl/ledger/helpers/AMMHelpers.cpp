@@ -777,24 +777,11 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
     if (auto const ter = deleteAMMMPTokens(sb, ammAccountID, j); !isTesSuccess(ter))
         return ter;
 
-    auto const ownerDirKeylet = keylet::ownerDir(ammAccountID);
-    if (!sb.dirRemove(ownerDirKeylet, (*ammSle)[sfOwnerNode], ammSle->key(), false))
-    {
-        // LCOV_EXCL_START
-        JLOG(j.error()) << "deleteAMMAccount: failed to remove dir link";
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
-    if (sb.exists(ownerDirKeylet) && !sb.emptyDirDelete(ownerDirKeylet))
-    {
-        // LCOV_EXCL_START
-        JLOG(j.error()) << "deleteAMMAccount: cannot delete root dir node of "
-                        << toBase58(ammAccountID);
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+    // Unlink the AMM from its pseudo-account's directory (collapsing the empty
+    // root) and erase it. See AMMEntry::destroy().
+    if (auto const ter = ammSle.destroy(); !isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
 
-    ammSle.erase();
     sleAMMRoot.erase();
 
     return tesSUCCESS;

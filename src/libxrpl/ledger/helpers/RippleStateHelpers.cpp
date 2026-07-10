@@ -302,28 +302,16 @@ trustDelete(
     AccountID const& uHighAccountID,
     beast::Journal j)
 {
-    // Detect legacy dirs.
-    std::uint64_t const uLowNode = sleRippleState->getFieldU64(sfLowNode);
-    std::uint64_t const uHighNode = sleRippleState->getFieldU64(sfHighNode);
+    // The low/high accounts are recorded as the issuers of sfLowLimit/sfHighLimit
+    // and rederived by RippleStateEntry::destroy(); the explicit parameters are
+    // retained for the caller-facing signature.
+    (void)uLowAccountID;
+    (void)uHighAccountID;
 
-    JLOG(j.trace()) << "trustDelete: Deleting ripple line: low";
-
-    if (!view.dirRemove(keylet::ownerDir(uLowAccountID), uLowNode, sleRippleState->key(), false))
-    {
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    }
-
-    JLOG(j.trace()) << "trustDelete: Deleting ripple line: high";
-
-    if (!view.dirRemove(keylet::ownerDir(uHighAccountID), uHighNode, sleRippleState->key(), false))
-    {
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    }
-
-    JLOG(j.trace()) << "trustDelete: Deleting ripple line: state";
-    view.erase(sleRippleState);
-
-    return tesSUCCESS;
+    // Unlink the trust line from both endpoints' directories and erase it. Trust
+    // lines do not adjust OwnerCount here. See RippleStateEntry::destroy().
+    RippleStateEntry<ApplyView> rs{sleRippleState, view, j};
+    return rs.destroy();
 }
 
 //------------------------------------------------------------------------------

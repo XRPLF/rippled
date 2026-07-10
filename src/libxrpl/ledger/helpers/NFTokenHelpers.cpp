@@ -632,26 +632,11 @@ deleteTokenOffer(ApplyView& view, SLE::ref offer)
     if (offer->getType() != ltNFTOKEN_OFFER)
         return false;
 
-    auto const owner = (*offer)[sfOwner];
-
-    if (!view.dirRemove(keylet::ownerDir(owner), (*offer)[sfOwnerNode], offer->key(), false))
-        return false;
-
-    auto const nftokenID = (*offer)[sfNFTokenID];
-
-    if (!view.dirRemove(
-            offer->isFlag(lsfSellNFToken) ? keylet::nftSells(nftokenID)
-                                          : keylet::nftBuys(nftokenID),
-            (*offer)[sfNFTokenOfferNode],
-            offer->key(),
-            false))
-        return false;
-
-    adjustOwnerCount(
-        view, view.peek(keylet::account(owner)), -1, beast::Journal{beast::Journal::getNullSink()});
-
-    view.erase(offer);
-    return true;
+    // Unlink from the owner directory and the token's buy/sell offer directory,
+    // decrement the owner's OwnerCount, and erase. See
+    // NFTokenOfferEntry::destroy().
+    NFTokenOfferEntry<ApplyView> offerEntry{offer, view};
+    return isTesSuccess(offerEntry.destroy());
 }
 
 bool
@@ -937,64 +922,27 @@ tokenOfferCreateApply(
     beast::Journal j,
     std::uint32_t txFlags)
 {
-    Keylet const acctKeylet = keylet::account(acctID);
-    if (AccountRootEntry<ReadView> const acct{acctKeylet, view};
-        priorBalance < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
-        return tecINSUFFICIENT_RESERVE;
-
     auto const offerID = keylet::nftokenOffer(acctID, seqProxy.value());
 
-    // Create the offer:
-    {
-        // Token offers are always added to the owner's owner directory:
-        auto const ownerNode =
-            view.dirInsert(keylet::ownerDir(acctID), offerID, describeOwnerDir(acctID));
+    bool const isSellOffer = (txFlags & tfSellNFToken) != 0u;
 
-        if (!ownerNode)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
+    NFTokenOfferEntry<ApplyView> offer{offerID, view, j};
+    offer.newSLE();
+    (*offer)[sfOwner] = acctID;
+    (*offer)[sfNFTokenID] = nftokenID;
+    (*offer)[sfAmount] = amount;
+    (*offer)[sfFlags] = isSellOffer ? lsfSellNFToken : 0u;
 
-        bool const isSellOffer = (txFlags & tfSellNFToken) != 0u;
+    if (expiration)
+        (*offer)[sfExpiration] = *expiration;
 
-        // Token offers are also added to the token's buy or sell offer
-        // directory
-        auto const offerNode = view.dirInsert(
-            isSellOffer ? keylet::nftSells(nftokenID) : keylet::nftBuys(nftokenID),
-            offerID,
-            [&nftokenID, isSellOffer](SLE::ref sle) {
-                (*sle)[sfFlags] = isSellOffer ? lsfNFTokenSellOffers : lsfNFTokenBuyOffers;
-                (*sle)[sfNFTokenID] = nftokenID;
-            });
+    if (dest)
+        (*offer)[sfDestination] = *dest;
 
-        if (!offerNode)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-
-        std::uint32_t sleFlags = 0;
-
-        if (isSellOffer)
-            sleFlags |= lsfSellNFToken;
-
-        NFTokenOfferEntry<ApplyView> offer{offerID, view};
-        offer.newSLE();
-        (*offer)[sfOwner] = acctID;
-        (*offer)[sfNFTokenID] = nftokenID;
-        (*offer)[sfAmount] = amount;
-        (*offer)[sfFlags] = sleFlags;
-        (*offer)[sfOwnerNode] = *ownerNode;
-        (*offer)[sfNFTokenOfferNode] = *offerNode;
-
-        if (expiration)
-            (*offer)[sfExpiration] = *expiration;
-
-        if (dest)
-            (*offer)[sfDestination] = *dest;
-
-        offer.insert();
-    }
-
-    // Update owner count.
-    adjustOwnerCount(view, view.peek(acctKeylet), 1, j);
-
-    return tesSUCCESS;
+    // Reserve check + link into the owner directory and the token's buy/sell
+    // offer directory + bump the owner's OwnerCount + insert. See
+    // NFTokenOfferEntry::create().
+    return offer.create(priorBalance);
 }
 
 TER
