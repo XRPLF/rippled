@@ -19,9 +19,9 @@ struct OwnerCounts
 
     OwnerCounts() = default;
     OwnerCounts(SLE::const_ref sle)
-        : owner(sle->getFieldU32(sfOwnerCount))
-        , sponsored(sle->at(~sfSponsoredOwnerCount).value_or(0))
-        , sponsoring(sle->at(~sfSponsoringOwnerCount).value_or(0))
+        : owner(sle->at(sfOwnerCount))
+        , sponsored(sle->at(sfSponsoredOwnerCount))
+        , sponsoring(sle->at(sfSponsoringOwnerCount))
     {
         XRPL_ASSERT(
             owner >= sponsored,
@@ -50,11 +50,11 @@ struct OwnerCounts
     auto
     operator<=>(OwnerCounts const& o) const
     {
-        if (auto cmp = count() <=> o.count(); cmp != 0)  // NOLINT
+        if (auto cmp = count() <=> o.count(); cmp != 0)  // NOLINT(modernize-use-nullptr)
             return cmp;
-        if (auto cmp = owner <=> o.owner; cmp != 0)  // NOLINT
+        if (auto cmp = owner <=> o.owner; cmp != 0)  // NOLINT(modernize-use-nullptr)
             return cmp;
-        if (auto cmp = sponsored <=> o.sponsored; cmp != 0)  // NOLINT
+        if (auto cmp = sponsored <=> o.sponsored; cmp != 0)  // NOLINT(modernize-use-nullptr)
             return cmp;
         return sponsoring <=> o.sponsoring;
     }
