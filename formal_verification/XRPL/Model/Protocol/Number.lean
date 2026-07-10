@@ -6,11 +6,11 @@ Lean model of xrpld's `Number`.
 For simplicity, and to demonstrate the approach, we model just one small function here:
 `operator<`, along with the constants and the normalization check the proofs need.
 
-Names, constants, and the branching of the function bodies are kept relatively faithful 
+Names, constants, and the branching of the function bodies are kept relatively faithful
 to C++ in this instance - as we wanted to make sure we capture every branch of the code.
 
 `Number.operator_lt` is a named function, instead of Lean's overloaded `<`. We chose this
-approach because for other operators (+, -, *, /), we also need the third parameter: 
+approach because for other operators (+, -, *, /), we also need the third parameter:
 rounding mode.
 
 Constants are spelled out in full digits, never as expressions like `10^19 - 1`, because

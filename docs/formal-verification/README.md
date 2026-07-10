@@ -36,10 +36,13 @@ us the model faithfully represents the C++.
 ## Overview
 
 - Lean4 models are in `formal_verification/XRPL/Model` under the root directory.
-- C++ has unit tests in `src/test/formal_verification/` that compare Lean4 vs C++ implementation.
+- C++ has unit tests in `src/test/formal_verification/` that compare Lean4 vs
+  C++ implementation.
 - For these test to work, Lean4 needs to expose its functions to C++.
-- Lean4 is capable of compiling to C via FFI exports, which can then be called from C++. These exports are defined in `formal_verification/XRPL/FFI`.
-- C++ side also needs FFI wrappers to abstract any complexities or memory management away from C++ developers.
+- Lean4 is capable of compiling to C via FFI exports, which can then be called
+  from C++. These exports are defined in `formal_verification/XRPL/FFI`.
+- C++ side also needs FFI wrappers to abstract any complexities or memory
+  management away from C++ developers.
 
 ```mermaid
 flowchart TD
@@ -68,8 +71,12 @@ There are two use-cases of Lean4 models:
 
 As part of day-to-day development cycle, it is important that:
 
-1. Theorems always compile in Lean4 (in Lean4, "it compiles" means "its verified"). For regular workflow of most developers, this can be left to CI/CD.
-2. Cross-verification unit tests always pass (it means Lean4 models have not drifted from C++). This affects developers working on formally verified code or formal verification itself.
+1. Theorems always compile in Lean4 (in Lean4, "it compiles" means "its
+   verified"). For regular workflow of most developers, this can be left to
+   CI/CD.
+2. Cross-verification unit tests always pass (it means Lean4 models have not
+   drifted from C++). This affects developers working on formally verified code
+   or formal verification itself.
 
 Integration is done as following:
 
@@ -114,7 +121,8 @@ cmake/XrplLean4.cmake                   Links the Lean4 libraries into xrpld
 
 ## The Lean4 model: translating C++ into code suitable for theorems and proofs
 
-A model is a translation of the C++ code. For example, Number class data structure will look like:
+A model is a translation of the C++ code. For example, Number class data
+structure will look like:
 
 ```lean
 inductive rounding_mode where
@@ -150,14 +158,16 @@ with no `sorry` and only standard axioms, the proofs are sound.
 
 Lean4 compiles to C, so each `@[export]` function is a C symbol that C++ can call.
 
-Lean4 values live as heap-allocated `lean_object*` pointers in the C ABI, and C++ works with them through those handles.
+Lean4 values live as heap-allocated `lean_object*` pointers in the C ABI, and
+C++ works with them through those handles.
 
 Before any export can be called, the Lean4 runtime and the module's initializers
 must run. The base suite does this exactly once, behind a `std::once_flag`, and
 serializes all Lean4 calls behind a mutex because the Lean4 runtime is
 single-threaded. This is handled in `src/test/formal_verification/common/LeanSuite.h`
 
-Note that we only compile and initialize the model, so that the tests are buildable and runnable even while the proofs are a work in progress.
+Note that we only compile and initialize the model, so that the tests are
+buildable and runnable even while the proofs are a work in progress.
 
 ### Memory management is hidden in a base class
 
@@ -184,7 +194,8 @@ surrender it, and never calls `lean_inc` / `lean_dec` itself. A typed wrapper
 builds on this so a test sees only ordinary C++ values, which is what
 `NumberFFI::build` / `read` above do.
 
-An operation's result structure isn't kept as a handle. A RAII guard `LeanObjOwner` frees it when the fields have been copied out:
+An operation's result structure isn't kept as a handle. A RAII guard
+`LeanObjOwner` frees it when the fields have been copied out:
 
 ```cpp
 struct LeanNumberResult : LeanNumber
@@ -234,9 +245,11 @@ public:
 
 #### Running a function
 
-A function export takes the operands' fields, calls the matching model function, and returns the result as a Lean4 structure.
+A function export takes the operands' fields, calls the matching model
+function, and returns the result as a Lean4 structure.
 
-For example, `lean_number_mul` decodes its arguments into `Number` values, calls `Number.operator_mul`, and encodes the outcome:
+For example, `lean_number_mul` decodes its arguments into `Number` values,
+calls `Number.operator_mul`, and encodes the outcome:
 
 ```lean
 structure FFINumberResult where
@@ -267,7 +280,9 @@ The returned structure is a `lean_object*`.
 
 ## The build process
 
-The Lean4 side is heavy: it depends on `mathlib`, which contains thousands of files that are slow to compile. The strategy is to compile it **once** and keep it warm.
+The Lean4 side is heavy: it depends on `mathlib`, which contains thousands of
+files that are slow to compile. The strategy is to compile it **once** and keep
+it warm.
 
 Our model is built **in-tree** by CMake when `formal_verification=ON`, while
 mathlib's native objects come prebuilt from the `lean4-deps` Conan package.
@@ -277,7 +292,8 @@ what changed.
 
 ### Compile mathlib once, keep edits incremental
 
-`lake exe cache get` downloads mathlib's _elaboration_ artifacts (`.olean`), so the objects are compiled locally.
+`lake exe cache get` downloads mathlib's _elaboration_ artifacts (`.olean`), so
+the objects are compiled locally.
 
 On first build, `lean4-deps` compiles mathlib's modules and caches them for reuse later.
 
@@ -291,14 +307,18 @@ Two properties keep compilation after edit fast:
 We link the objects into a **shared** library, passing the ~8,000 object paths in a file
 instead of on the command line.
 
-8,000 paths on one command line overflow the OS limit (`ARG_MAX`), which is why both `ar` and lake's own `:shared` facet fails on mathlib, so CMake links them itself.
+8,000 paths on one command line overflow the OS limit (`ARG_MAX`), which is why
+both `ar` and lake's own `:shared` facet fails on mathlib, so CMake links them
+itself.
 
 The Lean4 build writes its artifacts into `formal_verification/.lake/` (gitignored).
 Building `xrpld` needs no separate Lean4 toolchain installed, Conan provides it.
 
 ### Wiring into xrpld
 
-`formal_verification` is a Conan option (declared in `conanfile.py`) mirrored into a CMake option of the same name (declared in `cmake/XrplSettings.cmake`). Default is **OFF**, so a normal `xrpld` build is unaffected.
+`formal_verification` is a Conan option (declared in `conanfile.py`) mirrored
+into a CMake option of the same name (declared in `cmake/XrplSettings.cmake`).
+Default is **OFF**, so a normal `xrpld` build is unaffected.
 
 When the option is on, a single `cmake --build .` builds the Lean4 library first,
 then links `xrpld` against it.
@@ -336,7 +356,8 @@ cmake --build . --parallel N
 into the graph, and the matching `-Dformal_verification=ON` tells CMake to build
 and link the Lean4 side.
 
-`--lockfile-partial` lets Conan add `lean4` and `lean4-deps`, which are opt-in and not pinned in `conan.lock`.
+`--lockfile-partial` lets Conan add `lean4` and `lean4-deps`, which are opt-in
+and not pinned in `conan.lock`.
 
 ## Testing Principles
 
@@ -346,7 +367,9 @@ and link the Lean4 side.
 model. Each case runs the operation in both implementations and asserts they
 agree (`checkResult`).
 
-The suite involves targeted fuzzing. Inputs are chosen to push the **result** onto those boundaries, to trigger coverage of every edge case, with a random pass to cover usual inputs as a backstop.
+The suite involves targeted fuzzing. Inputs are chosen to push the **result**
+onto those boundaries, to trigger coverage of every edge case, with a random
+pass to cover usual inputs as a backstop.
 
 A `Number` is `mantissa × 10^exponent`, sign-magnitude, normalized into a fixed
 mantissa range.
@@ -361,10 +384,12 @@ The backstop draws operands from `randomOperand`, which returns a boundary value
 about a third of the time and a uniform interior value otherwise, so random
 _pairs_ also mix a boundary operand with an interior one.
 
-Its exponent range is `[STAmount::kMinOffset, kMaxOffset]` = `[-96, 80]`, the range real amounts occupy, since `Number` backs `STAmount`.
+Its exponent range is `[STAmount::kMinOffset, kMaxOffset]` = `[-96, 80]`, the
+range real amounts occupy, since `Number` backs `STAmount`.
 
-Widening it to the full exponent range was measured to catch **fewer** bugs (random pairs land so far apart that additions stop cancelling); the extremes are
-covered by the deterministic sweeps instead.
+Widening it to the full exponent range was measured to catch **fewer** bugs
+(random pairs land so far apart that additions stop cancelling); the extremes
+are covered by the deterministic sweeps instead.
 
 #### Landing a result on a boundary
 

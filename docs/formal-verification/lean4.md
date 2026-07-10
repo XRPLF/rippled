@@ -123,6 +123,7 @@ Among other things, `do` notation also supports `while` loops and mutable variab
 An `inductive` type declares a fixed set of alternatives, like a C++ `enum class`.
 (Its constructors can also carry data, which makes it closer to a `std::variant`,
 but the simple form is enough here.) For example, this C++ code:
+
 ```cpp
 enum class Sign { negative, zero, positive };
 
@@ -187,7 +188,7 @@ instance : ToText Sign where  -- Sign can now be turned into text
 ## FFI
 
 `@[export name]` gives a function a C symbol, so the C++ code can declare it
-`extern "C"` and call it. 
+`extern "C"` and call it.
 
 ```lean
 @[export lean_number_lt]  -- exported as the C symbol "lean_number_lt"
@@ -207,4 +208,3 @@ For a crash course beyond this document, we recommend the learning platform [lea
 If you care about functional programming in Lean 4, we recommend the excellent book [Functional Programming in Lean](https://lean-lang.org/functional_programming_in_lean/) by David Thrane Christiansen.
 
 If you want to dabble in theorems and proofs, we recommend [Theorem Proving in Lean 4](https://lean-lang.org/theorem_proving_in_lean4/).
-

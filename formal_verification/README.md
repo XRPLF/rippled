@@ -20,7 +20,8 @@ Conan package, so it needs no separate Lean or elan install.
 
 ## Working on the proofs directly
 
-Only needed when editing the Lean model or proofs by hand. You can use lake binary in `.conan2` directory or install your own.
+Only needed when editing the Lean model or proofs by hand.
+You can use lake binary in `.conan2` directory or install your own.
 
 That requires [elan](https://github.com/leanprover/elan) (it provides the Lean
 version pinned in `lean-toolchain`):
@@ -32,4 +33,3 @@ lake build
 
 `lake build` is the proof check: it passes only if every file elaborates with no
 `sorry` and standard axioms.
-
