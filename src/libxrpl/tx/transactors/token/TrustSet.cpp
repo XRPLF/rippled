@@ -329,7 +329,7 @@ TrustSet::doApply()
     // With any sponsor on the tx, the sponsor must cover the reserve (via balance or
     // prefunded budget), so the reserve check always runs.
     bool const freeTrustLine = !sponsorSle && (ownerCount(sle, j_) < 2);
-    std::uint32_t const ownerCount = ownerCount(sle, j_) < 2;
+    std::uint32_t const ownerCount = ownerCount(sle, j_);
     XRPAmount const reserveCreate(
         (ownerCount < 2) ? XRPAmount(beast::kZero)
                          : view().fees().accountReserve(ownerCount + 1, 1));
