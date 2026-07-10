@@ -408,9 +408,9 @@
       "id": 10
     },
     {
-      "title": "Tx Apply Pipeline Rate by Stage",
-      "description": "###### What this is:\n*How many transactions pass through each apply-pipeline stage (preflight, preclaim, apply) per second.*\n\n###### How it's computed:\n*Per-second rate over 5 minutes, grouped by pipeline stage and node.*\n\n###### Reading it:\n*Stages should step down slightly as invalid transactions are filtered out.*\n\n###### Healthy range:\n*Workload-dependent; preflight highest, apply lowest.*\n\n###### Watch for:\n*A large drop between stages, showing where most transactions are being rejected.*\n\n###### Source:\n[applySteps.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/applySteps.cpp) \u00b7 [Transactor.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/tx/Transactor.cpp)\n\n###### Function:\n`makeStageSpan ; Transactor::operator()`",
-      "type": "timeseries",
+      "title": "TxQ Accept: Applied Ratio per Node (State Timeline)",
+      "description": "###### What this is:\n*The applied fraction of TxQ accepts per node over time: the share of queued transactions that were included in a ledger versus removed on failure.*\n\n###### How it's computed:\n*Per node, applied accepts divided by applied-plus-failed accepts over the window.*\n\n###### Reading it:\n*Green (>=90% applied) is a healthy drain; yellow is degraded; red means accepts are mostly failing.*\n\n###### Healthy range:\n*At or near 100% applied when the queue is draining healthily; workload-dependent.*\n\n###### Watch for:\n*A node dropping into yellow or red, which signals queue pressure, under-bidding, or fee escalation on that node.*\n\n###### Source:\n[TxQ.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/TxQ.cpp)\n\n###### Function:\n`TxQ::accept`",
+      "type": "state-timeline",
       "gridPos": {
         "h": 8,
         "w": 24,
@@ -418,15 +418,22 @@
         "y": 60
       },
       "options": {
+        "mergeValues": true,
+        "showValue": "auto",
+        "alignValue": "center",
+        "rowHeight": 0.85,
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
           "maxHeight": 500
         },
         "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "calcs": ["mean", "max"]
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single"
         }
       },
       "targets": [
@@ -435,19 +442,30 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_replace(label_replace(sum by (stage, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\"}[$__rate_interval])), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\")",
-          "legendFormat": "{{stage}} [{{service_instance_id}}]"
+          "expr": "sum by (service_instance_id) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.accept_tx\", txq_status=\"applied\"}[$__rate_interval]))\n/\nsum by (service_instance_id) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.accept_tx\", txq_status=~\"applied|failed\"}[$__rate_interval]))",
+          "interval": "15s",
+          "legendFormat": "{{service_instance_id}}"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "yellow", "value": 0.7 },
+              { "color": "green", "value": 0.9 }
+            ]
+          },
           "custom": {
-            "axisLabel": "Spans / Sec",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
+            "fillOpacity": 80,
+            "lineWidth": 0
           }
         },
         "overrides": []
@@ -999,25 +1017,6 @@
         },
         "sort": 1,
         "label": "Result Code"
-      },
-      {
-        "name": "txq_status",
-        "type": "query",
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
-        },
-        "query": "label_values(span_calls_total{span_name=\"txq.accept_tx\", txq_status!=\"\"}, txq_status)",
-        "refresh": 2,
-        "includeAll": true,
-        "multi": true,
-        "allValue": ".*",
-        "current": {
-          "text": "All",
-          "value": "$__all"
-        },
-        "sort": 1,
-        "label": "Queue Status"
       },
       {
         "name": "stage",
