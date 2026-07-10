@@ -30,7 +30,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rpc_requests_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(rpc_requests_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
+          "interval": "15s",
           "legendFormat": "Requests / Sec [{{service_instance_id}}]"
         }
       ],
@@ -63,6 +64,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P95 Response Time [{{service_instance_id}}]"
         },
         {
@@ -70,6 +72,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P50 Response Time [{{service_instance_id}}]"
         }
       ],
@@ -109,6 +112,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(rpc_size_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P95 Response Size [{{service_instance_id}}]"
         },
         {
@@ -116,6 +120,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(rpc_size_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P50 Response Size [{{service_instance_id}}]"
         }
       ],
@@ -155,6 +160,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P50 [{{service_instance_id}}]"
         },
         {
@@ -162,6 +168,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.9, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P90 [{{service_instance_id}}]"
         },
         {
@@ -169,6 +176,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P95 [{{service_instance_id}}]"
         },
         {
@@ -176,6 +184,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.99, sum by (le, service_instance_id) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P99 [{{service_instance_id}}]"
         }
       ],
@@ -215,6 +224,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(pathfind_fast_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P95 Fast Pathfind [{{service_instance_id}}]"
         },
         {
@@ -222,6 +232,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(pathfind_fast_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P50 Fast Pathfind [{{service_instance_id}}]"
         }
       ],
@@ -261,6 +272,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(pathfind_full_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P95 Full Pathfind [{{service_instance_id}}]"
         },
         {
@@ -268,6 +280,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(pathfind_full_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P50 Full Pathfind [{{service_instance_id}}]"
         }
       ],
@@ -306,7 +319,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(warn_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(warn_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
+          "interval": "15s",
           "legendFormat": "Warnings / Sec [{{service_instance_id}}]"
         }
       ],
@@ -354,7 +368,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(drop_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(drop_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
+          "interval": "15s",
           "legendFormat": "Drops / Sec [{{service_instance_id}}]"
         }
       ],
@@ -402,7 +417,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (method, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m]))",
+          "expr": "sum by (method, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "{{method}} [{{service_instance_id}}]"
         }
       ],
@@ -442,6 +458,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, method, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "{{method}} [{{service_instance_id}}]"
         }
       ],
@@ -480,7 +497,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (grpc_status, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"grpc\\\\..*\", grpc_status!=\"\"}[5m]))",
+          "expr": "sum by (grpc_status, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"grpc\\\\..*\", grpc_status!=\"\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "{{grpc_status}} [{{service_instance_id}}]"
         }
       ],
@@ -520,6 +538,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.compute\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P95 Compute [{{service_instance_id}}]"
         },
         {
@@ -527,6 +546,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.50, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.compute\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P50 Compute [{{service_instance_id}}]"
         }
       ],
@@ -565,14 +585,16 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.request\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.request\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "Requests / Sec [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.discover\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.discover\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "Discoveries / Sec [{{service_instance_id}}]"
         }
       ],
