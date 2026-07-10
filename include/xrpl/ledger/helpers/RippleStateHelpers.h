@@ -156,6 +156,7 @@ trustCreate(
                                 // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
+    SLE::ref sponsorSle,
     beast::Journal j);
 
 [[nodiscard]] TER
@@ -178,6 +179,7 @@ issueIOU(
     AccountID const& account,
     STAmount const& amount,
     Issue const& issue,
+    SLE::ref sponsorSle,
     beast::Journal j);
 
 [[nodiscard]] TER
@@ -235,7 +237,7 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
 /// canAddHolding() in preflight with the same View and Asset
 [[nodiscard]] TER
 addEmptyHolding(
-    ApplyView& view,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Issue const& issue,
@@ -243,7 +245,7 @@ addEmptyHolding(
 
 [[nodiscard]] TER
 removeEmptyHolding(
-    ApplyView& view,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     Issue const& issue,
     beast::Journal journal);

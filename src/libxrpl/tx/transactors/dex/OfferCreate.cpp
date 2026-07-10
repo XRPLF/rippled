@@ -833,9 +833,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tefINTERNAL, false};
 
     {
-        XRPAmount const reserve =
-            sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
-
+        XRPAmount const reserve = accountReserve(sb, sleCreator, viewJ, {.ownerCountDelta = 1});
         if (preFeeBalance_ < reserve)
         {
             // If we are here, the signing account had an insufficient reserve
@@ -869,7 +867,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // Update owner count.
-    adjustOwnerCount(sb, sleCreator, 1, viewJ);
+    increaseOwnerCount(sb, sleCreator, {}, 1, viewJ);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.asset()) << " : "
                      << to_string(saTakerGets.asset())

@@ -20,6 +20,8 @@
 #include <test/jtx/require.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
@@ -2333,6 +2335,43 @@ public:
         ++limit;
         checkMetrics(*this, env, 0, limit * 2, 1, limit);
         BEAST_EXPECT(env.balance(alice) == drops(5));
+    }
+
+    void
+    testSponsorTxCannotQueue()
+    {
+        using namespace jtx;
+        testcase("disallow sponsored transaction from being queued");
+
+        Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
+
+        auto sponsor = Account("sponsor");
+        auto sponsee = Account("sponsee");
+        auto filler = Account("filler");
+
+        env.fund(XRP(50000), noripple(sponsor, sponsee));
+        env.close();
+        env.fund(XRP(50000), noripple(filler));
+        env.close();
+
+        fillQueue(env, filler);
+        checkMetrics(*this, env, 0, 6, 4, 3);
+
+        // Sponsored transactions are not allowed to be queued.
+        env(noop(sponsee),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(telCAN_NOT_QUEUE));
+        checkMetrics(*this, env, 0, 6, 4, 3);
+
+        // Sponsored transactions may still apply directly if they pay the
+        // open ledger fee. They just cannot be held in the queue.
+        env(noop(sponsee),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Fee(openLedgerCost(env)),
+            Ter(tesSUCCESS));
+        checkMetrics(*this, env, 0, 6, 5, 3);
     }
 
     void
@@ -4698,6 +4737,7 @@ public:
         testBlockersSeq();
         testBlockersTicket();
         testInFlightBalance();
+        testSponsorTxCannotQueue();
         testDelegateTxCannotQueue();
         testConsequences();
     }

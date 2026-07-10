@@ -58,7 +58,7 @@ closeChannel(SLE::ref slep, ApplyView& view, uint256 const& key, beast::Journal 
     XRPL_ASSERT(
         (*slep)[sfAmount] >= (*slep)[sfBalance], "xrpl::closeChannel : minimum channel amount");
     (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
-    adjustOwnerCount(view, sle, -1, j);
+    decreaseOwnerCountForObject(view, sle, slep, 1, j);
     view.update(sle);
 
     // Remove PayChan from ledger

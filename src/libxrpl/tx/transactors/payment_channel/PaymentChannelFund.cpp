@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -87,13 +88,18 @@ PaymentChannelFund::doApply()
 
     {
         // Check reserve and funds availability
-        auto const balance = (*sle)[sfBalance];
-        auto const reserve = ctx_.view().fees().accountReserve((*sle)[sfOwnerCount]);
+        STAmount const balance = (*sle)[sfBalance];
+        if (auto const ret = checkReserve(ctx_.getApplyViewContext(), sle, balance.xrp(), {}, j_);
+            !isTesSuccess(ret))
+            return ret;
 
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-
-        if (balance < reserve + ctx_.tx[sfAmount])
+        // After locking sfAmount in the channel, the source must still meet
+        // its own reserve floor. We compare directly (rather than via
+        // checkReserve) because that helper diverts to the sponsor's balance
+        // when a sponsor is present and would ignore the source's post-lock
+        // balance entirely. Funding an existing channel adds no owned object,
+        // so there is no owner-count delta.
+        if (balance < accountReserve(ctx_.view(), sle, j_) + ctx_.tx[sfAmount])
             return tecUNFUNDED;
     }
 

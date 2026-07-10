@@ -7,13 +7,13 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>  // IWYU pragma: keep
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -130,12 +130,10 @@ CredentialCreate::doApply()
     if (!sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    {
-        STAmount const reserve{
-            view().fees().accountReserve(sleIssuer->getFieldU32(sfOwnerCount) + 1)};
-        if (preFeeBalance_ < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
+    if (auto const ret = checkReserve(
+            ctx_.getApplyViewContext(), sleIssuer, preFeeBalance_, {.ownerCountDelta = 1}, j_);
+        !isTesSuccess(ret))
+        return ret;
 
     sleCred->setAccountID(sfSubject, subject);
     sleCred->setAccountID(sfIssuer, accountID_);
@@ -153,7 +151,8 @@ CredentialCreate::doApply()
             return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
 
-        adjustOwnerCount(view(), sleIssuer, 1, j_);
+        increaseOwnerCount(ctx_.getApplyViewContext(), sleIssuer, 1, j_);
+        addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred);
     }
 
     if (subject == accountID_)
