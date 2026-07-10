@@ -329,10 +329,10 @@ TrustSet::doApply()
     // With any sponsor on the tx, the sponsor must cover the reserve (via balance or
     // prefunded budget), so the reserve check always runs.
     bool const freeTrustLine = !sponsorSle && (ownerCount(sle, j_) < 2);
-    std::uint32_t const ownerCount = ownerCount(sle, j_);
+    std::uint32_t const uOwnerCount = ownerCount(sle, j_);
     XRPAmount const reserveCreate(
-        (ownerCount < 2) ? XRPAmount(beast::kZero)
-                         : view().fees().accountReserve(ownerCount + 1, 1));
+        (uOwnerCount < 2) ? XRPAmount(beast::kZero)
+                          : view().fees().accountReserve(uOwnerCount + 1, 1));
 
     std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
@@ -628,7 +628,7 @@ TrustSet::doApply()
 
             // Another transaction could provide XRP to the account and then
             // this transaction would succeed.
-            terResult = ret;
+            terResult = tecINSUF_RESERVE_LINE;
         }
         else if (
             auto const ret = checkReserve(
