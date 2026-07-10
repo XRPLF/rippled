@@ -667,10 +667,8 @@ TrustSet::doApply()
         JLOG(j_.trace()) << "Redundant: Setting non-existent ripple line to defaults.";
         return tecNO_LINE_REDUNDANT;
     }
-    else if (!view().rules().enabled(featureSponsor) && preFeeBalance_ < reserveCreate)  // Reserve
-                                                                                         // is not
-                                                                                         // scaled
-                                                                                         // by load.
+    // reserve is not scaled by load
+    else if (!view().rules().enabled(featureSponsor) && preFeeBalance_ < reserveCreate)
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
                             "Insufficent reserve to create line.";

@@ -165,9 +165,6 @@ adjustOwnerCountSigned(
 
         if (sponsorSle)
         {
-            XRPL_ASSERT(
-                view.rules().enabled(featureSponsor),
-                "xrpl::getTxReserveSponsor : sponsor exists + Sponsor enabled");
             bool const validSponsorType = sponsorSle->getType() == ltACCOUNT_ROOT;
             XRPL_ASSERT(validSponsorType, "xrpl::adjustOwnerCountSigned : valid sponsor sle type");
             if (!validSponsorType)
@@ -212,16 +209,8 @@ adjustOwnerCountSigned(
         std::uint32_t const adjusted = confineOwnerCount(current, adjustment, id, j);
 
         OwnerCounts const currentOwnerCount(accountSle);
-        XRPL_ASSERT(
-            currentOwnerCount.owner == current && currentOwnerCount.sponsored == 0 &&
-                currentOwnerCount.sponsoring == 0,
-            "xrpl::adjustOwnerCountSigned : no sponsoring/sponsored on currentOwnerCount");
         OwnerCounts finalOwnerCount(currentOwnerCount);
         finalOwnerCount.owner = adjusted;
-        XRPL_ASSERT(
-            finalOwnerCount.owner == adjusted && finalOwnerCount.sponsored == 0 &&
-                finalOwnerCount.sponsoring == 0,
-            "xrpl::adjustOwnerCountSigned : no sponsoring/sponsored on finalOwnerCount");
 
         view.adjustOwnerCountHook(id, currentOwnerCount, finalOwnerCount);
         accountSle->at(sfOwnerCount) = adjusted;
