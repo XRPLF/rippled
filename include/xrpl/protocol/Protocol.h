@@ -237,8 +237,8 @@ constexpr std::size_t kMaxPermissionedDomainCredentialsArraySize = 10;
 constexpr std::size_t kMaxMpTokenMetadataLength = 1024;
 
 /** The maximum amount of MPTokenIssuance */
-constexpr std::uint64_t kMaxMpTokenAmount = 0x7FFF'FFFF'FFFF'FFFFull;
-static_assert(Number::kMaxRep >= kMaxMpTokenAmount);
+std::uint64_t constexpr kMaxMpTokenAmount = 0x7FFF'FFFF'FFFF'FFFFull;
+static_assert(Number::kLargestMantissa >= kMaxMpTokenAmount);
 
 /** The maximum length of Data payload */
 constexpr std::size_t kMaxDataPayloadLength = 256;

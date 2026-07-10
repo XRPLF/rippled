@@ -26,7 +26,7 @@ systemName()
 /** Number of drops in the genesis account. */
 constexpr XRPAmount kInitialXrp{100'000'000'000 * kDropsPerXrp};
 static_assert(kInitialXrp.drops() == 100'000'000'000'000'000);
-static_assert(Number::kMaxRep >= kInitialXrp.drops());
+static_assert(Number::kLargestMantissa >= kInitialXrp.drops());
 
 /** Returns true if the amount does not exceed the initial XRP in existence. */
 inline bool
