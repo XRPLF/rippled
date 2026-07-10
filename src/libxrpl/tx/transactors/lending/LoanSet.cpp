@@ -381,7 +381,7 @@ LoanSet::doApply()
     if (!brokerOwnerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    auto const vaultSle = view.peek(keylet ::vault(brokerSle->at(sfVaultID)));
+    VaultEntry<ApplyView> vaultSle{keylet::vault(brokerSle->at(sfVaultID)), view};
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultPseudo = vaultSle->at(sfAccount);
@@ -627,7 +627,7 @@ LoanSet::doApply()
         *vaultAvailableProxy <= *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
         "assets available must not be greater than assets outstanding");
-    view.update(vaultSle);
+    vaultSle.update();
 
     // Update the balances in the loan broker
     adjustImpreciseNumber(brokerSle->at(sfDebtTotal), newDebtDelta, vaultAsset, vaultScale);

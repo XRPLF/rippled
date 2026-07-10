@@ -4,6 +4,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -41,9 +42,9 @@ public:
     static TER
     defaultLoan(
         ApplyView& view,
-        SLE::ref loanSle,
-        SLE::ref brokerSle,
-        SLE::ref vaultSle,
+        LoanEntry<ApplyView>& loanSle,
+        LoanBrokerEntry<ApplyView>& brokerSle,
+        VaultEntry<ApplyView>& vaultSle,
         Asset const& vaultAsset,
         beast::Journal j);
 
@@ -52,8 +53,8 @@ public:
     static TER
     impairLoan(
         ApplyView& view,
-        SLE::ref loanSle,
-        SLE::ref vaultSle,
+        LoanEntry<ApplyView>& loanSle,
+        VaultEntry<ApplyView>& vaultSle,
         Asset const& vaultAsset,
         beast::Journal j);
 
@@ -62,8 +63,8 @@ public:
     [[nodiscard]] static TER
     unimpairLoan(
         ApplyView& view,
-        SLE::ref loanSle,
-        SLE::ref vaultSle,
+        LoanEntry<ApplyView>& loanSle,
+        VaultEntry<ApplyView>& vaultSle,
         Asset const& vaultAsset,
         beast::Journal j);
 

@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Protocol.h>
@@ -48,7 +49,7 @@ namespace xrpl {
 [[nodiscard]] TER
 canApplyToBrokerCover(
     ReadView const& view,
-    SLE::const_ref sleBroker,
+    LoanBrokerEntry<ReadView> const& sleBroker,
     Asset const& vaultAsset,
     STAmount const& amount,
     beast::Journal j,
@@ -214,7 +215,7 @@ adjustImpreciseNumber(
 }
 
 inline int
-getAssetsTotalScale(SLE::const_ref vaultSle)
+getAssetsTotalScale(VaultEntry<ReadView> const& vaultSle)
 {
     if (!vaultSle)
         return Number::kMinExponent - 1;  // LCOV_EXCL_LINE
@@ -225,7 +226,10 @@ getAssetsTotalScale(SLE::const_ref vaultSle)
 // DebtTotal is a broker-level aggregate maintained at vault scale, so the
 // rounding must also use vault scale — never an individual loan's scale.
 inline Number
-minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::const_ref vaultSle)
+minimumBrokerCover(
+    Number const& debtTotal,
+    TenthBips32 coverRateMinimum,
+    VaultEntry<ReadView> const& vaultSle)
 {
     XRPL_ASSERT(
         vaultSle && vaultSle->getType() == ltVAULT, "xrpl::minimumBrokerCover : valid Vault sle");
@@ -263,7 +267,7 @@ constructLoanState(
 // Constructs a valid LoanState object from a Loan object, which always has
 // rounded values
 LoanState
-constructRoundedLoanState(SLE::const_ref loan);
+constructRoundedLoanState(LoanEntry<ReadView> const& loan);
 
 Number
 computeManagementFee(
@@ -545,8 +549,8 @@ std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
     ApplyView& view,
-    SLE::ref loan,
-    SLE::const_ref brokerSle,
+    LoanEntry<ApplyView>& loan,
+    LoanBrokerEntry<ReadView> const& brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
     beast::Journal j);

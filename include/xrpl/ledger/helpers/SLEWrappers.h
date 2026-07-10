@@ -14,8 +14,8 @@ namespace xrpl {
  * than translate the entry's "keylet parts" (the arguments to its keylet::
  * function) into a Keylet that the base class resolves against the view:
  *
- *   AccountRoot<ApplyView> acct{id, view};     // peek (writable)
- *   AccountRoot<ReadView>  acct{id, readView}; // read  (read-only)
+ *   AccountRootEntry<ApplyView> acct{id, view};     // peek (writable)
+ *   AccountRootEntry<ReadView>  acct{id, readView}; // read  (read-only)
  *
  * Domain-specific accessors will be layered onto each wrapper over time.
  */
@@ -23,10 +23,14 @@ namespace xrpl {
 // Ordered to match include/xrpl/protocol/detail/ledger_entries.macro.
 
 template <typename ViewT>
-class NFTokenOffer : public SLEBase<ViewT>
+class NFTokenOfferEntry : public SLEBase<ViewT>
 {
 public:
-    explicit NFTokenOffer(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit NFTokenOfferEntry(
         AccountID const& owner,
         std::uint32_t seq,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -37,10 +41,14 @@ public:
 };
 
 template <typename ViewT>
-class Check : public SLEBase<ViewT>
+class CheckEntry : public SLEBase<ViewT>
 {
 public:
-    explicit Check(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit CheckEntry(
         AccountID const& id,
         std::uint32_t seq,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -51,10 +59,14 @@ public:
 };
 
 template <typename ViewT>
-class DID : public SLEBase<ViewT>
+class DIDEntry : public SLEBase<ViewT>
 {
 public:
-    explicit DID(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit DIDEntry(
         AccountID const& account,
         typename SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
@@ -64,10 +76,14 @@ public:
 };
 
 template <typename ViewT>
-class NegativeUNL : public SLEBase<ViewT>
+class NegativeUNLEntry : public SLEBase<ViewT>
 {
 public:
-    explicit NegativeUNL(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit NegativeUNLEntry(
         typename SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::negativeUNL(), view, j)
@@ -76,10 +92,14 @@ public:
 };
 
 template <typename ViewT>
-class NFTokenPage : public SLEBase<ViewT>
+class NFTokenPageEntry : public SLEBase<ViewT>
 {
 public:
-    explicit NFTokenPage(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit NFTokenPageEntry(
         Keylet const& page,
         uint256 const& token,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -90,10 +110,14 @@ public:
 };
 
 template <typename ViewT>
-class SignerList : public SLEBase<ViewT>
+class SignerListEntry : public SLEBase<ViewT>
 {
 public:
-    explicit SignerList(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit SignerListEntry(
         AccountID const& account,
         typename SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
@@ -103,10 +127,14 @@ public:
 };
 
 template <typename ViewT>
-class Ticket : public SLEBase<ViewT>
+class TicketEntry : public SLEBase<ViewT>
 {
 public:
-    explicit Ticket(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit TicketEntry(
         AccountID const& id,
         std::uint32_t ticketSeq,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -117,10 +145,14 @@ public:
 };
 
 template <typename ViewT>
-class AccountRoot : public SLEBase<ViewT>
+class AccountRootEntry : public SLEBase<ViewT>
 {
 public:
-    explicit AccountRoot(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit AccountRootEntry(
         AccountID const& id,
         typename SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
@@ -130,10 +162,14 @@ public:
 };
 
 template <typename ViewT>
-class DirectoryNode : public SLEBase<ViewT>
+class DirectoryNodeEntry : public SLEBase<ViewT>
 {
 public:
-    explicit DirectoryNode(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit DirectoryNodeEntry(
         AccountID const& id,
         typename SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
@@ -143,10 +179,14 @@ public:
 };
 
 template <typename ViewT>
-class Amendments : public SLEBase<ViewT>
+class AmendmentsEntry : public SLEBase<ViewT>
 {
 public:
-    explicit Amendments(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit AmendmentsEntry(
         typename SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::amendments(), view, j)
@@ -155,10 +195,14 @@ public:
 };
 
 template <typename ViewT>
-class LedgerHashes : public SLEBase<ViewT>
+class LedgerHashesEntry : public SLEBase<ViewT>
 {
 public:
-    explicit LedgerHashes(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit LedgerHashesEntry(
         typename SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::skip(), view, j)
@@ -167,10 +211,14 @@ public:
 };
 
 template <typename ViewT>
-class Bridge : public SLEBase<ViewT>
+class BridgeEntry : public SLEBase<ViewT>
 {
 public:
-    explicit Bridge(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit BridgeEntry(
         STXChainBridge const& bridge,
         STXChainBridge::ChainType chainType,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -181,10 +229,14 @@ public:
 };
 
 template <typename ViewT>
-class Offer : public SLEBase<ViewT>
+class OfferEntry : public SLEBase<ViewT>
 {
 public:
-    explicit Offer(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit OfferEntry(
         AccountID const& id,
         std::uint32_t seq,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -195,10 +247,14 @@ public:
 };
 
 template <typename ViewT>
-class DepositPreauth : public SLEBase<ViewT>
+class DepositPreauthEntry : public SLEBase<ViewT>
 {
 public:
-    explicit DepositPreauth(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit DepositPreauthEntry(
         AccountID const& owner,
         AccountID const& preauthorized,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -209,10 +265,14 @@ public:
 };
 
 template <typename ViewT>
-class XChainOwnedClaimID : public SLEBase<ViewT>
+class XChainOwnedClaimIDEntry : public SLEBase<ViewT>
 {
 public:
-    explicit XChainOwnedClaimID(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit XChainOwnedClaimIDEntry(
         STXChainBridge const& bridge,
         std::uint64_t seq,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -223,10 +283,14 @@ public:
 };
 
 template <typename ViewT>
-class RippleState : public SLEBase<ViewT>
+class RippleStateEntry : public SLEBase<ViewT>
 {
 public:
-    explicit RippleState(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit RippleStateEntry(
         AccountID const& id0,
         AccountID const& id1,
         Currency const& currency,
@@ -238,10 +302,14 @@ public:
 };
 
 template <typename ViewT>
-class FeeSettings : public SLEBase<ViewT>
+class FeeSettingsEntry : public SLEBase<ViewT>
 {
 public:
-    explicit FeeSettings(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit FeeSettingsEntry(
         typename SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::feeSettings(), view, j)
@@ -250,10 +318,14 @@ public:
 };
 
 template <typename ViewT>
-class XChainOwnedCreateAccountClaimID : public SLEBase<ViewT>
+class XChainOwnedCreateAccountClaimIDEntry : public SLEBase<ViewT>
 {
 public:
-    explicit XChainOwnedCreateAccountClaimID(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit XChainOwnedCreateAccountClaimIDEntry(
         STXChainBridge const& bridge,
         std::uint64_t seq,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -264,10 +336,14 @@ public:
 };
 
 template <typename ViewT>
-class Escrow : public SLEBase<ViewT>
+class EscrowEntry : public SLEBase<ViewT>
 {
 public:
-    explicit Escrow(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit EscrowEntry(
         AccountID const& src,
         std::uint32_t seq,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -278,10 +354,14 @@ public:
 };
 
 template <typename ViewT>
-class PayChannel : public SLEBase<ViewT>
+class PayChannelEntry : public SLEBase<ViewT>
 {
 public:
-    explicit PayChannel(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit PayChannelEntry(
         AccountID const& src,
         AccountID const& dst,
         std::uint32_t seq,
@@ -293,10 +373,14 @@ public:
 };
 
 template <typename ViewT>
-class AMM : public SLEBase<ViewT>
+class AMMEntry : public SLEBase<ViewT>
 {
 public:
-    explicit AMM(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit AMMEntry(
         Asset const& issue1,
         Asset const& issue2,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -307,10 +391,14 @@ public:
 };
 
 template <typename ViewT>
-class MPTokenIssuance : public SLEBase<ViewT>
+class MPTokenIssuanceEntry : public SLEBase<ViewT>
 {
 public:
-    explicit MPTokenIssuance(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit MPTokenIssuanceEntry(
         std::uint32_t seq,
         AccountID const& issuer,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -321,10 +409,14 @@ public:
 };
 
 template <typename ViewT>
-class MPToken : public SLEBase<ViewT>
+class MPTokenEntry : public SLEBase<ViewT>
 {
 public:
-    explicit MPToken(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit MPTokenEntry(
         MPTID const& issuanceID,
         AccountID const& holder,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -335,10 +427,14 @@ public:
 };
 
 template <typename ViewT>
-class Oracle : public SLEBase<ViewT>
+class OracleEntry : public SLEBase<ViewT>
 {
 public:
-    explicit Oracle(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit OracleEntry(
         AccountID const& account,
         std::uint32_t documentID,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -349,10 +445,14 @@ public:
 };
 
 template <typename ViewT>
-class Credential : public SLEBase<ViewT>
+class CredentialEntry : public SLEBase<ViewT>
 {
 public:
-    explicit Credential(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit CredentialEntry(
         AccountID const& subject,
         AccountID const& issuer,
         Slice const& credType,
@@ -364,10 +464,14 @@ public:
 };
 
 template <typename ViewT>
-class PermissionedDomain : public SLEBase<ViewT>
+class PermissionedDomainEntry : public SLEBase<ViewT>
 {
 public:
-    explicit PermissionedDomain(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit PermissionedDomainEntry(
         AccountID const& account,
         std::uint32_t seq,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -378,10 +482,14 @@ public:
 };
 
 template <typename ViewT>
-class Delegate : public SLEBase<ViewT>
+class DelegateEntry : public SLEBase<ViewT>
 {
 public:
-    explicit Delegate(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit DelegateEntry(
         AccountID const& account,
         AccountID const& authorizedAccount,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -392,10 +500,14 @@ public:
 };
 
 template <typename ViewT>
-class Vault : public SLEBase<ViewT>
+class VaultEntry : public SLEBase<ViewT>
 {
 public:
-    explicit Vault(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit VaultEntry(
         AccountID const& owner,
         std::uint32_t seq,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -406,10 +518,14 @@ public:
 };
 
 template <typename ViewT>
-class LoanBroker : public SLEBase<ViewT>
+class LoanBrokerEntry : public SLEBase<ViewT>
 {
 public:
-    explicit LoanBroker(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit LoanBrokerEntry(
         AccountID const& owner,
         std::uint32_t seq,
         typename SLEBase<ViewT>::view_ref_type view,
@@ -420,29 +536,19 @@ public:
 };
 
 template <typename ViewT>
-class Loan : public SLEBase<ViewT>
+class LoanEntry : public SLEBase<ViewT>
 {
 public:
-    explicit Loan(
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit LoanEntry(
         uint256 const& loanBrokerID,
         std::uint32_t loanSeq,
         typename SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::loan(loanBrokerID, loanSeq), view, j)
-    {
-    }
-};
-
-template <typename ViewT>
-class Sponsorship : public SLEBase<ViewT>
-{
-public:
-    explicit Sponsorship(
-        AccountID const& sponsor,
-        AccountID const& sponsee,
-        typename SLEBase<ViewT>::view_ref_type view,
-        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : SLEBase<ViewT>(keylet::sponsorship(sponsor, sponsee), view, j)
     {
     }
 };

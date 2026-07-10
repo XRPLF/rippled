@@ -128,7 +128,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
 }
 
 static Number
-owedToVault(SLE::ref loanSle)
+owedToVault(LoanEntry<ApplyView> const& loanSle)
 {
     // Spec section 3.2.3.2, defines the default amount as
     //
@@ -147,9 +147,9 @@ owedToVault(SLE::ref loanSle)
 TER
 LoanManage::defaultLoan(
     ApplyView& view,
-    SLE::ref loanSle,
-    SLE::ref brokerSle,
-    SLE::ref vaultSle,
+    LoanEntry<ApplyView>& loanSle,
+    LoanBrokerEntry<ApplyView>& brokerSle,
+    VaultEntry<ApplyView>& vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -251,7 +251,7 @@ LoanManage::defaultLoan(
             adjustImpreciseNumber(
                 vaultLossUnrealizedProxy, -totalDefaultAmount, vaultAsset, vaultScale);
         }
-        view.update(vaultSle);
+        vaultSle.update();
     }
 
     // Update the LoanBroker object:
@@ -269,7 +269,7 @@ LoanManage::defaultLoan(
             // LCOV_EXCL_STOP
         }
         coverAvailableProxy -= defaultCovered;
-        view.update(brokerSle);
+        brokerSle.update();
     }
 
     // Update the Loan object:
@@ -282,7 +282,7 @@ LoanManage::defaultLoan(
     // Zero out the next due date. Since it's default, it'll be removed from
     // the object.
     loanSle->at(sfNextPaymentDueDate) = 0;
-    view.update(loanSle);
+    loanSle.update();
 
     // Return funds from the LoanBroker pseudo-account to the
     // Vault pseudo-account:
@@ -298,8 +298,8 @@ LoanManage::defaultLoan(
 TER
 LoanManage::impairLoan(
     ApplyView& view,
-    SLE::ref loanSle,
-    SLE::ref vaultSle,
+    LoanEntry<ApplyView>& loanSle,
+    VaultEntry<ApplyView>& vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -321,7 +321,7 @@ LoanManage::impairLoan(
                           "corrupt the vault.";
         return tecLIMIT_EXCEEDED;
     }
-    view.update(vaultSle);
+    vaultSle.update();
 
     // Update the Loan object
     loanSle->setFlag(lsfLoanImpaired);
@@ -332,7 +332,7 @@ LoanManage::impairLoan(
         // move the next payment due date to now
         loanNextDueProxy = view.parentCloseTime().time_since_epoch().count();
     }
-    view.update(loanSle);
+    loanSle.update();
 
     return tesSUCCESS;
 }
@@ -340,8 +340,8 @@ LoanManage::impairLoan(
 [[nodiscard]] TER
 LoanManage::unimpairLoan(
     ApplyView& view,
-    SLE::ref loanSle,
-    SLE::ref vaultSle,
+    LoanEntry<ApplyView>& loanSle,
+    VaultEntry<ApplyView>& vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -363,7 +363,7 @@ LoanManage::unimpairLoan(
     // Reverse the "paper loss"
     adjustImpreciseNumber(vaultLossUnrealizedProxy, -lossReversed, vaultAsset, vaultScale);
 
-    view.update(vaultSle);
+    vaultSle.update();
 
     // Update the Loan object
     loanSle->clearFlag(lsfLoanImpaired);
@@ -381,7 +381,7 @@ LoanManage::unimpairLoan(
         loanSle->at(sfNextPaymentDueDate) =
             view.parentCloseTime().time_since_epoch().count() + paymentInterval;
     }
-    view.update(loanSle);
+    loanSle.update();
 
     return tesSUCCESS;
 }
@@ -393,16 +393,16 @@ LoanManage::doApply()
     auto& view = ctx_.view();
 
     auto const loanID = tx[sfLoanID];
-    auto const loanSle = view.peek(keylet::loan(loanID));
+    LoanEntry<ApplyView> loanSle{keylet::loan(loanID), view};
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     auto const brokerID = loanSle->at(sfLoanBrokerID);
-    auto const brokerSle = view.peek(keylet::loanBroker(brokerID));
+    LoanBrokerEntry<ApplyView> brokerSle{keylet::loanBroker(brokerID), view};
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
+    VaultEntry<ApplyView> vaultSle{keylet::vault(brokerSle->at(sfVaultID)), view};
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);

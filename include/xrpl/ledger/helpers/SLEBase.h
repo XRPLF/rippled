@@ -177,7 +177,10 @@ public:
         return j_;
     }
 
-protected:
+    // --- Constructors that adopt/resolve an SLE (public so the ReadOnlySLE /
+    //     WritableSLE aliases and the per-type wrappers can be built directly
+    //     from an already-fetched SLE or a keylet). ---
+
     /** Constructor for read-only context */
     explicit SLEBase(
         SLE::const_pointer sle,
@@ -233,6 +236,7 @@ protected:
     {
     }
 
+protected:
     view_ref_type view_{};
 
     // Keylet is only meaningful for writable views, but we conditionally
@@ -246,5 +250,16 @@ protected:
     sle_ptr_type sle_{};
     beast::Journal j_;
 };
+
+/** Generic (any-entry-type) SLE handles.
+ *
+ * Use these when the concrete ledger entry type is not known at a given site;
+ * otherwise prefer the per-type wrappers in SLEWrappers.h.
+ *
+ *   SLE::const_pointer / SLE::const_ref  ->  ReadOnlySLE
+ *   SLE::pointer       / SLE::ref        ->  WritableSLE
+ */
+using ReadOnlySLE = SLEBase<ReadView>;
+using WritableSLE = SLEBase<ApplyView>;
 
 }  // namespace xrpl

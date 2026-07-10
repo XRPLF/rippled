@@ -287,19 +287,19 @@ LoanPay::doApply()
     auto const amount = tx[sfAmount];
 
     auto const loanID = tx[sfLoanID];
-    auto const loanSle = view.peek(keylet::loan(loanID));
+    LoanEntry<ApplyView> loanSle{keylet::loan(loanID), view};
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
 
     auto const brokerID = loanSle->at(sfLoanBrokerID);
-    auto const brokerSle = view.peek(keylet::loanBroker(brokerID));
+    LoanBrokerEntry<ApplyView> brokerSle{keylet::loanBroker(brokerID), view};
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const brokerOwner = brokerSle->at(sfOwner);
     auto const brokerPseudoAccount = brokerSle->at(sfAccount);
     auto const vaultID = brokerSle->at(sfVaultID);
-    auto const vaultSle = view.peek(keylet::vault(vaultID));
+    VaultEntry<ApplyView> vaultSle{keylet::vault(vaultID), view};
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultPseudoAccount = vaultSle->at(sfAccount);
@@ -392,7 +392,7 @@ LoanPay::doApply()
 
     // If the payment computation completed without error, the loanSle object
     // has been modified.
-    view.update(loanSle);
+    loanSle.update();
 
     XRPL_ASSERT_PARTS(
         // It is possible to pay 0 principal
@@ -427,7 +427,7 @@ LoanPay::doApply()
 
     //------------------------------------------------------
     // LoanBroker object state changes
-    view.update(brokerSle);
+    brokerSle.update();
 
     auto assetsAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto assetsTotalProxy = vaultSle->at(sfAssetsTotal);
@@ -468,7 +468,7 @@ LoanPay::doApply()
 
     //------------------------------------------------------
     // Vault object state changes
-    view.update(vaultSle);
+    vaultSle.update();
 
     Number const assetsAvailableBefore = *assetsAvailableProxy;
     Number const assetsTotalBefore = *assetsTotalProxy;

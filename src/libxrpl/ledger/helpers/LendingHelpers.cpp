@@ -33,7 +33,7 @@ namespace xrpl {
 [[nodiscard]] TER
 canApplyToBrokerCover(
     ReadView const& view,
-    SLE::const_ref sleBroker,
+    LoanBrokerEntry<ReadView> const& sleBroker,
     Asset const& vaultAsset,
     STAmount const& amount,
     beast::Journal j,
@@ -1632,7 +1632,7 @@ constructLoanState(
 }
 
 LoanState
-constructRoundedLoanState(SLE::const_ref loan)
+constructRoundedLoanState(LoanEntry<ReadView> const& loan)
 {
     return constructLoanState(
         loan->at(sfTotalValueOutstanding),
@@ -1784,8 +1784,8 @@ std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
     ApplyView& view,
-    SLE::ref loan,
-    SLE::const_ref brokerSle,
+    LoanEntry<ApplyView>& loan,
+    LoanBrokerEntry<ReadView> const& brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
     beast::Journal j)
@@ -1836,7 +1836,7 @@ loanMakePayment(
 
     XRPL_ASSERT(*totalValueOutstandingProxy > 0, "xrpl::loanMakePayment : valid total value");
 
-    view.update(loan);
+    loan.update();
 
     // -------------------------------------------------------------
     // A late payment not flagged as late overrides all other options.

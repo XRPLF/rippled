@@ -96,7 +96,12 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 
     // Helper handles both IOU and MPT correctly without explicit branching.
     if (auto const ret = canApplyToBrokerCover(
-            ctx.view, sleBroker, vaultAsset, amount, ctx.j, "LoanBrokerCoverWithdraw"))
+            ctx.view,
+            LoanBrokerEntry<ReadView>{sleBroker, ctx.view},
+            vaultAsset,
+            amount,
+            ctx.j,
+            "LoanBrokerCoverWithdraw"))
         return ret;
 
     // The broker's pseudo-account is the source of funds.
@@ -152,7 +157,9 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         if (fix320Enabled)
         {
             return minimumBrokerCover(
-                currentDebtTotal, TenthBips32{sleBroker->at(sfCoverRateMinimum)}, vault);
+                currentDebtTotal,
+                TenthBips32{sleBroker->at(sfCoverRateMinimum)},
+                VaultEntry<ReadView>{vault, ctx.view});
         }
 
         // Always round the minimum required up.

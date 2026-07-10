@@ -78,7 +78,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     {
         // Any remaining debt should have been wiped out by the last Loan
         // Delete. This check is purely defensive.
-        auto const scale = getAssetsTotalScale(vault);
+        auto const scale = getAssetsTotalScale(VaultEntry<ReadView>{vault, ctx.view});
 
         auto const rounded =
             roundToAsset(asset, debtTotal, scale, Number::RoundingMode::TowardsZero);

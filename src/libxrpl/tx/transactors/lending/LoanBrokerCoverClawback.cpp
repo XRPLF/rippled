@@ -161,7 +161,7 @@ determineClawAmount(
     SLE const& sleBroker,
     Asset const& vaultAsset,
     std::optional<STAmount> const& amount,
-    SLE::const_ref vaultSle,
+    VaultEntry<ReadView> const& vaultSle,
     Rules const& rules)
 {
     auto const maxClawAmount = [&]() {
@@ -293,8 +293,8 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto const findClawAmount =
-        determineClawAmount(*sleBroker, vaultAsset, amount, vault, ctx.view.rules());
+    auto const findClawAmount = determineClawAmount(
+        *sleBroker, vaultAsset, amount, VaultEntry<ReadView>{vault, ctx.view}, ctx.view.rules());
     if (!findClawAmount)
     {
         JLOG(ctx.j.warn()) << "LoanBroker cover is already at minimum.";
@@ -303,7 +303,12 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     STAmount const& clawAmount = *findClawAmount;
 
     if (auto const ret = canApplyToBrokerCover(
-            ctx.view, sleBroker, vaultAsset, clawAmount, ctx.j, "LoanBrokerCoverClawback"))
+            ctx.view,
+            LoanBrokerEntry<ReadView>{sleBroker, ctx.view},
+            vaultAsset,
+            clawAmount,
+            ctx.j,
+            "LoanBrokerCoverClawback"))
         return ret;
 
     // Explicitly check the balance of the trust line / MPT to make sure the
@@ -356,8 +361,8 @@ LoanBrokerCoverClawback::doApply()
 
     auto const vaultAsset = vault->at(sfAsset);
 
-    auto const findClawAmount =
-        determineClawAmount(*sleBroker, vaultAsset, amount, vault, view().rules());
+    auto const findClawAmount = determineClawAmount(
+        *sleBroker, vaultAsset, amount, VaultEntry<ReadView>{vault, view()}, view().rules());
     if (!findClawAmount)
         return tecINTERNAL;  // LCOV_EXCL_LINE
     STAmount const& clawAmount = *findClawAmount;
