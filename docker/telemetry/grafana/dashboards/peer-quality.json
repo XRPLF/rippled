@@ -431,7 +431,7 @@
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id)",
         "type": "query",
-        "query": "label_values(peer_quality, service_instance_id)",
+        "query": "label_values(target_info, service_instance_id)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
