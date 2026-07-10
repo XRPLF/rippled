@@ -1597,7 +1597,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
         auto const wasm = hexToBytes(kAllHostFunctionsWasmHex);
 
-        Env env{*this};
+        Env const env{*this};
         auto mock = HostFunctions{env.journal};
 
         perf(kRuns, [&] { return !preflightEscrowWasm(wasm, mock, escrowFunctionName); });
