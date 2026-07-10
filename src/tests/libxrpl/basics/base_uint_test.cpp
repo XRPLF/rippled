@@ -128,7 +128,9 @@ TEST_F(BaseUintDeathTest, fromRaw_size_mismatch)
 {
     // ENABLE_VOIDSTAR is a debug build, but does not crash on failed asserts. Rather than twist
     // these tests into knots to make them work, just skip them.
-#ifndef ENABLE_VOIDSTAR
+#ifdef ENABLE_VOIDSTAR
+	GTEST_SKIP() << "ENABLE_VOIDSTAR is a debug build, but does not crash on failed asserts."
+#else
     auto smallConstruct = [] {
         // Container smaller than the base_uint (8 bytes vs 12 bytes for
         // test96). Only the first 8 bytes are copied; the remaining 4 bytes
