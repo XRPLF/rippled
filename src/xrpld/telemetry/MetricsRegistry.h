@@ -23,23 +23,23 @@
                     |       +-- OtlpHttpMetricExporter
                     |
                     +-- Counters / Histograms   (synchronous instruments)
-                    |       +-- xrpld_rpc_method_started_total
-                    |       +-- xrpld_rpc_method_finished_total
-                    |       +-- xrpld_rpc_method_errored_total
-                    |       +-- xrpld_rpc_method_duration_us (Histogram)
-                    |       +-- xrpld_job_queued_total
-                    |       +-- xrpld_job_started_total
-                    |       +-- xrpld_job_finished_total
-                    |       +-- xrpld_job_queued_duration_us (Histogram)
-                    |       +-- xrpld_job_running_duration_us (Histogram)
-                    |       +-- xrpld_ledgers_closed_total
-                    |       +-- xrpld_validations_sent_total
-                    |       +-- xrpld_validations_checked_total
-                    |       +-- xrpld_state_changes_total
-                    |       +-- xrpld_jq_trans_overflow_total
-                    |       +-- xrpld_ledger_history_mismatch_total{reason}
-                    |       +-- xrpld_txq_expired_total
-                    |       +-- xrpld_txq_dropped_total{reason}
+                    |       +-- rpc_method_started_total
+                    |       +-- rpc_method_finished_total
+                    |       +-- rpc_method_errored_total
+                    |       +-- rpc_method_us (Histogram)
+                    |       +-- job_queued_total
+                    |       +-- job_started_total
+                    |       +-- job_finished_total
+                    |       +-- job_queued_us (Histogram)
+                    |       +-- job_running_us (Histogram)
+                    |       +-- ledgers_closed_total
+                    |       +-- validations_sent_total
+                    |       +-- validations_checked_total
+                    |       +-- state_changes_total
+                    |       +-- jq_trans_overflow_total
+                    |       +-- ledger_history_mismatch_total{reason}
+                    |       +-- txq_expired_total
+                    |       +-- txq_dropped_total{reason}
                     |
                     +-- ValidationTracker  (validation agreement tracker)
                     |
@@ -142,7 +142,8 @@
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/metrics/meter.h>
 #include <opentelemetry/metrics/meter_provider.h>
-#include <opentelemetry/metrics/observer_result.h>
+#include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/nostd/unique_ptr.h>
 #include <opentelemetry/sdk/metrics/meter_provider.h>
 #endif
 
@@ -230,7 +231,7 @@ public:
                            (e.g. "http://localhost:4318/v1/metrics").
         @param instanceId  Value for the service.instance.id resource
                            attribute. When non-empty, Prometheus metrics
-                           carry an exported_instance label for per-node
+                           carry an service_instance_id label for per-node
                            filtering.
     */
     void
@@ -503,42 +504,59 @@ private:
         validationAgreementGauge_;
 
     // --- External dashboard parity counters (Task 7.14) ---
-    /// Counter: xrpld_ledgers_closed_total — incremented each consensus round.
+    /// Counter: ledgers_closed_total — incremented each consensus round.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         ledgersClosedCounter_;
-    /// Counter: xrpld_validations_sent_total — incremented when this node sends a validation.
+    /// Counter: validations_sent_total — incremented when this node sends a validation.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         validationsSentCounter_;
-    /// Counter: xrpld_validations_checked_total — incremented for each network validation
+    /// Counter: validations_checked_total — incremented for each network validation
     /// received.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         validationsCheckedCounter_;
-    /// Counter: xrpld_state_changes_total — incremented on operating mode transitions.
+    /// Counter: state_changes_total — incremented on operating mode transitions.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         stateChangesCounter_;
-    /// Counter: xrpld_jq_trans_overflow_total — incremented on job queue transaction overflows.
+    /// Counter: jq_trans_overflow_total — incremented on job queue transaction overflows.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         jqTransOverflowCounter_;
-    /// Counter: xrpld_ledger_history_mismatch_total{reason} — incremented per classified
+    /// Counter: ledger_history_mismatch_total{reason} — incremented per classified
     /// built-vs-validated ledger mismatch.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         ledgerHistoryMismatchCounter_;
-    /// Counter: xrpld_txq_expired_total — incremented per transaction expired out of the
+    /// Counter: txq_expired_total — incremented per transaction expired out of the
     /// transaction queue.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> txqExpiredCounter_;
-    /// Counter: xrpld_txq_dropped_total{reason} — incremented when a transaction is refused
+    /// Counter: txq_dropped_total{reason} — incremented when a transaction is refused
     /// admission to the queue.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> txqDroppedCounter_;
-    /// ObservableCounter: xrpld_validation_agreements_total — observed from
+    /// ObservableCounter: validation_agreements_total — observed from
     /// ValidationTracker::totalAgreementsEver() (monotonic gross lifetime
     /// tally, initial-classification semantics).
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
         validationAgreementsObservable_;
-    /// ObservableCounter: xrpld_validation_missed_total — observed from
+    /// ObservableCounter: validation_missed_total — observed from
     /// ValidationTracker::totalMissedEver() (monotonic gross lifetime tally,
     /// initial-classification semantics).
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
         validationMissedObservable_;
+
+    /** Build the OTLP/HTTP exporter, periodic reader, resource attributes and
+        histogram views, then create the MeterProvider and meter. Extracted
+        from start() to keep each function under the 80-line limit.
+
+        @param endpoint OTLP/HTTP metrics endpoint URL.
+        @param instanceId service.instance.id resource attribute (may be empty).
+    */
+    void
+    initExporterAndProvider(std::string const& endpoint, std::string const& instanceId);
+
+    /** Create the synchronous instruments (RPC and job-queue counters and
+        histograms, plus the external dashboard parity counters). Extracted
+        from start() to keep each function under the 80-line limit.
+    */
+    void
+    initSyncInstruments();
 
     /** Register all observable gauge callbacks with the OTel SDK.
         Dispatches to one helper per metric domain so that each helper

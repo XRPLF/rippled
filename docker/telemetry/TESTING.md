@@ -434,21 +434,21 @@ Base URL: `http://localhost:9090`
 PROM="http://localhost:9090"
 
 # Span call counts (from spanmetrics connector)
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total" |
+curl -s "$PROM/api/v1/query?query=span_calls_total" |
     jq '.data.result[] | {span: .metric.span_name, count: .value[1]}'
 
 # Latency histogram
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_duration_milliseconds_count" |
+curl -s "$PROM/api/v1/query?query=span_duration_milliseconds_count" |
     jq '.data.result[] | {span: .metric.span_name, count: .value[1]}'
 
 # RPC calls by command
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}" |
+curl -s "$PROM/api/v1/query?query=span_calls_total{span_name=~\"rpc.command.*\"}" |
     jq '.data.result[] | {command: .metric["command"], count: .value[1]}'
 
 # Deployment-tier labels present on metrics (set by the collector's
 # resource/tier processor and promoted via resource_to_telemetry_conversion).
 # Expect deployment_environment and xrpl_network_type on each series.
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total" |
+curl -s "$PROM/api/v1/query?query=span_calls_total" |
     jq '.data.result[0].metric | {deployment_environment, xrpl_network_type, service_name}'
 ```
 
@@ -515,7 +515,7 @@ After exercising RPC/transaction workflows (Tests 1 or 2), open your Grafana
 Cloud instance and confirm:
 
 - **Traces**: Explore → hosted Tempo datasource → search `{resource.service.name="xrpld"}`
-- **Metrics**: Explore → hosted Prometheus/Mimir → query `traces_span_metrics_calls_total`
+- **Metrics**: Explore → hosted Prometheus/Mimir → query `span_calls_total`
 - **Logs**: Explore → hosted Loki → query `{job="xrpld"}` (requires `warning`+ file logging)
 
 If nothing appears, check the collector logs for auth/export errors:
@@ -550,7 +550,7 @@ Expected: log lines with `trace_id=<32hex> span_id=<16hex>` between the
 severity code and the message. Example:
 
 ```
-2024-01-15T10:30:45.123Z RPCHandler:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Calling server_info
+2024-Jan-15 10:30:45.123456 UTC RPCHandler:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Calling server_info
 ```
 
 Lines emitted outside of an active span (background tasks, startup) will
@@ -664,8 +664,11 @@ Expected: > 0 results.
 1. Verify the log file mount in docker-compose.yml:
    ```yaml
    volumes:
-     - /tmp/xrpld-integration:/var/log/rippled:ro
+     - ${XRPLD_LOG_DIR:-./data/logs}:/var/log/xrpld:ro
    ```
+   The mount source defaults to the repo-relative `docker/telemetry/data/logs`
+   (where the telemetry configs write). Override `XRPLD_LOG_DIR` to tail logs
+   from another root.
 2. Check OTel Collector logs for filelog receiver errors:
    ```bash
    docker compose -f docker/telemetry/docker-compose.yml logs otel-collector | grep -i "filelog\|loki\|error"
@@ -675,7 +678,7 @@ Expected: > 0 results.
    curl -s http://localhost:3100/ready
    ```
 4. Verify the filelog receiver glob pattern matches your log files:
-   The default pattern is `/var/log/rippled/*/debug.log`
+   The default pattern is `/var/log/xrpld/*/debug.log`
 
 ### Grafana trace-log links not working (Phase 8)
 

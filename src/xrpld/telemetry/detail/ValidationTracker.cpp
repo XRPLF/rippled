@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <deque>
 #include <mutex>
+#include <ranges>
 
 namespace xrpl::telemetry {
 
@@ -141,25 +142,11 @@ ValidationTracker::evictOldPending(TimePoint now)
         }
     }
 
-    // Hard trim if still over limit -- remove reconciled entries that are
-    // past the late-repair window first, then any reconciled entry as a
-    // last resort.
+    // Hard trim if still over limit. The loop above already removed every
+    // reconciled entry older than the late-repair window, so here we drop
+    // any remaining reconciled entry as a last resort.
     if (pending_.size() > kMaxPendingEvents)
     {
-        // Pass 1: only entries past late-repair window.
-        for (auto it = pending_.begin();
-             it != pending_.end() && pending_.size() > kMaxPendingEvents;)
-        {
-            if (it->second.reconciled && it->second.recordTime < cutoff)
-            {
-                it = pending_.erase(it);
-            }
-            else
-            {
-                ++it;
-            }
-        }
-        // Pass 2: any reconciled entry if still over limit.
         for (auto it = pending_.begin();
              it != pending_.end() && pending_.size() > kMaxPendingEvents;)
         {
@@ -296,11 +283,11 @@ void
 ValidationTracker::repairWindowEntry(std::deque<WindowEvent>& window, uint256 const& hash)
 {
     // Scan backwards since late repairs target recently added entries.
-    for (auto it = window.rbegin(); it != window.rend(); ++it)
+    for (auto& event : std::views::reverse(window))
     {
-        if (!it->agreed && it->ledgerHash == hash)
+        if (!event.agreed && event.ledgerHash == hash)
         {
-            it->agreed = true;
+            event.agreed = true;
             return;
         }
     }

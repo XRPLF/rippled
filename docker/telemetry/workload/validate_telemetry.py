@@ -52,6 +52,16 @@ SCRIPT_DIR = Path(__file__).parent
 EXPECTED_SPANS_FILE = SCRIPT_DIR / "expected_spans.json"
 EXPECTED_METRICS_FILE = SCRIPT_DIR / "expected_metrics.json"
 
+# Some beast::insight gauges/counters (ledger-age, peer-finder, overlay
+# traffic) only populate after the node validates ledgers and sustains peer
+# traffic, then travel a 1s periodic OTLP export + a 15s Prometheus scrape
+# before they are queryable. On a slow CI runner the fixed post-workload wait
+# can end before that pipeline settles, so a single query races and reports 0
+# series. Poll each missing metric for up to this long (covering two scrape
+# cycles) before failing, so the check is robust to runner speed.
+METRIC_POLL_TIMEOUT_SEC = 45.0
+METRIC_POLL_INTERVAL_SEC = 5.0
+
 
 # ---------------------------------------------------------------------------
 # Data classes
@@ -531,20 +541,30 @@ async def validate_metrics(
         ) as resp:
             label_data = await resp.json()
             all_metrics = label_data.get("data", [])
-            # Log xrpld-related and Phase 9 metrics for debugging.
+            # Log relevant metrics for debugging.
             relevant = [
                 m
                 for m in all_metrics
-                if "xrpld" in m.lower()
-                or m.startswith(
+                if m.startswith(
                     (
+                        "span_",
                         "rpc_method",
                         "cache_",
                         "txq_",
                         "object_count",
                         "load_factor",
                         "nodestore",
-                        "traces_span",
+                        "ledgermaster",
+                        "peer_finder",
+                        "jobq_",
+                        "total_bytes",
+                        "total_messages",
+                        "validation_agreement",
+                        "validator_health",
+                        "peer_quality",
+                        "ledger_economy",
+                        "state_tracking",
+                        "storage_detail",
                     )
                 )
             ]
@@ -595,26 +615,37 @@ async def _check_prometheus_metric(
         # stale in Prometheus and disappear from instant queries.  The
         # series endpoint returns any metric that existed in the window,
         # regardless of staleness.
+        #
+        # Poll rather than query once: late-populating gauges/counters may
+        # not have completed the export+scrape pipeline when this runs, so a
+        # single query races. Re-query until the metric appears or the poll
+        # window elapses; a metric that never appears still fails after the
+        # timeout.
         params: dict[str, str] = {"match[]": metric_name}
-        async with session.get(
-            f"{prometheus_url}/api/v1/series", params=params
-        ) as resp:
-            data = await resp.json()
-            results = data.get("data", [])
-            series_count = len(results)
-            report.add(
-                CheckResult(
-                    name=f"metric.{category}.{metric_name}",
-                    category="metric",
-                    passed=series_count > 0,
-                    message=(
-                        f"{metric_name}: {series_count} series"
-                        if series_count > 0
-                        else f"{metric_name}: 0 series (expected > 0)"
-                    ),
-                    details={"series_count": series_count},
-                )
+        series_count = 0
+        deadline = time.monotonic() + METRIC_POLL_TIMEOUT_SEC
+        while True:
+            async with session.get(
+                f"{prometheus_url}/api/v1/series", params=params
+            ) as resp:
+                data = await resp.json()
+                series_count = len(data.get("data", []))
+            if series_count > 0 or time.monotonic() >= deadline:
+                break
+            await asyncio.sleep(METRIC_POLL_INTERVAL_SEC)
+        report.add(
+            CheckResult(
+                name=f"metric.{category}.{metric_name}",
+                category="metric",
+                passed=series_count > 0,
+                message=(
+                    f"{metric_name}: {series_count} series"
+                    if series_count > 0
+                    else f"{metric_name}: 0 series (expected > 0)"
+                ),
+                details={"series_count": series_count},
             )
+        )
     except Exception as exc:
         report.add(
             CheckResult(
@@ -915,8 +946,8 @@ async def validate_span_durations(
 # dotted xrpl.* reserved for resource attributes). The amendment_blocked,
 # server_state, and proposers_validated values that earlier external-dashboard
 # work tracked are NOT span attributes — they exist only as MetricsRegistry
-# metrics (xrpld_validator_health{metric="amendment_blocked"},
-# xrpld_state_tracking{metric="state_value"}, etc.), so they are validated by
+# metrics (validator_health{metric="amendment_blocked"},
+# state_tracking{metric="state_value"}, etc.), so they are validated by
 # PARITY_VALUE_SANITY below rather than as span attributes here.
 PARITY_SPAN_ATTRS: list[dict[str, str]] = [
     {"span": "tx.receive", "attr": "peer_version"},
@@ -934,26 +965,26 @@ PARITY_SPAN_ATTRS: list[dict[str, str]] = [
 PARITY_VALUE_SANITY: list[dict[str, Any]] = [
     {
         "name": "validation_agreement_pct_1h",
-        "query": 'xrpld_validation_agreement{metric="agreement_pct_1h"}',
+        "query": 'validation_agreement{metric="agreement_pct_1h"}',
         "lo": 0,
         "hi": 100,
     },
     {
         "name": "unl_expiry_days",
-        "query": 'xrpld_validator_health{metric="unl_expiry_days"}',
+        "query": 'validator_health{metric="unl_expiry_days"}',
         "lo": 0,
         "hi": None,
         "exclusive_lo": True,
     },
     {
         "name": "peer_latency_p90_ms",
-        "query": 'xrpld_peer_quality{metric="peer_latency_p90_ms"}',
+        "query": 'peer_quality{metric="peer_latency_p90_ms"}',
         "lo": 0,
         "hi": None,
     },
     {
         "name": "state_value",
-        "query": 'xrpld_state_tracking{metric="state_value"}',
+        "query": 'state_tracking{metric="state_value"}',
         "lo": 0,
         "hi": 7,
     },

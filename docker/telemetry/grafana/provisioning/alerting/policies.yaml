@@ -3,10 +3,13 @@
 # Phase 9: Internal metric gap fill — alerting on health-critical metrics.
 #
 # The notification policy tree decides which contact point receives a firing
-# alert and how alerts are batched. This stack uses a single flat policy: every
-# xrpld alert routes to the `xrpld-default` contact point.
+# alert and how alerts are batched. Routing is split by severity:
+#   - default (root)        → xrpld-default  (Slack) — catches warnings.
+#   - severity = critical   → xrpld-critical (Slack + email) — child route.
+# A critical alert matches the child route and is delivered to Slack AND email;
+# everything else falls through to the root receiver.
 #
-# Grouping by alertname + exported_instance means one notification per
+# Grouping by alertname + service_instance_id means one notification per
 # (alert, node) pair, so a fleet-wide problem does not collapse into a single
 # ambiguous message.
 
@@ -17,7 +20,7 @@ policies:
     receiver: xrpld-default
     group_by:
       - alertname
-      - exported_instance
+      - service_instance_id
     # Wait before sending the first notification for a new group, so a burst of
     # related series is batched together.
     group_wait: 30s
@@ -26,3 +29,16 @@ policies:
     # Minimum time before re-sending a notification for an alert that is still
     # firing.
     repeat_interval: 4h
+    routes:
+      # Critical alerts page harder: Slack + email. matchers uses the
+      # PromQL-style label match "severity = critical" set on the rules.
+      - receiver: xrpld-critical
+        matchers:
+          - severity = critical
+        group_by:
+          - alertname
+          - service_instance_id
+        group_wait: 30s
+        group_interval: 5m
+        # Re-page critical alerts more often than the 4h default while still firing.
+        repeat_interval: 1h

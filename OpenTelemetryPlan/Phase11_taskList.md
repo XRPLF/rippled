@@ -441,7 +441,7 @@ This phase addresses the cross-cutting gap identified during research: **xrpld h
 
 ## Task 11.12: Alert Rules for External Dashboard Parity Metrics
 
-> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md) — 18 alert rules ported from the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
+> **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity) — 18 alert rules ported from the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
 >
 > **Upstream**: Phase 7 Tasks 7.9-7.16 (metrics), Phase 9 Tasks 9.11-9.13 (dashboards).
 > **Downstream**: None — terminal task in the parity chain.
@@ -499,7 +499,7 @@ This phase addresses the cross-cutting gap identified during research: **xrpld h
 
 ## Task 11.13: Dual-Datasource Architecture Documentation
 
-> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md)
+> **Source**: [External Dashboard Parity](./06-implementation-phases.md#appendix-external-dashboard-parity)
 
 **Objective**: Document the external dashboard's "fast path" pattern as a future optimization for real-time panels.
 

@@ -135,6 +135,7 @@ words:
   - godexsoft
   - gpgcheck
   - gpgkey
+  - havetxset
   - hotwallet
   - hicpp
   - htpasswd
@@ -302,6 +303,7 @@ words:
   - statsd
   - STATSDCOLLECTOR
   - stissue
+  - stledgerentry
   - stnum
   - stobj
   - stobject

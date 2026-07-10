@@ -30,8 +30,8 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.build\"}[5m]))",
-          "legendFormat": "Builds / Sec [{{exported_instance}}]"
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.build\"}[5m]))",
+          "legendFormat": "Builds / Sec [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -63,8 +63,8 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.build\"}[5m])))",
-          "legendFormat": "P95 Build Duration [{{exported_instance}}]"
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.build\"}[5m])))",
+          "legendFormat": "P95 Build Duration [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -103,8 +103,8 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.validate\"}[5m]))",
-          "legendFormat": "Validations / Sec [{{exported_instance}}]"
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.validate\"}[5m]))",
+          "legendFormat": "Validations / Sec [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -139,7 +139,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(increase(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.build\"}[5m])) by (le)",
+          "expr": "sum(increase(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.build\"}[5m])) by (le)",
           "legendFormat": "{{le}}",
           "format": "heatmap"
         }
@@ -173,8 +173,8 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.apply\"}[5m])))",
-          "legendFormat": "P95 tx.apply [{{exported_instance}}]"
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.apply\"}[5m])))",
+          "legendFormat": "P95 tx.apply [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -213,8 +213,8 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.apply\"}[5m]))",
-          "legendFormat": "tx.apply / Sec [{{exported_instance}}]"
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.apply\"}[5m]))",
+          "legendFormat": "tx.apply / Sec [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -253,8 +253,8 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.store\"}[5m]))",
-          "legendFormat": "Stores / Sec [{{exported_instance}}]"
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.store\"}[5m]))",
+          "legendFormat": "Stores / Sec [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -286,16 +286,16 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.build\"}[5m])))",
-          "legendFormat": "P95 ledger.build [{{exported_instance}}]"
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.build\"}[5m])))",
+          "legendFormat": "P95 ledger.build [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.ledger_close\"}[5m])))",
-          "legendFormat": "P95 consensus.ledger_close [{{exported_instance}}]"
+          "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.ledger_close\"}[5m])))",
+          "legendFormat": "P95 consensus.ledger_close [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
@@ -332,7 +332,7 @@
       },
       {
         "name": "service_name",
-        "label": "Service",
+        "label": "Service Name",
         "description": "Filter by service.name (e.g. xrpld, xrpld-validator)",
         "type": "query",
         "query": "label_values(service_name)",
@@ -343,8 +343,8 @@
         "includeAll": true,
         "allValue": ".*",
         "current": {
-          "text": "All",
-          "value": "$__all"
+          "text": "xrpld",
+          "value": "xrpld"
         },
         "multi": true,
         "refresh": 2,
@@ -395,7 +395,7 @@
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
         "type": "query",
-        "query": "label_values(traces_span_metrics_calls_total, exported_instance)",
+        "query": "label_values(span_calls_total, service_instance_id)",
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"

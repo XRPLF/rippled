@@ -76,7 +76,7 @@
   - Add Loki service:
     ```yaml
     loki:
-      image: grafana/loki:2.9.0
+      image: grafana/loki:3.4.2
       ports:
         - "3100:3100"
       command: -config.file=/etc/loki/local-config.yaml
@@ -107,7 +107,7 @@
     ```yaml
     receivers:
       filelog:
-        include: [/var/log/rippled/debug.log]
+        include: [/var/log/xrpld/*/debug.log]
         operators:
           - type: regex_parser
             regex: '^(?P<timestamp>\S+)\s+(?P<partition>\S+):(?P<severity>\S+)\s+(?:trace_id=(?P<trace_id>[a-f0-9]+)\s+span_id=(?P<span_id>[a-f0-9]+)\s+)?(?P<message>.*)$'
@@ -127,10 +127,8 @@
   - Add Loki exporter:
     ```yaml
     exporters:
-      otlp/loki:
-        endpoint: loki:3100
-        tls:
-          insecure: true
+      otlphttp/loki:
+        endpoint: http://loki:3100/otlp
     ```
 
 - Mount xrpld's log directory into the collector container via docker-compose volume

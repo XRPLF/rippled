@@ -359,6 +359,7 @@ private:
     deleteElement(Element const* p)
     {
         ElementAllocatorTraits::destroy(config_.alloc(), p);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
         ElementAllocatorTraits::deallocate(config_.alloc(), const_cast<Element*>(p), 1);
     }
 

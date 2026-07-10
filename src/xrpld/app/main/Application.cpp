@@ -394,7 +394,7 @@ public:
               stopwatch(),
               logs_->journal("TaggedCache"))
         , cachedSLEs_(
-              "Cached SLEs",
+              "Cached_SLEs",
               0,
               std::chrono::minutes(1),
               stopwatch(),
@@ -1550,6 +1550,32 @@ ApplicationImp::start(bool withTimers)
         setEntropyTimer();
     }
 
+    // Start telemetry before the other services so the tracer is live and
+    // their startup/early activity can be traced. (The metrics MeterProvider
+    // is already published in the Telemetry constructor — before subsystems
+    // create their beast::insight instruments during ApplicationImp init — so
+    // start() ordering does not affect metrics; only tracing benefits here.)
+    telemetry_->start();
+
+    // Start the metrics pipeline right after telemetry, before subsystems
+    // begin recording; the endpoint uses the same base URL with the
+    // /v1/metrics path.
+    if (metricsRegistry_)
+    {
+        auto const& section = config_->section("telemetry");
+        std::string endpoint = "http://localhost:4318/v1/metrics";
+        set(endpoint, "metrics_endpoint", section);
+
+        // Pass the service_instance_id so the MeterProvider Resource
+        // carries it, giving Prometheus an service_instance_id label.
+        std::string instanceId;
+        set(instanceId, "service_instance_id", section);
+        if (instanceId.empty() && nodeIdentity_)
+            instanceId = toBase58(TokenType::NodePublic, nodeIdentity_->first);
+
+        metricsRegistry_->start(endpoint, instanceId);
+    }
+
     io_latency_sampler_.start();
     resolver_->start();
     loadManager_->start();
@@ -1562,25 +1588,6 @@ ApplicationImp::start(bool withTimers)
 
     ledgerCleaner_->start();
     perfLog_->start();
-    telemetry_->start();
-
-    // Start the metrics pipeline after telemetry; the endpoint uses the
-    // same base URL but the /v1/metrics path.
-    if (metricsRegistry_)
-    {
-        auto const& section = config_->section("telemetry");
-        std::string endpoint = "http://localhost:4318/v1/metrics";
-        set(endpoint, "metrics_endpoint", section);
-
-        // Pass the service_instance_id so the MeterProvider Resource
-        // carries it, giving Prometheus an exported_instance label.
-        std::string instanceId;
-        set(instanceId, "service_instance_id", section);
-        if (instanceId.empty() && nodeIdentity_)
-            instanceId = toBase58(TokenType::NodePublic, nodeIdentity_->first);
-
-        metricsRegistry_->start(endpoint, instanceId);
-    }
 }
 
 void

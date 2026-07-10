@@ -23,9 +23,8 @@ redactAccount(std::string_view addr)
     // staying non-reversible — and lowercase them for a stable token.
     auto const digest = sha512Half(Slice(addr.data(), addr.size()));
     std::string token = to_string(digest).substr(0, 16);
-    std::transform(token.begin(), token.end(), token.begin(), [](unsigned char c) {
-        return static_cast<char>(std::tolower(c));
-    });
+    std::ranges::transform(
+        token, token.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     return token;
 }
 

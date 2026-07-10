@@ -36,12 +36,13 @@ services:
     volumes:
       # Mount collector pipeline config (receivers → processors → exporters)
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
-      # Phase 8: Mount rippled log directories for filelog receiver.
-      # User-run xrpld writes to /var/log/xrpld/<network>/debug.log.
-      # Integration test still writes to /tmp/xrpld-integration/.
-      # Both are mounted read-only so the collector can tail debug.log files.
-      - /var/log/xrpld:/var/log/rippled:ro
-      - /tmp/xrpld-integration:/var/log/rippled-integration:ro
+      # Mount the xrpld log root for the filelog receiver. The telemetry
+      # configs write to docker/telemetry/data/logs/<network>/debug.log, so
+      # the default source is the repo-relative ./data/logs — user-owned and
+      # needing no root, so `docker compose up` works with no setup. Override
+      # XRPLD_LOG_DIR to point at another root (e.g. the integration test sets
+      # it to its own workdir). Mounted read-only so the collector only tails.
+      - ${XRPLD_LOG_DIR:-./data/logs}:/var/log/xrpld:ro
     depends_on:
       - tempo
       - loki
@@ -63,7 +64,7 @@ services:
     networks:
       - xrpld-telemetry
 
-  # Phase 8: Grafana Loki for centralized log ingestion and log-trace
+  # Grafana Loki for centralized log ingestion and log-trace
   # correlation. Loki 3.x supports native OTLP ingestion, so the OTel
   # Collector exports via otlphttp to Loki's /otlp endpoint.
   # Query logs via Grafana Explore -> Loki at http://localhost:3000.
@@ -94,6 +95,13 @@ services:
   # Anonymous admin access enabled for local development convenience.
   grafana:
     image: grafana/grafana:11.5.2
+    # Alerting secrets/addresses (Slack webhook, alert email) come from this
+    # gitignored file; Grafana expands the ${VARS} referenced in the alerting
+    # provisioning YAML. Absent file = unset vars = receivers have no live
+    # destination, which is fine for a local stack. See .env.alerting.example.
+    env_file:
+      - path: .env.alerting
+        required: false
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true # No login required for local dev
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin # Full access without auth
@@ -102,6 +110,12 @@ services:
       # the callback URL is how the renderer fetches the panel from grafana.
       - GF_RENDERING_SERVER_URL=http://renderer:8081/render
       - GF_RENDERING_CALLBACK_URL=http://grafana:3000/
+    # SMTP for the critical-tier email receiver and the Slack webhook / email
+    # address for the contact points all come from the env_file above, which
+    # injects them straight into the container environment for Grafana to
+    # expand. They are deliberately NOT duplicated here: a compose-level
+    # `environment:` entry is interpolated from the host shell and would
+    # override (and blank out) the env_file values.
     ports:
       - "3000:3000" # Grafana web UI
     volumes:

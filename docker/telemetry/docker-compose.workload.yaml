@@ -39,8 +39,10 @@ services:
       - "13133:13133" # Health check
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
-      # Mount the validation workdir so filelog receiver can tail node logs.
-      - /tmp/xrpld-validation:/var/log/rippled:ro
+      # Mount the validation workdir so the filelog receiver can tail node
+      # logs. run-full-validation.sh sets XRPLD_LOG_DIR to its workdir; the
+      # default matches that workdir so a bare `docker compose up` also works.
+      - ${XRPLD_LOG_DIR:-/tmp/xrpld-validation}:/var/log/xrpld:ro
     depends_on:
       - tempo
     networks:

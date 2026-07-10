@@ -2,27 +2,64 @@
 #
 # Phase 9: Internal metric gap fill — alerting on health-critical metrics.
 #
-# A contact point is where a firing alert is delivered. This stack ships a
-# single webhook receiver as a working default for local development. To route
-# alerts to a real destination, replace the webhook `url` below, or add a
-# `slack` / `email` receiver to the same contact point (see ALERTING.md).
+# A contact point is where a firing alert is delivered. Two are defined:
+#   xrpld-default   — Slack only; receives warning-severity alerts.
+#   xrpld-critical  — Slack + email; receives critical-severity alerts.
+# The severity split is wired in policies.yaml.
 #
-# The default anonymous-admin Grafana in docker-compose.yml picks this file up
-# from /etc/grafana/provisioning/alerting/ on startup.
+# Secrets and personal addresses are NOT hard-coded. To enable delivery,
+# replace the disabled placeholder values below with a real Slack webhook
+# and alert email — e.g. by copying docker/telemetry/.env.alerting.example
+# to .env.alerting (gitignored) and swapping the placeholder lines to
+# ${SLACK_WEBHOOK_URL} / ${ALERT_EMAIL_TO}. See the Alerting section of
+# docs/telemetry-runbook.md for setup.
+#
+# The defaults are deliberately non-empty, invalid-but-valid-shaped
+# placeholders (an unroutable webhook host and a .invalid email). Grafana's
+# alerting provisioning validator REQUIRES a non-empty Slack url and email
+# addresses, and it does NOT support ${VAR:-default} expansion — an unset
+# ${VAR} expands to empty and crashes Grafana on startup. The placeholders
+# keep the whole stack booting with zero configuration; alerts simply route
+# nowhere until a real destination is supplied.
+#
+# Email delivery additionally requires SMTP configured on the Grafana
+# service (GF_SMTP_* in docker-compose.yml).
 
 apiVersion: 1
 
 contactPoints:
+  # --- Warning tier: Slack only ---
   - orgId: 1
     name: xrpld-default
     receivers:
-      # Local-dev webhook sink. Points at a placeholder host; alerts are
-      # emitted but silently dropped unless a receiver listens there.
-      # Swap the url for a real endpoint (PagerDuty/Opsgenie/custom) or
-      # replace the whole receiver block with a slack/email type.
-      - uid: xrpld-default-webhook
-        type: webhook
+      - uid: xrpld-slack-default
+        type: slack
         settings:
-          url: http://localhost:9999/xrpld-alerts
-          httpMethod: POST
+          # Disabled placeholder: an unroutable webhook host. A non-empty url
+          # selects Slack webhook mode (no recipient/token required) and keeps
+          # provisioning valid. Replace with a real ${SLACK_WEBHOOK_URL} to
+          # enable delivery.
+          url: https://hooks.slack.invalid/disabled
+          title: "{{ .CommonLabels.alertname }} on {{ .CommonLabels.service_instance_id }}"
+        disableResolveMessage: false
+
+  # --- Critical tier: Slack + email ---
+  - orgId: 1
+    name: xrpld-critical
+    receivers:
+      - uid: xrpld-slack-critical
+        type: slack
+        settings:
+          # Disabled placeholder — see xrpld-slack-default above.
+          url: https://hooks.slack.invalid/disabled
+          title: "[CRITICAL] {{ .CommonLabels.alertname }} on {{ .CommonLabels.service_instance_id }}"
+        disableResolveMessage: false
+      - uid: xrpld-email-critical
+        type: email
+        settings:
+          # Disabled placeholder: a .invalid address keeps the required
+          # `addresses` field non-empty so provisioning validates. Replace
+          # with a real ${ALERT_EMAIL_TO} (and enable SMTP) to deliver.
+          addresses: alerts-disabled@xrpld.invalid
+          singleEmail: true
         disableResolveMessage: false
