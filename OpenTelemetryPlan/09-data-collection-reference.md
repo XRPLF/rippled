@@ -545,15 +545,23 @@ prefix=xrpld
 
 ### 2.3 Histograms (Event timers)
 
-| Prometheus Metric | Source File       | Unit  | Description                    |
-| ----------------- | ----------------- | ----- | ------------------------------ |
-| `rpc_time`        | ServerHandler.cpp | ms    | RPC response time distribution |
-| `rpc_size`        | ServerHandler.cpp | bytes | RPC response size distribution |
-| `ios_latency`     | Application.cpp   | ms    | I/O service loop latency       |
-| `pathfind_fast`   | PathRequests.h    | ms    | Fast pathfinding duration      |
-| `pathfind_full`   | PathRequests.h    | ms    | Full pathfinding duration      |
+| Prometheus Metric | Source File       | Unit | Description                    |
+| ----------------- | ----------------- | ---- | ------------------------------ |
+| `rpc_time`        | ServerHandler.cpp | ms   | RPC response time distribution |
+| `rpc_size`        | ServerHandler.cpp | ms\* | RPC response size (see note)   |
+| `ios_latency`     | Application.cpp   | ms   | I/O service loop latency       |
+| `pathfind_fast`   | PathRequests.h    | ms   | Fast pathfinding duration      |
+| `pathfind_full`   | PathRequests.h    | ms   | Full pathfinding duration      |
 
 Quantiles collected: 0th, 50th, 90th, 95th, 99th, 100th percentile.
+
+\* **`rpc_size` instrument mismatch (known issue):** response size in bytes is
+recorded through the millisecond-scaled event histogram (`makeEvent`), so it is
+exported as `rpc_size_milliseconds_bucket` with time-scaled boundaries that top
+out at 5000. Byte values above ~5 KB saturate in the last bucket, so the
+percentiles are not true byte sizes. The _RPC & Pathfinding_ panel is flagged
+accordingly. A dedicated byte-unit histogram is needed to fix this; tracked
+separately.
 
 **Grafana dashboards**: _Node Health_ (`ios_latency`), _RPC & Pathfinding_ (`rpc_time`, `rpc_size`, `pathfind_*`)
 
@@ -1173,21 +1181,21 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 
 #### Synchronous Counters (Phase 7+)
 
-| Prometheus Metric           | Type    | Description                     | Increment Site   |
-| --------------------------- | ------- | ------------------------------- | ---------------- |
-| `ledgers_closed_total`      | Counter | Ledgers closed by consensus     | RCLConsensus.cpp |
-| `validations_sent_total`    | Counter | Validations sent                | RCLConsensus.cpp |
-| `validations_checked_total` | Counter | Network validations observed    | LedgerMaster.cpp |
-| `state_changes_total`       | Counter | Operating mode transitions      | NetworkOPs.cpp   |
-| `jq_trans_overflow_total`   | Counter | Job queue transaction overflows | JobQueue.cpp     |
+| Prometheus Metric           | Type    | Description                  | Increment Site   |
+| --------------------------- | ------- | ---------------------------- | ---------------- |
+| `ledgers_closed_total`      | Counter | Ledgers closed by consensus  | RCLConsensus.cpp |
+| `validations_sent_total`    | Counter | Validations sent             | RCLConsensus.cpp |
+| `validations_checked_total` | Counter | Network validations observed | LedgerMaster.cpp |
+| `state_changes_total`       | Counter | Operating mode transitions   | NetworkOPs.cpp   |
 
-Lifetime validation agreement/miss tallies are exported as monotonic **ObservableCounters**
-(not synchronous counters) observed from `ValidationTracker`'s gross lifetime totals:
+Lifetime tallies exported as monotonic **ObservableCounters** (not synchronous
+counters), observed from an existing cumulative source each collection cycle:
 
-| Prometheus Metric             | Type              | Description                                | Source                |
-| ----------------------------- | ----------------- | ------------------------------------------ | --------------------- |
-| `validation_agreements_total` | ObservableCounter | Lifetime validations that initially agreed | ValidationTracker.cpp |
-| `validation_missed_total`     | ObservableCounter | Lifetime validations that initially missed | ValidationTracker.cpp |
+| Prometheus Metric             | Type              | Description                                | Source                                               |
+| ----------------------------- | ----------------- | ------------------------------------------ | ---------------------------------------------------- |
+| `validation_agreements_total` | ObservableCounter | Lifetime validations that initially agreed | ValidationTracker.cpp                                |
+| `validation_missed_total`     | ObservableCounter | Lifetime validations that initially missed | ValidationTracker.cpp                                |
+| `jq_trans_overflow_total`     | ObservableCounter | Job queue transaction overflows            | Overlay::getJqTransOverflow (PeerImp.cpp increments) |
 
 > **Counting semantics (initial-classification only):** each reconciled ledger increments exactly
 > one of these two counters, at first classification. A later late-repair (miss → agreement) does
