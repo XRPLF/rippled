@@ -563,8 +563,8 @@ public:
 
     /**
      * Returns the next sequence number on account.
-     * Exceptions:
-     *     Throws if the account does not exist
+     *
+     * @throws if the account does not exist
      */
     [[nodiscard]] std::uint32_t
     seq(Account const& account) const;

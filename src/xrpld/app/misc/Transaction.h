@@ -326,7 +326,7 @@ public:
         /**
          * @return key used to find transaction in nodestore
          *
-         * Throws if isFound() returns false
+         * @throws if isFound() returns false
          */
         uint256 const&
         getNodestoreHash()
@@ -337,7 +337,7 @@ public:
         /**
          * @return sequence of ledger containing the transaction
          *
-         * Throws is isFound() returns false
+         * @throws if isFound() returns false
          */
         uint32_t
         getLedgerSequence()
@@ -348,7 +348,7 @@ public:
         /**
          * @return range of ledgers searched
          *
-         * Throws if isFound() returns true
+         * @throws if isFound() returns true
          */
         ClosedInterval<uint32_t> const&
         getLedgerRangeSearched()

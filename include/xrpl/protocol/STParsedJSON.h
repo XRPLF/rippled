@@ -30,8 +30,9 @@ public:
     /**
      * Parses and creates an STParsedJSON object.
      * The result of the parsing is stored in object and error.
-     * Exceptions:
-     *     Does not throw.
+     *
+     * @note Does not throw.
+     *
      * @param name The name of the JSON field, used in diagnostics.
      * @param json The JSON-RPC to parse.
      */
