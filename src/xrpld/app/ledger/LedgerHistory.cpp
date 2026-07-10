@@ -453,13 +453,10 @@ LedgerHistory::builtLedger(
     consensusValidated_.fetchAndModify(index, [&](CvEntry& entry) {
         if (entry.validated && !entry.built)
         {
-            SOMETIMES(
-                true, "xrpl::LedgerHistory::builtLedger : validated arrived first");
+            SOMETIMES(true, "xrpl::LedgerHistory::builtLedger : validated arrived first");
             if (entry.validated.value() != hash)
             {
-                SOMETIMES(
-                    true,
-                    "xrpl::LedgerHistory::builtLedger : validated-first mismatch");
+                SOMETIMES(true, "xrpl::LedgerHistory::builtLedger : validated-first mismatch");
                 JLOG(j_.error()) << "MISMATCH: seq=" << index
                                  << " validated:" << entry.validated.value() << " then:" << hash;
                 mismatch = MismatchInputs{
@@ -504,16 +501,13 @@ LedgerHistory::validatedLedger(
     consensusValidated_.fetchAndModify(index, [&](CvEntry& entry) {
         if (entry.built && !entry.validated)
         {
-            SOMETIMES(
-                true, "xrpl::LedgerHistory::validatedLedger : built arrived first");
+            SOMETIMES(true, "xrpl::LedgerHistory::validatedLedger : built arrived first");
             XRPL_ASSERT(
                 entry.consensus.has_value(),
                 "xrpl::LedgerHistory::validatedLedger : consensus set when built set");
             if (entry.built.value() != hash)
             {
-                SOMETIMES(
-                    true,
-                    "xrpl::LedgerHistory::validatedLedger : built-first mismatch");
+                SOMETIMES(true, "xrpl::LedgerHistory::validatedLedger : built-first mismatch");
                 JLOG(j_.error()) << "MISMATCH: seq=" << index << " built:" << entry.built.value()
                                  << " then:" << hash;
                 mismatch = MismatchInputs{
