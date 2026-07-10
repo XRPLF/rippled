@@ -30,6 +30,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.accept\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P95 Round Duration [{{service_instance_id}}]"
         },
         {
@@ -37,6 +38,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.50, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.accept\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P50 Round Duration [{{service_instance_id}}]"
         }
       ],
@@ -75,7 +77,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.proposal.send\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.proposal.send\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "Proposals / Sec [{{service_instance_id}}]"
         }
       ],
@@ -115,6 +118,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.ledger_close\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P95 Close Duration [{{service_instance_id}}]"
         }
       ],
@@ -153,7 +157,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.validation.send\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.validation.send\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "Validations / Sec [{{service_instance_id}}]"
         }
       ],
@@ -180,6 +185,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.accept.apply\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P95 Apply Duration [{{service_instance_id}}]"
         },
         {
@@ -187,6 +193,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.50, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.accept.apply\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P50 Apply Duration [{{service_instance_id}}]"
         }
       ],
@@ -220,6 +227,7 @@
             "type": "prometheus"
           },
           "expr": "sum by (close_time_correct, service_instance_id) (rate(span_calls_total{span_name=\"consensus.accept.apply\", consensus_mode=~\"$consensus_mode\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "Close Time Correct={{close_time_correct}} [{{service_instance_id}}]"
         }
       ],
@@ -258,7 +266,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (consensus_mode, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.ledger_close\"}[5m]))",
+          "expr": "sum by (consensus_mode, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.ledger_close\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "{{consensus_mode}} [{{service_instance_id}}]"
         }
       ],
@@ -297,14 +306,16 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.accept\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.accept\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "Accepts / Sec [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.ledger_close\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.ledger_close\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "Closes / Sec [{{service_instance_id}}]"
         }
       ],
@@ -343,14 +354,16 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.validation.send\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.validation.send\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "Validations / Sec [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.ledger_close\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.ledger_close\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "Closes / Sec [{{service_instance_id}}]"
         }
       ],
@@ -394,6 +407,7 @@
             "type": "prometheus"
           },
           "expr": "sum(increase(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.accept\"}[5m])) by (le)",
+          "interval": "15s",
           "legendFormat": "{{le}}",
           "format": "heatmap"
         }
@@ -686,7 +700,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (consensus_state) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.accept\", consensus_state!=\"\"}[5m]))",
+          "expr": "sum by (consensus_state) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.accept\", consensus_state!=\"\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "{{consensus_state}}"
         }
       ],
@@ -718,14 +733,16 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.accept\", consensus_state=\"moved_on\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.accept\", consensus_state=\"moved_on\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "moved_on [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.accept\", consensus_state=\"expired\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.accept\", consensus_state=\"expired\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "expired [{{service_instance_id}}]"
         }
       ],
@@ -765,6 +782,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.round\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P95 Round [{{service_instance_id}}]"
         },
         {
@@ -772,6 +790,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.50, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.round\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P50 Round [{{service_instance_id}}]"
         }
       ],
@@ -811,6 +830,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.phase.open\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P95 Open Phase [{{service_instance_id}}]"
         },
         {
@@ -818,6 +838,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.establish\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P95 Establish Phase [{{service_instance_id}}]"
         }
       ],
@@ -857,6 +878,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.update_positions\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P95 Update [{{service_instance_id}}]"
         },
         {
@@ -864,6 +886,7 @@
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.5, sum by (le, service_instance_id) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.update_positions\"}[5m])))",
+          "interval": "15s",
           "legendFormat": "P50 Update [{{service_instance_id}}]"
         }
       ],
@@ -902,14 +925,16 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.check\", consensus_stalled=\"true\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.check\", consensus_stalled=\"true\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "Stalled [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.check\", consensus_stalled=\"false\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.check\", consensus_stalled=\"false\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "Not Stalled [{{service_instance_id}}]"
         }
       ],
@@ -948,7 +973,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (mode_new, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.mode_change\"}[5m]))",
+          "expr": "sum by (mode_new, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"consensus.mode_change\"}[$__rate_interval]))",
+          "interval": "15s",
           "legendFormat": "{{mode_new}} [{{service_instance_id}}]"
         }
       ],

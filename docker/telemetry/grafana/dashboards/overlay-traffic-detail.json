@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Squelch Traffic (Messages)",
-      "description": "###### What this is:\n*Squelch relay-control messages in/out, plus messages suppressed by squelch and squelch directives that were ignored. Squelch reduces redundant message forwarding between peers.*\n\n###### How it's computed:\n*Current message counts for the squelch, squelch-suppressed, and squelch-ignored categories, in and out.*\n\n###### Reading it:\n*High suppressed counts mean squelch is saving bandwidth; ignored should stay low.*\n\n###### Healthy range:\n*workload-dependent; suppressed far above ignored.*\n\n###### Watch for:\n*High ignored counts (peers not honoring squelch) or squelch traffic itself dominating.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Squelch relay-control messages in/out, plus messages suppressed by squelch and squelch directives that were ignored. Squelch reduces redundant message forwarding between peers.*\n\n###### How it's computed:\n*Per-second message rate for the squelch, squelch-suppressed, and squelch-ignored categories, in and out.*\n\n###### Reading it:\n*High suppressed counts mean squelch is saving bandwidth; ignored should stay low.*\n\n###### Healthy range:\n*workload-dependent; suppressed far above ignored.*\n\n###### Watch for:\n*High ignored counts (peers not honoring squelch) or squelch traffic itself dominating.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -30,48 +30,48 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "squelch_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(squelch_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Squelch In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "squelch_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(squelch_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Squelch Out [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "squelch_suppressed_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(squelch_suppressed_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Suppressed In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "squelch_suppressed_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(squelch_suppressed_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Suppressed Out [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "squelch_ignored_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(squelch_ignored_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Ignored In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "squelch_ignored_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(squelch_ignored_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Ignored Out [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "cps",
           "custom": {
             "axisLabel": "Messages",
             "spanNulls": true,
@@ -85,7 +85,7 @@
     },
     {
       "title": "Overhead Traffic Breakdown (Bytes)",
-      "description": "###### What this is:\n*Overlay protocol overhead bytes split into base overhead, intra-cluster overhead, and validator-manifest distribution overhead.*\n\n###### How it's computed:\n*Current in/out byte counts for the overhead, overhead-cluster, and overhead-manifest categories.*\n\n###### Reading it:\n*Base overhead is routine; cluster and manifest rise around cluster syncs and manifest changes.*\n\n###### Healthy range:\n*workload-dependent; low and stable.*\n\n###### Watch for:\n*Sustained high cluster or manifest overhead (frequent cluster state churn or manifest reissue).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Overlay protocol overhead bytes split into base overhead, intra-cluster overhead, and validator-manifest distribution overhead.*\n\n###### How it's computed:\n*Per-second in/out byte rate for the overhead, overhead-cluster, and overhead-manifest categories.*\n\n###### Reading it:\n*Base overhead is routine; cluster and manifest rise around cluster syncs and manifest changes.*\n\n###### Healthy range:\n*workload-dependent; low and stable.*\n\n###### Watch for:\n*Sustained high cluster or manifest overhead (frequent cluster state churn or manifest reissue).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -104,48 +104,48 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "overhead_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(overhead_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Base Overhead In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "overhead_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(overhead_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Base Overhead Out [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "overhead_cluster_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(overhead_cluster_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Cluster In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "overhead_cluster_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(overhead_cluster_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Cluster Out [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "overhead_manifest_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(overhead_manifest_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Manifest In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "overhead_manifest_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(overhead_manifest_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Manifest Out [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "decbytes",
+          "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes",
             "spanNulls": true,
@@ -159,7 +159,7 @@
     },
     {
       "title": "Validator List Traffic",
-      "description": "###### What this is:\n*Bytes and messages exchanged distributing validator lists (trusted-list configuration) between peers.*\n\n###### How it's computed:\n*Current in/out byte and message counts for the validator-lists category.*\n\n###### Reading it:\n*Bursts when lists update or new peers connect; quiet otherwise.*\n\n###### Healthy range:\n*workload-dependent; occasional bursts.*\n\n###### Watch for:\n*Continuous high volume (repeated list re-fetching or churn).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Bytes and messages exchanged distributing validator lists (trusted-list configuration) between peers.*\n\n###### How it's computed:\n*Per-second in/out byte and message rate for the validator-lists category.*\n\n###### Reading it:\n*Bursts when lists update or new peers connect; quiet otherwise.*\n\n###### Healthy range:\n*workload-dependent; occasional bursts.*\n\n###### Watch for:\n*Continuous high volume (repeated list re-fetching or churn).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -178,34 +178,34 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "validator_lists_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(validator_lists_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Bytes In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "validator_lists_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(validator_lists_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Bytes Out [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "validator_lists_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(validator_lists_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Messages In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "validator_lists_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(validator_lists_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Messages Out [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "cps",
           "custom": {
             "axisLabel": "Count",
             "spanNulls": true,
@@ -227,7 +227,7 @@
               },
               {
                 "id": "unit",
-                "value": "decbytes"
+                "value": "binBps"
               }
             ]
           }
@@ -236,7 +236,7 @@
     },
     {
       "title": "Set Get/Share Traffic (Bytes)",
-      "description": "###### What this is:\n*Transaction-set fetch (get) and share bytes exchanged during ledger close.*\n\n###### How it's computed:\n*Current in/out byte counts for the set-get and set-share categories.*\n\n###### Reading it:\n*Some exchange each ledger is normal as peers reconcile transaction sets.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High set-get (peers frequently missing transaction sets: possible sync delays).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Transaction-set fetch (get) and share bytes exchanged during ledger close.*\n\n###### How it's computed:\n*Per-second in/out byte rate for the set-get and set-share categories.*\n\n###### Reading it:\n*Some exchange each ledger is normal as peers reconcile transaction sets.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High set-get (peers frequently missing transaction sets: possible sync delays).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -255,34 +255,34 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "set_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(set_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Set Get In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "set_get_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(set_get_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Set Get Out [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "set_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(set_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Set Share In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "set_share_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(set_share_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Set Share Out [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "decbytes",
+          "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes",
             "spanNulls": true,
@@ -296,7 +296,7 @@
     },
     {
       "title": "Have/Requested Transactions (Messages)",
-      "description": "###### What this is:\n*Transaction-availability messages: advertisements that a peer has certain transactions, and explicit requests for transaction data.*\n\n###### How it's computed:\n*Current in/out message counts for the have-transactions and requested-transactions categories.*\n\n###### Reading it:\n*Compare requested versus have to gauge how well transactions are propagating.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*Requested far exceeding have (peers behind on transaction propagation).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Transaction-availability messages: advertisements that a peer has certain transactions, and explicit requests for transaction data.*\n\n###### How it's computed:\n*Per-second in/out message rate for the have-transactions and requested-transactions categories.*\n\n###### Reading it:\n*Compare requested versus have to gauge how well transactions are propagating.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*Requested far exceeding have (peers behind on transaction propagation).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -315,34 +315,34 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "have_transactions_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(have_transactions_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Have TX In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "have_transactions_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(have_transactions_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Have TX Out [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "requested_transactions_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(requested_transactions_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Requested TX In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "requested_transactions_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(requested_transactions_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Requested TX Out [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "cps",
           "custom": {
             "axisLabel": "Messages",
             "spanNulls": true,
@@ -433,7 +433,7 @@
     },
     {
       "title": "Proof Path Traffic",
-      "description": "###### What this is:\n*Proof-path request/response bytes used to verify individual ledger entries without downloading the whole ledger.*\n\n###### How it's computed:\n*Current in/out byte counts for the proof-path request and response categories.*\n\n###### Reading it:\n*Rises when peers verify specific state, often during catch-up.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High sustained request volume (heavy state-verification load).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Proof-path request/response bytes used to verify individual ledger entries without downloading the whole ledger.*\n\n###### How it's computed:\n*Per-second in/out byte rate for the proof-path request and response categories.*\n\n###### Reading it:\n*Rises when peers verify specific state, often during catch-up.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*High sustained request volume (heavy state-verification load).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -452,34 +452,34 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "proof_path_request_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(proof_path_request_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Request Bytes In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "proof_path_request_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(proof_path_request_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Request Bytes Out [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "proof_path_response_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(proof_path_response_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Response Bytes In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "proof_path_response_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(proof_path_response_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Response Bytes Out [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "decbytes",
+          "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes",
             "spanNulls": true,
@@ -493,7 +493,7 @@
     },
     {
       "title": "Replay Delta Traffic",
-      "description": "###### What this is:\n*Replay-delta request/response bytes used to efficiently replay ledger state changes during catch-up.*\n\n###### How it's computed:\n*Current in/out byte counts for the replay-delta request and response categories.*\n\n###### Reading it:\n*Active during catch-up and replay; quiet when synced.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*Continuous replay traffic (node repeatedly replaying rather than staying current).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
+      "description": "###### What this is:\n*Replay-delta request/response bytes used to efficiently replay ledger state changes during catch-up.*\n\n###### How it's computed:\n*Per-second in/out byte rate for the replay-delta request and response categories.*\n\n###### Reading it:\n*Active during catch-up and replay; quiet when synced.*\n\n###### Healthy range:\n*workload-dependent; low when synced.*\n\n###### Watch for:\n*Continuous replay traffic (node repeatedly replaying rather than staying current).*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -512,34 +512,34 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "replay_delta_request_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(replay_delta_request_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Request Bytes In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "replay_delta_request_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(replay_delta_request_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Request Bytes Out [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "replay_delta_response_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(replay_delta_response_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Response Bytes In [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "replay_delta_response_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(replay_delta_response_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Response Bytes Out [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "decbytes",
+          "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes",
             "spanNulls": true,

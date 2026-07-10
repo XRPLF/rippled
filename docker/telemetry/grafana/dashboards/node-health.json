@@ -106,8 +106,8 @@
       }
     },
     {
-      "title": "Operating Mode Duration",
-      "description": "**What:** Cumulative time the node has spent in each operating mode: Disconnected, Connected, Syncing, Tracking, Full.\n**How it's computed:** Per-mode accumulated time (microseconds) at its latest value per node.\n**Reading it:** Full should dominate and keep growing; other modes should be nearly flat.\n**Healthy range:** almost all time in Full on a healthy node.\n**Watch for:** Growth in Syncing, Connected, or Disconnected (instability or repeated resync).\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp NetworkOPsImp::Stats ctor",
+      "title": "Operating Mode (Time Share)",
+      "description": "**What:** Fraction of time in each operating mode (per-interval): Disconnected, Connected, Syncing, Tracking, Full.\n**How it's computed:** Per-mode duration rate divided by the sum of all five mode rates over the interval; the five shares stack to 100%.\n**Reading it:** Full should fill almost the entire band on a healthy node.\n**Healthy range:** Full near 100%; other modes near 0.\n**Watch for:** A rising share of Syncing, Connected, or Disconnected (instability or repeated resync).\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp NetworkOPsImp::Stats ctor",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -126,47 +126,50 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "state_accounting_full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(state_accounting_full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) / (rate(state_accounting_disconnected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_connected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_syncing_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_tracking_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]))",
           "legendFormat": "Full [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "state_accounting_tracking_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(state_accounting_tracking_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) / (rate(state_accounting_disconnected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_connected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_syncing_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_tracking_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]))",
           "legendFormat": "Tracking [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "state_accounting_syncing_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(state_accounting_syncing_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) / (rate(state_accounting_disconnected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_connected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_syncing_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_tracking_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]))",
           "legendFormat": "Syncing [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "state_accounting_connected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(state_accounting_connected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) / (rate(state_accounting_disconnected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_connected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_syncing_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_tracking_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]))",
           "legendFormat": "Connected [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "state_accounting_disconnected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "rate(state_accounting_disconnected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) / (rate(state_accounting_disconnected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_connected_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_syncing_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_tracking_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) + rate(state_accounting_full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]))",
           "legendFormat": "Disconnected [{{service_instance_id}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "µs",
+          "unit": "percentunit",
           "custom": {
-            "axisLabel": "Duration",
+            "axisLabel": "Time in mode",
             "spanNulls": true,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 3
+            "pointSize": 3,
+            "stacking": {
+              "mode": "normal"
+            }
           }
         },
         "overrides": []
@@ -345,7 +348,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(ledger_fetches_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(ledger_fetches_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Fetches / Sec [{{service_instance_id}}]"
         }
       ],
@@ -377,7 +380,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(ledger_history_mismatch_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(ledger_history_mismatch_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Mismatches / Sec [{{service_instance_id}}]"
         }
       ],
@@ -788,14 +791,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(state_accounting_full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) / 1000000",
+          "expr": "rate(state_accounting_full_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) / 1000000",
           "legendFormat": "Full Mode Rate"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(state_accounting_tracking_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) / 1000000",
+          "expr": "rate(state_accounting_tracking_duration{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) / 1000000",
           "legendFormat": "Tracking Mode Rate"
         }
       ],
