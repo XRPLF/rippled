@@ -332,7 +332,7 @@ TrustSet::doApply()
     std::uint32_t const uOwnerCount = ownerCount(sle, j_);
     XRPAmount const reserveCreate(
         (uOwnerCount < 2) ? XRPAmount(beast::kZero)
-                          : view().fees().accountReserve(uOwnerCount + 1, 1));
+                          : accountReserve(view(), sle, j_, {.ownerCountDelta = 1}));
 
     std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
