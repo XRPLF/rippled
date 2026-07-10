@@ -41,32 +41,26 @@ public:
      */
     static TER
     defaultLoan(
-        ApplyView& view,
         LoanEntry<ApplyView>& loanSle,
         LoanBrokerEntry<ApplyView>& brokerSle,
         VaultEntry<ApplyView>& vaultSle,
-        Asset const& vaultAsset,
-        beast::Journal j);
+        Asset const& vaultAsset);
 
     /** Helper function that might be needed by other transactors
      */
     static TER
     impairLoan(
-        ApplyView& view,
         LoanEntry<ApplyView>& loanSle,
         VaultEntry<ApplyView>& vaultSle,
-        Asset const& vaultAsset,
-        beast::Journal j);
+        Asset const& vaultAsset);
 
     /** Helper function that might be needed by other transactors
      */
     [[nodiscard]] static TER
     unimpairLoan(
-        ApplyView& view,
         LoanEntry<ApplyView>& loanSle,
         VaultEntry<ApplyView>& vaultSle,
-        Asset const& vaultAsset,
-        beast::Journal j);
+        Asset const& vaultAsset);
 
     TER
     doApply() override;

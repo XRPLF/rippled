@@ -38,25 +38,8 @@ DIDDelete::deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner)
 TER
 DIDDelete::deleteSLE(ApplyView& view, SLE::pointer sle, AccountID const owner, beast::Journal j)
 {
-    // Remove object from owner directory
-    if (!view.dirRemove(keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))
-    {
-        // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete DID from owner.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    AccountRootEntry<ApplyView> sleOwner{keylet::account(owner), view};
-    if (!sleOwner)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    adjustOwnerCount(view, sleOwner.mutableSle(), -1, j);
-    sleOwner.update();
-
-    // Remove object from ledger
-    view.erase(sle);
-    return tesSUCCESS;
+    DIDEntry<ApplyView> did{sle, view, j};
+    return did.destroy();
 }
 
 TER

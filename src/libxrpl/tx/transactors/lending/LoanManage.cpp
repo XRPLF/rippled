@@ -146,13 +146,14 @@ owedToVault(LoanEntry<ApplyView> const& loanSle)
 
 TER
 LoanManage::defaultLoan(
-    ApplyView& view,
     LoanEntry<ApplyView>& loanSle,
     LoanBrokerEntry<ApplyView>& brokerSle,
     VaultEntry<ApplyView>& vaultSle,
-    Asset const& vaultAsset,
-    beast::Journal j)
+    Asset const& vaultAsset)
 {
+    ApplyView& view = loanSle.applyView();
+    beast::Journal const j = loanSle.journal();
+
     // Calculate the amount of the Default that First-Loss Capital covers:
 
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
@@ -297,12 +298,13 @@ LoanManage::defaultLoan(
 
 TER
 LoanManage::impairLoan(
-    ApplyView& view,
     LoanEntry<ApplyView>& loanSle,
     VaultEntry<ApplyView>& vaultSle,
-    Asset const& vaultAsset,
-    beast::Journal j)
+    Asset const& vaultAsset)
 {
+    ApplyView& view = loanSle.applyView();
+    beast::Journal const j = loanSle.journal();
+
     Number const lossUnrealized = owedToVault(loanSle);
 
     // The vault may be at a different scale than the loan. Reduce rounding
@@ -339,12 +341,13 @@ LoanManage::impairLoan(
 
 [[nodiscard]] TER
 LoanManage::unimpairLoan(
-    ApplyView& view,
     LoanEntry<ApplyView>& loanSle,
     VaultEntry<ApplyView>& vaultSle,
-    Asset const& vaultAsset,
-    beast::Journal j)
+    Asset const& vaultAsset)
 {
+    ApplyView& view = loanSle.applyView();
+    beast::Journal const j = loanSle.journal();
+
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
     // scale.
@@ -393,16 +396,16 @@ LoanManage::doApply()
     auto& view = ctx_.view();
 
     auto const loanID = tx[sfLoanID];
-    LoanEntry<ApplyView> loanSle{keylet::loan(loanID), view};
+    LoanEntry<ApplyView> loanSle{keylet::loan(loanID), view, j_};
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     auto const brokerID = loanSle->at(sfLoanBrokerID);
-    LoanBrokerEntry<ApplyView> brokerSle{keylet::loanBroker(brokerID), view};
+    LoanBrokerEntry<ApplyView> brokerSle{keylet::loanBroker(brokerID), view, j_};
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    VaultEntry<ApplyView> vaultSle{keylet::vault(brokerSle->at(sfVaultID)), view};
+    VaultEntry<ApplyView> vaultSle{keylet::vault(brokerSle->at(sfVaultID)), view, j_};
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);
@@ -411,11 +414,11 @@ LoanManage::doApply()
         // Valid flag combinations are checked in preflight. No flags is valid -
         // just a noop.
         if (tx.isFlag(tfLoanDefault))
-            return defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
+            return defaultLoan(loanSle, brokerSle, vaultSle, vaultAsset);
         if (tx.isFlag(tfLoanImpair))
-            return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+            return impairLoan(loanSle, vaultSle, vaultAsset);
         if (tx.isFlag(tfLoanUnimpair))
-            return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+            return unimpairLoan(loanSle, vaultSle, vaultAsset);
         // NoOp, as described above.
         return tesSUCCESS;
     }();

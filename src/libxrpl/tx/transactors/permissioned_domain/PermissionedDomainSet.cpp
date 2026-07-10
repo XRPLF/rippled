@@ -106,30 +106,20 @@ PermissionedDomainSet::doApply()
     else
     {
         // Create new permissioned domain.
-        // Check reserve availability for new object creation
-        auto const balance = STAmount((*ownerSle)[sfBalance]).xrp();
-        auto const reserve = ctx_.view().fees().accountReserve((*ownerSle)[sfOwnerCount] + 1);
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-
         bool const fixEnabled = view().rules().enabled(fixCleanup3_1_3);
         auto const seq = fixEnabled ? ctx_.tx.getSeqValue() : ctx_.tx.getFieldU32(sfSequence);
         Keylet const pdKeylet = keylet::permissionedDomain(accountID_, seq);
-        PermissionedDomainEntry<ApplyView> slePd{pdKeylet, view()};
-        slePd.newSLE();
+        // Adopt a fresh SLE (rather than peek + newSLE) so that the pre-
+        // fixCleanup3_1_3 ticket case, where sfSequence is 0 and the keylet can
+        // collide with an existing domain, throws at insert() (-> tefEXCEPTION)
+        // instead of tripping the newSLE() "no existing SLE" assertion.
+        PermissionedDomainEntry<ApplyView> slePd{std::make_shared<SLE>(pdKeylet), view()};
 
         slePd->setAccountID(sfOwner, accountID_);
         slePd->setFieldU32(sfSequence, seq);
         slePd->peekFieldArray(sfAcceptedCredentials) = std::move(sortedLE);
-        auto const page =
-            view().dirInsert(keylet::ownerDir(accountID_), pdKeylet, describeOwnerDir(accountID_));
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-        slePd->setFieldU64(sfOwnerNode, *page);
-        // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), ownerSle.mutableSle(), 1, ctx_.journal);
-        slePd.insert();
+        return slePd.create(preFeeBalance_);
     }
 
     return tesSUCCESS;

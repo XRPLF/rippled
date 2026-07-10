@@ -560,33 +560,11 @@ CheckCash::doApply()
         }
     }
 
-    // Check was cashed.  If not a self send (and it shouldn't be), remove
-    // check link from destination directory.
-    if (srcId != accountID_ &&
-        !psb.dirRemove(
-            keylet::ownerDir(accountID_), sleCheck->at(sfDestinationNode), sleCheck->key(), true))
-    {
-        // LCOV_EXCL_START
-        JLOG(j_.fatal()) << "Unable to delete check from destination.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    // Remove check from check owner's directory.
-    if (!psb.dirRemove(keylet::ownerDir(srcId), sleCheck->at(sfOwnerNode), sleCheck->key(), true))
-    {
-        // LCOV_EXCL_START
-        JLOG(j_.fatal()) << "Unable to delete check from owner.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    // If we succeeded, update the check owner's reserve.
-    AccountRootEntry<ApplyView> sleSrcAccount{keylet::account(srcId), psb};
-    adjustOwnerCount(psb, sleSrcAccount.mutableSle(), -1, viewJ);
-
-    // Remove check from ledger.
-    psb.erase(sleCheck);
+    // Check was cashed. Unlink it from the owner (and destination) directories,
+    // decrement the source's OwnerCount, and erase it. See CheckEntry::ownerDirs().
+    CheckEntry<ApplyView> checkEntry{sleCheck, psb};
+    if (auto const ter = checkEntry.destroy(); !isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
 
     psb.apply(ctx_.rawView());
     return tesSUCCESS;

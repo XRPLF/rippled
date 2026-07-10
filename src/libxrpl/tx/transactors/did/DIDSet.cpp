@@ -63,39 +63,6 @@ DIDSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
-addSLE(ApplyContext& ctx, DIDEntry<ApplyView>& sle, AccountID const& owner)
-{
-    AccountRootEntry<ApplyView> sleAccount{keylet::account(owner), ctx.view()};
-    if (!sleAccount)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
-
-    // Check reserve availability for new object creation
-    {
-        auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
-        auto const reserve = ctx.view().fees().accountReserve((*sleAccount)[sfOwnerCount] + 1);
-
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
-
-    // Add ledger object to ledger
-    sle.insert();
-
-    // Add ledger object to owner's page
-    {
-        auto page =
-            ctx.view().dirInsert(keylet::ownerDir(owner), sle->key(), describeOwnerDir(owner));
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (*sle)[sfOwnerNode] = *page;
-    }
-    adjustOwnerCount(ctx.view(), sleAccount.mutableSle(), 1, ctx.journal);
-    sleAccount.update();
-
-    return tesSUCCESS;
-}
-
 TER
 DIDSet::doApply()
 {
@@ -148,7 +115,7 @@ DIDSet::doApply()
         return tecEMPTY_DID;
     }
 
-    return addSLE(ctx_, sleDID, accountID_);
+    return sleDID.create(preFeeBalance_);
 }
 
 void

@@ -76,52 +76,26 @@ deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j)
     if (!sleCredential)
         return tecNO_ENTRY;
 
-    auto delSLE = [&view, &sleCredential, j](
-                      AccountID const& account, SField const& node, bool isOwner) -> TER {
-        AccountRootEntry<ApplyView> sleAccount{keylet::account(account), view};
-        if (!sleAccount)
-        {
-            // LCOV_EXCL_START
-            JLOG(j.fatal()) << "Internal error: can't retrieve Owner account.";
-            return tecINTERNAL;
-            // LCOV_EXCL_STOP
-        }
-
-        // Remove object from owner directory
-        std::uint64_t const page = sleCredential->getFieldU64(node);
-        if (!view.dirRemove(keylet::ownerDir(account), page, sleCredential->key(), false))
-        {
-            // LCOV_EXCL_START
-            JLOG(j.fatal()) << "Unable to delete Credential from owner.";
-            return tefBAD_LEDGER;
-            // LCOV_EXCL_STOP
-        }
-
-        if (isOwner)
-            adjustOwnerCount(view, sleAccount.mutableSle(), -1, j);
-
-        return tesSUCCESS;
-    };
-
+    // Historically deleteSLE fetched both the issuer's and (for a third-party
+    // credential) the subject's account and failed if either was missing, even
+    // though only one of them is counted against a reserve. Preserve that
+    // stricter contract: a corrupted view missing one of these accounts must
+    // report tecINTERNAL rather than silently unlinking.
     auto const issuer = sleCredential->getAccountID(sfIssuer);
     auto const subject = sleCredential->getAccountID(sfSubject);
-    bool const accepted = sleCredential->isFlag(lsfAccepted);
-
-    auto err = delSLE(issuer, sfIssuerNode, !accepted || (subject == issuer));
-    if (!isTesSuccess(err))
-        return err;
-
-    if (subject != issuer)
+    if (!view.exists(keylet::account(issuer)) ||
+        (subject != issuer && !view.exists(keylet::account(subject))))
     {
-        err = delSLE(subject, sfSubjectNode, accepted);
-        if (!isTesSuccess(err))
-            return err;
+        JLOG(j.fatal()) << "Internal error: can't retrieve Owner account.";
+        return tecINTERNAL;
     }
 
-    // Remove object from ledger
-    view.erase(sleCredential);
-
-    return tesSUCCESS;
+    // Unlink the credential from the issuer's and subject's directories,
+    // decrementing whichever account currently owns it (the issuer until the
+    // subject accepts, the subject afterwards), and erase it. See
+    // CredentialEntry::ownerDirs().
+    CredentialEntry<ApplyView> cred{sleCredential, view, j};
+    return cred.destroy();
 }
 
 NotTEC

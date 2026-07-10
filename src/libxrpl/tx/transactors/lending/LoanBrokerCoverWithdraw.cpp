@@ -96,11 +96,9 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 
     // Helper handles both IOU and MPT correctly without explicit branching.
     if (auto const ret = canApplyToBrokerCover(
-            ctx.view,
-            LoanBrokerEntry<ReadView>{sleBroker, ctx.view},
+            LoanBrokerEntry<ReadView>{sleBroker, ctx.view, ctx.j},
             vaultAsset,
             amount,
-            ctx.j,
             "LoanBrokerCoverWithdraw"))
         return ret;
 

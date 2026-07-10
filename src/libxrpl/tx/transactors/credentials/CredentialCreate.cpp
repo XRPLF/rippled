@@ -128,17 +128,6 @@ CredentialCreate::doApply()
         sleCred->setFieldU32(sfExpiration, *optExp);
     }
 
-    AccountRootEntry<ApplyView> sleIssuer{keylet::account(accountID_), view()};
-    if (!sleIssuer)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
-
-    {
-        STAmount const reserve{
-            view().fees().accountReserve(sleIssuer->getFieldU32(sfOwnerCount) + 1)};
-        if (preFeeBalance_ < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
-
     sleCred->setAccountID(sfSubject, subject);
     sleCred->setAccountID(sfIssuer, accountID_);
     sleCred->setFieldVL(sfCredentialType, credType);
@@ -146,38 +135,15 @@ CredentialCreate::doApply()
     if (ctx_.tx.isFieldPresent(sfURI))
         sleCred->setFieldVL(sfURI, ctx_.tx.getFieldVL(sfURI));
 
-    {
-        auto const page = view().dirInsert(
-            keylet::ownerDir(accountID_), credentialKey, describeOwnerDir(accountID_));
-        JLOG(j_.trace()) << "Adding Credential to owner directory " << to_string(credentialKey.key)
-                         << ": " << (page ? "success" : "failure");
-        if (!page)
-            return tecDIR_FULL;
-        sleCred->setFieldU64(sfIssuerNode, *page);
-
-        adjustOwnerCount(view(), sleIssuer.mutableSle(), 1, j_);
-    }
-
+    // A self-issued credential is accepted immediately.
     if (subject == accountID_)
-    {
         sleCred->setFieldU32(sfFlags, lsfAccepted);
-    }
-    else
-    {
-        // Added to both dirs, owned only by issuer. CredentialAccept will transfer ownership to
-        // subject. CredentialDelete will remove from both dirs and decrement 1 ownerCount.
-        auto const page =
-            view().dirInsert(keylet::ownerDir(subject), credentialKey, describeOwnerDir(subject));
-        JLOG(j_.trace()) << "Adding Credential to subject directory "
-                         << to_string(credentialKey.key) << ": " << (page ? "success" : "failure");
-        if (!page)
-            return tecDIR_FULL;
-        sleCred->setFieldU64(sfSubjectNode, *page);
-    }
 
-    sleCred.insert();
-
-    return tesSUCCESS;
+    // Reserve check (issuer's pre-fee balance) + link into the issuer's owner
+    // directory (counted) and, for a third-party subject, the subject's tracking
+    // directory + bump the issuer's OwnerCount + insert. Ownership transfers to
+    // the subject on CredentialAccept. See CredentialEntry::ownerDirs().
+    return sleCred.create(preFeeBalance_);
 }
 
 void

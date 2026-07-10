@@ -99,41 +99,15 @@ DelegateSet::doApply()
     if (permissions.empty())
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    STAmount const reserve{
-        ctx_.view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
-
-    if (preFeeBalance_ < reserve)
-        return tecINSUFFICIENT_RESERVE;
-
     sle.newSLE();
     sle->setAccountID(sfAccount, accountID_);
     sle->setAccountID(sfAuthorize, authAccount);
-
     sle->setFieldArray(sfPermissions, permissions);
 
-    // Add to delegating account's owner directory
-    auto const page = ctx_.view().dirInsert(
-        keylet::ownerDir(accountID_), delegateKey, describeOwnerDir(accountID_));
-
-    if (!page)
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
-
-    (*sle)[sfOwnerNode] = *page;
-
-    // Add to authorized account's owner directory so AccountDelete can find
-    // and clean up inbound delegations when the authorized account is deleted.
-    auto const destPage = ctx_.view().dirInsert(
-        keylet::ownerDir(authAccount), delegateKey, describeOwnerDir(authAccount));
-
-    if (!destPage)
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
-
-    (*sle)[sfDestinationNode] = *destPage;
-
-    sle.insert();
-    adjustOwnerCount(ctx_.view(), sleOwner.mutableSle(), 1, ctx_.journal);
-
-    return tesSUCCESS;
+    // Reserve check (delegator's pre-fee balance) + link into the delegator's
+    // owner directory and the authorized account's directory + bump the
+    // delegator's OwnerCount + insert. See DelegateEntry::ownerDirs().
+    return sle.create(preFeeBalance_);
 }
 
 TER
@@ -142,40 +116,11 @@ DelegateSet::deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j)
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const delegator = (*sle)[sfAccount];
-    auto const delegatee = (*sle)[sfAuthorize];
-
-    // Remove from delegating account's owner directory
-    if (!view.dirRemove(keylet::ownerDir(delegator), (*sle)[sfOwnerNode], sle->key(), false))
-    {
-        // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete Delegate from owner.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    // Remove from authorized account's owner directory, if present
-    if (auto const optPage = (*sle)[~sfDestinationNode])
-    {
-        if (!view.dirRemove(keylet::ownerDir(delegatee), *optPage, sle->key(), false))
-        {
-            // LCOV_EXCL_START
-            JLOG(j.fatal()) << "Unable to delete Delegate from authorized account.";
-            return tefBAD_LEDGER;
-            // LCOV_EXCL_STOP
-        }
-    }
-
-    // Only the delegating account's owner count was incremented on creation
-    AccountRootEntry<ApplyView> sleOwner{keylet::account(delegator), view};
-    if (!sleOwner)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    adjustOwnerCount(view, sleOwner.mutableSle(), -1, j);
-
-    view.erase(sle);
-
-    return tesSUCCESS;
+    // Unlink from the delegator's owner directory and the authorized account's
+    // directory, decrement the delegator's OwnerCount, and erase. Only the
+    // delegator's count was bumped on creation. See DelegateEntry::ownerDirs().
+    DelegateEntry<ApplyView> delegate{sle, view, j};
+    return delegate.destroy();
 }
 
 void

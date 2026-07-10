@@ -192,16 +192,6 @@ CheckCreate::doApply()
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    // A check counts against the reserve of the issuing account, but we
-    // check the starting balance because we want to allow dipping into the
-    // reserve to pay fees.
-    {
-        STAmount const reserve{view().fees().accountReserve(sle->getFieldU32(sfOwnerCount) + 1)};
-
-        if (preFeeBalance_ < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
-
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
     std::uint32_t const seq = ctx_.tx.getSeqValue();
@@ -223,40 +213,10 @@ CheckCreate::doApply()
     if (auto const expiry = ctx_.tx[~sfExpiration])
         sleCheck->setFieldU32(sfExpiration, *expiry);
 
-    sleCheck.insert();
-
-    auto viewJ = ctx_.registry.get().getJournal("View");
-    // If it's not a self-send (and it shouldn't be), add Check to the
-    // destination's owner directory.
-    if (dstAccountId != accountID_)
-    {
-        auto const page = view().dirInsert(
-            keylet::ownerDir(dstAccountId), checkKeylet, describeOwnerDir(dstAccountId));
-
-        JLOG(j_.trace()) << "Adding Check to destination directory " << to_string(checkKeylet.key)
-                         << ": " << (page ? "success" : "failure");
-
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-
-        sleCheck->setFieldU64(sfDestinationNode, *page);
-    }
-
-    {
-        auto const page = view().dirInsert(
-            keylet::ownerDir(accountID_), checkKeylet, describeOwnerDir(accountID_));
-
-        JLOG(j_.trace()) << "Adding Check to owner directory " << to_string(checkKeylet.key) << ": "
-                         << (page ? "success" : "failure");
-
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-
-        sleCheck->setFieldU64(sfOwnerNode, *page);
-    }
-    // If we succeeded, the new entry counts against the creator's reserve.
-    adjustOwnerCount(view(), sle.mutableSle(), 1, viewJ);
-    return tesSUCCESS;
+    // Reserve check (source's pre-fee balance) + link into the source owner
+    // directory and the destination tracking directory + bump the source's
+    // OwnerCount + insert. See CheckEntry::ownerDirs().
+    return sleCheck.create(preFeeBalance_);
 }
 
 void

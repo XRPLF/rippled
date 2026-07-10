@@ -287,7 +287,7 @@ LoanPay::doApply()
     auto const amount = tx[sfAmount];
 
     auto const loanID = tx[sfLoanID];
-    LoanEntry<ApplyView> loanSle{keylet::loan(loanID), view};
+    LoanEntry<ApplyView> loanSle{keylet::loan(loanID), view, j_};
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
@@ -299,7 +299,7 @@ LoanPay::doApply()
     auto const brokerOwner = brokerSle->at(sfOwner);
     auto const brokerPseudoAccount = brokerSle->at(sfAccount);
     auto const vaultID = brokerSle->at(sfVaultID);
-    VaultEntry<ApplyView> vaultSle{keylet::vault(vaultID), view};
+    VaultEntry<ApplyView> vaultSle{keylet::vault(vaultID), view, j_};
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultPseudoAccount = vaultSle->at(sfAccount);
@@ -362,7 +362,7 @@ LoanPay::doApply()
     // change will be discarded.
     if (loanSle->isFlag(lsfLoanImpaired))
     {
-        if (auto const ret = LoanManage::unimpairLoan(view, loanSle, vaultSle, asset, j_))
+        if (auto const ret = LoanManage::unimpairLoan(loanSle, vaultSle, asset))
         {
             JLOG(j_.fatal()) << "Failed to unimpair loan before payment.";
             return ret;  // LCOV_EXCL_LINE
@@ -381,7 +381,7 @@ LoanPay::doApply()
     }();
 
     std::expected<LoanPaymentParts, TER> const paymentParts =
-        loanMakePayment(asset, view, loanSle, brokerSle, amount, paymentType, j_);
+        loanMakePayment(asset, loanSle, brokerSle, amount, paymentType);
 
     if (!paymentParts)
     {

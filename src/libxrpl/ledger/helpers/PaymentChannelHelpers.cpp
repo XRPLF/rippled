@@ -29,32 +29,8 @@ closeChannel(
     beast::Journal j)
 {
     AccountID const src = (*slep)[sfAccount];
-    // Remove PayChan from owner directory
-    {
-        auto const page = (*slep)[sfOwnerNode];
-        if (!view.dirRemove(keylet::ownerDir(src), page, key, true))
-        {
-            // LCOV_EXCL_START
-            JLOG(j.fatal()) << "Could not remove paychan from src owner directory";
-            return tefBAD_LEDGER;
-            // LCOV_EXCL_STOP
-        }
-    }
 
-    // Remove PayChan from recipient's owner directory, if present.
-    if (auto const page = (*slep)[~sfDestinationNode])
-    {
-        auto const dst = (*slep)[sfDestination];
-        if (!view.dirRemove(keylet::ownerDir(dst), *page, key, true))
-        {
-            // LCOV_EXCL_START
-            JLOG(j.fatal()) << "Could not remove paychan from dst owner directory";
-            return tefBAD_LEDGER;
-            // LCOV_EXCL_STOP
-        }
-    }
-
-    // Transfer amount back to owner, decrement owner count
+    // Transfer any remaining balance back to the owner.
     AccountRootEntry<ApplyView> sle{src, view};
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -62,12 +38,11 @@ closeChannel(
     XRPL_ASSERT(
         (*slep)[sfAmount] >= (*slep)[sfBalance], "xrpl::closeChannel : minimum channel amount");
     (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
-    adjustOwnerCount(view, sle.mutableSle(), -1, j);
     sle.update();
 
-    // Remove PayChan from ledger
-    slep.erase();
-    return tesSUCCESS;
+    // Unlink the channel from the owner and destination directories, decrement
+    // the owner's OwnerCount, and erase it. See PayChannelEntry::ownerDirs().
+    return slep.destroy();
 }
 
 uint32_t

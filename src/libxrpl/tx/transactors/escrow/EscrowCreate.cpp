@@ -484,45 +484,12 @@ EscrowCreate::doApply()
             (*slep)[sfTransferRate] = xferRate.value;
     }
 
-    slep.insert();
-
-    // Add escrow to sender's owner directory
-    {
-        auto page = ctx_.view().dirInsert(
-            keylet::ownerDir(accountID_), escrowKeylet, describeOwnerDir(accountID_));
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (*slep)[sfOwnerNode] = *page;
-    }
-
-    // If it's not a self-send, add escrow to recipient's owner directory.
-    AccountID const dest = ctx_.tx[sfDestination];
-    if (dest != accountID_)
-    {
-        auto page =
-            ctx_.view().dirInsert(keylet::ownerDir(dest), escrowKeylet, describeOwnerDir(dest));
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (*slep)[sfDestinationNode] = *page;
-    }
-
-    // IOU escrow objects are added to the issuer's owner directory to help
-    // track the total locked balance. For MPT, this isn't necessary because the
-    // locked balance is already stored directly in the MPTokenIssuance object.
+    // Deduct/lock the escrowed amount from the sender.
     AccountID const issuer = amount.getIssuer();
-    if (!isXRP(amount) && issuer != accountID_ && issuer != dest && !amount.holds<MPTIssue>())
-    {
-        auto page =
-            ctx_.view().dirInsert(keylet::ownerDir(issuer), escrowKeylet, describeOwnerDir(issuer));
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (*slep)[sfIssuerNode] = *page;
-    }
-
-    // Deduct owner's balance
     if (isXRP(amount))
     {
         (*sle)[sfBalance] = (*sle)[sfBalance] - amount;
+        sle.update();
     }
     else
     {
@@ -537,10 +504,11 @@ EscrowCreate::doApply()
         }
     }
 
-    // increment owner count
-    adjustOwnerCount(ctx_.view(), sle.mutableSle(), 1, ctx_.journal);
-    sle.update();
-    return tesSUCCESS;
+    // Link the escrow into the sender's owner directory (counts toward reserve),
+    // plus the destination and (for IOU) issuer tracking directories where
+    // applicable, bump the sender's OwnerCount, and insert. The recipient/issuer
+    // tracking dirs help track locked balances. See EscrowEntry::ownerDirs().
+    return slep.create(preFeeBalance_);
 }
 
 void

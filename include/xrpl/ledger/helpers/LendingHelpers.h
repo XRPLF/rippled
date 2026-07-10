@@ -48,11 +48,9 @@ namespace xrpl {
  */
 [[nodiscard]] TER
 canApplyToBrokerCover(
-    ReadView const& view,
     LoanBrokerEntry<ReadView> const& sleBroker,
     Asset const& vaultAsset,
     STAmount const& amount,
-    beast::Journal j,
     std::string_view logPrefix);
 
 // Lending protocol has dependencies, so capture them here.
@@ -548,11 +546,9 @@ enum class LoanPaymentType { Regular = 0, Late, Full, Overpayment };
 std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
-    ApplyView& view,
     LoanEntry<ApplyView>& loan,
     LoanBrokerEntry<ReadView> const& brokerSle,
     STAmount const& amount,
-    LoanPaymentType const paymentType,
-    beast::Journal j);
+    LoanPaymentType const paymentType);
 
 }  // namespace xrpl

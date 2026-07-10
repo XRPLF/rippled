@@ -53,24 +53,8 @@ PermissionedDomainDelete::doApply()
 
     PermissionedDomainEntry<ApplyView> slePd{
         keylet::permissionedDomain(ctx_.tx.at(sfDomainID)), view()};
-    auto const page = (*slePd)[sfOwnerNode];
 
-    if (!view().dirRemove(keylet::ownerDir(accountID_), page, slePd->key(), true))
-    {
-        // LCOV_EXCL_START
-        JLOG(j_.fatal()) << "Unable to delete permissioned domain directory entry.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    AccountRootEntry<ApplyView> ownerSle{keylet::account(accountID_), view()};
-    XRPL_ASSERT(
-        ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0,
-        "xrpl::PermissionedDomainDelete::doApply : nonzero owner count");
-    adjustOwnerCount(view(), ownerSle.mutableSle(), -1, ctx_.journal);
-    slePd.erase();
-
-    return tesSUCCESS;
+    return slePd.destroy();
 }
 
 void

@@ -32,13 +32,14 @@ namespace xrpl {
 
 [[nodiscard]] TER
 canApplyToBrokerCover(
-    ReadView const& view,
     LoanBrokerEntry<ReadView> const& sleBroker,
     Asset const& vaultAsset,
     STAmount const& amount,
-    beast::Journal j,
     std::string_view logPrefix)
 {
+    ReadView const& view = sleBroker.readView();
+    beast::Journal const j = sleBroker.journal();
+
     XRPL_ASSERT(
         sleBroker && sleBroker->getType() == ltLOAN_BROKER,
         "xrpl::canApplyToBrokerCover : valid LoanBroker sle");
@@ -1783,14 +1784,15 @@ computeLoanProperties(
 std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
-    ApplyView& view,
     LoanEntry<ApplyView>& loan,
     LoanBrokerEntry<ReadView> const& brokerSle,
     STAmount const& amount,
-    LoanPaymentType const paymentType,
-    beast::Journal j)
+    LoanPaymentType const paymentType)
 {
     using namespace Lending;
+
+    ApplyView& view = loan.applyView();
+    beast::Journal const j = loan.journal();
 
     auto principalOutstandingProxy = loan->at(sfPrincipalOutstanding);
     auto paymentRemainingProxy = loan->at(sfPaymentRemaining);

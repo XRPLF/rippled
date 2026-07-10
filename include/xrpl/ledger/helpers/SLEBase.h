@@ -3,18 +3,45 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>  // adjustOwnerCount
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>    // describeOwnerDir
+#include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Indexes.h>  // keylet::account, keylet::ownerDir
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <concepts>
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <type_traits>
+#include <vector>
 
 namespace xrpl {
 
 // Concept to distinguish read-only vs writable view types
 template <typename V>
 concept WritableView = std::derived_from<V, ApplyView>;
+
+/** Describes one directory a ledger entry is linked into, for create()/destroy().
+ *
+ *  @param owner        the account whose owner directory this is (the directory
+ *                      is keylet::ownerDir(owner)).
+ *  @param node         the field on the entry holding this directory's page
+ *                      index (sfOwnerNode, sfDestinationNode, sfSubjectNode, ...).
+ *  @param countsToward whether linking here consumes `owner`'s OwnerCount /
+ *                      reserve (true for the owning account, false for auxiliary
+ *                      links such as a destination's tracking directory).
+ */
+struct OwnerDirLink
+{
+    AccountID owner;
+    SField const* node;
+    bool countsToward;
+};
 
 /**
  * View-parameterized base class for all ledger entry wrappers.
@@ -169,6 +196,126 @@ public:
     {
         XRPL_ASSERT(!canModify(), "xrpl::SLEBase::newSLE : no existing SLE");
         sle_ = std::make_shared<SLE>(key_);
+    }
+
+    /** The field holding the account that owns this entry (sfAccount, sfOwner,
+     *  sfIssuer, ...).
+     *
+     *  Single-directory entry types override this to name their owning-account
+     *  field; the default ownerDirs() then links a single owner directory keyed
+     *  on it. Types that live in multiple directories override ownerDirs()
+     *  directly instead. The generic base has no owner.
+     */
+    [[nodiscard]] virtual SField const&
+    ownerField() const
+    {
+        UNREACHABLE("xrpl::SLEBase::ownerField : type does not define an owner field");
+        return sfAccount;  // unreachable; present only to satisfy the return type
+    }
+
+    /** The directories this entry is linked into, and where each stores its
+     *  page index.
+     *
+     *  Default: a single owner directory for ownerField()'s account, recorded in
+     *  sfOwnerNode, counting toward that account's reserve. Types linked into
+     *  more than one directory (e.g. Check/PayChannel/Escrow's destination
+     *  directory, Credential's subject directory) override this to list them;
+     *  only links with `countsToward == true` consume an OwnerCount/reserve slot.
+     */
+    [[nodiscard]] virtual std::vector<OwnerDirLink>
+    ownerDirs() const
+    {
+        return {{sle_->getAccountID(ownerField()), &sfOwnerNode, /*countsToward=*/true}};
+    }
+
+    /** Number of OwnerCount/reserve slots a counted link consumes (default 1).
+     *  Types whose footprint scales with their contents (e.g. Oracle) override.
+     */
+    [[nodiscard]] virtual std::uint32_t
+    reserveCount() const
+    {
+        return 1;
+    }
+
+    /** Link a freshly-populated entry into its owner directories and insert it.
+     *
+     *  Handles the create-time boilerplate shared by owned ledger entries:
+     *    1. reserve check against `ownerReserveBalance` (the owner's pre-fee XRP
+     *       balance — pass the transactor's preFeeBalance_ when the entry is
+     *       owned by the transaction submitter). Pass std::nullopt to skip the
+     *       check entirely, e.g. for entries an internal caller installs on a
+     *       pseudo-account (VaultCreate),
+     *    2. link into each ownerDirs() directory, recording the page in its node
+     *       field,
+     *    3. bump the OwnerCount of each counted owner by reserveCount(),
+     *    4. insert the entry into the view.
+     *
+     *  The caller must have already called newSLE() and populated the entry's
+     *  domain fields (in particular the account fields ownerDirs() reads).
+     */
+    [[nodiscard]] TER
+    create(std::optional<XRPAmount> ownerReserveBalance)
+        requires kIsWritable
+    {
+        XRPL_ASSERT(canModify(), "xrpl::SLEBase::create : can modify");
+        auto const dirs = ownerDirs();
+
+        for (auto const& d : dirs)
+        {
+            if (!d.countsToward)
+                continue;
+            auto const ownerSle = view_.peek(keylet::account(d.owner));
+            if (!ownerSle)
+                return tecNO_ENTRY;  // LCOV_EXCL_LINE
+            if (ownerReserveBalance &&
+                *ownerReserveBalance <
+                    view_.fees().accountReserve((*ownerSle)[sfOwnerCount] + reserveCount()))
+                return tecINSUFFICIENT_RESERVE;
+        }
+
+        for (auto const& d : dirs)
+        {
+            auto const page =
+                view_.dirInsert(keylet::ownerDir(d.owner), key_.key, describeOwnerDir(d.owner));
+            if (!page)
+                return tecDIR_FULL;  // LCOV_EXCL_LINE
+            sle_->setFieldU64(*d.node, *page);
+            if (d.countsToward)
+                adjustOwnerCount(view_, view_.peek(keylet::account(d.owner)), reserveCount(), j_);
+        }
+
+        view_.insert(sle_);
+        return tesSUCCESS;
+    }
+
+    /** Unlink an owned entry from its directories and erase it.
+     *
+     *  Inverse of create(): removes the entry from each ownerDirs() directory
+     *  (using the stored node fields), decrements each counted owner's OwnerCount
+     *  by reserveCount(), and erases the entry.
+     */
+    [[nodiscard]] TER
+    destroy()
+        requires kIsWritable
+    {
+        XRPL_ASSERT(canModify(), "xrpl::SLEBase::destroy : can modify");
+
+        for (auto const& d : ownerDirs())
+        {
+            if (!view_.dirRemove(
+                    keylet::ownerDir(d.owner),
+                    sle_->getFieldU64(*d.node),
+                    key_.key,
+                    /*keepRoot=*/false))
+                return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+            if (d.countsToward)
+                if (auto ownerSle = view_.peek(keylet::account(d.owner)))
+                    adjustOwnerCount(
+                        view_, ownerSle, -static_cast<std::int32_t>(reserveCount()), j_);
+        }
+
+        view_.erase(sle_);
+        return tesSUCCESS;
     }
 
     [[nodiscard]] beast::Journal

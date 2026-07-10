@@ -56,6 +56,19 @@ public:
         : SLEBase<ViewT>(keylet::check(id, seq), view, j)
     {
     }
+
+    // Owner dir (counts toward the source's reserve) + destination tracking dir
+    // (added only for a real, non-self check, matching CheckCreate).
+    [[nodiscard]] std::vector<OwnerDirLink>
+    ownerDirs() const override
+    {
+        auto const owner = this->sle()->getAccountID(sfAccount);
+        auto const dest = this->sle()->getAccountID(sfDestination);
+        std::vector<OwnerDirLink> dirs{{owner, &sfOwnerNode, /*countsToward=*/true}};
+        if (dest != owner)
+            dirs.push_back({dest, &sfDestinationNode, /*countsToward=*/false});
+        return dirs;
+    }
 };
 
 template <typename ViewT>
@@ -72,6 +85,12 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::did(account), view, j)
     {
+    }
+
+    [[nodiscard]] SField const&
+    ownerField() const override
+    {
+        return sfAccount;
     }
 };
 
@@ -141,6 +160,12 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::ticket(id, ticketSeq), view, j)
     {
+    }
+
+    [[nodiscard]] SField const&
+    ownerField() const override
+    {
+        return sfAccount;
     }
 };
 
@@ -262,6 +287,12 @@ public:
         : SLEBase<ViewT>(keylet::depositPreauth(owner, preauthorized), view, j)
     {
     }
+
+    [[nodiscard]] SField const&
+    ownerField() const override
+    {
+        return sfAccount;
+    }
 };
 
 template <typename ViewT>
@@ -351,6 +382,29 @@ public:
         : SLEBase<ViewT>(keylet::escrow(src, seq), view, j)
     {
     }
+
+    // Owner dir (counts toward the sender's reserve) plus tracking dirs: the
+    // destination's (when not a self-send) and, for IOU escrows, the issuer's
+    // (to track the locked balance). MPT escrows track the lock on the issuance
+    // object instead, so they take no issuer dir. Mirrors EscrowCreate.
+    [[nodiscard]] std::vector<OwnerDirLink>
+    ownerDirs() const override
+    {
+        auto const& sle = *this->sle();
+        AccountID const account = sle.getAccountID(sfAccount);
+        AccountID const dest = sle.getAccountID(sfDestination);
+        STAmount const amount = sle.getFieldAmount(sfAmount);
+
+        std::vector<OwnerDirLink> dirs;
+        dirs.push_back({account, &sfOwnerNode, /*countsToward=*/true});
+        if (dest != account)
+            dirs.push_back({dest, &sfDestinationNode, /*countsToward=*/false});
+
+        AccountID const issuer = amount.getIssuer();
+        if (!isXRP(amount) && issuer != account && issuer != dest && !amount.holds<MPTIssue>())
+            dirs.push_back({issuer, &sfIssuerNode, /*countsToward=*/false});
+        return dirs;
+    }
 };
 
 template <typename ViewT>
@@ -369,6 +423,16 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::payChannel(src, dst, seq), view, j)
     {
+    }
+
+    // Owner dir (counts toward the source's reserve) + destination tracking dir
+    // (PaymentChannelCreate forbids dst == src, so both are always present).
+    [[nodiscard]] std::vector<OwnerDirLink>
+    ownerDirs() const override
+    {
+        return {
+            {this->sle()->getAccountID(sfAccount), &sfOwnerNode, /*countsToward=*/true},
+            {this->sle()->getAccountID(sfDestination), &sfDestinationNode, /*countsToward=*/false}};
     }
 };
 
@@ -406,6 +470,12 @@ public:
         : SLEBase<ViewT>(keylet::mptokenIssuance(seq, issuer), view, j)
     {
     }
+
+    [[nodiscard]] SField const&
+    ownerField() const override
+    {
+        return sfIssuer;
+    }
 };
 
 template <typename ViewT>
@@ -442,6 +512,19 @@ public:
         : SLEBase<ViewT>(keylet::oracle(account, documentID), view, j)
     {
     }
+
+    [[nodiscard]] SField const&
+    ownerField() const override
+    {
+        return sfOwner;
+    }
+
+    // An Oracle with more than five price-data pairs occupies two reserve slots.
+    [[nodiscard]] std::uint32_t
+    reserveCount() const override
+    {
+        return this->sle()->getFieldArray(sfPriceDataSeries).size() > 5 ? 2 : 1;
+    }
 };
 
 template <typename ViewT>
@@ -461,6 +544,26 @@ public:
         : SLEBase<ViewT>(keylet::credential(subject, issuer, credType), view, j)
     {
     }
+
+    // A credential lives in both the issuer's and subject's directories, but is
+    // only counted against one owner's reserve at a time: the issuer holds it
+    // until the subject accepts (lsfAccepted), after which the subject owns it.
+    // A self-issued credential is always owned (and counted) by the issuer.
+    // Mirrors CredentialCreate / credentials::deleteSLE.
+    [[nodiscard]] std::vector<OwnerDirLink>
+    ownerDirs() const override
+    {
+        auto const& sle = *this->sle();
+        AccountID const issuer = sle.getAccountID(sfIssuer);
+        AccountID const subject = sle.getAccountID(sfSubject);
+        bool const accepted = sle.isFlag(lsfAccepted);
+
+        std::vector<OwnerDirLink> dirs;
+        dirs.push_back({issuer, &sfIssuerNode, /*countsToward=*/!accepted || subject == issuer});
+        if (subject != issuer)
+            dirs.push_back({subject, &sfSubjectNode, /*countsToward=*/accepted});
+        return dirs;
+    }
 };
 
 template <typename ViewT>
@@ -479,6 +582,12 @@ public:
         : SLEBase<ViewT>(keylet::permissionedDomain(account, seq), view, j)
     {
     }
+
+    [[nodiscard]] SField const&
+    ownerField() const override
+    {
+        return sfOwner;
+    }
 };
 
 template <typename ViewT>
@@ -496,6 +605,16 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::delegate(account, authorizedAccount), view, j)
     {
+    }
+
+    // Owner dir (counts toward the delegator's reserve) + the authorized
+    // account's dir (so AccountDelete can find inbound delegations; no count).
+    [[nodiscard]] std::vector<OwnerDirLink>
+    ownerDirs() const override
+    {
+        return {
+            {this->sle()->getAccountID(sfAccount), &sfOwnerNode, /*countsToward=*/true},
+            {this->sle()->getAccountID(sfAuthorize), &sfDestinationNode, /*countsToward=*/false}};
     }
 };
 

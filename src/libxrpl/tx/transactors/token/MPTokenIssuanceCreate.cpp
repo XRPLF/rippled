@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -115,71 +116,60 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 std::expected<MPTID, TER>
 MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreateArgs const& args)
 {
-    auto const acct = view.peek(keylet::account(args.account));
-    if (!acct)
+    if (!view.exists(keylet::account(args.account)))
         return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
-
-    if (args.priorBalance &&
-        *(args.priorBalance) < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
-        return std::unexpected(tecINSUFFICIENT_RESERVE);
 
     auto const mptId = makeMptID(args.sequence, args.account);
     auto const mptIssuanceKeylet = keylet::mptokenIssuance(mptId);
 
     // create the MPTokenIssuance
+    MPTokenIssuanceEntry<ApplyView> mptIssuance{mptIssuanceKeylet, view, journal};
+    mptIssuance.newSLE();
+    (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
+    (*mptIssuance)[sfIssuer] = args.account;
+    (*mptIssuance)[sfOutstandingAmount] = 0;
+    (*mptIssuance)[sfSequence] = args.sequence;
+
+    if (args.maxAmount)
+        (*mptIssuance)[sfMaximumAmount] = *args.maxAmount;
+
+    if (args.assetScale)
+        (*mptIssuance)[sfAssetScale] = *args.assetScale;
+
+    if (args.transferFee)
+        (*mptIssuance)[sfTransferFee] = *args.transferFee;
+
+    if (args.metadata)
+        (*mptIssuance)[sfMPTokenMetadata] = *args.metadata;
+
+    if (args.domainId)
+        (*mptIssuance)[sfDomainID] = *args.domainId;
+
+    if (args.mutableFlags)
+        (*mptIssuance)[sfMutableFlags] = *args.mutableFlags;
+
+    if (args.referenceHolding)
     {
-        auto const ownerNode = view.dirInsert(
-            keylet::ownerDir(args.account), mptIssuanceKeylet, describeOwnerDir(args.account));
-
-        if (!ownerNode)
-            return std::unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE
-
-        auto mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
-        (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
-        (*mptIssuance)[sfIssuer] = args.account;
-        (*mptIssuance)[sfOutstandingAmount] = 0;
-        (*mptIssuance)[sfOwnerNode] = *ownerNode;
-        (*mptIssuance)[sfSequence] = args.sequence;
-
-        if (args.maxAmount)
-            (*mptIssuance)[sfMaximumAmount] = *args.maxAmount;
-
-        if (args.assetScale)
-            (*mptIssuance)[sfAssetScale] = *args.assetScale;
-
-        if (args.transferFee)
-            (*mptIssuance)[sfTransferFee] = *args.transferFee;
-
-        if (args.metadata)
-            (*mptIssuance)[sfMPTokenMetadata] = *args.metadata;
-
-        if (args.domainId)
-            (*mptIssuance)[sfDomainID] = *args.domainId;
-
-        if (args.mutableFlags)
-            (*mptIssuance)[sfMutableFlags] = *args.mutableFlags;
-
-        if (args.referenceHolding)
-        {
-            // Defensive: the holding must already exist and be of an
-            // expected type. Callers (currently only VaultCreate)
-            // populate this after the pseudo-account's MPToken /
-            // RippleState has been installed. A missing holding here
-            // would dangle the pointer and is a programmer error.
-            auto const sleHolding = view.read(keylet::unchecked(*args.referenceHolding));
-            if (!sleHolding)
-                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
-            auto const type = sleHolding->getType();
-            if (type != ltMPTOKEN && type != ltRIPPLE_STATE)
-                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
-            (*mptIssuance)[sfReferenceHolding] = *args.referenceHolding;
-        }
-
-        view.insert(mptIssuance);
+        // Defensive: the holding must already exist and be of an
+        // expected type. Callers (currently only VaultCreate)
+        // populate this after the pseudo-account's MPToken /
+        // RippleState has been installed. A missing holding here
+        // would dangle the pointer and is a programmer error.
+        auto const sleHolding = view.read(keylet::unchecked(*args.referenceHolding));
+        if (!sleHolding)
+            return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+        auto const type = sleHolding->getType();
+        if (type != ltMPTOKEN && type != ltRIPPLE_STATE)
+            return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+        (*mptIssuance)[sfReferenceHolding] = *args.referenceHolding;
     }
 
-    // Update owner count.
-    adjustOwnerCount(view, acct, 1, journal);
+    // Reserve check against the issuer's pre-fee balance (skipped when
+    // priorBalance is std::nullopt, i.e. VaultCreate's pseudo-account) + link
+    // into the issuer's owner directory + bump the issuer's OwnerCount +
+    // insert. See MPTokenIssuanceEntry.
+    if (auto const ter = mptIssuance.create(args.priorBalance); !isTesSuccess(ter))
+        return std::unexpected(ter);
 
     return mptId;
 }

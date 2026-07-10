@@ -312,18 +312,10 @@ OracleSet::doApply()
         sle->setFieldVL(sfAssetClass, ctx_.tx[sfAssetClass]);
         sle->setFieldU32(sfLastUpdateTime, ctx_.tx[sfLastUpdateTime]);
 
-        auto page = ctx_.view().dirInsert(
-            keylet::ownerDir(accountID_), sle->key(), describeOwnerDir(accountID_));
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-
-        (*sle)[sfOwnerNode] = *page;
-
-        auto const count = series.size() > 5 ? 2 : 1;
-        if (!adjustOwnerCount(ctx_, count))
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-
-        sle.insert();
+        // Reserve check (owner's pre-fee balance) + link into the owner
+        // directory + bump the owner's OwnerCount by reserveCount() (1, or 2
+        // for a large price-data series) + insert. See OracleEntry.
+        return sle.create(preFeeBalance_);
     }
 
     return tesSUCCESS;

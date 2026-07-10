@@ -303,11 +303,9 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     STAmount const& clawAmount = *findClawAmount;
 
     if (auto const ret = canApplyToBrokerCover(
-            ctx.view,
-            LoanBrokerEntry<ReadView>{sleBroker, ctx.view},
+            LoanBrokerEntry<ReadView>{sleBroker, ctx.view, ctx.j},
             vaultAsset,
             clawAmount,
-            ctx.j,
             "LoanBrokerCoverClawback"))
         return ret;
 

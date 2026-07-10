@@ -1527,10 +1527,8 @@ public:
             testcase("canApplyToBrokerCover: " + tc.name);
             auto broker = std::make_shared<SLE>(Keylet{ltLOAN_BROKER, uint256{1u}});
             broker->at(sfCoverAvailable) = tc.coverAvailable;
-            LoanBrokerEntry<ReadView> sle{broker, *env.current()};
-            BEAST_EXPECT(
-                canApplyToBrokerCover(*env.current(), sle, iou, tc.amount, env.journal, "test") ==
-                tc.expected);
+            LoanBrokerEntry<ReadView> sle{broker, *env.current(), env.journal};
+            BEAST_EXPECT(canApplyToBrokerCover(sle, iou, tc.amount, "test") == tc.expected);
         }
 
         // Amendment off → guard is bypassed regardless of amount.
@@ -1539,15 +1537,9 @@ public:
             Env const envOff{*this, testableAmendments() - fixCleanup3_2_0};
             auto broker = std::make_shared<SLE>(Keylet{ltLOAN_BROKER, uint256{1u}});
             broker->at(sfCoverAvailable) = Number{10};
-            LoanBrokerEntry<ReadView> sle{broker, *envOff.current()};
+            LoanBrokerEntry<ReadView> sle{broker, *envOff.current(), envOff.journal};
             BEAST_EXPECT(
-                canApplyToBrokerCover(
-                    *envOff.current(),
-                    sle,
-                    iou,
-                    STAmount{iou, Number{0}},
-                    envOff.journal,
-                    "test") == tesSUCCESS);
+                canApplyToBrokerCover(sle, iou, STAmount{iou, Number{0}}, "test") == tesSUCCESS);
         }
     }
 

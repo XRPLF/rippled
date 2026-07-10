@@ -57,25 +57,11 @@ OracleDelete::deleteOracle(
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view.dirRemove(keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), true))
-    {
-        // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete Oracle from owner.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    AccountRootEntry<ApplyView> sleOwner{keylet::account(account), view};
-    if (!sleOwner)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const count = sle->getFieldArray(sfPriceDataSeries).size() > 5 ? -2 : -1;
-
-    adjustOwnerCount(view, sleOwner.mutableSle(), count, j);
-
-    view.erase(sle);
-
-    return tesSUCCESS;
+    // Unlink the Oracle from its owner's directory, decrement the owner's
+    // OwnerCount by reserveCount() (1, or 2 for a large price-data series),
+    // and erase it. See OracleEntry.
+    OracleEntry<ApplyView> oracle{sle, view, j};
+    return oracle.destroy();
 }
 
 TER

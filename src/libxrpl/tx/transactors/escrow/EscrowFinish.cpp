@@ -317,30 +317,6 @@ EscrowFinish::doApply()
 
     AccountID const account = (*slep)[sfAccount];
 
-    // Remove escrow from owner directory
-    {
-        auto const page = (*slep)[sfOwnerNode];
-        if (!ctx_.view().dirRemove(keylet::ownerDir(account), page, k.key, true))
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.fatal()) << "Unable to delete Escrow from owner.";
-            return tefBAD_LEDGER;
-            // LCOV_EXCL_STOP
-        }
-    }
-
-    // Remove escrow from recipient's owner directory, if present.
-    if (auto const optPage = (*slep)[~sfDestinationNode])
-    {
-        if (!ctx_.view().dirRemove(keylet::ownerDir(destID), *optPage, k.key, true))
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
-            return tefBAD_LEDGER;
-            // LCOV_EXCL_STOP
-        }
-    }
-
     STAmount const amount = slep->getFieldAmount(sfAmount);
     // Transfer amount to destination
     if (isXRP(amount))
@@ -374,30 +350,14 @@ EscrowFinish::doApply()
                 amount.asset().value());
             !isTesSuccess(ret))
             return ret;
-
-        // Remove escrow from issuers owner directory, if present.
-        if (auto const optPage = (*slep)[~sfIssuerNode]; optPage)
-        {
-            if (!ctx_.view().dirRemove(keylet::ownerDir(issuer), *optPage, k.key, true))
-            {
-                // LCOV_EXCL_START
-                JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
-                return tefBAD_LEDGER;
-                // LCOV_EXCL_STOP
-            }
-        }
     }
 
     sled.update();
 
-    // Adjust source owner count
-    AccountRootEntry<ApplyView> sle{keylet::account(account), ctx_.view()};
-    adjustOwnerCount(ctx_.view(), sle.mutableSle(), -1, ctx_.journal);
-    sle.update();
-
-    // Remove escrow from ledger
-    slep.erase();
-    return tesSUCCESS;
+    // Unlink the escrow from the sender's owner directory (and the destination
+    // and issuer tracking directories, if present), decrement the sender's
+    // OwnerCount, and erase it. See EscrowEntry::ownerDirs().
+    return slep.destroy();
 }
 
 void

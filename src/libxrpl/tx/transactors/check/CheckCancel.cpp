@@ -63,41 +63,9 @@ CheckCancel::doApply()
         return tecNO_ENTRY;
     }
 
-    AccountID const srcId{sleCheck->getAccountID(sfAccount)};
-    AccountID const dstId{sleCheck->getAccountID(sfDestination)};
-    auto viewJ = ctx_.registry.get().getJournal("View");
-
-    // If the check is not written to self (and it shouldn't be), remove the
-    // check from the destination account root.
-    if (srcId != dstId)
-    {
-        std::uint64_t const page{(*sleCheck)[sfDestinationNode]};
-        if (!view().dirRemove(keylet::ownerDir(dstId), page, sleCheck->key(), true))
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.fatal()) << "Unable to delete check from destination.";
-            return tefBAD_LEDGER;
-            // LCOV_EXCL_STOP
-        }
-    }
-    {
-        std::uint64_t const page{(*sleCheck)[sfOwnerNode]};
-        if (!view().dirRemove(keylet::ownerDir(srcId), page, sleCheck->key(), true))
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.fatal()) << "Unable to delete check from owner.";
-            return tefBAD_LEDGER;
-            // LCOV_EXCL_STOP
-        }
-    }
-
-    // If we succeeded, update the check owner's reserve.
-    AccountRootEntry<ApplyView> sleSrc{keylet::account(srcId), view()};
-    adjustOwnerCount(view(), sleSrc.mutableSle(), -1, viewJ);
-
-    // Remove check from ledger.
-    sleCheck.erase();
-    return tesSUCCESS;
+    // Unlink the check from the source (and destination) directories, decrement
+    // the source's OwnerCount, and erase it. See CheckEntry::ownerDirs().
+    return sleCheck.destroy();
 }
 
 void
