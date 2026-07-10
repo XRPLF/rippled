@@ -5,7 +5,10 @@
 
 #include <boost/asio/buffer.hpp>
 
+#include <deque>
+#include <istream>
 #include <stack>
+#include <string>
 
 namespace json {
 
@@ -151,7 +154,7 @@ private:
         Location end,
         unsigned int& unicode);
     bool
-    addError(std::string const& message, Token& token, Location extra = 0);
+    addError(std::string const& message, Token& token, Location extra = nullptr);
     bool
     recoverFromError(TokenType skipUntilToken);
     bool

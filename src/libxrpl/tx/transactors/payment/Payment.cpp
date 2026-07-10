@@ -363,16 +363,21 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return tecNO_DST;
         }
-        if (ctx.view.open() && partialPaymentAllowed)
+        // A partial payment may not fund a new account.
+        if (partialPaymentAllowed)
         {
-            // You cannot fund an account with a partial payment.
-            // Make retry work smaller, by rejecting this.
-            JLOG(ctx.j.trace()) << "Delay transaction: Partial payment not "
-                                   "allowed to create account.";
-
-            // Another transaction could create the account and then this
-            // transaction would succeed.
-            return telNO_DST_PARTIAL;
+            // Open view: the soft tel (unchanged).
+            if (ctx.view.open())
+            {
+                // Make retry work smaller, by rejecting this.
+                JLOG(ctx.j.trace()) << "Delay transaction: Partial payment not "
+                                       "allowed to create account.";
+                return telNO_DST_PARTIAL;
+            }
+            // Inner batch txns are claimed on a closed view, where a tel is
+            // invalid, so use the tef.
+            if (ctx.parentBatchId && ctx.view.rules().enabled(featureBatchV1_1))
+                return tefNO_DST_PARTIAL;
         }
         if (dstAmount < STAmount(ctx.view.fees().reserve))
         {
@@ -400,7 +405,7 @@ Payment::preclaim(PreclaimContext const& ctx)
     }
 
     // Payment with at least one intermediate step and uses transitive balances.
-    if ((hasPaths || sendMax || !dstAmount.native()) && ctx.view.open())
+    if (hasPaths || sendMax || !dstAmount.native())
     {
         STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 
@@ -408,7 +413,12 @@ Payment::preclaim(PreclaimContext const& ctx)
                 return path.size() > kMaxPathLength;
             }))
         {
-            return telBAD_PATH_COUNT;
+            // Open view: the soft tel (unchanged). Inner batch txns are claimed
+            // on a closed view, where a tel is invalid, so use the tef.
+            if (ctx.view.open())
+                return telBAD_PATH_COUNT;
+            if (ctx.parentBatchId && ctx.view.rules().enabled(featureBatchV1_1))
+                return tefBAD_PATH_COUNT;
         }
     }
 

@@ -1,15 +1,22 @@
 #pragma once
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <cstdint>
 #include <initializer_list>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -144,19 +151,18 @@ checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& ass
  *
  * Otherwise checks, in order:
  *   1. If the asset is globally frozen the remaining checks are redundant.
- *   2. For MPT shares: The pseudo-account's vault share must not be transitively frozen via its
- * underlying asset.
- *   3. The pseudo-account's trustline / MPToken must not be frozen for sending.
- *   4. Skipped when submitter == dst (self-withdrawal); a regular freeze should not prevent
- * recovering one's own funds.
- *   5. The destination must not be deep-frozen (cannot receive under any circumstance).
+ *   2. The pseudo-account's trustline / MPToken must not be individually frozen for sending.
+ *   3. The submitter's trustline / MPToken must not be individually frozen. Skipped when
+ * submitter == dst (self-withdrawal) so a regular freeze does not prevent recovering one's own
+ * funds. (Enforced as defensive code; no current caller exercises a frozen submitter ≠ dst.)
+ *   4. The destination must not be deep-frozen.
  *
- * For IOUs a regular individual freeze on the withdrawer does NOT block self-withdrawal; only deep
- * freeze does.  For MPTs "locked" is equivalent to deep-frozen, so locked MPT holders are always
+ * For IOUs a regular individual freeze on the submitter does NOT block self-withdrawal; only deep
+ * freeze does. For MPTs "locked" is equivalent to deep-frozen, so locked MPT holders are always
  * blocked.
  *
  * @param view          Ledger view to read freeze state from.
- * @param srcAcct       Pseudo-account the funds are withdrawn from (sender).
+ * @param pseudoAcct       Pseudo-account the funds are withdrawn from (sender).
  * @param submitterAcct Account that submitted the withdrawal transaction.
  * @param dstAcct       Account receiving the withdrawn funds.
  * @param asset         Asset being withdrawn.
@@ -166,7 +172,7 @@ checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& ass
 [[nodiscard]] TER
 checkWithdrawFreeze(
     ReadView const& view,
-    AccountID const& srcAcct,
+    AccountID const& pseudoAcct,
     AccountID const& submitterAcct,
     AccountID const& dstAcct,
     Asset const& asset);
@@ -175,20 +181,17 @@ checkWithdrawFreeze(
  * Checks freeze compliance for depositing an asset into a pseudo-account (e.g. Vault, AMM,
  * LoanBroker).
  *
- *
  * Checks, in order:
  *   1. If the asset is globally frozen the remaining checks are redundant.
- *   2. For MPT shares: the pseudo-account's vault share must not be transitively frozen via its
- * underlying asset (returns tecLOCKED).
- *   3. The depositor must not be individually frozen. Skipped when srcAcct is the asset issuer,
- * since the issuer can always send its own asset.
- *   4. The pseudo-account must not be individually frozen for the asset.  Unlike regular accounts,
+ *   2. The depositor must not be individually frozen for the asset. Skipped when srcAcct is the
+ * asset issuer, since the issuer can always send its own asset.
+ *   3. The pseudo-account must not be individually frozen for the asset.  Unlike regular accounts,
  * pseudo-accounts cannot receive deposits under a regular freeze because the deposited funds
  * could not later be withdrawn.
  *
  * @param view    Ledger view to read freeze state from.
  * @param srcAcct Depositor sending the funds.
- * @param dstAcct Pseudo-account receiving the deposit.
+ * @param pseudoAcct Pseudo-account receiving the deposit.
  * @param asset   Asset being deposited.
  * @return tesSUCCESS if the deposit is permitted, otherwise a freeze result
  *         (tecFROZEN for IOUs, tecLOCKED for MPTs).
@@ -197,7 +200,7 @@ checkWithdrawFreeze(
 checkDepositFreeze(
     ReadView const& view,
     AccountID const& srcAcct,
-    AccountID const& dstAcct,
+    AccountID const& pseudoAcct,
     Asset const& asset);
 
 //------------------------------------------------------------------------------

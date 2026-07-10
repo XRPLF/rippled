@@ -10,6 +10,9 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 
+#include <functional>
+#include <memory>
+#include <string>
 #include <utility>
 
 namespace xrpl::detail {
@@ -60,9 +63,9 @@ WorkFile::run()
 {
     if (!strand_.running_in_this_thread())
     {
-        boost::asio::post(
-            ios_,
-            boost::asio::bind_executor(strand_, std::bind(&WorkFile::run, shared_from_this())));
+        boost::asio::post(ios_, boost::asio::bind_executor(strand_, [self = shared_from_this()] {
+                              self->run();
+                          }));
         return;
     }
 

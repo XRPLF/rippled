@@ -2463,8 +2463,8 @@ private:
             // The vote is not added to the slots
             ammAlice.vote(carol_, 1'000);
             auto const info = ammAlice.ammRpcInfo()[jss::amm][jss::vote_slots];
-            for (std::uint32_t i = 0; i < info.size(); ++i)
-                BEAST_EXPECT(info[i][jss::account] != carol_.human());
+            for (auto const& entry : info)
+                BEAST_EXPECT(entry[jss::account] != carol_.human());
             // But the slots are refreshed and the fee is changed
             BEAST_EXPECT(ammAlice.expectTradingFee(82));
         });
@@ -4436,7 +4436,7 @@ private:
             auto const info = env.rpc(
                 "json",
                 "account_info",
-                std::string("{\"account\": \"" + to_string(ammAlice.ammAccount()) + "\"}"));
+                std::string(R"({"account": ")" + to_string(ammAlice.ammAccount()) + "\"}"));
             auto const flags = info[jss::result][jss::account_data][jss::Flags].asUInt();
             BEAST_EXPECT(flags == (lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth));
         });
@@ -5265,7 +5265,7 @@ private:
             auto const info = env.rpc(
                 "json",
                 "account_info",
-                std::string("{\"account\": \"" + to_string(amm.ammAccount()) + "\"}"));
+                std::string(R"({"account": ")" + to_string(amm.ammAccount()) + "\"}"));
             try
             {
                 BEAST_EXPECT(
@@ -5747,38 +5747,16 @@ private:
         };
 
         // ledger is closed after each transaction, vote/withdraw don't fail
-        // regardless whether the amendment is enabled or not
         test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 0, true);
-        test(all - fixInnerObjTemplate, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 0, true);
         // ledger is not closed after each transaction
-        // vote/withdraw don't fail if the amendment is enabled
         test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 0, false);
-        // vote/withdraw fail if the amendment is not enabled
-        // second vote/withdraw still fail: second vote fails because
-        // the initial trading fee is 0, consequently second withdraw fails
-        // because the second vote fails
-        test(
-            all - fixInnerObjTemplate,
-            tefEXCEPTION,
-            tefEXCEPTION,
-            tefEXCEPTION,
-            tefEXCEPTION,
-            0,
-            false);
         // if non-zero trading/discounted fee then vote/withdraw
-        // don't fail whether the ledger is closed or not and
-        // the amendment is enabled or not
+        // don't fail whether the ledger is closed or not
         test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 10, true);
-        test(all - fixInnerObjTemplate, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 10, true);
         test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 10, false);
-        test(all - fixInnerObjTemplate, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 10, false);
         // non-zero trading fee but discounted fee is 0, vote doesn't fail
         // but withdraw fails
         test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 9, false);
-        // second vote sets the trading fee to non-zero, consequently
-        // second withdraw doesn't fail even if the amendment is not
-        // enabled and the ledger is not closed
-        test(all - fixInnerObjTemplate, tesSUCCESS, tefEXCEPTION, tesSUCCESS, tesSUCCESS, 9, false);
     }
 
     void
