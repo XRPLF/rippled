@@ -29,15 +29,15 @@ hasSponsorshipBudget(
     std::optional<STAmount> const& feeAmount,
     std::optional<std::uint32_t> const& remainingOwnerCount)
 {
+    // A field the transaction omits keeps whatever the existing object holds,
+    // so fall back to the current SLE value when the tx does not set it.
     bool const hasFeeAmount = feeAmount
         ? *feeAmount > beast::kZero
-        : sponsorshipSle && sponsorshipSle->isFieldPresent(sfFeeAmount) &&
-            sponsorshipSle->getFieldAmount(sfFeeAmount) > beast::kZero;
+        : sponsorshipSle && (*sponsorshipSle)[~sfFeeAmount].value_or(STAmount{0}) > beast::kZero;
 
     bool const hasRemainingOwnerCount = remainingOwnerCount
         ? *remainingOwnerCount > 0
-        : sponsorshipSle && sponsorshipSle->isFieldPresent(sfRemainingOwnerCount) &&
-            sponsorshipSle->getFieldU32(sfRemainingOwnerCount) > 0;
+        : sponsorshipSle && (*sponsorshipSle)[~sfRemainingOwnerCount].value_or(0) > 0;
 
     return hasFeeAmount || hasRemainingOwnerCount;
 }
@@ -154,6 +154,9 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
     if (ctx.tx.isFlag(tfDeleteObject) && !sponsorshipSle)
         return tecNO_ENTRY;
 
+    // Reject creating or updating a Sponsorship that would be left with no
+    // budget (neither a positive FeeAmount nor a positive RemainingOwnerCount).
+    // Such an object is unusable yet still consumes the sponsor's reserve.
     if (!ctx.tx.isFlag(tfDeleteObject) &&
         !hasSponsorshipBudget(sponsorshipSle, ctx.tx[~sfFeeAmount], ctx.tx[~sfRemainingOwnerCount]))
         return temMALFORMED;
@@ -237,11 +240,6 @@ SponsorshipSet::doApply()
     auto const remainingOwnerCount = ctx_.tx[~sfRemainingOwnerCount];
 
     bool const hasPositiveFeeAmount = feeAmount.has_value() && *feeAmount > beast::kZero;
-
-    // Defense-in-depth: preclaim already rejects a Sponsorship left with no
-    // fee or reserve budget, so this branch is unreachable in practice.
-    if (!hasSponsorshipBudget(sponsorshipSle, feeAmount, remainingOwnerCount))
-        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto reserveSponsorAccSle = getTxReserveSponsor(ctx_.getApplyViewContext());
     if (!reserveSponsorAccSle)
