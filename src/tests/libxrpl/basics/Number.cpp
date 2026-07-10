@@ -2730,25 +2730,30 @@ TEST(NumberTest, number_cusp_rounding_with_fractional_parts)
 
         auto header = [&] {
             std::ostringstream log;
-            log << "Below: " << below << ", Above: " << above << "\n";
+            log << "Scale: " << to_string(mantissaScale) << ", Below: " << below
+                << ", Above: " << above << "\n";
             return log.str();
         };
 
         auto const zeroPointFour = Number(4, -1);
+        auto const zeroPointFive = Number(5, -1);
         auto const zeroPointSix = Number(6, -1);
         auto const onePointFour = Number(14, -1);
         auto const onePointFive = Number(15, -1);
         auto const onePointSix = Number(16, -1);
         auto const twoPointFour = Number(24, -1);
+        auto const twoPointFive = Number(25, -1);
         auto const twoPointSix = Number(26, -1);
 
         auto const operands = std::to_array<Number>({
             zeroPointFour,
+            zeroPointFive,
             zeroPointSix,
             onePointFour,
             onePointFive,
             onePointSix,
             twoPointFour,
+            twoPointFive,
             twoPointSix,
         });
 
@@ -2767,6 +2772,7 @@ TEST(NumberTest, number_cusp_rounding_with_fractional_parts)
                 NumberRoundModeGuard const rg{mode};
 
                 auto const expectedValue = [&]() {
+                    // Returns "above" by default. The checks here are for exceptions.
                     if (scale >= MantissaRange::MantissaScale::Large330)
                     {
                         if (mode == Number::RoundingMode::ToNearest && operand < onePointFive)
@@ -2779,7 +2785,7 @@ TEST(NumberTest, number_cusp_rounding_with_fractional_parts)
                     {
                         if (mode == Number::RoundingMode::ToNearest)
                         {
-                            if (operand < zeroPointSix)
+                            if (operand < zeroPointFive)
                                 return below;
                         }
                         if (mode == Number::RoundingMode::TowardsZero ||
@@ -2794,9 +2800,9 @@ TEST(NumberTest, number_cusp_rounding_with_fractional_parts)
                     {
                         if (mode == Number::RoundingMode::ToNearest)
                         {
-                            if (operand < zeroPointSix)
+                            if (operand < zeroPointFive)
                                 return below;
-                            if (operand == zeroPointSix)
+                            if (operand <= zeroPointSix)
                                 return below - 7;
                         }
                         if (mode == Number::RoundingMode::TowardsZero ||

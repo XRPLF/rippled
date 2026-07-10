@@ -431,12 +431,6 @@ Number::Guard::pushOverflow(T mantissa)
             }
         }
 
-        if (mantissa == kMaxRep)
-        {
-            // If the mantissa ends up exactly kMaxRep, there's nothing more to do here.
-            return;
-        }
-
         // The second step scales the final digit of the updated mantissa proportionally, converting
         // from (kMaxRep, kMaxRepUp) to (0 to 9]. It then pushes that scaled digit onto the guard as
         // if it was a digit that got removed, but doesn't actually remove it. This method should be
@@ -455,7 +449,7 @@ Number::Guard::pushOverflow(T mantissa)
         auto const diff = mantissa - kMaxRep;
         auto const digit = (diff * 10) / spread;
         XRPL_ASSERT(
-            digit > 0 && digit < 10 && digit != 5,
+            digit >= 0 && digit < 10 && digit != 5,
             "xrpl::Number::Guard::pushOverflow : valid overflow digit");
 
         // Don't remove the digit from the mantissa, but add it to the guard as if it was.
