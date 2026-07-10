@@ -227,6 +227,7 @@ words:
   - onlatest
   - ostr
   - otelc
+  - otelcol
   - pargs
   - partitioner
   - paychan
