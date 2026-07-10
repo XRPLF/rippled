@@ -916,7 +916,7 @@
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
         "type": "query",
-        "query": "label_values(traces_span_metrics_calls_total, service_instance_id)",
+        "query": "label_values(target_info, service_instance_id)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
