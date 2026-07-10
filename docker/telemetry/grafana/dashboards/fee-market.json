@@ -305,12 +305,12 @@
       }
     },
     {
-      "title": "Load Factor Attribution (Stacked Components)",
-      "description": "###### What this is:\n*The stacked contribution of each load-factor component (fee escalation, queue, local, net, cluster) to the effective transaction cost.*\n\n###### How it's computed:\n*Instantaneous gauge readings of each component stacked to show relative share.*\n\n###### Reading it:\n*The tallest band identifies which component is driving the fee, detail the aggregate load factor hides.*\n\n###### Healthy range:\n*Thin bands near 1.0 total under normal traffic.*\n\n###### Watch for:\n*One band dominating during a fee spike, revealing the specific driver of elevated cost.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerLoadFactorGauge`",
+      "title": "Queue Abandonment Rate (Expired)",
+      "description": "###### What this is:\n*Transactions dropped from the queue because their last-ledger deadline passed before they could be included.*\n\n###### How it's computed:\n*Per-second rate of the cumulative expired-transaction counter over the dashboard's rate interval.*\n\n###### Reading it:\n*Near zero is healthy; a rising rate means submitters under-bid the escalating fee and their transactions timed out.*\n\n###### Healthy range:\n*Near 0 expirations per second.*\n\n###### Watch for:\n*Sustained expiry rate, a demand-frustration signal often coinciding with fee spikes or spam that crowds out honest traffic.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementTxqExpired (caller TxQ.cpp)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 24
       },
@@ -325,79 +325,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "load_factor_metrics{metric=\"load_factor_fee_escalation\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Fee Escalation [{{service_instance_id}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "load_factor_metrics{metric=\"load_factor_fee_queue\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Fee Queue [{{service_instance_id}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "load_factor_metrics{metric=\"load_factor_local\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Local [{{service_instance_id}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "load_factor_metrics{metric=\"load_factor_net\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Net [{{service_instance_id}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "load_factor_metrics{metric=\"load_factor_cluster\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
-          "legendFormat": "Cluster [{{service_instance_id}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "custom": {
-            "axisLabel": "Load Factor Multiplier",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3,
-            "stacking": {
-              "mode": "normal",
-              "group": "A"
-            },
-            "fillOpacity": 30
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Queue Abandonment Rate (Expired)",
-      "description": "###### What this is:\n*Transactions dropped from the queue because their last-ledger deadline passed before they could be included.*\n\n###### How it's computed:\n*Per-second rate of the cumulative expired-transaction counter over a 5-minute window.*\n\n###### Reading it:\n*Near zero is healthy; a rising rate means submitters under-bid the escalating fee and their transactions timed out.*\n\n###### Healthy range:\n*Near 0 expirations per second.*\n\n###### Watch for:\n*Sustained expiry rate, a demand-frustration signal often coinciding with fee spikes or spam that crowds out honest traffic.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementTxqExpired (caller TxQ.cpp)`",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 32
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (service_instance_id) (rate(txq_expired_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(txq_expired_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]))",
           "legendFormat": "Expired / Sec [{{service_instance_id}}]"
         }
       ],
@@ -417,13 +345,13 @@
     },
     {
       "title": "Queue Admission Rejections (Dropped)",
-      "description": "###### What this is:\n*Transactions refused entry to the queue, broken down by reason such as queue_full.*\n\n###### How it's computed:\n*Per-second rate of the cumulative dropped-transaction counter over a 5-minute window, split by reason.*\n\n###### Reading it:\n*Near zero is healthy; queue_full rejections mean the queue is at capacity and applying backpressure.*\n\n###### Healthy range:\n*Near 0 rejections per second.*\n\n###### Watch for:\n*A burst of queue_full drops, distinct from expiry, indicating the node is being flooded faster than it can drain.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementTxqDropped (caller TxQ.cpp)`",
+      "description": "###### What this is:\n*Transactions refused entry to the queue, broken down by reason such as queue_full.*\n\n###### How it's computed:\n*Per-second rate of the cumulative dropped-transaction counter over the dashboard's rate interval, split by reason.*\n\n###### Reading it:\n*Near zero is healthy; queue_full rejections mean the queue is at capacity and applying backpressure.*\n\n###### Healthy range:\n*Near 0 rejections per second.*\n\n###### Watch for:\n*A burst of queue_full drops, distinct from expiry, indicating the node is being flooded faster than it can drain.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementTxqDropped (caller TxQ.cpp)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 32
+        "y": 24
       },
       "options": {
         "tooltip": {
@@ -436,7 +364,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (reason, service_instance_id) (rate(txq_dropped_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]))",
+          "expr": "sum by (reason, service_instance_id) (rate(txq_dropped_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]))",
           "legendFormat": "{{reason}} [{{service_instance_id}}]"
         }
       ],
