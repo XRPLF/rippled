@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -37,7 +38,7 @@ getLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& accou
         case ltMPTOKEN_ISSUANCE:
             return sle.getAccountID(sfIssuer);
         case ltSIGNER_LIST: {
-            auto const signerList = view.read(keylet::signerList(account));
+            SignerListEntry<ReadView> signerList{keylet::signerList(account), view};
             if (!signerList)
                 return std::nullopt;
             if (signerList->key() == sle.key())

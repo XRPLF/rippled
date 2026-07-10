@@ -11,6 +11,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
@@ -201,14 +202,15 @@ escrowCreatePreclaimHelper<Issue>(
         return tecNO_PERMISSION;
 
     // If the lsfAllowTrustLineLocking is not enabled, return tecNO_PERMISSION
-    auto const sleIssuer = ctx.view.read(keylet::account(issuer));
+    AccountRootEntry<ReadView> sleIssuer{keylet::account(issuer), ctx.view};
     if (!sleIssuer)
         return tecNO_ISSUER;
     if (!sleIssuer->isFlag(lsfAllowTrustLineLocking))
         return tecNO_PERMISSION;
 
     // If the account does not have a trustline to the issuer, return tecNO_LINE
-    auto const sleRippleState = ctx.view.read(keylet::trustLine(account, issuer, issue.currency));
+    RippleStateEntry<ReadView> sleRippleState{
+        keylet::trustLine(account, issuer, issue.currency), ctx.view};
     if (!sleRippleState)
         return tecNO_LINE;
 
@@ -272,7 +274,7 @@ escrowCreatePreclaimHelper<MPTIssue>(
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
     auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
-    auto const sleIssuance = ctx.view.read(issuanceKey);
+    MPTokenIssuanceEntry<ReadView> sleIssuance{issuanceKey, ctx.view};
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -341,7 +343,7 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dest{ctx.tx[sfDestination]};
 
-    auto const sled = ctx.view.read(keylet::account(dest));
+    AccountRootEntry<ReadView> sled{keylet::account(dest), ctx.view};
     if (!sled)
         return tecNO_DST;
 
@@ -349,7 +351,7 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
     // because all writes to pseudo-account discriminator fields **are**
     // amendment gated, hence the behaviour of this check will always match the
     // currently active amendments.
-    if (isPseudoAccount(sled))
+    if (isPseudoAccount(sled.sle()))
         return tecNO_PERMISSION;
 
     if (!isXRP(amount))
@@ -427,7 +429,7 @@ EscrowCreate::doApply()
     if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
         return tecNO_PERMISSION;
 
-    auto const sle = ctx_.view().peek(keylet::account(accountID_));
+    AccountRootEntry<ApplyView> sle{keylet::account(accountID_), ctx_.view()};
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -449,7 +451,7 @@ EscrowCreate::doApply()
 
     // Check destination account
     {
-        auto const sled = ctx_.view().read(keylet::account(ctx_.tx[sfDestination]));
+        AccountRootEntry<ReadView> sled{keylet::account(ctx_.tx[sfDestination]), ctx_.view()};
         if (!sled)
             return tecNO_DST;  // LCOV_EXCL_LINE
         if (sled->isFlag(lsfRequireDestTag) && !ctx_.tx[~sfDestinationTag])
@@ -459,7 +461,8 @@ EscrowCreate::doApply()
     // Create escrow in ledger.  Note that we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
     Keylet const escrowKeylet = keylet::escrow(accountID_, ctx_.tx.getSeqValue());
-    auto const slep = std::make_shared<SLE>(escrowKeylet);
+    EscrowEntry<ApplyView> slep{escrowKeylet, ctx_.view()};
+    slep.newSLE();
     (*slep)[sfAmount] = amount;
     (*slep)[sfAccount] = accountID_;
     (*slep)[~sfCondition] = ctx_.tx[~sfCondition];
@@ -481,7 +484,7 @@ EscrowCreate::doApply()
             (*slep)[sfTransferRate] = xferRate.value;
     }
 
-    ctx_.view().insert(slep);
+    slep.insert();
 
     // Add escrow to sender's owner directory
     {
@@ -535,8 +538,8 @@ EscrowCreate::doApply()
     }
 
     // increment owner count
-    adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
-    ctx_.view().update(sle);
+    adjustOwnerCount(ctx_.view(), sle.mutableSle(), 1, ctx_.journal);
+    sle.update();
     return tesSUCCESS;
 }
 

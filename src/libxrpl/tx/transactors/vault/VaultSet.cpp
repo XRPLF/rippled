@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -63,7 +64,7 @@ VaultSet::preflight(PreflightContext const& ctx)
 TER
 VaultSet::preclaim(PreclaimContext const& ctx)
 {
-    auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
+    VaultEntry<ReadView> vault{keylet::vault(ctx.tx[sfVaultID]), ctx.view};
     if (!vault)
         return tecNO_ENTRY;
 
@@ -75,7 +76,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     }
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntry<ReadView> sleIssuance{keylet::mptokenIssuance(mptIssuanceID), ctx.view};
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -95,7 +96,8 @@ VaultSet::preclaim(PreclaimContext const& ctx)
 
         if (*domain != beast::kZero)
         {
-            auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domain));
+            PermissionedDomainEntry<ReadView> sleDomain{
+                keylet::permissionedDomain(*domain), ctx.view};
             if (!sleDomain)
                 return tecOBJECT_NOT_FOUND;
         }
@@ -123,14 +125,14 @@ VaultSet::doApply()
     auto const& tx = ctx_.tx;
 
     // Update existing object.
-    auto vault = view().peek(keylet::vault(tx[sfVaultID]));
+    VaultEntry<ApplyView> vault{keylet::vault(tx[sfVaultID]), view()};
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const vaultAsset = vault->at(sfAsset);
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntry<ApplyView> sleIssuance{keylet::mptokenIssuance(mptIssuanceID), view()};
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -164,13 +166,13 @@ VaultSet::doApply()
         {
             sleIssuance->makeFieldAbsent(sfDomainID);
         }
-        view().update(sleIssuance);
+        sleIssuance.update();
     }
 
     // Note, we must update Vault object even if only DomainID is being updated
     // in Issuance object. Otherwise it's really difficult for Vault invariants
     // to verify the operation.
-    view().update(vault);
+    vault.update();
 
     associateAsset(*vault, vaultAsset);
 

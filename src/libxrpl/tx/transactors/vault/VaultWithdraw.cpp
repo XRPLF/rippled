@@ -28,7 +28,10 @@
 namespace xrpl {
 
 static WaiveUnrealizedLoss
-shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
+shouldWaiveWithdrawal(
+    ReadView const& view,
+    AccountID const& account,
+    MPTokenIssuanceEntry<ReadView> const& issuance)
 {
     XRPL_ASSERT(
         issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
@@ -69,7 +72,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
 
-    auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
+    VaultEntry<ReadView> vault{keylet::vault(ctx.tx[sfVaultID]), ctx.view};
     if (!vault)
         return tecNO_ENTRY;
 
@@ -109,7 +112,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // to the equivalent asset amount before checking withdrawal
         // limits. Pre-amendment the limit check was skipped for
         // share-denominated withdrawals.
-        auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(vaultShare));
+        MPTokenIssuanceEntry<ReadView> sleIssuance{keylet::mptokenIssuance(vaultShare), ctx.view};
         if (!sleIssuance)
         {
             // LCOV_EXCL_START
@@ -193,12 +196,12 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 TER
 VaultWithdraw::doApply()
 {
-    auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    VaultEntry<ApplyView> vault{keylet::vault(ctx_.tx[sfVaultID]), view()};
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
-    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntry<ReadView> sleIssuance{keylet::mptokenIssuance(mptIssuanceID), view()};
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -346,7 +349,7 @@ VaultWithdraw::doApply()
         assetsTotal -= assetsWithdrawn;
         assetsAvailable -= assetsWithdrawn;
     }
-    view().update(vault);
+    vault.update();
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from depositor to vault.

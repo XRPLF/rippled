@@ -5,6 +5,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
@@ -62,8 +63,8 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfDomainID))
     {
-        auto const sleDomain =
-            ctx.view.read(keylet::permissionedDomain(ctx.tx.getFieldH256(sfDomainID)));
+        PermissionedDomainEntry<ReadView> sleDomain{
+            keylet::permissionedDomain(ctx.tx.getFieldH256(sfDomainID)), ctx.view};
         if (!sleDomain)
             return tecNO_ENTRY;
         if (sleDomain->getAccountID(sfOwner) != account)
@@ -77,7 +78,7 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 TER
 PermissionedDomainSet::doApply()
 {
-    auto const ownerSle = view().peek(keylet::account(accountID_));
+    AccountRootEntry<ApplyView> ownerSle{keylet::account(accountID_), view()};
     if (!ownerSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -95,11 +96,12 @@ PermissionedDomainSet::doApply()
     if (ctx_.tx.isFieldPresent(sfDomainID))
     {
         // Modify existing permissioned domain.
-        auto slePd = view().peek(keylet::permissionedDomain(ctx_.tx.getFieldH256(sfDomainID)));
+        PermissionedDomainEntry<ApplyView> slePd{
+            keylet::permissionedDomain(ctx_.tx.getFieldH256(sfDomainID)), view()};
         if (!slePd)
             return tefINTERNAL;  // LCOV_EXCL_LINE
         slePd->peekFieldArray(sfAcceptedCredentials) = std::move(sortedLE);
-        view().update(slePd);
+        slePd.update();
     }
     else
     {
@@ -113,7 +115,8 @@ PermissionedDomainSet::doApply()
         bool const fixEnabled = view().rules().enabled(fixCleanup3_1_3);
         auto const seq = fixEnabled ? ctx_.tx.getSeqValue() : ctx_.tx.getFieldU32(sfSequence);
         Keylet const pdKeylet = keylet::permissionedDomain(accountID_, seq);
-        auto slePd = std::make_shared<SLE>(pdKeylet);
+        PermissionedDomainEntry<ApplyView> slePd{pdKeylet, view()};
+        slePd.newSLE();
 
         slePd->setAccountID(sfOwner, accountID_);
         slePd->setFieldU32(sfSequence, seq);
@@ -125,8 +128,8 @@ PermissionedDomainSet::doApply()
 
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), ownerSle, 1, ctx_.journal);
-        view().insert(slePd);
+        adjustOwnerCount(view(), ownerSle.mutableSle(), 1, ctx_.journal);
+        slePd.insert();
     }
 
     return tesSUCCESS;

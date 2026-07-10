@@ -6,6 +6,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
@@ -67,7 +68,7 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
 TER
 TicketCreate::doApply()
 {
-    SLE::pointer const sleAccountRoot = view().peek(keylet::account(accountID_));
+    AccountRootEntry<ApplyView> sleAccountRoot{keylet::account(accountID_), view()};
     if (!sleAccountRoot)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -101,11 +102,12 @@ TicketCreate::doApply()
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
         Keylet const ticketKeylet = keylet::ticket(accountID_, curTicketSeq);
-        SLE::pointer const sleTicket = std::make_shared<SLE>(ticketKeylet);
+        TicketEntry<ApplyView> sleTicket{ticketKeylet, view()};
+        sleTicket.newSLE();
 
         sleTicket->setAccountID(sfAccount, accountID_);
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);
-        view().insert(sleTicket);
+        sleTicket.insert();
 
         auto const page = view().dirInsert(
             keylet::ownerDir(accountID_), ticketKeylet, describeOwnerDir(accountID_));
@@ -125,7 +127,7 @@ TicketCreate::doApply()
     sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 
     // Every added Ticket counts against the creator's reserve.
-    adjustOwnerCount(view(), sleAccountRoot, ticketCount, viewJ);
+    adjustOwnerCount(view(), sleAccountRoot.mutableSle(), ticketCount, viewJ);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.

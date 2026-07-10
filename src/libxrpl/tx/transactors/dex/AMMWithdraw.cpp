@@ -446,8 +446,9 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         }
     }
 
+    AMMEntry<ApplyView> ammEntry{ammSle, sb};
     auto const res = deleteAMMAccountIfEmpty(
-        sb, ammSle, newLPTokenBalance, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);
+        sb, ammEntry, newLPTokenBalance, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);
     // LCOV_EXCL_START
     if (!res.second)
         return {res.first, false};
@@ -797,7 +798,7 @@ AMMWithdraw::equalWithdrawTokens(
 std::pair<TER, bool>
 AMMWithdraw::deleteAMMAccountIfEmpty(
     Sandbox& sb,
-    SLE::pointer const ammSle,
+    AMMEntry<ApplyView>& ammSle,
     STAmount const& lpTokenBalance,
     Asset const& asset1,
     Asset const& asset2,
@@ -817,7 +818,7 @@ AMMWithdraw::deleteAMMAccountIfEmpty(
     if (updateBalance)
     {
         ammSle->setFieldAmount(sfLPTokenBalance, lpTokenBalance);
-        sb.update(ammSle);
+        ammSle.update();
     }
 
     return {ter, true};

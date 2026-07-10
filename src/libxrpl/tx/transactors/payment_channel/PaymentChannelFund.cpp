@@ -43,7 +43,7 @@ TER
 PaymentChannelFund::doApply()
 {
     Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
-    auto const slep = ctx_.view().peek(k);
+    PayChannelEntry<ApplyView> slep{k, ctx_.view()};
     if (!slep)
         return tecNO_ENTRY;
 
@@ -78,10 +78,10 @@ PaymentChannelFund::doApply()
                                                                 : TER{temBAD_EXPIRATION};
         }
         (*slep)[~sfExpiration] = *newExpiration;
-        ctx_.view().update(slep);
+        slep.update();
     }
 
-    auto const sle = ctx_.view().peek(keylet::account(txAccount));
+    AccountRootEntry<ApplyView> sle{txAccount, ctx_.view()};
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -104,10 +104,10 @@ PaymentChannelFund::doApply()
     }
 
     (*slep)[sfAmount] = (*slep)[sfAmount] + ctx_.tx[sfAmount];
-    ctx_.view().update(slep);
+    slep.update();
 
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    ctx_.view().update(sle);
+    sle.update();
 
     return tesSUCCESS;
 }

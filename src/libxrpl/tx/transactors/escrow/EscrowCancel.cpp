@@ -7,6 +7,7 @@
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
@@ -73,7 +74,7 @@ escrowCancelPreclaimHelper<MPTIssue>(
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
     auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
-    auto const sleIssuance = ctx.view.read(issuanceKey);
+    MPTokenIssuanceEntry<ReadView> sleIssuance{issuanceKey, ctx.view};
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -93,7 +94,7 @@ EscrowCancel::preclaim(PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(featureTokenEscrow))
     {
         auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
-        auto const slep = ctx.view.read(k);
+        EscrowEntry<ReadView> slep{k, ctx.view};
         if (!slep)
             return tecNO_TARGET;
 
@@ -118,7 +119,7 @@ TER
 EscrowCancel::doApply()
 {
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
-    auto const slep = ctx_.view().peek(k);
+    EscrowEntry<ApplyView> slep{k, ctx_.view()};
     if (!slep)
     {
         if (ctx_.view().rules().enabled(featureTokenEscrow))
@@ -163,7 +164,7 @@ EscrowCancel::doApply()
         }
     }
 
-    auto const sle = ctx_.view().peek(keylet::account(account));
+    AccountRootEntry<ApplyView> sle{keylet::account(account), ctx_.view()};
     STAmount const amount = slep->getFieldAmount(sfAmount);
 
     // Transfer amount back to the owner
@@ -183,7 +184,8 @@ EscrowCancel::doApply()
                     return escrowUnlockApplyHelper<T>(
                         ctx_.view(),
                         kParityRate,
-                        ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle : slep,
+                        ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle.mutableSle()
+                                                                     : slep.mutableSle(),
                         preFeeBalance_,
                         amount,
                         issuer,
@@ -209,11 +211,11 @@ EscrowCancel::doApply()
         }
     }
 
-    adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
-    ctx_.view().update(sle);
+    adjustOwnerCount(ctx_.view(), sle.mutableSle(), -1, ctx_.journal);
+    sle.update();
 
     // Remove escrow from ledger
-    ctx_.view().erase(slep);
+    slep.erase();
 
     return tesSUCCESS;
 }

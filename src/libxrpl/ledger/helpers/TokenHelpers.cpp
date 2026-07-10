@@ -10,6 +10,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>
@@ -275,7 +276,7 @@ getLineIfUsable(
     FreezeHandling zeroIfFrozen,
     beast::Journal j)
 {
-    auto sle = view.read(keylet::trustLine(account, issuer, currency));
+    RippleStateEntry<ReadView> sle{keylet::trustLine(account, issuer, currency), view};
 
     if (!sle)
     {
@@ -294,14 +295,14 @@ getLineIfUsable(
         // we need to check if the associated assets have been frozen
         if (view.rules().enabled(fixFrozenLPTokenTransfer))
         {
-            auto const sleIssuer = view.read(keylet::account(issuer));
+            AccountRootEntry<ReadView> const sleIssuer{keylet::account(issuer), view};
             if (!sleIssuer)
             {
                 return nullptr;  // LCOV_EXCL_LINE
             }
             if (sleIssuer->isFieldPresent(sfAMMID))
             {
-                auto const sleAmm = view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+                AMMEntry<ReadView> const sleAmm{keylet::amm((*sleIssuer)[sfAMMID]), view};
 
                 if (!sleAmm ||
                     isLPTokenFrozen(view, account, (*sleAmm)[sfAsset], (*sleAmm)[sfAsset2]))
@@ -312,7 +313,7 @@ getLineIfUsable(
         }
     }
 
-    return sle;
+    return sle.sle();
 }
 
 static STAmount
@@ -416,7 +417,8 @@ accountHolds(
     {
         // if the account is the issuer, and the issuance exists, their limit is
         // the issuance limit minus the outstanding value
-        auto const issuance = view.read(keylet::mptokenIssuance(mptIssue.getMptID()));
+        MPTokenIssuanceEntry<ReadView> const issuance{
+            keylet::mptokenIssuance(mptIssue.getMptID()), view};
 
         if (!issuance)
         {
@@ -428,7 +430,7 @@ accountHolds(
         return view.balanceHookMPT(issuer, mptIssue, available);
     }
 
-    auto const sleMpt = view.read(keylet::mptoken(mptIssue.getMptID(), account));
+    MPTokenEntry<ReadView> const sleMpt{keylet::mptoken(mptIssue.getMptID(), account), view};
 
     if (!sleMpt ||
         (zeroIfFrozen == FreezeHandling::ZeroIfFrozen && isFrozen(view, account, mptIssue)))
@@ -451,7 +453,8 @@ accountHolds(
         }
         else if (zeroIfUnauthorized == AuthHandling::ZeroIfUnauthorized)
         {
-            auto const sleIssuance = view.read(keylet::mptokenIssuance(mptIssue.getMptID()));
+            MPTokenIssuanceEntry<ReadView> const sleIssuance{
+                keylet::mptokenIssuance(mptIssue.getMptID()), view};
 
             // if auth is enabled on the issuance and mpt is not authorized,
             // clear amount
@@ -548,7 +551,7 @@ canAddHolding(ReadView const& view, Issue const& issue)
         return tesSUCCESS;  // No special checks for XRP
     }
 
-    auto const issuer = view.read(keylet::account(issue.getIssuer()));
+    AccountRootEntry<ReadView> const issuer{keylet::account(issue.getIssuer()), view};
     if (!issuer)
     {
         return terNO_ACCOUNT;
@@ -672,7 +675,7 @@ directSendNoFeeIOU(
         "xrpl::directSendNoFeeIOU : receiver is not XRP");
 
     // If the line exists, modify it accordingly.
-    if (auto const sleRippleState = view.peek(index))
+    if (RippleStateEntry<ApplyView> sleRippleState{index, view})
     {
         STAmount saBalance = sleRippleState->getFieldAmount(sfBalance);
 
@@ -739,13 +742,13 @@ directSendNoFeeIOU(
         {
             return trustDelete(
                 view,
-                sleRippleState,
+                sleRippleState.mutableSle(),
                 bSenderHigh ? uReceiverID : uSenderID,
                 bSenderHigh ? uSenderID : uReceiverID,
                 j);
         }
 
-        view.update(sleRippleState);
+        sleRippleState.update();
         return tesSUCCESS;
     }
 
@@ -759,7 +762,7 @@ directSendNoFeeIOU(
                     << to_string(uSenderID) << " -> " << to_string(uReceiverID) << " : "
                     << saAmount.getFullText();
 
-    auto const sleAccount = view.peek(keylet::account(uReceiverID));
+    AccountRootEntry<ApplyView> const sleAccount{keylet::account(uReceiverID), view};
     if (!sleAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -771,7 +774,7 @@ directSendNoFeeIOU(
         uSenderID,
         uReceiverID,
         index.key,
-        sleAccount,
+        sleAccount.mutableSle(),
         false,
         noRipple,
         false,
@@ -956,10 +959,11 @@ accountSendIOU(
      */
     TER terResult(tesSUCCESS);
 
-    SLE::pointer const sender =
-        uSenderID != beast::kZero ? view.peek(keylet::account(uSenderID)) : SLE::pointer();
-    SLE::pointer const receiver =
-        uReceiverID != beast::kZero ? view.peek(keylet::account(uReceiverID)) : SLE::pointer();
+    AccountRootEntry<ApplyView> sender{
+        uSenderID != beast::kZero ? view.peek(keylet::account(uSenderID)) : SLE::pointer(), view};
+    AccountRootEntry<ApplyView> receiver{
+        uReceiverID != beast::kZero ? view.peek(keylet::account(uReceiverID)) : SLE::pointer(),
+        view};
 
     if (auto stream = j.trace())
     {
@@ -993,7 +997,7 @@ accountSendIOU(
 
             // Decrement XRP balance.
             sender->setFieldAmount(sfBalance, sndBal - saAmount);
-            view.update(sender);
+            sender.update();
         }
     }
 
@@ -1004,7 +1008,7 @@ accountSendIOU(
         receiver->setFieldAmount(sfBalance, rcvBal + saAmount);
         view.creditHookIOU(xrpAccount(), uReceiverID, saAmount, -rcvBal);
 
-        view.update(receiver);
+        receiver.update();
     }
 
     if (auto stream = j.trace())
@@ -1052,8 +1056,8 @@ accountSendMultiIOU(
      * ensure that transfers are balanced.
      */
 
-    SLE::pointer const sender =
-        senderID != beast::kZero ? view.peek(keylet::account(senderID)) : SLE::pointer();
+    AccountRootEntry<ApplyView> sender{
+        senderID != beast::kZero ? view.peek(keylet::account(senderID)) : SLE::pointer(), view};
 
     if (auto stream = j.trace())
     {
@@ -1084,8 +1088,9 @@ accountSendMultiIOU(
         if (!amount || (senderID == receiverID))
             continue;
 
-        SLE::pointer const receiver =
-            receiverID != beast::kZero ? view.peek(keylet::account(receiverID)) : SLE::pointer();
+        AccountRootEntry<ApplyView> receiver{
+            receiverID != beast::kZero ? view.peek(keylet::account(receiverID)) : SLE::pointer(),
+            view};
 
         if (auto stream = j.trace())
         {
@@ -1106,7 +1111,7 @@ accountSendMultiIOU(
             receiver->setFieldAmount(sfBalance, rcvBal + amount);
             view.creditHookIOU(xrpAccount(), receiverID, amount, -rcvBal);
 
-            view.update(receiver);
+            receiver.update();
 
             // Take what is actually sent
             takeFromSender += amount;
@@ -1136,7 +1141,7 @@ accountSendMultiIOU(
 
         // Decrement XRP balance.
         sender->setFieldAmount(sfBalance, sndBal - takeFromSender);
-        view.update(sender);
+        sender.update();
     }
 
     if (auto stream = j.trace())
@@ -1163,7 +1168,7 @@ directSendNoFeeMPT(
     // Do not check MPT authorization here - it must have been checked earlier
     auto const mptID = keylet::mptokenIssuance(saAmount.get<MPTIssue>().getMptID());
     auto const& issuer = saAmount.getIssuer();
-    auto sleIssuance = view.peek(mptID);
+    MPTokenIssuanceEntry<ApplyView> sleIssuance{mptID, view};
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -1180,19 +1185,19 @@ directSendNoFeeMPT(
                 return tecPATH_DRY;
         }
         (*sleIssuance)[sfOutstandingAmount] += amt;
-        view.update(sleIssuance);
+        sleIssuance.update();
     }
     else
     {
         auto const mptokenID = keylet::mptoken(mptID.key, uSenderID);
-        if (auto sle = view.peek(mptokenID))
+        if (MPTokenEntry<ApplyView> sle{mptokenID, view})
         {
             auto const senderBalance = sle->getFieldU64(sfMPTAmount);
             if (senderBalance < amt)
                 return tecINSUFFICIENT_FUNDS;
             view.creditHookMPT(uSenderID, uReceiverID, saAmount, (*sle)[sfMPTAmount], available);
             (*sle)[sfMPTAmount] = senderBalance - amt;
-            view.update(sle);
+            sle.update();
         }
         else
         {
@@ -1205,7 +1210,7 @@ directSendNoFeeMPT(
         if (outstanding >= amt)
         {
             sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - amt);
-            view.update(sleIssuance);
+            sleIssuance.update();
         }
         else
         {
@@ -1215,7 +1220,7 @@ directSendNoFeeMPT(
     else
     {
         auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
-        if (auto sle = view.peek(mptokenID))
+        if (MPTokenEntry<ApplyView> sle{mptokenID, view})
         {
             if (view.rules().enabled(featureMPTokensV2))
             {
@@ -1226,7 +1231,7 @@ directSendNoFeeMPT(
             }
             view.creditHookMPT(uSenderID, uReceiverID, saAmount, (*sle)[sfMPTAmount], available);
             (*sle)[sfMPTAmount] += amt;
-            view.update(sle);
+            sle.update();
         }
         else
         {
@@ -1253,7 +1258,8 @@ directSendNoLimitMPT(
     // Safe to get MPT since directSendNoLimitMPT is only called by accountSendMPT
     auto const& issuer = saAmount.getIssuer();
 
-    auto const sle = view.read(keylet::mptokenIssuance(saAmount.get<MPTIssue>().getMptID()));
+    MPTokenIssuanceEntry<ReadView> const sle{
+        keylet::mptokenIssuance(saAmount.get<MPTIssue>().getMptID()), view};
     if (!sle)
         return tecOBJECT_NOT_FOUND;
 
@@ -1310,7 +1316,7 @@ directSendNoLimitMultiMPT(
 {
     auto const& issuer = mptIssue.getIssuer();
 
-    auto const sle = view.read(keylet::mptokenIssuance(mptIssue.getMptID()));
+    MPTokenIssuanceEntry<ReadView> const sle{keylet::mptokenIssuance(mptIssue.getMptID()), view};
     if (!sle)
         return tecOBJECT_NOT_FOUND;
 
@@ -1536,8 +1542,8 @@ transferXRP(
     XRPL_ASSERT(from != to, "xrpl::transferXRP : sender is not receiver");
     XRPL_ASSERT(amount.native(), "xrpl::transferXRP : amount is XRP");
 
-    SLE::pointer const sender = view.peek(keylet::account(from));
-    SLE::pointer const receiver = view.peek(keylet::account(to));
+    AccountRootEntry<ApplyView> sender{keylet::account(from), view};
+    AccountRootEntry<ApplyView> receiver{keylet::account(to), view};
     if (!sender || !receiver)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -1556,10 +1562,10 @@ transferXRP(
 
     // Decrement XRP balance.
     sender->setFieldAmount(sfBalance, sender->getFieldAmount(sfBalance) - amount);
-    view.update(sender);
+    sender.update();
 
     receiver->setFieldAmount(sfBalance, receiver->getFieldAmount(sfBalance) + amount);
-    view.update(receiver);
+    receiver.update();
 
     return tesSUCCESS;
 }

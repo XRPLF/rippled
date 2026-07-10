@@ -4,6 +4,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -25,7 +26,7 @@ CheckCancel::preflight(PreflightContext const& ctx)
 TER
 CheckCancel::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
+    CheckEntry<ReadView> sleCheck{keylet::check(ctx.tx[sfCheckID]), ctx.view};
     if (!sleCheck)
     {
         JLOG(ctx.j.warn()) << "Check does not exist.";
@@ -54,7 +55,7 @@ CheckCancel::preclaim(PreclaimContext const& ctx)
 TER
 CheckCancel::doApply()
 {
-    auto const sleCheck = view().peek(keylet::check(ctx_.tx[sfCheckID]));
+    CheckEntry<ApplyView> sleCheck{keylet::check(ctx_.tx[sfCheckID]), view()};
     if (!sleCheck)
     {
         // Error should have been caught in preclaim.
@@ -91,11 +92,11 @@ CheckCancel::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    auto const sleSrc = view().peek(keylet::account(srcId));
-    adjustOwnerCount(view(), sleSrc, -1, viewJ);
+    AccountRootEntry<ApplyView> sleSrc{keylet::account(srcId), view()};
+    adjustOwnerCount(view(), sleSrc.mutableSle(), -1, viewJ);
 
     // Remove check from ledger.
-    view().erase(sleCheck);
+    sleCheck.erase();
     return tesSUCCESS;
 }
 

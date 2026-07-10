@@ -4,6 +4,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -64,13 +65,13 @@ OracleDelete::deleteOracle(
         // LCOV_EXCL_STOP
     }
 
-    auto const sleOwner = view.peek(keylet::account(account));
+    AccountRootEntry<ApplyView> sleOwner{keylet::account(account), view};
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const count = sle->getFieldArray(sfPriceDataSeries).size() > 5 ? -2 : -1;
 
-    adjustOwnerCount(view, sleOwner, count, j);
+    adjustOwnerCount(view, sleOwner.mutableSle(), count, j);
 
     view.erase(sle);
 
@@ -80,8 +81,9 @@ OracleDelete::deleteOracle(
 TER
 OracleDelete::doApply()
 {
-    if (auto sle = ctx_.view().peek(keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID])))
-        return deleteOracle(ctx_.view(), sle, accountID_, j_);
+    if (OracleEntry<ApplyView> sle{
+            keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID]), ctx_.view()})
+        return deleteOracle(ctx_.view(), sle.mutableSle(), accountID_, j_);
 
     return tecINTERNAL;  // LCOV_EXCL_LINE
 }

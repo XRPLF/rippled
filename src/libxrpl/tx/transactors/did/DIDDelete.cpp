@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
@@ -27,11 +28,11 @@ DIDDelete::preflight(PreflightContext const& ctx)
 TER
 DIDDelete::deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner)
 {
-    auto const sle = ctx.view().peek(sleKeylet);
+    WritableSLE sle{sleKeylet, ctx.view()};
     if (!sle)
         return tecNO_ENTRY;
 
-    return DIDDelete::deleteSLE(ctx.view(), sle, owner, ctx.journal);
+    return DIDDelete::deleteSLE(ctx.view(), sle.mutableSle(), owner, ctx.journal);
 }
 
 TER
@@ -46,12 +47,12 @@ DIDDelete::deleteSLE(ApplyView& view, SLE::pointer sle, AccountID const owner, b
         // LCOV_EXCL_STOP
     }
 
-    auto const sleOwner = view.peek(keylet::account(owner));
+    AccountRootEntry<ApplyView> sleOwner{keylet::account(owner), view};
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCount(view, sleOwner, -1, j);
-    view.update(sleOwner);
+    adjustOwnerCount(view, sleOwner.mutableSle(), -1, j);
+    sleOwner.update();
 
     // Remove object from ledger
     view.erase(sle);

@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -80,7 +81,7 @@ CredentialDelete::doApply()
     auto const issuer = ctx_.tx[~sfIssuer].value_or(accountID_);
 
     auto const credType(ctx_.tx[sfCredentialType]);
-    auto const sleCred = view().peek(keylet::credential(subject, issuer, credType));
+    CredentialEntry<ApplyView> sleCred{keylet::credential(subject, issuer, credType), view()};
     if (!sleCred)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -91,7 +92,7 @@ CredentialDelete::doApply()
         return tecNO_PERMISSION;
     }
 
-    return deleteSLE(view(), sleCred, j_);
+    return deleteSLE(view(), sleCred.mutableSle(), j_);
 }
 
 void

@@ -8,6 +8,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -80,7 +81,7 @@ CheckCash::preflight(PreflightContext const& ctx)
 TER
 CheckCash::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
+    CheckEntry<ReadView> sleCheck{keylet::check(ctx.tx[sfCheckID]), ctx.view};
     if (!sleCheck)
     {
         JLOG(ctx.j.warn()) << "Check does not exist.";
@@ -105,8 +106,8 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
     {
-        auto const sleSrc = ctx.view.read(keylet::account(srcId));
-        auto const sleDst = ctx.view.read(keylet::account(dstId));
+        AccountRootEntry<ReadView> sleSrc{keylet::account(srcId), ctx.view};
+        AccountRootEntry<ReadView> sleDst{keylet::account(dstId), ctx.view};
         if (!sleSrc || !sleDst)
         {
             // If the check exists this should never occur.
@@ -191,10 +192,10 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             return value.asset().visit(
                 [&](Issue const& issue) -> TER {
                     Currency const currency{issue.currency};
-                    auto const sleTrustLine =
-                        ctx.view.read(keylet::trustLine(dstId, issuerId, currency));
+                    RippleStateEntry<ReadView> sleTrustLine{
+                        keylet::trustLine(dstId, issuerId, currency), ctx.view};
 
-                    auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
+                    AccountRootEntry<ReadView> sleIssuer{keylet::account(issuerId), ctx.view};
                     if (!sleIssuer)
                     {
                         JLOG(ctx.j.warn()) << "Can't receive IOUs from "
@@ -246,7 +247,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                     return tesSUCCESS;
                 },
                 [&](MPTIssue const& issue) -> TER {
-                    auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
+                    AccountRootEntry<ReadView> sleIssuer{keylet::account(issuerId), ctx.view};
                     if (!sleIssuer)
                     {
                         JLOG(ctx.j.warn()) << "Can't receive MPTs from "
@@ -581,7 +582,8 @@ CheckCash::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    adjustOwnerCount(psb, psb.peek(keylet::account(srcId)), -1, viewJ);
+    AccountRootEntry<ApplyView> sleSrcAccount{keylet::account(srcId), psb};
+    adjustOwnerCount(psb, sleSrcAccount.mutableSle(), -1, viewJ);
 
     // Remove check from ledger.
     psb.erase(sleCheck);

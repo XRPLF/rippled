@@ -7,6 +7,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>  // IWYU pragma: keep
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
@@ -106,7 +107,8 @@ CredentialCreate::doApply()
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const credentialKey = keylet::credential(subject, accountID_, credType);
 
-    auto const sleCred = std::make_shared<SLE>(credentialKey);
+    CredentialEntry<ApplyView> sleCred{credentialKey, view()};
+    sleCred.newSLE();
     if (!sleCred)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -126,7 +128,7 @@ CredentialCreate::doApply()
         sleCred->setFieldU32(sfExpiration, *optExp);
     }
 
-    auto const sleIssuer = view().peek(keylet::account(accountID_));
+    AccountRootEntry<ApplyView> sleIssuer{keylet::account(accountID_), view()};
     if (!sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -153,7 +155,7 @@ CredentialCreate::doApply()
             return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
 
-        adjustOwnerCount(view(), sleIssuer, 1, j_);
+        adjustOwnerCount(view(), sleIssuer.mutableSle(), 1, j_);
     }
 
     if (subject == accountID_)
@@ -173,7 +175,7 @@ CredentialCreate::doApply()
         sleCred->setFieldU64(sfSubjectNode, *page);
     }
 
-    view().insert(sleCred);
+    sleCred.insert();
 
     return tesSUCCESS;
 }

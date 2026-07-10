@@ -8,6 +8,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -36,7 +37,7 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer)
 {
     if (isXRP(issuer))
         return false;
-    if (auto const sle = view.read(keylet::account(issuer)))
+    if (AccountRootEntry<ReadView> sle{keylet::account(issuer), view})
         return sle->isFlag(lsfGlobalFreeze);
     return false;
 }
@@ -86,8 +87,8 @@ confineOwnerCount(
 XRPAmount
 xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j)
 {
-    auto const sle = view.read(keylet::account(id));
-    if (sle == nullptr)
+    AccountRootEntry<ReadView> sle{keylet::account(id), view};
+    if (!sle)
         return beast::kZero;
 
     // Return balance minus reserve
@@ -96,7 +97,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 
     // Pseudo-accounts have no reserve requirement
     auto const reserve =
-        isPseudoAccount(sle) ? XRPAmount{0} : view.fees().accountReserve(ownerCount);
+        isPseudoAccount(sle.sle()) ? XRPAmount{0} : view.fees().accountReserve(ownerCount);
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
@@ -116,7 +117,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 Rate
 transferRate(ReadView const& view, AccountID const& issuer)
 {
-    auto const sle = view.read(keylet::account(issuer));
+    AccountRootEntry<ReadView> sle{keylet::account(issuer), view};
 
     if (sle && sle->isFieldPresent(sfTransferRate))
         return Rate{sle->getFieldU32(sfTransferRate)};

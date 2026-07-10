@@ -4,6 +4,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
@@ -61,7 +62,7 @@ OracleSet::preflight(PreflightContext const& ctx)
 TER
 OracleSet::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleSetter = ctx.view.read(keylet::account(ctx.tx.getAccountID(sfAccount)));
+    AccountRootEntry<ReadView> sleSetter{keylet::account(ctx.tx.getAccountID(sfAccount)), ctx.view};
     if (!sleSetter)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
@@ -80,8 +81,8 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         lastUpdateTimeEpoch > (closeTime + kMaxLastUpdateTimeDelta))
         return tecINVALID_UPDATE_TIME;
 
-    auto const sle =
-        ctx.view.read(keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
+    OracleEntry<ReadView> sle{
+        keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]), ctx.view};
 
     // token pairs to add/update
     std::set<std::pair<Currency, Currency>> pairs;
@@ -181,9 +182,9 @@ OracleSet::preclaim(PreclaimContext const& ctx)
 static bool
 adjustOwnerCount(ApplyContext& ctx, int count)
 {
-    if (auto const sleAccount = ctx.view().peek(keylet::account(ctx.tx[sfAccount])))
+    if (AccountRootEntry<ApplyView> sleAccount{keylet::account(ctx.tx[sfAccount]), ctx.view()})
     {
-        adjustOwnerCount(ctx.view(), sleAccount, count, ctx.journal);
+        adjustOwnerCount(ctx.view(), sleAccount.mutableSle(), count, ctx.journal);
         return true;
     }
 
@@ -212,7 +213,8 @@ OracleSet::doApply()
             priceData.setFieldU8(sfScale, entry.getFieldU8(sfScale));
     };
 
-    if (auto sle = ctx_.view().peek(oracleID))
+    OracleEntry<ApplyView> sle{oracleID, ctx_.view()};
+    if (sle)
     {
         // update
         // the token pair that doesn't have their price updated will not
@@ -271,13 +273,13 @@ OracleSet::doApply()
         if (adjust != 0 && !adjustOwnerCount(ctx_, adjust))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        ctx_.view().update(sle);
+        sle.update();
     }
     else
     {
         // create
 
-        sle = std::make_shared<SLE>(oracleID);
+        sle.newSLE();
         sle->setAccountID(sfOwner, ctx_.tx.getAccountID(sfAccount));
         if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
         {
@@ -321,7 +323,7 @@ OracleSet::doApply()
         if (!adjustOwnerCount(ctx_, count))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        ctx_.view().insert(sle);
+        sle.insert();
     }
 
     return tesSUCCESS;

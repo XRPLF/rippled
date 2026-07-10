@@ -7,6 +7,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -79,7 +80,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
 {
     AccountID const dstId{ctx.tx[sfDestination]};
     AccountID const srcId{ctx.tx[sfAccount]};
-    auto const sleDst = ctx.view.read(keylet::account(dstId));
+    AccountRootEntry<ReadView> sleDst{keylet::account(dstId), ctx.view};
     if (!sleDst)
     {
         JLOG(ctx.j.warn()) << "Destination account does not exist.";
@@ -94,7 +95,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
     // because all writes to pseudo-account discriminator fields **are**
     // amendment gated, hence the behaviour of this check will always match the
     // currently active amendments.
-    if (isPseudoAccount(sleDst))
+    if (isPseudoAccount(sleDst.sle()))
         return tecNO_PERMISSION;
 
     if (sleDst->isFlag(lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
@@ -126,8 +127,8 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                     if (issuerId != srcId)
                     {
                         // Check if the issuer froze the line
-                        auto const sleTrust =
-                            ctx.view.read(keylet::trustLine(srcId, issuerId, issue.currency));
+                        RippleStateEntry<ReadView> sleTrust{
+                            keylet::trustLine(srcId, issuerId, issue.currency), ctx.view};
                         if (sleTrust &&
                             sleTrust->isFlag((issuerId > srcId) ? lsfHighFreeze : lsfLowFreeze))
                         {
@@ -138,8 +139,8 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                     if (issuerId != dstId)
                     {
                         // Check if dst froze the line.
-                        auto const sleTrust =
-                            ctx.view.read(keylet::trustLine(issuerId, dstId, issue.currency));
+                        RippleStateEntry<ReadView> sleTrust{
+                            keylet::trustLine(issuerId, dstId, issue.currency), ctx.view};
                         if (sleTrust &&
                             sleTrust->isFlag((dstId > issuerId) ? lsfHighFreeze : lsfLowFreeze))
                         {
@@ -187,7 +188,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
 TER
 CheckCreate::doApply()
 {
-    auto const sle = view().peek(keylet::account(accountID_));
+    AccountRootEntry<ApplyView> sle{keylet::account(accountID_), view()};
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -205,7 +206,8 @@ CheckCreate::doApply()
     // Check sequence.  For more explanation see comments in SeqProxy.h.
     std::uint32_t const seq = ctx_.tx.getSeqValue();
     Keylet const checkKeylet = keylet::check(accountID_, seq);
-    auto sleCheck = std::make_shared<SLE>(checkKeylet);
+    CheckEntry<ApplyView> sleCheck{checkKeylet, view()};
+    sleCheck.newSLE();
 
     sleCheck->setAccountID(sfAccount, accountID_);
     AccountID const dstAccountId = ctx_.tx[sfDestination];
@@ -221,7 +223,7 @@ CheckCreate::doApply()
     if (auto const expiry = ctx_.tx[~sfExpiration])
         sleCheck->setFieldU32(sfExpiration, *expiry);
 
-    view().insert(sleCheck);
+    sleCheck.insert();
 
     auto viewJ = ctx_.registry.get().getJournal("View");
     // If it's not a self-send (and it shouldn't be), add Check to the
@@ -253,7 +255,7 @@ CheckCreate::doApply()
         sleCheck->setFieldU64(sfOwnerNode, *page);
     }
     // If we succeeded, the new entry counts against the creator's reserve.
-    adjustOwnerCount(view(), sle, 1, viewJ);
+    adjustOwnerCount(view(), sle.mutableSle(), 1, viewJ);
     return tesSUCCESS;
 }
 

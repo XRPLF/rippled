@@ -268,8 +268,9 @@ AMMClawback::applyGuts(Sandbox& sb)
         }
     }
 
+    AMMEntry<ApplyView> ammEntry{ammSle, sb};
     auto const res =
-        AMMWithdraw::deleteAMMAccountIfEmpty(sb, ammSle, newLPTokenBalance, asset, asset2, j_);
+        AMMWithdraw::deleteAMMAccountIfEmpty(sb, ammEntry, newLPTokenBalance, asset, asset2, j_);
     if (!res.second)
         return res.first;  // LCOV_EXCL_LINE
 

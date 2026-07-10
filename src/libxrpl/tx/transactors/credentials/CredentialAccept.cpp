@@ -4,6 +4,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -63,7 +64,7 @@ CredentialAccept::preclaim(PreclaimContext const& ctx)
         return tecNO_ISSUER;
     }
 
-    auto const sleCred = ctx.view.read(keylet::credential(subject, issuer, credType));
+    CredentialEntry<ReadView> sleCred{keylet::credential(subject, issuer, credType), ctx.view};
     if (!sleCred)
     {
         JLOG(ctx.j.warn()) << "No credential: " << to_string(subject) << ", " << to_string(issuer)
@@ -87,8 +88,8 @@ CredentialAccept::doApply()
     AccountID const issuer{ctx_.tx[sfIssuer]};
 
     // Both exist as credential object exist itself (checked in preclaim)
-    auto const sleSubject = view().peek(keylet::account(accountID_));
-    auto const sleIssuer = view().peek(keylet::account(issuer));
+    AccountRootEntry<ApplyView> sleSubject{keylet::account(accountID_), view()};
+    AccountRootEntry<ApplyView> sleIssuer{keylet::account(issuer), view()};
 
     if (!sleSubject || !sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -102,7 +103,7 @@ CredentialAccept::doApply()
 
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const credentialKey = keylet::credential(accountID_, issuer, credType);
-    auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
+    CredentialEntry<ApplyView> sleCred{credentialKey, view()};  // Checked in preclaim()
     if (!sleCred)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -110,15 +111,15 @@ CredentialAccept::doApply()
     {
         JLOG(j_.trace()) << "Credential is expired: " << sleCred->getText();
         // delete expired credentials even if the transaction failed
-        auto const err = credentials::deleteSLE(view(), sleCred, j_);
+        auto const err = credentials::deleteSLE(view(), sleCred.mutableSle(), j_);
         return isTesSuccess(err) ? tecEXPIRED : err;
     }
 
     sleCred->setFieldU32(sfFlags, lsfAccepted);
-    view().update(sleCred);
+    sleCred.update();
 
-    adjustOwnerCount(view(), sleIssuer, -1, j_);
-    adjustOwnerCount(view(), sleSubject, 1, j_);
+    adjustOwnerCount(view(), sleIssuer.mutableSle(), -1, j_);
+    adjustOwnerCount(view(), sleSubject.mutableSle(), 1, j_);
 
     return tesSUCCESS;
 }

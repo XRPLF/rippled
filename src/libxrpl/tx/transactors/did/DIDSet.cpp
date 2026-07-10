@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -63,9 +64,9 @@ DIDSet::preflight(PreflightContext const& ctx)
 }
 
 static TER
-addSLE(ApplyContext& ctx, SLE::ref sle, AccountID const& owner)
+addSLE(ApplyContext& ctx, DIDEntry<ApplyView>& sle, AccountID const& owner)
 {
-    auto const sleAccount = ctx.view().peek(keylet::account(owner));
+    AccountRootEntry<ApplyView> sleAccount{keylet::account(owner), ctx.view()};
     if (!sleAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -79,7 +80,7 @@ addSLE(ApplyContext& ctx, SLE::ref sle, AccountID const& owner)
     }
 
     // Add ledger object to ledger
-    ctx.view().insert(sle);
+    sle.insert();
 
     // Add ledger object to owner's page
     {
@@ -89,8 +90,8 @@ addSLE(ApplyContext& ctx, SLE::ref sle, AccountID const& owner)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
     }
-    adjustOwnerCount(ctx.view(), sleAccount, 1, ctx.journal);
-    ctx.view().update(sleAccount);
+    adjustOwnerCount(ctx.view(), sleAccount.mutableSle(), 1, ctx.journal);
+    sleAccount.update();
 
     return tesSUCCESS;
 }
@@ -100,7 +101,8 @@ DIDSet::doApply()
 {
     // Edit ledger object if it already exists
     Keylet const didKeylet = keylet::did(accountID_);
-    if (auto const sleDID = ctx_.view().peek(didKeylet))
+    DIDEntry<ApplyView> sleDID{didKeylet, ctx_.view()};
+    if (sleDID)
     {
         auto update = [&](auto const& sField) {
             if (auto const field = ctx_.tx[~sField])
@@ -124,12 +126,12 @@ DIDSet::doApply()
         {
             return tecEMPTY_DID;
         }
-        ctx_.view().update(sleDID);
+        sleDID.update();
         return tesSUCCESS;
     }
 
     // Create new ledger object otherwise
-    auto const sleDID = std::make_shared<SLE>(didKeylet);
+    sleDID.newSLE();
     (*sleDID)[sfAccount] = accountID_;
 
     auto set = [&](auto const& sField) {

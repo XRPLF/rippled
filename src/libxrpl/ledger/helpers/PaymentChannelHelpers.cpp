@@ -22,7 +22,11 @@
 namespace xrpl {
 
 TER
-closeChannel(SLE::ref slep, ApplyView& view, uint256 const& key, beast::Journal j)
+closeChannel(
+    PayChannelEntry<ApplyView>& slep,
+    ApplyView& view,
+    uint256 const& key,
+    beast::Journal j)
 {
     AccountID const src = (*slep)[sfAccount];
     // Remove PayChan from owner directory
@@ -51,18 +55,18 @@ closeChannel(SLE::ref slep, ApplyView& view, uint256 const& key, beast::Journal 
     }
 
     // Transfer amount back to owner, decrement owner count
-    auto const sle = view.peek(keylet::account(src));
+    AccountRootEntry<ApplyView> sle{src, view};
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     XRPL_ASSERT(
         (*slep)[sfAmount] >= (*slep)[sfBalance], "xrpl::closeChannel : minimum channel amount");
     (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
-    adjustOwnerCount(view, sle, -1, j);
-    view.update(sle);
+    adjustOwnerCount(view, sle.mutableSle(), -1, j);
+    sle.update();
 
     // Remove PayChan from ledger
-    view.erase(slep);
+    slep.erase();
     return tesSUCCESS;
 }
 

@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -293,7 +294,7 @@ TrustSet::doApply()
     // true, if current is high account.
     bool const bHigh = accountID_ > uDstAccountID;
 
-    auto const sle = view().peek(keylet::account(accountID_));
+    AccountRootEntry<ApplyView> sle{keylet::account(accountID_), view()};
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -337,7 +338,7 @@ TrustSet::doApply()
 
     auto viewJ = ctx_.registry.get().getJournal("View");
 
-    SLE::pointer const sleDst = view().peek(keylet::account(uDstAccountID));
+    AccountRootEntry<ApplyView> sleDst{keylet::account(uDstAccountID), view()};
 
     if (!sleDst)
     {
@@ -348,8 +349,8 @@ TrustSet::doApply()
     STAmount saLimitAllow = saLimitAmount;
     saLimitAllow.get<Issue>().account = accountID_;
 
-    SLE::pointer const sleRippleState =
-        view().peek(keylet::trustLine(accountID_, uDstAccountID, currency));
+    RippleStateEntry<ApplyView> sleRippleState{
+        keylet::trustLine(accountID_, uDstAccountID, currency), view()};
 
     if (sleRippleState)
     {
@@ -363,8 +364,8 @@ TrustSet::doApply()
         std::uint32_t uHighQualityOut = 0;
         auto const& uLowAccountID = !bHigh ? accountID_ : uDstAccountID;
         auto const& uHighAccountID = bHigh ? accountID_ : uDstAccountID;
-        SLE::ref sleLowAccount = !bHigh ? sle : sleDst;
-        SLE::ref sleHighAccount = bHigh ? sle : sleDst;
+        AccountRootEntry<ApplyView>& sleLowAccount = !bHigh ? sle : sleDst;
+        AccountRootEntry<ApplyView>& sleHighAccount = bHigh ? sle : sleDst;
 
         //
         // Balances
@@ -513,7 +514,7 @@ TrustSet::doApply()
         if (bLowReserveSet && !bLowReserved)
         {
             // Set reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, 1, viewJ);
+            adjustOwnerCount(view(), sleLowAccount.mutableSle(), 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
             if (!bHigh)
@@ -523,14 +524,14 @@ TrustSet::doApply()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, -1, viewJ);
+            adjustOwnerCount(view(), sleLowAccount.mutableSle(), -1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
         }
 
         if (bHighReserveSet && !bHighReserved)
         {
             // Set reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, 1, viewJ);
+            adjustOwnerCount(view(), sleHighAccount.mutableSle(), 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
             if (bHigh)
@@ -540,7 +541,7 @@ TrustSet::doApply()
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, -1, viewJ);
+            adjustOwnerCount(view(), sleHighAccount.mutableSle(), -1, viewJ);
             uFlagsOut &= ~lsfHighReserve;
         }
 
@@ -551,7 +552,8 @@ TrustSet::doApply()
         {
             // Delete.
 
-            terResult = trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
+            terResult = trustDelete(
+                view(), sleRippleState.mutableSle(), uLowAccountID, uHighAccountID, viewJ);
         }
         // Reserve is not scaled by load.
         else if (bReserveIncrease && preFeeBalance_ < reserveCreate)
@@ -565,7 +567,7 @@ TrustSet::doApply()
         }
         else
         {
-            view().update(sleRippleState);
+            sleRippleState.update();
 
             JLOG(j_.trace()) << "Modify ripple line";
         }
@@ -608,7 +610,7 @@ TrustSet::doApply()
             accountID_,
             uDstAccountID,
             k.key,
-            sle,
+            sle.mutableSle(),
             bSetAuth,
             bSetNoRipple && !bClearNoRipple,
             bSetFreeze && !bClearFreeze,

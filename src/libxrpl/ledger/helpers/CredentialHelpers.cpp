@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -53,13 +54,13 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
     {
         // Credentials already checked in preclaim. Look only for expired here.
         auto const k = keylet::credential(h);
-        auto const sleCred = view.peek(k);
+        CredentialEntry<ApplyView> sleCred{k, view};
 
         if (sleCred && checkExpired(*sleCred, closeTime))
         {
             JLOG(j.trace()) << "Credentials are expired. Cred: " << sleCred->getText();
             // delete expired credentials even if the transaction failed
-            auto const err = deleteSLE(view, sleCred, j);
+            auto const err = deleteSLE(view, sleCred.mutableSle(), j);
             if (view.rules().enabled(fixCleanup3_1_3) && !isTesSuccess(err))
                 return std::unexpected(err);
             foundExpired = true;
@@ -77,7 +78,7 @@ deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j)
 
     auto delSLE = [&view, &sleCredential, j](
                       AccountID const& account, SField const& node, bool isOwner) -> TER {
-        auto const sleAccount = view.peek(keylet::account(account));
+        AccountRootEntry<ApplyView> sleAccount{keylet::account(account), view};
         if (!sleAccount)
         {
             // LCOV_EXCL_START
@@ -97,7 +98,7 @@ deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j)
         }
 
         if (isOwner)
-            adjustOwnerCount(view, sleAccount, -1, j);
+            adjustOwnerCount(view, sleAccount.mutableSle(), -1, j);
 
         return tesSUCCESS;
     };
@@ -160,7 +161,7 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
     auto const& credIDs(tx.getFieldV256(sfCredentialIDs));
     for (auto const& h : credIDs)
     {
-        auto const sleCred = view.read(keylet::credential(h));
+        CredentialEntry<ReadView> sleCred{keylet::credential(h), view};
         if (!sleCred)
         {
             JLOG(j.trace()) << "Credential doesn't exist. Cred: " << h;
@@ -189,7 +190,7 @@ TER
 validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
 {
     // Note, permissioned domain objects can be deleted at any time
-    auto const slePD = view.read(keylet::permissionedDomain(domainID));
+    PermissionedDomainEntry<ReadView> slePD{keylet::permissionedDomain(domainID), view};
     if (!slePD)
         return tecOBJECT_NOT_FOUND;
 
@@ -200,7 +201,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
         auto const issuer = h.getAccountID(sfIssuer);
         auto const type = h.getFieldVL(sfCredentialType);
         auto const keyletCredential = keylet::credential(subject, issuer, makeSlice(type));
-        auto const sleCredential = view.read(keyletCredential);
+        CredentialEntry<ReadView> sleCredential{keyletCredential, view};
 
         // We cannot delete expired credentials, that would require ApplyView&
         // However we can check if credentials are expired. Expected transaction
@@ -234,14 +235,14 @@ authorizedDepositPreauth(ReadView const& view, STVector256 const& credIDs, Accou
     lifeExtender.reserve(credIDs.size());
     for (auto const& h : credIDs)
     {
-        auto sleCred = view.read(keylet::credential(h));
+        CredentialEntry<ReadView> sleCred{keylet::credential(h), view};
         if (!sleCred)            // already checked in preclaim
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
         auto [it, ins] = sorted.emplace((*sleCred)[sfIssuer], (*sleCred)[sfCredentialType]);
         if (!ins)
             return tefINTERNAL;  // LCOV_EXCL_LINE
-        lifeExtender.push_back(std::move(sleCred));
+        lifeExtender.push_back(sleCred.sle());
     }
 
     if (!view.exists(keylet::depositPreauth(dst, sorted)))
@@ -312,7 +313,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
 TER
 verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, beast::Journal j)
 {
-    auto const slePD = view.read(keylet::permissionedDomain(domainID));
+    PermissionedDomainEntry<ReadView> slePD{keylet::permissionedDomain(domainID), view};
     if (!slePD)
         return tecOBJECT_NOT_FOUND;
 
@@ -334,7 +335,7 @@ verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, b
 
     for (auto const& h : credentials)
     {
-        auto sleCredential = view.read(keylet::credential(h));
+        CredentialEntry<ReadView> sleCredential{keylet::credential(h), view};
         if (!sleCredential)
             continue;  // expired, i.e. deleted in credentials::removeExpired
 

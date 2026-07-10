@@ -12,6 +12,7 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
@@ -555,7 +556,7 @@ ammLPHolds(
     auto const currency = ammLPTCurrency(asset1, asset2);
     STAmount amount;
 
-    auto const sle = view.read(keylet::trustLine(lpAccount, ammAccount, currency));
+    RippleStateEntry<ReadView> const sle{keylet::trustLine(lpAccount, ammAccount, currency), view};
     if (!sle)
     {
         amount.clear(Issue{currency, ammAccount});
@@ -632,7 +633,7 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
     // Get the actual AMM balance without factoring in the balance hook
     return asset.visit(
         [&](MPTIssue const& issue) {
-            if (auto const sle = view.read(keylet::mptoken(issue, ammAccountID));
+            if (MPTokenEntry<ReadView> const sle{keylet::mptoken(issue, ammAccountID), view};
                 sle && !isFrozen(view, ammAccountID, issue))
                 return STAmount{issue, (*sle)[sfMPTAmount]};
             return STAmount{asset};
@@ -640,12 +641,12 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
         [&](Issue const& issue) {
             if (isXRP(issue))
             {
-                if (auto const sle = view.read(keylet::account(ammAccountID)))
+                if (AccountRootEntry<ReadView> const sle{keylet::account(ammAccountID), view})
                     return (*sle)[sfBalance];
             }
             else if (
-                auto const sle =
-                    view.read(keylet::trustLine(ammAccountID, issue.account, issue.currency));
+                RippleStateEntry<ReadView> const sle{
+                    keylet::trustLine(ammAccountID, issue.account, issue.currency), view};
                 sle && !isFrozen(view, ammAccountID, issue.currency, issue.account))
             {
                 STAmount amount = (*sle)[sfBalance];
@@ -746,7 +747,7 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
 TER
 deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Journal j)
 {
-    auto ammSle = sb.peek(keylet::amm(asset, asset2));
+    AMMEntry<ApplyView> ammSle{keylet::amm(asset, asset2), sb};
     if (!ammSle)
     {
         // LCOV_EXCL_START
@@ -756,7 +757,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
     }
 
     auto const ammAccountID = (*ammSle)[sfAccount];
-    auto sleAMMRoot = sb.peek(keylet::account(ammAccountID));
+    AccountRootEntry<ApplyView> sleAMMRoot{keylet::account(ammAccountID), sb};
     if (!sleAMMRoot)
     {
         // LCOV_EXCL_START
@@ -793,8 +794,8 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
         // LCOV_EXCL_STOP
     }
 
-    sb.erase(ammSle);
-    sb.erase(sleAMMRoot);
+    ammSle.erase();
+    sleAMMRoot.erase();
 
     return tesSUCCESS;
 }
@@ -885,12 +886,12 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
     // Iterate over AMM owner directory objects.
     while (limit-- >= 1)
     {
-        auto const ownerDir = view.read(currentIndex);
+        DirectoryNodeEntry<ReadView> const ownerDir{currentIndex, view};
         if (!ownerDir)
             return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
         for (auto const& key : ownerDir->getFieldV256(sfIndexes))
         {
-            auto const sle = view.read(keylet::child(key));
+            ReadOnlySLE const sle{keylet::child(key), view};
             if (!sle)
                 return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const entryType = sle->getFieldU16(sfLedgerEntryType);

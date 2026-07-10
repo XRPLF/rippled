@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
@@ -47,7 +48,7 @@ creditLimit(
 {
     STAmount result(Issue{currency, account});
 
-    auto sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
+    RippleStateEntry<ReadView> sleRippleState{keylet::trustLine(account, issuer, currency), view};
 
     if (sleRippleState)
     {
@@ -78,7 +79,7 @@ creditBalance(
 {
     STAmount result(Issue{currency, account});
 
-    auto sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
+    RippleStateEntry<ReadView> sleRippleState{keylet::trustLine(account, issuer, currency), view};
 
     if (sleRippleState)
     {
@@ -114,7 +115,7 @@ isIndividualFrozen(
     if (issuer != account)
     {
         // Check if the issuer froze the line
-        auto const sle = view.read(keylet::trustLine(account, issuer, currency));
+        RippleStateEntry<ReadView> const sle{keylet::trustLine(account, issuer, currency), view};
         if (sle && sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
             return true;
     }
@@ -162,7 +163,7 @@ isDeepFrozen(
         return false;
     }
 
-    auto const sle = view.read(keylet::trustLine(account, issuer, currency));
+    RippleStateEntry<ReadView> const sle{keylet::trustLine(account, issuer, currency), view};
     if (!sle)
     {
         return false;
@@ -211,8 +212,9 @@ trustCreate(
         // LCOV_EXCL_STOP
     }
 
-    auto const sleRippleState = std::make_shared<SLE>(ltRIPPLE_STATE, uIndex);
-    view.insert(sleRippleState);
+    RippleStateEntry<ApplyView> sleRippleState{Keylet(ltRIPPLE_STATE, uIndex), view};
+    sleRippleState.newSLE();
+    sleRippleState.insert();
 
     auto lowNode = view.dirInsert(
         keylet::ownerDir(uLowAccountID), sleRippleState->key(), describeOwnerDir(uLowAccountID));
@@ -236,7 +238,8 @@ trustCreate(
     XRPL_ASSERT(
         sleAccount->getAccountID(sfAccount) == (bSetHigh ? uHighAccountID : uLowAccountID),
         "xrpl::trustCreate : matching account ID");
-    auto const slePeer = view.peek(keylet::account(bSetHigh ? uLowAccountID : uHighAccountID));
+    AccountRootEntry<ApplyView> const slePeer{
+        keylet::account(bSetHigh ? uLowAccountID : uHighAccountID), view};
     if (!slePeer)
         return tecNO_TARGET;
 
@@ -342,7 +345,7 @@ updateTrustLine(
     if (!state)
         return false;
 
-    auto sle = view.peek(keylet::account(sender));
+    AccountRootEntry<ApplyView> sle{keylet::account(sender), view};
     if (!sle)
         return false;
 
@@ -369,7 +372,7 @@ updateTrustLine(
     {
         // VFALCO Where is the line being deleted?
         // Clear the reserve of the sender, possibly delete the line!
-        adjustOwnerCount(view, sle, -1, j);
+        adjustOwnerCount(view, sle.mutableSle(), -1, j);
 
         // Clear reserve flag.
         state->clearFlag(senderReserveFlag);
@@ -405,7 +408,7 @@ issueIOU(
 
     auto const index = keylet::trustLine(issue.account, account, issue.currency);
 
-    if (auto state = view.peek(index))
+    if (RippleStateEntry<ApplyView> state{index, view})
     {
         STAmount finalBalance = state->getFieldAmount(sfBalance);
 
@@ -416,8 +419,8 @@ issueIOU(
 
         finalBalance -= amount;
 
-        auto const mustDelete =
-            updateTrustLine(view, state, bSenderHigh, issue.account, startBalance, finalBalance, j);
+        auto const mustDelete = updateTrustLine(
+            view, state.mutableSle(), bSenderHigh, issue.account, startBalance, finalBalance, j);
 
         view.creditHookIOU(issue.account, account, amount, startBalance);
 
@@ -432,13 +435,13 @@ issueIOU(
         {
             return trustDelete(
                 view,
-                state,
+                state.mutableSle(),
                 bSenderHigh ? account : issue.account,
                 bSenderHigh ? issue.account : account,
                 j);
         }
 
-        view.update(state);
+        state.update();
 
         return tesSUCCESS;
     }
@@ -451,7 +454,7 @@ issueIOU(
 
     finalBalance.get<Issue>().account = noAccount();
 
-    auto const receiverAccount = view.peek(keylet::account(account));
+    AccountRootEntry<ApplyView> const receiverAccount{keylet::account(account), view};
     if (!receiverAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -463,7 +466,7 @@ issueIOU(
         issue.account,
         account,
         index.key,
-        receiverAccount,
+        receiverAccount.mutableSle(),
         false,
         noRipple,
         false,
@@ -497,7 +500,8 @@ redeemIOU(
 
     bool const bSenderHigh = account > issue.account;
 
-    if (auto state = view.peek(keylet::trustLine(account, issue.account, issue.currency)))
+    if (RippleStateEntry<ApplyView> state{
+            keylet::trustLine(account, issue.account, issue.currency), view})
     {
         STAmount finalBalance = state->getFieldAmount(sfBalance);
 
@@ -508,8 +512,8 @@ redeemIOU(
 
         finalBalance -= amount;
 
-        auto const mustDelete =
-            updateTrustLine(view, state, bSenderHigh, account, startBalance, finalBalance, j);
+        auto const mustDelete = updateTrustLine(
+            view, state.mutableSle(), bSenderHigh, account, startBalance, finalBalance, j);
 
         view.creditHookIOU(account, issue.account, amount, startBalance);
 
@@ -525,13 +529,13 @@ redeemIOU(
         {
             return trustDelete(
                 view,
-                state,
+                state.mutableSle(),
                 bSenderHigh ? issue.account : account,
                 bSenderHigh ? account : issue.account,
                 j);
         }
 
-        view.update(state);
+        state.update();
         return tesSUCCESS;
     }
 
@@ -558,14 +562,15 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
     if (isXRP(issue) || issue.account == account)
         return tesSUCCESS;
 
-    auto const trustLine = view.read(keylet::trustLine(account, issue.account, issue.currency));
+    RippleStateEntry<ReadView> const trustLine{
+        keylet::trustLine(account, issue.account, issue.currency), view};
     // If account has no line, and this is a strong check, fail
     if (!trustLine && authType == AuthType::StrongAuth)
         return tecNO_LINE;
 
     // If this is a weak or legacy check, or if the account has a line, fail if
     // auth is required and not set on the line
-    if (auto const issuerAccount = view.read(keylet::account(issue.account));
+    if (AccountRootEntry<ReadView> const issuerAccount{keylet::account(issue.account), view};
         issuerAccount && issuerAccount->isFlag(lsfRequireAuth))
     {
         if (trustLine)
@@ -589,14 +594,14 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
     auto const& issuerId = issue.getIssuer();
     if (issuerId == from || issuerId == to)
         return tesSUCCESS;
-    auto const sleIssuer = view.read(keylet::account(issuerId));
-    if (sleIssuer == nullptr)
+    AccountRootEntry<ReadView> const sleIssuer{keylet::account(issuerId), view};
+    if (!sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const isRippleDisabled = [&](AccountID account) -> bool {
         // Line might not exist, but some transfers can create it. If this
         // is the case, just check the default ripple on the issuer account.
-        auto const line = view.read(keylet::trustLine(account, issue));
+        RippleStateEntry<ReadView> const line{keylet::trustLine(account, issue), view};
         if (line)
         {
             bool const issuerHigh = issuerId > account;
@@ -639,8 +644,8 @@ addEmptyHolding(
     auto const& dstId = accountID;
     auto const high = srcId > dstId;
     auto const index = keylet::trustLine(srcId, dstId, currency);
-    auto const sleSrc = view.peek(keylet::account(srcId));
-    auto const sleDst = view.peek(keylet::account(dstId));
+    AccountRootEntry<ApplyView> const sleSrc{keylet::account(srcId), view};
+    AccountRootEntry<ApplyView> const sleDst{keylet::account(dstId), view};
     if (!sleDst || !sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (!sleSrc->isFlag(lsfDefaultRipple))
@@ -660,7 +665,7 @@ addEmptyHolding(
         srcId,
         dstId,
         index.key,
-        sleDst,
+        sleDst.mutableSle(),
         /*bAuth=*/false,
         /*bNoRipple=*/true,
         /*bFreeze=*/false,
@@ -681,7 +686,7 @@ removeEmptyHolding(
 {
     if (issue.native())
     {
-        auto const sle = view.read(keylet::account(accountID));
+        AccountRootEntry<ReadView> const sle{keylet::account(accountID), view};
         if (!sle)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -696,7 +701,7 @@ removeEmptyHolding(
     // If the account is the issuer, then no line should exist. Check anyway.
     // If a line does exist, it will get deleted. If not, return success.
     bool const accountIsIssuer = accountID == issue.account;
-    auto const line = view.peek(keylet::trustLine(accountID, issue));
+    RippleStateEntry<ApplyView> line{keylet::trustLine(accountID, issue), view};
     if (!line)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
     if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZero)
@@ -706,11 +711,12 @@ removeEmptyHolding(
     if (line->isFlag(lsfLowReserve))
     {
         // Clear reserve for low account.
-        auto sleLowAccount = view.peek(keylet::account(line->at(sfLowLimit)->getIssuer()));
+        AccountRootEntry<ApplyView> sleLowAccount{
+            keylet::account(line->at(sfLowLimit)->getIssuer()), view};
         if (!sleLowAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        adjustOwnerCount(view, sleLowAccount, -1, journal);
+        adjustOwnerCount(view, sleLowAccount.mutableSle(), -1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
@@ -720,11 +726,12 @@ removeEmptyHolding(
     if (line->isFlag(lsfHighReserve))
     {
         // Clear reserve for high account.
-        auto sleHighAccount = view.peek(keylet::account(line->at(sfHighLimit)->getIssuer()));
+        AccountRootEntry<ApplyView> sleHighAccount{
+            keylet::account(line->at(sfHighLimit)->getIssuer()), view};
         if (!sleHighAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        adjustOwnerCount(view, sleHighAccount, -1, journal);
+        adjustOwnerCount(view, sleHighAccount.mutableSle(), -1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
@@ -732,7 +739,11 @@ removeEmptyHolding(
     }
 
     return trustDelete(
-        view, line, line->at(sfLowLimit)->getIssuer(), line->at(sfHighLimit)->getIssuer(), journal);
+        view,
+        line.mutableSle(),
+        line->at(sfLowLimit)->getIssuer(),
+        line->at(sfHighLimit)->getIssuer(),
+        journal);
 }
 
 TER
@@ -748,8 +759,8 @@ deleteAMMTrustLine(
     auto const& [low, high] = std::minmax(
         sleState->getFieldAmount(sfLowLimit).getIssuer(),
         sleState->getFieldAmount(sfHighLimit).getIssuer());
-    auto sleLow = view.peek(keylet::account(low));
-    auto sleHigh = view.peek(keylet::account(high));
+    AccountRootEntry<ApplyView> sleLow{keylet::account(low), view};
+    AccountRootEntry<ApplyView> sleHigh{keylet::account(high), view};
     if (!sleLow || !sleHigh)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -778,7 +789,7 @@ deleteAMMTrustLine(
     if (!sleState->isFlag(uFlags))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, -1, j);
+    adjustOwnerCount(view, !ammLow ? sleLow.mutableSle() : sleHigh.mutableSle(), -1, j);
 
     return tesSUCCESS;
 }

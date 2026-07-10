@@ -12,6 +12,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -797,24 +798,27 @@ readOrpeekBridge(F&& getter, STXChainBridge const& bridgeSpec)
     return tryGet(STXChainBridge::ChainType::Issuing);
 }
 
-SLE::pointer
+BridgeEntry<ApplyView>
 peekBridge(ApplyView& v, STXChainBridge const& bridgeSpec)
 {
-    return readOrpeekBridge<SLE>(
-        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> SLE::pointer {
-            return v.peek(keylet::bridge(b, ct));
-        },
-        bridgeSpec);
+    return BridgeEntry<ApplyView>{
+        readOrpeekBridge<SLE>(
+            [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> std::shared_ptr<SLE> {
+                return v.peek(keylet::bridge(b, ct));
+            },
+            bridgeSpec),
+        v};
 }
 
-SLE::const_pointer
+BridgeEntry<ReadView>
 readBridge(ReadView const& v, STXChainBridge const& bridgeSpec)
 {
-    return readOrpeekBridge<SLE const>(
-        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> SLE::const_pointer {
-            return v.read(keylet::bridge(b, ct));
-        },
-        bridgeSpec);
+    return BridgeEntry<ReadView>{
+        readOrpeekBridge<SLE const>(
+            [&v](STXChainBridge const& b, STXChainBridge::ChainType ct)
+                -> std::shared_ptr<SLE const> { return v.read(keylet::bridge(b, ct)); },
+            bridgeSpec),
+        v};
 }
 
 // Precondition: all the claims in the range are consistent. They must sign for
@@ -2008,7 +2012,7 @@ XChainCreateClaimID::doApply()
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sleBridge = peekBridge(ctx_.view(), bridgeSpec);
+    auto sleBridge = peekBridge(ctx_.view(), bridgeSpec);
     if (!sleBridge)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -2049,7 +2053,7 @@ XChainCreateClaimID::doApply()
     adjustOwnerCount(ctx_.view(), sleAcct, 1, ctx_.journal);
 
     ctx_.view().insert(sleClaimID);
-    ctx_.view().update(sleBridge);
+    sleBridge.update();
     ctx_.view().update(sleAcct);
 
     return tesSUCCESS;
@@ -2192,7 +2196,7 @@ XChainCreateAccountCommit::doApply()
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sleBridge = peekBridge(psb, bridge);
+    auto sleBridge = peekBridge(psb, bridge);
     if (!sleBridge)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -2220,7 +2224,7 @@ XChainCreateAccountCommit::doApply()
         return thTer;
 
     (*sleBridge)[sfXChainAccountCreateCount] = (*sleBridge)[sfXChainAccountCreateCount] + 1;
-    psb.update(sleBridge);
+    sleBridge.update();
 
     psb.apply(ctx_.rawView());
 

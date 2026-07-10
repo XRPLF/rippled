@@ -1525,8 +1525,9 @@ public:
         for (auto const& tc : testCases)
         {
             testcase("canApplyToBrokerCover: " + tc.name);
-            auto sle = std::make_shared<SLE>(ltLOAN_BROKER, uint256{1u});
-            sle->at(sfCoverAvailable) = tc.coverAvailable;
+            auto broker = std::make_shared<SLE>(Keylet{ltLOAN_BROKER, uint256{1u}});
+            broker->at(sfCoverAvailable) = tc.coverAvailable;
+            LoanBrokerEntry<ReadView> sle{broker, *env.current()};
             BEAST_EXPECT(
                 canApplyToBrokerCover(*env.current(), sle, iou, tc.amount, env.journal, "test") ==
                 tc.expected);
@@ -1536,8 +1537,9 @@ public:
         {
             testcase("canApplyToBrokerCover: amendment disabled");
             Env const envOff{*this, testableAmendments() - fixCleanup3_2_0};
-            auto sle = std::make_shared<SLE>(ltLOAN_BROKER, uint256{1u});
-            sle->at(sfCoverAvailable) = Number{10};
+            auto broker = std::make_shared<SLE>(Keylet{ltLOAN_BROKER, uint256{1u}});
+            broker->at(sfCoverAvailable) = Number{10};
+            LoanBrokerEntry<ReadView> sle{broker, *envOff.current()};
             BEAST_EXPECT(
                 canApplyToBrokerCover(
                     *envOff.current(),

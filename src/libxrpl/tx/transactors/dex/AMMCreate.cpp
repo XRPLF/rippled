@@ -10,6 +10,7 @@
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
@@ -347,8 +348,8 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                 // Set AMM flag on AMM trustline
                 if (!isXRP(amount))
                 {
-                    SLE::pointer const sleRippleState =
-                        sb.peek(keylet::trustLine(accountId, issue));
+                    RippleStateEntry<ApplyView> sleRippleState{
+                        keylet::trustLine(accountId, issue), sb};
                     if (!sleRippleState)
                     {
                         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -356,7 +357,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
 
                     auto const flags = sleRippleState->getFlags();
                     sleRippleState->setFieldU32(sfFlags, flags | lsfAMMNode);
-                    sb.update(sleRippleState);
+                    sleRippleState.update();
                 }
                 return tesSUCCESS;
             });

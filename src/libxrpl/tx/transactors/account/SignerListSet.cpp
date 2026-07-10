@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -187,7 +188,7 @@ removeSignersFromLedger(
 {
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
-    SLE::pointer const signers = view.peek(signerListKeylet);
+    SignerListEntry<ApplyView> signers{signerListKeylet, view};
 
     // If the signer list doesn't exist we've already succeeded in deleting it.
     if (!signers)
@@ -215,10 +216,10 @@ removeSignersFromLedger(
         // LCOV_EXCL_STOP
     }
 
-    adjustOwnerCount(
-        view, view.peek(accountKeylet), removeFromOwnerCount, registry.getJournal("View"));
+    AccountRootEntry<ApplyView> account{accountKeylet, view};
+    adjustOwnerCount(view, account.mutableSle(), removeFromOwnerCount, registry.getJournal("View"));
 
-    view.erase(signers);
+    signers.erase();
 
     return tesSUCCESS;
 }
@@ -311,7 +312,7 @@ SignerListSet::replaceSignerList()
             ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_))
         return ter;
 
-    auto const sle = view().peek(accountKeylet);
+    AccountRootEntry<ApplyView> const sle{accountKeylet, view()};
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -330,8 +331,9 @@ SignerListSet::replaceSignerList()
         return tecINSUFFICIENT_RESERVE;
 
     // Everything's ducky.  Add the ltSIGNER_LIST to the ledger.
-    auto signerList = std::make_shared<SLE>(signerListKeylet);
-    view().insert(signerList);
+    SignerListEntry<ApplyView> signerList{signerListKeylet, view()};
+    signerList.newSLE();
+    signerList.insert();
     writeSignersToSLE(signerList, flags);
 
     auto viewJ = ctx_.registry.get().getJournal("View");
@@ -349,7 +351,7 @@ SignerListSet::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    adjustOwnerCount(view(), sle, kAddedOwnerCount, viewJ);
+    adjustOwnerCount(view(), sle.mutableSle(), kAddedOwnerCount, viewJ);
     return tesSUCCESS;
 }
 
@@ -359,7 +361,7 @@ SignerListSet::destroySignerList()
     auto const accountKeylet = keylet::account(accountID_);
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
-    SLE::pointer const ledgerEntry = view().peek(accountKeylet);
+    AccountRootEntry<ApplyView> const ledgerEntry{accountKeylet, view()};
     if (!ledgerEntry)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -373,7 +375,7 @@ SignerListSet::destroySignerList()
 }
 
 void
-SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const
+SignerListSet::writeSignersToSLE(SignerListEntry<ApplyView>& ledgerEntry, std::uint32_t flags) const
 {
     // Assign the quorum, default SignerListID, and flags.
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))

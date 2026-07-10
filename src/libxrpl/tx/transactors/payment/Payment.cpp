@@ -10,6 +10,7 @@
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -460,24 +461,24 @@ Payment::doApply()
 
     // Open a ledger for editing.
     auto const k = keylet::account(dstAccountID);
-    SLE::pointer sleDst = view().peek(k);
+    AccountRootEntry<ApplyView> sleDst{k, view()};
 
     if (!sleDst)
     {
         // Create the account.
-        sleDst = std::make_shared<SLE>(k);
+        sleDst.newSLE();
         sleDst->setAccountID(sfAccount, dstAccountID);
         sleDst->setFieldU32(sfSequence, view().seq());
         sleDst->setFieldAmount(sfBalance, XRPAmount(beast::kZero));
 
-        view().insert(sleDst);
+        sleDst.insert();
     }
     else
     {
         // Tell the engine that we are intending to change the destination
         // account.  The source account gets always charged a fee so it's always
         // marked as modified.
-        view().update(sleDst);
+        sleDst.update();
     }
 
     bool const mpTokensV2 = view().rules().enabled(featureMPTokensV2);
@@ -496,7 +497,7 @@ Payment::doApply()
         //  2. If Account is deposit preauthorized by destination.
 
         if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst, ctx_.journal);
+                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst.sle(), ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -566,7 +567,7 @@ Payment::doApply()
             return ter;
 
         if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst, ctx_.journal);
+                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst.sle(), ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -669,7 +670,7 @@ Payment::doApply()
     // transaction types. Note, this is not amendment-gated because all writes
     // to pseudo-account discriminator fields **are** amendment gated, hence the
     // behaviour of this check will always match the active amendments.
-    if (isPseudoAccount(sleDst))
+    if (isPseudoAccount(sleDst.sle()))
         return tecNO_PERMISSION;
 
     // The source account does have enough money.  Make sure the
@@ -699,7 +700,7 @@ Payment::doApply()
     if (dstAmount > dstReserve || sleDst->getFieldAmount(sfBalance) > dstReserve)
     {
         if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst, ctx_.journal);
+                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst.sle(), ctx_.journal);
             !isTesSuccess(err))
             return err;
     }

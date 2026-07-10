@@ -5,6 +5,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -72,25 +73,25 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
 TER
 DelegateSet::doApply()
 {
-    auto const sleOwner = ctx_.view().peek(keylet::account(accountID_));
+    AccountRootEntry<ApplyView> sleOwner{keylet::account(accountID_), ctx_.view()};
     if (!sleOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const& authAccount = ctx_.tx[sfAuthorize];
     auto const delegateKey = keylet::delegate(accountID_, authAccount);
 
-    auto sle = ctx_.view().peek(delegateKey);
+    DelegateEntry<ApplyView> sle{delegateKey, ctx_.view()};
     if (sle)
     {
         auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
         if (permissions.empty())
         {
             // if permissions array is empty, delete the ledger object.
-            return deleteDelegate(view(), sle, j_);
+            return deleteDelegate(view(), sle.mutableSle(), j_);
         }
 
         sle->setFieldArray(sfPermissions, permissions);
-        ctx_.view().update(sle);
+        sle.update();
         return tesSUCCESS;
     }
 
@@ -104,7 +105,7 @@ DelegateSet::doApply()
     if (preFeeBalance_ < reserve)
         return tecINSUFFICIENT_RESERVE;
 
-    sle = std::make_shared<SLE>(delegateKey);
+    sle.newSLE();
     sle->setAccountID(sfAccount, accountID_);
     sle->setAccountID(sfAuthorize, authAccount);
 
@@ -129,8 +130,8 @@ DelegateSet::doApply()
 
     (*sle)[sfDestinationNode] = *destPage;
 
-    ctx_.view().insert(sle);
-    adjustOwnerCount(ctx_.view(), sleOwner, 1, ctx_.journal);
+    sle.insert();
+    adjustOwnerCount(ctx_.view(), sleOwner.mutableSle(), 1, ctx_.journal);
 
     return tesSUCCESS;
 }
@@ -166,11 +167,11 @@ DelegateSet::deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j)
     }
 
     // Only the delegating account's owner count was incremented on creation
-    auto const sleOwner = view.peek(keylet::account(delegator));
+    AccountRootEntry<ApplyView> sleOwner{keylet::account(delegator), view};
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCount(view, sleOwner, -1, j);
+    adjustOwnerCount(view, sleOwner.mutableSle(), -1, j);
 
     view.erase(sle);
 
