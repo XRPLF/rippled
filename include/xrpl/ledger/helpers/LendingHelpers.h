@@ -327,12 +327,14 @@ struct PaymentComponents
     // - extra: An additional payment beyond the regular schedule (overpayment)
     PaymentSpecialCase specialCase = PaymentSpecialCase::None;
 
-    // Calculates the tracked interest portion of this payment.
-    // This is derived from the other components as:
-    // trackedValueDelta - trackedPrincipalDelta - trackedManagementFeeDelta
-    //
-    // @return The amount of tracked interest included in this payment that
-    //         will be paid to the vault.
+    /**
+     * Calculates the tracked interest portion of this payment.
+     * This is derived from the other components as:
+     * trackedValueDelta - trackedPrincipalDelta - trackedManagementFeeDelta
+     *
+     * @return The amount of tracked interest included in this payment that
+     *         will be paid to the vault.
+     */
     [[nodiscard]] Number
     trackedInterestPart() const;
 };

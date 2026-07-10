@@ -524,7 +524,9 @@ public:
     void
     gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet);
 
-    // @see Consensus::prevLedgerID
+    /**
+     * @see Consensus::prevLedgerID
+     */
     RCLCxLedger::ID
     prevLedgerID() const
     {

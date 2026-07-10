@@ -27,15 +27,17 @@ namespace xrpl {
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, AccountID const& issuer);
 
-// Calculate liquid XRP balance for an account.
-// This function may be used to calculate the amount of XRP that
-// the holder is able to freely spend. It subtracts reserve requirements.
-//
-// ownerCountAdj adjusts the owner count in case the caller calculates
-// before ledger entries are added or removed. Positive to add, negative
-// to subtract.
-//
-// @param ownerCountAdj positive to add to count, negative to reduce count.
+/**
+ * Calculate liquid XRP balance for an account.
+ * This function may be used to calculate the amount of XRP that
+ * the holder is able to freely spend. It subtracts reserve requirements.
+ *
+ * ownerCountAdj adjusts the owner count in case the caller calculates
+ * before ledger entries are added or removed. Positive to add, negative
+ * to subtract.
+ *
+ * @param ownerCountAdj positive to add to count, negative to reduce count.
+ */
 [[nodiscard]] XRPAmount
 xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j);
 

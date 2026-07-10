@@ -295,8 +295,10 @@ public:
         return runner_->arg();
     }
 
-    // DEPRECATED
-    // @return `true` if the test condition indicates success(a false value)
+    /**
+     * DEPRECATED
+     * @return `true` if the test condition indicates success(a false value)
+     */
     template <class Condition, class String>
     bool
     unexpected(Condition shouldBeFalse, String const& reason);
