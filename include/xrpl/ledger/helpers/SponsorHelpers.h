@@ -10,49 +10,19 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 
-#include <algorithm>
-#include <array>
 #include <cstdint>
 #include <expected>
 #include <optional>
 
 namespace xrpl {
 
-// Transaction types explicitly allow-listed for reserve sponsorship, for v1.
-inline constexpr std::array kReserveSponsorAllowed = {
-    ttDELEGATE_SET,
-    ttDEPOSIT_PREAUTH,
-    ttPAYMENT,
-    ttSIGNER_LIST_SET,
-    ttCHECK_CANCEL,
-    ttCHECK_CASH,
-    ttCHECK_CREATE,
-    ttESCROW_CANCEL,
-    ttESCROW_CREATE,
-    ttESCROW_FINISH,
-    ttPAYCHAN_CLAIM,
-    ttPAYCHAN_CREATE,
-    ttPAYCHAN_FUND,
-    ttCLAWBACK,
-    ttMPTOKEN_AUTHORIZE,
-    ttMPTOKEN_ISSUANCE_CREATE,
-    ttMPTOKEN_ISSUANCE_DESTROY,
-    ttMPTOKEN_ISSUANCE_SET,
-    ttTRUST_SET,
-    ttCREDENTIAL_ACCEPT,
-    ttCREDENTIAL_CREATE,
-    ttCREDENTIAL_DELETE,
-    ttACCOUNT_SET,
-    ttREGULAR_KEY_SET,
-    ttSPONSORSHIP_TRANSFER,
-};
-
-/** Whether the given transaction type may use reserve sponsorship (v1). */
-inline constexpr bool
-isReserveSponsorAllowed(TxType txType)
-{
-    return std::ranges::find(kReserveSponsorAllowed, txType) != kReserveSponsorAllowed.end();
-}
+/** Whether the given transaction type may use reserve sponsorship (v1).
+ *
+ *  Reserve sponsorship is restricted to an explicit allow-list of transaction
+ *  types; all others reject spfSponsorReserve at preflight.
+ */
+bool
+isReserveSponsorAllowed(TxType txType);
 
 /** Whether the transaction's fee is sponsored (sfSponsor present + spfSponsorFee set). */
 inline bool

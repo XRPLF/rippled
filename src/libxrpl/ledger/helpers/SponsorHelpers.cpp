@@ -19,8 +19,45 @@
 #include <cstdint>
 #include <expected>
 #include <optional>
+#include <unordered_set>
 
 namespace xrpl {
+
+bool
+isReserveSponsorAllowed(TxType txType)
+{
+    // Transaction types explicitly allow-listed for reserve sponsorship, for
+    // v1. Lazily-initialized function-local static: constructed once on first
+    // use, with no startup cost paid by clients that never call this.
+    static std::unordered_set<TxType> const kReserveSponsorAllowed = {
+        ttDELEGATE_SET,
+        ttDEPOSIT_PREAUTH,
+        ttPAYMENT,
+        ttSIGNER_LIST_SET,
+        ttCHECK_CANCEL,
+        ttCHECK_CASH,
+        ttCHECK_CREATE,
+        ttESCROW_CANCEL,
+        ttESCROW_CREATE,
+        ttESCROW_FINISH,
+        ttPAYCHAN_CLAIM,
+        ttPAYCHAN_CREATE,
+        ttPAYCHAN_FUND,
+        ttCLAWBACK,
+        ttMPTOKEN_AUTHORIZE,
+        ttMPTOKEN_ISSUANCE_CREATE,
+        ttMPTOKEN_ISSUANCE_DESTROY,
+        ttMPTOKEN_ISSUANCE_SET,
+        ttTRUST_SET,
+        ttCREDENTIAL_ACCEPT,
+        ttCREDENTIAL_CREATE,
+        ttCREDENTIAL_DELETE,
+        ttACCOUNT_SET,
+        ttREGULAR_KEY_SET,
+        ttSPONSORSHIP_TRANSFER,
+    };
+    return kReserveSponsorAllowed.contains(txType);
+}
 
 std::optional<AccountID>
 getTxReserveSponsorID(STTx const& tx)
