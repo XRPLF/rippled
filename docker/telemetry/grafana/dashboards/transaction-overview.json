@@ -30,7 +30,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.apply\", status_code=\"STATUS_CODE_ERROR\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.apply\", status_code=\"STATUS_CODE_ERROR\"}[$__rate_interval]))",
           "legendFormat": "Failed / Sec [{{service_instance_id}}]"
         }
       ],
@@ -131,7 +131,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (tx_type, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m]))",
+          "expr": "sum by (tx_type, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[$__rate_interval]))",
           "legendFormat": "{{tx_type}} [{{service_instance_id}}]"
         }
       ],
@@ -177,7 +177,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (tx_type, ter_result, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.process\", tx_type=~\"$tx_type\", ter_result=~\"$ter_result\", ter_result!=\"tesSUCCESS\"}[5m]))",
+          "expr": "sum by (tx_type, ter_result, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.process\", tx_type=~\"$tx_type\", ter_result=~\"$ter_result\", ter_result!=\"tesSUCCESS\"}[$__rate_interval]))",
           "legendFormat": "{{tx_type}} [{{ter_result}}, {{service_instance_id}}]"
         }
       ],
@@ -259,14 +259,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[$__rate_interval]))",
           "legendFormat": "tx.process / Sec [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.receive\", tx_type=~\"$tx_type\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.receive\", tx_type=~\"$tx_type\"}[$__rate_interval]))",
           "legendFormat": "tx.receive / Sec [{{service_instance_id}}]"
         }
       ],
@@ -307,7 +307,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (local, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", local=~\"$tx_origin\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m]))",
+          "expr": "sum by (local, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", local=~\"$tx_origin\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[$__rate_interval]))",
           "legendFormat": "Local [{{local}}, {{service_instance_id}}]"
         }
       ],
@@ -373,7 +373,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.receive\", tx_type=~\"$tx_type\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.receive\", tx_type=~\"$tx_type\"}[$__rate_interval]))",
           "legendFormat": "tx.receive / Sec [{{service_instance_id}}]"
         }
       ],
@@ -465,7 +465,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(label_replace(label_replace(sum by (stage, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\"}[5m])), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\")",
+          "expr": "label_replace(label_replace(label_replace(sum by (stage, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\"}[$__rate_interval])), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\")",
           "legendFormat": "{{stage}} [{{service_instance_id}}]"
         }
       ],
@@ -557,7 +557,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(label_replace(label_replace(sum by (stage, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\", ter_result!~\"tesSUCCESS|\"}[5m])), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\")",
+          "expr": "label_replace(label_replace(label_replace(sum by (stage, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\", ter_result!~\"tesSUCCESS|\"}[$__rate_interval])), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\")",
           "legendFormat": "{{stage}} [{{service_instance_id}}]"
         }
       ],
@@ -685,7 +685,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (tx_type, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.enqueue\"}[5m]))",
+          "expr": "sum by (tx_type, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.enqueue\"}[$__rate_interval]))",
           "legendFormat": "{{tx_type}} [{{service_instance_id}}]"
         }
       ],
@@ -730,7 +730,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (txq_status, service_instance_id) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.accept_tx\", txq_status=~\"$txq_status\"}[5m]))",
+          "expr": "sum by (txq_status, service_instance_id) (increase(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.accept_tx\", txq_status=~\"$txq_status\"}[$__rate_interval]))",
           "legendFormat": "{{txq_status}} [{{service_instance_id}}]"
         }
       ],
@@ -764,7 +764,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.apply_direct\"}[5m])) / clamp_min(sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.apply_direct\"}[5m])) + sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.enqueue\"}[5m])), 1)",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.apply_direct\"}[$__rate_interval])) / clamp_min(sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.apply_direct\"}[$__rate_interval])) + sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.enqueue\"}[$__rate_interval])), 1)",
           "legendFormat": "Direct-Apply Fraction [{{service_instance_id}}]"
         }
       ],
@@ -846,7 +846,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.cleanup\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"txq.cleanup\"}[$__rate_interval]))",
           "legendFormat": "Cleanups / Sec [{{service_instance_id}}]"
         }
       ],

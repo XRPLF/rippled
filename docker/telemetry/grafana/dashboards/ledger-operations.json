@@ -29,7 +29,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.build\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.build\"}[$__rate_interval]))",
           "legendFormat": "Builds / Sec [{{service_instance_id}}]"
         }
       ],
@@ -100,7 +100,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.validate\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.validate\"}[$__rate_interval]))",
           "legendFormat": "Validations / Sec [{{service_instance_id}}]"
         }
       ],
@@ -207,7 +207,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.apply\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"tx.apply\"}[$__rate_interval]))",
           "legendFormat": "tx.apply / Sec [{{service_instance_id}}]"
         }
       ],
@@ -246,7 +246,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.store\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"ledger.store\"}[$__rate_interval]))",
           "legendFormat": "Stores / Sec [{{service_instance_id}}]"
         }
       ],

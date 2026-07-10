@@ -677,42 +677,42 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(transactions_duplicate_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(transactions_duplicate_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "TX Duplicate In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(transactions_duplicate_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(transactions_duplicate_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "TX Duplicate Out"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(proposals_duplicate_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(proposals_duplicate_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Proposals Duplicate In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(proposals_duplicate_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(proposals_duplicate_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Proposals Duplicate Out"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(validations_duplicate_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(validations_duplicate_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Validations Duplicate In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(validations_duplicate_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(validations_duplicate_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Validations Duplicate Out"
         }
       ],
@@ -751,7 +751,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(15, rate({__name__=~\".*_bytes_in\", __name__!~\"total_.*\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]))",
+          "expr": "topk(15, rate({__name__=~\".*_bytes_in\", __name__!~\"total_.*\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]))",
           "legendFormat": "{{__name__}}"
         }
       ],

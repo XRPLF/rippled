@@ -30,7 +30,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rpc_requests_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(rpc_requests_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Requests / Sec [{{service_instance_id}}]"
         }
       ],
@@ -271,7 +271,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(warn_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(warn_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Warnings / Sec [{{service_instance_id}}]"
         }
       ],
@@ -319,7 +319,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(drop_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
+          "expr": "rate(drop_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval])",
           "legendFormat": "Drops / Sec [{{service_instance_id}}]"
         }
       ],
@@ -367,7 +367,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (method, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m]))",
+          "expr": "sum by (method, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[$__rate_interval]))",
           "legendFormat": "{{method}} [{{service_instance_id}}]"
         }
       ],
@@ -445,7 +445,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (grpc_status, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"grpc\\\\..*\", grpc_status!=\"\"}[5m]))",
+          "expr": "sum by (grpc_status, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=~\"grpc\\\\..*\", grpc_status!=\"\"}[$__rate_interval]))",
           "legendFormat": "{{grpc_status}} [{{service_instance_id}}]"
         }
       ],
@@ -523,14 +523,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.request\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.request\"}[$__rate_interval]))",
           "legendFormat": "Requests / Sec [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.discover\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"pathfind.discover\"}[$__rate_interval]))",
           "legendFormat": "Discoveries / Sec [{{service_instance_id}}]"
         }
       ],
