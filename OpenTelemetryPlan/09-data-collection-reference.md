@@ -537,15 +537,23 @@ prefix=xrpld
 
 ### 2.3 Histograms (Event timers)
 
-| Prometheus Metric | Source File       | Unit  | Description                    |
-| ----------------- | ----------------- | ----- | ------------------------------ |
-| `rpc_time`        | ServerHandler.cpp | ms    | RPC response time distribution |
-| `rpc_size`        | ServerHandler.cpp | bytes | RPC response size distribution |
-| `ios_latency`     | Application.cpp   | ms    | I/O service loop latency       |
-| `pathfind_fast`   | PathRequests.h    | ms    | Fast pathfinding duration      |
-| `pathfind_full`   | PathRequests.h    | ms    | Full pathfinding duration      |
+| Prometheus Metric | Source File       | Unit | Description                    |
+| ----------------- | ----------------- | ---- | ------------------------------ |
+| `rpc_time`        | ServerHandler.cpp | ms   | RPC response time distribution |
+| `rpc_size`        | ServerHandler.cpp | ms\* | RPC response size (see note)   |
+| `ios_latency`     | Application.cpp   | ms   | I/O service loop latency       |
+| `pathfind_fast`   | PathRequests.h    | ms   | Fast pathfinding duration      |
+| `pathfind_full`   | PathRequests.h    | ms   | Full pathfinding duration      |
 
 Quantiles collected: 0th, 50th, 90th, 95th, 99th, 100th percentile.
+
+\* **`rpc_size` instrument mismatch (known issue):** response size in bytes is
+recorded through the millisecond-scaled event histogram (`makeEvent`), so it is
+exported as `rpc_size_milliseconds_bucket` with time-scaled boundaries that top
+out at 5000. Byte values above ~5 KB saturate in the last bucket, so the
+percentiles are not true byte sizes. The _RPC & Pathfinding_ panel is flagged
+accordingly. A dedicated byte-unit histogram is needed to fix this; tracked
+separately.
 
 **Grafana dashboards**: _Node Health_ (`ios_latency`), _RPC & Pathfinding_ (`rpc_time`, `rpc_size`, `pathfind_*`)
 
