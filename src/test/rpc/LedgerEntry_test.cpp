@@ -1899,7 +1899,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         env.fund(XRP(10000), alice, bob);
         env.close();
-        env(sponsor::set(alice, 0), sponsor::SponseeAcc(bob));
+        env(sponsor::set(alice, 0, 100), sponsor::SponseeAcc(bob));
         env.close();
         std::string const ledgerHash{to_string(env.closed()->header().hash)};
         auto const sponsorshipIndex = to_string(keylet::sponsorship(alice.id(), bob.id()).key);

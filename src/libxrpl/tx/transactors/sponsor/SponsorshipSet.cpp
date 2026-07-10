@@ -238,8 +238,10 @@ SponsorshipSet::doApply()
 
     bool const hasPositiveFeeAmount = feeAmount.has_value() && *feeAmount > beast::kZero;
 
+    // Defense-in-depth: preclaim already rejects a Sponsorship left with no
+    // fee or reserve budget, so this branch is unreachable in practice.
     if (!hasSponsorshipBudget(sponsorshipSle, feeAmount, remainingOwnerCount))
-        return temMALFORMED;
+        return temMALFORMED;  // LCOV_EXCL_LINE
 
     auto reserveSponsorAccSle = getTxReserveSponsor(ctx_.getApplyViewContext());
     if (!reserveSponsorAccSle)
