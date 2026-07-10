@@ -64,7 +64,8 @@ public:
     operator()(Env& env) const;
 };
 
-/** Match the number of items in the account's owner directory */
+/** Match the account's SponsoredOwnerCount field: the number of owned
+    objects whose reserve is sponsored by another account. */
 class SponsoredOwners
 {
 private:
@@ -81,7 +82,8 @@ public:
     operator()(Env& env) const;
 };
 
-/** Match the number of items in the account's owner directory */
+/** Match the account's SponsoringOwnerCount field: the number of objects
+    (owned by other accounts) whose reserve this account sponsors. */
 class SponsoringOwners
 {
 private:
@@ -98,7 +100,8 @@ public:
     operator()(Env& env) const;
 };
 
-/** Match the number of items in the account's owner directory */
+/** Match the account's SponsoringAccountCount field: the number of accounts
+    whose base reserve this account sponsors. */
 class SponsoringAccountCount
 {
 private:

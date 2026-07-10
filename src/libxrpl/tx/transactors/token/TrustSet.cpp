@@ -528,17 +528,20 @@ TrustSet::doApply()
         {
             SLE::pointer const lowSponsor = getSponsor(uLowAccountID);
 
-            if (auto const ret = checkReserve(
-                    ctx_.getApplyViewContext(),
-                    sleLowAccount,
-                    preFeeBalance_,
-                    lowSponsor,
-                    {.ownerCountDelta = 1},
-                    j_,
-                    tecINSUF_RESERVE_LINE);
-                lowSponsor && !isTesSuccess(ret))
+            if (view().rules().enabled(featureSponsor))
             {
-                return ret;
+                if (auto const ret = checkReserve(
+                        ctx_.getApplyViewContext(),
+                        sleLowAccount,
+                        preFeeBalance_,
+                        lowSponsor,
+                        {.ownerCountDelta = 1},
+                        j_,
+                        tecINSUF_RESERVE_LINE);
+                    lowSponsor && !isTesSuccess(ret))
+                {
+                    return ret;
+                }
             }
 
             // Set reserve for low account.
@@ -567,17 +570,20 @@ TrustSet::doApply()
             // should be checked PreFunded Sponsor before increaseOwnerCount()
             // For PreFunded sponsors, we need to check if there are sufficient reserves before
             // calling increaseOwnerCount().
-            if (auto const ret = checkReserve(
-                    ctx_.getApplyViewContext(),
-                    sleHighAccount,
-                    preFeeBalance_,
-                    highSponsor,
-                    {.ownerCountDelta = 1},
-                    j_,
-                    tecINSUF_RESERVE_LINE);
-                highSponsor && !isTesSuccess(ret))
+            if (view().rules().enabled(featureSponsor))
             {
-                return ret;
+                if (auto const ret = checkReserve(
+                        ctx_.getApplyViewContext(),
+                        sleHighAccount,
+                        preFeeBalance_,
+                        highSponsor,
+                        {.ownerCountDelta = 1},
+                        j_,
+                        tecINSUF_RESERVE_LINE);
+                    highSponsor && !isTesSuccess(ret))
+                {
+                    return ret;
+                }
             }
 
             // Set reserve for high account.
