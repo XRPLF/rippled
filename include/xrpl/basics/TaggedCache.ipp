@@ -693,7 +693,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         return false;
     });
 
-    XRPL_ASSERT(
+    ALWAYS(
         entry != nullptr, "xrpl::TaggedCache::fetchAndModify : entry present after canonicalize");
 
     callback(*entry);

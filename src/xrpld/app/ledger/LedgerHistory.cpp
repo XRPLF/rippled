@@ -453,8 +453,13 @@ LedgerHistory::builtLedger(
     consensusValidated_.fetchAndModify(index, [&](CvEntry& entry) {
         if (entry.validated && !entry.built)
         {
+            SOMETIMES(
+                true, "xrpl::LedgerHistory::builtLedger : validated arrived first");
             if (entry.validated.value() != hash)
             {
+                SOMETIMES(
+                    true,
+                    "xrpl::LedgerHistory::builtLedger : validated-first mismatch");
                 JLOG(j_.error()) << "MISMATCH: seq=" << index
                                  << " validated:" << entry.validated.value() << " then:" << hash;
                 mismatch = MismatchInputs{
@@ -499,11 +504,16 @@ LedgerHistory::validatedLedger(
     consensusValidated_.fetchAndModify(index, [&](CvEntry& entry) {
         if (entry.built && !entry.validated)
         {
+            SOMETIMES(
+                true, "xrpl::LedgerHistory::validatedLedger : built arrived first");
             XRPL_ASSERT(
                 entry.consensus.has_value(),
                 "xrpl::LedgerHistory::validatedLedger : consensus set when built set");
             if (entry.built.value() != hash)
             {
+                SOMETIMES(
+                    true,
+                    "xrpl::LedgerHistory::validatedLedger : built-first mismatch");
                 JLOG(j_.error()) << "MISMATCH: seq=" << index << " built:" << entry.built.value()
                                  << " then:" << hash;
                 mismatch = MismatchInputs{
@@ -545,6 +555,7 @@ LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
     {
         if (it->second != ledgerHash)
         {
+            SOMETIMES(true, "xrpl::LedgerHistory::fixIndex : hash repaired");
             it->second = ledgerHash;
             return false;
         }
@@ -584,7 +595,7 @@ LedgerHistory::clearLedgerCachePrior(LedgerIndex seq)
             std::erase_if(lock->byIndex, [seq](auto const& kv) { return kv.first < seq; });
         indexSize = lock->byIndex.size();
 
-        XRPL_ASSERT(
+        ALWAYS(
             lock->byIndex.empty() || lock->byIndex.begin()->first >= seq,
             "xrpl::LedgerHistory::clearLedgerCachePrior : byIndex pruned to seq");
     }
