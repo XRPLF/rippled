@@ -170,7 +170,7 @@ preflightCheckSimulateKeys(ApplyFlags flags, STObject const& sigObject, beast::J
 }  // namespace detail
 
 static NotTEC
-preflight1Sponsor(PreflightContext const& ctx, AccountID const& id)
+preflight1Sponsor(PreflightContext const& ctx)
 {
     bool const hasSponsor = ctx.tx.isFieldPresent(sfSponsor);
     bool const hasSponsorFlags = ctx.tx.isFieldPresent(sfSponsorFlags);
@@ -212,10 +212,9 @@ preflight1Sponsor(PreflightContext const& ctx, AccountID const& id)
         }
     }
 
-    if (hasSponsor && ctx.tx.getAccountID(sfSponsor) == id)
+    if (hasSponsor && ctx.tx.getAccountID(sfSponsor) == ctx.tx.getAccountID(sfAccount))
     {
-        JLOG(ctx.j.debug()) << "preflight1: Sponsor account cannot be the "
-                               "same as the transaction originator";
+        JLOG(ctx.j.debug()) << "preflight1: Sponsor account should be the same as the account";
         return temMALFORMED;
     }
 
@@ -285,7 +284,7 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     if (ctx.tx.isFlag(tfInnerBatchTxn) != ctx.parentBatchId.has_value())
         return temINVALID_INNER_BATCH;
 
-    if (auto const ter = preflight1Sponsor(ctx, id); !isTesSuccess(ter))
+    if (auto const ter = preflight1Sponsor(ctx); !isTesSuccess(ter))
         return ter;
 
     return tesSUCCESS;
@@ -414,13 +413,11 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
     if (!view.exists(keylet::account(tx.getAccountID(sfSponsor))))
         return terNO_ACCOUNT;
 
-    auto const hasSponsorSignature = tx.isFieldPresent(sfSponsorSignature);
-
     // Skip Sponsorship existence checks if the sponsor has signed the transaction - this
     // transaction is valid regardless of the Sponsorship object.
     // The use of the Sponsorship object is properly handled in
     // getFeePayer/checkReserve/increaseOwnerCount/decreaseOwnerCount.
-    if (hasSponsorSignature)
+    if (tx.isFieldPresent(sfSponsorSignature))
         return tesSUCCESS;
 
     // If the transaction contains sfDelegate, the Sponsorship object should be
@@ -461,8 +458,8 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (tx.isFieldPresent(sfSponsorSignature))
     {
         auto const sponsorObj = tx.getFieldObject(sfSponsorSignature);
-        sponsorSignerCount +=
-            sponsorObj.isFieldPresent(sfSigners) ? sponsorObj.getFieldArray(sfSigners).size() : 0;
+        if (sponsorObj.isFieldPresent(sfSigners))
+            sponsorSignerCount += sponsorObj.getFieldArray(sfSigners).size();
     }
 
     return baseFee + ((signerCount + sponsorSignerCount) * baseFee);
@@ -581,8 +578,8 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
         if (feePayer.type == FeePayerType::SponsorCoSigned)
         {
-            STAmount const sponsorReserve = accountReserve(ctx.view, payerSle, ctx.j);
-            maxSpendable = payerSle->getFieldAmount(sfBalance).xrp() - sponsorReserve.xrp();
+            auto const sponsorReserve = accountReserve(ctx.view, payerSle, ctx.j);
+            maxSpendable = payerSle->getFieldAmount(sfBalance).xrp() - sponsorReserve;
         }
         else
         {

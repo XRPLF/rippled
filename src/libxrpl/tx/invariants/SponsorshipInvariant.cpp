@@ -63,6 +63,7 @@ SponsorshipOwnerCountsMatch::visitEntry(bool isDelete, SLE::const_ref before, SL
         }
     };
 
+    // The values are implicitly casted to std::int64_t to calculate deltas.
     std::int64_t const beforeSponsored = getSponsored(before);
     std::int64_t const afterSponsored = getSponsored(after);
     std::int64_t const beforeSponsoring = getSponsoring(before);
