@@ -482,7 +482,7 @@
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id)",
         "type": "query",
-        "query": "label_values(service_instance_id)",
+        "query": "label_values(target_info, service_instance_id)",
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
