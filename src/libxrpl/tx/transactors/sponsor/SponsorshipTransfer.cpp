@@ -412,17 +412,9 @@ SponsorshipTransfer::doApply()
             if (!oldSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
-            // The owner takes the reserve burden back when the object is
-            // no longer sponsored.
-            if (auto const ter = checkReserve(
-                    ctx_.getApplyViewContext(),
-                    ownerSle,
-                    balanceBeforeFee(ownerSle),
-                    SLE::pointer(),
-                    {.ownerCountDelta = ownerCountDelta},
-                    ctx_.journal);
-                !isTesSuccess(ter))
-                return ter;
+            // The owner reclaims the reserve burden when the object is no longer sponsored.
+            // We do not check the sponsee's reserve here so that a sponsor can always
+            // end a sponsorship, even if the sponsee lacks sufficient reserve.
 
             // Decrement sponsored count
             if (auto const ter = decrementSponsorCount(

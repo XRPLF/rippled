@@ -1223,26 +1223,9 @@ public:
             BEAST_EXPECT(sle2->isFieldPresent(sfSponsor));
             BEAST_EXPECT(sle2->getAccountID(sfSponsor) == sponsor2.id());
 
-            // dissolve sponsor
+            // dissolve sponsor: ending an object sponsorship succeeds even
+            // when the sponsee lacks sufficient reserve to reclaim the object.
             adjustAccountXRPBalance(env, alice, reserve(env, 1) - drops(1));
-
-            env(sponsor::transfer(alice, tfSponsorshipEnd, checkId), Ter(tecINSUFFICIENT_RESERVE));
-            env.close();
-
-            adjustAccountXRPBalance(env, alice, reserve(env, 1));
-
-            // object doesn't sponsored
-            auto const ticketSeq = env.seq(alice);
-            env(ticket::create(alice, 1));
-            env.close();
-            auto ticketId = keylet::ticket(alice, ticketSeq + 1).key;
-            BEAST_EXPECT(env.le(keylet::unchecked(ticketId)));
-            env(sponsor::transfer(alice, tfSponsorshipEnd, ticketId), Ter(tecNO_PERMISSION));
-            env.close();
-            env(noop(alice), ticket::Use(ticketSeq + 1));
-            env.close();
-
-            adjustAccountXRPBalance(env, alice, reserve(env, 1));
 
             env(sponsor::transfer(alice, tfSponsorshipEnd, checkId));
             env.close();
@@ -1260,6 +1243,19 @@ public:
                 !env.le(keylet::account(sponsor2))->isFieldPresent(sfSponsoringOwnerCount));
             auto const sle3 = env.le(keylet::unchecked(checkId));
             BEAST_EXPECT(!sle3->isFieldPresent(sfSponsor));
+
+            // Ending sponsorship on an object that is not sponsored (a ticket,
+            // which cannot be sponsored) is rejected.
+            adjustAccountXRPBalance(env, alice, reserve(env, 2));
+            auto const ticketSeq = env.seq(alice);
+            env(ticket::create(alice, 1));
+            env.close();
+            auto ticketId = keylet::ticket(alice, ticketSeq + 1).key;
+            BEAST_EXPECT(env.le(keylet::unchecked(ticketId)));
+            env(sponsor::transfer(alice, tfSponsorshipEnd, ticketId), Ter(tecNO_PERMISSION));
+            env.close();
+            env(noop(alice), ticket::Use(ticketSeq + 1));
+            env.close();
         }
         {
             // sponsor object (pre-funded + no ltSponsorship entry)
