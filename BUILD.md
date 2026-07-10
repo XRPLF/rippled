@@ -41,7 +41,10 @@ Our Linux CI tooling is distro-independent and uses a Nix-based environment, so 
 
 ### macOS
 
-Many `xrpld` engineers use macOS for development.
+Many `xrpld` engineers use macOS for development. The minimum supported version
+is macOS 26, which is also what our CI builds and tests against. The build
+defaults `CMAKE_OSX_DEPLOYMENT_TARGET` accordingly, so you do not need to pass it
+yourself.
 
 ### Windows
 
