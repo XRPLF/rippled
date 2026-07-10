@@ -92,21 +92,21 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(job_queued_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(job_queued_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[$__rate_interval]))",
           "legendFormat": "Queued/s [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(job_started_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(job_started_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[$__rate_interval]))",
           "legendFormat": "Started/s [{{service_instance_id}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(job_finished_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m]))",
+          "expr": "sum by (service_instance_id) (rate(job_finished_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[$__rate_interval]))",
           "legendFormat": "Finished/s [{{service_instance_id}}]"
         }
       ],
@@ -157,7 +157,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(10, rate(job_queued_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m]))",
+          "expr": "topk(10, rate(job_queued_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[$__rate_interval]))",
           "legendFormat": "{{job_type}} [{{service_instance_id}}]"
         }
       ],
@@ -208,7 +208,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(10, rate(job_finished_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m]))",
+          "expr": "topk(10, rate(job_finished_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[$__rate_interval]))",
           "legendFormat": "{{job_type}} [{{service_instance_id}}]"
         }
       ],
@@ -392,7 +392,7 @@
     },
     {
       "title": "Transaction Overflow Rate",
-      "description": "###### What this is:\n*Rate at which transaction jobs would be shed when the queue's transaction limit is exceeded.*\n\n###### How it's computed:\n*Per-second rate of the overflow counter over 5 minutes, scaled to per minute.*\n\n###### Reading it:\n*This counter is not currently wired up in the code, so the panel reads empty or zero regardless of load.*\n\n###### Healthy range:\n*Not applicable until wired; currently always empty or zero.*\n\n###### Watch for:\n*n/a until wired — this counter does not rise under load today.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`(job-queue transaction overflow counter)`",
+      "description": "⚠ NOT YET INSTRUMENTED — jq_trans_overflow_total has no call sites; reads flat zero until wired.\n\n###### What this is:\n*Rate at which transaction jobs would be shed when the queue's transaction limit is exceeded.*\n\n###### How it's computed:\n*Per-second rate of the overflow counter over the dashboard's rate interval, scaled to per minute.*\n\n###### Reading it:\n*This counter is not currently wired up in the code, so the panel reads empty or zero regardless of load.*\n\n###### Healthy range:\n*Not applicable until wired; currently always empty or zero.*\n\n###### Watch for:\n*n/a until wired — this counter does not rise under load today.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`(job-queue transaction overflow counter)`",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -411,7 +411,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(jq_trans_overflow_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) * 60",
+          "expr": "rate(jq_trans_overflow_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[$__rate_interval]) * 60",
           "legendFormat": "Overflows/min [{{service_instance_id}}]"
         }
       ],
