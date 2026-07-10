@@ -847,9 +847,12 @@ struct FlowMPT_test : public beast::unit_test::Suite
             BEAST_EXPECT(!env.le(keylet::mptoken(usd.issuanceID(), bob.id())));
             auto const carolXRP = env.balance(carol);
 
-            // Partial consumption leaves Bob's offer on ledger, so this setup
-            // gives Bob enough reserve for both the remaining offer and the
-            // newly created MPToken.
+            // Partial consumption leaves Bob's offer on the ledger, so he ends
+            // up owning both the remaining offer and a newly created MPToken.
+            // The MPToken is created regardless of reserve; this setup simply
+            // funds Bob enough that he still meets reserve(2) afterward (the
+            // under-reserved case is covered in OfferMPT_test's no-reserve-check
+            // testcase).
             env(pay(alice, carol, drops(ownerIncrement)),
                 Path(~XRP),
                 Sendmax(usd(1)),
