@@ -79,12 +79,14 @@ confineOwnerCount(
         // Underflow is well defined on unsigned
         if (totalOwnerCount > currentOwnerCount)
         {
+            // LCOV_EXCL_START
             if (id)
             {
                 JLOG(j.fatal()) << "Account " << *id << " owner count set below 0!";
             }
             totalOwnerCount = 0;
             XRPL_ASSERT(!id, "xrpl::confineOwnerCount : id is not set");
+            // LCOV_EXCL_STOP
         }
     }
     return totalOwnerCount;
