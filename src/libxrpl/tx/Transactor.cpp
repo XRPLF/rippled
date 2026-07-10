@@ -214,7 +214,7 @@ preflight1Sponsor(PreflightContext const& ctx)
 
     if (hasSponsor && ctx.tx.getAccountID(sfSponsor) == ctx.tx.getAccountID(sfAccount))
     {
-        JLOG(ctx.j.debug()) << "preflight1: Sponsor account should be the same as the account";
+        JLOG(ctx.j.debug()) << "preflight1: Sponsor account cannot be the same as the account";
         return temMALFORMED;
     }
 
