@@ -329,6 +329,10 @@ TrustSet::doApply()
     // With any sponsor on the tx, the sponsor must cover the reserve (via balance or
     // prefunded budget), so the reserve check always runs.
     bool const freeTrustLine = !sponsorSle && (ownerCount(sle, j_) < 2);
+    std::uint32_t const ownerCount = ownerCount(sle, j_) < 2;
+    XRPAmount const reserveCreate(
+        (ownerCount < 2) ? XRPAmount(beast::kZero)
+                         : view().fees().accountReserve(ownerCount + 1, 1));
 
     std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
@@ -616,6 +620,17 @@ TrustSet::doApply()
         }
         // Reserve is not scaled by load.
         else if (
+            !view().rules().enabled(featureSponsor) && bReserveIncrease &&
+            preFeeBalance_ < reserveCreate)
+        {
+            JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
+                                "add trust line.";
+
+            // Another transaction could provide XRP to the account and then
+            // this transaction would succeed.
+            terResult = ret;
+        }
+        else if (
             auto const ret = checkReserve(
                 ctx_.getApplyViewContext(),
                 sle,
@@ -651,6 +666,18 @@ TrustSet::doApply()
     {
         JLOG(j_.trace()) << "Redundant: Setting non-existent ripple line to defaults.";
         return tecNO_LINE_REDUNDANT;
+    }
+    else if (!view().rules().enabled(featureSponsor) && preFeeBalance_ < reserveCreate)  // Reserve
+                                                                                         // is not
+                                                                                         // scaled
+                                                                                         // by load.
+    {
+        JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
+                            "Insufficent reserve to create line.";
+
+        // Another transaction could create the account and then this
+        // transaction would succeed.
+        terResult = tecNO_LINE_INSUF_RESERVE;
     }
     else if (
         auto const ret = checkReserve(
