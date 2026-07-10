@@ -4,6 +4,11 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/conditions/Condition.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <system_error>
+
 namespace xrpl::cryptoconditions {
 
 struct Fulfillment
@@ -16,7 +21,7 @@ public:
               that were previously considered valid to no longer
               be allowed.
     */
-    static constexpr std::size_t kMAX_SERIALIZED_FULFILLMENT = 256;
+    static constexpr std::size_t kMaxSerializedFulfillment = 256;
 
     /** Load a fulfillment from its binary form
 

@@ -31,7 +31,6 @@
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -47,7 +46,7 @@ class Transaction_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
         return envconfig([&](std::unique_ptr<Config> cfg) {
-            cfg->NETWORK_ID = networkID;
+            cfg->networkId = networkID;
             return cfg;
         });
     }
@@ -697,7 +696,7 @@ class Transaction_test : public beast::unit_test::Suite
 
             json::Value params;
             params[jss::id] = 1;
-            auto const hash = env.tx()->getJson(JsonOptions::KNone)[jss::hash];
+            auto const hash = env.tx()->getJson(JsonOptions::Values::None)[jss::hash];
             params[jss::transaction] = hash;
             auto const jrr = env.rpc("json", "tx", to_string(params))[jss::result];
             BEAST_EXPECT(jrr[jss::hash] == hash);
@@ -749,7 +748,7 @@ class Transaction_test : public beast::unit_test::Suite
         using std::to_string;
 
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
+                    cfg->fees.referenceFee = 10;
                     return cfg;
                 })};
         Account const alice{"alice"};
@@ -771,7 +770,7 @@ class Transaction_test : public beast::unit_test::Suite
         std::shared_ptr<STObject const> const meta =
             env.closed()->txRead(env.tx()->getTransactionID()).second;
 
-        json::Value expected = txn->getJson(JsonOptions::KNone);
+        json::Value expected = txn->getJson(JsonOptions::Values::None);
         expected[jss::DeliverMax] = expected[jss::Amount];
         if (apiVersion > 1)
         {
@@ -780,7 +779,7 @@ class Transaction_test : public beast::unit_test::Suite
         }
 
         json::Value const result = {[&env, txn, apiVersion]() {
-            json::Value params{json::ObjectValue};
+            json::Value params{json::ValueType::Object};
             params[jss::transaction] = to_string(txn->getTransactionID());
             params[jss::binary] = false;
             params[jss::api_version] = apiVersion;
@@ -827,7 +826,7 @@ class Transaction_test : public beast::unit_test::Suite
         using std::to_string;
 
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
+                    cfg->fees.referenceFee = 10;
                     return cfg;
                 })};
         Account const alice{"alice"};
@@ -847,7 +846,7 @@ class Transaction_test : public beast::unit_test::Suite
         std::string const expectedMetaBlob = serializeHex(*meta);
 
         json::Value const result = [&env, txn, apiVersion]() {
-            json::Value params{json::ObjectValue};
+            json::Value params{json::ValueType::Object};
             params[jss::transaction] = to_string(txn->getTransactionID());
             params[jss::binary] = true;
             params[jss::api_version] = apiVersion;
@@ -886,7 +885,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        forAllApiVersions(std::bind_front(&Transaction_test::testBinaryRequest, this));
+        forAllApiVersions([this](unsigned apiVersion) { testBinaryRequest(apiVersion); });
 
         FeatureBitset const all{testableAmendments()};
         testWithFeats(all);
@@ -899,7 +898,8 @@ public:
         testRangeCTIDRequest(features);
         testCTIDValidation(features);
         testRPCsForCTID(features);
-        forAllApiVersions(std::bind_front(&Transaction_test::testRequest, this, features));
+        forAllApiVersions(
+            [this, features](unsigned apiVersion) { testRequest(features, apiVersion); });
     }
 };
 

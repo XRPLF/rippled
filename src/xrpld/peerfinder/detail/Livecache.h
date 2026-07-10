@@ -7,13 +7,27 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/container/aged_map.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/utility/maybe_const.h>
 
 #include <boost/intrusive/list.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
 #include <algorithm>
+#include <array>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <memory>
+#include <sstream>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl::PeerFinder {
 
@@ -65,12 +79,12 @@ public:
         };
 
     public:
-        using iterator = boost::transform_iterator<Transform, typename list_type::const_iterator>;
+        using iterator = boost::transform_iterator<Transform, list_type::const_iterator>;
 
         using const_iterator = iterator;
 
         using reverse_iterator =
-            boost::transform_iterator<Transform, typename list_type::const_reverse_iterator>;
+            boost::transform_iterator<Transform, list_type::const_reverse_iterator>;
 
         using const_reverse_iterator = reverse_iterator;
 
@@ -132,7 +146,7 @@ public:
         }
 
     private:
-        explicit Hop(typename beast::MaybeConst<IsConst, list_type>::type& list) : list_(list)
+        explicit Hop(beast::MaybeConst<IsConst, list_type>::type& list) : list_(list)
         {
         }
 
@@ -145,7 +159,7 @@ protected:
     // Work-around to call Hop's private constructor from Livecache
     template <bool IsConst>
     static Hop<IsConst>
-    makeHop(typename beast::MaybeConst<IsConst, list_type>::type& list)
+    makeHop(beast::MaybeConst<IsConst, list_type>::type& list)
     {
         return Hop<IsConst>(list);
     }
@@ -202,36 +216,35 @@ public:
         // but not given out (since they would exceed maxHops). They
         // are used for automatic connection attempts.
         //
-        using Histogram = std::array<int, 1 + Tuning::kMAX_HOPS + 1>;
-        using lists_type = std::array<list_type, 1 + Tuning::kMAX_HOPS + 1>;
+        using Histogram = std::array<int, 1 + Tuning::kMaxHops + 1>;
+        using lists_type = std::array<list_type, 1 + Tuning::kMaxHops + 1>;
 
         template <bool IsConst>
         struct Transform
         {
-            using first_argument = typename lists_type::value_type;
+            using first_argument = lists_type::value_type;
             using result_type = Hop<IsConst>;
 
             explicit Transform() = default;
 
             Hop<IsConst>
-            operator()(typename beast::MaybeConst<IsConst, typename lists_type::value_type>::type&
-                           list) const
+            operator()(beast::MaybeConst<IsConst, lists_type::value_type>::type& list) const
             {
                 return makeHop<IsConst>(list);
             }
         };
 
     public:
-        using iterator = boost::transform_iterator<Transform<false>, typename lists_type::iterator>;
+        using iterator = boost::transform_iterator<Transform<false>, lists_type::iterator>;
 
         using const_iterator =
-            boost::transform_iterator<Transform<true>, typename lists_type::const_iterator>;
+            boost::transform_iterator<Transform<true>, lists_type::const_iterator>;
 
         using reverse_iterator =
-            boost::transform_iterator<Transform<false>, typename lists_type::reverse_iterator>;
+            boost::transform_iterator<Transform<false>, lists_type::reverse_iterator>;
 
         using const_reverse_iterator =
-            boost::transform_iterator<Transform<true>, typename lists_type::const_reverse_iterator>;
+            boost::transform_iterator<Transform<true>, lists_type::const_reverse_iterator>;
 
         iterator
         begin()
@@ -338,7 +351,7 @@ public:
     }
 
     /** Returns the number of entries in the cache. */
-    typename cache_type::size_type
+    cache_type::size_type
     size() const
     {
         return cache_.size();
@@ -371,7 +384,7 @@ Livecache<Allocator>::expire()
 {
     std::size_t n(0);
     typename cache_type::time_point const expired(
-        cache_.clock().now() - Tuning::kLIVE_CACHE_SECONDS_TO_LIVE);
+        cache_.clock().now() - Tuning::kLiveCacheSecondsToLive);
     for (auto iter(cache_.chronological.begin());
          iter != cache_.chronological.end() && iter.when() <= expired;)
     {
@@ -398,7 +411,7 @@ Livecache<Allocator>::insert(Endpoint const& ep)
     // when redirecting.
     //
     XRPL_ASSERT(
-        ep.hops <= (Tuning::kMAX_HOPS + 1),
+        ep.hops <= (Tuning::kMaxHops + 1),
         "xrpl::PeerFinder::Livecache::insert : maximum input hops");
     auto result = cache_.emplace(ep.address, ep);
     Element& e(result.first->second);
@@ -439,7 +452,7 @@ void
 Livecache<Allocator>::onWrite(beast::PropertyStream::Map& map)
 {
     typename cache_type::time_point const expired(
-        cache_.clock().now() - Tuning::kLIVE_CACHE_SECONDS_TO_LIVE);
+        cache_.clock().now() - Tuning::kLiveCacheSecondsToLive);
     map["size"] = size();
     map["hist"] = hops.histogram();
     beast::PropertyStream::Set set("entries", map);
@@ -498,7 +511,7 @@ void
 Livecache<Allocator>::HopsT::insert(Element& e)
 {
     XRPL_ASSERT(
-        e.endpoint.hops <= Tuning::kMAX_HOPS + 1,
+        e.endpoint.hops <= Tuning::kMaxHops + 1,
         "xrpl::PeerFinder::Livecache::HopsT::insert : maximum input hops");
     // This has security implications without a shuffle
     lists_[e.endpoint.hops].push_front(e);
@@ -510,7 +523,7 @@ void
 Livecache<Allocator>::HopsT::reinsert(Element& e, std::uint32_t numHops)
 {
     XRPL_ASSERT(
-        numHops <= Tuning::kMAX_HOPS + 1,
+        numHops <= Tuning::kMaxHops + 1,
         "xrpl::PeerFinder::Livecache::HopsT::reinsert : maximum hops input");
 
     auto& list = lists_[e.endpoint.hops];

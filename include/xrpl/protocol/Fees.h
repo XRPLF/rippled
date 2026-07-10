@@ -2,11 +2,14 @@
 
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <cstddef>
+#include <cstdint>
+
 namespace xrpl {
 
 // Deprecated constant for backwards compatibility with pre-XRPFees amendment.
 // This was the reference fee units used in the old fee calculation.
-inline constexpr std::uint32_t kFEE_UNITS_DEPRECATED = 10;
+inline constexpr std::uint32_t kFeeUnitsDeprecated = 10;
 
 /** Reflects the fee settings for a particular ledger.
 

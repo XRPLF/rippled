@@ -3,8 +3,8 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
 
-#include <functional>
 #include <memory>
+#include <optional>
 
 namespace json {
 class Value;

@@ -7,6 +7,7 @@
 #include <boost/asio/streambuf.hpp>
 
 #include <chrono>
+#include <cstddef>
 #include <deque>
 #include <functional>
 #include <string>
@@ -20,7 +21,7 @@ class HTTPClient
 public:
     explicit HTTPClient() = default;
 
-    static constexpr auto kMAX_CLIENT_HEADER_BYTES = kilobytes(32);
+    static constexpr auto kMaxClientHeaderBytes = kilobytes(32);
 
     static void
     initializeSSLContext(
@@ -53,7 +54,7 @@ public:
             boost::system::error_code const& ecResult,
             int iStatus,
             std::string const& strData)> complete,
-        beast::Journal& j);
+        beast::Journal const& j);
 
     static void
     get(bool bSSL,
@@ -67,7 +68,7 @@ public:
             boost::system::error_code const& ecResult,
             int iStatus,
             std::string const& strData)> complete,
-        beast::Journal& j);
+        beast::Journal const& j);
 
     static void
     request(
@@ -82,7 +83,7 @@ public:
             boost::system::error_code const& ecResult,
             int iStatus,
             std::string const& strData)> complete,
-        beast::Journal& j);
+        beast::Journal const& j);
 };
 
 }  // namespace xrpl

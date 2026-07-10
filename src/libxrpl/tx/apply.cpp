@@ -8,8 +8,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
@@ -27,10 +25,10 @@ namespace xrpl {
 
 // These are the same flags defined as HashRouterFlags::PRIVATE1-4 in
 // HashRouter.h
-constexpr HashRouterFlags kSF_SIGBAD = HashRouterFlags::PRIVATE1;     // Signature is bad
-constexpr HashRouterFlags kSF_SIGGOOD = HashRouterFlags::PRIVATE2;    // Signature is good
-constexpr HashRouterFlags kSF_LOCALBAD = HashRouterFlags::PRIVATE3;   // Local checks failed
-constexpr HashRouterFlags kSF_LOCALGOOD = HashRouterFlags::PRIVATE4;  // Local checks passed
+constexpr HashRouterFlags kSfSigbad = HashRouterFlags::PRIVATE1;     // Signature is bad
+constexpr HashRouterFlags kSfSiggood = HashRouterFlags::PRIVATE2;    // Signature is good
+constexpr HashRouterFlags kSfLocalbad = HashRouterFlags::PRIVATE3;   // Local checks failed
+constexpr HashRouterFlags kSfLocalgood = HashRouterFlags::PRIVATE4;  // Local checks passed
 
 //------------------------------------------------------------------------------
 
@@ -40,58 +38,42 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);
 
-    // Ignore signature check on batch inner transactions
-    if (tx.isFlag(tfInnerBatchTxn) && rules.enabled(featureBatch))
+    // Batch inner transactions are never independently valid: they are applied
+    // within their batch, not through checkValidity. Reaching here means one was
+    // relayed or submitted on its own, so mark it bad regardless of the
+    // amendment (like PeerImp and NetworkOPs).
+    if (tx.isFlag(tfInnerBatchTxn))
     {
-        // Defensive Check: These values are also checked in Batch::preflight
-        if (tx.isFieldPresent(sfTxnSignature) || !tx.getSigningPubKey().empty() ||
-            tx.isFieldPresent(sfSigners))
-            return {Validity::SigBad, "Malformed: Invalid inner batch transaction."};
-
-        // This block should probably have never been included in the
-        // original `Batch` implementation. An inner transaction never
-        // has a valid signature.
-        bool const neverValid = rules.enabled(fixBatchInnerSigs);
-        if (!neverValid)
-        {
-            std::string reason;
-            if (!passesLocalChecks(tx, reason))
-            {
-                router.setFlags(id, kSF_LOCALBAD);
-                return {Validity::SigGoodOnly, reason};
-            }
-
-            router.setFlags(id, kSF_SIGGOOD);
-            return {Validity::Valid, ""};
-        }
+        router.setFlags(id, kSfSigbad);
+        return {Validity::SigBad, "Batch inner transactions are never considered validly signed."};
     }
 
-    if (any(flags & kSF_SIGBAD))
+    if (any(flags & kSfSigbad))
     {
         // Signature is known bad
         return {Validity::SigBad, "Transaction has bad signature."};
     }
 
-    if (!any(flags & kSF_SIGGOOD))
+    if (!any(flags & kSfSiggood))
     {
         auto const sigVerify = tx.checkSign(rules);
         if (!sigVerify)
         {
-            router.setFlags(id, kSF_SIGBAD);
+            router.setFlags(id, kSfSigbad);
             return {Validity::SigBad, sigVerify.error()};
         }
-        router.setFlags(id, kSF_SIGGOOD);
+        router.setFlags(id, kSfSiggood);
     }
 
     // Signature is now known good
-    if (any(flags & kSF_LOCALBAD))
+    if (any(flags & kSfLocalbad))
     {
         // ...but the local checks
         // are known bad.
         return {Validity::SigGoodOnly, "Local checks failed."};
     }
 
-    if (any(flags & kSF_LOCALGOOD))
+    if (any(flags & kSfLocalgood))
     {
         // ...and the local checks
         // are known good.
@@ -102,10 +84,10 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
     std::string reason;
     if (!passesLocalChecks(tx, reason))
     {
-        router.setFlags(id, kSF_LOCALBAD);
+        router.setFlags(id, kSfLocalbad);
         return {Validity::SigGoodOnly, reason};
     }
-    router.setFlags(id, kSF_LOCALGOOD);
+    router.setFlags(id, kSfLocalgood);
     return {Validity::Valid, ""};
 }
 
@@ -116,10 +98,10 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
     switch (validity)
     {
         case Validity::Valid:
-            flags |= kSF_LOCALGOOD;
+            flags |= kSfLocalgood;
             [[fallthrough]];
         case Validity::SigGoodOnly:
-            flags |= kSF_SIGGOOD;
+            flags |= kSfSiggood;
             [[fallthrough]];
         case Validity::SigBad:
             // would be silly to call directly
@@ -133,7 +115,6 @@ template <typename PreflightChecks>
 ApplyResult
 apply(ServiceRegistry& registry, OpenView& view, PreflightChecks&& preflightChecks)
 {
-    NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
     return doApply(preclaim(preflightChecks(), registry, view), registry, view);
 }
 
@@ -173,7 +154,7 @@ applyBatchTransactions(
     auto const mode = batchTxn.getFlags();
 
     auto applyOneTransaction = [&registry, &j, &parentBatchId, &batchView](STTx const& tx) {
-        OpenView perTxBatchView(kBATCH_VIEW, batchView);
+        OpenView perTxBatchView(kBatchView, batchView);
 
         auto const ret = apply(registry, perTxBatchView, parentBatchId, tx, TapBatch, j);
         XRPL_ASSERT(
@@ -185,6 +166,9 @@ applyBatchTransactions(
 
         // If the transaction should be applied push its changes to the
         // whole-batch view.
+        // NOTE: each inner tx is individually capped at kOversizeMetaDataCap;
+        // there is no aggregate cap here. Bounded by kMaxBatchTxCount * cap,
+        // which standalone txns can already produce in one ledger.
         if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
             perTxBatchView.apply(batchView);
 
@@ -247,7 +231,7 @@ applyTransaction(
             // its inner transactions as necessary.
             if (isTesSuccess(result.ter) && txn.getTxnType() == ttBATCH)
             {
-                OpenView wholeBatchView(kBATCH_VIEW, view);
+                OpenView wholeBatchView(kBatchView, view);
 
                 if (applyBatchTransactions(registry, wholeBatchView, txn, j))
                     wholeBatchView.apply(view);

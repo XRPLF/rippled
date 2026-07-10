@@ -24,6 +24,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
@@ -50,6 +51,8 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/AMMInvariant.h>
+#include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <algorithm>
@@ -61,6 +64,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -94,7 +98,7 @@ class Invariants_test : public beast::unit_test::Suite
     static FeatureBitset
     defaultAmendments()
     {
-        return xrpl::test::jtx::testableAmendments() | featureInvariantsV1_1 | fixSecurity3_1_3;
+        return xrpl::test::jtx::testableAmendments() | fixCleanup3_1_3 | fixCleanup3_2_0;
     }
 
     /** Run a specific test case to put the ledger into a state that will be
@@ -176,13 +180,13 @@ class Invariants_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         OpenView ov{*env.current()};
-        test::StreamSink sink{beast::severities::KWarning};
+        test::StreamSink sink{beast::Severity::Warning};
         beast::Journal const jlog{sink};
         ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
 
         // Invariants normally run in the Transaction's "apply" (operator()) context, and can always
         // access global Rules.
-        CurrentTransactionRulesGuard const rg(ov.rules());
+        CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
         BEAST_EXPECT(precheck(a1, a2, ac));
 
@@ -214,7 +218,7 @@ class Invariants_test : public beast::unit_test::Suite
             // std::cerr << messages << '\n';
             for (auto const& m : expectLogs)
             {
-                BEAST_EXPECTS(messages.find(m) != std::string::npos, m);
+                BEAST_EXPECTS(messages.contains(m), m);
             }
         }
     }
@@ -255,7 +259,7 @@ class Invariants_test : public beast::unit_test::Suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sle->at(sfBalance) = beast::kZERO;
+                sle->at(sfBalance) = beast::kZero;
                 ac.view().erase(sle);
                 return true;
             });
@@ -284,8 +288,8 @@ class Invariants_test : public beast::unit_test::Suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sleA1->at(sfBalance) = beast::kZERO;
-                sleA2->at(sfBalance) = beast::kZERO;
+                sleA1->at(sfBalance) = beast::kZero;
+                sleA2->at(sfBalance) = beast::kZero;
                 ac.view().erase(sleA1);
                 ac.view().erase(sleA2);
                 return true;
@@ -309,7 +313,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto const sleA1 = ac.view().peek(keylet::account(a1));
                 if (!sleA1)
                     return false;
-                if (!BEAST_EXPECT(*sleA1->at(sfBalance) != beast::kZERO))
+                if (!BEAST_EXPECT(*sleA1->at(sfBalance) != beast::kZero))
                     return false;
 
                 ac.view().erase(sleA1);
@@ -331,7 +335,7 @@ class Invariants_test : public beast::unit_test::Suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sleA1->at(sfBalance) = beast::kZERO;
+                sleA1->at(sfBalance) = beast::kZero;
                 BEAST_EXPECT(sleA1->at(sfOwnerCount) == 0);
                 adjustOwnerCount(ac.view(), sleA1, 1, ac.journal);
 
@@ -342,7 +346,7 @@ class Invariants_test : public beast::unit_test::Suite
             XRPAmount{},
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
-        for (auto const& keyletInfo : kDIRECT_ACCOUNT_KEYLETS)
+        for (auto const& keyletInfo : kDirectAccountKeylets)
         {
             // TODO: Use structured binding once LLVM 16 is the minimum
             // supported version. See also:
@@ -372,7 +376,7 @@ class Invariants_test : public beast::unit_test::Suite
                     // Clear the balance so the "account deletion left behind a
                     // non-zero balance" check doesn't trip earlier than the
                     // desired check.
-                    sleA1->at(sfBalance) = beast::kZERO;
+                    sleA1->at(sfBalance) = beast::kZero;
                     ac.view().erase(sleA1);
 
                     return true;
@@ -392,7 +396,7 @@ class Invariants_test : public beast::unit_test::Suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sle->at(sfBalance) = beast::kZERO;
+                sle->at(sfBalance) = beast::kZero;
                 sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
                 return true;
@@ -427,7 +431,7 @@ class Invariants_test : public beast::unit_test::Suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sle->at(sfBalance) = beast::kZERO;
+                sle->at(sfBalance) = beast::kZero;
                 sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
 
@@ -459,7 +463,7 @@ class Invariants_test : public beast::unit_test::Suite
                 BEAST_EXPECT(sle->at(~sfAMMID) == ammKey);
 
                 for (auto const& trustKeylet :
-                     {keylet::line(ammAcctID, a1["USD"]), keylet::line(a1, ammIssue)})
+                     {keylet::trustLine(ammAcctID, a1["USD"]), keylet::trustLine(a1, ammIssue)})
                 {
                     auto const line = ac.view().peek(trustKeylet);
                     if (!line)
@@ -491,7 +495,7 @@ class Invariants_test : public beast::unit_test::Suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sle->at(sfBalance) = beast::kZERO;
+                sle->at(sfBalance) = beast::kZero;
                 sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
 
@@ -560,7 +564,7 @@ class Invariants_test : public beast::unit_test::Suite
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // create simple trust SLE with xrp currency
                 auto const sleNew =
-                    std::make_shared<SLE>(keylet::line(a1, a2, xrpIssue().currency));
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, xrpIssue().currency));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -576,7 +580,8 @@ class Invariants_test : public beast::unit_test::Suite
             {{"a trust line with deep freeze flag without normal freeze was "
               "created"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const sleNew = std::make_shared<SLE>(keylet::line(a1, a2, a1["USD"].currency));
+                auto const sleNew =
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, a1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, a1["USD"](0));
 
@@ -591,7 +596,8 @@ class Invariants_test : public beast::unit_test::Suite
             {{"a trust line with deep freeze flag without normal freeze was "
               "created"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const sleNew = std::make_shared<SLE>(keylet::line(a1, a2, a1["USD"].currency));
+                auto const sleNew =
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, a1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, a1["USD"](0));
                 std::uint32_t uFlags = 0u;
@@ -605,7 +611,8 @@ class Invariants_test : public beast::unit_test::Suite
             {{"a trust line with deep freeze flag without normal freeze was "
               "created"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const sleNew = std::make_shared<SLE>(keylet::line(a1, a2, a1["USD"].currency));
+                auto const sleNew =
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, a1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, a1["USD"](0));
                 std::uint32_t uFlags = 0u;
@@ -619,7 +626,8 @@ class Invariants_test : public beast::unit_test::Suite
             {{"a trust line with deep freeze flag without normal freeze was "
               "created"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const sleNew = std::make_shared<SLE>(keylet::line(a1, a2, a1["USD"].currency));
+                auto const sleNew =
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, a1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, a1["USD"](0));
                 std::uint32_t uFlags = 0u;
@@ -633,7 +641,8 @@ class Invariants_test : public beast::unit_test::Suite
             {{"a trust line with deep freeze flag without normal freeze was "
               "created"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const sleNew = std::make_shared<SLE>(keylet::line(a1, a2, a1["USD"].currency));
+                auto const sleNew =
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, a1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, a1["USD"](0));
                 std::uint32_t uFlags = 0u;
@@ -688,8 +697,8 @@ class Invariants_test : public beast::unit_test::Suite
                                         ApplyContext& ac,
                                         int a1Balance,
                                         int a2Balance) {
-            auto const sleA1 = ac.view().peek(keylet::line(a1, g1["USD"]));
-            auto const sleA2 = ac.view().peek(keylet::line(a2, g1["USD"]));
+            auto const sleA1 = ac.view().peek(keylet::trustLine(a1, g1["USD"]));
+            auto const sleA2 = ac.view().peek(keylet::trustLine(a2, g1["USD"]));
 
             sleA1->setFieldAmount(sfBalance, g1["USD"](a1Balance));
             sleA2->setFieldAmount(sfBalance, g1["USD"](a2Balance));
@@ -763,7 +772,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
                 // Use `drops(1)` to bypass a call to STAmount::canonicalize
                 // with an invalid value
-                sle->setFieldAmount(sfBalance, kINITIAL_XRP + drops(1));
+                sle->setFieldAmount(sfBalance, kInitialXrp + drops(1));
                 BEAST_EXPECT(!sle->getFieldAmount(sfBalance).negative());
                 ac.view().update(sle);
                 return true;
@@ -797,10 +806,10 @@ class Invariants_test : public beast::unit_test::Suite
             XRPAmount{-1});
 
         doInvariantCheck(
-            {{"fee paid exceeds system limit: "s + to_string(kINITIAL_XRP)},
-             {"XRP net change of 0 doesn't match fee "s + to_string(kINITIAL_XRP)}},
+            {{"fee paid exceeds system limit: "s + to_string(kInitialXrp)},
+             {"XRP net change of 0 doesn't match fee "s + to_string(kInitialXrp)}},
             [](Account const&, Account const&, ApplyContext&) { return true; },
-            XRPAmount{kINITIAL_XRP});
+            XRPAmount{kInitialXrp});
 
         doInvariantCheck(
             {{"fee paid is 20 exceeds fee specified in transaction."},
@@ -892,7 +901,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleNew = std::make_shared<SLE>(keylet::escrow(a1, (*sle)[sfSequence] + 2));
                 // Use `drops(1)` to bypass a call to STAmount::canonicalize
                 // with an invalid value
-                sleNew->setFieldAmount(sfAmount, kINITIAL_XRP + drops(1));
+                sleNew->setFieldAmount(sfAmount, kInitialXrp + drops(1));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -958,7 +967,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, -1);
                 ac.view().insert(sleNew);
                 return true;
@@ -974,7 +983,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfLockedAmount, -1);
                 ac.view().insert(sleNew);
                 return true;
@@ -990,7 +999,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 1);
                 sleNew->setFieldU64(sfLockedAmount, 10);
                 ac.view().insert(sleNew);
@@ -1173,7 +1182,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {{"NFT page has invalid size"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(0));
 
                 ac.view().insert(nftPage);
@@ -1183,7 +1192,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {{"NFT page has invalid size"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(33));
 
                 ac.view().insert(nftPage);
@@ -1196,7 +1205,7 @@ class Invariants_test : public beast::unit_test::Suite
                 STArray nfTokens = makeNFTokenIDs(2);
                 std::iter_swap(nfTokens.begin(), nfTokens.begin() + 1);
 
-                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
@@ -1209,7 +1218,7 @@ class Invariants_test : public beast::unit_test::Suite
                 STArray nfTokens = makeNFTokenIDs(1);
                 nfTokens[0].setFieldVL(sfURI, Blob{});
 
-                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
@@ -1219,9 +1228,9 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
-                nftPage->setFieldH256(sfPreviousPageMin, keylet::nftpageMax(a1).key);
+                nftPage->setFieldH256(sfPreviousPageMin, keylet::nftokenPageMax(a1).key);
 
                 ac.view().insert(nftPage);
                 return true;
@@ -1230,9 +1239,9 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
-                nftPage->setFieldH256(sfPreviousPageMin, keylet::nftpageMin(a2).key);
+                nftPage->setFieldH256(sfPreviousPageMin, keylet::nftokenPageMin(a2).key);
 
                 ac.view().insert(nftPage);
                 return true;
@@ -1241,7 +1250,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
                 nftPage->setFieldH256(sfNextPageMin, nftPage->key());
 
@@ -1253,10 +1262,10 @@ class Invariants_test : public beast::unit_test::Suite
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& a1, Account const& a2, ApplyContext& ac) {
                 STArray nfTokens = makeNFTokenIDs(1);
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage(
-                    keylet::nftpageMax(a1), ++(nfTokens[0].getFieldH256(sfNFTokenID))));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPage(
+                    keylet::nftokenPageMax(a1), ++(nfTokens[0].getFieldH256(sfNFTokenID))));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
-                nftPage->setFieldH256(sfNextPageMin, keylet::nftpageMax(a2).key);
+                nftPage->setFieldH256(sfNextPageMin, keylet::nftokenPageMax(a2).key);
 
                 ac.view().insert(nftPage);
                 return true;
@@ -1266,8 +1275,8 @@ class Invariants_test : public beast::unit_test::Suite
             {{"NFT found in incorrect page"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
                 STArray nfTokens = makeNFTokenIDs(2);
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage(
-                    keylet::nftpageMax(a1), (nfTokens[1].getFieldH256(sfNFTokenID))));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPage(
+                    keylet::nftokenPageMax(a1), (nfTokens[1].getFieldH256(sfNFTokenID))));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
@@ -1275,7 +1284,88 @@ class Invariants_test : public beast::unit_test::Suite
             });
     }
 
-    static std::shared_ptr<SLE>
+    void
+    testAMMDeleteInvariants(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        bool const enforceAMMDelete = features[fixCleanup3_3_0];
+        testcase << "AMM delete invariants" + std::string(enforceAMMDelete ? " fix" : "");
+
+        Env env(*this, features);
+        Account const issuer{"issuer"};
+        Issue const lptIssue{Currency(0x4c50540000000000), issuer.id()};
+        STAmount const zeroLP{lptIssue, 0};
+        STAmount const nonZeroLP{lptIssue, 1};
+
+        auto const makeAMM = [](STAmount const& lptBalance) {
+            auto sleAMM = std::make_shared<SLE>(keylet::amm(uint256(1)));
+            sleAMM->setFieldAmount(sfLPTokenBalance, lptBalance);
+            return sleAMM;
+        };
+
+        auto const checkInvariant = [&](TxType txType,
+                                        TER result,
+                                        std::optional<STAmount> const& deletedLPBalance,
+                                        bool expected,
+                                        std::string const& expectedLog) {
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ValidAMM invariant;
+
+            if (deletedLPBalance)
+                invariant.visitEntry(true, makeAMM(*deletedLPBalance), nullptr);
+
+            bool const actual = invariant.finalize(
+                STTx{txType, [](STObject&) {}}, result, XRPAmount{}, *env.current(), jlog);
+
+            BEAST_EXPECTS(actual == expected, "unexpected AMM delete invariant result");
+            auto const messages = sink.messages().str();
+            auto const expectedLogWhenEnforced = enforceAMMDelete ? expectedLog : "";
+            if (!expectedLogWhenEnforced.empty())
+            {
+                BEAST_EXPECTS(messages.contains(expectedLogWhenEnforced), expectedLogWhenEnforced);
+            }
+            else
+            {
+                BEAST_EXPECTS(messages.empty(), messages);
+            }
+        };
+
+        checkInvariant(
+            ttPAYMENT,
+            tesSUCCESS,
+            nonZeroLP,
+            !enforceAMMDelete,
+            "Invariant failed: AMM failed, unexpected AMM deletion by");
+        checkInvariant(
+            ttAMM_DELETE,
+            tesSUCCESS,
+            std::nullopt,
+            !enforceAMMDelete,
+            "Invariant failed: AMMDelete failed, AMM object remained on tesSUCCESS");
+        checkInvariant(
+            ttAMM_DELETE,
+            tesSUCCESS,
+            nonZeroLP,
+            !enforceAMMDelete,
+            "Invariant failed: AMMDelete failed, AMM object deleted with non-zero LP balance");
+        checkInvariant(
+            ttAMM_DELETE,
+            tecINCOMPLETE,
+            zeroLP,
+            !enforceAMMDelete,
+            "Invariant failed: AMMDelete failed, AMM object deleted when result is not tesSUCCESS");
+
+        checkInvariant(ttAMM_WITHDRAW, tesSUCCESS, nonZeroLP, true, "");
+        checkInvariant(ttAMM_CLAWBACK, tesSUCCESS, nonZeroLP, true, "");
+
+        checkInvariant(ttAMM_DELETE, tesSUCCESS, zeroLP, true, "");
+        checkInvariant(ttAMM_WITHDRAW, tesSUCCESS, zeroLP, true, "");
+        checkInvariant(ttAMM_CLAWBACK, tesSUCCESS, zeroLP, true, "");
+    }
+
+    static SLE::pointer
     createPermissionedDomain(
         ApplyContext& ac,
         test::jtx::Account const& a1,
@@ -1291,8 +1381,8 @@ class Invariants_test : public beast::unit_test::Suite
 
         if (numCreds != 0u)
         {
-            // This array is sorted naturally, but if you willing to change this
-            // behavior don't forget to use credentials::makeSorted
+            // This array is sorted naturally, but if you are going to change
+            // this behavior, don't forget to use credentials::makeSorted
             STArray credentials(sfAcceptedCredentials, numCreds);
             for (std::size_t n = 0; n < numCreds; ++n)
             {
@@ -1314,11 +1404,11 @@ class Invariants_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
 
-        bool const fixPDEnabled = features[fixPermissionedDomainInvariant];
+        bool const fixEnabled = features[fixCleanup3_1_3];
         std::initializer_list<TER> const badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
         std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
 
-        testcase << "PermissionedDomain" + std::string(fixPDEnabled ? " fix" : "");
+        testcase << "PermissionedDomain" + std::string(fixEnabled ? " fix" : "");
 
         doInvariantCheck(
             Env(*this, features),
@@ -1328,20 +1418,20 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            fixPDEnabled ? failTers : badTers);
+            fixEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain 2";
 
-        auto constexpr kTOO_BIG = kMAX_PERMISSIONED_DOMAIN_CREDENTIALS_ARRAY_SIZE + 1;
+        static constexpr auto kTooBig = kMaxPermissionedDomainCredentialsArraySize + 1;
         doInvariantCheck(
             Env(*this, features),
-            {{"permissioned domain bad credentials size " + std::to_string(kTOO_BIG)}},
+            {{"permissioned domain bad credentials size " + std::to_string(kTooBig)}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                return !!createPermissionedDomain(ac, a1, a2, kTOO_BIG);
+                return !!createPermissionedDomain(ac, a1, a2, kTooBig);
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            fixPDEnabled ? failTers : badTers);
+            fixEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain 3";
         doInvariantCheck(
@@ -1365,7 +1455,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            fixPDEnabled ? failTers : badTers);
+            fixEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain 4";
         doInvariantCheck(
@@ -1388,7 +1478,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            fixPDEnabled ? failTers : badTers);
+            fixEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain Set 1";
         doInvariantCheck(
@@ -1409,21 +1499,21 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            fixPDEnabled ? failTers : badTers);
+            fixEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain Set 2";
         doInvariantCheck(
             Env(*this, features),
-            {{"permissioned domain bad credentials size " + std::to_string(kTOO_BIG)}},
+            {{"permissioned domain bad credentials size " + std::to_string(kTooBig)}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // create PD
                 auto slePd = createPermissionedDomain(ac, a1, a2);
 
                 // update PD
                 {
-                    STArray credentials(sfAcceptedCredentials, kTOO_BIG);
+                    STArray credentials(sfAcceptedCredentials, kTooBig);
 
-                    for (std::size_t n = 0; n < kTOO_BIG; ++n)
+                    for (std::size_t n = 0; n < kTooBig; ++n)
                     {
                         auto cred = STObject::makeInnerObject(sfCredential);
                         cred.setAccountID(sfIssuer, a2);
@@ -1440,7 +1530,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            fixPDEnabled ? failTers : badTers);
+            fixEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain Set 3";
         doInvariantCheck(
@@ -1470,7 +1560,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            fixPDEnabled ? failTers : badTers);
+            fixEnabled ? failTers : badTers);
 
         testcase << "PermissionedDomain Set 4";
         doInvariantCheck(
@@ -1498,7 +1588,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-            fixPDEnabled ? failTers : badTers);
+            fixEnabled ? failTers : badTers);
 
         std::initializer_list<TER> const goodTers = {tesSUCCESS, tesSUCCESS};
 
@@ -1516,7 +1606,7 @@ class Invariants_test : public beast::unit_test::Suite
             testcase << "PermissionedDomain set 2 domains ";
             doInvariantCheck(
                 Env(*this, features),
-                fixPDEnabled ? badMoreThan1 : emptyV,
+                fixEnabled ? badMoreThan1 : emptyV,
                 [](Account const& a1, Account const& a2, ApplyContext& ac) {
                     createPermissionedDomain(ac, a1, a2);
                     createPermissionedDomain(ac, a1, a2, 2, 11);
@@ -1524,7 +1614,7 @@ class Invariants_test : public beast::unit_test::Suite
                 },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-                fixPDEnabled ? failTers : goodTers);
+                fixEnabled ? failTers : goodTers);
         }
 
         {
@@ -1545,7 +1635,7 @@ class Invariants_test : public beast::unit_test::Suite
                 std::move(env1),
                 a1,
                 a2,
-                fixPDEnabled ? badMoreThan1 : emptyV,
+                fixEnabled ? badMoreThan1 : emptyV,
                 [&pd1, &pd2](Account const&, Account const&, ApplyContext& ac) {
                     auto sle1 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd1});
                     auto sle2 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd2});
@@ -1555,18 +1645,18 @@ class Invariants_test : public beast::unit_test::Suite
                 },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_DELETE, [](STObject&) {}},
-                fixPDEnabled ? failTers : goodTers);
+                fixEnabled ? failTers : goodTers);
         }
 
         {
             testcase << "PermissionedDomain set 0 domains ";
             doInvariantCheck(
                 Env(*this, features),
-                fixPDEnabled ? badNoDomains : emptyV,
+                fixEnabled ? badNoDomains : emptyV,
                 [](Account const&, Account const&, ApplyContext&) { return true; },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-                fixPDEnabled ? badTers : goodTers);
+                fixEnabled ? badTers : goodTers);
         }
 
         {
@@ -1587,11 +1677,11 @@ class Invariants_test : public beast::unit_test::Suite
                 Env(*this, features),
                 a1,
                 a2,
-                fixPDEnabled ? badNoDomains : emptyV,
+                fixEnabled ? badNoDomains : emptyV,
                 [](Account const&, Account const&, ApplyContext&) { return true; },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_DELETE, [](STObject&) {}},
-                fixPDEnabled ? badTers : goodTers);
+                fixEnabled ? badTers : goodTers);
         }
 
         {
@@ -1611,7 +1701,7 @@ class Invariants_test : public beast::unit_test::Suite
                 std::move(env1),
                 a1,
                 a2,
-                fixPDEnabled ? badDeleted : emptyV,
+                fixEnabled ? badDeleted : emptyV,
                 [&pd1](Account const&, Account const&, ApplyContext& ac) {
                     auto sle1 = ac.view().peek({ltPERMISSIONED_DOMAIN, pd1});
                     ac.view().erase(sle1);
@@ -1619,28 +1709,28 @@ class Invariants_test : public beast::unit_test::Suite
                 },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
-                fixPDEnabled ? failTers : goodTers);
+                fixEnabled ? failTers : goodTers);
         }
 
         {
             testcase << "PermissionedDomain del, create domain ";
             doInvariantCheck(
                 Env(*this, features),
-                fixPDEnabled ? badNotDeleted : emptyV,
+                fixEnabled ? badNotDeleted : emptyV,
                 [](Account const& a1, Account const& a2, ApplyContext& ac) {
                     createPermissionedDomain(ac, a1, a2);
                     return true;
                 },
                 XRPAmount{},
                 STTx{ttPERMISSIONED_DOMAIN_DELETE, [](STObject&) {}},
-                fixPDEnabled ? failTers : goodTers);
+                fixEnabled ? failTers : goodTers);
         }
 
         {
             testcase << "PermissionedDomain invalid tx";
 
             doInvariantCheck(
-                fixPDEnabled ? badTx : emptyV,
+                fixEnabled ? badTx : emptyV,
                 [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                     createPermissionedDomain(ac, a1, a2);
                     return true;
@@ -1783,7 +1873,7 @@ class Invariants_test : public beast::unit_test::Suite
         for (std::size_t n = 0; n < numCreds; ++n)
         {
             auto credType = "cred_type" + std::to_string(n);
-            credentials.push_back({a2, credType});
+            credentials.push_back({.issuer = a2, .credType = credType});
         }
 
         std::uint32_t const seq = env.seq(a1);
@@ -1800,11 +1890,9 @@ class Invariants_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
 
-        bool const fixPDEnabled = features[fixPermissionedDomainInvariant];
-        bool const fixS313Enabled = features[fixSecurity3_1_3];
+        bool const fixEnabled = features[fixCleanup3_1_3];
 
-        testcase << "PermissionedDEX" + std::string(fixPDEnabled ? " fixPD" : "") +
-                std::string(fixS313Enabled ? " fixS313" : "");
+        testcase << "PermissionedDEX" + std::string(fixEnabled ? " fix" : "");
 
         doInvariantCheck(
             Env(*this, features),
@@ -1908,8 +1996,8 @@ class Invariants_test : public beast::unit_test::Suite
                 std::move(env1),
                 a1,
                 a2,
-                fixS313Enabled ? std::vector<std::string>{{"hybrid offer is malformed"}}
-                               : std::vector<std::string>{},
+                fixEnabled ? std::vector<std::string>{{"hybrid offer is malformed"}}
+                           : std::vector<std::string>{},
                 [&pd1](Account const& a1, Account const& a2, ApplyContext& ac) {
                     Keylet const offerKey = keylet::offer(a2.id(), 10);
                     auto sleOffer = std::make_shared<SLE>(offerKey);
@@ -1926,9 +2014,8 @@ class Invariants_test : public beast::unit_test::Suite
                 },
                 XRPAmount{},
                 STTx{ttOFFER_CREATE, [&](STObject&) {}},
-                fixS313Enabled
-                    ? std::initializer_list<TER>{tecINVARIANT_FAILED, tecINVARIANT_FAILED}
-                    : std::initializer_list<TER>{tesSUCCESS, tesSUCCESS});
+                fixEnabled ? std::initializer_list<TER>{tecINVARIANT_FAILED, tecINVARIANT_FAILED}
+                           : std::initializer_list<TER>{tesSUCCESS, tesSUCCESS});
         }
 
         // hybrid offer missing sfAdditionalBooks
@@ -2040,6 +2127,169 @@ class Invariants_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testBookDirectoryExchangeRate()
+    {
+        using namespace test::jtx;
+        testcase << "book directory exchange rate";
+
+        auto const getBookRootKey = [](Account const& account, std::uint64_t quality) {
+            Book const book{xrpIssue(), account["USD"], std::nullopt};
+            return keylet::quality(keylet::book(book), quality);
+        };
+
+        // Root book-directory pages carry exchange-rate metadata that must
+        // match the quality encoded in the directory key.
+        auto const makeRootPage = [](Keylet const& dir, std::uint64_t exchangeRate) {
+            auto sleDir = std::make_shared<SLE>(dir);
+            sleDir->setFieldH256(sfRootIndex, dir.key);
+            STVector256 indexes;
+            indexes.pushBack(uint256{1});
+            sleDir->setFieldV256(sfIndexes, indexes);
+            sleDir->setFieldU64(sfExchangeRate, exchangeRate);
+            return sleDir;
+        };
+
+        // Child pages do not carry quality metadata; they only point back to
+        // the root directory.
+        auto const makeChildPage = [](Keylet const& rootDir) {
+            auto sleDir = std::make_shared<SLE>(keylet::page(rootDir, 1));
+            sleDir->setFieldH256(sfRootIndex, rootDir.key);
+            STVector256 indexes;
+            indexes.pushBack(uint256{2});
+            sleDir->setFieldV256(sfIndexes, indexes);
+            return sleDir;
+        };
+
+        auto const makeOfferCreateTx = [] {
+            return STTx{ttOFFER_CREATE, [](STObject& tx) {
+                            Account const account{"A1"};
+                            tx.setFieldAmount(sfTakerPays, XRP(1));
+                            tx.setFieldAmount(sfTakerGets, account["USD"](1));
+                        }};
+        };
+        std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+
+        // Creating a root book directory with mismatched exchange-rate
+        // metadata violates the invariant.
+        doInvariantCheck(
+            {{"book directory exchange rate does not match directory quality"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const directoryQuality = STAmount::kURateOne;
+                auto const dir = getBookRootKey(a1, directoryQuality);
+                ac.view().insert(makeRootPage(dir, directoryQuality + 1));
+                return true;
+            },
+            XRPAmount{},
+            makeOfferCreateTx(),
+            failTers);
+
+        // A new child page must point to an existing root page.
+        doInvariantCheck(
+            {{"book directory root missing"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const directoryQuality = STAmount::kURateOne;
+                auto const rootDir = getBookRootKey(a1, directoryQuality);
+                // Insert only the child page.  It points at rootDir, but the
+                // corresponding root page is intentionally missing.
+                ac.view().insert(makeChildPage(rootDir));
+                return true;
+            },
+            XRPAmount{},
+            makeOfferCreateTx(),
+            failTers);
+
+        // Legacy bad-root tolerance:
+        // - The view contains a pre-existing root page with bad sfExchangeRate
+        //   metadata.
+        // - The simulated transaction only creates a child page pointing to
+        //   that root.
+        // - The invariant must pass because this transaction did not create
+        //   the bad root, only adding a child page.
+        {
+            Env env{*this, defaultAmendments()};
+            Account const a1{"A1"};
+            env.fund(XRP(1000), a1);
+            env.close();
+
+            OpenView view{*env.current()};
+            auto const directoryQuality = STAmount::kURateOne;
+            auto const rootDir = getBookRootKey(a1, directoryQuality);
+            view.rawInsert(makeRootPage(rootDir, directoryQuality + 1));
+
+            ValidBookDirectory invariant;
+            invariant.visitEntry(false, nullptr, makeChildPage(rootDir));
+
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            BEAST_EXPECT(
+                invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+        }
+
+        // A bad root is rejected when added, ignored when a legacy bad root is
+        // modified without changing sfRootIndex or deleted, and checked when a
+        // modified directory changes sfRootIndex.
+        {
+            Env env{*this, defaultAmendments()};
+            Account const a1{"A1"};
+            env.fund(XRP(1000), a1);
+            env.close();
+
+            OpenView view{*env.current()};
+            auto const directoryQuality = STAmount::kURateOne;
+            auto const rootDir = getBookRootKey(a1, directoryQuality);
+            auto const missingRootDir = getBookRootKey(a1, directoryQuality + 1);
+            auto const badRoot = makeRootPage(rootDir, directoryQuality + 1);
+            view.rawInsert(badRoot);
+
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+
+            {
+                // add
+                ValidBookDirectory invariant;
+                invariant.visitEntry(false, nullptr, badRoot);
+
+                BEAST_EXPECT(
+                    !invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+            }
+            {
+                // modify (without changing the sfRootIndex)
+                ValidBookDirectory invariant;
+                invariant.visitEntry(false, badRoot, badRoot);
+
+                BEAST_EXPECT(
+                    invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+            }
+            {
+                // modify (changing sfRootIndex to a missing root)
+                auto const childBefore = makeChildPage(rootDir);
+                auto const childAfter = std::make_shared<SLE>(*childBefore, childBefore->key());
+                childAfter->setFieldH256(sfRootIndex, missingRootDir.key);
+
+                ValidBookDirectory invariant;
+                invariant.visitEntry(false, childBefore, childAfter);
+
+                test::StreamSink missingRootSink{beast::Severity::Warning};
+                beast::Journal const missingRootJlog{missingRootSink};
+                BEAST_EXPECT(!invariant.finalize(
+                    makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, missingRootJlog));
+                BEAST_EXPECT(
+                    missingRootSink.messages().str().contains("book directory root missing"));
+            }
+            {
+                // delete
+                view.rawErase(badRoot);
+                BEAST_EXPECT(!view.exists(rootDir));
+
+                ValidBookDirectory invariant;
+                invariant.visitEntry(true, badRoot, badRoot);
+                BEAST_EXPECT(
+                    invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+            }
+        }
+    }
+
     Keylet
     createLoanBroker(jtx::Account const& a, jtx::Env& env, jtx::PrettyAsset const& asset)
     {
@@ -2057,9 +2307,9 @@ class Invariants_test : public beast::unit_test::Suite
         // Create Loan Broker
         using namespace loanBroker;
 
-        auto const loanBrokerKeylet = keylet::loanbroker(a.id(), env.seq(a));
+        auto const loanBrokerKeylet = keylet::loanBroker(a.id(), env.seq(a));
         // Create a Loan Broker with all default values.
-        env(set(a, vaultID), Fee(kINCREMENT));
+        env(set(a, vaultID), Fee(kIncrement));
 
         return loanBrokerKeylet;
     };
@@ -2163,7 +2413,7 @@ class Invariants_test : public beast::unit_test::Suite
                         return iouAsset;
                     }
                     case Asset::MPT: {
-                        MPTTester mptt{env, issuer, kMPT_INIT_NO_FUND};
+                        MPTTester mptt{env, issuer, kMptInitNoFund};
                         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
                         PrettyAsset const mptAsset = mptt.issuanceID();
                         mptt.authorize({.account = alice});
@@ -2387,7 +2637,7 @@ class Invariants_test : public beast::unit_test::Suite
             }
 
             // Test: cover available greater than pseudo-account asset balance
-            // (requires fixSecurity3_1_3)
+            // (requires fixCleanup3_1_3)
             doInvariantCheck(
                 {{"Loan Broker cover available is greater than pseudo-account asset balance"}},
                 [&](Account const&, Account const&, ApplyContext& ac) {
@@ -2430,13 +2680,13 @@ class Invariants_test : public beast::unit_test::Suite
             std::optional<AccountAmount> accountShares = std::nullopt;
             // NOLINTEND(readability-redundant-member-init)
         };
-        auto constexpr kADJUST = [&](ApplyView& ac, xrpl::Keylet keylet, Adjustments args) {
+        constexpr auto kAdjust = [&](ApplyView& ac, xrpl::Keylet keylet, Adjustments args) {
             auto sleVault = ac.peek(keylet);
             if (!sleVault)
                 return false;
 
             auto const mptIssuanceID = (*sleVault)[sfShareMPTID];
-            auto sleShares = ac.peek(keylet::mptIssuance(mptIssuanceID));
+            auto sleShares = ac.peek(keylet::mptokenIssuance(mptIssuanceID));
             if (!sleShares)
                 return false;
 
@@ -2529,7 +2779,7 @@ class Invariants_test : public beast::unit_test::Suite
             return true;
         };
 
-        constexpr auto kARGS = [](AccountID id, int adjustment, auto fn) -> Adjustments {
+        static constexpr auto kArgs = [](AccountID id, int adjustment, auto fn) -> Adjustments {
             Adjustments sample = {
                 .assetsTotal = adjustment,
                 .assetsAvailable = adjustment,
@@ -2579,7 +2829,8 @@ class Invariants_test : public beast::unit_test::Suite
             });
 
         doInvariantCheck(
-            {"vault updated by a wrong transaction type"},
+            {"vault updated by a wrong transaction type",
+             "deleted Vault without deleting its pseudo-account"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
@@ -2590,7 +2841,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttPAYMENT, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -2627,6 +2878,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto const vaultPage = ac.view().dirInsert(
                     keylet::ownerDir(a1.id()), sleVault->key(), describeOwnerDir(a1.id()));
                 sleVault->setFieldU64(sfOwnerNode, *vaultPage);
+                sleVault->setAccountID(sfAccount, a1.id());
                 ac.view().insert(sleVault);
                 return true;
             },
@@ -2635,7 +2887,8 @@ class Invariants_test : public beast::unit_test::Suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
         doInvariantCheck(
-            {"vault deleted by a wrong transaction type"},
+            {"vault deleted by a wrong transaction type",
+             "deleted Vault without deleting its pseudo-account"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
@@ -2646,7 +2899,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -2655,7 +2908,8 @@ class Invariants_test : public beast::unit_test::Suite
             });
 
         doInvariantCheck(
-            {"vault operation updated more than single vault"},
+            {"vault operation updated more than single vault",
+             "deleted Vault without deleting its pseudo-account"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 {
                     auto const keylet = keylet::vault(a1.id(), ac.view().seq());
@@ -2675,7 +2929,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DELETE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 {
@@ -2699,6 +2953,7 @@ class Invariants_test : public beast::unit_test::Suite
                     auto const vaultPage = ac.view().dirInsert(
                         keylet::ownerDir(a.id()), sleVault->key(), describeOwnerDir(a.id()));
                     sleVault->setFieldU64(sfOwnerNode, *vaultPage);
+                    sleVault->setAccountID(sfAccount, a.id());
                     ac.view().insert(sleVault);
                 };
                 insertVault(a1);
@@ -2710,7 +2965,8 @@ class Invariants_test : public beast::unit_test::Suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
         doInvariantCheck(
-            {"deleted vault must also delete shares"},
+            {"deleted vault must also delete shares",
+             "deleted Vault without deleting its pseudo-account"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
@@ -2721,7 +2977,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DELETE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -2738,7 +2994,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 ac.view().erase(sleVault);
@@ -2763,7 +3019,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 // Note, such an "orphaned" update of MPT issuance attached to a
@@ -2853,7 +3109,7 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleVault)[sfAssetsMaximum] = 200;
                 ac.view().update(sleVault);
 
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 ac.view().erase(sleShares);
@@ -2918,9 +3174,9 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleA4)[sfBalance] = *(*sleA4)[sfBalance] + 10;
                 ac.view().update(sleA4);
 
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [&](Adjustments& sample) {
-                                   sample.assetsAvailable = (kDROPS_PER_XRP * -100).value();
-                                   sample.assetsTotal = (kDROPS_PER_XRP * -200).value();
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
+                                   sample.assetsAvailable = (kDropsPerXrp * -100).value();
+                                   sample.assetsTotal = (kDropsPerXrp * -200).value();
                                    sample.sharesTotal = -1;
                                }));
             },
@@ -2983,7 +3239,7 @@ class Invariants_test : public beast::unit_test::Suite
              "set must not change assets outstanding"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
                                    sample.lossUnrealized = 13;
                                    sample.assetsTotal = 20;
                                }));
@@ -3000,7 +3256,7 @@ class Invariants_test : public beast::unit_test::Suite
              "vault transaction must not change loss unrealized"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 100, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 100, [&](Adjustments& sample) {
                                    sample.lossUnrealized = 13;
                                }));
             },
@@ -3015,7 +3271,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"set assets outstanding must not exceed assets maximum"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
                                    sample.assetsMaximum = 1;
                                }));
             },
@@ -3029,7 +3285,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"assets maximum must be positive"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
                                    sample.assetsMaximum = -1;
                                }));
             },
@@ -3049,7 +3305,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sleVault)
                     return false;
                 ac.view().update(sleVault);
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 (*sleShares)[sfOutstandingAmount] = 0;
@@ -3069,13 +3325,13 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 (*sleShares)[sfMaximumAmount] = 10;
                 ac.view().update(sleShares);
 
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [](Adjustments&) {}));
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [](Adjustments&) {}));
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
@@ -3087,15 +3343,15 @@ class Invariants_test : public beast::unit_test::Suite
             {"updated shares must not exceed maximum"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [](Adjustments&) {}));
+                kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [](Adjustments&) {}));
 
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
-                (*sleShares)[sfOutstandingAmount] = kMAX_MP_TOKEN_AMOUNT + 1;
+                (*sleShares)[sfOutstandingAmount] = kMaxMpTokenAmount + 1;
                 ac.view().update(sleShares);
                 return true;
             },
@@ -3194,7 +3450,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 ac.view().update(sleVault);
@@ -3246,7 +3502,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 ac.view().update(sleVault);
@@ -3293,7 +3549,7 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().insert(sleAccount);
 
                 auto const sharesMptId = makeMptID(sequence, pseudoId);
-                auto const sharesKeylet = keylet::mptIssuance(sharesMptId);
+                auto const sharesKeylet = keylet::mptokenIssuance(sharesMptId);
                 auto sleShares = std::make_shared<SLE>(sharesKeylet);
                 auto const sharesPage = ac.view().dirInsert(
                     keylet::ownerDir(pseudoId), sharesKeylet, describeOwnerDir(pseudoId));
@@ -3312,7 +3568,7 @@ class Invariants_test : public beast::unit_test::Suite
                 sleVault->at(sfAssetsAvailable) = Number(0);
                 sleVault->at(sfLossUnrealized) = Number(0);
                 sleVault->at(sfShareMPTID) = sharesMptId;
-                sleVault->at(sfWithdrawalPolicy) = kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE;
+                sleVault->at(sfWithdrawalPolicy) = kVaultStrategyFirstComeFirstServe;
 
                 ac.view().insert(sleVault);
                 ac.view().insert(sleShares);
@@ -3351,7 +3607,7 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().insert(sleAccount);
 
                 auto const sharesMptId = makeMptID(sequence, pseudoId);
-                auto const sharesKeylet = keylet::mptIssuance(sharesMptId);
+                auto const sharesKeylet = keylet::mptokenIssuance(sharesMptId);
                 auto sleShares = std::make_shared<SLE>(sharesKeylet);
                 auto const sharesPage = ac.view().dirInsert(
                     keylet::ownerDir(pseudoId), sharesKeylet, describeOwnerDir(pseudoId));
@@ -3372,7 +3628,7 @@ class Invariants_test : public beast::unit_test::Suite
                 sleVault->at(sfAssetsAvailable) = Number(0);
                 sleVault->at(sfLossUnrealized) = Number(0);
                 sleVault->at(sfShareMPTID) = sharesMptId;
-                sleVault->at(sfWithdrawalPolicy) = kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE;
+                sleVault->at(sfWithdrawalPolicy) = kVaultStrategyFirstComeFirstServe;
 
                 ac.view().insert(sleVault);
                 ac.view().insert(sleShares);
@@ -3393,7 +3649,7 @@ class Invariants_test : public beast::unit_test::Suite
                 sleVault->setFieldU64(sfOwnerNode, *vaultPage);
 
                 auto const sharesMptId = makeMptID(sequence, a2.id());
-                auto const sharesKeylet = keylet::mptIssuance(sharesMptId);
+                auto const sharesKeylet = keylet::mptokenIssuance(sharesMptId);
                 auto sleShares = std::make_shared<SLE>(sharesKeylet);
                 auto const sharesPage = ac.view().dirInsert(
                     keylet::ownerDir(a2.id()), sharesKeylet, describeOwnerDir(a2.id()));
@@ -3401,7 +3657,7 @@ class Invariants_test : public beast::unit_test::Suite
 
                 sleShares->at(sfFlags) = 0;
                 // Setting wrong pseudo account ID
-                sleShares->at(sfIssuer) = AccountID(uint160(42));
+                sleShares->at(sfIssuer) = AccountID(42);
                 sleShares->at(sfOutstandingAmount) = 0;
                 sleShares->at(sfSequence) = sequence;
 
@@ -3413,7 +3669,7 @@ class Invariants_test : public beast::unit_test::Suite
                 sleVault->at(sfAssetsAvailable) = Number(0);
                 sleVault->at(sfLossUnrealized) = Number(0);
                 sleVault->at(sfShareMPTID) = sharesMptId;
-                sleVault->at(sfWithdrawalPolicy) = kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE;
+                sleVault->at(sfWithdrawalPolicy) = kVaultStrategyFirstComeFirstServe;
 
                 ac.view().insert(sleVault);
                 ac.view().insert(sleShares);
@@ -3428,7 +3684,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"deposit must change vault balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [](Adjustments& sample) {
                                    sample.vaultAssets.reset();
                                }));
             },
@@ -3441,7 +3697,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"deposit assets outstanding must not exceed assets maximum"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 200, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 200, [&](Adjustments& sample) {
                                    sample.assetsMaximum = 1;
                                }));
             },
@@ -3468,7 +3724,7 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleA4)[sfBalance] = *(*sleA4)[sfBalance] + 10;
                 ac.view().update(sleA4);
 
-                return kADJUST(ac.view(), keylet, kARGS(a3.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a3.id(), -10, [&](Adjustments& sample) {
                                    sample.accountAssets->amount = -100;
                                }));
             },
@@ -3498,7 +3754,7 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] + 10;
                 ac.view().update(sleA3);
 
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.vaultAssets = -20;
                                    sample.accountAssets->amount = 10;
                                }));
@@ -3521,7 +3777,7 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] - 10;
                 ac.view().update(sleA3);
 
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.accountAssets->amount = 0;
                                }));
             },
@@ -3535,7 +3791,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"deposit must change depositor shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.accountShares.reset();
                                }));
             },
@@ -3550,7 +3806,7 @@ class Invariants_test : public beast::unit_test::Suite
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
 
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [](Adjustments& sample) {
                                    sample.sharesTotal = 0;
                                }));
             },
@@ -3567,7 +3823,7 @@ class Invariants_test : public beast::unit_test::Suite
              "amount"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.accountShares->amount = -5;
                                    sample.sharesTotal = -10;
                                }));
@@ -3586,7 +3842,7 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().update(sleA3);
 
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.assetsTotal = 11;
                                }));
             },
@@ -3607,7 +3863,7 @@ class Invariants_test : public beast::unit_test::Suite
              "deposit and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.assetsTotal = 7;
                                    sample.assetsAvailable = 7;
                                }));
@@ -3623,7 +3879,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"withdrawal must change vault balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [](Adjustments& sample) {
                                    sample.vaultAssets.reset();
                                }));
             },
@@ -3648,7 +3904,7 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleA4)[sfBalance] = *(*sleA4)[sfBalance] + 10;
                 ac.view().update(sleA4);
 
-                return kADJUST(ac.view(), keylet, kARGS(a3.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a3.id(), -10, [&](Adjustments& sample) {
                                    sample.accountAssets->amount = -100;
                                }));
             },
@@ -3682,7 +3938,7 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] + 10;
                 ac.view().update(sleA3);
 
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.vaultAssets = 10;
                                    sample.accountAssets->amount = -20;
                                }));
@@ -3697,7 +3953,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"withdrawal must change one destination balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                if (!kADJUST(ac.view(), keylet, kARGS(a2.id(), -10, [&](Adjustments& sample) {
+                if (!kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                  *sample.vaultAssets -= 5;
                              })))
                     return false;
@@ -3718,7 +3974,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"withdrawal must change depositor shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.accountShares.reset();
                                }));
             },
@@ -3732,7 +3988,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"withdrawal must change vault shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), -10, [](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [](Adjustments& sample) {
                                    sample.sharesTotal = 0;
                                }));
             },
@@ -3748,7 +4004,7 @@ class Invariants_test : public beast::unit_test::Suite
              "amount"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.accountShares->amount = 5;
                                    sample.sharesTotal = 10;
                                }));
@@ -3764,7 +4020,7 @@ class Invariants_test : public beast::unit_test::Suite
              "withdrawal and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.assetsTotal = -15;
                                    sample.assetsAvailable = -15;
                                }));
@@ -3783,7 +4039,7 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().update(sleA3);
 
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.assetsTotal = -7;
                                }));
             },
@@ -3851,7 +4107,7 @@ class Invariants_test : public beast::unit_test::Suite
              "amount"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq() - 2);
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
                                    sample.accountShares->amount = 5;
                                }));
             },
@@ -3866,7 +4122,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"clawback must change vault balance"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq() - 2);
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), -1, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -1, [&](Adjustments& sample) {
                                    sample.vaultAssets.reset();
                                }));
             },
@@ -3880,7 +4136,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"clawback may only be performed by the asset issuer"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [&](Adjustments& sample) {}));
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {}));
             },
             XRPAmount{},
             STTx{ttVAULT_CLAWBACK, [](STObject&) {}},
@@ -3892,7 +4148,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"clawback may only be performed by the asset issuer"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq() - 2);
-                return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [&](Adjustments& sample) {}));
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {}));
             },
             XRPAmount{},
             STTx{ttVAULT_CLAWBACK, [&](STObject& tx) { tx[sfAccount] = a4.id(); }},
@@ -3905,7 +4161,7 @@ class Invariants_test : public beast::unit_test::Suite
              "clawback must change vault shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq() - 2);
-                return kADJUST(ac.view(), keylet, kARGS(a4.id(), 10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a4.id(), 10, [&](Adjustments& sample) {
                                    sample.sharesTotal = 0;
                                }));
             },
@@ -3923,7 +4179,7 @@ class Invariants_test : public beast::unit_test::Suite
             {"clawback must change holder shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq() - 2);
-                return kADJUST(ac.view(), keylet, kARGS(a4.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a4.id(), -10, [&](Adjustments& sample) {
                                    sample.accountShares.reset();
                                }));
             },
@@ -3943,7 +4199,7 @@ class Invariants_test : public beast::unit_test::Suite
              "clawback and assets available must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq() - 2);
-                return kADJUST(ac.view(), keylet, kARGS(a4.id(), -10, [&](Adjustments& sample) {
+                return kAdjust(ac.view(), keylet, kArgs(a4.id(), -10, [&](Adjustments& sample) {
                                    sample.accountShares->amount = -8;
                                    sample.assetsTotal = -7;
                                    sample.assetsAvailable = -7;
@@ -3966,6 +4222,63 @@ class Invariants_test : public beast::unit_test::Suite
         using namespace test::jtx;
         testcase << "MPT";
 
+        MPTIssue const nonCanonicalMPTIssue{makeMptID(1, AccountID(0x4985601))};
+        auto const nonCanonicalMPTAmount = [&](SField const& field) {
+            return STAmount{
+                field,
+                nonCanonicalMPTIssue,
+                kMaxMpTokenAmount + std::uint64_t{1},
+                0,
+                false,
+                STAmount::Unchecked{}};
+        };
+        auto const negativeMPTAmount = [&](SField const& field) {
+            return STAmount{field, nonCanonicalMPTIssue, 2, 0, true, STAmount::Unchecked{}};
+        };
+        auto const nonCanonicalMPTPayment = [&]() {
+            return STTx{ttPAYMENT, [&](STObject& tx) {
+                            tx.setFieldAmount(sfAmount, nonCanonicalMPTAmount(sfAmount));
+                        }};
+        };
+
+        doInvariantCheck(
+            Env{*this, defaultAmendments() - fixCleanup3_2_0},
+            {},
+            [](Account const&, Account const&, ApplyContext&) { return true; },
+            XRPAmount{},
+            nonCanonicalMPTPayment(),
+            {tesSUCCESS, tesSUCCESS});
+
+        doInvariantCheck(
+            {{"ledger entry contains non-canonical MPT or XRP amount"}},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
+                if (!sle)
+                    return false;
+
+                auto sleNew = std::make_shared<SLE>(keylet::check(a1.id(), (*sle)[sfSequence]));
+                sleNew->setAccountID(sfAccount, a1.id());
+                sleNew->setAccountID(sfDestination, a2.id());
+                sleNew->setFieldAmount(sfSendMax, nonCanonicalMPTAmount(sfSendMax));
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"ledger entry contains non-canonical MPT or XRP amount"}},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
+                if (!sle)
+                    return false;
+
+                auto sleNew = std::make_shared<SLE>(keylet::check(a1.id(), (*sle)[sfSequence]));
+                sleNew->setAccountID(sfAccount, a1.id());
+                sleNew->setAccountID(sfDestination, a2.id());
+                sleNew->setFieldAmount(sfSendMax, negativeMPTAmount(sfSendMax));
+                ac.view().insert(sleNew);
+                return true;
+            });
+
         // MPT OutstandingAmount > MaximumAmount
         doInvariantCheck(
             {{"OutstandingAmount overflow"}},
@@ -3976,7 +4289,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(sle->getFieldU32(sfSequence), a1)};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 110);
                 sleNew->setFieldU64(sfMaximumAmount, 100);
                 ac.view().insert(sleNew);
@@ -3993,7 +4306,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(sle->getFieldU32(sfSequence), a1)};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 100);
                 sleNew->setFieldU64(sfMaximumAmount, 100);
                 ac.view().insert(sleNew);
@@ -4037,7 +4350,7 @@ class Invariants_test : public beast::unit_test::Suite
             });
         testPayment(
             "OutstandingAmount overflow", [&](MPTID const& id, ApplyContext& ac, Account const&) {
-                auto sle = ac.view().peek(keylet::mptIssuance(id));
+                auto sle = ac.view().peek(keylet::mptokenIssuance(id));
                 if (!sle)
                     return false;
                 sle->setFieldU64(sfOutstandingAmount, 101);
@@ -4064,7 +4377,8 @@ class Invariants_test : public beast::unit_test::Suite
                     for (int i = 0; i < nTokens; ++i)
                     {
                         MPTIssue const mpt{makeMptID(seq + i, a1)};
-                        auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                        auto sleNew =
+                            std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                         ac.view().insert(sleNew);
 
                         sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), a2));
@@ -4106,6 +4420,384 @@ class Invariants_test : public beast::unit_test::Suite
                     return true;
                 });
         }
+
+        // sfReferenceHolding can only be set on creation by VaultCreate. A
+        // non-VaultCreate transaction that creates an MPTokenIssuance with
+        // sfReferenceHolding present must trip the invariant.
+        doInvariantCheck(
+            {{"sfReferenceHolding set on a new MPTokenIssuance by a "
+              "non-VaultCreate transaction"}},
+            [](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const sleAcct = ac.view().peek(keylet::account(a1.id()));
+                if (!sleAcct)
+                    return false;
+                MPTIssue const mpt{makeMptID(sleAcct->getFieldU32(sfSequence), a1)};
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
+                sleNew->setFieldH256(sfReferenceHolding, uint256{1});
+                ac.view().insert(sleNew);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}});
+
+        // sfReferenceHolding is immutable: changing the field on an
+        // existing MPTokenIssuance must trip the invariant. Set up a real
+        // vault via preclose (so the share issuance carries
+        // sfReferenceHolding), then mutate it in precheck to produce a
+        // before/after pair.
+        {
+            uint256 vaultKey;
+            doInvariantCheck(
+                {{"sfReferenceHolding was modified on an existing "
+                  "MPTokenIssuance"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto const sleVault = ac.view().peek(keylet::vault(vaultKey));
+                    if (!sleVault)
+                        return false;
+                    auto sleIssuance =
+                        ac.view().peek(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
+                    if (!sleIssuance)
+                        return false;
+                    sleIssuance->setFieldH256(sfReferenceHolding, uint256{2});
+                    ac.view().update(sleIssuance);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&](Account const& a1, Account const&, Env& env) {
+                    Account const issuer{"issuer"};
+                    env.fund(XRP(10'000), issuer);
+                    env.close();
+                    MPTTester mptt{env, issuer, kMptInitNoFund};
+                    mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+                    PrettyAsset const asset = mptt.issuanceID();
+                    mptt.authorize({.account = a1});
+                    env.close();
+
+                    Vault const vault{env};
+                    auto [tx, keylet] = vault.create({.owner = a1, .asset = asset});
+                    env(tx);
+                    env.close();
+                    vaultKey = keylet.key;
+                    return true;
+                });
+        }
+
+        // A vault pseudo-account's MPToken cannot be deleted by anything
+        // other than a VaultDelete transaction. Set up a vault, then have
+        // an arbitrary tx erase the pseudo's MPToken in precheck.
+        {
+            uint256 vaultKey;
+            doInvariantCheck(
+                {{"vault pseudo-account holding deleted by a "
+                  "non-VaultDelete transaction"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto const sleVault = ac.view().peek(keylet::vault(vaultKey));
+                    if (!sleVault)
+                        return false;
+                    auto const sleIssuance =
+                        ac.view().peek(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
+                    if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
+                        return false;
+                    auto sleHolding = ac.view().peek(
+                        keylet::unchecked(sleIssuance->getFieldH256(sfReferenceHolding)));
+                    if (!sleHolding)
+                        return false;
+                    ac.view().erase(sleHolding);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&](Account const& a1, Account const&, Env& env) {
+                    Account const issuer{"issuer"};
+                    env.fund(XRP(10'000), issuer);
+                    env.close();
+                    MPTTester mptt{env, issuer, kMptInitNoFund};
+                    mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+                    PrettyAsset const asset = mptt.issuanceID();
+                    mptt.authorize({.account = a1});
+                    env.close();
+
+                    Vault const vault{env};
+                    auto [tx, keylet] = vault.create({.owner = a1, .asset = asset});
+                    env(tx);
+                    env.close();
+                    vaultKey = keylet.key;
+                    return true;
+                });
+        }
+
+        // Invalid transfer
+        std::array<std::pair<TxType, bool>, 3> const invalidTransferTests = {
+            std::make_pair(ttAMM_WITHDRAW, false),
+            std::make_pair(ttPAYMENT, false),
+            std::make_pair(ttPAYMENT, true)};
+        for (auto const enabled : {true, false})
+        {
+            for (auto const& [tx, crossCurrencyPayment] : invalidTransferTests)
+            {
+                for (auto const flag :
+                     {static_cast<std::uint32_t>(lsfMPTLocked),
+                      ~lsfMPTCanTransfer,
+                      ~lsfMPTCanTrade,
+                      0u})
+                {
+                    MPTID id{};
+                    auto const isSuccess = !enabled || flag == 0 ||
+                        (tx == ttPAYMENT && !crossCurrencyPayment && (flag == ~lsfMPTCanTrade)) ||
+                        (tx == ttAMM_WITHDRAW &&
+                         (flag == ~lsfMPTCanTrade || flag == ~lsfMPTCanTransfer));
+                    std::pair<TER, TER> const error = isSuccess
+                        ? std::make_pair(TER(tesSUCCESS), TER(tesSUCCESS))
+                        : std::make_pair(TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED));
+                    doInvariantCheck(
+                        {{isSuccess ? "" : "invalid MPToken transfer between holders"}},
+                        [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                            auto update = [&](AccountID const& a, std::uint64_t v) {
+                                auto sle = ac.view().peek(keylet::mptoken(id, a));
+                                if (!sle)
+                                    return false;
+                                sle->at(sfMPTAmount) = v;
+                                ac.view().update(sle);
+                                return true;
+                            };
+                            auto issuanceSle = ac.view().peek(keylet::mptokenIssuance(id));
+                            if (!issuanceSle)
+                                return false;
+                            auto const flags = issuanceSle->at(sfFlags);
+                            if (flag == lsfMPTLocked)
+                            {
+                                issuanceSle->at(sfFlags) = flags | lsfMPTLocked;
+                            }
+                            else if (flag != 0u)
+                            {
+                                issuanceSle->at(sfFlags) = flags & flag;
+                            }
+                            issuanceSle->at(sfOutstandingAmount) = 200;
+                            ac.view().update(issuanceSle);
+                            return update(a1, 101) && update(a2, 99);
+                        },
+                        XRPAmount{},
+                        STTx{
+                            tx,
+                            [&](STObject& tx) {
+                                if (crossCurrencyPayment)
+                                {
+                                    tx.setFieldAmount(
+                                        sfSendMax, STAmount(MPTAmount{100}, MPTIssue{id}));
+                                }
+                            }},
+                        {error.first, error.second},
+                        [&](Account const& a1, Account const& a2, Env& env) {
+                            Account const gw("gw");
+                            env.fund(XRP(1'000), gw);
+                            MPTTester const usd(
+                                {.env = env, .issuer = gw, .holders = {a1, a2}, .pay = 100});
+                            id = usd.issuanceID();
+                            if (!enabled)
+                            {
+                                env.disableFeature(featureMPTokensV2);
+                            }
+                            return true;
+                        });
+                }
+            }
+        }
+
+        // Vault-share freeze invariant: isVaultPseudoAccountFrozen descends
+        // through sfReferenceHolding to test the vault's underlying asset for
+        // each changed holder.
+        {
+            Account const gw{"gw"};
+            MPTID shareID{};
+
+            // Vault setup: a1 and a2 both deposit IOU and hold vault shares.
+            auto const setupVault = [&](Account const& a1,
+                                        Account const& a2,
+                                        Env& env) -> std::tuple<MPTID, AccountID> {
+                env.fund(XRP(1'000), gw);
+                env.trust(gw["IOU"](10'000), a1);
+                env.trust(gw["IOU"](10'000), a2);
+                env.close();
+                env(pay(gw, a1, gw["IOU"](500)));
+                env(pay(gw, a2, gw["IOU"](500)));
+                env.close();
+
+                Vault const vault{env};
+                auto [createTx, vaultKeylet] = vault.create({.owner = a1, .asset = gw["IOU"]});
+                env(createTx);
+                env.close();
+                env(vault.deposit(
+                    {.depositor = a1, .id = vaultKeylet.key, .amount = gw["IOU"](100)}));
+                env(vault.deposit(
+                    {.depositor = a2, .id = vaultKeylet.key, .amount = gw["IOU"](100)}));
+                env.close();
+
+                return {env.le(vaultKeylet)->at(sfShareMPTID), env.le(vaultKeylet)->at(sfAccount)};
+            };
+
+            // Simulate a vault-share transfer: a1 sends 10 shares to a2.
+            auto const precheck =
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) -> bool {
+                auto sle1 = ac.view().peek(keylet::mptoken(shareID, a1.id()));
+                auto sle2 = ac.view().peek(keylet::mptoken(shareID, a2.id()));
+                if (!sle1 || !sle2)
+                    return false;
+                (*sle1)[sfMPTAmount] -= 10;
+                (*sle2)[sfMPTAmount] += 10;
+                ac.view().update(sle1);
+                ac.view().update(sle2);
+                return true;
+            };
+
+            // Case: vault pseudo-account's IOU trustline is frozen.
+            {
+                auto const preclose = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+                    auto [sid, vid] = setupVault(a1, a2, env);
+                    shareID = sid;
+                    env(trust(gw, gw["IOU"](0), Account{"vaultPseudo", vid}, tfSetFreeze));
+                    env.close();
+                    return true;
+                };
+
+                doInvariantCheck(
+                    Env{*this, defaultAmendments()},
+                    {{"invalid MPToken transfer between holders"}},
+                    precheck,
+                    XRPAmount{},
+                    STTx{ttPAYMENT, [](STObject&) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    preclose);
+            }
+
+            // Case: receiver's (a2's) IOU trustline is frozen.
+            {
+                auto const preclose = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+                    auto [sid, vid] = setupVault(a1, a2, env);
+                    shareID = sid;
+                    env(trust(gw, gw["IOU"](0), a2, tfSetFreeze));
+                    env.close();
+                    return true;
+                };
+
+                doInvariantCheck(
+                    Env{*this, defaultAmendments()},
+                    {{"invalid MPToken transfer between holders"}},
+                    precheck,
+                    XRPAmount{},
+                    STTx{ttPAYMENT, [](STObject&) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    preclose);
+            }
+        }
+    }
+
+    void
+    testAMM()
+    {
+        testcase << "AMM";
+        using namespace jtx;
+
+        MPTID mptID{};
+        uint256 ammID{};
+        AccountID ammAccountID{};
+        Account const gw{"gw"};
+        Issue lptIssue{};
+        PrettyAsset poolAsset{xrpIssue()};
+
+        auto deleteAMMAccount = [&](ApplyContext& ac, bool) {
+            auto sle = ac.view().peek(keylet::account(ammAccountID));
+            if (!sle)
+                return false;
+            ac.view().erase(sle);
+            return true;
+        };
+
+        auto updateLPTokensBalance = [&](ApplyContext& ac, std::int64_t amount) {
+            auto sle = ac.view().peek(keylet::amm(ammID));
+            if (!sle)
+                return false;
+            sle->setFieldAmount(sfLPTokenBalance, STAmount{lptIssue, amount});
+            ac.view().update(sle);
+            return true;
+        };
+        auto updateLPTokensBadAmount = [&](ApplyContext& ac, bool) {
+            return updateLPTokensBalance(ac, -1);
+        };
+        auto updateLPTokensBadBalance = [&](ApplyContext& ac, bool) {
+            return updateLPTokensBalance(ac, 200'000'000);
+        };
+        auto updateAMM = [&](ApplyContext& ac, bool) { return updateLPTokensBalance(ac, 10); };
+
+        auto updateAMMPool = [&](ApplyContext& ac, bool isMPT) {
+            if (isMPT)
+            {
+                auto sle = ac.view().peek(keylet::mptoken(mptID, ammAccountID));
+                if (!sle)
+                    return false;
+                sle->setFieldU64(sfMPTAmount, 1);
+                ac.view().update(sle);
+                return true;
+            }
+            auto sle = ac.view().peek(keylet::account(ammAccountID));
+            if (!sle)
+                return false;
+            sle->setFieldAmount(sfBalance, XRP(1));
+            ac.view().update(sle);
+            return true;
+        };
+
+        auto test = [&](auto const txType,
+                        auto&& update,
+                        bool isMPT,
+                        TER error = tecINVARIANT_FAILED) {
+            doInvariantCheck(
+                {{"AMM"}},
+                [&](Account const&, Account const&, ApplyContext& ac) { return update(ac, isMPT); },
+                XRPAmount{},
+                STTx{txType, [&](STObject& tx) {}},
+                {tecINVARIANT_FAILED, error},
+                [&](Account const&, Account const&, Env& env) {
+                    env.fund(XRP(1'000), gw);
+                    poolAsset = [&]() -> PrettyAsset {
+                        if (isMPT)
+                        {
+                            MPT const mpt = MPTTester({.env = env, .issuer = gw});
+                            mptID = mpt.issuanceID;
+                            return mpt;
+                        }
+                        return gw["USD"];
+                    }();
+                    AMM const amm(env, gw, XRP(100), poolAsset(100));
+                    ammAccountID = amm.ammAccount();
+                    ammID = amm.ammID();
+                    lptIssue = amm.lptIssue();
+                    return true;
+                });
+        };
+
+        for (bool const isMPT : {false, true})
+        {
+            auto const error = isMPT ? TER(tecINVARIANT_FAILED) : TER(tefINVARIANT_FAILED);
+            for (auto txType : {ttAMM_CREATE, ttAMM_DEPOSIT, ttAMM_CLAWBACK, ttAMM_WITHDRAW})
+            {
+                test(txType, deleteAMMAccount, isMPT, tefINVARIANT_FAILED);
+                test(txType, updateLPTokensBadAmount, isMPT);
+                test(txType, updateLPTokensBadBalance, isMPT);
+            }
+            for (auto txType : {ttAMM_BID, ttAMM_VOTE})
+            {
+                test(txType, updateAMMPool, isMPT, error);
+                test(txType, updateLPTokensBadAmount, isMPT);
+                test(txType, updateLPTokensBadBalance, isMPT);
+            }
+            for (auto txType : {ttAMM_DELETE, ttCHECK_CASH, ttOFFER_CREATE, ttPAYMENT})
+            {
+                test(txType, updateAMM, isMPT);
+            }
+        }
     }
 
     // Test the invariant overwrite fix for both pre- and post-amendment
@@ -4116,7 +4808,7 @@ class Invariants_test : public beast::unit_test::Suite
     testInvariantOverwrite(FeatureBitset features)
     {
         using namespace test::jtx;
-        bool const fixEnabled = features[fixSecurity3_1_3];
+        bool const fixEnabled = features[fixCleanup3_1_3];
         std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
         std::initializer_list<TER> const passTers = {tesSUCCESS, tesSUCCESS};
 
@@ -4132,8 +4824,8 @@ class Invariants_test : public beast::unit_test::Suite
                                                    auto const& goodConfig) {
             char const* const c1 = "USD";
             char const* const c2 = "EUR";
-            auto const k1 = keylet::line(a1, a2, a1[c1].currency);
-            auto const k2 = keylet::line(a1, a3, a1[c2].currency);
+            auto const k1 = keylet::trustLine(a1, a2, a1[c1].currency);
+            auto const k2 = keylet::trustLine(a1, a3, a1[c2].currency);
 
             bool const k1First = k1.key < k2.key;
             auto const& badKey = k1First ? k1 : k2;
@@ -4228,9 +4920,9 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
-                // outstanding exceeds kMAX_MP_TOKEN_AMOUNT -> checkAmount sets bad_
-                sleNew->setFieldU64(sfOutstandingAmount, kMAX_MP_TOKEN_AMOUNT + 1);
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
+                // outstanding exceeds kMaxMpTokenAmount -> checkAmount sets bad_
+                sleNew->setFieldU64(sfOutstandingAmount, kMaxMpTokenAmount + 1);
                 // locked is valid and <= outstanding -> must NOT clear bad_
                 sleNew->setFieldU64(sfLockedAmount, 10);
                 ac.view().insert(sleNew);
@@ -4256,111 +4948,488 @@ class Invariants_test : public beast::unit_test::Suite
             std::vector<ValidVault::DeltaInfo> values;
         };
 
-        NumberMantissaScaleGuard const g{MantissaRange::MantissaScale::Large};
-
-        auto makeDelta = [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
-            return {.delta = n, .scale = scale(n, vaultAsset.raw())};
-        };
-
-        auto const testCases = std::vector<TestCase>{
-            {
-                .name = "No values",
-                .expectedMinScale = 0,
-                .values = {},
-            },
-            {
-                .name = "Mixed integer and Number values",
-                .expectedMinScale = -15,
-                .values = {makeDelta(1), makeDelta(-1), makeDelta(Number{10, -1})},
-            },
-            {
-                .name = "Mixed scales",
-                .expectedMinScale = -17,
-                .values =
-                    {makeDelta(Number{1, -2}), makeDelta(Number{5, -3}), makeDelta(Number{3, -2})},
-            },
-            {
-                .name = "Equal scales",
-                .expectedMinScale = -16,
-                .values =
-                    {makeDelta(Number{1, -1}), makeDelta(Number{5, -1}), makeDelta(Number{1, -1})},
-            },
-            {
-                .name = "Mixed mantissa sizes",
-                .expectedMinScale = -12,
-                .values =
-                    {makeDelta(Number{1}),
-                     makeDelta(Number{1234, -3}),
-                     makeDelta(Number{12345, -6}),
-                     makeDelta(Number{123, 1})},
-            },
-        };
-
-        for (auto const& tc : testCases)
+        for (auto const mantissaScale : {
+                 MantissaRange::MantissaScale::LargeLegacy,
+                 MantissaRange::MantissaScale::Large,
+             })
         {
-            testcase("vault computeCoarsestScale: " + tc.name);
+            NumberMantissaScaleGuard const g{mantissaScale};
 
-            auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
+            auto makeDelta = [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
+                return {.delta = n, .scale = scale(n, vaultAsset.raw())};
+            };
 
-            BEAST_EXPECTS(
-                actualScale == tc.expectedMinScale,
-                "expected: " + std::to_string(tc.expectedMinScale) +
-                    ", actual: " + std::to_string(actualScale));
-            for (auto const& num : tc.values)
-            {
-                // None of these scales are far enough apart that rounding the
-                // values would lose information, so check that the rounded
-                // value matches the original.
-                auto const actualRounded = roundToAsset(vaultAsset, num.delta, actualScale);
-                BEAST_EXPECTS(
-                    actualRounded == num.delta,
-                    "number " + to_string(num.delta) + " rounded to scale " +
-                        std::to_string(actualScale) + " is " + to_string(actualRounded));
-            }
-        }
-
-        auto const testCases2 = std::vector<TestCase>{
-            {
-                .name = "False equivalence",
-                .expectedMinScale = -15,
-                .values =
-                    {
-                        makeDelta(Number{1234567890123456789, -18}),
-                        makeDelta(Number{12345, -4}),
-                        makeDelta(Number{1}),
-                    },
-            },
-        };
-
-        // Unlike the first set of test cases, the values in these test could
-        // look equivalent if using the wrong scale.
-        for (auto const& tc : testCases2)
-        {
-            testcase("vault computeCoarsestScale: " + tc.name);
-
-            auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
-
-            BEAST_EXPECTS(
-                actualScale == tc.expectedMinScale,
-                "expected: " + std::to_string(tc.expectedMinScale) +
-                    ", actual: " + std::to_string(actualScale));
-            std::optional<Number> first;
-            Number firstRounded;
-            for (auto const& num : tc.values)
-            {
-                if (!first)
+            auto const testCases = std::vector<TestCase>{
                 {
-                    first = num.delta;
-                    firstRounded = roundToAsset(vaultAsset, num.delta, actualScale);
-                    continue;
-                }
-                auto const numRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                    .name = "No values",
+                    .expectedMinScale = 0,
+                    .values = {},
+                },
+                {
+                    .name = "Mixed integer and Number values",
+                    .expectedMinScale = -15,
+                    .values = {makeDelta(1), makeDelta(-1), makeDelta(Number{10, -1})},
+                },
+                {
+                    .name = "Mixed scales",
+                    .expectedMinScale = -17,
+                    .values =
+                        {makeDelta(Number{1, -2}),
+                         makeDelta(Number{5, -3}),
+                         makeDelta(Number{3, -2})},
+                },
+                {
+                    .name = "Equal scales",
+                    .expectedMinScale = -16,
+                    .values =
+                        {makeDelta(Number{1, -1}),
+                         makeDelta(Number{5, -1}),
+                         makeDelta(Number{1, -1})},
+                },
+                {
+                    .name = "Mixed mantissa sizes",
+                    .expectedMinScale = -12,
+                    .values =
+                        {makeDelta(Number{1}),
+                         makeDelta(Number{1234, -3}),
+                         makeDelta(Number{12345, -6}),
+                         makeDelta(Number{123, 1})},
+                },
+            };
+
+            for (auto const& tc : testCases)
+            {
+                testcase("vault computeCoarsestScale: " + tc.name);
+
+                auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
+
                 BEAST_EXPECTS(
-                    numRounded != firstRounded,
-                    "at a scale of " + std::to_string(actualScale) + " " + to_string(num.delta) +
-                        " == " + to_string(*first));
+                    actualScale == tc.expectedMinScale,
+                    "expected: " + std::to_string(tc.expectedMinScale) +
+                        ", actual: " + std::to_string(actualScale));
+                for (auto const& num : tc.values)
+                {
+                    // None of these scales are far enough apart that rounding the
+                    // values would lose information, so check that the rounded
+                    // value matches the original.
+                    auto const actualRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                    BEAST_EXPECTS(
+                        actualRounded == num.delta,
+                        "number " + to_string(num.delta) + " rounded to scale " +
+                            std::to_string(actualScale) + " is " + to_string(actualRounded));
+                }
+            }
+
+            auto const testCases2 = std::vector<TestCase>{
+                {
+                    .name = "False equivalence",
+                    .expectedMinScale = -15,
+                    .values =
+                        {
+                            makeDelta(Number{1234567890123456789, -18}),
+                            makeDelta(Number{12345, -4}),
+                            makeDelta(Number{1}),
+                        },
+                },
+            };
+
+            // Unlike the first set of test cases, the values in these test could
+            // look equivalent if using the wrong scale.
+            for (auto const& tc : testCases2)
+            {
+                testcase("vault computeCoarsestScale: " + tc.name);
+
+                auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
+
+                BEAST_EXPECTS(
+                    actualScale == tc.expectedMinScale,
+                    "expected: " + std::to_string(tc.expectedMinScale) +
+                        ", actual: " + std::to_string(actualScale));
+                std::optional<Number> first;
+                Number firstRounded;
+                for (auto const& num : tc.values)
+                {
+                    if (!first)
+                    {
+                        first = num.delta;
+                        firstRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                        continue;
+                    }
+                    auto const numRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                    BEAST_EXPECTS(
+                        numRounded != firstRounded,
+                        "at a scale of " + std::to_string(actualScale) + " " +
+                            to_string(num.delta) + " == " + to_string(*first));
+                }
             }
         }
+    }
+
+    void
+    testObjectHasPseudoAccount()
+    {
+        testcase << "object has pseudo-account";
+        using namespace jtx;
+
+        auto const amendments = defaultAmendments() | fixCleanup3_3_0;
+
+        // Vault: object deleted without its pseudo-account
+        {
+            Keylet vaultKeylet = keylet::amendments();
+            doInvariantCheck(
+                Env{*this, amendments},
+                {{"deleted Vault without deleting its pseudo-account"}},
+                [&vaultKeylet](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(vaultKeylet);
+                    if (!sle)
+                        return false;
+                    ac.view().erase(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttVAULT_DELETE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&vaultKeylet](Account const& a1, Account const&, Env& env) {
+                    Vault const vault{env};
+                    auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+                    env(tx);
+                    vaultKeylet = keylet;
+                    return true;
+                });
+        }
+
+        // AMM: object deleted without its pseudo-account
+        {
+            uint256 ammID{};
+            Account const gw{"gw"};
+            doInvariantCheck(
+                Env{*this, amendments},
+                {{"deleted AMM without deleting its pseudo-account"}},
+                [&ammID](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(keylet::amm(ammID));
+                    if (!sle)
+                        return false;
+                    ac.view().erase(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttAMM_DELETE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&ammID, &gw](Account const&, Account const&, Env& env) {
+                    env.fund(XRP(1'000), gw);
+                    AMM const amm(env, gw, XRP(100), gw["USD"](100));
+                    ammID = amm.ammID();
+                    return true;
+                });
+        }
+
+        // LoanBroker: object deleted without its pseudo-account
+        {
+            Keylet loanBrokerKeylet = keylet::amendments();
+            doInvariantCheck(
+                Env{*this, amendments},
+                {{"deleted LoanBroker without deleting its pseudo-account"}},
+                [&loanBrokerKeylet](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(loanBrokerKeylet);
+                    if (!sle)
+                        return false;
+                    ac.view().erase(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_DELETE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&loanBrokerKeylet, this](Account const& a1, Account const&, Env& env) {
+                    PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+                    loanBrokerKeylet = this->createLoanBroker(a1, env, xrpAsset);
+                    return BEAST_EXPECT(env.le(loanBrokerKeylet));
+                });
+        }
+
+        // Deleted object missing sfAccount field (defensive check).
+        // Manually construct the view to place a vault SLE without
+        // sfAccount into the base ledger, then erase it.
+        {
+            Env env{*this, amendments};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            env.close();
+
+            OpenView ov{*env.current()};
+
+            auto const vaultKeylet = keylet::vault(a1.id(), ov.seq());
+            auto sleVault = std::make_shared<SLE>(vaultKeylet);
+            sleVault->makeFieldAbsent(sfAccount);
+            ov.rawInsert(sleVault);
+
+            STTx const tx{ttVAULT_DELETE, [](STObject&) {}};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            auto sle = ac.view().peek(vaultKeylet);
+            if (!BEAST_EXPECT(sle))
+                return;
+            ac.view().erase(sle);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            TER const result = transactor->checkInvariants(tesSUCCESS, XRPAmount{});
+            BEAST_EXPECT(result == tecINVARIANT_FAILED);
+            BEAST_EXPECT(sink.messages().str().contains("is missing pseudo-account field"));
+        }
+    }
+
+    void
+    testConfidentialMPTTransfer()
+    {
+        using namespace test::jtx;
+        testcase << "ValidConfidentialMPToken";
+
+        MPTID mptID;
+
+        // Generate an MPT with privacy, issue 100 tokens to A2.
+        // Perform a confidential conversion to populate encrypted state.
+        auto const precloseConfidential =
+            [&mptID](Account const& a1, Account const& a2, Env& env) -> bool {
+            MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
+            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance});
+            mptID = mpt.issuanceID();
+
+            mpt.authorize({.account = a2});
+            mpt.pay(a1, a2, 100);
+
+            mpt.generateKeyPair(a1);
+            mpt.set({.account = a1, .issuerPubKey = mpt.getPubKey(a1)});
+
+            mpt.generateKeyPair(a2);
+            mpt.convert({
+                .account = a2,
+                .amt = 100,
+                .holderPubKey = mpt.getPubKey(a2),
+            });
+            return true;
+        };
+
+        // badDelete
+        doInvariantCheck(
+            {"MPToken deleted with encrypted fields while COA > 0"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                // Force an erase of the object while the COA remains 100
+                ac.view().erase(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseConfidential);
+
+        // badConsistency
+        doInvariantCheck(
+            {"MPToken encrypted field existence inconsistency"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                // Remove one of the required encrypted fields to create a mismatch
+                sleToken->makeFieldAbsent(sfIssuerEncryptedBalance);
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        doInvariantCheck(
+            {"MPToken encrypted field existence inconsistency"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                sleToken->makeFieldAbsent(sfIssuerEncryptedBalance);
+                sleToken->makeFieldAbsent(sfConfidentialBalanceInbox);
+                sleToken->makeFieldAbsent(sfConfidentialBalanceSpending);
+                sleToken->setFieldVL(sfAuditorEncryptedBalance, Blob{0x00});
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // requiresPrivacyFlag
+        auto const precloseNoPrivacy = [&mptID](
+                                           Account const& a1, Account const& a2, Env& env) -> bool {
+            MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
+            // completely omitted the tfMPTCanHoldConfidentialBalance flag here.
+            mpt.create({.flags = tfMPTCanTransfer});
+            mptID = mpt.issuanceID();
+            mpt.authorize({.account = a2});
+            mpt.pay(a1, a2, 100);
+            return true;
+        };
+
+        doInvariantCheck(
+            {"MPToken has encrypted fields but Issuance does not have "
+             "lsfMPTCanHoldConfidentialBalance "
+             "set"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                // Inject all three encrypted fields consistently (inbox+spending+issuer must be
+                // in sync or badConsistency fires first and masks requiresPrivacyFlag).
+                sleToken->setFieldVL(sfConfidentialBalanceInbox, Blob{0x00});
+                sleToken->setFieldVL(sfConfidentialBalanceSpending, Blob{0x00});
+                sleToken->setFieldVL(sfIssuerEncryptedBalance, Blob{0x00});
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseNoPrivacy);
+
+        // badCOA
+        doInvariantCheck(
+            {"Confidential outstanding amount exceeds total outstanding amount"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                if (!sleIssuance)
+                    return false;
+                // Total outstanding is natively 100; bloat the COA over 100
+                sleIssuance->setFieldU64(sfConfidentialOutstandingAmount, 200);
+                ac.view().update(sleIssuance);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_ISSUANCE_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // Conservation Violation
+        doInvariantCheck(
+            {"Token conservation violation for MPT"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                if (!sleIssuance)
+                    return false;
+
+                sleIssuance->setFieldU64(
+                    sfConfidentialOutstandingAmount,
+                    sleIssuance->getFieldU64(sfConfidentialOutstandingAmount) - 10);
+                ac.view().update(sleIssuance);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // Send/MergeInbox must not change OutstandingAmount (coaDelta == 0)
+        doInvariantCheck(
+            {"Invariant failed: OutstandingAmount changed "
+             "by confidential transaction that should not "
+             "modify it for MPT"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
+                if (!sleIssuance)
+                    return false;
+                sleIssuance->setFieldU64(
+                    sfOutstandingAmount, sleIssuance->getFieldU64(sfOutstandingAmount) + 1);
+                ac.view().update(sleIssuance);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttCONFIDENTIAL_MPT_SEND, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // Send/MergeInbox and zero-COA-delta confidential transactions must not
+        // change public holder MPTAmount.
+        doInvariantCheck(
+            {"Invariant failed: MPTAmount changed by confidential "
+             "transaction that should not modify this field."},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                sleToken->setFieldU64(sfMPTAmount, sleToken->getFieldU64(sfMPTAmount) + 1);
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttCONFIDENTIAL_MPT_SEND, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // badVersion
+        doInvariantCheck(
+            {"MPToken sfConfidentialBalanceVersion not updated when sfConfidentialBalanceSpending "
+             "changed"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                Blob const kChangedConfidentialSpending = {0xBA, 0xDD};
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                sleToken->setFieldVL(sfConfidentialBalanceSpending, kChangedConfidentialSpending);
+
+                // DO NOT update sfConfidentialBalanceVersion
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
+        // Skipping Deleted MPTs (Issuance deleted)
+        auto const precloseOrphan = [&mptID](
+                                        Account const& a1, Account const& a2, Env& env) -> bool {
+            MPTTester mpt(env, a1, {.holders = {a2}, .fund = false});
+            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance});
+            mptID = mpt.issuanceID();
+            mpt.authorize({.account = a2});
+
+            // Generate privacy keys and convert 0 amount so Bob has the encrypted fields
+            mpt.generateKeyPair(a1);
+            mpt.set({.account = a1, .issuerPubKey = mpt.getPubKey(a1)});
+            mpt.generateKeyPair(a2);
+            mpt.convert({
+                .account = a2,
+                .amt = 0,
+                .holderPubKey = mpt.getPubKey(a2),
+            });
+
+            // Immediately destroy the issuance. A2's empty, encrypted token object lives on.
+            mpt.destroy();
+            return true;
+        };
+
+        doInvariantCheck(
+            {},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                // Safely able to erase the deleted token.
+                ac.view().erase(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tesSUCCESS, tesSUCCESS},
+            precloseOrphan);
     }
 
 public:
@@ -4380,22 +5449,24 @@ public:
         testNoZeroEscrow();
         testValidNewAccountRoot();
         testNFTokenPageInvariants();
-        testPermissionedDomainInvariants(defaultAmendments() | fixPermissionedDomainInvariant);
-        testPermissionedDomainInvariants(defaultAmendments() - fixPermissionedDomainInvariant);
-        testPermissionedDEX(defaultAmendments() | fixPermissionedDomainInvariant);
-        testPermissionedDEX(defaultAmendments() - fixPermissionedDomainInvariant);
-        testPermissionedDEX(
-            (defaultAmendments() | fixPermissionedDomainInvariant) - fixSecurity3_1_3);
-        testPermissionedDEX(
-            defaultAmendments() - fixPermissionedDomainInvariant - fixSecurity3_1_3);
+        testAMMDeleteInvariants(defaultAmendments());
+        testAMMDeleteInvariants(defaultAmendments() - fixCleanup3_3_0);
+        testPermissionedDomainInvariants(defaultAmendments() | fixCleanup3_1_3);
+        testPermissionedDomainInvariants(defaultAmendments() - fixCleanup3_1_3);
+        testPermissionedDEX(defaultAmendments() | fixCleanup3_1_3);
+        testPermissionedDEX(defaultAmendments() - fixCleanup3_1_3);
+        testBookDirectoryExchangeRate();
         testNoModifiedUnmodifiableFields();
         testValidPseudoAccounts();
         testValidLoanBroker();
         testVault();
+        testConfidentialMPTTransfer();
         testMPT();
         testInvariantOverwrite(defaultAmendments());
-        testInvariantOverwrite(defaultAmendments() - fixSecurity3_1_3);
+        testInvariantOverwrite(defaultAmendments() - fixCleanup3_1_3);
         testVaultComputeCoarsestScale();
+        testAMM();
+        testObjectHasPseudoAccount();
     }
 };
 

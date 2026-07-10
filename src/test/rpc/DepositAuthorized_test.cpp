@@ -8,7 +8,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Protocol.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -32,7 +32,7 @@ public:
         std::string const& ledger = "",
         std::vector<std::string> const& credentials = {})
     {
-        json::Value args{json::ObjectValue};
+        json::Value args{json::ValueType::Object};
         args[jss::source_account] = source.human();
         args[jss::destination_account] = dest.human();
         if (!ledger.empty())
@@ -40,7 +40,7 @@ public:
 
         if (!credentials.empty())
         {
-            auto& arr(args[jss::credentials] = json::ArrayValue);
+            auto& arr(args[jss::credentials] = json::ValueType::Array);
             for (auto const& s : credentials)
                 arr.append(s);
         }
@@ -324,14 +324,14 @@ public:
         env.close();
 
         // becky authorize any account recognized by carol to make a payment
-        env(deposit::authCredentials(becky, {{carol, credType}}));
+        env(deposit::authCredentials(becky, {{.issuer = carol, .credType = credType}}));
         env.close();
 
         {
             testcase("deposit_authorized with credentials failure: empty array.");
 
             auto args = depositAuthArgs(alice, becky, "validated");
-            args[jss::credentials] = json::ArrayValue;
+            args[jss::credentials] = json::ValueType::Array;
 
             auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
             checkCredentialsResponse(jv[jss::result], alice, becky, false, {}, "invalidParams");
@@ -343,7 +343,7 @@ public:
                 "credentials");
 
             auto args = depositAuthArgs(alice, becky, "validated");
-            args[jss::credentials] = json::ArrayValue;
+            args[jss::credentials] = json::ValueType::Array;
             args[jss::credentials].append(1);
             args[jss::credentials].append(3);
 
@@ -357,7 +357,7 @@ public:
                 "credentials");
 
             auto args = depositAuthArgs(alice, becky, "validated");
-            args[jss::credentials] = json::ArrayValue;
+            args[jss::credentials] = json::ValueType::Array;
             args[jss::credentials].append("hello world");
 
             auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
@@ -415,7 +415,7 @@ public:
         }
 
         {
-            static std::vector<std::string> const kCRED_IDS = {
+            static std::vector<std::string> const kCredIds = {
                 "18004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
                 "28004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
                 "38004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
@@ -426,15 +426,15 @@ public:
                 "88004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
                 "98004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
             };
-            assert(kCRED_IDS.size() > kMAX_CREDENTIALS_ARRAY_SIZE);
+            assert(kCredIds.size() > kMaxCredentialsArraySize);
 
             testcase("deposit_authorized too long credentials");
             auto const jv = env.rpc(
                 "json",
                 "deposit_authorized",
-                depositAuthArgs(alice, becky, "validated", kCRED_IDS).toStyledString());
+                depositAuthArgs(alice, becky, "validated", kCredIds).toStyledString());
             checkCredentialsResponse(
-                jv[jss::result], alice, becky, false, kCRED_IDS, "invalidParams");
+                jv[jss::result], alice, becky, false, kCredIds, "invalidParams");
         }
 
         {
@@ -507,7 +507,7 @@ public:
             env.close();
 
             // becky authorize any account recognized by carol to make a payment
-            env(deposit::authCredentials(becky, {{carol, credType2}}));
+            env(deposit::authCredentials(becky, {{.issuer = carol, .credType = credType2}}));
             env.close();
 
             {

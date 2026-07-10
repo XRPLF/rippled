@@ -1,16 +1,26 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 
+#include <cstdint>
+#include <optional>
+#include <ostream>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace xrpl {
@@ -21,7 +31,7 @@ class TOffer
 private:
     SLE::pointer entry_;
     Quality quality_{};
-    AccountID account_;
+    AccountID accountID_;
     Asset assetIn_;
     Asset assetOut_;
 
@@ -53,7 +63,7 @@ public:
     [[nodiscard]] AccountID const&
     owner() const
     {
-        return account_;
+        return accountID_;
     }
 
     /** Returns the in and out amounts.
@@ -69,9 +79,9 @@ public:
     [[nodiscard]] bool
     fullyConsumed() const
     {
-        if (amounts_.in <= beast::kZERO)
+        if (amounts_.in <= beast::kZero)
             return true;
-        if (amounts_.out <= beast::kZERO)
+        if (amounts_.out <= beast::kZero)
             return true;
         return false;
     }
@@ -122,7 +132,7 @@ public:
     isFunded() const
     {
         // Offer owner is issuer; they have unlimited funds if IOU
-        return account_ == assetOut_.getIssuer() && assetOut_.holds<Issue>();
+        return accountID_ == assetOut_.getIssuer() && assetOut_.holds<Issue>();
     }
 
     static std::pair<std::uint32_t, std::uint32_t>
@@ -159,7 +169,7 @@ public:
 
 template <StepAmount TIn, StepAmount TOut>
 TOffer<TIn, TOut>::TOffer(SLE::pointer entry, Quality quality)
-    : entry_(std::move(entry)), quality_(quality), account_(entry_->getAccountID(sfAccount))
+    : entry_(std::move(entry)), quality_(quality), accountID_(entry_->getAccountID(sfAccount))
 {
     auto const tp = entry_->getFieldAmount(sfTakerPays);
     auto const tg = entry_->getFieldAmount(sfTakerGets);

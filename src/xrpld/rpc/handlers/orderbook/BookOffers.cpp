@@ -107,7 +107,7 @@ parseTakerIssuerJSON(
 
     if (taker.isMember(jss::currency))
     {
-        Issue& issue = asset.get<Issue>();
+        auto& issue = asset.get<Issue>();
 
         if (taker.isMember(jss::issuer))
         {
@@ -242,25 +242,25 @@ doBookOffers(RPC::JsonContext& context)
     }
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kBOOK_OFFERS, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kBookOffers, context))
         return *err;
 
     bool const bProof(context.params.isMember(jss::proof));
 
     json::Value const jvMarker(
         context.params.isMember(jss::marker) ? context.params[jss::marker]
-                                             : json::Value(json::NullValue));
+                                             : json::Value(json::ValueType::Null));
 
     context.netOps.getBookPage(
         lpLedger,
         {book.in, book.out, domain},
-        takerID ? *takerID : beast::kZERO,
+        takerID ? *takerID : beast::kZero,
         bProof,
         limit,
         jvMarker,
         jvResult);
 
-    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
 
     return jvResult;
 }

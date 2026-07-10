@@ -4,17 +4,18 @@
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/Protocol.h>
@@ -101,62 +102,63 @@ SHAMapStoreImp::SHAMapStoreImp(
 {
     Config& config{app.config()};
 
-    Section& section{config.section(ConfigSection::nodeDatabase())};
+    Section& section{config.section(Sections::kNodeDatabase)};
     if (section.empty())
     {
         Throw<std::runtime_error>(
-            "Missing [" + ConfigSection::nodeDatabase() + "] entry in configuration file");
+            std::string("Missing [") + Sections::kNodeDatabase + "] entry in configuration file");
     }
 
     // RocksDB only. Use sensible defaults if no values specified.
-    if (boost::iequals(get(section, "type"), "RocksDB"))
+    if (boost::iequals(get(section, Keys::kType), "RocksDB"))
     {
-        if (!section.exists("cache_mb"))
+        if (!section.exists(Keys::kCacheMb))
         {
-            section.set("cache_mb", std::to_string(config.getValueFor(SizedItem::HashNodeDbCache)));
+            section.set(
+                Keys::kCacheMb, std::to_string(config.getValueFor(SizedItem::HashNodeDbCache)));
         }
 
-        if (!section.exists("filter_bits") && (config.NODE_SIZE >= 2))
-            section.set("filter_bits", "10");
+        if (!section.exists(Keys::kFilterBits) && (config.nodeSize >= 2))
+            section.set(Keys::kFilterBits, "10");
     }
 
-    getIfExists(section, "online_delete", deleteInterval_);
+    getIfExists(section, Keys::kOnlineDelete, deleteInterval_);
 
     if (deleteInterval_ != 0u)
     {
         // Configuration that affects the behavior of online delete
-        getIfExists(section, "delete_batch", deleteBatch_);
+        getIfExists(section, Keys::kDeleteBatch, deleteBatch_);
         std::uint32_t temp = 0;
-        if (getIfExists(section, "back_off_milliseconds", temp) ||
+        if (getIfExists(section, Keys::kBackOffMilliseconds, temp) ||
             // Included for backward compatibility with an undocumented setting
-            getIfExists(section, "backOff", temp))
+            getIfExists(section, Keys::kBackOff, temp))
         {
             backOff_ = std::chrono::milliseconds{temp};
         }
-        if (getIfExists(section, "age_threshold_seconds", temp))
+        if (getIfExists(section, Keys::kAgeThresholdSeconds, temp))
             ageThreshold_ = std::chrono::seconds{temp};
-        if (getIfExists(section, "recovery_wait_seconds", temp))
+        if (getIfExists(section, Keys::kRecoveryWaitSeconds, temp))
             recoveryWaitTime_ = std::chrono::seconds{temp};
 
-        getIfExists(section, "advisory_delete", advisoryDelete_);
+        getIfExists(section, Keys::kAdvisoryDelete, advisoryDelete_);
 
         auto const minInterval =
-            config.standalone() ? kMINIMUM_DELETION_INTERVAL_SA : kMINIMUM_DELETION_INTERVAL;
+            config.standalone() ? kMinimumDeletionIntervalSa : kMinimumDeletionInterval;
         if (deleteInterval_ < minInterval)
         {
             Throw<std::runtime_error>(
                 "online_delete must be at least " + std::to_string(minInterval));
         }
 
-        if (config.LEDGER_HISTORY > deleteInterval_)
+        if (config.ledgerHistory > deleteInterval_)
         {
             Throw<std::runtime_error>(
                 "online_delete must not be less than ledger_history "
                 "(currently " +
-                std::to_string(config.LEDGER_HISTORY) + ")");
+                std::to_string(config.ledgerHistory) + ")");
         }
 
-        state_db_.init(config, dbName_);
+        stateDb_.init(config, dbName_);
         dbPaths();
     }
 }
@@ -164,19 +166,35 @@ SHAMapStoreImp::SHAMapStoreImp(
 std::unique_ptr<NodeStore::Database>
 SHAMapStoreImp::makeNodeStore(int readThreads)
 {
-    auto nscfg = app_.config().section(ConfigSection::nodeDatabase());
+    auto nscfg = app_.config().section(Sections::kNodeDatabase);
+
+    // Provide default values.
+    if (!nscfg.exists(Keys::kCacheSize))
+    {
+        nscfg.set(
+            Keys::kCacheSize,
+            std::to_string(app_.config().getValueFor(SizedItem::TreeCacheSize, std::nullopt)));
+    }
+
+    if (!nscfg.exists(Keys::kCacheAge))
+    {
+        nscfg.set(
+            Keys::kCacheAge,
+            std::to_string(app_.config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
+    }
+
     std::unique_ptr<NodeStore::Database> db;
 
     if (deleteInterval_ != 0u)
     {
-        SavedState state = state_db_.getState();
+        SavedState state = stateDb_.getState();
         auto writableBackend = makeBackendRotating(state.writableDb);
         auto archiveBackend = makeBackendRotating(state.archiveDb);
         if (state.writableDb.empty())
         {
             state.writableDb = writableBackend->getName();
             state.archiveDb = archiveBackend->getName();
-            state_db_.setState(state);
+            stateDb_.setState(state);
         }
 
         // Create NodeStore with two backends to allow online deletion of
@@ -187,7 +205,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             std::move(writableBackend),
             std::move(archiveBackend),
             nscfg,
-            app_.getJournal(kNODE_STORE_NAME));
+            app_.getJournal(kNodeStoreName));
         fdRequired_ += dbr->fdRequired();
         dbRotating_ = dbr.get();
         db.reset(dynamic_cast<NodeStore::Database*>(dbr.release()));
@@ -199,7 +217,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             scheduler_,
             readThreads,
             nscfg,
-            app_.getJournal(kNODE_STORE_NAME));
+            app_.getJournal(kNodeStoreName));
         fdRequired_ += db->fdRequired();
     }
     return db;
@@ -237,7 +255,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
     dbRotating_->fetchNodeObject(
-        node.getHash().asUint256(), 0, NodeStore::FetchType::Synchronous, true);
+        node.getHash().asUInt256(), 0, NodeStore::FetchType::Synchronous, true);
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {
         if (healthWait() == HealthResult::Stopping)
@@ -251,12 +269,14 @@ void
 SHAMapStoreImp::run()
 {
     beast::setCurrentThreadName("SHAMapStore");
-    LedgerIndex lastRotated = state_db_.getState().lastRotated;
+    LedgerIndex lastRotated = stateDb_.getState().lastRotated;
     netOPs_ = &app_.getOPs();
     ledgerMaster_ = &app_.getLedgerMaster();
+    fullBelowCache_ = &(*app_.getNodeFamily().getFullBelowCache());
+    treeNodeCache_ = &(*app_.getNodeFamily().getTreeNodeCache());
 
     if (advisoryDelete_)
-        canDelete_ = state_db_.getCanDelete();
+        canDelete_ = stateDb_.getCanDelete();
 
     while (true)
     {
@@ -286,7 +306,7 @@ SHAMapStoreImp::run()
         if (lastRotated == 0u)
         {
             lastRotated = validatedSeq;
-            state_db_.setLastRotated(lastRotated);
+            stateDb_.setLastRotated(lastRotated);
         }
 
         bool const readyToRotate = validatedSeq >= lastRotated + deleteInterval_ &&
@@ -311,11 +331,9 @@ SHAMapStoreImp::run()
             try
             {
                 validatedLedger->stateMap().snapShot(false)->visitNodes(
-                    std::bind(
-                        &SHAMapStoreImp::copyNode,
-                        this,
-                        std::ref(nodeCount),
-                        std::placeholders::_1));
+                    [this, &nodeCount](SHAMapTreeNode const& node) {
+                        return copyNode(nodeCount, node);
+                    });
             }
             catch (SHAMapMissingNode const& e)
             {
@@ -354,7 +372,7 @@ SHAMapStoreImp::run()
                     savedState.writableDb = writableName;
                     savedState.archiveDb = archiveName;
                     savedState.lastRotated = lastRotated;
-                    state_db_.setState(savedState);
+                    stateDb_.setState(savedState);
 
                     clearCaches(validatedSeq);
                 });
@@ -367,9 +385,13 @@ SHAMapStoreImp::run()
 void
 SHAMapStoreImp::dbPaths()
 {
-    Section const section{app_.config().section(ConfigSection::nodeDatabase())};
-    boost::filesystem::path dbPath = get(section, "path");
+    Section const section{app_.config().section(Sections::kNodeDatabase)};
 
+    // Skip creating the directory when an in-memory database is used.
+    if (boost::iequals(get(section, Keys::kType), "memory"))
+        return;
+
+    boost::filesystem::path dbPath = get(section, Keys::kPath);
     if (boost::filesystem::exists(dbPath))
     {
         if (!boost::filesystem::is_directory(dbPath))
@@ -383,7 +405,7 @@ SHAMapStoreImp::dbPaths()
         boost::filesystem::create_directories(dbPath);
     }
 
-    SavedState state = state_db_.getState();
+    SavedState state = stateDb_.getState();
 
     {
         auto update = [&dbPath](std::string& sPath) {
@@ -403,7 +425,7 @@ SHAMapStoreImp::dbPaths()
         if (update(state.writableDb))
         {
             update(state.archiveDb);
-            state_db_.setState(state);
+            stateDb_.setState(state);
         }
     }
 
@@ -433,7 +455,7 @@ SHAMapStoreImp::dbPaths()
         (!archiveDbExists && !state.archiveDb.empty()) || (writableDbExists != archiveDbExists) ||
         state.writableDb.empty() != state.archiveDb.empty())
     {
-        boost::filesystem::path stateDbPathName = app_.config().legacy("database_path");
+        boost::filesystem::path stateDbPathName = app_.config().legacy(Sections::kDatabasePath);
         stateDbPathName /= dbName_;
         stateDbPathName += "*";
 
@@ -445,7 +467,7 @@ SHAMapStoreImp::dbPaths()
                          << "The existing data is in a corrupted state.\n"
                          << "To resume operation, remove the files matching "
                          << stateDbPathName.string() << " and contents of the directory "
-                         << get(section, "path") << '\n'
+                         << get(section, Keys::kPath) << '\n'
                          << "Optionally, you can move those files to another\n"
                          << "location if you wish to analyze or back up the data.\n"
                          << "However, there is no guarantee that the data in its\n"
@@ -462,7 +484,7 @@ SHAMapStoreImp::dbPaths()
 std::unique_ptr<NodeStore::Backend>
 SHAMapStoreImp::makeBackendRotating(std::string path)
 {
-    Section section{app_.config().section(ConfigSection::nodeDatabase())};
+    Section section{app_.config().section(Sections::kNodeDatabase)};
     boost::filesystem::path newPath;
 
     if (!path.empty())
@@ -471,18 +493,18 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     }
     else
     {
-        boost::filesystem::path p = get(section, "path");
+        boost::filesystem::path p = get(section, Keys::kPath);
         p /= dbPrefix_;
         p += ".%%%%";
         newPath = boost::filesystem::unique_path(p);
     }
-    section.set("path", newPath.string());
+    section.set(Keys::kPath, newPath.string());
 
     auto backend{NodeStore::Manager::instance().makeBackend(
         section,
         megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
         scheduler_,
-        app_.getJournal(kNODE_STORE_NAME))};
+        app_.getJournal(kNodeStoreName))};
     backend->open();
     return backend;
 }
@@ -542,16 +564,16 @@ SHAMapStoreImp::clearCaches(LedgerIndex validatedSeq)
     // Also clear the FullBelowCache so its generation counter is bumped.
     // This prevents stale "full below" markers from persisting across
     // backend rotation/online deletion and interfering with SHAMap sync.
-    app_.getNodeFamily().getFullBelowCache()->clear();
+    fullBelowCache_->clear();
 }
 
 void
 SHAMapStoreImp::freshenCaches()
 {
-    if (freshenCache(*app_.getNodeFamily().getTreeNodeCache()))
+    if (freshenCache(*treeNodeCache_))
         return;
-
-    freshenCache(app_.getMasterTransaction().getCache());
+    if (freshenCache(app_.getMasterTransaction().getCache()))
+        return;
 }
 
 void

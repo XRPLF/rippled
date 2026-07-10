@@ -16,7 +16,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/paths/detail/AmountSpec.h>
 #include <xrpl/tx/paths/detail/EitherAmount.h>
 #include <xrpl/tx/paths/detail/StepChecks.h>
 #include <xrpl/tx/paths/detail/Steps.h>
@@ -204,7 +203,7 @@ private:
         {
             return ctx.strandDeliver.visit(
                 [&](Issue const& issue) {
-                    if (!ctx.view.exists(keylet::line(acc, issue)))
+                    if (!ctx.view.exists(keylet::trustLine(acc, issue)))
                         return -1;
                     return 0;
                 },
@@ -253,7 +252,7 @@ template <class TDerived>
 std::pair<std::optional<Quality>, DebtDirection>
 XRPEndpointStep<TDerived>::qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const
 {
-    return {Quality{STAmount::kU_RATE_ONE}, this->debtDirection(v, StrandDirection::Forward)};
+    return {Quality{STAmount::kURateOne}, this->debtDirection(v, StrandDirection::Forward)};
 }
 
 template <class TDerived>
@@ -272,7 +271,7 @@ XRPEndpointStep<TDerived>::revImp(
     auto& receiver = isLast_ ? acc_ : xrpAccount();
     auto ter = accountSend(sb, sender, receiver, toSTAmount(result), j_);
     if (!isTesSuccess(ter))
-        return {XRPAmount{beast::kZERO}, XRPAmount{beast::kZERO}};
+        return {XRPAmount{beast::kZero}, XRPAmount{beast::kZero}};
 
     cache_.emplace(result);
     return {result, result};
@@ -295,7 +294,7 @@ XRPEndpointStep<TDerived>::fwdImp(
     auto& receiver = isLast_ ? acc_ : xrpAccount();
     auto ter = accountSend(sb, sender, receiver, toSTAmount(result), j_);
     if (!isTesSuccess(ter))
-        return {XRPAmount{beast::kZERO}, XRPAmount{beast::kZERO}};
+        return {XRPAmount{beast::kZero}, XRPAmount{beast::kZero}};
 
     cache_.emplace(result);
     return {result, result};
@@ -308,7 +307,7 @@ XRPEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, Eithe
     if (!cache_)
     {
         JLOG(j_.error()) << "Expected valid cache in validFwd";
-        return {false, EitherAmount(XRPAmount(beast::kZERO))};
+        return {false, EitherAmount(XRPAmount(beast::kZero))};
     }
 
     XRPL_ASSERT(in.holds<XRPAmount>(), "xrpl::XRPEndpointStep::validFwd : input is XRP");

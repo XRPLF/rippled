@@ -3,7 +3,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/xor_shift_engine.h>
 
-#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <mutex>
@@ -29,6 +28,7 @@ static_assert(
 namespace detail {
 
 // Determines if a type can be called like an Engine
+// NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
 template <class Engine, class Result = typename Engine::result_type>
 using is_engine = std::is_invocable_r<Result, Engine>;
 }  // namespace detail
@@ -47,7 +47,7 @@ inline beast::xor_shift_engine&
 defaultPrng()
 {
     // This is used to seed the thread-specific PRNGs on demand
-    static beast::xor_shift_engine kSEEDER = [] {
+    static beast::xor_shift_engine kSeeder = [] {
         std::random_device rng;
         std::uniform_int_distribution<std::uint64_t> distribution{1};
         return beast::xor_shift_engine(distribution(rng));
@@ -57,17 +57,17 @@ defaultPrng()
     static std::mutex kM;
 
     // The thread-specific PRNGs:
-    thread_local beast::xor_shift_engine kENGINE = [] {
+    thread_local beast::xor_shift_engine kEngine = [] {
         std::uint64_t seed = 0;
         {
             std::scoped_lock const lk(kM);
             std::uniform_int_distribution<std::uint64_t> distribution{1};
-            seed = distribution(kSEEDER);
+            seed = distribution(kSeeder);
         }
         return beast::xor_shift_engine{seed};
     }();
 
-    return kENGINE;
+    return kEngine;
 }
 
 /** Return a uniformly distributed random integer.
@@ -91,8 +91,9 @@ defaultPrng()
 */
 /** @{ */
 template <class Engine, class Integral>
-std::enable_if_t<std::is_integral_v<Integral> && detail::is_engine<Engine>::value, Integral>
+Integral
 randInt(Engine& engine, Integral min, Integral max)
+    requires(std::is_integral_v<Integral> && detail::is_engine<Engine>::value)
 {
     XRPL_ASSERT(max > min, "xrpl::randInt : max over min inputs");
 
@@ -103,36 +104,41 @@ randInt(Engine& engine, Integral min, Integral max)
 }
 
 template <class Integral>
-std::enable_if_t<std::is_integral_v<Integral>, Integral>
+Integral
 randInt(Integral min, Integral max)
+    requires(std::is_integral_v<Integral>)
 {
     return randInt(defaultPrng(), min, max);
 }
 
 template <class Engine, class Integral>
-std::enable_if_t<std::is_integral_v<Integral> && detail::is_engine<Engine>::value, Integral>
+Integral
 randInt(Engine& engine, Integral max)
+    requires(std::is_integral_v<Integral> && detail::is_engine<Engine>::value)
 {
     return randInt(engine, Integral(0), max);
 }
 
 template <class Integral>
-std::enable_if_t<std::is_integral_v<Integral>, Integral>
+Integral
 randInt(Integral max)
+    requires(std::is_integral_v<Integral>)
 {
     return randInt(defaultPrng(), max);
 }
 
 template <class Integral, class Engine>
-std::enable_if_t<std::is_integral_v<Integral> && detail::is_engine<Engine>::value, Integral>
+Integral
 randInt(Engine& engine)
+    requires(std::is_integral_v<Integral> && detail::is_engine<Engine>::value)
 {
     return randInt(engine, std::numeric_limits<Integral>::max());
 }
 
 template <class Integral = int>
-std::enable_if_t<std::is_integral_v<Integral>, Integral>
+Integral
 randInt()
+    requires(std::is_integral_v<Integral>)
 {
     return randInt(defaultPrng(), std::numeric_limits<Integral>::max());
 }
@@ -141,19 +147,20 @@ randInt()
 /** Return a random byte */
 /** @{ */
 template <class Byte, class Engine>
-std::enable_if_t<
-    (std::is_same_v<Byte, unsigned char> || std::is_same_v<Byte, std::uint8_t>) &&
-        detail::is_engine<Engine>::value,
-    Byte>
+Byte
 randByte(Engine& engine)
+    requires(
+        (std::is_same_v<Byte, unsigned char> || std::is_same_v<Byte, std::uint8_t>) &&
+        detail::is_engine<Engine>::value)
 {
     return static_cast<Byte>(randInt<Engine, std::uint32_t>(
         engine, std::numeric_limits<Byte>::min(), std::numeric_limits<Byte>::max()));
 }
 
 template <class Byte = std::uint8_t>
-std::enable_if_t<(std::is_same_v<Byte, unsigned char> || std::is_same_v<Byte, std::uint8_t>), Byte>
+Byte
 randByte()
+    requires(std::is_same_v<Byte, unsigned char> || std::is_same_v<Byte, std::uint8_t>)
 {
     return randByte<Byte>(defaultPrng());
 }

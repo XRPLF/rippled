@@ -1,6 +1,5 @@
 #include <xrpl/ledger/AmendmentTable.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
@@ -8,6 +7,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/View.h>
@@ -49,7 +49,7 @@ namespace xrpl {
 static std::vector<std::pair<uint256, std::string>>
 parseSection(Section const& section)
 {
-    static boost::regex const kRE1(
+    static boost::regex const kRe1(
         "^"                        // start of line
         "(?:\\s*)"                 // whitespace (optional)
         "([abcdefABCDEF0-9]{64})"  // <hexadecimal amendment ID>
@@ -64,7 +64,7 @@ parseSection(Section const& section)
     {
         boost::smatch match;
 
-        if (!boost::regex_match(line, match, kRE1))
+        if (!boost::regex_match(line, match, kRe1))
             Throw<std::runtime_error>("Invalid entry '" + line + "' in [" + section.name() + "]");
 
         uint256 id;
@@ -176,9 +176,9 @@ public:
         // from that validator.  So flapping due to that validator being off
         // line will happen less frequently than every 24 hours.
         using namespace std::chrono_literals;
-        static constexpr NetClock::duration kEXPIRES_AFTER = 24h;
+        static constexpr NetClock::duration kExpiresAfter = 24h;
 
-        auto const newTimeout = closeTime + kEXPIRES_AFTER;
+        auto const newTimeout = closeTime + kExpiresAfter;
 
         // Walk all validations and replace previous votes from trusted
         // validators with these newest votes.
@@ -330,8 +330,8 @@ public:
         threshold_ = std::max(
             1L,
             static_cast<long>(
-                (trustedValidations_ * kAMENDMENT_MAJORITY_CALC_THRESHOLD.num) /
-                kAMENDMENT_MAJORITY_CALC_THRESHOLD.den));
+                (trustedValidations_ * kAmendmentMajorityCalcThreshold.num) /
+                kAmendmentMajorityCalcThreshold.den));
     }
 
     [[nodiscard]] bool
@@ -643,6 +643,7 @@ AmendmentState*
 AmendmentTableImpl::get(uint256 const& amendmentHash, std::scoped_lock<std::mutex> const& lock)
 {
     // Forward to the const version of get.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     return const_cast<AmendmentState*>(std::as_const(*this).get(amendmentHash, lock));
 }
 
@@ -983,13 +984,17 @@ AmendmentTableImpl::injectJson(
 json::Value
 AmendmentTableImpl::getJson(bool isAdmin) const
 {
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::Object);
     {
         std::scoped_lock const lock(mutex_);
         for (auto const& e : amendmentMap_)
         {
             injectJson(
-                ret[to_string(e.first)] = json::ObjectValue, e.first, e.second, isAdmin, lock);
+                ret[to_string(e.first)] = json::ValueType::Object,
+                e.first,
+                e.second,
+                isAdmin,
+                lock);
         }
     }
     return ret;
@@ -998,14 +1003,14 @@ AmendmentTableImpl::getJson(bool isAdmin) const
 json::Value
 AmendmentTableImpl::getJson(uint256 const& amendmentID, bool isAdmin) const
 {
-    json::Value ret = json::ObjectValue;
+    json::Value ret = json::ValueType::Object;
 
     {
         std::scoped_lock const lock(mutex_);
         AmendmentState const* a = get(amendmentID, lock);
         if (a != nullptr)
         {
-            json::Value& jAmendment = (ret[to_string(amendmentID)] = json::ObjectValue);
+            json::Value& jAmendment = (ret[to_string(amendmentID)] = json::ValueType::Object);
             injectJson(jAmendment, amendmentID, *a, isAdmin, lock);
         }
     }

@@ -13,10 +13,11 @@
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/nodestore/NodeObject.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/apply.h>
 
 #include <cstddef>
@@ -73,7 +74,7 @@ buildLedgerImpl(
 
     // Accept ledger
     XRPL_ASSERT(
-        built->header().seq < kXRP_LEDGER_EARLIEST_FEES || built->read(keylet::fees()),
+        built->header().seq < kXrpLedgerEarliestFees || built->read(keylet::feeSettings()),
         "xrpl::buildLedgerImpl : valid ledger fees");
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 
@@ -204,9 +205,11 @@ buildLedger(
                                 << accum.txCount();
             }
             else
+            {
                 JLOG(j.debug()) << "Applied " << applied << " transactions. "
                                 << "Total transactions in ledger (including Inner Batch): "
                                 << accum.txCount();
+            }
         });
 }
 
@@ -225,13 +228,21 @@ buildLedger(
     return buildLedgerImpl(
         replayData.parent(),
         replayLedger->header().closeTime,
-        ((replayLedger->header().closeFlags & kS_LCF_NO_CONSENSUS_TIME) == 0),
+        ((replayLedger->header().closeFlags & kSLcfNoConsensusTime) == 0),
         replayLedger->header().closeTimeResolution,
         app,
         j,
         [&](OpenView& accum, std::shared_ptr<Ledger> const& built) {
             for (auto& tx : replayData.orderedTxns())
+            {
+                // Inner batch transactions are applied as part of their outer
+                // Batch transaction, never on their own. Skip them here so they
+                // are not re-applied a second time outside of the batch during
+                // replay.
+                if (tx.second->isFlag(tfInnerBatchTxn))
+                    continue;
                 applyTransaction(app, accum, *tx.second, false, applyFlags, j);
+            }
         });
 }
 

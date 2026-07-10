@@ -1,7 +1,14 @@
 #pragma once
 
+#include <xrpl/basics/contract.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/UintTypes.h>
+
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <variant>
 
 namespace xrpl {
 
@@ -52,10 +59,10 @@ public:
 };
 
 template <ValidPathAsset PA>
-constexpr bool kIS_CURRENCY_V = std::is_same_v<PA, Currency>;
+constexpr bool kIsCurrencyV = std::is_same_v<PA, Currency>;
 
 template <ValidPathAsset PA>
-constexpr bool kIS_MPTID_V = std::is_same_v<PA, MPTID>;
+constexpr bool kIsMptidV = std::is_same_v<PA, MPTID>;
 
 inline PathAsset::PathAsset(Asset const& asset)
 {

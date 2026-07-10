@@ -16,7 +16,6 @@
 #include <xrpld/rpc/handlers/admin/status/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/basics/Slice.h>
@@ -36,6 +35,8 @@
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/BuildInfo.h>
@@ -92,15 +93,11 @@
 namespace xrpl {
 
 namespace CrawlOptions {
-// Need to be named before converting
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum {
-    Disabled = 0,
-    Overlay = (1 << 0),
-    ServerInfo = (1 << 1),
-    ServerCounts = (1 << 2),
-    Unl = (1 << 3)
-};
+static constexpr auto kDisabled = 0;
+static constexpr auto kOverlay = (1 << 0);
+static constexpr auto kServerInfo = (1 << 1);
+static constexpr auto kServerCounts = (1 << 2);
+static constexpr auto kUnl = (1 << 3);
 }  // namespace CrawlOptions
 
 //------------------------------------------------------------------------------
@@ -116,7 +113,7 @@ OverlayImpl::Child::~Child()
 
 //------------------------------------------------------------------------------
 
-OverlayImpl::Timer::Timer(OverlayImpl& overlay) : Child(overlay), timer(overlay_.io_context_)
+OverlayImpl::Timer::Timer(OverlayImpl& overlay) : Child(overlay), timer(overlay_.ioContext_)
 {
 }
 
@@ -136,7 +133,7 @@ OverlayImpl::Timer::asyncWait()
     timer.async_wait(
         boost::asio::bind_executor(
             overlay_.strand_,
-            std::bind(&Timer::onTimer, shared_from_this(), std::placeholders::_1)));
+            [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
 }
 
 void
@@ -154,10 +151,10 @@ OverlayImpl::Timer::onTimer(error_code ec)
     overlay_.peerFinder_->oncePerSecond();
     overlay_.sendEndpoints();
     overlay_.autoConnect();
-    if (overlay_.app_.config().TX_REDUCE_RELAY_ENABLE)
+    if (overlay_.app_.config().txReduceRelayEnable)
         overlay_.sendTxQueue();
 
-    if ((++overlay_.timer_count_ % Tuning::CheckIdlePeers) == 0)
+    if ((++overlay_.timerCount_ % Tuning::kCheckIdlePeers) == 0)
         overlay_.deleteIdlePeers();
 
     asyncWait();
@@ -175,9 +172,9 @@ OverlayImpl::OverlayImpl(
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector)
     : app_(app)
-    , io_context_(ioContext)
-    , work_(std::in_place, boost::asio::make_work_guard(io_context_))
-    , strand_(boost::asio::make_strand(io_context_))
+    , ioContext_(ioContext)
+    , work_(std::in_place, boost::asio::make_work_guard(ioContext_))
+    , strand_(boost::asio::make_strand(ioContext_))
     , setup_(std::move(setup))
     , journal_(app_.getJournal("Overlay"))
     , serverHandler_(serverHandler)
@@ -190,10 +187,10 @@ OverlayImpl::OverlayImpl(
               config,
               collector))
     , resolver_(resolver)
-    , next_id_(1)
+    , nextId_(1)
     , slots_(app, *this, app.config())
     , stats_(
-          std::bind(&OverlayImpl::collectMetrics, this),
+          [this] { collectMetrics(); },
           collector,
           [counts = traffic_.getCounts(), collector]() {
               std::unordered_map<TrafficCount::Category, TrafficGauges> ret;
@@ -213,7 +210,7 @@ OverlayImpl::onHandoff(
     http_request_type&& request,
     endpoint_type remoteEndpoint)
 {
-    auto const id = next_id_++;
+    auto const id = nextId_++;
     auto peerJournal = app_.getJournal("Peer");
     beast::WrappedSink sink(peerJournal.sink(), makePrefix(id));
     beast::Journal const journal(sink);
@@ -263,7 +260,7 @@ OverlayImpl::onHandoff(
         {
             handoff.moved = false;
             handoff.response = makeRedirectResponse(slot, request, remoteEndpoint.address());
-            handoff.keep_alive = beast::rfc2616::isKeepAlive(request);
+            handoff.keepAlive = beast::rfc2616::isKeepAlive(request);
             return handoff;
         }
     }
@@ -275,7 +272,7 @@ OverlayImpl::onHandoff(
         handoff.moved = false;
         handoff.response = makeErrorResponse(
             slot, request, remoteEndpoint.address(), "Unable to agree on a protocol version");
-        handoff.keep_alive = false;
+        handoff.keepAlive = false;
         return handoff;
     }
 
@@ -286,7 +283,7 @@ OverlayImpl::onHandoff(
         handoff.moved = false;
         handoff.response =
             makeErrorResponse(slot, request, remoteEndpoint.address(), "Incorrect security cookie");
-        handoff.keep_alive = false;
+        handoff.keepAlive = false;
         return handoff;
     }
 
@@ -315,7 +312,7 @@ OverlayImpl::onHandoff(
                     << "Peer " << remoteEndpoint << " redirected, " << to_string(result);
                 handoff.moved = false;
                 handoff.response = makeRedirectResponse(slot, request, remoteEndpoint.address());
-                handoff.keep_alive = false;
+                handoff.keepAlive = false;
                 return handoff;
             }
         }
@@ -355,7 +352,7 @@ OverlayImpl::onHandoff(
         peerFinder_->onClosed(slot);
         handoff.moved = false;
         handoff.response = makeErrorResponse(slot, request, remoteEndpoint.address(), e.what());
-        handoff.keep_alive = false;
+        handoff.keepAlive = false;
         return handoff;
     }
 }
@@ -396,9 +393,9 @@ OverlayImpl::makeRedirectResponse(
     }
     msg.insert("Content-Type", "application/json");
     msg.insert(boost::beast::http::field::connection, "close");
-    msg.body() = json::ObjectValue;
+    msg.body() = json::ValueType::Object;
     {
-        json::Value& ips = (msg.body()["peer-ips"] = json::ArrayValue);
+        json::Value& ips = (msg.body()["peer-ips"] = json::ValueType::Array);
         for (auto const& _ : peerFinder_->redirect(slot))
             ips.append(_.address.toString());
     }
@@ -411,7 +408,7 @@ OverlayImpl::makeErrorResponse(
     std::shared_ptr<PeerFinder::Slot> const& slot,
     http_request_type const& request,
     address_type remoteAddress,
-    std::string text)
+    std::string const& text)
 {
     boost::beast::http::response<boost::beast::http::empty_body> msg;
     msg.version(request.version());
@@ -448,11 +445,11 @@ OverlayImpl::connect(beast::IP::Endpoint const& remoteEndpoint)
 
     auto const p = std::make_shared<ConnectAttempt>(
         app_,
-        io_context_,
+        ioContext_,
         beast::IPAddressConversion::toAsioEndpoint(remoteEndpoint),
         usage,
         setup_.context,
-        next_id_++,
+        nextId_++,
         slot,
         app_.getJournal("Peer"),
         *this);
@@ -512,14 +509,15 @@ OverlayImpl::start()
         app_.config(),
         serverHandler_.setup().overlay.port(),
         app_.getValidationPublicKey().has_value(),
-        setup_.ipLimit);
+        setup_.ipLimit,
+        setup_.verifyEndpoints);
 
     peerFinder_->setConfig(config);
     peerFinder_->start();
 
     // Populate our boot cache: if there are no entries in [ips] then we use
     // the entries in [ips_fixed].
-    auto bootstrapIps = app_.config().IPS.empty() ? app_.config().IPS_FIXED : app_.config().IPS;
+    auto bootstrapIps = app_.config().ips.empty() ? app_.config().ipsFixed : app_.config().ips;
 
     // If nothing is specified, default to several well-known high-capacity
     // servers to serve as bootstrap:
@@ -547,7 +545,7 @@ OverlayImpl::start()
             {
                 if (addr.port() == 0)
                 {
-                    ips.push_back(to_string(addr.atPort(kDEFAULT_PEER_PORT)));
+                    ips.push_back(to_string(addr.atPort(kDefaultPeerPort)));
                 }
                 else
                 {
@@ -561,10 +559,10 @@ OverlayImpl::start()
         });
 
     // Add the ips_fixed from the xrpld.cfg file
-    if (!app_.config().standalone() && !app_.config().IPS_FIXED.empty())
+    if (!app_.config().standalone() && !app_.config().ipsFixed.empty())
     {
         resolver_.resolve(
-            app_.config().IPS_FIXED,
+            app_.config().ipsFixed,
             [this](std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) {
                 std::vector<beast::IP::Endpoint> ips;
                 ips.reserve(addresses.size());
@@ -573,7 +571,7 @@ OverlayImpl::start()
                 {
                     if (addr.port() == 0)
                     {
-                        ips.emplace_back(addr.address(), kDEFAULT_PEER_PORT);
+                        ips.emplace_back(addr.address(), kDefaultPeerPort);
                     }
                     else
                     {
@@ -595,7 +593,7 @@ OverlayImpl::start()
 void
 OverlayImpl::stop()
 {
-    boost::asio::dispatch(strand_, std::bind(&OverlayImpl::stopChildren, this));
+    boost::asio::dispatch(strand_, [this] { stopChildren(); });
     {
         std::unique_lock<decltype(mutex_)> lock(mutex_);
         cond_.wait(lock, [this] { return list_.empty(); });
@@ -749,10 +747,10 @@ OverlayImpl::getOverlayInfo() const
 {
     using namespace std::chrono;
     json::Value jv;
-    auto& av = jv[jss::active] = json::Value(json::ArrayValue);
+    auto& av = jv[jss::active] = json::Value(json::ValueType::Array);
 
     forEach([&](std::shared_ptr<PeerImp> const& sp) {
-        auto& pv = av.append(json::Value(json::ObjectValue));
+        auto& pv = av.append(json::Value(json::ValueType::Object));
         pv[jss::public_key] = base64Encode(sp->getNodePublic().data(), sp->getNodePublic().size());
         pv[jss::type] = sp->slot()->inbound() ? jss::in : jss::out;
         pv[jss::uptime] = static_cast<std::uint32_t>(duration_cast<seconds>(sp->uptime()).count());
@@ -865,7 +863,7 @@ OverlayImpl::json()
 bool
 OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
 {
-    if (req.target() != "/crawl" || setup_.crawlOptions == CrawlOptions::Disabled)
+    if (req.target() != "/crawl" || setup_.crawlOptions == CrawlOptions::kDisabled)
         return false;
 
     boost::beast::http::response<JsonBody> msg;
@@ -876,19 +874,19 @@ OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
     msg.insert("Connection", "close");
     msg.body()["version"] = json::Value(2u);
 
-    if ((setup_.crawlOptions & CrawlOptions::Overlay) != 0u)
+    if ((setup_.crawlOptions & CrawlOptions::kOverlay) != 0u)
     {
         msg.body()["overlay"] = getOverlayInfo();
     }
-    if ((setup_.crawlOptions & CrawlOptions::ServerInfo) != 0u)
+    if ((setup_.crawlOptions & CrawlOptions::kServerInfo) != 0u)
     {
         msg.body()["server"] = getServerInfo();
     }
-    if ((setup_.crawlOptions & CrawlOptions::ServerCounts) != 0u)
+    if ((setup_.crawlOptions & CrawlOptions::kServerCounts) != 0u)
     {
         msg.body()["counts"] = getServerCounts();
     }
-    if ((setup_.crawlOptions & CrawlOptions::Unl) != 0u)
+    if ((setup_.crawlOptions & CrawlOptions::kUnl) != 0u)
     {
         msg.body()["unl"] = getUnlInfo();
     }
@@ -903,9 +901,9 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
 {
     // If the target is in the form "/vl/<validator_list_public_key>",
     // return the most recent validator list for that key.
-    constexpr std::string_view kPREFIX("/vl/");
+    constexpr std::string_view kPrefix("/vl/");
 
-    if (!req.target().starts_with(kPREFIX) || !setup_.vlEnabled)
+    if (!req.target().starts_with(kPrefix) || !setup_.vlEnabled)
         return false;
 
     std::uint32_t version = 1;
@@ -920,14 +918,14 @@ OverlayImpl::processValidatorList(http_request_type const& req, Handoff& handoff
         msg.result(status);
         msg.insert("Content-Length", "0");
 
-        msg.body() = json::NullValue;
+        msg.body() = json::ValueType::Null;
 
         msg.prepare_payload();
         handoff.response = std::make_shared<SimpleWriter>(msg);
         return true;
     };
 
-    std::string_view key = req.target().substr(kPREFIX.size());
+    std::string_view key = req.target().substr(kPrefix.size());
 
     if (auto slash = key.find('/'); slash != std::string_view::npos)
     {
@@ -989,7 +987,7 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     auto health = HealthState::Healthy;
     auto setHealth = [&health](HealthState state) { health = std::max(health, state); };
 
-    msg.body()[jss::info] = json::ObjectValue;
+    msg.body()[jss::info] = json::ValueType::Object;
     if (lastValidatedLedgerAge >= 7 || lastValidatedLedgerAge < 0)
     {
         msg.body()[jss::info][jss::validated_ledger] = lastValidatedLedgerAge;
@@ -1160,14 +1158,14 @@ OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
 }
 
 void
-OverlayImpl::broadcast(protocol::TMProposeSet& m)
+OverlayImpl::broadcast(protocol::TMProposeSet const& m)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
     forEach([&](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
 std::set<Peer::id_t>
-OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator)
+OverlayImpl::relay(protocol::TMProposeSet const& m, uint256 const& uid, PublicKey const& validator)
 {
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
@@ -1182,14 +1180,14 @@ OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey cons
 }
 
 void
-OverlayImpl::broadcast(protocol::TMValidation& m)
+OverlayImpl::broadcast(protocol::TMValidation const& m)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
     forEach([sm](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
 std::set<Peer::id_t>
-OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator)
+OverlayImpl::relay(protocol::TMValidation const& m, uint256 const& uid, PublicKey const& validator)
 {
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
@@ -1260,7 +1258,7 @@ OverlayImpl::relay(
 
     if (!relay)
     {
-        if (!app_.config().TX_REDUCE_RELAY_ENABLE)
+        if (!app_.config().txReduceRelayEnable)
             return;
 
         peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
@@ -1273,13 +1271,13 @@ OverlayImpl::relay(
     auto& txn = tx->get();
     auto const sm = std::make_shared<Message>(txn, protocol::mtTRANSACTION);
     peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
-    auto const minRelay = app_.config().TX_REDUCE_RELAY_MIN_PEERS + disabled;
+    auto const minRelay = app_.config().txReduceRelayMinPeers + disabled;
 
-    if (!app_.config().TX_REDUCE_RELAY_ENABLE || total <= minRelay)
+    if (!app_.config().txReduceRelayEnable || total <= minRelay)
     {
         for (auto const& p : peers)
             p->send(sm);
-        if (app_.config().TX_REDUCE_RELAY_ENABLE || app_.config().TX_REDUCE_RELAY_METRICS)
+        if (app_.config().txReduceRelayEnable || app_.config().txReduceRelayMetrics)
             txMetrics_.addMetrics(total, toSkip.size(), 0);
         return;
     }
@@ -1287,8 +1285,8 @@ OverlayImpl::relay(
     // We have more peers than the minimum (disabled + minimum enabled),
     // relay to all disabled and some randomly selected enabled that
     // do not have the transaction.
-    auto const enabledTarget = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
-        ((total - minRelay) * app_.config().TX_RELAY_PERCENTAGE / 100);
+    auto const enabledTarget = app_.config().txReduceRelayMinPeers +
+        ((total - minRelay) * app_.config().txRelayPercentage / 100);
 
     txMetrics_.addMetrics(enabledTarget, toSkip.size(), disabled);
 
@@ -1492,7 +1490,7 @@ OverlayImpl::deletePeer(Peer::id_t id)
 {
     if (!strand_.running_in_this_thread())
     {
-        post(strand_, std::bind(&OverlayImpl::deletePeer, this, id));
+        post(strand_, [this, id] { deletePeer(id); });
         return;
     }
 
@@ -1504,7 +1502,7 @@ OverlayImpl::deleteIdlePeers()
 {
     if (!strand_.running_in_this_thread())
     {
-        post(strand_, std::bind(&OverlayImpl::deleteIdlePeers, this));
+        post(strand_, [this] { deleteIdlePeers(); });
         return;
     }
 
@@ -1514,12 +1512,12 @@ OverlayImpl::deleteIdlePeers()
 //------------------------------------------------------------------------------
 
 Overlay::Setup
-setupOverlay(BasicConfig const& config)
+setupOverlay(BasicConfig const& config, beast::Journal j)
 {
     Overlay::Setup setup;
 
     {
-        auto const& section = config.section("overlay");
+        auto const& section = config.section(Sections::kOverlay);
         setup.context = makeSslContext("");
 
         set(setup.ipLimit, "ip_limit", section);
@@ -1532,13 +1530,21 @@ setupOverlay(BasicConfig const& config)
         {
             boost::system::error_code ec;
             setup.publicIp = boost::asio::ip::make_address(ip, ec);
-            if (ec || beast::IP::isPrivate(setup.publicIp))
+            if (ec || !beast::IP::isPublic(setup.publicIp))
                 Throw<std::runtime_error>("Configured public IP is invalid");
+        }
+
+        set(setup.verifyEndpoints, true, "verify_endpoints", section);
+        if (!setup.verifyEndpoints)
+        {
+            JLOG(j.warn()) << "Endpoint verification is disabled. This is a "
+                              "security risk and should only be used for "
+                              "testing.";
         }
     }
 
     {
-        auto const& section = config.section("crawl");
+        auto const& section = config.section(Sections::kCrawl);
         auto const& values = section.values();
 
         if (values.size() > 1)
@@ -1564,33 +1570,33 @@ setupOverlay(BasicConfig const& config)
 
         if (crawlEnabled)
         {
-            if (get<bool>(section, "overlay", true))
+            if (get<bool>(section, Keys::kOverlay, true))
             {
-                setup.crawlOptions |= CrawlOptions::Overlay;
+                setup.crawlOptions |= CrawlOptions::kOverlay;
             }
-            if (get<bool>(section, "server", true))
+            if (get<bool>(section, Keys::kServer, true))
             {
-                setup.crawlOptions |= CrawlOptions::ServerInfo;
+                setup.crawlOptions |= CrawlOptions::kServerInfo;
             }
-            if (get<bool>(section, "counts", false))
+            if (get<bool>(section, Keys::kCounts, false))
             {
-                setup.crawlOptions |= CrawlOptions::ServerCounts;
+                setup.crawlOptions |= CrawlOptions::kServerCounts;
             }
-            if (get<bool>(section, "unl", true))
+            if (get<bool>(section, Keys::kUnl, true))
             {
-                setup.crawlOptions |= CrawlOptions::Unl;
+                setup.crawlOptions |= CrawlOptions::kUnl;
             }
         }
     }
     {
-        auto const& section = config.section("vl");
+        auto const& section = config.section(Sections::kVl);
 
         set(setup.vlEnabled, "enabled", section);
     }
 
     try
     {
-        auto id = config.legacy("network_id");
+        auto id = config.legacy(Sections::kNetworkId);
 
         if (!id.empty())
         {

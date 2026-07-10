@@ -2,11 +2,15 @@
 
 #include <test/jtx/Env.h>
 
-#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/Protocol.h>
 
 #include <cstdint>
+#include <expected>
+#include <functional>
 #include <limits>
 
 /** Directory operations. */
@@ -34,7 +38,7 @@ bumpLastPage(
     Env& env,
     std::uint64_t newLastPage,
     Keylet directory,
-    std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust) -> Expected<void, Error>;
+    std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust) -> std::expected<void, Error>;
 
 /// Implementation of adjust for the most common ledger entry, i.e. one where
 /// page index is stored in sfOwnerNode (and only there). Pass this function
@@ -48,7 +52,7 @@ maximumPageIndex(Env const& env) -> std::uint64_t
 {
     if (env.enabled(fixDirectoryLimit))
         return std::numeric_limits<std::uint64_t>::max();
-    return kDIR_NODE_MAX_PAGES - 1;
+    return kDirNodeMaxPages - 1;
 }
 
 }  // namespace xrpl::test::jtx::directory

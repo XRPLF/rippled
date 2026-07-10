@@ -56,7 +56,7 @@ PaymentChannelCreate::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 PaymentChannelCreate::preflight(PreflightContext const& ctx)
 {
-    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZERO))
+    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZero))
         return temBAD_AMOUNT;
 
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
@@ -96,13 +96,11 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
         if (!sled)
             return tecNO_DST;
 
-        auto const flags = sled->getFlags();
-
         // Check if they have disallowed incoming payment channels
-        if ((flags & lsfDisallowIncomingPayChan) != 0u)
+        if (sled->isFlag(lsfDisallowIncomingPayChan))
             return tecNO_PERMISSION;
 
-        if (((flags & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
+        if (sled->isFlag(lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
         // Pseudo-accounts cannot receive payment channels, other than native
@@ -139,7 +137,7 @@ PaymentChannelCreate::doApply()
     //
     // Note that we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
-    Keylet const payChanKeylet = keylet::payChan(account, dst, ctx_.tx.getSeqValue());
+    Keylet const payChanKeylet = keylet::payChannel(account, dst, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(payChanKeylet);
 
     // Funds held in this channel
@@ -187,10 +185,7 @@ PaymentChannelCreate::doApply()
 }
 
 void
-PaymentChannelCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+PaymentChannelCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

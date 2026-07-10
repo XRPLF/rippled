@@ -383,6 +383,7 @@ public:
         auto const usd = gw["USD"];
 
         // Test gateway with a variety of allowed transfer rates
+        // NOLINTNEXTLINE(bugprone-float-loop-counter)
         for (double transferRate = 1.0; transferRate <= 2.0; transferRate += 0.03125)
         {
             Env env(*this);
@@ -536,7 +537,7 @@ public:
         env(fset(alice, asfRequireAuth), Ter(tecOWNERS));
 
         // Remove the signer list.  After that asfRequireAuth should succeed.
-        env(signers(alice, test::jtx::kNONE));
+        env(signers(alice, test::jtx::kNone));
         env.close();
         BEAST_EXPECT(dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 

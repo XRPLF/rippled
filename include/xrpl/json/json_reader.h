@@ -5,7 +5,10 @@
 
 #include <boost/asio/buffer.hpp>
 
+#include <deque>
+#include <istream>
 #include <stack>
+#include <string>
 
 namespace json {
 
@@ -67,27 +70,25 @@ public:
     [[nodiscard]] std::string
     getFormattedErrorMessages() const;
 
-    static constexpr unsigned kNEST_LIMIT{25};
+    static constexpr unsigned kNestLimit{25};
 
 private:
-    // 53 files, protocol-wide
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum TokenType {
-        TokenEndOfStream = 0,
-        TokenObjectBegin,
-        TokenObjectEnd,
-        TokenArrayBegin,
-        TokenArrayEnd,
-        TokenString,
-        TokenInteger,
-        TokenDouble,
-        TokenTrue,
-        TokenFalse,
-        TokenNull,
-        TokenArraySeparator,
-        TokenMemberSeparator,
-        TokenComment,
-        TokenError
+    enum class TokenType {
+        EndOfStream = 0,
+        ObjectBegin,
+        ObjectEnd,
+        ArrayBegin,
+        ArrayEnd,
+        String,
+        Integer,
+        Double,
+        True,
+        False,
+        Null,
+        ArraySeparator,
+        MemberSeparator,
+        Comment,
+        Error
     };
 
     class Token
@@ -153,7 +154,7 @@ private:
         Location end,
         unsigned int& unicode);
     bool
-    addError(std::string const& message, Token& token, Location extra = 0);
+    addError(std::string const& message, Token& token, Location extra = nullptr);
     bool
     recoverFromError(TokenType skipUntilToken);
     bool

@@ -2,16 +2,27 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Handler.h>
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 #include <xrpl/resource/Charge.h>
-#include <xrpl/server/InfoSub.h>
+#include <xrpl/resource/Consumer.h>
 
 #include <grpcpp/grpcpp.h>
+#include <grpcpp/support/status.h>
+
+#include <atomic>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <string>
+#include <thread>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -93,7 +104,7 @@ private:
     template <class Request, class Response>
     using Handler = std::function<std::pair<Response, grpc::Status>(RPC::GRPCContext<Request>&)>;
     // This implementation is currently limited to v1 of the API
-    static unsigned constexpr kAPI_VERSION = 1;
+    static constexpr unsigned kApiVersion = 1;
 
     template <class Request, class Response>
     using Forward = std::function<grpc::Status(

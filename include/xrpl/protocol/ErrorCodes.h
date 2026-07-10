@@ -1,7 +1,8 @@
 #pragma once
 
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/jss.h>
+
+#include <string>
 
 namespace xrpl {
 
@@ -172,24 +173,24 @@ struct ErrorInfo
 {
     // Default ctor needed to produce an empty std::array during constexpr eval.
     constexpr ErrorInfo()
-        : code(RpcUnknown), token("unknown"), message("An unknown error code."), http_status(200)
+        : code(RpcUnknown), token("unknown"), message("An unknown error code."), httpStatus(200)
     {
     }
 
     constexpr ErrorInfo(ErrorCodeI code, char const* token, char const* message)
-        : code(code), token(token), message(message), http_status(200)
+        : code(code), token(token), message(message), httpStatus(200)
     {
     }
 
     constexpr ErrorInfo(ErrorCodeI code, char const* token, char const* message, int httpStatus)
-        : code(code), token(token), message(message), http_status(httpStatus)
+        : code(code), token(token), message(message), httpStatus(httpStatus)
     {
     }
 
     ErrorCodeI code;
     json::StaticString token;
     json::StaticString message;
-    int http_status;
+    int httpStatus;
 };
 
 /** Returns an ErrorInfo that reflects the error code. */

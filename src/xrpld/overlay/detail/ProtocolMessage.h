@@ -5,14 +5,21 @@
 #include <xrpld/overlay/detail/ZeroCopyStream.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/messages.h>
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
 
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <optional>
+#include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -98,19 +105,19 @@ struct MessageHeader
 
         @note This is the sum of sizes of the header and the payload.
     */
-    std::uint32_t total_wire_size = 0;
+    std::uint32_t totalWireSize = 0;
 
     /** The size of the header associated with this message. */
-    std::uint32_t header_size = 0;
+    std::uint32_t headerSize = 0;
 
     /** The size of the payload on the wire. */
-    std::uint32_t payload_wire_size = 0;
+    std::uint32_t payloadWireSize = 0;
 
     /** Uncompressed message size if the message is compressed. */
-    std::uint32_t uncompressed_size = 0;
+    std::uint32_t uncompressedSize = 0;
 
     /** The type of the message. */
-    std::uint16_t message_type = 0;
+    std::uint16_t messageType = 0;
 
     /** Indicates which compression algorithm the payload is compressed with.
      * Currently only lz4 is supported. If None then the message is not
@@ -159,10 +166,10 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
     // - 32 bits are the uncompressed data size
     if (*iter & 0x80)
     {
-        hdr.header_size = kHEADER_BYTES_COMPRESSED;
+        hdr.headerSize = kHeaderBytesCompressed;
 
         // not enough bytes to parse the header
-        if (size < hdr.header_size)
+        if (size < hdr.headerSize)
         {
             ec = make_error_code(boost::system::errc::success);
             return std::nullopt;
@@ -183,18 +190,18 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
         }
 
         for (int i = 0; i != 4; ++i)
-            hdr.payload_wire_size = (hdr.payload_wire_size << 8) + *iter++;
+            hdr.payloadWireSize = (hdr.payloadWireSize << 8) + *iter++;
 
         // clear the top four bits (the compression bits).
-        hdr.payload_wire_size &= 0x0FFFFFFF;
+        hdr.payloadWireSize &= 0x0FFFFFFF;
 
-        hdr.total_wire_size = hdr.header_size + hdr.payload_wire_size;
+        hdr.totalWireSize = hdr.headerSize + hdr.payloadWireSize;
 
         for (int i = 0; i != 2; ++i)
-            hdr.message_type = (hdr.message_type << 8) + *iter++;
+            hdr.messageType = (hdr.messageType << 8) + *iter++;
 
         for (int i = 0; i != 4; ++i)
-            hdr.uncompressed_size = (hdr.uncompressed_size << 8) + *iter++;
+            hdr.uncompressedSize = (hdr.uncompressedSize << 8) + *iter++;
 
         return hdr;
     }
@@ -204,9 +211,9 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
     // - 26 bits are the payload size
     if ((*iter & 0xFC) == 0)
     {
-        hdr.header_size = kHEADER_BYTES;
+        hdr.headerSize = kHeaderBytes;
 
-        if (size < hdr.header_size)
+        if (size < hdr.headerSize)
         {
             ec = make_error_code(boost::system::errc::success);
             return std::nullopt;
@@ -215,13 +222,13 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
         hdr.algorithm = Algorithm::None;
 
         for (int i = 0; i != 4; ++i)
-            hdr.payload_wire_size = (hdr.payload_wire_size << 8) + *iter++;
+            hdr.payloadWireSize = (hdr.payloadWireSize << 8) + *iter++;
 
-        hdr.uncompressed_size = hdr.payload_wire_size;
-        hdr.total_wire_size = hdr.header_size + hdr.payload_wire_size;
+        hdr.uncompressedSize = hdr.payloadWireSize;
+        hdr.totalWireSize = hdr.headerSize + hdr.payloadWireSize;
 
         for (int i = 0; i != 2; ++i)
-            hdr.message_type = (hdr.message_type << 8) + *iter++;
+            hdr.messageType = (hdr.messageType << 8) + *iter++;
 
         return hdr;
     }
@@ -230,28 +237,26 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
     return std::nullopt;
 }
 
-template <
-    class T,
-    class Buffers,
-    class = std::enable_if_t<std::is_base_of_v<::google::protobuf::Message, T>>>
+template <class T, class Buffers>
 std::shared_ptr<T>
 parseMessageContent(MessageHeader const& header, Buffers const& buffers)
+    requires(std::is_base_of_v<::google::protobuf::Message, T>)
 {
     auto m = std::make_shared<T>();
 
     ZeroCopyInputStream<Buffers> stream(buffers);
-    stream.Skip(header.header_size);
+    stream.Skip(header.headerSize);
 
     if (header.algorithm != compression::Algorithm::None)
     {
         std::vector<std::uint8_t> payload;
-        payload.resize(header.uncompressed_size);
+        payload.resize(header.uncompressedSize);
 
         auto const payloadSize = xrpl::compression::decompress(
             stream,
-            header.payload_wire_size,
+            header.payloadWireSize,
             payload.data(),
-            header.uncompressed_size,
+            header.uncompressedSize,
             header.algorithm);
 
         if (payloadSize == 0 || !m->ParseFromArray(payload.data(), payloadSize))
@@ -265,13 +270,10 @@ parseMessageContent(MessageHeader const& header, Buffers const& buffers)
     return m;
 }
 
-template <
-    class T,
-    class Buffers,
-    class Handler,
-    class = std::enable_if_t<std::is_base_of_v<::google::protobuf::Message, T>>>
+template <class T, class Buffers, class Handler>
 bool
 invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
+    requires(std::is_base_of_v<::google::protobuf::Message, T>)
 {
     auto const m = parseMessageContent<T>(header, buffers);
     if (!m)
@@ -279,13 +281,13 @@ invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
 
     using namespace xrpl::compression;
     handler.onMessageBegin(
-        header.message_type,
+        header.messageType,
         m,
-        header.payload_wire_size,
-        header.uncompressed_size,
+        header.payloadWireSize,
+        header.uncompressedSize,
         header.algorithm != Algorithm::None);
     handler.onMessage(m);
-    handler.onMessageEnd(header.message_type, m);
+    handler.onMessageEnd(header.messageType, m);
 
     return true;
 }
@@ -329,8 +331,8 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
     // whose size exceeds this may result in the connection being dropped. A
     // larger message size may be supported in the future or negotiated as
     // part of a protocol upgrade.
-    if (header->payload_wire_size > kMAXIMUM_MESSAGE_SIZE ||
-        header->uncompressed_size > kMAXIMUM_MESSAGE_SIZE)
+    if (header->payloadWireSize > kMaximumMessageSize ||
+        header->uncompressedSize > kMaximumMessageSize)
     {
         result.second = make_error_code(boost::system::errc::message_size);
         return result;
@@ -345,15 +347,15 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
 
     // We don't have the whole message yet. This isn't an error but we have
     // nothing to do.
-    if (header->total_wire_size > size)
+    if (header->totalWireSize > size)
     {
-        hint = header->total_wire_size - size;
+        hint = header->totalWireSize - size;
         return result;
     }
 
     bool success = false;
 
-    switch (header->message_type)
+    switch (header->messageType)
     {
         case protocol::mtMANIFESTS:
             success = detail::invoke<protocol::TMManifests>(*header, buffers, handler);
@@ -420,12 +422,12 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
             success = detail::invoke<protocol::TMReplayDeltaResponse>(*header, buffers, handler);
             break;
         default:
-            handler.onMessageUnknown(header->message_type);
+            handler.onMessageUnknown(header->messageType);
             success = true;
             break;
     }
 
-    result.first = header->total_wire_size;
+    result.first = header->totalWireSize;
 
     if (!success)
         result.second = make_error_code(boost::system::errc::bad_message);

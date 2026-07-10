@@ -1,6 +1,11 @@
 #pragma once
 
+#include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
+
+#include <algorithm>
+#include <chrono>
+#include <cstddef>
 
 namespace xrpl::PeerFinder {
 
@@ -25,8 +30,8 @@ public:
     void
     failure(clock_type::time_point const& now)
     {
-        failures_ = std::min(failures_ + 1, Tuning::kCONNECTION_BACKOFF.size() - 1);
-        when_ = now + std::chrono::minutes(Tuning::kCONNECTION_BACKOFF[failures_]);
+        failures_ = std::min(failures_ + 1, Tuning::kConnectionBackoff.size() - 1);
+        when_ = now + std::chrono::minutes(Tuning::kConnectionBackoff[failures_]);
     }
 
     /** Updates metadata to reflect a successful connection. */

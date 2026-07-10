@@ -39,7 +39,7 @@ estimateEntropy(std::string const& input)
     {
         (void)_;
         auto x = f / input.length();
-        se += (x)*log2(x);
+        se += x * log2(x);
     }
 
     // We multiply it by the length, to get an estimate of
@@ -126,7 +126,7 @@ walletPropose(json::Value const& params)
 
     auto const publicKey = generateKeyPair(*keyType, *seed).first;
 
-    json::Value obj(json::ObjectValue);
+    json::Value obj(json::ValueType::Object);
 
     auto const seed1751 = seedAs1751(*seed);
     auto const seedHex = strHex(*seed);

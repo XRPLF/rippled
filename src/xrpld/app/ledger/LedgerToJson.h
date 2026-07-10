@@ -5,8 +5,12 @@
 #include <xrpld/rpc/Context.h>
 
 #include <xrpl/basics/chrono.h>
-#include <xrpl/ledger/Ledger.h>
-#include <xrpl/protocol/serialize.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
+
+#include <optional>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -23,9 +27,7 @@ struct LedgerFill
             closeTime = context->ledgerMaster.getCloseTimeBySeq(ledger.seq());
     }
 
-    // Bitwise bitmask
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum Options {
+    enum class Options {
         DumpTxrp = 1,
         DumpState = 2,
         Expand = 4,

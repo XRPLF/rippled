@@ -1,12 +1,12 @@
 #pragma once
 
-#include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 
 #include <boost/operators.hpp>
 
 #include <cstdint>
+#include <ostream>
 #include <string>
 
 namespace xrpl {
@@ -92,7 +92,7 @@ public:
 
 inline IOUAmount::IOUAmount(beast::Zero)
 {
-    *this = beast::kZERO;
+    *this = beast::kZero;
 }
 
 inline IOUAmount::IOUAmount(mantissa_type mantissa, exponent_type exponent)
@@ -178,37 +178,5 @@ to_string(IOUAmount const& amount);
 */
 IOUAmount
 mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundUp);
-
-// Since many uses of the number class do not have access to a ledger,
-// getSTNumberSwitchover needs to be globally accessible.
-
-bool
-getSTNumberSwitchover();
-
-void
-setSTNumberSwitchover(bool v);
-
-/** RAII class to set and restore the Number switchover.
- */
-
-class NumberSO
-{
-    bool saved_;
-
-public:
-    ~NumberSO()
-    {
-        setSTNumberSwitchover(saved_);
-    }
-
-    NumberSO(NumberSO const&) = delete;
-    NumberSO&
-    operator=(NumberSO const&) = delete;
-
-    explicit NumberSO(bool v) : saved_(getSTNumberSwitchover())
-    {
-        setSTNumberSwitchover(v);
-    }
-};
 
 }  // namespace xrpl

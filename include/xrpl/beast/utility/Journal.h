@@ -2,29 +2,28 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <cstdint>
+#include <ostream>
 #include <sstream>
+#include <string>
+#include <type_traits>
 
 namespace beast {
 
-/** A namespace for easy access to logging severity values. */
-namespace severities {
 /** Severity level / threshold of a Journal message. */
-// Hundreds of usages via logging macros
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum Severity {
-    KAll = 0,
+enum class Severity : std::uint8_t {
+    All = 0,
 
-    KTrace = KAll,
-    KDebug = 1,
-    KInfo = 2,
-    KWarning = 3,
-    KError = 4,
-    KFatal = 5,
+    Trace = All,
+    Debug = 1,
+    Info = 2,
+    Warning = 3,
+    Error = 4,
+    Fatal = 5,
 
-    KDisabled = 6,
-    KNone = KDisabled
+    Disabled = 6,
+    None = Disabled
 };
-}  // namespace severities
 
 /** A generic endpoint for log messages.
 
@@ -44,9 +43,6 @@ public:
     class Sink;
 
 private:
-    // Severity level / threshold of a Journal message.
-    using Severity = severities::Severity;
-
     // Invariant: sink_ always points to a valid Sink
     Sink* sink_;
 
@@ -112,12 +108,12 @@ public:
     };
 
 #ifndef __INTELLISENSE__
-    static_assert(!std::is_default_constructible_v<Sink>, "");
-    static_assert(!std::is_copy_constructible_v<Sink>, "");
-    static_assert(!std::is_move_constructible_v<Sink>, "");
-    static_assert(!std::is_copy_assignable_v<Sink>, "");
-    static_assert(!std::is_move_assignable_v<Sink>, "");
-    static_assert(std::is_nothrow_destructible_v<Sink>, "");
+    static_assert(!std::is_default_constructible_v<Sink>);
+    static_assert(!std::is_copy_constructible_v<Sink>);
+    static_assert(!std::is_move_constructible_v<Sink>);
+    static_assert(!std::is_copy_assignable_v<Sink>);
+    static_assert(!std::is_move_assignable_v<Sink>);
+    static_assert(std::is_nothrow_destructible_v<Sink>);
 #endif
 
     /** Returns a Sink which does nothing. */
@@ -168,12 +164,12 @@ public:
     };
 
 #ifndef __INTELLISENSE__
-    static_assert(!std::is_default_constructible_v<ScopedStream>, "");
-    static_assert(std::is_copy_constructible_v<ScopedStream>, "");
-    static_assert(std::is_move_constructible_v<ScopedStream>, "");
-    static_assert(!std::is_copy_assignable_v<ScopedStream>, "");
-    static_assert(!std::is_move_assignable_v<ScopedStream>, "");
-    static_assert(std::is_nothrow_destructible_v<ScopedStream>, "");
+    static_assert(!std::is_default_constructible_v<ScopedStream>);
+    static_assert(std::is_copy_constructible_v<ScopedStream>);
+    static_assert(std::is_move_constructible_v<ScopedStream>);
+    static_assert(!std::is_copy_assignable_v<ScopedStream>);
+    static_assert(!std::is_move_assignable_v<ScopedStream>);
+    static_assert(std::is_nothrow_destructible_v<ScopedStream>);
 #endif
 
     //--------------------------------------------------------------------------
@@ -183,7 +179,7 @@ public:
     {
     public:
         /** Create a stream which produces no output. */
-        explicit Stream() : sink_(getNullSink()), level_(severities::KDisabled)
+        explicit Stream() : sink_(getNullSink()), level_(Severity::Disabled)
         {
         }
 
@@ -194,7 +190,7 @@ public:
         Stream(Sink& sink, Severity level) : sink_(sink), level_(level)
         {
             XRPL_ASSERT(
-                level_ < severities::KDisabled, "beast::Journal::Stream::Stream : maximum level");
+                level_ < Severity::Disabled, "beast::Journal::Stream::Stream : maximum level");
         }
 
         /** Construct or copy another Stream. */
@@ -250,12 +246,12 @@ public:
     };
 
 #ifndef __INTELLISENSE__
-    static_assert(std::is_default_constructible_v<Stream>, "");
-    static_assert(std::is_copy_constructible_v<Stream>, "");
-    static_assert(std::is_move_constructible_v<Stream>, "");
-    static_assert(!std::is_copy_assignable_v<Stream>, "");
-    static_assert(!std::is_move_assignable_v<Stream>, "");
-    static_assert(std::is_nothrow_destructible_v<Stream>, "");
+    static_assert(std::is_default_constructible_v<Stream>);
+    static_assert(std::is_copy_constructible_v<Stream>);
+    static_assert(std::is_move_constructible_v<Stream>);
+    static_assert(!std::is_copy_assignable_v<Stream>);
+    static_assert(!std::is_move_assignable_v<Stream>);
+    static_assert(std::is_nothrow_destructible_v<Stream>);
 #endif
 
     //--------------------------------------------------------------------------
@@ -297,48 +293,48 @@ public:
     [[nodiscard]] Stream
     trace() const
     {
-        return {*sink_, severities::KTrace};
+        return {*sink_, Severity::Trace};
     }
 
     [[nodiscard]] Stream
     debug() const
     {
-        return {*sink_, severities::KDebug};
+        return {*sink_, Severity::Debug};
     }
 
     [[nodiscard]] Stream
     info() const
     {
-        return {*sink_, severities::KInfo};
+        return {*sink_, Severity::Info};
     }
 
     [[nodiscard]] Stream
     warn() const
     {
-        return {*sink_, severities::KWarning};
+        return {*sink_, Severity::Warning};
     }
 
     [[nodiscard]] Stream
     error() const
     {
-        return {*sink_, severities::KError};
+        return {*sink_, Severity::Error};
     }
 
     [[nodiscard]] Stream
     fatal() const
     {
-        return {*sink_, severities::KFatal};
+        return {*sink_, Severity::Fatal};
     }
     /** @} */
 };
 
 #ifndef __INTELLISENSE__
-static_assert(!std::is_default_constructible_v<Journal>, "");
-static_assert(std::is_copy_constructible_v<Journal>, "");
-static_assert(std::is_move_constructible_v<Journal>, "");
-static_assert(std::is_copy_assignable_v<Journal>, "");
-static_assert(std::is_move_assignable_v<Journal>, "");
-static_assert(std::is_nothrow_destructible_v<Journal>, "");
+static_assert(!std::is_default_constructible_v<Journal>);
+static_assert(std::is_copy_constructible_v<Journal>);
+static_assert(std::is_move_constructible_v<Journal>);
+static_assert(std::is_copy_assignable_v<Journal>);
+static_assert(std::is_move_assignable_v<Journal>);
+static_assert(std::is_nothrow_destructible_v<Journal>);
 #endif
 
 //------------------------------------------------------------------------------
@@ -418,9 +414,9 @@ class BasicLogstream : public std::basic_ostream<CharT, Traits>
 {
     using char_type = CharT;
     using traits_type = Traits;
-    using int_type = typename traits_type::int_type;
-    using pos_type = typename traits_type::pos_type;
-    using off_type = typename traits_type::off_type;
+    using int_type = traits_type::int_type;
+    using pos_type = traits_type::pos_type;
+    using off_type = traits_type::off_type;
 
     detail::LogStreamBuf<CharT, Traits> buf_;
 

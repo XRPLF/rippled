@@ -12,12 +12,12 @@
 #include <test/jtx/trust.h>
 
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -49,7 +49,7 @@ struct TxnTestData
     //   3. sign_for, and
     //   4. submit_multisigned.
     // The JSON is not valid for all of these interfaces, but it should
-    // crash kNONE of them, and should provide reliable error messages.
+    // crash kNone of them, and should provide reliable error messages.
     //
     // The expMsg array contains the expected error string for the above cases.
     std::array<char const* const, 4> const expMsg;
@@ -72,7 +72,7 @@ struct TxnTestData
     operator=(TxnTestData&&) = delete;
 };
 
-static constexpr TxnTestData kTXN_TEST_ARRAY[] = {
+static constexpr TxnTestData kTxnTestArray[] = {
 
     {"Minimal payment, no Amount only DeliverMax",
      __LINE__,
@@ -2238,7 +2238,7 @@ public:
 
         {
             json::Value req;
-            json::Reader().parse("{ \"fee_mult_max\" : 1, \"tx_json\" : { } } ", req);
+            json::Reader().parse(R"({ "fee_mult_max" : 1, "tx_json" : { } } )", req);
             json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
@@ -2275,7 +2275,7 @@ public:
 
         {
             json::Value req;
-            json::Reader().parse("{ \"fee_mult_max\" : 0, \"tx_json\" : { } } ", req);
+            json::Reader().parse(R"({ "fee_mult_max" : 0, "tx_json" : { } } )", req);
             json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
@@ -2375,8 +2375,9 @@ public:
         testcase("autofill escalated fees");
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
-                    cfg->section("transaction_queue").set("minimum_txn_in_ledger_standalone", "3");
+                    cfg->loadFromString(std::string("[") + Sections::kSigningSupport + "]\ntrue");
+                    cfg->section(Sections::kTransactionQueue)
+                        .set(Keys::kMinimumTxnInLedgerStandalone, "3");
                     return cfg;
                 })};
         LoadFeeTrack const& feeTrackOuter = env.app().getFeeTrack();
@@ -2602,7 +2603,7 @@ public:
                 result[jss::tx_json].isMember(jss::Fee) && result[jss::tx_json][jss::Fee] == "10");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UInt));
         }
 
         {
@@ -2629,7 +2630,7 @@ public:
                 result[jss::tx_json][jss::Fee] == "7813");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UInt));
 
             env.close();
         }
@@ -2655,7 +2656,7 @@ public:
                 result[jss::tx_json].isMember(jss::Fee) && result[jss::tx_json][jss::Fee] == "47");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UInt));
         }
 
         {
@@ -2687,7 +2688,7 @@ public:
                 result[jss::tx_json][jss::Fee] == "6806");
             BEAST_EXPECT(
                 result[jss::tx_json].isMember(jss::Sequence) &&
-                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UintValue));
+                result[jss::tx_json][jss::Sequence].isConvertibleTo(json::ValueType::UInt));
         }
     }
 
@@ -2697,7 +2698,7 @@ public:
         testcase("autofill NetworkID");
         using namespace test::jtx;
         Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->NETWORK_ID = 1025;
+                    cfg->networkId = 1025;
                     return cfg;
                 })};
 
@@ -2743,7 +2744,7 @@ public:
         // "c" (phantom signer) is rPcNzota6B8YBokhYtcTNqQVCngtbnWfux.
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FEES.reference_fee = 10;
+            cfg->fees.referenceFee = 10;
             return cfg;
         }));
         env.fund(XRP(100000), a, ed, g);
@@ -2777,26 +2778,26 @@ public:
 
         using TestStuff = std::tuple<signFunc, submitFunc, char const*, unsigned int>;
 
-        static TestStuff const kTEST_FUNCS[] = {
+        static TestStuff const kTestFuncs[] = {
             TestStuff{transactionSign, nullptr, "sign", 0},
             TestStuff{nullptr, transactionSubmit, "submit", 1},
             TestStuff{transactionSignFor, nullptr, "sign_for", 2},
             TestStuff{nullptr, transactionSubmitMultiSigned, "submit_multisigned", 3}};
 
-        for (auto testFunc : kTEST_FUNCS)
+        for (auto testFunc : kTestFuncs)
         {
             // For each JSON test.
-            for (auto const& txnTest : kTXN_TEST_ARRAY)
+            for (auto const& txnTest : kTxnTestArray)
             {
                 json::Value req;
                 json::Reader().parse(txnTest.json, req);
                 if (RPC::containsError(req))
                     Throw<std::runtime_error>("Internal JSONRPC_test error.  Bad test JSON.");
 
-                static Role const kTESTED_ROLES[] = {
+                static Role const kTestedRoles[] = {
                     Role::GUEST, Role::USER, Role::ADMIN, Role::FORBID};
 
-                for (Role const testRole : kTESTED_ROLES)
+                for (Role const testRole : kTestedRoles)
                 {
                     json::Value result;
                     auto const signFn = get<0>(testFunc);

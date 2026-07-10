@@ -2,17 +2,23 @@
 
 #include <test/csf/Tx.h>
 
-#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
-#include <xrpl/basics/comparators.h>
 #include <xrpl/basics/tagged_integer.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/LedgerTiming.h>
 
 #include <boost/bimap/bimap.hpp>
 
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <optional>
 #include <set>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <vector>
 
 namespace xrpl::test::csf {
 
@@ -66,7 +72,7 @@ private:
         TxSetType txs;
 
         // Resolution used to determine close time
-        NetClock::duration closeTimeResolution = kLEDGER_DEFAULT_TIME_RESOLUTION;
+        NetClock::duration closeTimeResolution = kLedgerDefaultTimeResolution;
 
         //! When the ledger closed (up to closeTimeResolution)
         NetClock::time_point closeTime;
@@ -128,14 +134,14 @@ private:
     };
 
     // Single common genesis instance
-    static Instance const kGENESIS;
+    static Instance const kGenesis;
 
     Ledger(ID id, Instance const* i) : id_{id}, instance_{i}
     {
     }
 
 public:
-    Ledger(MakeGenesis) : instance_(&kGENESIS)
+    Ledger(MakeGenesis) : instance_(&kGenesis)
     {
     }
 
@@ -226,8 +232,8 @@ private:
 class LedgerOracle
 {
     using InstanceMap = boost::bimaps::bimap<
-        boost::bimaps::set_of<Ledger::Instance, xrpl::less<Ledger::Instance>>,
-        boost::bimaps::set_of<Ledger::ID, xrpl::less<Ledger::ID>>>;
+        boost::bimaps::set_of<Ledger::Instance, std::less<>>,
+        boost::bimaps::set_of<Ledger::ID, std::less<>>>;
     using InstanceEntry = InstanceMap::value_type;
 
     // Set of all known ledgers; note this is never pruned

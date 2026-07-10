@@ -1,11 +1,13 @@
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
@@ -32,15 +34,15 @@ public:
 
         Section params;
         beast::TempDir const tempDir;
-        params.set("type", type);
-        params.set("path", tempDir.path());
+        params.set(Keys::kType, type);
+        params.set(Keys::kPath, tempDir.path());
 
         beast::xor_shift_engine rng(seedValue);
 
         // Create a batch
         auto batch = createPredictableBatch(numObjsToTest, rng());
 
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("Backend_test", *this);
 
         {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/STAmount.h>
 
 #include <boost/operators.hpp>
@@ -72,6 +72,6 @@ transferFeeAsRate(std::uint16_t fee);
 }  // namespace nft
 
 /** A transfer rate signifying a 1:1 exchange */
-extern Rate const kPARITY_RATE;
+extern Rate const kParityRate;
 
 }  // namespace xrpl

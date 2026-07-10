@@ -1,11 +1,13 @@
 #pragma once
 
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/messages.h>
 
 #include <boost/circular_buffer.hpp>
 
+#include <xrpl.pb.h>
+
 #include <chrono>
+#include <cstdint>
 #include <mutex>
 
 namespace xrpl::metrics {
@@ -29,7 +31,7 @@ struct SingleMetrics
     clock_type::time_point intervalStart{clock_type::now()};
     std::uint64_t accum{0};
     std::uint64_t rollingAvg{0};
-    std::uint32_t N{0};
+    std::uint32_t n{0};
     bool perTimeUnit{true};
     boost::circular_buffer<std::uint64_t> rollingAvgAggregate{30, 0ull};
     /** Add metrics value

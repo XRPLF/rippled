@@ -5,6 +5,7 @@
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstddef>
+#include <tuple>
 #include <type_traits>
 
 namespace xrpl::detail {
@@ -35,9 +36,9 @@ class STVar
 {
 private:
     // The largest "small object" we can accommodate
-    static std::size_t constexpr kMAX_SIZE = 72;
+    static constexpr std::size_t kMaxSize = 72;
 
-    std::aligned_storage<kMAX_SIZE>::type d_ = {};
+    alignas(std::max_align_t) std::byte d_[kMaxSize] = {};
     STBase* p_ = nullptr;
 
 public:
@@ -49,14 +50,13 @@ public:
     STVar&
     operator=(STVar&& rhs);
 
-    STVar(STBase&& t)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+    STVar(STBase&& t) : p_(t.move(kMaxSize, &d_))
     {
-        p_ = t.move(kMAX_SIZE, &d_);
     }
 
-    STVar(STBase const& t)
+    STVar(STBase const& t) : p_(t.copy(kMaxSize, &d_))
     {
-        p_ = t.copy(kMAX_SIZE, &d_);
     }
 
     STVar(DefaultObjectT, SField const& name);
@@ -110,7 +110,7 @@ private:
     void
     construct(Args&&... args)
     {
-        if constexpr (sizeof(T) > kMAX_SIZE)
+        if constexpr (sizeof(T) > kMaxSize)
         {
             p_ = new T(std::forward<Args>(args)...);
         }

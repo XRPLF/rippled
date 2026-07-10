@@ -1,9 +1,15 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
+
+#include <cstddef>
+#include <map>
+#include <memory>
 
 namespace xrpl {
 
@@ -93,7 +99,7 @@ public:
     }
 
     void
-    insert(std::shared_ptr<STTx const> const& txn);
+    insert(std::shared_ptr<STTx const> txn);
 
     // Pops the next transaction on account that follows seqProx in the
     // sort order.  Normally called when a transaction is successfully

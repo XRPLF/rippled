@@ -1,8 +1,14 @@
 #pragma once
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Quality.h>
+
+#include <cstdint>
+#include <optional>
+#include <stdexcept>
 
 namespace xrpl {
 
@@ -72,7 +78,7 @@ QualityFunction::QualityFunction(
     std::uint32_t tfee,
     QualityFunction::AMMTag)
 {
-    if (amounts.in <= beast::kZERO || amounts.out <= beast::kZERO)
+    if (amounts.in <= beast::kZero || amounts.out <= beast::kZero)
         Throw<std::runtime_error>("QualityFunction amounts are 0.");
     Number const cfee = feeMult(tfee);
     m_ = -cfee / amounts.in;

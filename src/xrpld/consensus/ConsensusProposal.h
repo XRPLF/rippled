@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <optional>
 #include <sstream>
+#include <string>
 
 namespace xrpl {
 /** Represents a proposed position taken during a round of consensus.
@@ -26,7 +27,7 @@ namespace xrpl {
     As consensus proceeds, peers may change their position on the transaction,
     or choose to abstain. Each successive proposal includes a strictly
     monotonically increasing number (or, if a peer is choosing to abstain,
-    the special value `kSEQ_LEAVE`).
+    the special value `kSeqLeave`).
 
     Refer to @ref Consensus for requirements of the template arguments.
 
@@ -42,10 +43,10 @@ public:
     using NodeID = NodeId;
 
     //< Sequence value when a peer initially joins consensus
-    static std::uint32_t const kSEQ_JOIN = 0;
+    static std::uint32_t const kSeqJoin = 0;
 
     //< Sequence number when  a peer wants to bow out and leave consensus
-    static std::uint32_t const kSEQ_LEAVE = 0xffffffff;
+    static std::uint32_t const kSeqLeave = 0xffffffff;
 
     /** Constructor
 
@@ -95,7 +96,7 @@ public:
 
     /** Get the sequence number of this proposal
 
-        Starting with an initial sequence number of `kSEQ_JOIN`, successive
+        Starting with an initial sequence number of `kSeqJoin`, successive
         proposals from a peer will increase the sequence number.
 
         @return the sequence number
@@ -126,14 +127,14 @@ public:
     bool
     isInitial() const
     {
-        return proposeSeq_ == kSEQ_JOIN;
+        return proposeSeq_ == kSeqJoin;
     }
 
     //! Get whether this node left the consensus process
     bool
     isBowOut() const
     {
-        return proposeSeq_ == kSEQ_LEAVE;
+        return proposeSeq_ == kSeqLeave;
     }
 
     //! Get whether this position is stale relative to the provided cutoff
@@ -160,7 +161,7 @@ public:
         position_ = newPosition;
         closeTime_ = newCloseTime;
         time_ = now;
-        if (proposeSeq_ != kSEQ_LEAVE)
+        if (proposeSeq_ != kSeqLeave)
             ++proposeSeq_;
     }
 
@@ -175,7 +176,7 @@ public:
     {
         signingHash_.reset();
         time_ = now;
-        proposeSeq_ = kSEQ_LEAVE;
+        proposeSeq_ = kSeqLeave;
     }
 
     std::string
@@ -195,7 +196,7 @@ public:
     {
         using std::to_string;
 
-        json::Value ret = json::ObjectValue;
+        json::Value ret = json::ValueType::Object;
         ret[jss::previous_ledger] = to_string(prevLedger());
 
         if (!isBowOut())

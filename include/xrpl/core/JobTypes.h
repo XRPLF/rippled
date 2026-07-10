@@ -1,10 +1,14 @@
 #pragma once
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobTypeInfo.h>
 
+#include <limits>
 #include <map>
 #include <string>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -101,8 +105,8 @@ public:
     static JobTypes const&
     instance()
     {
-        static JobTypes const kTYPES;
-        return kTYPES;
+        static JobTypes const kTypes;
+        return kTypes;
     }
 
     static std::string const&
@@ -114,7 +118,7 @@ public:
     [[nodiscard]] JobTypeInfo const&
     get(JobType jt) const
     {
-        Map::const_iterator const iter(map.find(jt));
+        auto const iter = map.find(jt);
         XRPL_ASSERT(iter != map.end(), "xrpl::JobTypes::get : valid input");
 
         if (iter != map.end())

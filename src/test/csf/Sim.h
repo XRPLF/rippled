@@ -2,16 +2,22 @@
 
 #include <test/csf/BasicNetwork.h>
 #include <test/csf/CollectorRef.h>
-#include <test/csf/Digraph.h>
 #include <test/csf/Peer.h>
 #include <test/csf/PeerGroup.h>
 #include <test/csf/Scheduler.h>
 #include <test/csf/SimTime.h>
 #include <test/csf/TrustGraph.h>
+#include <test/csf/ledgers.h>
 
+#include <xrpl/beast/utility/Journal.h>
+
+#include <cstddef>
+#include <cstdint>
 #include <deque>
 #include <iostream>
 #include <random>
+#include <string>
+#include <vector>
 
 namespace xrpl::test::csf {
 
@@ -22,12 +28,12 @@ class BasicSink : public beast::Journal::Sink
 
 public:
     BasicSink(Scheduler::clock_type const& clock)
-        : Sink(beast::severities::KDisabled, false), clock_{clock}
+        : Sink(beast::Severity::Disabled, false), clock_{clock}
     {
     }
 
     void
-    write(beast::severities::Severity level, std::string const& text) override
+    write(beast::Severity level, std::string const& text) override
     {
         if (level < threshold())
             return;
@@ -36,7 +42,7 @@ public:
     }
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text) override
+    writeAlways(beast::Severity level, std::string const& text) override
     {
         std::cout << clock_.now().time_since_epoch().count() << " " << text << std::endl;
     }
@@ -65,6 +71,7 @@ public:
         and no network connections.
 
     */
+    // NOLINTNEXTLINE(bugprone-random-generator-seed): fixed seed for reproducible test
     Sim() : sink{scheduler.clock()}, j{sink}, net{scheduler}
     {
     }

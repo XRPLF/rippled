@@ -26,7 +26,7 @@ protected:
             run(bool previousAgree, std::uint32_t rounds)
             {
                 TestRes res;
-                auto closeResolution = kLEDGER_DEFAULT_TIME_RESOLUTION;
+                auto closeResolution = kLedgerDefaultTimeResolution;
                 auto nextCloseResolution = closeResolution;
                 std::uint32_t round = 0;
                 do

@@ -420,9 +420,10 @@ SQLiteDatabase::oldestAccountTxPage(AccountTxPageOptions const& options)
     if (!useTxTables_)
         return {};
 
-    static std::uint32_t const kPAGE_LENGTH(200);
-    auto onUnsavedLedger =
-        std::bind(saveLedgerAsync, std::ref(registry_.get().getApp()), std::placeholders::_1);
+    static std::uint32_t const kPageLength(200);
+    auto onUnsavedLedger = [&app = registry_.get().getApp()](std::uint32_t seq) {
+        saveLedgerAsync(app, seq);
+    };
     AccountTxs ret;
     auto onTransaction = [&ret, &app = registry_.get().getApp()](
                              std::uint32_t ledgerIndex,
@@ -436,7 +437,7 @@ SQLiteDatabase::oldestAccountTxPage(AccountTxPageOptions const& options)
     {
         auto db = checkoutTransaction();
         auto newmarker =
-            detail::oldestAccountTxPage(*db, onUnsavedLedger, onTransaction, options, kPAGE_LENGTH)
+            detail::oldestAccountTxPage(*db, onUnsavedLedger, onTransaction, options, kPageLength)
                 .first;
         return {ret, newmarker};
     }
@@ -450,9 +451,10 @@ SQLiteDatabase::newestAccountTxPage(AccountTxPageOptions const& options)
     if (!useTxTables_)
         return {};
 
-    static std::uint32_t const kPAGE_LENGTH(200);
-    auto onUnsavedLedger =
-        std::bind(saveLedgerAsync, std::ref(registry_.get().getApp()), std::placeholders::_1);
+    static std::uint32_t const kPageLength(200);
+    auto onUnsavedLedger = [&app = registry_.get().getApp()](std::uint32_t seq) {
+        saveLedgerAsync(app, seq);
+    };
     AccountTxs ret;
     auto onTransaction = [&ret, &app = registry_.get().getApp()](
                              std::uint32_t ledgerIndex,
@@ -466,7 +468,7 @@ SQLiteDatabase::newestAccountTxPage(AccountTxPageOptions const& options)
     {
         auto db = checkoutTransaction();
         auto newmarker =
-            detail::newestAccountTxPage(*db, onUnsavedLedger, onTransaction, options, kPAGE_LENGTH)
+            detail::newestAccountTxPage(*db, onUnsavedLedger, onTransaction, options, kPageLength)
                 .first;
         return {ret, newmarker};
     }
@@ -480,9 +482,10 @@ SQLiteDatabase::oldestAccountTxPageB(AccountTxPageOptions const& options)
     if (!useTxTables_)
         return {};
 
-    static std::uint32_t const kPAGE_LENGTH(500);
-    auto onUnsavedLedger =
-        std::bind(saveLedgerAsync, std::ref(registry_.get().getApp()), std::placeholders::_1);
+    static std::uint32_t const kPageLength(500);
+    auto onUnsavedLedger = [&app = registry_.get().getApp()](std::uint32_t seq) {
+        saveLedgerAsync(app, seq);
+    };
     MetaTxsList ret;
     auto onTransaction =
         [&ret](
@@ -494,7 +497,7 @@ SQLiteDatabase::oldestAccountTxPageB(AccountTxPageOptions const& options)
     {
         auto db = checkoutTransaction();
         auto newmarker =
-            detail::oldestAccountTxPage(*db, onUnsavedLedger, onTransaction, options, kPAGE_LENGTH)
+            detail::oldestAccountTxPage(*db, onUnsavedLedger, onTransaction, options, kPageLength)
                 .first;
         return {ret, newmarker};
     }
@@ -508,9 +511,10 @@ SQLiteDatabase::newestAccountTxPageB(AccountTxPageOptions const& options)
     if (!useTxTables_)
         return {};
 
-    static std::uint32_t const kPAGE_LENGTH(500);
-    auto onUnsavedLedger =
-        std::bind(saveLedgerAsync, std::ref(registry_.get().getApp()), std::placeholders::_1);
+    static std::uint32_t const kPageLength(500);
+    auto onUnsavedLedger = [&app = registry_.get().getApp()](std::uint32_t seq) {
+        saveLedgerAsync(app, seq);
+    };
     MetaTxsList ret;
     auto onTransaction =
         [&ret](
@@ -522,7 +526,7 @@ SQLiteDatabase::newestAccountTxPageB(AccountTxPageOptions const& options)
     {
         auto db = checkoutTransaction();
         auto newmarker =
-            detail::newestAccountTxPage(*db, onUnsavedLedger, onTransaction, options, kPAGE_LENGTH)
+            detail::newestAccountTxPage(*db, onUnsavedLedger, onTransaction, options, kPageLength)
                 .first;
         return {ret, newmarker};
     }
@@ -641,10 +645,10 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
             setup,
             DatabaseCon::CheckpointerSetup{.jobQueue = &jobQueue, .registry = registry_}))
     {
-        std::string_view constexpr kERROR = "Failed to create ledger databases";
+        static constexpr std::string_view kError = "Failed to create ledger databases";
 
-        JLOG(j_.fatal()) << kERROR;
-        Throw<std::runtime_error>(kERROR.data());
+        JLOG(j_.fatal()) << kError;
+        Throw<std::runtime_error>(kError.data());
     }
 }
 

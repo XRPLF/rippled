@@ -54,7 +54,7 @@ public:
         env(noop(alice), Sig(alice));
 
         testcase("Revoke regular key");
-        env(regkey(alice, kDISABLED));
+        env(regkey(alice, kDisabled));
         env(noop(alice), Sig(bob), Ter(tefBAD_AUTH));
         env(noop(alice), Sig(alice));
     }
@@ -73,6 +73,27 @@ public:
     }
 
     void
+    testNoAlternativeKey()
+    {
+        using namespace test::jtx;
+
+        testcase("Cannot remove last signing method");
+        Env env{*this, testableAmendments()};
+        Account const alice("alice");
+        Account const bob("bob");
+        env.fund(XRP(10000), alice);
+
+        env(regkey(alice, bob));
+        env(fset(alice, asfDisableMaster), Sig(alice));
+
+        env(regkey(alice, kDisabled), Sig(bob), Ter(tecNO_ALTERNATIVE_KEY));
+
+        auto const sle = env.le(alice);
+        BEAST_EXPECT(
+            sle && sle->isFlag(lsfDisableMaster) && sle->getAccountID(sfRegularKey) == bob.id());
+    }
+
+    void
     testPasswordSpent()
     {
         using namespace test::jtx;
@@ -84,15 +105,12 @@ public:
         env.fund(XRP(10000), alice, bob);
 
         auto ar = env.le(alice);
-        BEAST_EXPECT(
-            ar->isFieldPresent(sfFlags) && ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == 0));
+        BEAST_EXPECT(ar->isFieldPresent(sfFlags) && !ar->isFlag(lsfPasswordSpent));
 
         env(regkey(alice, bob), Sig(alice), Fee(0));
 
         ar = env.le(alice);
-        BEAST_EXPECT(
-            ar->isFieldPresent(sfFlags) &&
-            ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == lsfPasswordSpent));
+        BEAST_EXPECT(ar->isFieldPresent(sfFlags) && ar->isFlag(lsfPasswordSpent));
 
         // The second SetRegularKey transaction with Fee=0 should fail.
         env(regkey(alice, bob), Sig(alice), Fee(0), Ter(telINSUF_FEE_P));
@@ -100,8 +118,7 @@ public:
         env.trust(bob["USD"](1), alice);
         env(pay(bob, alice, bob["USD"](1)));
         ar = env.le(alice);
-        BEAST_EXPECT(
-            ar->isFieldPresent(sfFlags) && ((ar->getFieldU32(sfFlags) & lsfPasswordSpent) == 0));
+        BEAST_EXPECT(ar->isFieldPresent(sfFlags) && !ar->isFlag(lsfPasswordSpent));
     }
 
     void
@@ -158,7 +175,7 @@ public:
         env.close();
 
         // Disable the regular key using a ticket.
-        env(regkey(alice, kDISABLED), Sig(alie), ticket::Use(--ticketSeq));
+        env(regkey(alice, kDisabled), Sig(alie), ticket::Use(--ticketSeq));
         env.close();
 
         // alice should be able to sign using the master key but not the
@@ -173,6 +190,7 @@ public:
     {
         testDisabledMasterKey();
         testDisabledRegularKey();
+        testNoAlternativeKey();
         testPasswordSpent();
         testUniversalMask();
         testTicketRegularKey();

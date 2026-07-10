@@ -1,6 +1,11 @@
 #pragma once
 
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/tags.h>
+
+#include <xrpl/protocol/SField.h>
 
 #include <optional>
 
@@ -26,7 +31,7 @@ private:
     std::optional<Account> account_;
     /// Used solely as a convenience placeholder for ctors that do _not_ specify
     /// a subfield.
-    static constexpr SField* const kTOP_LEVEL = nullptr;
+    static constexpr SField const* kTopLevel = nullptr;
 
 public:
     explicit Sig(AutofillT) : manual_(false)
@@ -46,7 +51,7 @@ public:
     {
     }
 
-    explicit Sig(Account const& account) : Sig(kTOP_LEVEL, account)
+    explicit Sig(Account const& account) : Sig(kTopLevel, account)
     {
     }
 

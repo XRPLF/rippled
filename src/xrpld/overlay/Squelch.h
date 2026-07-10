@@ -3,6 +3,7 @@
 #include <xrpld/overlay/ReduceRelayCommon.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
 
@@ -14,7 +15,7 @@ namespace xrpl::reduce_relay {
 template <typename ClockType>
 class Squelch
 {
-    using time_point = typename ClockType::time_point;
+    using time_point = ClockType::time_point;
 
 public:
     explicit Squelch(beast::Journal journal) : journal_(journal)
@@ -56,7 +57,7 @@ Squelch<ClockType>::addSquelch(
     PublicKey const& validator,
     std::chrono::seconds const& squelchDuration)
 {
-    if (squelchDuration >= kMIN_UNSQUELCH_EXPIRE && squelchDuration <= kMAX_UNSQUELCH_EXPIRE_PEERS)
+    if (squelchDuration >= kMinUnsquelchExpire && squelchDuration <= kMaxUnsquelchExpirePeers)
     {
         squelched_[validator] = ClockType::now() + squelchDuration;
         return true;

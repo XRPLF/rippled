@@ -345,15 +345,15 @@ protected:
 
             EXPECT_TRUE(
                 ValStatus::Stale ==
-                harness.add(n.validate(ledgerA, -harness.parms().validationCURRENT_EARLY, 0s)));
+                harness.add(n.validate(ledgerA, -harness.parms().validationCurrentEarly, 0s)));
 
             EXPECT_TRUE(
                 ValStatus::Stale ==
-                harness.add(n.validate(ledgerA, harness.parms().validationCURRENT_WALL, 0s)));
+                harness.add(n.validate(ledgerA, harness.parms().validationCurrentWall, 0s)));
 
             EXPECT_TRUE(
                 ValStatus::Stale ==
-                harness.add(n.validate(ledgerA, 0s, harness.parms().validationCURRENT_LOCAL)));
+                harness.add(n.validate(ledgerA, 0s, harness.parms().validationCurrentLocal)));
         }
 
         {
@@ -378,7 +378,7 @@ protected:
                 // If we advance far enough for AB to expire, we can fully
                 // validate or partially validate that sequence number again
                 EXPECT_TRUE(ValStatus::Conflicting == process(ledgerAZ));
-                harness.clock().advance(harness.parms().validationSET_EXPIRES + 1ms);
+                harness.clock().advance(harness.parms().validationSetExpires + 1ms);
                 EXPECT_TRUE(ValStatus::Current == process(ledgerAZ));
             }
         }
@@ -413,7 +413,7 @@ protected:
             EXPECT_TRUE(
                 harness.vals().getPreferred(genesisLedger_) ==
                 std::make_pair(ledgerAB.seq(), ledgerAB.id()));
-            harness.clock().advance(harness.parms().validationCURRENT_LOCAL);
+            harness.clock().advance(harness.parms().validationCurrentLocal);
 
             // trigger check for stale
             trigger(harness.vals());
@@ -508,7 +508,7 @@ protected:
         EXPECT_TRUE(harness.vals().currentTrusted()[0].seq() == ledgerAC.seq());
 
         // Pass enough time for it to go stale
-        harness.clock().advance(harness.parms().validationCURRENT_LOCAL);
+        harness.clock().advance(harness.parms().validationCurrentLocal);
         EXPECT_TRUE(harness.vals().currentTrusted().empty());
     }
 
@@ -549,7 +549,7 @@ protected:
         }
 
         // Pass enough time for them to go stale
-        harness.clock().advance(harness.parms().validationCURRENT_LOCAL);
+        harness.clock().advance(harness.parms().validationCurrentLocal);
         EXPECT_TRUE(harness.vals().getCurrentNodeIDs().empty());
     }
 
@@ -668,8 +668,8 @@ protected:
         LedgerHistoryHelper h;
         TestHarness harness(h.oracle);
         Node const a = harness.makeNode();
-        constexpr Ledger::Seq kONE(1);
-        constexpr Ledger::Seq kTWO(2);
+        constexpr Ledger::Seq kOne(1);
+        constexpr Ledger::Seq kTwo(2);
 
         // simple cases
         Ledger const ledgerA = h["a"];
@@ -677,7 +677,7 @@ protected:
         EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerA.id()) == 1);
         expireValidations(harness.vals());
         EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerA.id()) == 1);
-        harness.clock().advance(harness.parms().validationSET_EXPIRES);
+        harness.clock().advance(harness.parms().validationSetExpires);
         expireValidations(harness.vals());
         EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerA.id()) == 0);
 
@@ -685,15 +685,15 @@ protected:
         Ledger const ledgerB = h["ab"];
         EXPECT_TRUE(ValStatus::Current == harness.add(a.validate(ledgerB)));
         EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerB.id()) == 1);
-        harness.vals().setSeqToKeep(ledgerB.seq(), ledgerB.seq() + kONE);
-        harness.clock().advance(harness.parms().validationSET_EXPIRES);
+        harness.vals().setSeqToKeep(ledgerB.seq(), ledgerB.seq() + kOne);
+        harness.clock().advance(harness.parms().validationSetExpires);
         expireValidations(harness.vals());
         EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerB.id()) == 1);
         // change toKeep
-        harness.vals().setSeqToKeep(ledgerB.seq() + kONE, ledgerB.seq() + kTWO);
+        harness.vals().setSeqToKeep(ledgerB.seq() + kOne, ledgerB.seq() + kTwo);
         // advance clock slowly
         int const loops =
-            harness.parms().validationSET_EXPIRES / harness.parms().validationFRESHNESS + 1;
+            harness.parms().validationSetExpires / harness.parms().validationFRESHNESS + 1;
         for (int i = 0; i < loops; ++i)
         {
             harness.clock().advance(harness.parms().validationFRESHNESS);
@@ -705,8 +705,8 @@ protected:
         Ledger const ledgerC = h["abc"];
         EXPECT_TRUE(ValStatus::Current == harness.add(a.validate(ledgerC)));
         EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerC.id()) == 1);
-        harness.vals().setSeqToKeep(ledgerC.seq() - kONE, ledgerC.seq());
-        harness.clock().advance(harness.parms().validationSET_EXPIRES);
+        harness.vals().setSeqToKeep(ledgerC.seq() - kOne, ledgerC.seq());
+        harness.clock().advance(harness.parms().validationSetExpires);
         expireValidations(harness.vals());
         EXPECT_TRUE(harness.vals().numTrustedForLedger(ledgerC.id()) == 0);
     }
@@ -954,7 +954,7 @@ protected:
         EXPECT_TRUE(enforcer(clock.now(), Seq{10}, p));
         EXPECT_TRUE(!enforcer(clock.now(), Seq{5}, p));
         EXPECT_TRUE(!enforcer(clock.now(), Seq{9}, p));
-        clock.advance(p.validationSET_EXPIRES - 1ms);
+        clock.advance(p.validationSetExpires - 1ms);
         EXPECT_TRUE(!enforcer(clock.now(), Seq{1}, p));
         clock.advance(2ms);
         EXPECT_TRUE(enforcer(clock.now(), Seq{1}, p));

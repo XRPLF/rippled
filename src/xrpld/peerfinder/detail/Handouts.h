@@ -1,12 +1,17 @@
 #pragma once
 
+#include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/SlotImp.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
 #include <xrpl/beast/container/aged_set.h>
+#include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <algorithm>
+#include <cstddef>
 #include <utility>
+#include <vector>
 
 namespace xrpl::PeerFinder {
 
@@ -88,7 +93,7 @@ public:
     [[nodiscard]] bool
     full() const
     {
-        return list_.size() >= Tuning::kREDIRECT_ENDPOINT_COUNT;
+        return list_.size() >= Tuning::kRedirectEndpointCount;
     }
 
     [[nodiscard]] SlotImp::ptr const&
@@ -117,7 +122,7 @@ private:
 template <class>
 RedirectHandouts::RedirectHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
 {
-    list_.reserve(Tuning::kREDIRECT_ENDPOINT_COUNT);
+    list_.reserve(Tuning::kRedirectEndpointCount);
 }
 
 template <class>
@@ -131,7 +136,7 @@ RedirectHandouts::tryInsert(Endpoint const& ep)
     //             addresses in a peer HTTP handshake instead of
     //             the tmENDPOINTS message.
     //
-    if (ep.hops > Tuning::kMAX_HOPS)
+    if (ep.hops > Tuning::kMaxHops)
         return false;
 
     // Don't send them our address
@@ -143,7 +148,7 @@ RedirectHandouts::tryInsert(Endpoint const& ep)
         return false;
 
     // Make sure the address isn't already in our list
-    if (std::any_of(list_.begin(), list_.end(), [&ep](Endpoint const& other) {
+    if (std::ranges::any_of(list_, [&ep](Endpoint const& other) {
             // Ignore port for security reasons
             return other.address.address() == ep.address.address();
         }))
@@ -172,7 +177,7 @@ public:
     [[nodiscard]] bool
     full() const
     {
-        return list_.size() >= Tuning::kNUMBER_OF_ENDPOINTS;
+        return list_.size() >= Tuning::kNumberOfEndpoints;
     }
 
     void
@@ -201,7 +206,7 @@ private:
 template <class>
 SlotHandouts::SlotHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
 {
-    list_.reserve(Tuning::kNUMBER_OF_ENDPOINTS);
+    list_.reserve(Tuning::kNumberOfEndpoints);
 }
 
 template <class>
@@ -211,7 +216,7 @@ SlotHandouts::tryInsert(Endpoint const& ep)
     if (full())
         return false;
 
-    if (ep.hops > Tuning::kMAX_HOPS)
+    if (ep.hops > Tuning::kMaxHops)
         return false;
 
     if (slot_->recent.filter(ep.address, ep.hops))
@@ -222,7 +227,7 @@ SlotHandouts::tryInsert(Endpoint const& ep)
         return false;
 
     // Make sure the address isn't already in our list
-    if (std::any_of(list_.begin(), list_.end(), [&ep](Endpoint const& other) {
+    if (std::ranges::any_of(list_, [&ep](Endpoint const& other) {
             // Ignore port for security reasons
             return other.address.address() == ep.address.address();
         }))
@@ -311,7 +316,7 @@ ConnectHandouts::tryInsert(beast::IP::Endpoint const& endpoint)
         return false;
 
     // Make sure the address isn't already in our list
-    if (std::any_of(list_.begin(), list_.end(), [&endpoint](beast::IP::Endpoint const& other) {
+    if (std::ranges::any_of(list_, [&endpoint](beast::IP::Endpoint const& other) {
             // Ignore port for security reasons
             return other.address() == endpoint.address();
         }))

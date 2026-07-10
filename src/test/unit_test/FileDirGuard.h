@@ -1,12 +1,16 @@
 #pragma once
 
-#include <test/jtx/TestSuite.h>
-
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <boost/filesystem.hpp>
 
+#include <exception>
 #include <fstream>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace xrpl::detail {
 
@@ -45,9 +49,9 @@ public:
     {
         using namespace boost::filesystem;
 
-        static auto kSUB_DIR_COUNTER = 0;
+        static auto kSubDirCounter = 0;
         if (useCounter)
-            subDir_ += std::to_string(++kSUB_DIR_COUNTER);
+            subDir_ += std::to_string(++kSubDirCounter);
         if (!exists(subDir_))
         {
             create_directory(subDir_);

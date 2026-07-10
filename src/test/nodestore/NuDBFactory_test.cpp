@@ -1,12 +1,13 @@
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/Types.h>
@@ -29,10 +30,10 @@ private:
     createSection(std::string const& path, std::string const& blockSize = "")
     {
         Section params;
-        params.set("type", "nudb");
-        params.set("path", path);
+        params.set(Keys::kType, "nudb");
+        params.set(Keys::kPath, path);
         if (!blockSize.empty())
-            params.set("nudb_block_size", blockSize);
+            params.set(Keys::kNudbBlockSize, blockSize);
         return params;
     }
 
@@ -78,10 +79,7 @@ private:
 
     // Helper function to test log messages
     void
-    testLogMessage(
-        Section const& params,
-        beast::severities::Severity level,
-        std::string const& expectedMessage)
+    testLogMessage(Section const& params, beast::Severity level, std::string const& expectedMessage)
     {
         test::StreamSink sink(level);
         beast::Journal const journal(sink);
@@ -90,7 +88,7 @@ private:
         auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
         std::string const logOutput = sink.messages().str();
-        BEAST_EXPECT(logOutput.find(expectedMessage) != std::string::npos);
+        BEAST_EXPECT(logOutput.contains(expectedMessage));
     }
 
     // Helper function to test power of two validation
@@ -100,14 +98,14 @@ private:
         beast::TempDir const tempDir;
         auto params = createSection(tempDir.path(), size);
 
-        test::StreamSink sink(beast::severities::KWarning);
+        test::StreamSink sink(beast::Severity::Warning);
         beast::Journal const journal(sink);
 
         DummyScheduler scheduler;
         auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
         std::string const logOutput = sink.messages().str();
-        bool const hasWarning = logOutput.find("Invalid nudb_block_size") != std::string::npos;
+        bool const hasWarning = logOutput.contains("Invalid nudb_block_size");
 
         BEAST_EXPECT(hasWarning == !shouldWork);
     }
@@ -202,7 +200,7 @@ public:
             beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), "8192");
 
-            testLogMessage(params, beast::severities::KInfo, "Using custom NuDB block size: 8192");
+            testLogMessage(params, beast::Severity::Info, "Using custom NuDB block size: 8192");
         }
 
         // Test invalid block size failure
@@ -210,7 +208,7 @@ public:
             beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), "5000");
 
-            test::StreamSink sink(beast::severities::KWarning);
+            test::StreamSink sink(beast::Severity::Warning);
             beast::Journal const journal(sink);
 
             DummyScheduler scheduler;
@@ -223,10 +221,8 @@ public:
             catch (std::exception const& e)
             {
                 std::string const logOutput{e.what()};
-                BEAST_EXPECT(logOutput.find("Invalid nudb_block_size: 5000") != std::string::npos);
-                BEAST_EXPECT(
-                    logOutput.find("Must be power of 2 between 4096 and 32768") !=
-                    std::string::npos);
+                BEAST_EXPECT(logOutput.contains("Invalid nudb_block_size: 5000"));
+                BEAST_EXPECT(logOutput.contains("Must be power of 2 between 4096 and 32768"));
             }
         }
 
@@ -235,7 +231,7 @@ public:
             beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), "invalid");
 
-            test::StreamSink sink(beast::severities::KWarning);
+            test::StreamSink sink(beast::Severity::Warning);
             beast::Journal const journal(sink);
 
             DummyScheduler scheduler;
@@ -249,8 +245,7 @@ public:
             catch (std::exception const& e)
             {
                 std::string const logOutput{e.what()};
-                BEAST_EXPECT(
-                    logOutput.find("Invalid nudb_block_size value: invalid") != std::string::npos);
+                BEAST_EXPECT(logOutput.contains("Invalid nudb_block_size value: invalid"));
             }
         }
     }
@@ -280,7 +275,7 @@ public:
 
             // We test the validation logic by catching exceptions for invalid
             // values
-            test::StreamSink sink(beast::severities::KWarning);
+            test::StreamSink sink(beast::Severity::Warning);
             beast::Journal const journal(sink);
 
             DummyScheduler scheduler;
@@ -293,7 +288,7 @@ public:
             catch (std::exception const& e)
             {
                 std::string const logOutput{e.what()};
-                BEAST_EXPECT(logOutput.find("Invalid nudb_block_size") != std::string::npos);
+                BEAST_EXPECT(logOutput.contains("Invalid nudb_block_size"));
             }
         }
     }
@@ -348,7 +343,7 @@ public:
             beast::TempDir const tempDir;
             auto params = createSection(tempDir.path(), format);
 
-            test::StreamSink sink(beast::severities::KInfo);
+            test::StreamSink sink(beast::Severity::Info);
             beast::Journal const journal(sink);
 
             DummyScheduler scheduler;
@@ -357,8 +352,7 @@ public:
 
             // Should log success message for valid values
             std::string const logOutput = sink.messages().str();
-            bool const hasSuccessMessage =
-                logOutput.find("Using custom NuDB block size") != std::string::npos;
+            bool const hasSuccessMessage = logOutput.contains("Using custom NuDB block size");
             BEAST_EXPECT(hasSuccessMessage);
         }
 
@@ -370,7 +364,7 @@ public:
             auto params = createSection(tempDir.path(), format);
 
             // Use a lower threshold to capture both info and warning messages
-            test::StreamSink sink(beast::severities::KDebug);
+            test::StreamSink sink(beast::Severity::Debug);
             beast::Journal const journal(sink);
 
             DummyScheduler scheduler;

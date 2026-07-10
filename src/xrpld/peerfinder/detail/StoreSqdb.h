@@ -3,7 +3,16 @@
 #include <xrpld/app/rdb/PeerFinder.h>
 #include <xrpld/peerfinder/detail/Store.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/rdb/SociDB.h>
+
+#include <soci/session.h>
+
+#include <cstddef>
+#include <string>
+#include <vector>
 
 namespace xrpl::PeerFinder {
 
@@ -15,12 +24,7 @@ private:
     soci::session sqlDb_;
 
 public:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum {
-        // This determines the on-database format of the data
-        CurrentSchemaVersion = 4
-    };
+    static constexpr auto kCurrentSchemaVersion = 4;  // on-database format version
 
     explicit StoreSqdb(beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
         : journal_(journal)
@@ -73,7 +77,7 @@ public:
     void
     update()
     {
-        updatePeerFinderDB(sqlDb_, CurrentSchemaVersion, journal_);
+        updatePeerFinderDB(sqlDb_, kCurrentSchemaVersion, journal_);
     }
 
 private:

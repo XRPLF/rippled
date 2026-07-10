@@ -2,6 +2,7 @@
 
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
@@ -86,18 +87,18 @@ LedgerReplayTask::LedgerReplayTask(
     : TimeoutCounter(
           app,
           parameter.finishHash,
-          LedgerReplayParameters::kTASK_TIMEOUT,
+          LedgerReplayParameters::kTaskTimeout,
           {.jobType = JtReplayTask,
            .jobName = "LedReplTask",
-           .jobLimit = LedgerReplayParameters::kMAX_QUEUED_TASKS},
+           .jobLimit = LedgerReplayParameters::kMaxQueuedTasks},
           app.getJournal("LedgerReplayTask"))
     , inboundLedgers_(inboundLedgers)
     , replayer_(replayer)
     , parameter_(parameter)
     , maxTimeouts_(
           std::max(
-              LedgerReplayParameters::kTASK_MAX_TIMEOUTS_MINIMUM,
-              parameter.totalLedgers * LedgerReplayParameters::kTASK_MAX_TIMEOUTS_MULTIPLIER))
+              LedgerReplayParameters::kTaskMaxTimeoutsMinimum,
+              parameter.totalLedgers * LedgerReplayParameters::kTaskMaxTimeoutsMultiplier))
     , skipListAcquirer_(skipListAcquirer)
 {
     JLOG(journal_.trace()) << "Create " << hash_;

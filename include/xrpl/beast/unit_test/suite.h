@@ -10,6 +10,8 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/throw_exception.hpp>
 
+#include <exception>
+#include <memory>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -299,8 +301,8 @@ private:
     static Suite**
     pThisSuite()
     {
-        static Suite* kP_TS = nullptr;  // NOLINT TODO
-        return &kP_TS;
+        static Suite* kPTs = nullptr;  // NOLINT TODO
+        return &kPTs;
     }
 
     /** Runs the suite. */
@@ -634,7 +636,7 @@ Suite::run(Runner& r)
 #define BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Class, Module, Library, Priority)
 
 #else
-#include <xrpl/beast/unit_test/global_suites.h>
+#include <xrpl/beast/unit_test/global_suites.h>  // IWYU pragma: keep
 #define BEAST_DEFINE_TESTSUITE(Class, Module, Library) \
     BEAST_DEFINE_TESTSUITE_INSERT(Class, Module, Library, false, 0)
 #define BEAST_DEFINE_TESTSUITE_MANUAL(Class, Module, Library) \

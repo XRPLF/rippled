@@ -78,12 +78,10 @@ STObject::makeInnerObject(SField const& name)
     // The if is complicated because inner object templates were added in
     // two phases:
     //  1. If there are no available Rules, then always apply the template.
-    //  2. fixInnerObjTemplate added templates to two AMM inner objects.
-    //  3. fixInnerObjTemplate2 added templates to all remaining inner objects.
+    //  2. fixInnerObjTemplate2 added templates to all remaining inner objects.
     std::optional<Rules> const& rules = getCurrentTransactionRules();
     bool const isAMMObj = name == sfAuctionSlot || name == sfVoteEntry;
-    if (!rules || (rules->enabled(fixInnerObjTemplate) && isAMMObj) ||
-        (rules->enabled(fixInnerObjTemplate2) && !isAMMObj))
+    if (!rules || isAMMObj || rules->enabled(fixInnerObjTemplate2))
     {
         if (SOTemplate const* elements =
                 InnerObjectFormats::getInstance().findSOTemplateBySField(name))
@@ -340,7 +338,7 @@ STObject::getText() const
 bool
 STObject::isEquivalent(STBase const& t) const
 {
-    STObject const* v = dynamic_cast<STObject const*>(&t);
+    auto const* v = dynamic_cast<STObject const*>(&t);
 
     if (v == nullptr)
         return false;
@@ -476,7 +474,7 @@ STObject::peekFieldArray(SField const& field)
 bool
 STObject::setFlag(std::uint32_t f)
 {
-    STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags, true));
+    auto* t = dynamic_cast<STUInt32*>(getPField(sfFlags, true));
 
     if (t == nullptr)
         return false;
@@ -488,7 +486,7 @@ STObject::setFlag(std::uint32_t f)
 bool
 STObject::clearFlag(std::uint32_t f)
 {
-    STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags));
+    auto* t = dynamic_cast<STUInt32*>(getPField(sfFlags));
 
     if (t == nullptr)
         return false;
@@ -504,9 +502,9 @@ STObject::isFlag(std::uint32_t f) const
 }
 
 std::uint32_t
-STObject::getFlags(void) const
+STObject::getFlags() const
 {
-    STUInt32 const* t = dynamic_cast<STUInt32 const*>(peekAtPField(sfFlags));
+    auto const* t = dynamic_cast<STUInt32 const*>(peekAtPField(sfFlags));
 
     if (t == nullptr)
         return 0;
@@ -635,33 +633,47 @@ STObject::getAccountID(SField const& field) const
     return getFieldByValue<STAccount>(field);
 }
 
+AccountID
+STObject::getFeePayer() const
+{
+    // If sfDelegate is present, the delegate account is the payer
+    // note: if a delegate is specified, its authorization to act on behalf of the account is
+    // enforced in `Transactor::invokeCheckPermission`
+    // cryptographic signature validity is checked separately (e.g., in `Transactor::checkSign`)
+    if (isFieldPresent(sfDelegate))
+        return getAccountID(sfDelegate);
+
+    // Default payer
+    return getAccountID(sfAccount);
+}
+
 Blob
 STObject::getFieldVL(SField const& field) const
 {
     STBlob const empty;
-    STBlob const& b = getFieldByConstRef<STBlob>(field, empty);
+    auto const& b = getFieldByConstRef<STBlob>(field, empty);
     return Blob(b.data(), b.data() + b.size());
 }
 
 STAmount const&
 STObject::getFieldAmount(SField const& field) const
 {
-    static STAmount const kEMPTY{};
-    return getFieldByConstRef<STAmount>(field, kEMPTY);
+    static STAmount const kEmpty{};
+    return getFieldByConstRef<STAmount>(field, kEmpty);
 }
 
 STPathSet const&
 STObject::getFieldPathSet(SField const& field) const
 {
-    static STPathSet const kEMPTY{};
-    return getFieldByConstRef<STPathSet>(field, kEMPTY);
+    static STPathSet const kEmpty{};
+    return getFieldByConstRef<STPathSet>(field, kEmpty);
 }
 
 STVector256 const&
 STObject::getFieldV256(SField const& field) const
 {
-    static STVector256 const kEMPTY{};
-    return getFieldByConstRef<STVector256>(field, kEMPTY);
+    static STVector256 const kEmpty{};
+    return getFieldByConstRef<STVector256>(field, kEmpty);
 }
 
 STObject
@@ -677,22 +689,22 @@ STObject::getFieldObject(SField const& field) const
 STArray const&
 STObject::getFieldArray(SField const& field) const
 {
-    static STArray const kEMPTY{};
-    return getFieldByConstRef<STArray>(field, kEMPTY);
+    static STArray const kEmpty{};
+    return getFieldByConstRef<STArray>(field, kEmpty);
 }
 
 STCurrency const&
 STObject::getFieldCurrency(SField const& field) const
 {
-    static STCurrency const kEMPTY{};
-    return getFieldByConstRef<STCurrency>(field, kEMPTY);
+    static STCurrency const kEmpty{};
+    return getFieldByConstRef<STCurrency>(field, kEmpty);
 }
 
 STNumber const&
 STObject::getFieldNumber(SField const& field) const
 {
-    static STNumber const kEMPTY{};
-    return getFieldByConstRef<STNumber>(field, kEMPTY);
+    static STNumber const kEmpty{};
+    return getFieldByConstRef<STNumber>(field, kEmpty);
 }
 
 void
@@ -834,7 +846,7 @@ STObject::setFieldObject(SField const& field, STObject const& v)
 json::Value
 STObject::getJson(JsonOptions options) const
 {
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::Object);
 
     for (auto const& elem : v_)
     {

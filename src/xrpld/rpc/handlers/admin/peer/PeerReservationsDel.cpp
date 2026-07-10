@@ -1,6 +1,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 
+#include <xrpl/core/PeerReservationTable.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -31,7 +32,7 @@ doPeerReservationsDel(RPC::JsonContext& context)
 
     auto const previous = context.app.getPeerReservations().erase(nodeId);
 
-    json::Value result{json::ObjectValue};
+    json::Value result{json::ValueType::Object};
     if (previous)
     {
         result[jss::previous] = previous->toJson();

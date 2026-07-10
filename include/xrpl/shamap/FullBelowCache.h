@@ -4,9 +4,13 @@
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/utility/Journal.h>
 
 #include <atomic>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 
 namespace xrpl {
@@ -22,12 +26,10 @@ private:
     using CacheType = KeyCache;
 
 public:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum { DefaultCacheTargetSize = 0 };
+    static constexpr auto kDefaultCacheTargetSize = 0;
 
     using key_type = uint256;
-    using clock_type = typename CacheType::clock_type;
+    using clock_type = CacheType::clock_type;
 
     /** Construct the cache.
 
@@ -41,7 +43,7 @@ public:
         clock_type& clock,
         beast::Journal j,
         beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::make(),
-        std::size_t targetSize = DefaultCacheTargetSize,
+        std::size_t targetSize = kDefaultCacheTargetSize,
         std::chrono::seconds expiration = std::chrono::minutes{2})
         : cache_(name, targetSize, expiration, clock, j, collector), gen_(1)
     {
@@ -101,7 +103,7 @@ public:
 
     /** generation determines whether cached entry is valid */
     std::uint32_t
-    getGeneration(void) const
+    getGeneration() const
     {
         return gen_;
     }

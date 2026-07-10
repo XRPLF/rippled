@@ -6,13 +6,14 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/SField.h>
 
 #include <cstdint>
 #include <cstring>
+#include <stdexcept>
+#include <string>
 #include <type_traits>
 
 namespace xrpl {
@@ -134,13 +135,13 @@ public:
     bool
     getInteger(Integer& number, int offset)
     {
-        static auto const kBYTES = sizeof(Integer);
-        if ((offset + kBYTES) > data_.size())
+        static auto const kBytes = sizeof(Integer);
+        if ((offset + kBytes) > data_.size())
             return false;
         number = 0;
 
         auto ptr = &data_[offset];
-        for (auto i = 0; i < kBYTES; ++i)
+        for (auto i = 0; i < kBytes; ++i)
         {
             if (i)
                 number <<= 8;
@@ -333,7 +334,7 @@ public:
     template <int N>
     explicit SerialIter(std::uint8_t const (&data)[N]) : SerialIter(&data[0], N)
     {
-        static_assert(N > 0, "");
+        static_assert(N > 0);
     }
 
     [[nodiscard]] bool

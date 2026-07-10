@@ -21,11 +21,11 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
@@ -55,39 +55,17 @@ namespace xrpl {
 
 using namespace std::chrono_literals;
 
-// Need to be named before converting
-// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum {
-    // Number of peers to start with
-    PeerCountStart = 5
-
-    // Number of peers to add on a timeout
-    ,
-    PeerCountAdd = 3
-
-    // how many timeouts before we give up
-    ,
-    LedgerTimeoutRetriesMax = 6
-
-    // how many timeouts before we get aggressive
-    ,
-    LedgerBecomeAggressiveThreshold = 4
-
-    // Number of nodes to find initially
-    ,
-    MissingNodesFind = 256
-
-    // Number of nodes to request for a reply
-    ,
-    ReqNodesReply = 128
-
-    // Number of nodes to request blindly
-    ,
-    ReqNodes = 12
-};
+static constexpr auto kPeerCountStart = 5;           // Number of peers to start with
+static constexpr auto kPeerCountAdd = 3;             // Number of peers to add on a timeout
+static constexpr auto kLedgerTimeoutRetriesMax = 6;  // how many timeouts before we give up
+static constexpr auto kLedgerBecomeAggressiveThreshold =
+    4;                                          // how many timeouts before we get aggressive
+static constexpr auto kMissingNodesFind = 256;  // Number of nodes to find initially
+static constexpr auto kReqNodesReply = 128;     // Number of nodes to request for a reply
+static constexpr auto kReqNodes = 12;           // Number of nodes to request blindly
 
 // millisecond for each ledger timeout
-auto constexpr kLEDGER_ACQUIRE_TIMEOUT = 3000ms;
+constexpr auto kLedgerAcquireTimeout = 3000ms;
 
 InboundLedger::InboundLedger(
     Application& app,
@@ -99,7 +77,7 @@ InboundLedger::InboundLedger(
     : TimeoutCounter(
           app,
           hash,
-          kLEDGER_ACQUIRE_TIMEOUT,
+          kLedgerAcquireTimeout,
           {.jobType = JtLedgerData, .jobName = "InboundLedger", .jobLimit = 5},
           app.getJournal("InboundLedger"))
     , clock_(clock)
@@ -131,7 +109,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
     JLOG(journal_.debug()) << "Acquiring ledger we already have in "
                            << " local store. " << hash_;
     XRPL_ASSERT(
-        ledger_->header().seq < kXRP_LEDGER_EARLIEST_FEES || ledger_->read(keylet::fees()),
+        ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
         "xrpl::InboundLedger::init : valid ledger fees");
     ledger_->setImmutable();
 
@@ -149,9 +127,8 @@ std::size_t
 InboundLedger::getPeerCount() const
 {
     auto const& peerIds = peerSet_->getPeerIds();
-    return std::count_if(peerIds.begin(), peerIds.end(), [this](auto id) {
-        return (app_.getOverlay().findPeerByShortID(id) != nullptr);
-    });
+    return std::ranges::count_if(
+        peerIds, [this](auto id) { return (app_.getOverlay().findPeerByShortID(id) != nullptr); });
 }
 
 void
@@ -210,7 +187,7 @@ InboundLedger::~InboundLedger()
 }
 
 static std::vector<uint256>
-neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter* filter)
+neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter const* filter)
 {
     std::vector<uint256> ret;
 
@@ -233,13 +210,13 @@ neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter* filter
 }
 
 std::vector<uint256>
-InboundLedger::neededTxHashes(int max, SHAMapSyncFilter* filter) const
+InboundLedger::neededTxHashes(int max, SHAMapSyncFilter const* filter) const
 {
     return neededHashes(ledger_->header().txHash, ledger_->txMap(), max, filter);
 }
 
 std::vector<uint256>
-InboundLedger::neededStateHashes(int max, SHAMapSyncFilter* filter) const
+InboundLedger::neededStateHashes(int max, SHAMapSyncFilter const* filter) const
 {
     return neededHashes(ledger_->header().accountHash, ledger_->stateMap(), max, filter);
 }
@@ -353,7 +330,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
         JLOG(journal_.debug()) << "Had everything locally";
         complete_ = true;
         XRPL_ASSERT(
-            ledger_->header().seq < kXRP_LEDGER_EARLIEST_FEES || ledger_->read(keylet::fees()),
+            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::tryDB : valid ledger fees");
         ledger_->setImmutable();
     }
@@ -372,7 +349,7 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
         return;
     }
 
-    if (timeouts_ > LedgerTimeoutRetriesMax)
+    if (timeouts_ > kLedgerTimeoutRetriesMax)
     {
         if (seq_ != 0)
         {
@@ -413,7 +390,7 @@ void
 InboundLedger::addPeers()
 {
     peerSet_->addPeers(
-        (getPeerCount() == 0) ? PeerCountStart : PeerCountAdd,
+        (getPeerCount() == 0) ? kPeerCountStart : kPeerCountAdd,
         [this](auto peer) { return peer->hasLedger(hash_, seq_); },
         [this](auto peer) {
             // For historical nodes, do not trigger too soon
@@ -449,7 +426,7 @@ InboundLedger::done()
     if (complete_ && !failed_ && ledger_)
     {
         XRPL_ASSERT(
-            ledger_->header().seq < kXRP_LEDGER_EARLIEST_FEES || ledger_->read(keylet::fees()),
+            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::done : valid ledger fees");
         ledger_->setImmutable();
         switch (reason_)
@@ -527,7 +504,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         // Be more aggressive if we've timed out at least once
         tmGL.set_querytype(protocol::qtINDIRECT);
 
-        if (!progress_ && !failed_ && byHash_ && (timeouts_ > LedgerBecomeAggressiveThreshold))
+        if (!progress_ && !failed_ && byHash_ && (timeouts_ > kLedgerBecomeAggressiveThreshold))
         {
             auto need = getNeededHashes();
 
@@ -637,7 +614,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
             // Release the lock while we process the large state map
             sl.unlock();
-            auto nodes = ledger_->stateMap().getMissingNodes(MissingNodesFind, &filter);
+            auto nodes = ledger_->stateMap().getMissingNodes(kMissingNodesFind, &filter);
             sl.lock();
 
             // Make sure nothing happened while we released the lock
@@ -706,7 +683,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         {
             TransactionStateSF filter(ledger_->txMap().family().db(), app_.getLedgerMaster());
 
-            auto nodes = ledger_->txMap().getMissingNodes(MissingNodesFind, &filter);
+            auto nodes = ledger_->txMap().getMissingNodes(kMissingNodesFind, &filter);
 
             if (nodes.empty())
             {
@@ -783,7 +760,7 @@ InboundLedger::filterNodes(
         nodes.erase(dup.begin(), dup.end());
     }
 
-    std::size_t const limit = (reason == TriggerReason::Reply) ? ReqNodesReply : ReqNodes;
+    std::size_t const limit = (reason == TriggerReason::Reply) ? kReqNodesReply : kReqNodes;
 
     if (nodes.size() > limit)
         nodes.resize(limit);
@@ -842,7 +819,7 @@ InboundLedger::takeHeader(std::string const& data)
     Call with a lock
 */
 void
-InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
+InboundLedger::receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode& san)
 {
     if (!haveHeader_)
     {
@@ -1048,14 +1025,14 @@ InboundLedger::gotData(
 //        TODO Change peer to Consumer
 //
 int
-InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& packet)
+InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData const& packet)
 {
     if (packet.type() == protocol::liBASE)
     {
         if (packet.nodes().empty())
         {
             JLOG(journal_.warn()) << peer->id() << ": empty header data";
-            peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_data empty header");
+            peer->charge(Resource::kFeeMalformedRequest, "ledger_data empty header");
             return -1;
         }
 
@@ -1070,7 +1047,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
                 if (!takeHeader(packet.nodes(0).nodedata()))
                 {
                     JLOG(journal_.warn()) << "Got invalid header data";
-                    peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_data invalid header");
+                    peer->charge(Resource::kFeeMalformedRequest, "ledger_data invalid header");
                     return -1;
                 }
 
@@ -1093,7 +1070,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
         {
             JLOG(journal_.warn()) << "Included AS/TX root invalid: " << ex.what();
             using namespace std::string_literals;
-            peer->charge(Resource::kFEE_INVALID_DATA, "ledger_data "s + ex.what());
+            peer->charge(Resource::kFeeInvalidData, "ledger_data "s + ex.what());
             return -1;
         }
 
@@ -1109,7 +1086,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
         if (packet.nodes().empty())
         {
             JLOG(journal_.info()) << peer->id() << ": response with no nodes";
-            peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_data no nodes");
+            peer->charge(Resource::kFeeMalformedRequest, "ledger_data no nodes");
             return -1;
         }
 
@@ -1121,7 +1098,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
             if (!node.has_nodeid() || !node.has_nodedata())
             {
                 JLOG(journal_.warn()) << "Got bad node";
-                peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_data bad node");
+                peer->charge(Resource::kFeeMalformedRequest, "ledger_data bad node");
                 return -1;
             }
         }
@@ -1223,7 +1200,7 @@ void
 InboundLedger::runData()
 {
     // Maximum number of peers to request data from
-    constexpr std::size_t kMAX_USEFUL_PEERS = 6;
+    static constexpr std::size_t kMaxUsefulPeers = 6;
 
     decltype(receivedData_) data;
 
@@ -1261,7 +1238,7 @@ InboundLedger::runData()
     // Select a random sample of the peers that gives us the most nodes that are
     // useful
     dataCounts.prune();
-    dataCounts.sampleN(kMAX_USEFUL_PEERS, [&](std::shared_ptr<Peer> const& peer) {
+    dataCounts.sampleN(kMaxUsefulPeers, [&](std::shared_ptr<Peer> const& peer) {
         trigger(peer, TriggerReason::Reply);
     });
 }
@@ -1269,7 +1246,7 @@ InboundLedger::runData()
 json::Value
 InboundLedger::getJson(int)
 {
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::Object);
 
     ScopedLockType const sl(mtx_);
 
@@ -1296,7 +1273,7 @@ InboundLedger::getJson(int)
 
     if (haveHeader_ && !haveState_)
     {
-        json::Value hv(json::ArrayValue);
+        json::Value hv(json::ValueType::Array);
         for (auto const& h : neededStateHashes(16, nullptr))
         {
             hv.append(to_string(h));
@@ -1306,7 +1283,7 @@ InboundLedger::getJson(int)
 
     if (haveHeader_ && !haveTransactions_)
     {
-        json::Value hv(json::ArrayValue);
+        json::Value hv(json::ValueType::Array);
         for (auto const& h : neededTxHashes(16, nullptr))
         {
             hv.append(to_string(h));

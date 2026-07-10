@@ -143,16 +143,21 @@ getBookBase(Book const& book)
 uint256
 getQualityNext(uint256 const& uBase)
 {
-    static constexpr uint256 kNEXT_QUALITY(
+    static constexpr uint256 kNextQuality(
         "0000000000000000000000000000000000000000000000010000000000000000");
-    return uBase + kNEXT_QUALITY;
+    return uBase + kNextQuality;
 }
 
 std::uint64_t
 getQuality(uint256 const& uBase)
 {
     // VFALCO [base_uint] This assumes a certain storage format
-    return boost::endian::big_to_native(((std::uint64_t*)uBase.end())[-1]);
+    //
+    // Load the final 8 bytes as a big-endian integer.  load_big_u64 reads
+    // through unaligned byte storage (via memcpy) and applies the endian
+    // conversion, avoiding the alignment/strict-aliasing UB of casting the
+    // unsigned char* returned by end() to a std::uint64_t*.
+    return boost::endian::load_big_u64(uBase.end() - 8);
 }
 
 uint256
@@ -197,8 +202,8 @@ child(uint256 const& key) noexcept
 Keylet const&
 skip() noexcept
 {
-    static Keylet const kRET{ltLEDGER_HASHES, indexHash(LedgerNameSpace::SkipList)};
-    return kRET;
+    static Keylet const kRet{ltLEDGER_HASHES, indexHash(LedgerNameSpace::SkipList)};
+    return kRet;
 }
 
 Keylet
@@ -213,37 +218,37 @@ skip(LedgerIndex ledger) noexcept
 Keylet const&
 amendments() noexcept
 {
-    static Keylet const kRET{ltAMENDMENTS, indexHash(LedgerNameSpace::Amendments)};
-    return kRET;
+    static Keylet const kRet{ltAMENDMENTS, indexHash(LedgerNameSpace::Amendments)};
+    return kRet;
 }
 
 Keylet const&
-fees() noexcept
+feeSettings() noexcept
 {
-    static Keylet const kRET{ltFEE_SETTINGS, indexHash(LedgerNameSpace::FeeSettings)};
-    return kRET;
+    static Keylet const kRet{ltFEE_SETTINGS, indexHash(LedgerNameSpace::FeeSettings)};
+    return kRet;
 }
 
 Keylet const&
 negativeUNL() noexcept
 {
-    static Keylet const kRET{ltNEGATIVE_UNL, indexHash(LedgerNameSpace::NegativeUnl)};
-    return kRET;
+    static Keylet const kRet{ltNEGATIVE_UNL, indexHash(LedgerNameSpace::NegativeUnl)};
+    return kRet;
 }
 
 Keylet
-BookT::operator()(Book const& b) const
+book(Book const& b)
 {
     return {ltDIR_NODE, getBookBase(b)};
 }
 
 Keylet
-line(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept
+trustLine(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept
 {
     // There is code in TrustSet that calls us with id0 == id1, to allow users
     // to locate and delete such "weird" trustlines. If we remove that code, we
     // could enable this assert:
-    // XRPL_ASSERT(id0 != id1, "xrpl::keylet::line : accounts must be
+    // XRPL_ASSERT(id0 != id1, "xrpl::keylet::trustLine : accounts must be
     // different");
 
     // A trust line is shared between two accounts; while we typically think
@@ -278,27 +283,30 @@ quality(Keylet const& k, std::uint64_t q) noexcept
     // for indexes.
     uint256 x = k.key;
 
-    // FIXME This is ugly and we can and should do better...
-    ((std::uint64_t*)x.end())[-1] = boost::endian::native_to_big(q);
+    // Store the quality as a big-endian integer in the final 8 bytes.
+    // store_big_u64 writes through unaligned byte storage (via memcpy) and
+    // applies the endian conversion, avoiding the alignment/strict-aliasing UB
+    // of casting the unsigned char* returned by end() to a std::uint64_t*.
+    boost::endian::store_big_u64(x.end() - 8, q);
 
     return {ltDIR_NODE, x};
 }
 
 Keylet
-NextT::operator()(Keylet const& k) const
+next(Keylet const& k)
 {
-    XRPL_ASSERT(k.type == ltDIR_NODE, "xrpl::keylet::NextT::operator() : valid input type");
+    XRPL_ASSERT(k.type == ltDIR_NODE, "xrpl::keylet::next : valid input type");
     return {ltDIR_NODE, getQualityNext(k.key)};
 }
 
 Keylet
-TicketT::operator()(AccountID const& id, std::uint32_t ticketSeq) const
+ticket(AccountID const& id, std::uint32_t ticketSeq)
 {
     return {ltTICKET, getTicketIndex(id, ticketSeq)};
 }
 
 Keylet
-TicketT::operator()(AccountID const& id, SeqProxy ticketSeq) const
+ticket(AccountID const& id, SeqProxy ticketSeq)
 {
     return {ltTICKET, getTicketIndex(id, ticketSeq)};
 }
@@ -307,15 +315,15 @@ TicketT::operator()(AccountID const& id, SeqProxy ticketSeq) const
 // else. If we ever support multiple pages of signer lists, this would be the
 // keylet used to locate them.
 static Keylet
-signers(AccountID const& account, std::uint32_t page) noexcept
+signerList(AccountID const& account, std::uint32_t page) noexcept
 {
     return {ltSIGNER_LIST, indexHash(LedgerNameSpace::SignerList, account, page)};
 }
 
 Keylet
-signers(AccountID const& account) noexcept
+signerList(AccountID const& account) noexcept
 {
-    return signers(account, 0);
+    return signerList(account, 0);
 }
 
 Keylet
@@ -375,36 +383,36 @@ escrow(AccountID const& src, std::uint32_t seq) noexcept
 }
 
 Keylet
-payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept
+payChannel(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept
 {
     return {ltPAYCHAN, indexHash(LedgerNameSpace::XRPPaymentChannel, src, dst, seq)};
 }
 
 Keylet
-nftpageMin(AccountID const& owner)
+nftokenPageMin(AccountID const& owner)
 {
     std::array<std::uint8_t, 32> buf{};
     std::memcpy(buf.data(), owner.data(), owner.size());
-    return {ltNFTOKEN_PAGE, uint256{buf}};
+    return {ltNFTOKEN_PAGE, uint256::fromRaw(buf)};
 }
 
 Keylet
-nftpageMax(AccountID const& owner)
+nftokenPageMax(AccountID const& owner)
 {
-    uint256 id = nft::kPAGE_MASK;
+    uint256 id = nft::kPageMask;
     std::memcpy(id.data(), owner.data(), owner.size());
     return {ltNFTOKEN_PAGE, id};
 }
 
 Keylet
-nftpage(Keylet const& k, uint256 const& token)
+nftokenPage(Keylet const& k, uint256 const& token)
 {
-    XRPL_ASSERT(k.type == ltNFTOKEN_PAGE, "xrpl::keylet::nftpage : valid input type");
-    return {ltNFTOKEN_PAGE, (k.key & ~nft::kPAGE_MASK) + (token & nft::kPAGE_MASK)};
+    XRPL_ASSERT(k.type == ltNFTOKEN_PAGE, "xrpl::keylet::nftokenPage : valid input type");
+    return {ltNFTOKEN_PAGE, (k.key & ~nft::kPageMask) + (token & nft::kPageMask)};
 }
 
 Keylet
-nftoffer(AccountID const& owner, std::uint32_t seq)
+nftokenOffer(AccountID const& owner, std::uint32_t seq)
 {
     return {ltNFTOKEN_OFFER, indexHash(LedgerNameSpace::NftokenOffer, owner, seq)};
 }
@@ -518,13 +526,13 @@ oracle(AccountID const& account, std::uint32_t const& documentID) noexcept
 }
 
 Keylet
-mptIssuance(std::uint32_t seq, AccountID const& issuer) noexcept
+mptokenIssuance(std::uint32_t seq, AccountID const& issuer) noexcept
 {
-    return mptIssuance(makeMptID(seq, issuer));
+    return mptokenIssuance(makeMptID(seq, issuer));
 }
 
 Keylet
-mptIssuance(MPTID const& issuanceID) noexcept
+mptokenIssuance(MPTID const& issuanceID) noexcept
 {
     return {ltMPTOKEN_ISSUANCE, indexHash(LedgerNameSpace::MPTokenIssuance, issuanceID)};
 }
@@ -532,7 +540,7 @@ mptIssuance(MPTID const& issuanceID) noexcept
 Keylet
 mptoken(MPTID const& issuanceID, AccountID const& holder) noexcept
 {
-    return mptoken(mptIssuance(issuanceID).key, holder);
+    return mptoken(mptokenIssuance(issuanceID).key, holder);
 }
 
 Keylet
@@ -554,9 +562,9 @@ vault(AccountID const& owner, std::uint32_t seq) noexcept
 }
 
 Keylet
-loanbroker(AccountID const& owner, std::uint32_t seq) noexcept
+loanBroker(AccountID const& owner, std::uint32_t seq) noexcept
 {
-    return loanbroker(indexHash(LedgerNameSpace::LoanBroker, owner, seq));
+    return loanBroker(indexHash(LedgerNameSpace::LoanBroker, owner, seq));
 }
 
 Keylet

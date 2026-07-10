@@ -2,8 +2,12 @@
 
 #include <xrpld/overlay/Peer.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/net/IPAddress.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/server/Handoff.h>
 
 #include <boost/asio/ip/tcp.hpp>
@@ -11,8 +15,15 @@
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 
+#include <xrpl.pb.h>
+
+#include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
+#include <set>
+#include <vector>
 
 namespace boost::asio::ssl {
 class context;
@@ -47,6 +58,7 @@ public:
         std::uint32_t crawlOptions = 0;
         std::optional<std::uint32_t> networkID;
         bool vlEnabled = true;
+        bool verifyEndpoints = true;
     };
 
     using PeerSequence = std::vector<std::shared_ptr<Peer>>;
@@ -116,11 +128,11 @@ public:
 
     /** Broadcast a proposal. */
     virtual void
-    broadcast(protocol::TMProposeSet& m) = 0;
+    broadcast(protocol::TMProposeSet const& m) = 0;
 
     /** Broadcast a validation. */
     virtual void
-    broadcast(protocol::TMValidation& m) = 0;
+    broadcast(protocol::TMValidation const& m) = 0;
 
     /** Relay a proposal.
      * @param m the serialized proposal
@@ -129,7 +141,7 @@ public:
      * @return the set of peers which have already sent us this proposal
      */
     virtual std::set<Peer::id_t>
-    relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator) = 0;
+    relay(protocol::TMProposeSet const& m, uint256 const& uid, PublicKey const& validator) = 0;
 
     /** Relay a validation.
      * @param m the serialized validation
@@ -138,7 +150,7 @@ public:
      * @return the set of peers which have already sent us this validation
      */
     virtual std::set<Peer::id_t>
-    relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator) = 0;
+    relay(protocol::TMValidation const& m, uint256 const& uid, PublicKey const& validator) = 0;
 
     /** Relay a transaction. If the tx reduce-relay feature is enabled then
      * randomly select peers to relay to and queue transaction's hash

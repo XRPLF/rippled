@@ -1,16 +1,30 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/QualityFunction.h>
+#include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/paths/detail/EitherAmount.h>
 
 #include <boost/container/flat_set.hpp>
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <optional>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 class PaymentSandbox;
@@ -460,7 +474,7 @@ public:
     [[nodiscard]] bool
     isZero(EitherAmount const& out) const override
     {
-        return get<TOut>(out) == beast::kZERO;
+        return get<TOut>(out) == beast::kZero;
     }
 
     [[nodiscard]] bool

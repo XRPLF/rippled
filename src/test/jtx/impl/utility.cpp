@@ -13,6 +13,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STParsedJSON.h>
@@ -57,7 +58,22 @@ fillFee(json::Value& jv, ReadView const& view)
 {
     if (jv.isMember(jss::Fee))
         return;
-    jv[jss::Fee] = to_string(view.fees().base);
+
+    auto const base = view.fees().base;
+
+    // For confidential transactions, the fee is higher because confidential
+    // transaction processing is more expensive.
+    auto const txType = jv[jss::TransactionType].asString();
+    if (txType == jss::ConfidentialMPTConvert || txType == jss::ConfidentialMPTConvertBack ||
+        txType == jss::ConfidentialMPTSend || txType == jss::ConfidentialMPTMergeInbox ||
+        txType == jss::ConfidentialMPTClawback)
+    {
+        jv[jss::Fee] = to_string(base * (kConfidentialFeeMultiplier + 1));
+    }
+    else
+    {
+        jv[jss::Fee] = to_string(base);
+    }
 }
 
 void
@@ -77,7 +93,7 @@ fillSeq(json::Value& jv, ReadView const& view)
 json::Value
 cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned int apiVersion)
 {
-    json::Value jv = json::Value(json::ObjectValue);
+    json::Value jv = json::Value(json::ValueType::Object);
     auto const paramsObj = rpcCmdToJson(args, jv, apiVersion, j);
 
     // Re-use jv to return our formatted result.
@@ -89,7 +105,7 @@ cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned in
     // If paramsObj is not empty, put it in a [params] array.
     if (paramsObj.begin() != paramsObj.end())
     {
-        auto& paramsArray = jv[jss::params] = json::ArrayValue;
+        auto& paramsArray = jv[jss::params] = json::ValueType::Array;
         paramsArray.append(paramsObj);
     }
     if (paramsObj.isMember(jss::jsonrpc))
@@ -100,5 +116,4 @@ cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned in
         jv[jss::id] = paramsObj[jss::id];
     return jv;
 }
-
 }  // namespace xrpl::test::jtx

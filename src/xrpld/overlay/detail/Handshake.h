@@ -3,8 +3,9 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/protocol/BuildInfo.h>
 
 #include <boost/asio/ssl.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
@@ -13,8 +14,9 @@
 #include <boost/beast/http/fields.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 
+#include <cstdint>
 #include <optional>
-#include <utility>
+#include <string>
 
 namespace xrpl {
 
@@ -115,15 +117,15 @@ makeResponse(
 // value: \S+
 
 // compression feature
-static constexpr char kFEATURE_COMPR[] = "compr";
+static constexpr char kFeatureCompr[] = "compr";
 // validation/proposal reduce-relay base squelch feature
-static constexpr char kFEATURE_VPRR[] = "vprr";
+static constexpr char kFeatureVprr[] = "vprr";
 // transaction reduce-relay feature
-static constexpr char kFEATURE_TXRR[] = "txrr";
+static constexpr char kFeatureTxrr[] = "txrr";
 // ledger replay
-static constexpr char kFEATURE_LEDGER_REPLAY[] = "ledgerreplay";
-static constexpr char kDELIM_FEATURE[] = ";";
-static constexpr char kDELIM_VALUE[] = ",";
+static constexpr char kFeatureLedgerReplay[] = "ledgerreplay";
+static constexpr char kDelimFeature[] = ";";
+static constexpr char kDelimValue[] = ",";
 
 /** Get feature's header value
    @param headers request/response header

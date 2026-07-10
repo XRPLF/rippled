@@ -6,6 +6,9 @@
 #include <boost/endian/conversion.hpp>
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
+#include <type_traits>
 
 namespace xrpl {
 
@@ -27,7 +30,7 @@ namespace xrpl {
 struct OpensslRipemd160Hasher
 {
 public:
-    static constexpr auto const kENDIAN = boost::endian::order::native;
+    static constexpr auto kEndian = boost::endian::order::native;
 
     using result_type = std::array<std::uint8_t, 20>;
 
@@ -50,7 +53,7 @@ private:
 struct OpensslSha512Hasher
 {
 public:
-    static constexpr auto const kENDIAN = boost::endian::order::native;
+    static constexpr auto kEndian = boost::endian::order::native;
 
     using result_type = std::array<std::uint8_t, 64>;
 
@@ -73,7 +76,7 @@ private:
 struct OpensslSha256Hasher
 {
 public:
-    static constexpr auto const kENDIAN = boost::endian::order::native;
+    static constexpr auto kEndian = boost::endian::order::native;
 
     using result_type = std::array<std::uint8_t, 32>;
 
@@ -118,7 +121,7 @@ private:
     sha256_hasher h_;
 
 public:
-    static constexpr auto const kENDIAN = boost::endian::order::native;
+    static constexpr auto kEndian = boost::endian::order::native;
 
     using result_type = std::array<std::uint8_t, 20>;
 
@@ -154,7 +157,7 @@ private:
     sha512_hasher h_;
 
 public:
-    static constexpr auto const kENDIAN = boost::endian::order::big;
+    static constexpr auto kEndian = boost::endian::order::big;
 
     using result_type = uint256;
 
@@ -206,7 +209,7 @@ sha512Half(Args const&... args)
     sha512_half_hasher h;
     using beast::hash_append;
     hash_append(h, args...);
-    return static_cast<typename sha512_half_hasher::result_type>(h);
+    return static_cast<sha512_half_hasher::result_type>(h);
 }
 
 /** Returns the SHA512-Half of a series of objects.
@@ -222,7 +225,7 @@ sha512HalfS(Args const&... args)
     sha512_half_hasher_s h;
     using beast::hash_append;
     hash_append(h, args...);
-    return static_cast<typename sha512_half_hasher_s::result_type>(h);
+    return static_cast<sha512_half_hasher_s::result_type>(h);
 }
 
 }  // namespace xrpl

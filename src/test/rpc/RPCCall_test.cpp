@@ -14,7 +14,6 @@
 
 #include <cstdint>
 #include <cstring>
-#include <functional>
 #include <initializer_list>
 #include <memory>
 #include <string>
@@ -66,7 +65,7 @@ struct RPCCallTestData
     operator=(RPCCallTestData&&) = delete;
 };
 
-static RPCCallTestData const kRPC_CALL_TEST_ARRAY[] = {
+static RPCCallTestData const kRpcCallTestArray[] = {
     // account_channels
     // ------------------------------------------------------------
     {"account_channels: minimal.",
@@ -5832,9 +5831,9 @@ std::string
 updateAPIVersionString(char const* const req, unsigned apiVersion)
 {
     std::string const versionStr = std::to_string(apiVersion);
-    static auto const kPLACE_HOLDER = "%API_VER%";
+    static auto const kPlaceHolder = "%API_VER%";
     std::string jr(req);
-    boost::replace_all(jr, kPLACE_HOLDER, versionStr);
+    boost::replace_all(jr, kPlaceHolder, versionStr);
     return jr;
 }
 
@@ -5843,7 +5842,7 @@ makeNetworkConfig(uint32_t networkID)
 {
     using namespace test::jtx;
     return envconfig([&](std::unique_ptr<Config> cfg) {
-        cfg->NETWORK_ID = networkID;
+        cfg->networkId = networkID;
         return cfg;
     });
 }
@@ -5856,14 +5855,14 @@ public:
     {
         testcase << "RPCCall API version " << apiVersion;
         if (!BEAST_EXPECT(
-                apiVersion >= RPC::kAPI_MINIMUM_SUPPORTED_VERSION &&
-                apiVersion <= RPC::kAPI_MAXIMUM_VALID_VERSION))
+                apiVersion >= RPC::kApiMinimumSupportedVersion &&
+                apiVersion <= RPC::kApiMaximumValidVersion))
             return;
 
         test::jtx::Env const env(*this, makeNetworkConfig(11111));  // Used only for its Journal.
 
         // For each RPCCall test.
-        for (RPCCallTestData const& rpcCallTest : kRPC_CALL_TEST_ARRAY)
+        for (RPCCallTestData const& rpcCallTest : kRpcCallTestArray)
         {
             if (!BEAST_EXPECT(!rpcCallTest.exp.empty()))
                 break;
@@ -5871,11 +5870,11 @@ public:
             std::vector<std::string> const args{rpcCallTest.args.begin(), rpcCallTest.args.end()};
 
             char const* const expVersioned =
-                (apiVersion - RPC::kAPI_MINIMUM_SUPPORTED_VERSION) < rpcCallTest.exp.size()
-                ? rpcCallTest.exp[apiVersion - RPC::kAPI_MINIMUM_SUPPORTED_VERSION]
+                (apiVersion - RPC::kApiMinimumSupportedVersion) < rpcCallTest.exp.size()
+                ? rpcCallTest.exp[apiVersion - RPC::kApiMinimumSupportedVersion]
                 : rpcCallTest.exp.back();
 
-            // Note that, over the long term, kNONE of these tests should
+            // Note that, over the long term, kNone of these tests should
             // throw.  But, for the moment, some of them do.  So handle it.
             json::Value got;
             try
@@ -5927,7 +5926,7 @@ public:
     void
     run() override
     {
-        forAllApiVersions(std::bind_front(&RPCCall_test::testRPCCall, this));
+        forAllApiVersions([this](unsigned apiVersion) { testRPCCall(apiVersion); });
     }
 };
 

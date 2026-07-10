@@ -82,7 +82,7 @@ Fulfillment::deserialize(Slice s, std::error_code& ec)
         return {};
     }
 
-    if (p.length > kMAX_SERIALIZED_FULFILLMENT)
+    if (p.length > kMaxSerializedFulfillment)
     {
         ec = Error::LargeSize;
         return {};
@@ -101,20 +101,8 @@ Fulfillment::deserialize(Slice s, std::error_code& ec)
             break;
 
         case safeCast<TagType>(Type::PrefixSha256):
-            ec = Error::UnsupportedType;
-            return {};
-            break;
-
         case safeCast<TagType>(Type::ThresholdSha256):
-            ec = Error::UnsupportedType;
-            return {};
-            break;
-
         case safeCast<TagType>(Type::RsaSha256):
-            ec = Error::UnsupportedType;
-            return {};
-            break;
-
         case safeCast<TagType>(Type::Ed25519Sha256):
             ec = Error::UnsupportedType;
             return {};

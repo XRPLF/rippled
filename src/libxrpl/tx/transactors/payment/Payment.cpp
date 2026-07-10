@@ -8,7 +8,6 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -29,7 +28,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -53,7 +51,7 @@ Payment::makeTxConsequences(PreflightContext const& ctx)
 
         // If there's no sfSendMax in XRP, and the sfAmount isn't
         // in XRP, then the transaction does not spend XRP.
-        return maxAmount.native() ? maxAmount.xrp() : beast::kZERO;
+        return maxAmount.native() ? maxAmount.xrp() : beast::kZero;
     };
 
     return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
@@ -78,7 +76,7 @@ getMaxSourceAmount(
                 Issue{issue.currency, account},
                 dstAmount.mantissa(),
                 dstAmount.exponent(),
-                dstAmount < beast::kZERO);
+                dstAmount < beast::kZero);
         });
 }
 
@@ -102,9 +100,9 @@ Payment::getFlagsMask(PreflightContext const& ctx)
     bool const isDstMPT = dstAmount.holds<MPTIssue>();
     bool const mpTokensV2 = ctx.rules.enabled(featureMPTokensV2);
 
-    constexpr std::uint32_t kTF_MPT_PAYMENT_MASK_V1 = ~(tfUniversal | tfPartialPayment);
+    static constexpr std::uint32_t kTfMptPaymentMaskV1 = ~(tfUniversal | tfPartialPayment);
     std::uint32_t const paymentMask =
-        (isDstMPT && !mpTokensV2) ? kTF_MPT_PAYMENT_MASK_V1 : tfPaymentMask;
+        (isDstMPT && !mpTokensV2) ? kTfMptPaymentMaskV1 : tfPaymentMask;
 
     return paymentMask;
 }
@@ -122,14 +120,18 @@ Payment::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureMPTokensV1) && isDstMPT)
         return temDISABLED;
 
-    std::uint32_t const txFlags = tx.getFlags();
-
     if (!mpTokensV2 && isDstMPT && ctx.tx.isFieldPresent(sfPaths))
         return temMALFORMED;
 
-    bool const partialPaymentAllowed = (txFlags & tfPartialPayment) != 0u;
-    bool const limitQuality = (txFlags & tfLimitQuality) != 0u;
-    bool const defaultPathsAllowed = (txFlags & tfNoRippleDirect) == 0u;
+    // A zero DomainID is invalid for a PermissionedDomain ledger entry because
+    // keylet::permissionedDomain(uint256) uses the DomainID as the ledger key.
+    if (auto const domainID = tx[~sfDomainID];
+        ctx.rules.enabled(fixCleanup3_2_0) && domainID && *domainID == beast::kZero)
+        return temMALFORMED;
+
+    bool const partialPaymentAllowed = tx.isFlag(tfPartialPayment);
+    bool const limitQuality = tx.isFlag(tfLimitQuality);
+    bool const defaultPathsAllowed = !tx.isFlag(tfNoRippleDirect);
     bool const hasPaths = tx.isFieldPresent(sfPaths);
     bool const hasMax = tx.isFieldPresent(sfSendMax);
 
@@ -164,13 +166,13 @@ Payment::preflight(PreflightContext const& ctx)
                         << "Payment destination account not specified.";
         return temDST_NEEDED;
     }
-    if (hasMax && maxSourceAmount <= beast::kZERO)
+    if (hasMax && maxSourceAmount <= beast::kZero)
     {
         JLOG(j.trace()) << "Malformed transaction: bad max amount: "
                         << maxSourceAmount.getFullText();
         return temBAD_AMOUNT;
     }
-    if (dstAmount <= beast::kZERO)
+    if (dstAmount <= beast::kZero)
     {
         JLOG(j.trace()) << "Malformed transaction: bad dst amount: " << dstAmount.getFullText();
         return temBAD_AMOUNT;
@@ -241,7 +243,7 @@ Payment::preflight(PreflightContext const& ctx)
         }
 
         auto const dMin = *deliverMin;
-        if (!isLegalNet(dMin) || dMin <= beast::kZERO)
+        if (!isLegalNet(dMin) || dMin <= beast::kZero)
         {
             JLOG(j.trace()) << "Malformed transaction: Invalid " << jss::DeliverMin.cStr()
                             << " amount. " << dMin.getFullText();
@@ -269,50 +271,78 @@ Payment::preflight(PreflightContext const& ctx)
 }
 
 NotTEC
-Payment::checkPermission(ReadView const& view, STTx const& tx)
+Payment::checkGranularSemantics(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
 {
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (isTesSuccess(checkTxPermission(sle, tx)))
-        return tesSUCCESS;
-
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttPAYMENT, granularPermissions);
-
     auto const& dstAmount = tx.getFieldAmount(sfAmount);
     auto const& amountAsset = dstAmount.asset();
 
     // Granular permissions are only valid for direct payments.
-    if ((tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset) ||
-        tx.isFieldPresent(sfPaths))
+    if (tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset)
         return terNO_DELEGATE_PERMISSION;
 
-    // PaymentMint and PaymentBurn apply to both IOU and MPT direct payments.
-    if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
-        amountAsset.getIssuer() == tx[sfAccount])
-        return tesSUCCESS;
+    if (isXRP(amountAsset))
+        return terNO_DELEGATE_PERMISSION;
 
-    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
-        amountAsset.getIssuer() == tx[sfDestination])
-        return tesSUCCESS;
+    return amountAsset.visit(
+        [&](MPTIssue const& mptIssue) -> NotTEC {
+            // For MPT payments, the MPTokenIssuanceID encodes the issuer unambiguously,
+            // unlike IOU, there is no endpoint aliasing where either side of the
+            // trustline can appear as the issuer.
+            if (heldGranularPermissions.contains(PaymentMint) &&
+                mptIssue.getIssuer() == tx[sfAccount])
+                return tesSUCCESS;
+            if (heldGranularPermissions.contains(PaymentBurn) &&
+                mptIssue.getIssuer() == tx[sfDestination])
+                return tesSUCCESS;
+            return terNO_DELEGATE_PERMISSION;
+        },
+        [&](Issue const& issue) -> NotTEC {
+            // For IOU payments, either endpoint may be encoded as the issuer in
+            // sfAmount. PaySteps normalizes those endpoint aliases, so sfAmount.issuer
+            // alone does not reliably identify whether the transaction issues or redeems
+            // IOUs. We determine PaymentMint vs PaymentBurn from the trustline balance
+            // direction instead.
+            auto const account = tx[sfAccount];
+            auto const destination = tx[sfDestination];
 
-    return terNO_DELEGATE_PERMISSION;
+            // Reject if neither endpoint is the issuer.
+            if (issue.getIssuer() != account && issue.getIssuer() != destination)
+                return terNO_DELEGATE_PERMISSION;
+
+            auto const sle = view.read(keylet::trustLine(account, destination, issue.currency));
+            if (!sle)
+                return terNO_DELEGATE_PERMISSION;
+
+            bool const accountIsLow = (account < destination);
+            auto const destLimit = sle->getFieldAmount(accountIsLow ? sfHighLimit : sfLowLimit);
+            auto const rawBalance = sle->getFieldAmount(sfBalance);
+            bool const accountIsHolder =
+                accountIsLow ? rawBalance > beast::kZero : rawBalance < beast::kZero;
+
+            // PaymentMint requires the destination to be the holder and the account to be the
+            // issuer. destLimit > 0: destination is willing to hold account's IOUs (account is the
+            // issuer). !accountIsHolder: DirectStepI will issue, not redeem.
+            if (heldGranularPermissions.contains(PaymentMint) && destLimit > beast::kZero &&
+                !accountIsHolder)
+                return tesSUCCESS;
+
+            // PaymentBurn requires the source account to be the holder and the destination to be
+            // the issuer. accountIsHolder: DirectStepI will redeem, not issue.
+            if (heldGranularPermissions.contains(PaymentBurn) && accountIsHolder)
+                return tesSUCCESS;
+
+            return terNO_DELEGATE_PERMISSION;
+        });
 }
 
 TER
 Payment::preclaim(PreclaimContext const& ctx)
 {
     // Ripple if source or destination is non-native or if there are paths.
-    std::uint32_t const txFlags = ctx.tx.getFlags();
-    bool const partialPaymentAllowed = (txFlags & tfPartialPayment) != 0u;
+    bool const partialPaymentAllowed = ctx.tx.isFlag(tfPartialPayment);
     auto const hasPaths = ctx.tx.isFieldPresent(sfPaths);
     auto const sendMax = ctx.tx[~sfSendMax];
 
@@ -333,16 +363,21 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return tecNO_DST;
         }
-        if (ctx.view.open() && partialPaymentAllowed)
+        // A partial payment may not fund a new account.
+        if (partialPaymentAllowed)
         {
-            // You cannot fund an account with a partial payment.
-            // Make retry work smaller, by rejecting this.
-            JLOG(ctx.j.trace()) << "Delay transaction: Partial payment not "
-                                   "allowed to create account.";
-
-            // Another transaction could create the account and then this
-            // transaction would succeed.
-            return telNO_DST_PARTIAL;
+            // Open view: the soft tel (unchanged).
+            if (ctx.view.open())
+            {
+                // Make retry work smaller, by rejecting this.
+                JLOG(ctx.j.trace()) << "Delay transaction: Partial payment not "
+                                       "allowed to create account.";
+                return telNO_DST_PARTIAL;
+            }
+            // Inner batch txns are claimed on a closed view, where a tel is
+            // invalid, so use the tef.
+            if (ctx.parentBatchId && ctx.view.rules().enabled(featureBatchV1_1))
+                return tefNO_DST_PARTIAL;
         }
         if (dstAmount < STAmount(ctx.view.fees().reserve))
         {
@@ -357,9 +392,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             return tecNO_DST_INSUF_XRP;
         }
     }
-    else if (
-        ((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
-        !ctx.tx.isFieldPresent(sfDestinationTag))
+    else if (sleDst->isFlag(lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.
@@ -372,15 +405,20 @@ Payment::preclaim(PreclaimContext const& ctx)
     }
 
     // Payment with at least one intermediate step and uses transitive balances.
-    if ((hasPaths || sendMax || !dstAmount.native()) && ctx.view.open())
+    if (hasPaths || sendMax || !dstAmount.native())
     {
         STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 
-        if (paths.size() > kMAX_PATH_SIZE || std::ranges::any_of(paths, [](STPath const& path) {
-                return path.size() > kMAX_PATH_LENGTH;
+        if (paths.size() > kMaxPathSize || std::ranges::any_of(paths, [](STPath const& path) {
+                return path.size() > kMaxPathLength;
             }))
         {
-            return telBAD_PATH_COUNT;
+            // Open view: the soft tel (unchanged). Inner batch txns are claimed
+            // on a closed view, where a tel is invalid, so use the tef.
+            if (ctx.view.open())
+                return telBAD_PATH_COUNT;
+            if (ctx.parentBatchId && ctx.view.rules().enabled(featureBatchV1_1))
+                return tefBAD_PATH_COUNT;
         }
     }
 
@@ -406,17 +444,16 @@ Payment::doApply()
     auto const deliverMin = ctx_.tx[~sfDeliverMin];
 
     // Ripple if source or destination is non-native or if there are paths.
-    std::uint32_t const txFlags = ctx_.tx.getFlags();
-    bool const partialPaymentAllowed = (txFlags & tfPartialPayment) != 0u;
-    bool const limitQuality = (txFlags & tfLimitQuality) != 0u;
-    bool const defaultPathsAllowed = (txFlags & tfNoRippleDirect) == 0u;
+    bool const partialPaymentAllowed = ctx_.tx.isFlag(tfPartialPayment);
+    bool const limitQuality = ctx_.tx.isFlag(tfLimitQuality);
+    bool const defaultPathsAllowed = !ctx_.tx.isFlag(tfNoRippleDirect);
     auto const hasPaths = ctx_.tx.isFieldPresent(sfPaths);
     auto const sendMax = ctx_.tx[~sfSendMax];
 
     AccountID const dstAccountID(ctx_.tx.getAccountID(sfDestination));
     STAmount const dstAmount(ctx_.tx.getFieldAmount(sfAmount));
     bool const isDstMPT = dstAmount.holds<MPTIssue>();
-    STAmount const maxSourceAmount = getMaxSourceAmount(account_, dstAmount, sendMax);
+    STAmount const maxSourceAmount = getMaxSourceAmount(accountID_, dstAmount, sendMax);
 
     JLOG(j_.trace()) << "maxSourceAmount=" << maxSourceAmount.getFullText()
                      << " dstAmount=" << dstAmount.getFullText();
@@ -431,7 +468,7 @@ Payment::doApply()
         sleDst = std::make_shared<SLE>(k);
         sleDst->setAccountID(sfAccount, dstAccountID);
         sleDst->setFieldU32(sfSequence, view().seq());
-        sleDst->setFieldAmount(sfBalance, XRPAmount(beast::kZERO));
+        sleDst->setFieldAmount(sfBalance, XRPAmount(beast::kZero));
 
         view().insert(sleDst);
     }
@@ -459,7 +496,7 @@ Payment::doApply()
         //  2. If Account is deposit preauthorized by destination.
 
         if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
+                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst, ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -478,7 +515,7 @@ Payment::doApply()
                 maxSourceAmount,
                 dstAmount,
                 dstAccountID,
-                account_,
+                accountID_,
                 ctx_.tx.getFieldPathSet(sfPaths),
                 ctx_.tx[~sfDomainID],
                 ctx_.registry,
@@ -518,18 +555,18 @@ Payment::doApply()
         JLOG(j_.trace()) << " dstAmount=" << dstAmount.getFullText();
         auto const& mptIssue = dstAmount.get<MPTIssue>();
 
-        if (auto const ter = requireAuth(view(), mptIssue, account_); !isTesSuccess(ter))
+        if (auto const ter = requireAuth(view(), mptIssue, accountID_); !isTesSuccess(ter))
             return ter;
 
         if (auto const ter = requireAuth(view(), mptIssue, dstAccountID); !isTesSuccess(ter))
             return ter;
 
-        if (auto const ter = canTransfer(view(), mptIssue, account_, dstAccountID);
+        if (auto const ter = canTransfer(view(), mptIssue, accountID_, dstAccountID);
             !isTesSuccess(ter))
             return ter;
 
         if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
+                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst, ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -538,13 +575,13 @@ Payment::doApply()
         // Transfer rate
         Rate rate{QUALITY_ONE};
         // Payment between the holders
-        if (account_ != issuer && dstAccountID != issuer)
+        if (accountID_ != issuer && dstAccountID != issuer)
         {
             // If globally/individually locked then
             //   - can't send between holders
             //   - holder can send back to issuer
             //   - issuer can send to holder
-            if (isAnyFrozen(view(), {account_, dstAccountID}, mptIssue))
+            if (isAnyFrozen(view(), {accountID_, dstAccountID}, mptIssue))
                 return tecLOCKED;
 
             // Get the rate for a payment between the holders.
@@ -572,7 +609,7 @@ Payment::doApply()
             return tecPATH_PARTIAL;
 
         PaymentSandbox pv(&view());
-        auto res = accountSend(pv, account_, dstAccountID, amountDeliver, ctx_.journal);
+        auto res = accountSend(pv, accountID_, dstAccountID, amountDeliver, ctx_.journal);
         if (isTesSuccess(res))
         {
             pv.apply(ctx_.rawView());
@@ -595,7 +632,7 @@ Payment::doApply()
 
     // Direct XRP payment.
 
-    auto const sleSrc = view().peek(keylet::account(account_));
+    auto const sleSrc = view().peek(keylet::account(accountID_));
     if (!sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -607,10 +644,10 @@ Payment::doApply()
     auto const reserve = view().fees().accountReserve(ownerCount);
 
     // In a delegated payment, the fee payer is the delegated account,
-    // not the source account (account_).
-    bool const accountIsPayer = (ctx_.tx.getFeePayer() == account_);
+    // not the source account (accountID_).
+    bool const accountIsPayer = (ctx_.tx.getFeePayer() == accountID_);
 
-    // preFeeBalance_ is the balance on the source account (account_) BEFORE the fees
+    // preFeeBalance_ is the balance on the source account (accountID_) BEFORE the fees
     // were charged. If source account is the fee payer, it must also cover the fee.
     // The final spend may use the reserve to cover fees.
     auto const minRequiredFunds =
@@ -662,7 +699,7 @@ Payment::doApply()
     if (dstAmount > dstReserve || sleDst->getFieldAmount(sfBalance) > dstReserve)
     {
         if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
+                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst, ctx_.journal);
             !isTesSuccess(err))
             return err;
     }
@@ -672,17 +709,14 @@ Payment::doApply()
     sleDst->setFieldAmount(sfBalance, sleDst->getFieldAmount(sfBalance) + dstAmount);
 
     // Re-arm the password change fee if we can and need to.
-    if ((sleDst->getFlags() & lsfPasswordSpent) != 0u)
+    if (sleDst->isFlag(lsfPasswordSpent))
         sleDst->clearFlag(lsfPasswordSpent);
 
     return tesSUCCESS;
 }
 
 void
-Payment::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+Payment::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

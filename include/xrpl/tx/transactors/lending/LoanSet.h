@@ -1,14 +1,25 @@
 #pragma once
 
-#include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <vector>
 
 namespace xrpl {
 
 class LoanSet : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit LoanSet(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -39,10 +50,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -53,16 +61,16 @@ public:
         beast::Journal const& j) override;
 
 public:
-    static std::uint32_t constexpr kMIN_PAYMENT_TOTAL = 1;
-    static std::uint32_t constexpr kDEFAULT_PAYMENT_TOTAL = 1;
-    static_assert(kDEFAULT_PAYMENT_TOTAL >= kMIN_PAYMENT_TOTAL);
+    static constexpr std::uint32_t kMinPaymentTotal = 1;
+    static constexpr std::uint32_t kDefaultPaymentTotal = 1;
+    static_assert(kDefaultPaymentTotal >= kMinPaymentTotal);
 
-    static std::uint32_t constexpr kMIN_PAYMENT_INTERVAL = 60;
-    static std::uint32_t constexpr kDEFAULT_PAYMENT_INTERVAL = 60;
-    static_assert(kDEFAULT_PAYMENT_INTERVAL >= kMIN_PAYMENT_INTERVAL);
+    static constexpr std::uint32_t kMinPaymentInterval = 60;
+    static constexpr std::uint32_t kDefaultPaymentInterval = 60;
+    static_assert(kDefaultPaymentInterval >= kMinPaymentInterval);
 
-    static std::uint32_t constexpr kDEFAULT_GRACE_PERIOD = 60;
-    static_assert(kDEFAULT_GRACE_PERIOD >= kMIN_PAYMENT_INTERVAL);
+    static constexpr std::uint32_t kDefaultGracePeriod = 60;
+    static_assert(kDefaultGracePeriod >= kMinPaymentInterval);
 };
 
 //------------------------------------------------------------------------------

@@ -17,7 +17,6 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -32,7 +31,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
         testcase("Invalid request params");
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
+                    cfg->fees.referenceFee = 10;
                     return cfg;
                 })};
 
@@ -44,7 +43,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
         }
 
         {
-            json::Value params{json::ObjectValue};
+            json::Value params{json::ValueType::Object};
             params[jss::ledger] = 20;
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
             BEAST_EXPECT(result[jss::error] == "lgrNotFound");
@@ -52,7 +51,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
         }
 
         {
-            json::Value params{json::ObjectValue};
+            json::Value params{json::ValueType::Object};
             params[jss::ledger] = "current";
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
@@ -61,7 +60,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
         }
 
         {
-            json::Value params{json::ObjectValue};
+            json::Value params{json::ValueType::Object};
             params[jss::ledger] = "closed";
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
@@ -139,7 +138,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
         testcase("Basic request API version " + std::to_string(apiVersion));
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
+                    cfg->fees.referenceFee = 10;
                     return cfg;
                 })};
 
@@ -151,7 +150,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
                            std::string const closeTimeIso = "") {
             // first request using ledger_index to lookup
             json::Value const resIndex{[&env, index, &txhash, apiVersion]() {
-                json::Value params{json::ObjectValue};
+                json::Value params{json::ValueType::Object};
                 params[jss::ledger_index] = index;
                 params[jss::tx_hash] = txhash;
                 params[jss::api_version] = apiVersion;
@@ -206,7 +205,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
             // second request using ledger_hash to lookup and verify
             // both responses match
             {
-                json::Value params{json::ObjectValue};
+                json::Value params{json::ValueType::Object};
                 params[jss::ledger_hash] = resIndex[jss::ledger_hash];
                 params[jss::tx_hash] = txhash;
                 params[jss::api_version] = apiVersion;
@@ -353,7 +352,7 @@ public:
     run() override
     {
         testBadInput();
-        forAllApiVersions(std::bind_front(&TransactionEntry_test::testRequest, this));
+        forAllApiVersions([this](unsigned apiVersion) { testRequest(apiVersion); });
     }
 };
 

@@ -29,11 +29,11 @@ toUInt32(Taxon t)
     return static_cast<std::uint32_t>(t);
 }
 
-constexpr std::uint16_t const kFLAG_BURNABLE = 0x0001;
-constexpr std::uint16_t const kFLAG_ONLY_XRP = 0x0002;
-constexpr std::uint16_t const kFLAG_CREATE_TRUST_LINES = 0x0004;
-constexpr std::uint16_t const kFLAG_TRANSFERABLE = 0x0008;
-constexpr std::uint16_t const kFLAG_MUTABLE = 0x0010;
+constexpr std::uint16_t const kFlagBurnable = 0x0001;
+constexpr std::uint16_t const kFlagOnlyXrp = 0x0002;
+constexpr std::uint16_t const kFlagCreateTrustLines = 0x0004;
+constexpr std::uint16_t const kFlagTransferable = 0x0008;
+constexpr std::uint16_t const kFlagMutable = 0x0010;
 
 inline std::uint16_t
 getFlags(uint256 const& id)
@@ -52,7 +52,7 @@ getTransferFee(uint256 const& id)
 }
 
 inline std::uint32_t
-getSerial(uint256 const& id)
+getSequence(uint256 const& id)
 {
     std::uint32_t seq = 0;
     memcpy(&seq, id.begin() + 28, 4);
@@ -92,7 +92,7 @@ getTaxon(uint256 const& id)
 
     // The taxon cipher is just an XOR, so it is reversible by applying the
     // XOR a second time.
-    return cipheredTaxon(getSerial(id), toTaxon(taxon));
+    return cipheredTaxon(getSequence(id), toTaxon(taxon));
 }
 
 inline AccountID

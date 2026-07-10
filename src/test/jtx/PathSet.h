@@ -1,10 +1,20 @@
 #pragma once
 
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STPathSet.h>
+
+#include <cstddef>
 
 namespace xrpl::test {
 
@@ -18,7 +28,7 @@ countOffers(
     Asset const& takerGets)
 {
     size_t count = 0;
-    forEachItem(*env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
+    forEachItem(*env.current(), account, [&](SLE::const_ref sle) {
         if (sle->getType() == ltOFFER && sle->getFieldAmount(sfTakerPays).asset() == takerPays &&
             sle->getFieldAmount(sfTakerGets).asset() == takerGets)
             ++count;
@@ -34,7 +44,7 @@ countOffers(
     STAmount const& takerGets)
 {
     size_t count = 0;
-    forEachItem(*env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
+    forEachItem(*env.current(), account, [&](SLE::const_ref sle) {
         if (sle->getType() == ltOFFER && sle->getFieldAmount(sfTakerPays) == takerPays &&
             sle->getFieldAmount(sfTakerGets) == takerGets)
             ++count;
@@ -109,7 +119,7 @@ TestPath::pushBack(Issue const& iss)
 {
     path.emplaceBack(
         STPathElement::TypeCurrency | STPathElement::TypeIssuer,
-        beast::kZERO,
+        beast::kZero,
         iss.currency,
         iss.account);
     return *this;
@@ -120,7 +130,7 @@ TestPath::pushBack(MPTIssue const& iss)
 {
     path.emplaceBack(
         STPathElement::TypeMpt | STPathElement::TypeIssuer,
-        beast::kZERO,
+        beast::kZero,
         iss.getMptID(),
         iss.getIssuer());
     return *this;
@@ -129,7 +139,7 @@ TestPath::pushBack(MPTIssue const& iss)
 inline TestPath&
 TestPath::pushBack(jtx::Account const& account)
 {
-    path.emplaceBack(account.id(), Currency{beast::kZERO}, beast::kZERO);
+    path.emplaceBack(account.id(), Currency{beast::kZero}, beast::kZero);
     return *this;
 }
 
@@ -145,7 +155,7 @@ TestPath::addHelper(First&& first, Rest&&... rest)
 inline json::Value
 TestPath::json() const
 {
-    return path.getJson(JsonOptions::KNone);
+    return path.getJson(JsonOptions::Values::None);
 }
 
 class PathSet
@@ -170,7 +180,7 @@ public:
     json() const
     {
         json::Value v;
-        v["Paths"] = paths.getJson(JsonOptions::KNone);
+        v["Paths"] = paths.getJson(JsonOptions::Values::None);
         return v;
     }
 

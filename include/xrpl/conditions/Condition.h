@@ -4,8 +4,12 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/conditions/detail/utils.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <set>
+#include <system_error>
+#include <utility>
 
 namespace xrpl::cryptoconditions {
 
@@ -27,7 +31,7 @@ public:
               that were previously considered valid to no longer
               be allowed.
     */
-    static constexpr std::size_t kMAX_SERIALIZED_CONDITION = 128;
+    static constexpr std::size_t kMaxSerializedCondition = 128;
 
     /** Load a condition from its binary form
 

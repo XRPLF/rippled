@@ -1,9 +1,11 @@
 #pragma once
 
-#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
-#include <xrpl/protocol/AccountID.h>
+
+#include <functional>
+#include <ostream>
+#include <string>
 
 namespace xrpl {
 namespace detail {
@@ -62,7 +64,7 @@ badCurrency();
 inline bool
 isXRP(Currency const& c)
 {
-    return c == beast::kZERO;
+    return c == beast::kZero;
 }
 
 /** Returns "", "XRP", or three letter ISO code. */

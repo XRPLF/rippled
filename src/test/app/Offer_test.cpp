@@ -49,7 +49,6 @@
 #include <cstdint>
 #include <iterator>
 #include <map>
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -260,7 +259,7 @@ public:
         for (int i = 0; i < 101; ++i)
             env(offer(carol, usd(1), eur(2)));
 
-        env(pay(alice, bob, eur(kEPSILON)), Path(~eur), Sendmax(usd(100)));
+        env(pay(alice, bob, eur(kEpsilon)), Path(~eur), Sendmax(usd(100)));
     }
 
     void
@@ -755,11 +754,11 @@ public:
     }
 
     // Helper function that returns the Offers on an account.
-    static std::vector<std::shared_ptr<SLE const>>
+    static std::vector<SLE::const_pointer>
     offersOnAccount(jtx::Env& env, jtx::Account const& account)
     {
-        std::vector<std::shared_ptr<SLE const>> result;
-        forEachItem(*env.current(), account, [&result](std::shared_ptr<SLE const> const& sle) {
+        std::vector<SLE::const_pointer> result;
+        forEachItem(*env.current(), account, [&result](SLE::const_ref sle) {
             if (sle->getType() == ltOFFER)
                 result.push_back(sle);
         });
@@ -798,11 +797,13 @@ public:
             // The offer expires (it's not removed yet).
             env.close();
             env.require(Owners(bob, 1), offers(bob, 1));
+            auto const expiredBobOffer = keylet::offer(bob, env.seq(bob) - 1);
 
             // bob creates the offer that will be crossed.
             env(offer(bob, usd(500), XRP(500)), Ter(tesSUCCESS));
             env.close();
             env.require(Owners(bob, 2), offers(bob, 2));
+            auto const crossedBobOffer = keylet::offer(bob, env.seq(bob) - 1);
 
             env(trust(alice, usd(1000)), Ter(tesSUCCESS));
             env(pay(gw, alice, usd(1000)), Ter(tesSUCCESS));
@@ -818,9 +819,11 @@ public:
                 Owners(alice, 1),
                 offers(alice, 0),
                 Balance(bob, startBalance - (f * 2)),
-                Balance(bob, usd(kNONE)),
+                Balance(bob, usd(kNone)),
                 Owners(bob, 1),
                 offers(bob, 1));
+            BEAST_EXPECT(!env.current()->exists(expiredBobOffer));
+            BEAST_EXPECT(env.current()->exists(crossedBobOffer));
 
             // Order that can be filled
             env(offer(alice, XRP(500), usd(500)), Txflags(tfFillOrKill), Ter(tesSUCCESS));
@@ -834,6 +837,27 @@ public:
                 Balance(bob, usd(500)),
                 Owners(bob, 1),
                 offers(bob, 0));
+        }
+
+        // A failed Fill-or-Kill may tentatively consume a funded offer before
+        // the transaction is reset. That offer must not be treated as an
+        // unfunded offer cleanup.
+        {
+            Env env{*this, features};
+
+            env.fund(startBalance, gw, alice, bob);
+            env.close();
+
+            env(offer(bob, usd(500), XRP(500)), Ter(tesSUCCESS));
+            env.close();
+            auto const bobOffer = keylet::offer(bob, env.seq(bob) - 1);
+
+            env(trust(alice, usd(1000)), Ter(tesSUCCESS));
+            env(pay(gw, alice, usd(1000)), Ter(tesSUCCESS));
+            env(offer(alice, XRP(1000), usd(1000)), Txflags(tfFillOrKill), Ter(tecKILLED));
+
+            env.require(offers(alice, 0), offers(bob, 1), Balance(alice, usd(1000)));
+            BEAST_EXPECT(env.current()->exists(bobOffer));
         }
 
         // Immediate or Cancel - cross as much as possible
@@ -1128,7 +1152,7 @@ public:
             offers(alice, 0),
             Owners(alice, 1),
             Balance(bob, startBalance - f),
-            Balance(bob, usd(kNONE)),
+            Balance(bob, usd(kNone)),
             offers(bob, 1),
             Owners(bob, 1));
     }
@@ -1239,7 +1263,7 @@ public:
         BEAST_EXPECT(isOffer(env, accountToTest, XRP(1000), usd(50)));
 
         // now make an offer that will cross and auto-bridge, meaning
-        // the outstanding offers will be taken leaving us with kNONE
+        // the outstanding offers will be taken leaving us with kNone
         env(offer(accountToTest, usd(50), btc(250)));
 
         auto jrr = getBookOffers(env, usd, btc);
@@ -1572,7 +1596,7 @@ public:
         auto jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::node][jss::TakerGets] == XRP(500).value().getText());
         BEAST_EXPECT(
-            jro[jss::node][jss::TakerPays] == usd(100).value().getJson(JsonOptions::KNone));
+            jro[jss::node][jss::TakerPays] == usd(100).value().getJson(JsonOptions::Values::None));
 
         env(pay(alice, alice, XRP(500)), Sendmax(usd(100)));
 
@@ -1651,7 +1675,8 @@ public:
         // The previous payment reduced the remaining offer amount by 200 XRP
         auto jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::node][jss::TakerGets] == XRP(300).value().getText());
-        BEAST_EXPECT(jro[jss::node][jss::TakerPays] == usd(60).value().getJson(JsonOptions::KNone));
+        BEAST_EXPECT(
+            jro[jss::node][jss::TakerPays] == usd(60).value().getJson(JsonOptions::Values::None));
 
         // the balance between alice and gw is 160 USD..200 less the 40 taken
         // by the offer
@@ -1732,7 +1757,8 @@ public:
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-475");
 
         auto jro = ledgerEntryOffer(env, carol, carolOfferSeq);
-        BEAST_EXPECT(jro[jss::node][jss::TakerGets] == usd(25).value().getJson(JsonOptions::KNone));
+        BEAST_EXPECT(
+            jro[jss::node][jss::TakerGets] == usd(25).value().getJson(JsonOptions::Values::None));
         BEAST_EXPECT(jro[jss::node][jss::TakerPays] == XRP(250).value().getText());
     }
 
@@ -1777,7 +1803,8 @@ public:
 
         auto jro = ledgerEntryOffer(env, carol, carolOfferSeq);
         BEAST_EXPECT(jro[jss::node][jss::TakerGets] == XRP(250).value().getText());
-        BEAST_EXPECT(jro[jss::node][jss::TakerPays] == usd(25).value().getJson(JsonOptions::KNone));
+        BEAST_EXPECT(
+            jro[jss::node][jss::TakerPays] == usd(25).value().getJson(JsonOptions::Values::None));
     }
 
     void
@@ -1815,7 +1842,7 @@ public:
         auto const danOfferSeq = env.seq(dan);
         env(offer(dan, XRP(500), eur(50)));
 
-        json::Value jtp{json::ArrayValue};
+        json::Value jtp{json::ValueType::Array};
         jtp[0u][0u][jss::currency] = "XRP";
         env(pay(alice, bob, eur(30)), Json(jss::Paths, jtp), Sendmax(usd(333)));
 
@@ -1833,11 +1860,13 @@ public:
 
         auto jro = ledgerEntryOffer(env, carol, carolOfferSeq);
         BEAST_EXPECT(jro[jss::node][jss::TakerGets] == XRP(200).value().getText());
-        BEAST_EXPECT(jro[jss::node][jss::TakerPays] == usd(20).value().getJson(JsonOptions::KNone));
+        BEAST_EXPECT(
+            jro[jss::node][jss::TakerPays] == usd(20).value().getJson(JsonOptions::Values::None));
 
         jro = ledgerEntryOffer(env, dan, danOfferSeq);
         BEAST_EXPECT(
-            jro[jss::node][jss::TakerGets] == gw2["EUR"](20).value().getJson(JsonOptions::KNone));
+            jro[jss::node][jss::TakerGets] ==
+            gw2["EUR"](20).value().getJson(JsonOptions::Values::None));
         BEAST_EXPECT(jro[jss::node][jss::TakerPays] == XRP(200).value().getText());
     }
 
@@ -1902,7 +1931,7 @@ public:
         env.require(Owners(alice, 2));
 
         env.require(Balance(carol, usd(0)));
-        env.require(Balance(carol, eur(kNONE)));
+        env.require(Balance(carol, eur(kNone)));
 
         env.require(offers(carol, 0));
         env.require(Owners(carol, 1));
@@ -1969,54 +1998,36 @@ public:
 
         using namespace jtx;
 
-        for (auto numberSwitchOver : {false, true})
-        {
-            Env env{*this, features};
-            if (numberSwitchOver)
-            {
-                env.enableFeature(fixUniversalNumber);
-            }
-            else
-            {
-                env.disableFeature(fixUniversalNumber);
-            }
+        Env env{*this, features};
 
-            auto const gw = Account{"gateway"};
-            auto const alice = Account{"alice"};
-            auto const bob = Account{"bob"};
-            auto const usd = gw["USD"];
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const usd = gw["USD"];
 
-            env.fund(XRP(10000), gw, alice, bob);
-            env.close();
+        env.fund(XRP(10000), gw, alice, bob);
+        env.close();
 
-            env(rate(gw, 1.005));
+        env(rate(gw, 1.005));
 
-            env(trust(alice, usd(1000)));
-            env(trust(bob, usd(1000)));
-            env(trust(gw, alice["USD"](50)));
+        env(trust(alice, usd(1000)));
+        env(trust(bob, usd(1000)));
+        env(trust(gw, alice["USD"](50)));
 
-            env(pay(gw, bob, bob["USD"](1)));
-            env(pay(alice, gw, usd(50)));
+        env(pay(gw, bob, bob["USD"](1)));
+        env(pay(alice, gw, usd(50)));
 
-            env(trust(gw, alice["USD"](0)));
+        env(trust(gw, alice["USD"](0)));
 
-            env(offer(alice, usd(50), XRP(150000)));
-            env(offer(bob, XRP(100), usd(0.1)));
+        env(offer(alice, usd(50), XRP(150000)));
+        env(offer(bob, XRP(100), usd(0.1)));
 
-            auto jrr = ledgerEntryState(env, alice, gw, "USD");
-            BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "49.96666666666667");
+        auto jrr = ledgerEntryState(env, alice, gw, "USD");
+        BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "49.96666666666667");
 
-            jrr = ledgerEntryState(env, bob, gw, "USD");
-            json::Value const bobUSD = jrr[jss::node][sfBalance.fieldName][jss::value];
-            if (!numberSwitchOver)
-            {
-                BEAST_EXPECT(bobUSD == "-0.966500000033334");
-            }
-            else
-            {
-                BEAST_EXPECT(bobUSD == "-0.9665000000333333");
-            }
-        }
+        jrr = ledgerEntryState(env, bob, gw, "USD");
+        json::Value const bobUSD = jrr[jss::node][sfBalance.fieldName][jss::value];
+        BEAST_EXPECT(bobUSD == "-0.9665000000333333");
     }
 
     void
@@ -2149,7 +2160,8 @@ public:
         payment[jss::tx_json][jss::Sequence] =
             env.current()->read(keylet::account(bob.id()))->getFieldU32(sfSequence);
         payment[jss::tx_json][jss::Fee] = to_string(env.current()->fees().base);
-        payment[jss::tx_json][jss::SendMax] = bob["XTS"](1.5).value().getJson(JsonOptions::KNone);
+        payment[jss::tx_json][jss::SendMax] =
+            bob["XTS"](1.5).value().getJson(JsonOptions::Values::None);
         auto jrr = wsc->invoke("submit", payment);
         BEAST_EXPECT(jrr[jss::status] == "success");
         BEAST_EXPECT(jrr[jss::result][jss::engine_result] == "tesSUCCESS");
@@ -2183,8 +2195,8 @@ public:
         jtx::Account const& account,
         jtx::PrettyAmount const& expectBalance)
     {
-        Issue const& issue = expectBalance.value().get<Issue>();
-        auto const sleTrust = env.le(keylet::line(account.id(), issue));
+        auto const& issue = expectBalance.value().get<Issue>();
+        auto const sleTrust = env.le(keylet::trustLine(account.id(), issue));
         BEAST_EXPECT(sleTrust);
         if (sleTrust)
         {
@@ -2351,7 +2363,7 @@ public:
                 else
                 {
                     // Verify that no trustline was created.
-                    auto const sleTrust = env.le(keylet::line(acct, usd));
+                    auto const sleTrust = env.le(keylet::trustLine(acct, usd));
                     BEAST_EXPECT(!sleTrust);
                 }
             }
@@ -2529,15 +2541,15 @@ public:
         env.close();
 
         env.require(Balance(alice, usd(1000)));
-        env.require(Balance(alice, eur(kNONE)));
-        env.require(Balance(bob, usd(kNONE)));
+        env.require(Balance(alice, eur(kNone)));
+        env.require(Balance(bob, usd(kNone)));
         env.require(Balance(bob, eur(1000)));
         env.require(offers(alice, 0));
         env.require(offers(bob, 0));
 
         // The two trustlines that were generated by offers should be gone.
-        BEAST_EXPECT(!env.le(keylet::line(alice.id(), eur)));
-        BEAST_EXPECT(!env.le(keylet::line(bob.id(), usd)));
+        BEAST_EXPECT(!env.le(keylet::trustLine(alice.id(), eur)));
+        BEAST_EXPECT(!env.le(keylet::trustLine(bob.id(), usd)));
 
         // Make two more offers that leave one of the offers non-dry. We
         // need to properly sequence the transactions:
@@ -2875,7 +2887,7 @@ public:
             // alice submits a tfSell | tfFillOrKill offer that does not cross.
             env(offer(alice, usd(21), XRP(2100), tfSell | tfFillOrKill), Ter(killedCode));
             env.close();
-            env.require(Balance(alice, usd(kNONE)));
+            env.require(Balance(alice, usd(kNone)));
             env.require(offers(alice, 0));
             env.require(Balance(bob, usd(100)));
         }
@@ -3150,14 +3162,14 @@ public:
             env(pay(kim, meg, nBux(60)), Path(lex, ned), Sendmax(kBux(200)));
             env.close();
 
-            env.require(Balance(kim, kBux(kNONE)));
-            env.require(Balance(kim, nBux(kNONE)));
+            env.require(Balance(kim, kBux(kNone)));
+            env.require(Balance(kim, nBux(kNone)));
             env.require(Balance(lex, kBux(72)));
             env.require(Balance(lex, nBux(40)));
-            env.require(Balance(meg, kBux(kNONE)));
+            env.require(Balance(meg, kBux(kNone)));
             env.require(Balance(meg, nBux(60)));
-            env.require(Balance(ned, kBux(kNONE)));
-            env.require(Balance(ned, nBux(kNONE)));
+            env.require(Balance(ned, kBux(kNone)));
+            env.require(Balance(ned, nBux(kNone)));
 
             // Now verify that offer crossing is unaffected by QualityOut.
             env(offer(lex, kBux(30), nBux(30)));
@@ -3166,14 +3178,14 @@ public:
             env(offer(kim, nBux(30), kBux(30)));
             env.close();
 
-            env.require(Balance(kim, kBux(kNONE)));
+            env.require(Balance(kim, kBux(kNone)));
             env.require(Balance(kim, nBux(30)));
             env.require(Balance(lex, kBux(102)));
             env.require(Balance(lex, nBux(10)));
-            env.require(Balance(meg, kBux(kNONE)));
+            env.require(Balance(meg, kBux(kNone)));
             env.require(Balance(meg, nBux(60)));
             env.require(Balance(ned, kBux(-30)));
-            env.require(Balance(ned, nBux(kNONE)));
+            env.require(Balance(ned, nBux(kNone)));
         }
         {
             // Make sure things work right when we're auto-bridging as well.
@@ -3506,14 +3518,14 @@ public:
             env(pay(ann, cam, dBux(60)), Path(bob, dan), Sendmax(aBux(200)));
             env.close();
 
-            env.require(Balance(ann, aBux(kNONE)));
-            env.require(Balance(ann, dBux(kNONE)));
+            env.require(Balance(ann, aBux(kNone)));
+            env.require(Balance(ann, dBux(kNone)));
             env.require(Balance(bob, aBux(72)));
             env.require(Balance(bob, dBux(40)));
-            env.require(Balance(cam, aBux(kNONE)));
+            env.require(Balance(cam, aBux(kNone)));
             env.require(Balance(cam, dBux(60)));
-            env.require(Balance(dan, aBux(kNONE)));
-            env.require(Balance(dan, dBux(kNONE)));
+            env.require(Balance(dan, aBux(kNone)));
+            env.require(Balance(dan, dBux(kNone)));
 
             env(offer(bob, aBux(30), dBux(30)));
             env.close();
@@ -3528,14 +3540,14 @@ public:
                 Ter(temBAD_PATH));
             env.close();
 
-            env.require(Balance(ann, aBux(kNONE)));
+            env.require(Balance(ann, aBux(kNone)));
             env.require(Balance(ann, dBux(0)));
             env.require(Balance(bob, aBux(72)));
             env.require(Balance(bob, dBux(40)));
-            env.require(Balance(cam, aBux(kNONE)));
+            env.require(Balance(cam, aBux(kNone)));
             env.require(Balance(cam, dBux(60)));
             env.require(Balance(dan, aBux(0)));
-            env.require(Balance(dan, dBux(kNONE)));
+            env.require(Balance(dan, dBux(kNone)));
         }
     }
 
@@ -3609,7 +3621,7 @@ public:
         auto const btc = gw["BTC"];
 
         auto const fee = env.current()->fees().base;
-        env.fund(reserve(env, 2) + drops(9999640) + (fee), ann);
+        env.fund(reserve(env, 2) + drops(9999640) + fee, ann);
         env.fund(reserve(env, 2) + (fee * 4), gw);
         env.close();
 
@@ -3647,7 +3659,7 @@ public:
         auto const cny = gw["CNY"];
 
         auto const fee = env.current()->fees().base;
-        env.fund(reserve(env, 2) + drops(400000000000) + (fee), alice, bob);
+        env.fund(reserve(env, 2) + drops(400000000000) + fee, alice, bob);
         env.fund(reserve(env, 2) + (fee * 4), gw);
         env.close();
 
@@ -3694,7 +3706,7 @@ public:
         auto const jpy = gw["JPY"];
 
         auto const fee = env.current()->fees().base;
-        env.fund(reserve(env, 2) + drops(400000000000) + (fee), alice, bob);
+        env.fund(reserve(env, 2) + drops(400000000000) + fee, alice, bob);
         env.fund(reserve(env, 2) + (fee * 4), gw);
         env.close();
 
@@ -3747,7 +3759,7 @@ public:
         auto const jpy = gw2["JPY"];
 
         auto const fee = env.current()->fees().base;
-        env.fund(reserve(env, 2) + drops(400000000000) + (fee), alice, bob);
+        env.fund(reserve(env, 2) + drops(400000000000) + fee, alice, bob);
         env.fund(reserve(env, 2) + (fee * 4), gw1, gw2);
         env.close();
 
@@ -3922,10 +3934,10 @@ public:
         // clang-format off
         TestData const tests[]{
             //        btcStart   --------------------- actor[0] ---------------------    -------------------- actor[1] -------------------
-            {.self=0, .leg0=0, .leg1=1, .btcStart=btc(20), .actors={{"ann", 0, drops(3900000'000000 - (4 * baseFee)), btc(20.0), usd(3000)}, {"abe", 0, drops(4100000'000000 - (3 * baseFee)), btc( 0), usd(750)}}},  // no BTC xfer fee
-            {.self=0, .leg0=1, .leg1=0, .btcStart=btc(20), .actors={{"bev", 0, drops(4100000'000000 - (4 * baseFee)), btc( 7.5), usd(2000)}, {"bob", 0, drops(3900000'000000 - (3 * baseFee)), btc(10), usd(  0)}}},  // no USD xfer fee
-            {.self=0, .leg0=0, .leg1=0, .btcStart=btc(20), .actors={{"cam", 0, drops(4000000'000000 - (5 * baseFee)), btc(20.0), usd(2000)}                                                     }},  // no xfer fee
-            {.self=0, .leg0=1, .leg1=0, .btcStart=btc( 5), .actors={{"deb", 1, drops(4040000'000000 - (4 * baseFee)), btc( 0.0), usd(2000)}, {"dan", 1, drops(3960000'000000 - (3 * baseFee)), btc( 4), usd(  0)}}},  // no USD xfer fee
+            {.self=0, .leg0=0, .leg1=1, .btcStart=btc(20), .actors={{.acct="ann", .offers=0, .xrp=drops(3900000'000000 - (4 * baseFee)), .btc=btc(20.0), .usd=usd(3000)}, {.acct="abe", .offers=0, .xrp=drops(4100000'000000 - (3 * baseFee)), .btc=btc( 0), .usd=usd(750)}}},  // no BTC xfer fee
+            {.self=0, .leg0=1, .leg1=0, .btcStart=btc(20), .actors={{.acct="bev", .offers=0, .xrp=drops(4100000'000000 - (4 * baseFee)), .btc=btc( 7.5), .usd=usd(2000)}, {.acct="bob", .offers=0, .xrp=drops(3900000'000000 - (3 * baseFee)), .btc=btc(10), .usd=usd(  0)}}},  // no USD xfer fee
+            {.self=0, .leg0=0, .leg1=0, .btcStart=btc(20), .actors={{.acct="cam", .offers=0, .xrp=drops(4000000'000000 - (5 * baseFee)), .btc=btc(20.0), .usd=usd(2000)}                                                     }},  // no xfer fee
+            {.self=0, .leg0=1, .leg1=0, .btcStart=btc( 5), .actors={{.acct="deb", .offers=1, .xrp=drops(4040000'000000 - (4 * baseFee)), .btc=btc( 0.0), .usd=usd(2000)}, {.acct="dan", .offers=1, .xrp=drops(3960000'000000 - (3 * baseFee)), .btc=btc( 4), .usd=usd(  0)}}},  // no USD xfer fee
         };
         // clang-format on
 
@@ -3974,7 +3986,7 @@ public:
                 auto actorOffers = offersOnAccount(env, actor.acct);
                 auto const offerCount = std::distance(
                     actorOffers.begin(),
-                    std::ranges::remove_if(actorOffers, [](std::shared_ptr<SLE const>& offer) {
+                    std::ranges::remove_if(actorOffers, [](SLE::const_pointer& offer) {
                         return (*offer)[sfTakerGets].signum() == 0;
                     }).begin());
                 BEAST_EXPECT(offerCount == actor.offers);
@@ -4070,8 +4082,8 @@ public:
         // clang-format off
         TestData const tests[]{
             //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
-            {.self=0, .leg0=0, .leg1=1, .btcStart=btc(5), .actors={{"gay", 1, drops(3950000'000000 - (4 * baseFee)), btc(5), usd(2500)}, {"gar", 1, drops(4050000'000000 - (3 * baseFee)), btc(0), usd(1375)}}}, // no BTC xfer fee
-            {.self=0, .leg0=0, .leg1=0, .btcStart=btc(5), .actors={{"hye", 2, drops(4000000'000000 - (5 * baseFee)), btc(5), usd(2000)}                                                     }}  // no xfer fee
+            {.self=0, .leg0=0, .leg1=1, .btcStart=btc(5), .actors={{.acct="gay", .offers=1, .xrp=drops(3950000'000000 - (4 * baseFee)), .btc=btc(5), .usd=usd(2500)}, {.acct="gar", .offers=1, .xrp=drops(4050000'000000 - (3 * baseFee)), .btc=btc(0), .usd=usd(1375)}}}, // no BTC xfer fee
+            {.self=0, .leg0=0, .leg1=0, .btcStart=btc(5), .actors={{.acct="hye", .offers=2, .xrp=drops(4000000'000000 - (5 * baseFee)), .btc=btc(5), .usd=usd(2000)}                                                     }}  // no xfer fee
         };
         // clang-format on
 
@@ -4120,7 +4132,7 @@ public:
                 auto actorOffers = offersOnAccount(env, actor.acct);
                 auto const offerCount = std::distance(
                     actorOffers.begin(),
-                    std::ranges::remove_if(actorOffers, [](std::shared_ptr<SLE const>& offer) {
+                    std::ranges::remove_if(actorOffers, [](SLE::const_pointer& offer) {
                         return (*offer)[sfTakerGets].signum() == 0;
                     }).begin());
                 BEAST_EXPECT(offerCount == actor.offers);
@@ -4231,7 +4243,7 @@ public:
         env.close();
 
         env.require(offers(alice, 1));
-        env.require(Balance(alice, gwUSD(kNONE)));
+        env.require(Balance(alice, gwUSD(kNone)));
         env(fset(gw, asfRequireAuth));
         env.close();
 
@@ -4255,7 +4267,7 @@ public:
 
         env.require(offers(alice, 0));
         // alice's unauthorized offer is deleted & bob's offer not crossed.
-        env.require(Balance(alice, gwUSD(kNONE)));
+        env.require(Balance(alice, gwUSD(kNone)));
         env.require(offers(bob, 1));
         env.require(Balance(bob, gwUSD(50)));
 
@@ -4266,7 +4278,7 @@ public:
         env.close();
 
         env.require(offers(alice, 0));
-        env.require(Balance(alice, gwUSD(kNONE)));
+        env.require(Balance(alice, gwUSD(kNone)));
 
         env.require(offers(bob, 1));
         env.require(Balance(bob, gwUSD(50)));
@@ -4472,7 +4484,7 @@ public:
                                   jtx::Account const& src,
                                   jtx::Account const& dst,
                                   Currency const& cur) -> bool {
-            return bool(env.le(keylet::line(src, dst, cur)));
+            return bool(env.le(keylet::trustLine(src, dst, cur)));
         };
 
         Account const alice("alice");
@@ -4580,25 +4592,25 @@ public:
             env.close();
 
             auto txn = noop(gw);
-            txn[sfTickSize.fieldName] = Quality::kMIN_TICK_SIZE - 1;
+            txn[sfTickSize.fieldName] = Quality::kMinTickSize - 1;
             env(txn, Ter(temBAD_TICK_SIZE));
 
-            txn[sfTickSize.fieldName] = Quality::kMIN_TICK_SIZE;
+            txn[sfTickSize.fieldName] = Quality::kMinTickSize;
             env(txn);
-            BEAST_EXPECT((*env.le(gw))[sfTickSize] == Quality::kMIN_TICK_SIZE);
+            BEAST_EXPECT((*env.le(gw))[sfTickSize] == Quality::kMinTickSize);
 
             txn = noop(gw);
-            txn[sfTickSize.fieldName] = Quality::kMAX_TICK_SIZE;
+            txn[sfTickSize.fieldName] = Quality::kMaxTickSize;
             env(txn);
             BEAST_EXPECT(!env.le(gw)->isFieldPresent(sfTickSize));
 
             txn = noop(gw);
-            txn[sfTickSize.fieldName] = Quality::kMAX_TICK_SIZE - 1;
+            txn[sfTickSize.fieldName] = Quality::kMaxTickSize - 1;
             env(txn);
-            BEAST_EXPECT((*env.le(gw))[sfTickSize] == Quality::kMAX_TICK_SIZE - 1);
+            BEAST_EXPECT((*env.le(gw))[sfTickSize] == Quality::kMaxTickSize - 1);
 
             txn = noop(gw);
-            txn[sfTickSize.fieldName] = Quality::kMAX_TICK_SIZE + 1;
+            txn[sfTickSize.fieldName] = Quality::kMaxTickSize + 1;
             env(txn, Ter(temBAD_TICK_SIZE));
 
             txn[sfTickSize.fieldName] = 0;
@@ -4635,7 +4647,7 @@ public:
         env(offer(alice, xts(30), xxx(10)), Json(jss::Flags, tfSell));
 
         std::map<std::uint32_t, std::pair<STAmount, STAmount>> offers;
-        forEachItem(*env.current(), alice, [&](std::shared_ptr<SLE const> const& sle) {
+        forEachItem(*env.current(), alice, [&](SLE::const_ref sle) {
             if (sle->getType() == ltOFFER)
             {
                 offers.emplace(
@@ -4670,15 +4682,13 @@ public:
     }
 
     // Helper function that returns offers on an account sorted by sequence.
-    static std::vector<std::shared_ptr<SLE const>>
+    static std::vector<SLE::const_pointer>
     sortedOffersOnAccount(jtx::Env& env, jtx::Account const& acct)
     {
-        std::vector<std::shared_ptr<SLE const>> offers{offersOnAccount(env, acct)};
-        std::ranges::sort(
-            offers,
-            [](std::shared_ptr<SLE const> const& rhs, std::shared_ptr<SLE const> const& lhs) {
-                return (*rhs)[sfSequence] < (*lhs)[sfSequence];
-            });
+        std::vector<SLE::const_pointer> offers{offersOnAccount(env, acct)};
+        std::ranges::sort(offers, [](SLE::const_ref rhs, SLE::const_ref lhs) {
+            return (*rhs)[sfSequence] < (*lhs)[sfSequence];
+        });
         return offers;
     }
 

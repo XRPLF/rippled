@@ -22,7 +22,7 @@ parseVault(json::Value const& params, json::Value& jvResult)
     auto const hasOwner = params.isMember(jss::owner);
     auto const hasSeq = params.isMember(jss::seq);
 
-    uint256 uNodeIndex = beast::kZERO;
+    uint256 uNodeIndex = beast::kZero;
     if (hasVaultId && !hasOwner && !hasSeq)
     {
         if (!uNodeIndex.parseHex(params[jss::vault_id].asString()))
@@ -42,7 +42,7 @@ parseVault(json::Value const& params, json::Value& jvResult)
         }
         if (!(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
             params[jss::seq].asDouble() <= 0.0 ||
-            params[jss::seq].asDouble() > double(json::Value::kMAX_U_INT))
+            params[jss::seq].asDouble() > double(json::Value::kMaxUInt))
         {
             RPC::injectError(RpcInvalidParams, jvResult);
             return std::nullopt;
@@ -69,8 +69,8 @@ doVaultInfo(RPC::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    auto const uNodeIndex = parseVault(context.params, jvResult).value_or(beast::kZERO);
-    if (uNodeIndex == beast::kZERO)
+    auto const uNodeIndex = parseVault(context.params, jvResult).value_or(beast::kZero);
+    if (uNodeIndex == beast::kZero)
     {
         jvResult[jss::error] = "malformedRequest";
         return jvResult;
@@ -79,7 +79,7 @@ doVaultInfo(RPC::JsonContext& context)
     auto const sleVault = lpLedger->read(keylet::vault(uNodeIndex));
     auto const sleIssuance = sleVault == nullptr  //
         ? nullptr
-        : lpLedger->read(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+        : lpLedger->read(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
     if (!sleVault || !sleIssuance)
     {
         jvResult[jss::error] = "entryNotFound";
@@ -87,9 +87,9 @@ doVaultInfo(RPC::JsonContext& context)
     }
 
     json::Value& vault = jvResult[jss::vault];
-    vault = sleVault->getJson(JsonOptions::KNone);
+    vault = sleVault->getJson(JsonOptions::Values::None);
     auto& share = vault[jss::shares];
-    share = sleIssuance->getJson(JsonOptions::KNone);
+    share = sleIssuance->getJson(JsonOptions::Values::None);
 
     jvResult[jss::vault] = vault;
     return jvResult;

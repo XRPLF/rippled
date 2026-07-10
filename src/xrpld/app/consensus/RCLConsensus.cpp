@@ -130,7 +130,7 @@ RCLConsensus::Adaptor::Adaptor(
 
     JLOG(j_.info()) << "Consensus engine started (cookie: " + std::to_string(valCookie_) + ")";
 
-    if (validatorKeys_.nodeID != beast::kZERO && validatorKeys_.keys)
+    if (validatorKeys_.nodeID != beast::kZero && validatorKeys_.keys)
     {
         JLOG(j_.info()) << "Validator identity: "
                         << toBase58(TokenType::NodePublic, validatorKeys_.keys->masterPublicKey);
@@ -214,8 +214,8 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
         msg.set_rawtransaction(slice.data(), slice.size());
         msg.set_status(protocol::tsNEW);
         msg.set_receivetimestamp(app_.getTimeKeeper().now().time_since_epoch().count());
-        static std::set<Peer::id_t> const kSKIP{};
-        app_.getOverlay().relay(tx.id(), msg, kSKIP);
+        static std::set<Peer::id_t> const kSkip{};
+        app_.getOverlay().relay(tx.id(), msg, kSkip);
     }
     else
     {
@@ -400,13 +400,13 @@ RCLConsensus::Adaptor::onClose(
     }
 
     // Needed because of the move below.
-    auto const setHash = initialSet->getHash().asUint256();
+    auto const setHash = initialSet->getHash().asUInt256();
 
     return Result{
         std::move(initialSet),
         RCLCxPeerPos::Proposal{
             initialLedger->header().parentHash,
-            RCLCxPeerPos::Proposal::kSEQ_JOIN,
+            RCLCxPeerPos::Proposal::kSeqJoin,
             setHash,
             closeTime,
             app_.getTimeKeeper().closeTime(),
@@ -499,7 +499,7 @@ RCLConsensus::Adaptor::doAccept(
     // we use the hash of the set.
     //
     // FIXME: Use a std::vector and a custom sorter instead of CanonicalTXSet?
-    CanonicalTXSet retriableTxs{result.txns.map->getHash().asUint256()};
+    CanonicalTXSet retriableTxs{result.txns.map->getHash().asUInt256()};
 
     JLOG(j_.debug()) << "Building canonical tx set: " << retriableTxs.key();
 
@@ -557,7 +557,7 @@ RCLConsensus::Adaptor::doAccept(
 
                 auto const wait = curr - seq;
 
-                if (wait && (wait % kCENSORSHIP_WARN_INTERNAL == 0))
+                if (wait && (wait % kCensorshipWarnInternal == 0))
                 {
                     std::ostringstream ss;
                     ss << "Potential Censorship: Eligible tx " << id
@@ -580,7 +580,9 @@ RCLConsensus::Adaptor::doAccept(
         JLOG(j_.info()) << "CNF Val " << newLCLHash;
     }
     else
+    {
         JLOG(j_.info()) << "CNF buildLCL " << newLCLHash;
+    }
 
     // See if we can accept a ledger as fully-validated
     ledgerMaster_.consensusBuilt(built.ledger, result.txns.id(), std::move(consensusJson));
@@ -688,7 +690,7 @@ RCLConsensus::Adaptor::doAccept(
 
         JLOG(j_.info()) << "We closed at " << closeTime.time_since_epoch().count();
         using usec64_t = std::chrono::duration<std::uint64_t>;
-        usec64_t closeTotal = std::chrono::duration_cast<usec64_t>(closeTime.time_since_epoch());
+        auto closeTotal = std::chrono::duration_cast<usec64_t>(closeTime.time_since_epoch());
         int closeCount = 1;
 
         for (auto const& [t, v] : rawCloseTimes.peers)
@@ -733,8 +735,8 @@ RCLConsensus::Adaptor::notify(
     s.set_ledgerseq(ledger.seq());
     s.set_networktime(app_.getTimeKeeper().now().time_since_epoch().count());
     s.set_ledgerhashprevious(
-        ledger.parentID().begin(), std::decay_t<decltype(ledger.parentID())>::kBYTES);
-    s.set_ledgerhash(ledger.id().begin(), std::decay_t<decltype(ledger.id())>::kBYTES);
+        ledger.parentID().begin(), std::decay_t<decltype(ledger.parentID())>::kBytes);
+    s.set_ledgerhash(ledger.id().begin(), std::decay_t<decltype(ledger.id())>::kBytes);
 
     std::uint32_t uMin = 0, uMax = 0;
     if (!ledgerMaster_.getFullValidatedRange(uMin, uMax))
@@ -796,7 +798,9 @@ RCLConsensus::Adaptor::buildLCL(
         JLOG(j_.debug()) << "Consensus built ledger we were acquiring";
     }
     else
+    {
         JLOG(j_.debug()) << "Consensus built new ledger";
+    }
     return RCLCxLedger{std::move(built)};
 }
 
@@ -831,7 +835,7 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
             v.setFieldU32(sfLedgerSequence, ledger.seq());
 
             if (proposing)
-                v.setFlag(kVF_FULL_VALIDATION);
+                v.setFlag(kVfFullValidation);
 
             // Attest to the hash of what we consider to be the last fully
             // validated ledger. This may be the hash of the ledger we are
@@ -1090,7 +1094,7 @@ RclConsensusLogger::~RclConsensusLogger()
     std::stringstream outSs;
     outSs << header_ << "duration " << (duration.count() / 1000) << '.' << std::setw(3)
           << std::setfill('0') << (duration.count() % 1000) << "s. " << ss_->str();
-    j_.sink().writeAlways(beast::severities::KInfo, outSs.str());
+    j_.sink().writeAlways(beast::Severity::Info, outSs.str());
 }
 
 }  // namespace xrpl

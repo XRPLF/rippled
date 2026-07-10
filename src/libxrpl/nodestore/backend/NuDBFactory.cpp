@@ -1,10 +1,11 @@
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
@@ -42,7 +43,6 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include <vector>
 
 namespace xrpl::NodeStore {
 
@@ -53,7 +53,7 @@ public:
     // NuDB database. We used it to identify shard databases before that code
     // was removed. For now, its only use is a sanity check that the database
     // was created by xrpld.
-    static constexpr std::uint64_t kAPPNUM = 1;
+    static constexpr std::uint64_t kAppNum = 1;
 
     beast::Journal const j;
     size_t const keyBytes;
@@ -73,7 +73,7 @@ public:
         : j(journal)
         , keyBytes(keyBytes)
         , burstSize(burstSize)
-        , name(get(keyValues, "path"))
+        , name(get(keyValues, Keys::kPath))
         , blockSize(parseBlockSize(name, keyValues, journal))
         , deletePath(false)
         , scheduler(scheduler)
@@ -92,7 +92,7 @@ public:
         : j(journal)
         , keyBytes(keyBytes)
         , burstSize(burstSize)
-        , name(get(keyValues, "path"))
+        , name(get(keyValues, Keys::kPath))
         , blockSize(parseBlockSize(name, keyValues, journal))
         , db(context)
         , deletePath(false)
@@ -161,7 +161,7 @@ public:
         if (ec)
             Throw<nudb::system_error>(ec);
 
-        if (db.appnum() != kAPPNUM)
+        if (db.appnum() != kAppNum)
             Throw<std::runtime_error>("nodestore: unknown appnum");
         db.set_burst(burstSize);
     }
@@ -175,7 +175,7 @@ public:
     void
     open(bool createIfMissing) override
     {
-        open(createIfMissing, kAPPNUM, nudb::make_uid(), nudb::make_salt());
+        open(createIfMissing, kAppNum, nudb::make_uid(), nudb::make_salt());
     }
 
     void
@@ -230,28 +230,6 @@ public:
         if (ec)
             Throw<nudb::system_error>(ec);
         return status;
-    }
-
-    std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256> const& hashes) override
-    {
-        std::vector<std::shared_ptr<NodeObject>> results;
-        results.reserve(hashes.size());
-        for (auto const& h : hashes)
-        {
-            std::shared_ptr<NodeObject> nObj;
-            Status const status = fetch(h, &nObj);
-            if (status != Status::Ok)
-            {
-                results.push_back({});
-            }
-            else
-            {
-                results.push_back(nObj);
-            }
-        }
-
-        return {results, Status::Ok};
     }
 
     void
@@ -382,14 +360,14 @@ private:
         std::size_t const blockSize = defaultSize;
         std::string blockSizeStr;
 
-        if (!getIfExists(keyValues, "nudb_block_size", blockSizeStr))
+        if (!getIfExists(keyValues, Keys::kNudbBlockSize, blockSizeStr))
         {
             return blockSize;  // Early return with default
         }
 
         try
         {
-            std::size_t const parsedBlockSize = beast::lexicalCastThrow<std::size_t>(blockSizeStr);
+            auto const parsedBlockSize = beast::lexicalCastThrow<std::size_t>(blockSizeStr);
 
             // Validate: must be power of 2 between 4K and 32K
             if (parsedBlockSize < 4096 || parsedBlockSize > 32768 ||
@@ -460,7 +438,7 @@ public:
 void
 registerNuDBFactory(Manager& manager)
 {
-    static NuDBFactory const kINSTANCE{manager};
+    static NuDBFactory const kInstance{manager};
 }
 
 }  // namespace xrpl::NodeStore

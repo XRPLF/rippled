@@ -41,7 +41,7 @@ namespace xrpl::test {
 FeatureBitset
 allFeatures()
 {
-    static FeatureBitset const kFEATURES = [] {
+    static FeatureBitset const kFeatures = [] {
         auto const& sa = allAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
@@ -52,7 +52,7 @@ allFeatures()
         }
         return FeatureBitset(feats);
     }();
-    return kFEATURES;
+    return kFeatures;
 }
 
 //------------------------------------------------------------------------------
@@ -73,19 +73,21 @@ TxTest::TxTest(std::optional<FeatureBitset> features)
 
     // Create a genesis ledger as the base
     closedLedger_ = std::make_shared<Ledger>(
-        kCREATE_GENESIS,
+        kCreateGenesis,
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         *rules_,
         fees,
         std::vector<uint256>{featureSet_.begin(), featureSet_.end()},
         registry_.getNodeFamily());
 
-    // Initialize time from the genesis ledger
+    // Initialize time from the genesis ledger.  closedLedger_ is created above
+    // in the body, so this cannot be a member initializer.
+    // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
     now_ = closedLedger_->header().closeTime;
 
     // Create an open view on top of the genesis ledger
     openLedger_ =
-        std::make_shared<OpenView>(kOPEN_LEDGER, closedLedger_.get(), *rules_, closedLedger_);
+        std::make_shared<OpenView>(kOpenLedger, closedLedger_.get(), *rules_, closedLedger_);
 }
 
 bool
@@ -123,7 +125,7 @@ void
 TxTest::createAccount(Account const& account, XRPAmount xrp, uint32_t accountFlags)
 {
     auto const paymentTer =
-        submit(transactions::PaymentBuilder{Account::master, account, xrp}, Account::master).ter;
+        submit(transactions::PaymentBuilder{Account::kMaster, account, xrp}, Account::kMaster).ter;
 
     if (paymentTer != tesSUCCESS)
     {
@@ -213,7 +215,7 @@ TxTest::close()
 
     openLedger_ =
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        std::make_shared<OpenView>(kOPEN_LEDGER, closedLedger_.get(), *rules_, closedLedger_);
+        std::make_shared<OpenView>(kOpenLedger, closedLedger_.get(), *rules_, closedLedger_);
 }
 
 void
@@ -231,13 +233,13 @@ TxTest::getCloseTime() const
 STAmount
 TxTest::getBalance(AccountID const& account, IOU const& iou) const
 {
-    auto const sle = openLedger_->read(keylet::line(account, iou.issue()));
+    auto const sle = openLedger_->read(keylet::trustLine(account, iou.issue()));
     if (!sle)
         return STAmount{iou.issue(), 0};
 
-    auto const rippleState = ledger_entries::RippleState{sle};
+    auto const trustLine = ledger_entries::RippleState{sle};
 
-    auto balance = rippleState.getBalance();
+    auto balance = trustLine.getBalance();
     if (iou.issue().account == account)
     {
         throw std::logic_error("TxTest::getBalance: account is issuer");

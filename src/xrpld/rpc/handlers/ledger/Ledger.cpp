@@ -8,7 +8,6 @@
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
@@ -28,8 +27,10 @@
 
 #include <chrono>
 #include <exception>
+#include <expected>
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace xrpl {
@@ -44,14 +45,14 @@ LedgerHandler::check()
 {
     auto const& params = context_.params;
 
-    auto getBool = [&](json::StaticString const& field) -> Expected<bool, Status> {
+    auto getBool = [&](json::StaticString const& field) -> std::expected<bool, Status> {
         if (!params.isMember(field))
         {
             return false;
         }
         if (!params[field].isBool())
         {
-            return Unexpected(RpcInvalidParams);
+            return std::unexpected(RpcInvalidParams);
         }
 
         return params[field].asBool();
@@ -80,10 +81,13 @@ LedgerHandler::check()
     if (!queue.has_value())
         return queue.error();
 
-    options_ = (*full ? LedgerFill::Full : 0) | (*expand ? LedgerFill::Expand : 0) |
-        (*transactions ? LedgerFill::DumpTxrp : 0) | (*accounts ? LedgerFill::DumpState : 0) |
-        (*binary ? LedgerFill::Binary : 0) | (*ownerFunds ? LedgerFill::OwnerFunds : 0) |
-        (*queue ? LedgerFill::DumpQueue : 0);
+    options_ = (*full ? static_cast<int>(LedgerFill::Options::Full) : 0) |
+        (*expand ? static_cast<int>(LedgerFill::Options::Expand) : 0) |
+        (*transactions ? static_cast<int>(LedgerFill::Options::DumpTxrp) : 0) |
+        (*accounts ? static_cast<int>(LedgerFill::Options::DumpState) : 0) |
+        (*binary ? static_cast<int>(LedgerFill::Options::Binary) : 0) |
+        (*ownerFunds ? static_cast<int>(LedgerFill::Options::OwnerFunds) : 0) |
+        (*queue ? static_cast<int>(LedgerFill::Options::DumpQueue) : 0);
 
     bool const needsLedger = params.isMember(jss::ledger) || params.isMember(jss::ledger_hash) ||
         params.isMember(jss::ledger_index);
@@ -103,8 +107,7 @@ LedgerHandler::check()
         {
             return RpcTooBusy;
         }
-        context_.loadType =
-            binary ? Resource::kFEE_MEDIUM_BURDEN_RPC : Resource::kFEE_HEAVY_BURDEN_RPC;
+        context_.loadType = binary ? Resource::kFeeMediumBurdenRpc : Resource::kFeeHeavyBurdenRpc;
     }
 
     if (*queue)
@@ -134,19 +137,19 @@ LedgerHandler::writeResult(json::Value& value)
     {
         auto& master = context_.app.getLedgerMaster();
         {
-            auto& closed = value[jss::closed] = json::ObjectValue;
+            auto& closed = value[jss::closed] = json::ValueType::Object;
             addJson(closed, {*master.getClosedLedger(), &context_, 0});
         }
         {
-            auto& open = value[jss::open] = json::ObjectValue;
+            auto& open = value[jss::open] = json::ValueType::Object;
             addJson(open, {*master.getCurrentLedger(), &context_, 0});
         }
     }
 
-    json::Value warnings{json::ArrayValue};
+    json::Value warnings{json::ValueType::Array};
     if (context_.params.isMember(jss::type))
     {
-        json::Value& w = warnings.append(json::ObjectValue);
+        json::Value& w = warnings.append(json::ValueType::Object);
         w[jss::id] = WarnRpcFieldsDeprecated;
         w[jss::message] =
             "Some fields from your request are deprecated. Please check the "
@@ -347,13 +350,15 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
     auto end = std::chrono::system_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() * 1.0;
+    // Guard the per-item rates: an empty ledger has zero objects and/or zero
+    // transactions, and dividing by zero is undefined for these doubles.
+    auto const numObjects = response.ledger_objects().objects_size();
+    auto const numTxns = response.transactions_list().transactions_size();
+    std::string const msPerObj = numObjects > 0 ? std::to_string(duration / numObjects) : "n/a";
+    std::string const msPerTxn = numTxns > 0 ? std::to_string(duration / numTxns) : "n/a";
     JLOG(context.j.warn()) << __func__ << " - Extract time = " << duration
-                           << " - num objects = " << response.ledger_objects().objects_size()
-                           << " - num txns = " << response.transactions_list().transactions_size()
-                           << " - ms per obj "
-                           << duration / response.ledger_objects().objects_size()
-                           << " - ms per txn "
-                           << duration / response.transactions_list().transactions_size();
+                           << " - num objects = " << numObjects << " - num txns = " << numTxns
+                           << " - ms per obj " << msPerObj << " - ms per txn " << msPerTxn;
 
     return {response, status};
 }

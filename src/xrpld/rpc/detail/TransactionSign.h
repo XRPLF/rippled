@@ -4,8 +4,13 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/json/json_value.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
+
+#include <chrono>
+#include <functional>
+#include <memory>
 
 namespace xrpl {
 
@@ -25,8 +30,8 @@ getCurrentNetworkFee(
     TxQ const& txQ,
     Application const& app,
     json::Value const& tx,
-    int mult = Tuning::kDEFAULT_AUTO_FILL_FEE_MULTIPLIER,
-    int div = Tuning::kDEFAULT_AUTO_FILL_FEE_DIVISOR);
+    int mult = Tuning::kDefaultAutoFillFeeMultiplier,
+    int div = Tuning::kDefaultAutoFillFeeDivisor);
 
 /** Fill in the fee on behalf of the client.
     This is called when the client does not explicitly specify the fee.
@@ -84,7 +89,7 @@ getProcessTxnFn(NetworkOPs& netOPs)
     };
 }
 
-/** Returns a json::objectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSign(
     json::Value params,  // Passed by value so it can be modified locally.
@@ -94,7 +99,7 @@ transactionSign(
     std::chrono::seconds validatedLedgerAge,
     Application& app);
 
-/** Returns a json::objectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSubmit(
     json::Value params,  // Passed by value so it can be modified locally.
@@ -105,7 +110,7 @@ transactionSubmit(
     Application& app,
     ProcessTransactionFn const& processTransaction);
 
-/** Returns a json::objectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSignFor(
     json::Value params,  // Passed by value so it can be modified locally.
@@ -115,7 +120,7 @@ transactionSignFor(
     std::chrono::seconds validatedLedgerAge,
     Application& app);
 
-/** Returns a json::objectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSubmitMultiSigned(
     json::Value params,  // Passed by value so it can be modified locally.

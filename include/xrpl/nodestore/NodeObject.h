@@ -4,6 +4,10 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+
 // VFALCO NOTE Intentionally not in the NodeStore namespace
 
 namespace xrpl {
@@ -29,7 +33,7 @@ enum class NodeObjectType : std::uint32_t {
 class NodeObject : public CountedObject<NodeObject>
 {
 public:
-    static constexpr std::size_t kKEY_BYTES = 32;
+    static constexpr std::size_t kKeyBytes = 32;
 
 private:
     // This hack is used to make the constructor effectively private

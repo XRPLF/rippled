@@ -3,6 +3,8 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -19,6 +21,16 @@ namespace xrpl::permissioned_dex {
 bool
 accountInDomain(ReadView const& view, AccountID const& account, Domain const& domainID)
 {
+    // Avoid constructing a zero-key PermissionedDomain keylet.
+    // keylet::permissionedDomain(uint256) uses the DomainID as the ledger key.
+    if (view.rules().enabled(fixCleanup3_2_0) && domainID == beast::kZero)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::permissioned_dex::accountInDomain : domainID is zero");
+        return false;
+        // LCOV_EXCL_STOP
+    }
+
     auto const sleDomain = view.read(keylet::permissionedDomain(domainID));
     if (!sleDomain)
         return false;
@@ -60,9 +72,9 @@ offerInDomain(
     if (sleOffer->getFieldH256(sfDomainID) != domainID)
         return false;  // LCOV_EXCL_LINE
 
-    if (view.rules().enabled(fixSecurity3_1_3))
+    if (view.rules().enabled(fixCleanup3_1_3))
     {
-        // post-fixSecurity3_1_3: a valid hybrid offer must have
+        // post-fixCleanup3_1_3: a valid hybrid offer must have
         // sfAdditionalBooks present with exactly 1 entry
         if (sleOffer->isFlag(lsfHybrid) &&
             (!sleOffer->isFieldPresent(sfAdditionalBooks) ||
@@ -75,7 +87,7 @@ offerInDomain(
     }
     else
     {
-        // pre-fixSecurity3_1_3: a valid hybrid offer must have
+        // pre-fixCleanup3_1_3: a valid hybrid offer must have
         // sfAdditionalBooks present (size is not checked)
         if (sleOffer->isFlag(lsfHybrid) && !sleOffer->isFieldPresent(sfAdditionalBooks))
         {

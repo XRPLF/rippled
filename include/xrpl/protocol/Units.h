@@ -3,14 +3,18 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/operators.hpp>
 
+#include <cstdint>
 #include <iosfwd>
 #include <limits>
 #include <optional>
+#include <string>
+#include <type_traits>
 
 namespace xrpl {
 
@@ -300,13 +304,13 @@ public:
             using jsontype =
                 std::conditional_t<std::is_signed_v<value_type>, json::Int, json::UInt>;
 
-            constexpr auto kMIN = std::numeric_limits<jsontype>::min();
-            constexpr auto kMAX = std::numeric_limits<jsontype>::max();
+            constexpr auto kMin = std::numeric_limits<jsontype>::min();
+            constexpr auto kMax = std::numeric_limits<jsontype>::max();
 
-            if (value_ < kMIN)
-                return kMIN;
-            if (value_ > kMAX)
-                return kMAX;
+            if (value_ < kMin)
+                return kMin;
+            if (value_ > kMax)
+                return kMax;
             return static_cast<jsontype>(value_);
         }
         else
@@ -391,15 +395,15 @@ mulDivU(Source1 value, Dest mul, Source2 div)
         return std::nullopt;
     }
 
-    using desttype = typename Dest::value_type;
-    constexpr auto kMAX = std::numeric_limits<desttype>::max();
+    using desttype = Dest::value_type;
+    constexpr auto kMax = std::numeric_limits<desttype>::max();
 
     // Shortcuts, since these happen a lot in the real world
     if (value == div)
         return mul;
     if (mul.value() == div.value())
     {
-        if (value.value() > kMAX)
+        if (value.value() > kMax)
             return std::nullopt;
         return Dest{static_cast<desttype>(value.value())};
     }
@@ -414,7 +418,7 @@ mulDivU(Source1 value, Dest mul, Source2 div)
 
     auto quotient = product / div.value();
 
-    if (quotient > kMAX)
+    if (quotient > kMax)
         return std::nullopt;
 
     return Dest{static_cast<desttype>(quotient)};

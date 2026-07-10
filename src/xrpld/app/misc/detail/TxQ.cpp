@@ -3,20 +3,19 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -26,6 +25,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -77,7 +77,7 @@ getFeeLevelPaid(ReadView const& view, STTx const& tx)
         return FeeLevel64(0);
     }
 
-    return mulDiv(effectiveFeePaid, TxQ::kBASE_LEVEL, baseFee)
+    return mulDiv(effectiveFeePaid, TxQ::kBaseLevel, baseFee)
         .value_or(FeeLevel64(std::numeric_limits<std::uint64_t>::max()));
 }
 
@@ -93,7 +93,7 @@ static FeeLevel64
 increase(FeeLevel64 level, std::uint32_t increasePercent)
 {
     return mulDiv(level, 100 + increasePercent, 100)
-        .value_or(static_cast<FeeLevel64>(xrpl::kMULDIV_MAX));
+        .value_or(static_cast<FeeLevel64>(xrpl::kMuldivMax));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -130,15 +130,15 @@ TxQ::FeeMetrics::update(
         // upperLimit must be >= minimumTxnCount_ or std::clamp can give
         // unexpected results
         auto const upperLimit = std::max<std::uint64_t>(
-            mulDiv(txnsExpected_, cutPct, 100).value_or(xrpl::kMULDIV_MAX), minimumTxnCount_);
+            mulDiv(txnsExpected_, cutPct, 100).value_or(xrpl::kMuldivMax), minimumTxnCount_);
         txnsExpected_ = std::clamp<std::uint64_t>(
-            mulDiv(size, cutPct, 100).value_or(xrpl::kMULDIV_MAX), minimumTxnCount_, upperLimit);
+            mulDiv(size, cutPct, 100).value_or(xrpl::kMuldivMax), minimumTxnCount_, upperLimit);
         recentTxnCounts_.clear();
     }
     else if (size > txnsExpected_ || size > targetTxnCount_)
     {
         recentTxnCounts_.push_back(mulDiv(size, 100 + setup.normalConsensusIncreasePercent, 100)
-                                       .value_or(xrpl::kMULDIV_MAX));
+                                       .value_or(xrpl::kMuldivMax));
         auto const iter = std::ranges::max_element(recentTxnCounts_);
         BOOST_ASSERT(iter != recentTxnCounts_.end());
         auto const next = [&] {
@@ -150,7 +150,7 @@ TxQ::FeeMetrics::update(
             // current size limit, use a limit that is
             // 90% of the way from max_element to the
             // current size limit.
-            return (txnsExpected_ * 9 + *iter) / 10;
+            return ((txnsExpected_ * 9) + *iter) / 10;
         }();
         // Ledgers are processing in a timely manner,
         // so keep the limit high, but don't let it
@@ -194,15 +194,15 @@ TxQ::FeeMetrics::scaleFeeLevel(Snapshot const& snapshot, OpenView const& view)
         // Compute escalated fee level
         // Don't care about the overflow flag
         return mulDiv(multiplier, current * current, target * target)
-            .value_or(static_cast<FeeLevel64>(xrpl::kMULDIV_MAX));
+            .value_or(static_cast<FeeLevel64>(xrpl::kMuldivMax));
     }
 
-    return kBASE_LEVEL;
+    return kBaseLevel;
 }
 
 namespace detail {
 
-constexpr static std::pair<bool, std::uint64_t>
+static constexpr std::pair<bool, std::uint64_t>
 sumOfFirstSquares(std::size_t xIn)
 {
     // sum(n = 1->x) : n * n = x(x + 1)(2x + 1) / 6
@@ -218,7 +218,7 @@ sumOfFirstSquares(std::size_t xIn)
     // in a ledger, this is the least of our problems.
     if (x >= (1 << 21))
         return {false, std::numeric_limits<std::uint64_t>::max()};
-    return {true, (x * (x + 1) * (2 * x + 1)) / 6};
+    return {true, (x * (x + 1) * ((2 * x) + 1)) / 6};
 }
 
 // Unit tests for sumOfSquares()
@@ -228,11 +228,11 @@ static_assert(sumOfFirstSquares(1).second == 1);
 static_assert(sumOfFirstSquares(2).first);
 static_assert(sumOfFirstSquares(2).second == 5);
 
-static_assert(sumOfFirstSquares(0x1FFFFF).first, "");
-static_assert(sumOfFirstSquares(0x1FFFFF).second == 0x2AAAA8AAAAB00000ul, "");
+static_assert(sumOfFirstSquares(0x1FFFFF).first);
+static_assert(sumOfFirstSquares(0x1FFFFF).second == 0x2AAAA8AAAAB00000ul);
 
-static_assert(!sumOfFirstSquares(0x200000).first, "");
-static_assert(sumOfFirstSquares(0x200000).second == std::numeric_limits<std::uint64_t>::max(), "");
+static_assert(!sumOfFirstSquares(0x200000).first);
+static_assert(sumOfFirstSquares(0x200000).second == std::numeric_limits<std::uint64_t>::max());
 
 }  // namespace detail
 
@@ -305,7 +305,6 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
 {
     // If the rules or flags change, preflight again
     XRPL_ASSERT(pfResult, "xrpl::TxQ::MaybeTx::apply : preflight result is set");
-    NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
     if (pfResult->rules != view.rules() || pfResult->flags != flags)
@@ -387,17 +386,27 @@ TxQ::canBeHeld(
     STTx const& tx,
     ApplyFlags const flags,
     OpenView const& view,
-    std::shared_ptr<SLE const> const& sleAccount,
+    SLE::const_ref sleAccount,
     AccountMap::iterator const& accountIter,
     std::optional<TxQAccount::TxMap::iterator> const& replacementIter,
     std::scoped_lock<std::mutex> const& lock)
 {
+    // A Batch is never queued: its inner transactions can change the sequence
+    // numbers of multiple accounts, which the TxQ's per-account model cannot
+    // forecast. It must apply straight to the open ledger or not at all.
+    if (tx.getTxnType() == ttBATCH)
+        return telCAN_NOT_QUEUE;
+
     // PreviousTxnID is deprecated and should never be used.
     // AccountTxnID is not supported by the transaction
     // queue yet, but should be added in the future.
-    // tapFAIL_HARD transactions are never held
+    // TapFailHard transactions are never held
     if (tx.isFieldPresent(sfPreviousTxnID) || tx.isFieldPresent(sfAccountTxnID) ||
         ((flags & TapFailHard) != 0u))
+        return telCAN_NOT_QUEUE;
+
+    // Disallow delegated transactions from being queued.
+    if (tx.isFieldPresent(sfDelegate))
         return telCAN_NOT_QUEUE;
 
     {
@@ -730,8 +739,6 @@ TxQ::apply(
     ApplyFlags flags,
     beast::Journal j)
 {
-    NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
-
     // See if the transaction is valid, properly formed,
     // etc. before doing potentially expensive queue
     // replace and multi-transaction operations.
@@ -743,6 +750,9 @@ TxQ::apply(
     // into the ledger.
     if (auto directApplied = tryDirectApply(app, view, tx, flags, j))
         return *directApplied;
+
+    if ((flags & TapDryRun) != 0u)
+        return {telCAN_NOT_QUEUE, false};
 
     // If we get past tryDirectApply() without returning then we expect
     // one of the following to occur:
@@ -761,7 +771,7 @@ TxQ::apply(
     // If the transaction needs a Ticket is that Ticket in the ledger?
     SeqProxy const acctSeqProx = SeqProxy::sequence((*sleAccount)[sfSequence]);
     SeqProxy const txSeqProx = tx->getSeqProxy();
-    if (txSeqProx.isTicket() && !view.exists(keylet::kTICKET(account, txSeqProx)))
+    if (txSeqProx.isTicket() && !view.exists(keylet::ticket(account, txSeqProx)))
     {
         if (txSeqProx.value() < acctSeqProx.value())
         {
@@ -778,7 +788,7 @@ TxQ::apply(
     std::scoped_lock const lock(mutex_);
 
     // accountIter is not const because it may be updated further down.
-    AccountMap::iterator accountIter = byAccount_.find(account);
+    auto accountIter = byAccount_.find(account);
     bool const accountIsInQueue = accountIter != byAccount_.end();
 
     // _If_ the account is in the queue, then ignore any sequence-based
@@ -807,7 +817,7 @@ TxQ::apply(
 
         // Find the first transaction in the queue that we might apply.
         TxQAccount::TxMap& acctTxs = accountIter->second.transactions;
-        TxQAccount::TxMap::iterator const firstIter = acctTxs.lower_bound(acctSeqProx);
+        auto const firstIter = acctTxs.lower_bound(acctSeqProx);
 
         if (firstIter == acctTxs.end())
         {
@@ -986,7 +996,7 @@ TxQ::apply(
 
             // Find the entry in the queue that precedes the new
             // transaction, if one does.
-            TxQAccount::TxMap::const_iterator const prevIter = txQAcct.getPrevTx(txSeqProx);
+            auto const prevIter = txQAcct.getPrevTx(txSeqProx);
 
             // Does the new transaction go to the front of the queue?
             // This can happen if:
@@ -1027,8 +1037,8 @@ TxQ::apply(
             // Sum fees and spending for all of the queued transactions
             // so we know how much to remove from the account balance
             // for the trial preclaim.
-            XRPAmount potentialSpend = beast::kZERO;
-            XRPAmount totalFee = beast::kZERO;
+            XRPAmount potentialSpend = beast::kZero;
+            XRPAmount totalFee = beast::kZero;
             for (auto iter = txIter->first; iter != txIter->end; ++iter)
             {
                 // If we're replacing this transaction don't include
@@ -1151,7 +1161,7 @@ TxQ::apply(
         return {pcresult.ter, false};
 
     // Too low of a fee should get caught by preclaim
-    XRPL_ASSERT(feeLevelPaid >= kBASE_LEVEL, "xrpl::TxQ::apply : minimum fee");
+    XRPL_ASSERT(feeLevelPaid >= kBaseLevel, "xrpl::TxQ::apply : minimum fee");
 
     JLOG(j_.trace()) << "Transaction " << transactionID << " from account " << account
                      << " has fee level of " << feeLevelPaid << " needs at least "
@@ -1176,10 +1186,10 @@ TxQ::apply(
             conditions change, but don't waste the effort to clear).
     */
     if (txSeqProx.isSeq() && txIter && multiTxn.has_value() &&
-        txIter->first->second.retriesRemaining == MaybeTx::kRETRIES_ALLOWED &&
-        feeLevelPaid > requiredFeeLevel && requiredFeeLevel > kBASE_LEVEL)
+        txIter->first->second.retriesRemaining == MaybeTx::kRetriesAllowed &&
+        feeLevelPaid > requiredFeeLevel && requiredFeeLevel > kBaseLevel)
     {
-        OpenView sandbox(kOPEN_LEDGER, &view, view.rules());
+        OpenView sandbox(kOpenLedger, &view, view.rules());
 
         auto result = tryClearAccountQueueUpThruTx(
             app,
@@ -1246,7 +1256,7 @@ TxQ::apply(
             if (lastRIter->feeLevel > feeLevelPaid || endAccount.transactions.size() == 1)
                 return lastRIter->feeLevel;
 
-            constexpr FeeLevel64 kMAX{std::numeric_limits<std::uint64_t>::max()};
+            constexpr FeeLevel64 kMax{std::numeric_limits<std::uint64_t>::max()};
             auto endTotal = std::accumulate(
                 endAccount.transactions.begin(),
                 endAccount.transactions.end(),
@@ -1255,8 +1265,8 @@ TxQ::apply(
                     // Check for overflow.
                     auto next = txn.second.feeLevel / endAccount.transactions.size();
                     auto mod = txn.second.feeLevel % endAccount.transactions.size();
-                    if (total.first >= kMAX - next || total.second >= kMAX - mod)
-                        return {kMAX, FeeLevel64{0}};
+                    if (total.first >= kMax - next || total.second >= kMax - mod)
+                        return {kMax, FeeLevel64{0}};
 
                     return {total.first + next, total.second + mod};
                 });
@@ -1573,7 +1583,7 @@ TxQ::accept(Application& app, OpenView& view)
 //
 // Acquires a lock and calls the implementation.
 SeqProxy
-TxQ::nextQueuableSeq(std::shared_ptr<SLE const> const& sleAccount) const
+TxQ::nextQueuableSeq(SLE::const_ref sleAccount) const
 {
     std::scoped_lock const lock(mutex_);
     return nextQueuableSeqImpl(sleAccount, lock);
@@ -1586,9 +1596,7 @@ TxQ::nextQueuableSeq(std::shared_ptr<SLE const> const& sleAccount) const
 // sequence number, that is not used by a transaction in the queue, must
 // be found and returned.
 SeqProxy
-TxQ::nextQueuableSeqImpl(
-    std::shared_ptr<SLE const> const& sleAccount,
-    std::scoped_lock<std::mutex> const&) const
+TxQ::nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex> const&) const
 {
     // If the account is not in the ledger or a non-account was passed
     // then return zero.  We have no idea.
@@ -1607,7 +1615,7 @@ TxQ::nextQueuableSeqImpl(
     // Ignore any sequence-based queued transactions that slipped into the
     // ledger while we were not watching.  This does actually happen in the
     // wild, but it's uncommon.
-    TxQAccount::TxMap::const_iterator txIter = acctTxs.lower_bound(acctSeqProx);
+    auto txIter = acctTxs.lower_bound(acctSeqProx);
 
     if (txIter == acctTxs.end() || !txIter->first.isSeq() || txIter->first != acctSeqProx)
     {
@@ -1692,7 +1700,7 @@ TxQ::tryDirectApply(
             // queue then remove the replaced transaction.
             std::scoped_lock const lock(mutex_);
 
-            AccountMap::iterator const accountIter = byAccount_.find(account);
+            auto const accountIter = byAccount_.find(account);
             if (accountIter != byAccount_.end())
             {
                 TxQAccount& txQAcct = accountIter->second;
@@ -1747,9 +1755,9 @@ TxQ::getMetrics(OpenView const& view) const
     result.txQMaxSize = maxSize_;
     result.txInLedger = view.txCount();
     result.txPerLedger = snapshot.txnsExpected;
-    result.referenceFeeLevel = kBASE_LEVEL;
+    result.referenceFeeLevel = kBaseLevel;
     result.minProcessingFeeLevel =
-        isFull() ? byFee_.rbegin()->feeLevel + FeeLevel64{1} : kBASE_LEVEL;
+        isFull() ? byFee_.rbegin()->feeLevel + FeeLevel64{1} : kBaseLevel;
     result.medFeeLevel = snapshot.escalationMultiplier;
     result.openLedgerFeeLevel = FeeMetrics::scaleFeeLevel(snapshot, view);
 
@@ -1772,7 +1780,7 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> co
     std::uint32_t const accountSeq = sle ? (*sle)[sfSequence] : 0;
     std::uint32_t const availableSeq = nextQueuableSeqImpl(sle, lock).value();
     return {
-        .fee = mulDiv(fee, baseFee, kBASE_LEVEL)
+        .fee = mulDiv(fee, baseFee, kBaseLevel)
                    .value_or(XRPAmount(std::numeric_limits<std::int64_t>::max())),
         .accountSeq = accountSeq,
         .availableSeq = availableSeq};
@@ -1825,9 +1833,9 @@ TxQ::doRPC(Application& app) const
 
     auto const metrics = getMetrics(*view);
 
-    json::Value ret(json::ObjectValue);
+    json::Value ret(json::ValueType::Object);
 
-    auto& levels = ret[jss::levels] = json::ObjectValue;
+    auto& levels = ret[jss::levels] = json::ValueType::Object;
 
     ret[jss::ledger_current_index] = view->header().seq;
     ret[jss::expected_ledger_size] = std::to_string(metrics.txPerLedger);
@@ -1871,16 +1879,16 @@ TxQ::Setup
 setupTxQ(Config const& config)
 {
     TxQ::Setup setup;
-    auto const& section = config.section("transaction_queue");
-    set(setup.ledgersInQueue, "ledgers_in_queue", section);
-    set(setup.queueSizeMin, "minimum_queue_size", section);
-    set(setup.retrySequencePercent, "retry_sequence_percent", section);
-    set(setup.minimumEscalationMultiplier, "minimum_escalation_multiplier", section);
-    set(setup.minimumTxnInLedger, "minimum_txn_in_ledger", section);
-    set(setup.minimumTxnInLedgerSA, "minimum_txn_in_ledger_standalone", section);
-    set(setup.targetTxnInLedger, "target_txn_in_ledger", section);
+    auto const& section = config.section(Sections::kTransactionQueue);
+    set(setup.ledgersInQueue, Keys::kLedgersInQueue, section);
+    set(setup.queueSizeMin, Keys::kMinimumQueueSize, section);
+    set(setup.retrySequencePercent, Keys::kRetrySequencePercent, section);
+    set(setup.minimumEscalationMultiplier, Keys::kMinimumEscalationMultiplier, section);
+    set(setup.minimumTxnInLedger, Keys::kMinimumTxnInLedger, section);
+    set(setup.minimumTxnInLedgerSA, Keys::kMinimumTxnInLedgerStandalone, section);
+    set(setup.targetTxnInLedger, Keys::kTargetTxnInLedger, section);
     std::uint32_t max = 0;
-    if (set(max, "maximum_txn_in_ledger", section))
+    if (set(max, Keys::kMaximumTxnInLedger, section))
     {
         if (max < setup.minimumTxnInLedger)
         {
@@ -1908,7 +1916,7 @@ setupTxQ(Config const& config)
        moot. (There are other ways to do that, including
        minimum_txn_in_ledger_.)
     */
-    set(setup.normalConsensusIncreasePercent, "normal_consensus_increase_percent", section);
+    set(setup.normalConsensusIncreasePercent, Keys::kNormalConsensusIncreasePercent, section);
     setup.normalConsensusIncreasePercent =
         std::clamp(setup.normalConsensusIncreasePercent, 0u, 1000u);
 
@@ -1916,11 +1924,11 @@ setupTxQ(Config const& config)
        are nonsensical (uint overflows happen, so the limit grows
        instead of shrinking). 0 is not recommended.
     */
-    set(setup.slowConsensusDecreasePercent, "slow_consensus_decrease_percent", section);
+    set(setup.slowConsensusDecreasePercent, Keys::kSlowConsensusDecreasePercent, section);
     setup.slowConsensusDecreasePercent = std::clamp(setup.slowConsensusDecreasePercent, 0u, 100u);
 
-    set(setup.maximumTxnPerAccount, "maximum_txn_per_account", section);
-    set(setup.minimumLastLedgerBuffer, "minimum_last_ledger_buffer", section);
+    set(setup.maximumTxnPerAccount, Keys::kMaximumTxnPerAccount, section);
+    set(setup.minimumLastLedgerBuffer, Keys::kMinimumLastLedgerBuffer, section);
 
     setup.standAlone = config.standalone();
     return setup;

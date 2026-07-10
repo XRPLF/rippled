@@ -69,9 +69,9 @@ class RCLValidations_test : public beast::unit_test::Suite
         jtx::Env env(*this);
         Config const config;
         auto prev = std::make_shared<Ledger const>(
-            kCREATE_GENESIS,
+            kCreateGenesis,
             Rules{config.features},
-            config.FEES.toFees(),
+            config.fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         history.push_back(prev);
@@ -97,7 +97,7 @@ class RCLValidations_test : public beast::unit_test::Suite
             auto next = std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
             // Force a different hash on the first iteration
             next->updateSkipList();
-            BEAST_EXPECT(next->read(keylet::fees()));
+            BEAST_EXPECT(next->read(keylet::feeSettings()));
             if (forceHash)
             {
                 next->setImmutable();
@@ -235,9 +235,9 @@ class RCLValidations_test : public beast::unit_test::Suite
         auto& j = env.journal;
         Config const config;
         auto prev = std::make_shared<Ledger const>(
-            kCREATE_GENESIS,
+            kCreateGenesis,
             Rules{config.features},
-            config.FEES.toFees(),
+            config.fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         history.push_back(prev);

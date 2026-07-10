@@ -24,7 +24,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/UintTypes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/protocol/nftPageMask.h>
@@ -41,11 +41,11 @@
 
 namespace xrpl::nft {
 
-static std::shared_ptr<SLE const>
+static SLE::const_pointer
 locatePage(ReadView const& view, AccountID const& owner, uint256 const& id)
 {
-    auto const first = keylet::nftpage(keylet::nftpageMin(owner), id);
-    auto const last = keylet::nftpageMax(owner);
+    auto const first = keylet::nftokenPage(keylet::nftokenPageMin(owner), id);
+    auto const last = keylet::nftokenPageMax(owner);
 
     // This NFT can only be found in the first page with a key that's strictly
     // greater than `first`, so look for that, up until the maximum possible
@@ -54,11 +54,11 @@ locatePage(ReadView const& view, AccountID const& owner, uint256 const& id)
         Keylet(ltNFTOKEN_PAGE, view.succ(first.key, last.key.next()).value_or(last.key)));
 }
 
-static std::shared_ptr<SLE>
+static SLE::pointer
 locatePage(ApplyView& view, AccountID const& owner, uint256 const& id)
 {
-    auto const first = keylet::nftpage(keylet::nftpageMin(owner), id);
-    auto const last = keylet::nftpageMax(owner);
+    auto const first = keylet::nftokenPage(keylet::nftokenPageMin(owner), id);
+    auto const last = keylet::nftokenPageMax(owner);
 
     // This NFT can only be found in the first page with a key that's strictly
     // greater than `first`, so look for that, up until the maximum possible
@@ -67,16 +67,16 @@ locatePage(ApplyView& view, AccountID const& owner, uint256 const& id)
         Keylet(ltNFTOKEN_PAGE, view.succ(first.key, last.key.next()).value_or(last.key)));
 }
 
-static std::shared_ptr<SLE>
+static SLE::pointer
 getPageForToken(
     ApplyView& view,
     AccountID const& owner,
     uint256 const& id,
     std::function<void(ApplyView&, AccountID const&)> const& createCallback)
 {
-    auto const base = keylet::nftpageMin(owner);
-    auto const first = keylet::nftpage(base, id);
-    auto const last = keylet::nftpageMax(owner);
+    auto const base = keylet::nftokenPageMin(owner);
+    auto const first = keylet::nftokenPage(base, id);
+    auto const last = keylet::nftokenPageMax(owner);
 
     // This NFT can only be found in the first page with a key that's strictly
     // greater than `first`, so look for that, up until the maximum possible
@@ -98,7 +98,7 @@ getPageForToken(
     STArray narr = cp->getFieldArray(sfNFTokens);
 
     // The right page still has space: we're good.
-    if (narr.size() != kDIR_MAX_TOKENS_PER_PAGE)
+    if (narr.size() != kDirMaxTokensPerPage)
         return cp;
 
     // We need to split the page in two: the first half of the items in this
@@ -115,13 +115,13 @@ getPageForToken(
         // any additional equivalent NFTs maximum room for expansion.
         // Round up the boundary until there's a non-equivalent entry.
         uint256 const cmp =
-            narr[(kDIR_MAX_TOKENS_PER_PAGE / 2) - 1].getFieldH256(sfNFTokenID) & nft::kPAGE_MASK;
+            narr[(kDirMaxTokensPerPage / 2) - 1].getFieldH256(sfNFTokenID) & nft::kPageMask;
 
         // Note that the calls to find_if_not() and (later) find_if()
         // rely on the fact that narr is kept in sorted order.
         auto splitIter = std::find_if_not(
-            narr.begin() + (kDIR_MAX_TOKENS_PER_PAGE / 2), narr.end(), [&cmp](STObject const& obj) {
-                return (obj.getFieldH256(sfNFTokenID) & nft::kPAGE_MASK) == cmp;
+            narr.begin() + (kDirMaxTokensPerPage / 2), narr.end(), [&cmp](STObject const& obj) {
+                return (obj.getFieldH256(sfNFTokenID) & nft::kPageMask) == cmp;
             });
 
         // If we get all the way from the middle to the end with only
@@ -130,7 +130,7 @@ getPageForToken(
         if (splitIter == narr.end())
         {
             splitIter = std::ranges::find_if(narr, [&cmp](STObject const& obj) {
-                return (obj.getFieldH256(sfNFTokenID) & nft::kPAGE_MASK) == cmp;
+                return (obj.getFieldH256(sfNFTokenID) & nft::kPageMask) == cmp;
             });
         }
 
@@ -143,7 +143,7 @@ getPageForToken(
         // equivalent tokens.  This requires special handling.
         if (splitIter == narr.begin())
         {
-            auto const relation{(id & nft::kPAGE_MASK) <=> cmp};
+            auto const relation{(id & nft::kPageMask) <=> cmp};
             if (relation == 0)
             {
                 // If the passed in id belongs exactly on this (full) page
@@ -178,11 +178,11 @@ getPageForToken(
     // less than the low 96-bits of the enclosing page's index.  In order to
     // accommodate that requirement we use an index one higher than the
     // largest NFT in the page.
-    uint256 const tokenIDForNewPage = narr.size() == kDIR_MAX_TOKENS_PER_PAGE
-        ? narr[kDIR_MAX_TOKENS_PER_PAGE - 1].getFieldH256(sfNFTokenID).next()
+    uint256 const tokenIDForNewPage = narr.size() == kDirMaxTokensPerPage
+        ? narr[kDirMaxTokensPerPage - 1].getFieldH256(sfNFTokenID).next()
         : carr[0].getFieldH256(sfNFTokenID);
 
-    auto np = std::make_shared<SLE>(keylet::nftpage(base, tokenIDForNewPage));
+    auto np = std::make_shared<SLE>(keylet::nftokenPage(base, tokenIDForNewPage));
     XRPL_ASSERT(np->key() > base.key, "xrpl::nft::getPageForToken : valid NFT page index");
     np->setFieldArray(sfNFTokens, narr);
     np->setFieldH256(sfNextPageMin, cp->key());
@@ -217,7 +217,7 @@ compareTokens(uint256 const& a, uint256 const& b)
     // 96-bits are identical we still need a fully deterministic sort.
     // So we sort on the low 96-bits first. If those are equal we sort on
     // the whole thing.
-    if (auto const lowBitsCmp{(a & nft::kPAGE_MASK) <=> (b & nft::kPAGE_MASK)}; lowBitsCmp != 0)
+    if (auto const lowBitsCmp{(a & nft::kPageMask) <=> (b & nft::kPageMask)}; lowBitsCmp != 0)
         return lowBitsCmp < 0;
 
     return a < b;
@@ -230,7 +230,7 @@ changeTokenURI(
     uint256 const& nftokenID,
     std::optional<xrpl::Slice> const& uri)
 {
-    std::shared_ptr<SLE> const page = locatePage(view, owner, nftokenID);
+    SLE::pointer const page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
@@ -267,7 +267,7 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
     // First, we need to locate the page the NFT belongs to, creating it
     // if necessary. This operation may fail if it is impossible to insert
     // the NFT.
-    std::shared_ptr<SLE> const page =
+    SLE::pointer const page =
         getPageForToken(view, owner, nft[sfNFTokenID], [](ApplyView& view, AccountID const& owner) {
             adjustOwnerCount(
                 view,
@@ -296,7 +296,7 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
 }
 
 static bool
-mergePages(ApplyView& view, std::shared_ptr<SLE> const& p1, std::shared_ptr<SLE> const& p2)
+mergePages(ApplyView& view, SLE::ref p1, SLE::ref p2)
 {
     if (p1->key() >= p2->key())
         Throw<std::runtime_error>("mergePages: pages passed in out of order!");
@@ -314,7 +314,7 @@ mergePages(ApplyView& view, std::shared_ptr<SLE> const& p1, std::shared_ptr<SLE>
     // this it would mean that one of them can be deleted as a result of
     // the merge.
 
-    if (p1arr.size() + p2arr.size() > kDIR_MAX_TOKENS_PER_PAGE)
+    if (p1arr.size() + p2arr.size() > kDirMaxTokensPerPage)
         return false;
 
     STArray x(p1arr.size() + p2arr.size());
@@ -355,7 +355,7 @@ mergePages(ApplyView& view, std::shared_ptr<SLE> const& p1, std::shared_ptr<SLE>
 TER
 removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID)
 {
-    std::shared_ptr<SLE> const page = locatePage(view, owner, nftokenID);
+    SLE::pointer const page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
@@ -366,11 +366,7 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID)
 
 /** Remove the token from the owner's token directory. */
 TER
-removeToken(
-    ApplyView& view,
-    AccountID const& owner,
-    uint256 const& nftokenID,
-    std::shared_ptr<SLE> const& curr)
+removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, SLE::ref curr)
 {
     // We found a page, but the given NFT may not be in it.
     auto arr = curr->getFieldArray(sfNFTokens);
@@ -386,8 +382,8 @@ removeToken(
     }
 
     // Page management:
-    auto const loadPage = [&view](std::shared_ptr<SLE> const& page1, SF_UINT256 const& field) {
-        std::shared_ptr<SLE> page2;
+    auto const loadPage = [&view](SLE::ref page1, SF_UINT256 const& field) {
+        SLE::pointer page2;
 
         if (auto const id = (*page1)[~field])
         {
@@ -445,7 +441,7 @@ removeToken(
         //  3. Fix up the owner count.
         //  4. Erase the previous page.
         if (view.rules().enabled(fixNFTokenPageLinks) &&
-            ((curr->key() & nft::kPAGE_MASK) == kPAGE_MASK))
+            ((curr->key() & nft::kPageMask) == kPageMask))
         {
             // Copy all relevant information from prev to curr.
             curr->peekFieldArray(sfNFTokens) = prev->peekFieldArray(sfNFTokens);
@@ -535,7 +531,7 @@ removeToken(
 std::optional<STObject>
 findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID)
 {
-    std::shared_ptr<SLE const> const page = locatePage(view, owner, nftokenID);
+    SLE::const_pointer const page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
@@ -554,7 +550,7 @@ findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID
 std::optional<TokenAndPage>
 findTokenAndPage(ApplyView& view, AccountID const& owner, uint256 const& nftokenID)
 {
-    std::shared_ptr<SLE> page = locatePage(view, owner, nftokenID);
+    SLE::pointer page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
@@ -601,7 +597,7 @@ removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t
         // deleting during iteration.
         for (int i = offerIndexes.size() - 1; i >= 0; --i)
         {
-            if (auto const offer = view.peek(keylet::nftoffer(offerIndexes[i])))
+            if (auto const offer = view.peek(keylet::nftokenOffer(offerIndexes[i])))
             {
                 if (deleteTokenOffer(view, offer))
                 {
@@ -623,7 +619,7 @@ removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t
 }
 
 bool
-deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
+deleteTokenOffer(ApplyView& view, SLE::ref offer)
 {
     if (offer->getType() != ltNFTOKEN_OFFER)
         return false;
@@ -636,8 +632,8 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
     auto const nftokenID = (*offer)[sfNFTokenID];
 
     if (!view.dirRemove(
-            (((*offer)[sfFlags] & lsfSellNFToken) != 0u) ? keylet::nftSells(nftokenID)
-                                                         : keylet::nftBuys(nftokenID),
+            offer->isFlag(lsfSellNFToken) ? keylet::nftSells(nftokenID)
+                                          : keylet::nftBuys(nftokenID),
             (*offer)[sfNFTokenOfferNode],
             offer->key(),
             false))
@@ -655,11 +651,11 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
 {
     bool didRepair = false;
 
-    auto const last = keylet::nftpageMax(owner);
+    auto const last = keylet::nftokenPageMax(owner);
 
-    std::shared_ptr<SLE> page = view.peek(Keylet(
+    SLE::pointer page = view.peek(Keylet(
         ltNFTOKEN_PAGE,
-        view.succ(keylet::nftpageMin(owner).key, last.key.next()).value_or(last.key)));
+        view.succ(keylet::nftokenPageMin(owner).key, last.key.next()).value_or(last.key)));
 
     if (!page)
         return didRepair;
@@ -691,7 +687,7 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
         view.update(page);
     }
 
-    std::shared_ptr<SLE> nextPage;
+    SLE::pointer nextPage;
     while (
         (nextPage = view.peek(Keylet(
              ltNFTOKEN_PAGE, view.succ(page->key().next(), last.key.next()).value_or(last.key)))))
@@ -788,7 +784,7 @@ tokenOfferCreatePreflight(
 
     if (!isXRP(amount))
     {
-        if ((nftFlags & nft::kFLAG_ONLY_XRP) != 0)
+        if ((nftFlags & nft::kFlagOnlyXrp) != 0)
             return temBAD_AMOUNT;
 
         if (!amount)
@@ -833,7 +829,7 @@ tokenOfferCreatePreclaim(
     std::optional<AccountID> const& owner,
     std::uint32_t txFlags)
 {
-    if (((nftFlags & nft::kFLAG_CREATE_TRUST_LINES) == 0) && !amount.native() && (xferFee != 0u))
+    if (((nftFlags & nft::kFlagCreateTrustLines) == 0) && !amount.native() && (xferFee != 0u))
     {
         if (!view.exists(keylet::account(nftIssuer)))
             return tecNO_ISSUER;
@@ -843,10 +839,10 @@ tokenOfferCreatePreclaim(
         if (view.rules().enabled(featureNFTokenMintOffer))
         {
             if (nftIssuer != amount.getIssuer() &&
-                !view.read(keylet::line(nftIssuer, amount.get<Issue>())))
+                !view.read(keylet::trustLine(nftIssuer, amount.get<Issue>())))
                 return tecNO_LINE;
         }
-        else if (!view.exists(keylet::line(nftIssuer, amount.get<Issue>())))
+        else if (!view.exists(keylet::trustLine(nftIssuer, amount.get<Issue>())))
         {
             return tecNO_LINE;
         }
@@ -855,7 +851,7 @@ tokenOfferCreatePreclaim(
             return tecFROZEN;
     }
 
-    if (nftIssuer != acctID && ((nftFlags & nft::kFLAG_TRANSFERABLE) == 0))
+    if (nftIssuer != acctID && ((nftFlags & nft::kFlagTransferable) == 0))
     {
         auto const root = view.read(keylet::account(nftIssuer));
         XRPL_ASSERT(root, "xrpl::nft::tokenOfferCreatePreclaim : non-null account");
@@ -888,7 +884,7 @@ tokenOfferCreatePreclaim(
             return tecNO_DST;
 
         // check if the destination has disallowed incoming offers
-        if ((sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer) != 0u)
+        if (sleDst->isFlag(lsfDisallowIncomingNFTokenOffer))
             return tecNO_PERMISSION;
     }
 
@@ -901,7 +897,7 @@ tokenOfferCreatePreclaim(
         if (!sleOwner)
             return tecNO_TARGET;
 
-        if ((sleOwner->getFlags() & lsfDisallowIncomingNFTokenOffer) != 0u)
+        if (sleOwner->isFlag(lsfDisallowIncomingNFTokenOffer))
             return tecNO_PERMISSION;
     }
 
@@ -938,7 +934,7 @@ tokenOfferCreateApply(
         priorBalance < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
         return tecINSUFFICIENT_RESERVE;
 
-    auto const offerID = keylet::nftoffer(acctID, seqProxy.value());
+    auto const offerID = keylet::nftokenOffer(acctID, seqProxy.value());
 
     // Create the offer:
     {
@@ -956,7 +952,7 @@ tokenOfferCreateApply(
         auto const offerNode = view.dirInsert(
             isSellOffer ? keylet::nftSells(nftokenID) : keylet::nftBuys(nftokenID),
             offerID,
-            [&nftokenID, isSellOffer](std::shared_ptr<SLE> const& sle) {
+            [&nftokenID, isSellOffer](SLE::ref sle) {
                 (*sle)[sfFlags] = isSellOffer ? lsfNFTokenSellOffers : lsfNFTokenBuyOffers;
                 (*sle)[sfNFTokenID] = nftokenID;
             });
@@ -1024,7 +1020,7 @@ checkTrustlineAuthorized(
 
         if (issuerAccount->isFlag(lsfRequireAuth))
         {
-            auto const trustLine = view.read(keylet::line(id, issue.account, issue.currency));
+            auto const trustLine = view.read(keylet::trustLine(id, issue.account, issue.currency));
 
             if (!trustLine)
             {
@@ -1074,7 +1070,7 @@ checkTrustlineDeepFrozen(
             return tesSUCCESS;
         }
 
-        auto const trustLine = view.read(keylet::line(id, issue.account, issue.currency));
+        auto const trustLine = view.read(keylet::trustLine(id, issue.account, issue.currency));
 
         if (!trustLine)
         {

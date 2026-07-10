@@ -90,10 +90,14 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             if (hasAccount)
                 account = sit.get160();
 
-            XRPL_ASSERT(
-                !(hasCurrency && hasMPT), "xrpl::STPathSet::STPathSet : not has Currency and MPT");
+            if (hasCurrency && hasMPT)
+            {
+                JLOG(debugLog().error()) << "Bad path element MPT and Currency in pathset";
+                Throw<std::runtime_error>("bad path element: MPT and Currency");
+            }
+
             if (hasCurrency)
-                asset = static_cast<Currency>(sit.get160());
+                asset = Currency::fromRaw(sit.get160());
 
             if (hasMPT)
                 asset = sit.get192();
@@ -101,7 +105,7 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             if (hasIssuer)
                 issuer = sit.get160();
 
-            path.emplace_back(account, asset, issuer, hasCurrency);
+            path.emplace_back(account, asset, issuer, hasCurrency || hasMPT);
         }
     }
 }
@@ -123,7 +127,7 @@ STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
 {  // assemble base+tail and add it to the set if it's not a duplicate
     value_.push_back(base);
 
-    std::vector<STPath>::reverse_iterator it = value_.rbegin();
+    auto it = value_.rbegin();
 
     STPath& newPath = *it;
     newPath.pushBack(tail);
@@ -142,7 +146,7 @@ STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
 bool
 STPathSet::isEquivalent(STBase const& t) const
 {
-    STPathSet const* v = dynamic_cast<STPathSet const*>(&t);
+    auto const* v = dynamic_cast<STPathSet const*>(&t);
     return (v != nullptr) && (value_ == v->value_);
 }
 
@@ -167,11 +171,11 @@ STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID cons
 json::Value
 STPath::getJson(JsonOptions) const
 {
-    json::Value ret(json::ArrayValue);
+    json::Value ret(json::ValueType::Array);
 
     for (auto const& it : path_)
     {
-        json::Value elem(json::ObjectValue);
+        json::Value elem(json::ValueType::Object);
         auto const iType = it.getNodeType();
 
         elem[jss::type] = iType;
@@ -201,7 +205,7 @@ STPath::getJson(JsonOptions) const
 json::Value
 STPathSet::getJson(JsonOptions options) const
 {
-    json::Value ret(json::ArrayValue);
+    json::Value ret(json::ValueType::Array);
     for (auto const& it : value_)
         ret.append(it.getJson(options));
 

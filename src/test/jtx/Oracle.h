@@ -1,8 +1,25 @@
 #pragma once
 
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/ter.h>
 
-#include <date/date.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+
+#include <chrono>
+#include <cstdint>
+#include <optional>
+#include <ostream>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <variant>
+#include <vector>
 
 namespace xrpl::test::jtx::oracle {
 
@@ -11,9 +28,9 @@ using OraclesData = std::vector<std::pair<std::optional<Account>, std::optional<
 
 // Special string value, which is converted to unquoted string in the string
 // passed to rpc.
-constexpr char const* kNONE_TAG = "%None%";
-constexpr char const* kUNQUOTED_NONE = "None";
-constexpr char const* kNONE_PATTERN = "\"%None%\"";
+constexpr char const* kNoneTag = "%None%";
+constexpr char const* kUnquotedNone = "None";
+constexpr char const* kNonePattern = "\"%None%\"";
 
 std::uint32_t
 asUInt(AnyValue const& v);
@@ -83,8 +100,7 @@ struct RemoveArg
 // The value doesn't matter much, it has to be greater
 // than maxLastUpdateTimeDelta in order to pass LastUpdateTime
 // validation {close-maxLastUpdateTimeDelta,close+maxLastUpdateTimeDelta}.
-constexpr static std::chrono::seconds kTEST_START_TIME =
-    kEPOCH_OFFSET + std::chrono::seconds(10'000);
+static constexpr std::chrono::seconds kTestStartTime = kEpochOffset + std::chrono::seconds(10'000);
 
 /** Oracle class facilitates unit-testing of the Price Oracle feature.
  * It defines functions to create, update, and delete the Oracle object,

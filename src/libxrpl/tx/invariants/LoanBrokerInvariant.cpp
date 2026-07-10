@@ -15,15 +15,10 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <memory>
-
 namespace xrpl {
 
 void
-ValidLoanBroker::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     if (after)
     {
@@ -135,7 +130,7 @@ ValidLoanBroker::finalize(
     for (auto const& [brokerID, broker] : brokers_)
     {
         auto const& after =
-            broker.brokerAfter ? broker.brokerAfter : view.read(keylet::loanbroker(brokerID));
+            broker.brokerAfter ? broker.brokerAfter : view.read(keylet::loanBroker(brokerID));
 
         if (!after)
         {
@@ -197,7 +192,7 @@ ValidLoanBroker::finalize(
             return false;
         }
 
-        if (view.rules().enabled(fixSecurity3_1_3))
+        if (view.rules().enabled(fixCleanup3_1_3))
         {
             // Don't check the balance when LoanBroker is deleted,
             // sfCoverAvailable is not zeroed

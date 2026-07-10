@@ -73,7 +73,7 @@ Transaction::setStatus(
 TransStatus
 Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
 {
-    auto const c = (status) ? safeCast<TxnSql>((*status)[0]) : TxnSql::Unknown;
+    auto const c = status ? safeCast<TxnSql>((*status)[0]) : TxnSql::Unknown;
 
     switch (static_cast<TxnSql>(c))
     {
@@ -103,7 +103,7 @@ Transaction::transactionFromSQL(
     Blob const& rawTxn,
     Application& app)
 {
-    std::uint32_t const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
+    auto const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
 
     SerialIter it(makeSlice(rawTxn));
     auto txn = std::make_shared<STTx const>(it);
@@ -150,12 +150,14 @@ json::Value
 Transaction::getJson(JsonOptions options, bool binary) const
 {
     // Note, we explicitly suppress `include_date` option here
-    json::Value ret(transaction_->getJson(options & ~JsonOptions::KIncludeDate, binary));
+    json::Value ret(transaction_->getJson(
+        options & ~static_cast<JsonOptions::underlying_t>(JsonOptions::Values::IncludeDate),
+        binary));
 
     // NOTE Binary STTx::getJson output might not be a JSON object
     if (ret.isObject() && (ledgerIndex_ != 0u))
     {
-        if (!(options & JsonOptions::KDisableApiPriorV2))
+        if (!(options & JsonOptions::Values::DisableApiPriorV2))
         {
             // Behaviour before API version 2
             ret[jss::inLedger] = ledgerIndex_;
@@ -165,7 +167,7 @@ Transaction::getJson(JsonOptions options, bool binary) const
         // `ledger_index` elements (taking precedence over include_date)
         ret[jss::ledger_index] = ledgerIndex_;
 
-        if (options & JsonOptions::KIncludeDate)
+        if (options & JsonOptions::Values::IncludeDate)
         {
             auto ct = app_.getLedgerMaster().getCloseTimeBySeq(ledgerIndex_);
             if (ct)

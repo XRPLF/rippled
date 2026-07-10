@@ -50,8 +50,9 @@ namespace xrpl {
 
 namespace STParsedJSONDetail {
 template <typename U, typename S>
-constexpr std::enable_if_t<std::is_unsigned_v<U> && std::is_signed_v<S>, U>
+constexpr U
 toUnsigned(S value)
+    requires(std::is_unsigned_v<U> && std::is_signed_v<S>)
 {
     if (value < 0 || std::numeric_limits<U>::max() < value)
         Throw<std::runtime_error>("Value out of range");
@@ -59,12 +60,24 @@ toUnsigned(S value)
 }
 
 template <typename U1, typename U2>
-constexpr std::enable_if_t<std::is_unsigned_v<U1> && std::is_unsigned_v<U2>, U1>
+constexpr U1
 toUnsigned(U2 value)
+    requires(std::is_unsigned_v<U1> && std::is_unsigned_v<U2>)
 {
     if (std::numeric_limits<U1>::max() < value)
         Throw<std::runtime_error>("Value out of range");
     return static_cast<U1>(value);
+}
+
+static std::string
+joinName(std::string const& jsonName, std::string const& fieldName)
+{
+    std::string result;
+    result.reserve(jsonName.size() + 1 + fieldName.size());
+    result += jsonName;
+    result += '.';
+    result += fieldName;
+    return result;
 }
 
 // LCOV_EXCL_START
@@ -74,7 +87,7 @@ makeName(std::string const& object, std::string const& field)
     if (field.empty())
         return object;
 
-    return object + "." + field;
+    return joinName(object, field);
 }
 
 static inline json::Value
@@ -134,6 +147,15 @@ arrayExpected(std::string const& object, std::string const& field)
 {
     return RPC::makeError(
         RpcInvalidParams, "Field '" + makeName(object, field) + "' must be a JSON array.");
+}
+
+static inline json::Value
+arrayTooBig(std::string const& object, std::string const& field)
+{
+    return RPC::makeError(
+        RpcInvalidParams,
+        "Field '" + makeName(object, field) + "' exceeds allowed JSON array size of " +
+            std::to_string(kMaxParsedJsonArraySize) + " elements per field.");
 }
 
 static inline json::Value
@@ -224,7 +246,7 @@ parseUnsigned(
 
 template <class STResult, class Integer = std::uint16_t>
 static std::optional<detail::STVar>
-parseUint16(
+parseUInt16(
     SField const& field,
     std::string const& jsonName,
     std::string const& fieldName,
@@ -249,7 +271,7 @@ parseUint16(
                         safeCast<typename STResult::value_type>(static_cast<Integer>(
                             TxFormats::getInstance().findTypeByName(strValue))));
 
-                    if (*name == kSF_GENERIC)
+                    if (*name == sfGeneric)
                         name = &sfTransaction;
                 }
                 else if (field == sfLedgerEntryType)
@@ -259,7 +281,7 @@ parseUint16(
                         safeCast<typename STResult::value_type>(static_cast<Integer>(
                             LedgerFormats::getInstance().findTypeByName(strValue))));
 
-                    if (*name == kSF_GENERIC)
+                    if (*name == sfGeneric)
                         name = &sfLedgerEntry;
                 }
                 else
@@ -285,7 +307,7 @@ parseUint16(
 
 template <class STResult, class Integer = std::uint32_t>
 static std::optional<detail::STVar>
-parseUint32(
+parseUInt32(
     SField const& field,
     std::string const& jsonName,
     std::string const& fieldName,
@@ -352,7 +374,7 @@ parseLeaf(
     auto const& field = SField::getField(fieldName);
 
     // checked in parseObject
-    if (field == kSF_INVALID)
+    if (field == sfInvalid)
     {
         // LCOV_EXCL_START
         error = unknownField(jsonName, fieldName);
@@ -365,8 +387,8 @@ parseLeaf(
         case STI_UINT8:
             try
             {
-                constexpr auto kMIN_VALUE = std::numeric_limits<std::uint8_t>::min();
-                constexpr auto kMAX_VALUE = std::numeric_limits<std::uint8_t>::max();
+                constexpr auto kMinValue = std::numeric_limits<std::uint8_t>::min();
+                constexpr auto kMaxValue = std::numeric_limits<std::uint8_t>::max();
                 if (value.isString())
                 {
                     std::string const strValue = value.asString();
@@ -377,7 +399,7 @@ parseLeaf(
                         {
                             auto ter = transCode(strValue);
 
-                            if (!ter || TERtoInt(*ter) < kMIN_VALUE || TERtoInt(*ter) > kMAX_VALUE)
+                            if (!ter || TERtoInt(*ter) < kMinValue || TERtoInt(*ter) > kMaxValue)
                             {
                                 error = outOfRange(jsonName, fieldName);
                                 return ret;
@@ -400,7 +422,7 @@ parseLeaf(
                 }
                 else if (value.isInt())
                 {
-                    if (value.asInt() < kMIN_VALUE || value.asInt() > kMAX_VALUE)
+                    if (value.asInt() < kMinValue || value.asInt() > kMaxValue)
                     {
                         error = outOfRange(jsonName, fieldName);
                         return ret;
@@ -411,7 +433,7 @@ parseLeaf(
                 }
                 else if (value.isUInt())
                 {
-                    if (value.asUInt() > kMAX_VALUE)
+                    if (value.asUInt() > kMaxValue)
                     {
                         error = outOfRange(jsonName, fieldName);
                         return ret;
@@ -434,14 +456,14 @@ parseLeaf(
             break;
 
         case STI_UINT16:
-            ret = parseUint16<STUInt16>(field, jsonName, fieldName, name, value, error);
+            ret = parseUInt16<STUInt16>(field, jsonName, fieldName, name, value, error);
             if (!ret)
                 return ret;
 
             break;
 
         case STI_UINT32:
-            ret = parseUint32<STUInt32>(field, jsonName, fieldName, name, value, error);
+            ret = parseUInt32<STUInt32>(field, jsonName, fieldName, name, value, error);
             if (!ret)
                 return ret;
 
@@ -456,7 +478,7 @@ parseLeaf(
 
                     std::uint64_t val = 0;
 
-                    bool const useBase10 = field.shouldMeta(SField::SMdBaseTen);
+                    bool const useBase10 = field.shouldMeta(SField::kSmdBaseTen);
 
                     // if the field is amount, serialize as base 10
                     auto [p, ec] = std::from_chars(
@@ -681,9 +703,15 @@ parseLeaf(
             break;
 
         case STI_VECTOR256:
-            if (!value.isArrayOrNull())
+            if (not value.isArrayOrNull())
             {
                 error = arrayExpected(jsonName, fieldName);
+                return ret;
+            }
+
+            if (not value.isNull() and value.size() > kMaxParsedJsonArraySize)
+            {
+                error = arrayTooBig(jsonName, fieldName);
                 return ret;
             }
 
@@ -708,9 +736,15 @@ parseLeaf(
             break;
 
         case STI_PATHSET:
-            if (!value.isArrayOrNull())
+            if (not value.isArrayOrNull())
             {
                 error = arrayExpected(jsonName, fieldName);
+                return ret;
+            }
+
+            if (not value.isNull() and value.size() > kMaxParsedJsonArraySize)
+            {
+                error = arrayTooBig(jsonName, fieldName);
                 return ret;
             }
 
@@ -722,11 +756,19 @@ parseLeaf(
                 {
                     STPath p;
 
-                    if (!value[i].isArrayOrNull())
+                    if (not value[i].isArrayOrNull())
                     {
                         std::stringstream ss;
                         ss << fieldName << "[" << i << "]";
                         error = arrayExpected(jsonName, ss.str());
+                        return ret;
+                    }
+
+                    if (not value[i].isNull() and value[i].size() > kMaxParsedJsonArraySize)
+                    {
+                        std::stringstream ss;
+                        ss << fieldName << "[" << i << "]";
+                        error = arrayTooBig(jsonName, ss.str());
                         return ret;
                     }
 
@@ -810,7 +852,7 @@ parseLeaf(
                                     error = invalidData(elementName, assetName.cStr());
                                     return ret;
                                 }
-                                if (getMPTIssuer(u) == beast::kZERO)
+                                if (getMPTIssuer(u) == beast::kZero)
                                 {
                                     error = invalidData(elementName, jss::account.cStr());
                                     return ret;
@@ -946,8 +988,6 @@ parseLeaf(
     return ret;
 }
 
-static int const kMAX_DEPTH = 64;
-
 // Forward declaration since parseObject() and parseArray() call each other.
 static std::optional<detail::STVar>
 parseArray(
@@ -965,13 +1005,13 @@ parseObject(
     int depth,
     json::Value& error)
 {
-    if (!json.isObjectOrNull())
+    if (not json.isObjectOrNull())
     {
         error = notAnObject(jsonName);
         return std::nullopt;
     }
 
-    if (depth > kMAX_DEPTH)
+    if (depth > kMaxParsedJsonDepth)
     {
         error = tooDeep(jsonName);
         return std::nullopt;
@@ -984,10 +1024,9 @@ parseObject(
         for (auto const& fieldName : json.getMemberNames())
         {
             json::Value const& value = json[fieldName];
-
             auto const& field = SField::getField(fieldName);
 
-            if (field == kSF_INVALID)
+            if (field == sfInvalid)
             {
                 error = unknownField(jsonName, fieldName);
                 return std::nullopt;
@@ -1008,8 +1047,8 @@ parseObject(
 
                     try
                     {
-                        auto ret =
-                            parseObject(jsonName + "." + fieldName, value, field, depth + 1, error);
+                        auto ret = parseObject(
+                            joinName(jsonName, fieldName), value, field, depth + 1, error);
                         if (!ret)
                             return std::nullopt;
                         data.emplaceBack(std::move(*ret));
@@ -1026,8 +1065,8 @@ parseObject(
                 case STI_ARRAY:
                     try
                     {
-                        auto array =
-                            parseArray(jsonName + "." + fieldName, value, field, depth + 1, error);
+                        auto array = parseArray(
+                            joinName(jsonName, fieldName), value, field, depth + 1, error);
                         if (!array.has_value())
                             return std::nullopt;
                         data.emplaceBack(std::move(*array));
@@ -1079,15 +1118,21 @@ parseArray(
     int depth,
     json::Value& error)
 {
-    if (!json.isArrayOrNull())
+    if (not json.isArrayOrNull())
     {
         error = notAnArray(jsonName);
         return std::nullopt;
     }
 
-    if (depth > kMAX_DEPTH)
+    if (depth > kMaxParsedJsonDepth)
     {
         error = tooDeep(jsonName);
+        return std::nullopt;
+    }
+
+    if (not json.isNull() and json.size() > kMaxParsedJsonArraySize)
+    {
+        error = arrayTooBig(jsonName, "");
         return std::nullopt;
     }
 
@@ -1108,13 +1153,11 @@ parseArray(
             }
 
             // TODO: There doesn't seem to be a nice way to get just the
-            // first/only key in an object without copying all keys into
-            // a vector
+            // first/only key in an object without copying all keys into a vector
             std::string const memberName(json[i].getMemberNames()[0]);
-            ;
             auto const& nameField(SField::getField(memberName));
 
-            if (nameField == kSF_INVALID)
+            if (nameField == sfInvalid)
             {
                 error = unknownField(jsonName, memberName);
                 return std::nullopt;
@@ -1159,7 +1202,7 @@ parseArray(
 STParsedJSONObject::STParsedJSONObject(std::string const& name, json::Value const& json)
 {
     using namespace STParsedJSONDetail;
-    object = parseObject(name, json, kSF_GENERIC, 0, error);
+    object = parseObject(name, json, sfGeneric, 0, error);
 }
 
 }  // namespace xrpl

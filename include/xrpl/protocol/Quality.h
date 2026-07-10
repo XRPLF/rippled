@@ -1,11 +1,13 @@
 #pragma once
 
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AmountConversions.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
+#include <cmath>
+#include <concepts>
 #include <cstdint>
 #include <ostream>
 #include <utility>
@@ -26,7 +28,7 @@ struct TAmounts
 {
     TAmounts() = default;
 
-    TAmounts(beast::Zero, beast::Zero) : in(beast::kZERO), out(beast::kZERO)
+    TAmounts(beast::Zero, beast::Zero) : in(beast::kZero), out(beast::kZero)
     {
     }
 
@@ -38,7 +40,7 @@ struct TAmounts
     [[nodiscard]] bool
     empty() const noexcept
     {
-        return in <= beast::kZERO || out <= beast::kZERO;
+        return in <= beast::kZero || out <= beast::kZero;
     }
 
     TAmounts&
@@ -94,8 +96,8 @@ public:
     // have lower unsigned integer representations.
     using value_type = std::uint64_t;
 
-    static int const kMIN_TICK_SIZE = 3;
-    static int const kMAX_TICK_SIZE = 16;
+    static int const kMinTickSize = 3;
+    static int const kMaxTickSize = 16;
 
 private:
     // This has the same representation as STAmount, see the comment on the
@@ -280,7 +282,7 @@ public:
         auto const maxVMantissa = mantissa(maxV);
         auto const expDiff = exponent(maxV) - exponent(minV);
 
-        double const minVD = static_cast<double>(minVMantissa);
+        auto const minVD = static_cast<double>(minVMantissa);
         double const maxVD =
             (expDiff != 0) ? maxVMantissa * pow(10, expDiff) : static_cast<double>(maxVMantissa);
 
@@ -316,10 +318,10 @@ TAmounts<In, Out>
 Quality::ceilIn(TAmounts<In, Out> const& amount, In const& limit) const
 {
     // Construct a function pointer to the function we want to call.
-    static constexpr Amounts (Quality::*kCEIL_IN_FN_PTR)(Amounts const&, STAmount const&) const =
+    static constexpr Amounts (Quality::*kCeilInFnPtr)(Amounts const&, STAmount const&) const =
         &Quality::ceilIn;
 
-    return ceilTAmountsHelper(amount, limit, amount.in, kCEIL_IN_FN_PTR);
+    return ceilTAmountsHelper(amount, limit, amount.in, kCeilInFnPtr);
 }
 
 template <class In, class Out>
@@ -327,10 +329,10 @@ TAmounts<In, Out>
 Quality::ceilInStrict(TAmounts<In, Out> const& amount, In const& limit, bool roundUp) const
 {
     // Construct a function pointer to the function we want to call.
-    static constexpr Amounts (Quality::*kCEIL_IN_FN_PTR)(Amounts const&, STAmount const&, bool)
-        const = &Quality::ceilInStrict;
+    static constexpr Amounts (Quality::*kCeilInFnPtr)(Amounts const&, STAmount const&, bool) const =
+        &Quality::ceilInStrict;
 
-    return ceilTAmountsHelper(amount, limit, amount.in, kCEIL_IN_FN_PTR, roundUp);
+    return ceilTAmountsHelper(amount, limit, amount.in, kCeilInFnPtr, roundUp);
 }
 
 template <class In, class Out>
@@ -338,10 +340,10 @@ TAmounts<In, Out>
 Quality::ceilOut(TAmounts<In, Out> const& amount, Out const& limit) const
 {
     // Construct a function pointer to the function we want to call.
-    static constexpr Amounts (Quality::*kCEIL_OUT_FN_PTR)(Amounts const&, STAmount const&) const =
+    static constexpr Amounts (Quality::*kCeilOutFnPtr)(Amounts const&, STAmount const&) const =
         &Quality::ceilOut;
 
-    return ceil_TAmounts_helper(amount, limit, amount.out, kCEIL_OUT_FN_PTR);
+    return ceil_TAmounts_helper(amount, limit, amount.out, kCeilOutFnPtr);
 }
 
 template <class In, class Out>
@@ -349,10 +351,10 @@ TAmounts<In, Out>
 Quality::ceilOutStrict(TAmounts<In, Out> const& amount, Out const& limit, bool roundUp) const
 {
     // Construct a function pointer to the function we want to call.
-    static constexpr Amounts (Quality::*kCEIL_OUT_FN_PTR)(Amounts const&, STAmount const&, bool)
+    static constexpr Amounts (Quality::*kCeilOutFnPtr)(Amounts const&, STAmount const&, bool)
         const = &Quality::ceilOutStrict;
 
-    return ceilTAmountsHelper(amount, limit, amount.out, kCEIL_OUT_FN_PTR, roundUp);
+    return ceilTAmountsHelper(amount, limit, amount.out, kCeilOutFnPtr, roundUp);
 }
 
 /** Calculate the quality of a two-hop path given the two hops.

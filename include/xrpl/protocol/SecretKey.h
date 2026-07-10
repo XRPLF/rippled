@@ -2,14 +2,18 @@
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/tokens.h>
 
 #include <array>
+#include <cstdint>
 #include <cstring>
+#include <optional>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -17,10 +21,10 @@ namespace xrpl {
 class SecretKey
 {
 public:
-    static constexpr std::size_t kSIZE = 32;
+    static constexpr std::size_t kSize = 32;
 
 private:
-    std::uint8_t buf_[kSIZE]{};
+    std::uint8_t buf_[kSize]{};
 
 public:
     using const_iterator = std::uint8_t const*;
@@ -37,7 +41,7 @@ public:
 
     ~SecretKey();
 
-    SecretKey(std::array<std::uint8_t, kSIZE> const& data);
+    SecretKey(std::array<std::uint8_t, kSize> const& data);
     SecretKey(Slice const& slice);
 
     [[nodiscard]] std::uint8_t const*
