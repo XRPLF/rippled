@@ -1,5 +1,6 @@
-#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
+
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/utility/Zero.h>
 
