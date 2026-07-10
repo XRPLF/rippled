@@ -41,7 +41,7 @@ graph LR
     BP -->|"OTLP/gRPC :4317"| D
 
     SM -->|"span_calls_total<br/>span_duration_ms<br/>(6 dimension labels)"| E
-    R1 -->|"xrpld_* gauges<br/>xrpld_* counters<br/>xrpld_* histograms"| E
+    R1 -->|"* gauges<br/>* counters<br/>* histograms"| E
 
     E -->|"Prometheus<br/>data source"| F
     D -->|"Tempo<br/>data source"| F
@@ -418,12 +418,12 @@ the parent `ledger.build` carries `ledger_seq` and the close-time attributes.
 
 The OTel Collector's SpanMetrics connector automatically generates RED (Rate, Errors, Duration) metrics from every span. No custom metrics code in xrpld is needed.
 
-| Prometheus Metric                                  | Type      | Description                                                                    |
-| -------------------------------------------------- | --------- | ------------------------------------------------------------------------------ |
-| `traces_span_metrics_calls_total`                  | Counter   | Total span invocations                                                         |
-| `traces_span_metrics_duration_milliseconds_bucket` | Histogram | Latency distribution (buckets: 1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000 ms) |
-| `traces_span_metrics_duration_milliseconds_count`  | Histogram | Observation count                                                              |
-| `traces_span_metrics_duration_milliseconds_sum`    | Histogram | Cumulative latency                                                             |
+| Prometheus Metric                   | Type      | Description                                                                    |
+| ----------------------------------- | --------- | ------------------------------------------------------------------------------ |
+| `span_calls_total`                  | Counter   | Total span invocations                                                         |
+| `span_duration_milliseconds_bucket` | Histogram | Latency distribution (buckets: 1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000 ms) |
+| `span_duration_milliseconds_count`  | Histogram | Observation count                                                              |
+| `span_duration_milliseconds_sum`    | Histogram | Cumulative latency                                                             |
 
 **Standard labels on every metric**: `span_name`, `status_code`, `service_name`, `span_kind`
 
@@ -466,7 +466,7 @@ _Transaction Overview_ dashboard charts rate, p95 latency, and failure rate by s
 > the retained traces, whereas native StatsD/meter metrics do not sample.
 > Account for any collector-side tail sampling when reading absolute stage rates.
 
-**Where to query**: Prometheus → `traces_span_metrics_calls_total{span_name="rpc.command.server_info"}`
+**Where to query**: Prometheus → `span_calls_total{span_name="rpc.command.server_info"}`
 
 ---
 
@@ -499,51 +499,51 @@ prefix=xrpld
 
 ### 2.1 Gauges
 
-| Prometheus Metric                                 | Source File           | Description                               | Typical Range                   |
-| ------------------------------------------------- | --------------------- | ----------------------------------------- | ------------------------------- |
-| `xrpld_LedgerMaster_Validated_Ledger_Age`         | LedgerMaster.h        | Seconds since last validated ledger       | 0–10 (healthy), >30 (stale)     |
-| `xrpld_LedgerMaster_Published_Ledger_Age`         | LedgerMaster.h        | Seconds since last published ledger       | 0–10 (healthy)                  |
-| `xrpld_State_Accounting_Disconnected_duration`    | NetworkOPs.cpp        | Cumulative seconds in Disconnected state  | Monotonic                       |
-| `xrpld_State_Accounting_Connected_duration`       | NetworkOPs.cpp        | Cumulative seconds in Connected state     | Monotonic                       |
-| `xrpld_State_Accounting_Syncing_duration`         | NetworkOPs.cpp        | Cumulative seconds in Syncing state       | Monotonic                       |
-| `xrpld_State_Accounting_Tracking_duration`        | NetworkOPs.cpp        | Cumulative seconds in Tracking state      | Monotonic                       |
-| `xrpld_State_Accounting_Full_duration`            | NetworkOPs.cpp        | Cumulative seconds in Full state          | Monotonic (should dominate)     |
-| `xrpld_State_Accounting_Disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected      | Low                             |
-| `xrpld_State_Accounting_Connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected         | Low                             |
-| `xrpld_State_Accounting_Syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing           | Low                             |
-| `xrpld_State_Accounting_Tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking          | Low                             |
-| `xrpld_State_Accounting_Full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full              | Low (should be 1 after startup) |
-| `xrpld_Peer_Finder_Active_Inbound_Peers`          | PeerfinderManager.cpp | Active inbound peer connections           | 0–85                            |
-| `xrpld_Peer_Finder_Active_Outbound_Peers`         | PeerfinderManager.cpp | Active outbound peer connections          | 10–21                           |
-| `xrpld_Overlay_Peer_Disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count       | Low growth                      |
-| `xrpld_Overlay_Peer_Disconnects_Charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges | Low growth (subset of above)    |
-| `xrpld_job_count`                                 | JobQueue.cpp          | Current job queue depth                   | 0–100 (healthy)                 |
+| Prometheus Metric                           | Source File           | Description                               | Typical Range                   |
+| ------------------------------------------- | --------------------- | ----------------------------------------- | ------------------------------- |
+| `ledgermaster_validated_ledger_age`         | LedgerMaster.h        | Seconds since last validated ledger       | 0–10 (healthy), >30 (stale)     |
+| `ledgermaster_published_ledger_age`         | LedgerMaster.h        | Seconds since last published ledger       | 0–10 (healthy)                  |
+| `state_accounting_disconnected_duration`    | NetworkOPs.cpp        | Cumulative seconds in Disconnected state  | Monotonic                       |
+| `state_accounting_connected_duration`       | NetworkOPs.cpp        | Cumulative seconds in Connected state     | Monotonic                       |
+| `state_accounting_syncing_duration`         | NetworkOPs.cpp        | Cumulative seconds in Syncing state       | Monotonic                       |
+| `state_accounting_tracking_duration`        | NetworkOPs.cpp        | Cumulative seconds in Tracking state      | Monotonic                       |
+| `state_accounting_full_duration`            | NetworkOPs.cpp        | Cumulative seconds in Full state          | Monotonic (should dominate)     |
+| `state_accounting_disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected      | Low                             |
+| `state_accounting_connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected         | Low                             |
+| `state_accounting_syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing           | Low                             |
+| `state_accounting_tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking          | Low                             |
+| `state_accounting_full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full              | Low (should be 1 after startup) |
+| `peer_finder_active_inbound_peers`          | PeerfinderManager.cpp | Active inbound peer connections           | 0–85                            |
+| `peer_finder_active_outbound_peers`         | PeerfinderManager.cpp | Active outbound peer connections          | 10–21                           |
+| `overlay_peer_disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count       | Low growth                      |
+| `overlay_peer_disconnects_charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges | Low growth (subset of above)    |
+| `job_count`                                 | JobQueue.cpp          | Current job queue depth                   | 0–100 (healthy)                 |
 
 **Grafana dashboard**: _Node Health_ (`node-health`)
 
 ### 2.2 Counters
 
-| Prometheus Metric               | Source File        | Description                                   |
-| ------------------------------- | ------------------ | --------------------------------------------- |
-| `xrpld_rpc_requests`            | ServerHandler.cpp  | Total RPC requests received                   |
-| `xrpld_ledger_fetches`          | InboundLedgers.cpp | Inbound ledger fetch attempts                 |
-| `xrpld_ledger_history_mismatch` | LedgerHistory.cpp  | Ledger hash mismatches detected               |
-| `xrpld_warn`                    | Logic.h            | Resource manager warnings issued              |
-| `xrpld_drop`                    | Logic.h            | Resource manager drops (connections rejected) |
+| Prometheus Metric         | Source File        | Description                                   |
+| ------------------------- | ------------------ | --------------------------------------------- |
+| `rpc_requests`            | ServerHandler.cpp  | Total RPC requests received                   |
+| `ledger_fetches`          | InboundLedgers.cpp | Inbound ledger fetch attempts                 |
+| `ledger_history_mismatch` | LedgerHistory.cpp  | Ledger hash mismatches detected               |
+| `warn`                    | Logic.h            | Resource manager warnings issued              |
+| `drop`                    | Logic.h            | Resource manager drops (connections rejected) |
 
-**Note**: With `server=otel`, `xrpld_warn` and `xrpld_drop` are properly exported as OTel Counter instruments. The previous StatsD `|m` type limitation no longer applies.
+**Note**: With `server=otel`, `warn` and `drop` are properly exported as OTel Counter instruments. The previous StatsD `|m` type limitation no longer applies.
 
 **Grafana dashboard**: _RPC & Pathfinding_ (`rpc-pathfinding`)
 
 ### 2.3 Histograms (Event timers)
 
-| Prometheus Metric     | Source File       | Unit  | Description                    |
-| --------------------- | ----------------- | ----- | ------------------------------ |
-| `xrpld_rpc_time`      | ServerHandler.cpp | ms    | RPC response time distribution |
-| `xrpld_rpc_size`      | ServerHandler.cpp | bytes | RPC response size distribution |
-| `xrpld_ios_latency`   | Application.cpp   | ms    | I/O service loop latency       |
-| `xrpld_pathfind_fast` | PathRequests.h    | ms    | Fast pathfinding duration      |
-| `xrpld_pathfind_full` | PathRequests.h    | ms    | Full pathfinding duration      |
+| Prometheus Metric | Source File       | Unit  | Description                    |
+| ----------------- | ----------------- | ----- | ------------------------------ |
+| `rpc_time`        | ServerHandler.cpp | ms    | RPC response time distribution |
+| `rpc_size`        | ServerHandler.cpp | bytes | RPC response size distribution |
+| `ios_latency`     | Application.cpp   | ms    | I/O service loop latency       |
+| `pathfind_fast`   | PathRequests.h    | ms    | Fast pathfinding duration      |
+| `pathfind_full`   | PathRequests.h    | ms    | Full pathfinding duration      |
 
 Quantiles collected: 0th, 50th, 90th, 95th, 99th, 100th percentile.
 
@@ -687,38 +687,38 @@ ledger.store                       (persist to DB)
 
 ```promql
 # RPC request rate by command (last 5 minutes)
-sum by (command) (rate(traces_span_metrics_calls_total{span_name=~"rpc.command.*"}[5m]))
+sum by (command) (rate(span_calls_total{span_name=~"rpc.command.*"}[5m]))
 
 # RPC p95 latency by command
-histogram_quantile(0.95, sum by (le, command) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))
+histogram_quantile(0.95, sum by (le, command) (rate(span_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))
 
 # Consensus round duration p95
-histogram_quantile(0.95, sum by (le) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name="consensus.round"}[5m])))
+histogram_quantile(0.95, sum by (le) (rate(span_duration_milliseconds_bucket{span_name="consensus.round"}[5m])))
 
 # Transaction processing rate (local vs relay)
-sum by (local) (rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))
+sum by (local) (rate(span_calls_total{span_name="tx.process"}[5m]))
 
 # Trusted vs untrusted proposal rate
-sum by (proposal_trusted) (rate(traces_span_metrics_calls_total{span_name="peer.proposal.receive"}[5m]))
+sum by (proposal_trusted) (rate(span_calls_total{span_name="peer.proposal.receive"}[5m]))
 ```
 
 ### StatsD Metrics
 
 ```promql
 # Validated ledger age (should be < 10s)
-xrpld_LedgerMaster_Validated_Ledger_Age
+ledgermaster_validated_ledger_age
 
 # Active peer count
-xrpld_Peer_Finder_Active_Inbound_Peers + xrpld_Peer_Finder_Active_Outbound_Peers
+peer_finder_active_inbound_peers + peer_finder_active_outbound_peers
 
 # RPC response time p95
-histogram_quantile(0.95, xrpld_rpc_time_bucket)
+histogram_quantile(0.95, rpc_time_bucket)
 
 # Total network bytes in (rate)
-rate(xrpld_total_Bytes_In[5m])
+rate(total_bytes_in[5m])
 
 # Operating mode (should be "Full" after startup)
-xrpld_State_Accounting_Full_duration
+state_accounting_full_duration
 ```
 
 ---
@@ -801,8 +801,8 @@ count_over_time({job="xrpld"} |= "trace_id=" [5m])
 | Issue                                                              | Impact                                           | Status                                                               |
 | ------------------------------------------------------------------ | ------------------------------------------------ | -------------------------------------------------------------------- |
 | `warn` and `drop` metrics use non-standard StatsD `\|m` meter type | Metrics silently dropped by OTel StatsD receiver | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp |
-| `xrpld_job_count` may not emit in standalone mode                  | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
-| `xrpld_rpc_requests` depends on `[insight]` config                 | Zero series if StatsD not configured             | Requires `[insight] server=statsd` in xrpld.cfg                      |
+| `job_count` may not emit in standalone mode                        | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
+| `rpc_requests` depends on `[insight]` config                       | Zero series if StatsD not configured             | Requires `[insight] server=statsd` in xrpld.cfg                      |
 | Peer tracing enabled by default                                    | `peer.*` spans emit unless `trace_peer=0`        | High volume — set `trace_peer=0` to opt out on busy mainnet nodes    |
 
 ---

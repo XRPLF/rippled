@@ -223,14 +223,14 @@ PromQL on the span-derived metrics (dashboard: _Transaction Overview_):
 
 ```
 # Per-stage throughput — the funnel preflight >= preclaim >= apply
-sum by (stage) (rate(traces_span_metrics_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.transactor"}[5m]))
+sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.transactor"}[5m]))
 
 # Per-stage p95 latency
-histogram_quantile(0.95, sum by (le, stage) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=~"tx.preflight|tx.preclaim|tx.transactor"}[5m])))
+histogram_quantile(0.95, sum by (le, stage) (rate(span_duration_milliseconds_bucket{span_name=~"tx.preflight|tx.preclaim|tx.transactor"}[5m])))
 
 # Per-stage failure rate (ter_result != tesSUCCESS; a failing ter completes the
 # span normally, so filter on the attribute, not status_code which only flags exceptions)
-sum by (stage) (rate(traces_span_metrics_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.transactor", ter_result!~"tesSUCCESS|"}[5m]))
+sum by (stage) (rate(span_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.transactor", ter_result!~"tesSUCCESS|"}[5m]))
 ```
 
 > **Alerting**: a rising `tx.preflight` / `tx.preclaim` failure rate points to
@@ -431,12 +431,12 @@ The OTel Collector's spanmetrics connector automatically derives RED (Rate, Erro
 
 ### Generated Metric Names
 
-| Prometheus Metric                                  | Type      | Description                  |
-| -------------------------------------------------- | --------- | ---------------------------- |
-| `traces_span_metrics_calls_total`                  | Counter   | Total span invocations       |
-| `traces_span_metrics_duration_milliseconds_bucket` | Histogram | Latency distribution buckets |
-| `traces_span_metrics_duration_milliseconds_count`  | Histogram | Latency observation count    |
-| `traces_span_metrics_duration_milliseconds_sum`    | Histogram | Cumulative latency           |
+| Prometheus Metric                   | Type      | Description                  |
+| ----------------------------------- | --------- | ---------------------------- |
+| `span_calls_total`                  | Counter   | Total span invocations       |
+| `span_duration_milliseconds_bucket` | Histogram | Latency distribution buckets |
+| `span_duration_milliseconds_count`  | Histogram | Latency observation count    |
+| `span_duration_milliseconds_sum`    | Histogram | Cumulative latency           |
 
 ### Metric Labels
 
@@ -496,38 +496,38 @@ The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTe
 
 #### Gauges
 
-| Prometheus Metric                           | Source                    | Description                                                                |
-| ------------------------------------------- | ------------------------- | -------------------------------------------------------------------------- |
-| `xrpld_LedgerMaster_Validated_Ledger_Age`   | LedgerMaster.h:373        | Age of validated ledger (seconds)                                          |
-| `xrpld_LedgerMaster_Published_Ledger_Age`   | LedgerMaster.h:374        | Age of published ledger (seconds)                                          |
-| `xrpld_State_Accounting_{Mode}_duration`    | NetworkOPs.cpp:774        | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
-| `xrpld_State_Accounting_{Mode}_transitions` | NetworkOPs.cpp:780        | Transition count per mode                                                  |
-| `xrpld_Peer_Finder_Active_Inbound_Peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                            |
-| `xrpld_Peer_Finder_Active_Outbound_Peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
-| `xrpld_Overlay_Peer_Disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
-| `xrpld_job_count`                           | JobQueue.cpp:26           | Current job queue depth                                                    |
-| `xrpld_{category}_Bytes_In/Out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
-| `xrpld_{category}_Messages_In/Out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
+| Prometheus Metric                     | Source                    | Description                                                                |
+| ------------------------------------- | ------------------------- | -------------------------------------------------------------------------- |
+| `ledgermaster_validated_ledger_age`   | LedgerMaster.h:373        | Age of validated ledger (seconds)                                          |
+| `ledgermaster_published_ledger_age`   | LedgerMaster.h:374        | Age of published ledger (seconds)                                          |
+| `state_accounting_{Mode}_duration`    | NetworkOPs.cpp:774        | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
+| `state_accounting_{Mode}_transitions` | NetworkOPs.cpp:780        | Transition count per mode                                                  |
+| `peer_finder_active_inbound_peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                            |
+| `peer_finder_active_outbound_peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
+| `overlay_peer_disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
+| `job_count`                           | JobQueue.cpp:26           | Current job queue depth                                                    |
+| `{category}_bytes_in/out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
+| `{category}_messages_in/out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
 
 #### Counters
 
-| Prometheus Metric               | Source                | Description                    |
-| ------------------------------- | --------------------- | ------------------------------ |
-| `xrpld_rpc_requests`            | ServerHandler.cpp:108 | Total RPC request count        |
-| `xrpld_ledger_fetches`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
-| `xrpld_ledger_history_mismatch` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
-| `xrpld_warn`                    | Logic.h:33            | Resource manager warning count |
-| `xrpld_drop`                    | Logic.h:34            | Resource manager drop count    |
+| Prometheus Metric         | Source                | Description                    |
+| ------------------------- | --------------------- | ------------------------------ |
+| `rpc_requests`            | ServerHandler.cpp:108 | Total RPC request count        |
+| `ledger_fetches`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
+| `ledger_history_mismatch` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
+| `warn`                    | Logic.h:33            | Resource manager warning count |
+| `drop`                    | Logic.h:34            | Resource manager drop count    |
 
 #### Histograms
 
-| Prometheus Metric     | Source                | Description                    |
-| --------------------- | --------------------- | ------------------------------ |
-| `xrpld_rpc_time`      | ServerHandler.cpp:110 | RPC response time (ms)         |
-| `xrpld_rpc_size`      | ServerHandler.cpp:109 | RPC response size (bytes)      |
-| `xrpld_ios_latency`   | Application.cpp:438   | I/O service loop latency (ms)  |
-| `xrpld_pathfind_fast` | PathRequests.h:23     | Fast pathfinding duration (ms) |
-| `xrpld_pathfind_full` | PathRequests.h:24     | Full pathfinding duration (ms) |
+| Prometheus Metric | Source                | Description                    |
+| ----------------- | --------------------- | ------------------------------ |
+| `rpc_time`        | ServerHandler.cpp:110 | RPC response time (ms)         |
+| `rpc_size`        | ServerHandler.cpp:109 | RPC response size (bytes)      |
+| `ios_latency`     | Application.cpp:438   | I/O service loop latency (ms)  |
+| `pathfind_fast`   | PathRequests.h:23     | Fast pathfinding duration (ms) |
+| `pathfind_full`   | PathRequests.h:24     | Full pathfinding duration (ms) |
 
 ## Deployment Tiers
 
@@ -619,44 +619,44 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ### RPC Performance (`rpc-performance`)
 
-| Panel                       | Type       | PromQL                                                                                                                                    | Labels Used              |
-| --------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| RPC Request Rate by Command | timeseries | `sum by (command) (rate(traces_span_metrics_calls_total{span_name=~"rpc.command.*"}[5m]))`                                                | `command`                |
-| RPC Latency p95 by Command  | timeseries | `histogram_quantile(0.95, sum by (le, command) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))` | `command`                |
-| RPC Error Rate              | bargauge   | Error spans / total spans × 100, grouped by `command`                                                                                     | `command`, `status_code` |
-| RPC Latency Heatmap         | heatmap    | `sum(increase(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])) by (le)`                                 | `le` (bucket boundaries) |
-| Overall RPC Throughput      | timeseries | `rpc.request` + `rpc.process` rate                                                                                                        | —                        |
-| RPC Success vs Error        | timeseries | by `status_code` (UNSET vs ERROR)                                                                                                         | `status_code`            |
-| Top Commands by Volume      | bargauge   | `topk(10, ...)` by `command`                                                                                                              | `command`                |
-| WebSocket Message Rate      | stat       | `rpc.ws_message` rate                                                                                                                     | —                        |
+| Panel                       | Type       | PromQL                                                                                                                     | Labels Used              |
+| --------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| RPC Request Rate by Command | timeseries | `sum by (command) (rate(span_calls_total{span_name=~"rpc.command.*"}[5m]))`                                                | `command`                |
+| RPC Latency p95 by Command  | timeseries | `histogram_quantile(0.95, sum by (le, command) (rate(span_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))` | `command`                |
+| RPC Error Rate              | bargauge   | Error spans / total spans × 100, grouped by `command`                                                                      | `command`, `status_code` |
+| RPC Latency Heatmap         | heatmap    | `sum(increase(span_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])) by (le)`                                 | `le` (bucket boundaries) |
+| Overall RPC Throughput      | timeseries | `rpc.request` + `rpc.process` rate                                                                                         | —                        |
+| RPC Success vs Error        | timeseries | by `status_code` (UNSET vs ERROR)                                                                                          | `status_code`            |
+| Top Commands by Volume      | bargauge   | `topk(10, ...)` by `command`                                                                                               | `command`                |
+| WebSocket Message Rate      | stat       | `rpc.ws_message` rate                                                                                                      | —                        |
 
 ### Transaction Overview (`transaction-overview`)
 
-| Panel                             | Type       | PromQL                                                                               | Labels Used   |
-| --------------------------------- | ---------- | ------------------------------------------------------------------------------------ | ------------- |
-| Transaction Processing Rate       | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m])` and `tx.receive` | `span_name`   |
-| Transaction Processing Latency    | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                      | —             |
-| Transaction Path Distribution     | piechart   | `sum by (local) (rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))` | `local`       |
-| Transaction Receive vs Suppressed | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.receive"}[5m])`                  | —             |
-| TX Processing Duration Heatmap    | heatmap    | `tx.process` histogram buckets                                                       | `le`          |
-| TX Apply Duration per Ledger      | timeseries | p95/p50 of `tx.apply`                                                                | —             |
-| Peer TX Receive Rate              | timeseries | `tx.receive` rate                                                                    | —             |
-| TX Apply Failed Rate              | stat       | `tx.apply` with `STATUS_CODE_ERROR`                                                  | `status_code` |
+| Panel                             | Type       | PromQL                                                                | Labels Used   |
+| --------------------------------- | ---------- | --------------------------------------------------------------------- | ------------- |
+| Transaction Processing Rate       | timeseries | `rate(span_calls_total{span_name="tx.process"}[5m])` and `tx.receive` | `span_name`   |
+| Transaction Processing Latency    | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`       | —             |
+| Transaction Path Distribution     | piechart   | `sum by (local) (rate(span_calls_total{span_name="tx.process"}[5m]))` | `local`       |
+| Transaction Receive vs Suppressed | timeseries | `rate(span_calls_total{span_name="tx.receive"}[5m])`                  | —             |
+| TX Processing Duration Heatmap    | heatmap    | `tx.process` histogram buckets                                        | `le`          |
+| TX Apply Duration per Ledger      | timeseries | p95/p50 of `tx.apply`                                                 | —             |
+| Peer TX Receive Rate              | timeseries | `tx.receive` rate                                                     | —             |
+| TX Apply Failed Rate              | stat       | `tx.apply` with `STATUS_CODE_ERROR`                                   | `status_code` |
 
 ### Consensus Health (`consensus-health`)
 
-| Panel                         | Type       | PromQL                                                                             | Labels Used      |
-| ----------------------------- | ---------- | ---------------------------------------------------------------------------------- | ---------------- |
-| Consensus Round Duration      | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept"})`              | —                |
-| Consensus Proposals Sent Rate | timeseries | `rate(traces_span_metrics_calls_total{span_name="consensus.proposal.send"}[5m])`   | —                |
-| Ledger Close Duration         | timeseries | `histogram_quantile(0.95, ... {span_name="consensus.ledger_close"})`               | —                |
-| Validation Send Rate          | stat       | `rate(traces_span_metrics_calls_total{span_name="consensus.validation.send"}[5m])` | —                |
-| Ledger Apply Duration         | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept.apply"})`        | —                |
-| Close Time Agreement          | timeseries | `rate(traces_span_metrics_calls_total{span_name="consensus.accept.apply"}[5m])`    | —                |
-| Consensus Mode Over Time      | timeseries | `consensus.ledger_close` by `consensus_mode`                                       | `consensus_mode` |
-| Accept vs Close Rate          | timeseries | `consensus.accept` vs `consensus.ledger_close` rate                                | —                |
-| Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                            | —                |
-| Accept Duration Heatmap       | heatmap    | `consensus.accept` histogram buckets                                               | `le`             |
+| Panel                         | Type       | PromQL                                                                      | Labels Used      |
+| ----------------------------- | ---------- | --------------------------------------------------------------------------- | ---------------- |
+| Consensus Round Duration      | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept"})`       | —                |
+| Consensus Proposals Sent Rate | timeseries | `rate(span_calls_total{span_name="consensus.proposal.send"}[5m])`           | —                |
+| Ledger Close Duration         | timeseries | `histogram_quantile(0.95, ... {span_name="consensus.ledger_close"})`        | —                |
+| Validation Send Rate          | stat       | `rate(span_calls_total{span_name="consensus.validation.send"}[5m])`         | —                |
+| Ledger Apply Duration         | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept.apply"})` | —                |
+| Close Time Agreement          | timeseries | `rate(span_calls_total{span_name="consensus.accept.apply"}[5m])`            | —                |
+| Consensus Mode Over Time      | timeseries | `consensus.ledger_close` by `consensus_mode`                                | `consensus_mode` |
+| Accept vs Close Rate          | timeseries | `consensus.accept` vs `consensus.ledger_close` rate                         | —                |
+| Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                     | —                |
+| Accept Duration Heatmap       | heatmap    | `consensus.accept` histogram buckets                                        | `le`             |
 
 ### Ledger Operations (`ledger-operations`)
 
@@ -684,52 +684,52 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 ### Node Health -- System Metrics (`node-health`)
 
-| Panel                                  | Type       | PromQL                                                          | Labels Used |
-| -------------------------------------- | ---------- | --------------------------------------------------------------- | ----------- |
-| Validated Ledger Age                   | stat       | `xrpld_LedgerMaster_Validated_Ledger_Age`                       | —           |
-| Published Ledger Age                   | stat       | `xrpld_LedgerMaster_Published_Ledger_Age`                       | —           |
-| Operating Mode Duration                | timeseries | `xrpld_State_Accounting_*_duration`                             | —           |
-| Operating Mode Transitions             | timeseries | `xrpld_State_Accounting_*_transitions`                          | —           |
-| I/O Latency                            | timeseries | `histogram_quantile(0.95, xrpld_ios_latency_bucket)`            | —           |
-| Job Queue Depth                        | timeseries | `xrpld_job_count`                                               | —           |
-| Ledger Fetch Rate                      | stat       | `rate(xrpld_ledger_fetches[5m])`                                | —           |
-| Ledger History Mismatches              | stat       | `rate(xrpld_ledger_history_mismatch[5m])`                       | —           |
-| Key Jobs Execution Time                | timeseries | `xrpld_acceptLedger{quantile="$quantile"}` (+ 10 more key jobs) | `quantile`  |
-| Key Jobs Dequeue Wait Time             | timeseries | `xrpld_acceptLedger_q{quantile="$quantile"}` (+ 10 more)        | `quantile`  |
-| FullBelowCache Size                    | timeseries | `xrpld_Node_family_full_below_cache_size`                       | —           |
-| FullBelowCache Hit Rate                | gauge      | `xrpld_Node_family_full_below_cache_hit_rate`                   | —           |
-| Ledger Publish Gap                     | stat       | `Published_Ledger_Age - Validated_Ledger_Age`                   | —           |
-| State Duration Rate (Full vs Tracking) | timeseries | `rate(xrpld_State_Accounting_Full_duration[5m]) / 1000000`      | —           |
-| All Jobs Execution Time (Detail)       | timeseries | `{__name__=~"xrpld_<all_jobs>", quantile="$quantile"}`          | `quantile`  |
-| All Jobs Dequeue Wait (Detail)         | timeseries | `{__name__=~"xrpld_<all_jobs>_q", quantile="$quantile"}`        | `quantile`  |
+| Panel                                  | Type       | PromQL                                                    | Labels Used |
+| -------------------------------------- | ---------- | --------------------------------------------------------- | ----------- |
+| Validated Ledger Age                   | stat       | `ledgermaster_validated_ledger_age`                       | —           |
+| Published Ledger Age                   | stat       | `ledgermaster_published_ledger_age`                       | —           |
+| Operating Mode Duration                | timeseries | `state_accounting_*_duration`                             | —           |
+| Operating Mode Transitions             | timeseries | `state_accounting_*_transitions`                          | —           |
+| I/O Latency                            | timeseries | `histogram_quantile(0.95, ios_latency_bucket)`            | —           |
+| Job Queue Depth                        | timeseries | `job_count`                                               | —           |
+| Ledger Fetch Rate                      | stat       | `rate(ledger_fetches[5m])`                                | —           |
+| Ledger History Mismatches              | stat       | `rate(ledger_history_mismatch[5m])`                       | —           |
+| Key Jobs Execution Time                | timeseries | `acceptledger{quantile="$quantile"}` (+ 10 more key jobs) | `quantile`  |
+| Key Jobs Dequeue Wait Time             | timeseries | `acceptledger_q{quantile="$quantile"}` (+ 10 more)        | `quantile`  |
+| FullBelowCache Size                    | timeseries | `node_family_full_below_cache_size`                       | —           |
+| FullBelowCache Hit Rate                | gauge      | `node_family_full_below_cache_hit_rate`                   | —           |
+| Ledger Publish Gap                     | stat       | `Published_Ledger_Age - Validated_Ledger_Age`             | —           |
+| State Duration Rate (Full vs Tracking) | timeseries | `rate(state_accounting_full_duration[5m]) / 1000000`      | —           |
+| All Jobs Execution Time (Detail)       | timeseries | `{__name__=~"<all_jobs>", quantile="$quantile"}`          | `quantile`  |
+| All Jobs Dequeue Wait (Detail)         | timeseries | `{__name__=~"<all_jobs>_q", quantile="$quantile"}`        | `quantile`  |
 
 ### Network Traffic -- System Metrics (`network-traffic`)
 
-| Panel                                | Type       | PromQL                                     | Labels Used |
-| ------------------------------------ | ---------- | ------------------------------------------ | ----------- |
-| Active Peers                         | timeseries | `xrpld_Peer_Finder_Active_*_Peers`         | —           |
-| Peer Disconnects                     | timeseries | `xrpld_Overlay_Peer_Disconnects`           | —           |
-| Total Network Bytes                  | timeseries | `rate(xrpld_total_Bytes_In/Out[5m])`       | —           |
-| Total Network Messages               | timeseries | `xrpld_total_Messages_In/Out`              | —           |
-| Transaction Traffic                  | timeseries | `xrpld_transactions_Messages_In/Out`       | —           |
-| Proposal Traffic                     | timeseries | `xrpld_proposals_Messages_In/Out`          | —           |
-| Validation Traffic                   | timeseries | `xrpld_validations_Messages_In/Out`        | —           |
-| Traffic by Category                  | bargauge   | `topk(10, xrpld_*_Bytes_In)`               | —           |
-| Duplicate Traffic (Wasted Bandwidth) | timeseries | `rate(xrpld_*_duplicate_Bytes_In/Out[5m])` | —           |
-| All Traffic Categories (Detail)      | timeseries | `topk(15, rate(xrpld_*_Bytes_In[5m]))`     | —           |
+| Panel                                | Type       | PromQL                               | Labels Used |
+| ------------------------------------ | ---------- | ------------------------------------ | ----------- |
+| Active Peers                         | timeseries | `peer_finder_active_*_peers`         | —           |
+| Peer Disconnects                     | timeseries | `overlay_peer_disconnects`           | —           |
+| Total Network Bytes                  | timeseries | `rate(total_bytes_in/out[5m])`       | —           |
+| Total Network Messages               | timeseries | `total_messages_in/out`              | —           |
+| Transaction Traffic                  | timeseries | `transactions_messages_in/out`       | —           |
+| Proposal Traffic                     | timeseries | `proposals_messages_in/out`          | —           |
+| Validation Traffic                   | timeseries | `validations_messages_in/out`        | —           |
+| Traffic by Category                  | bargauge   | `topk(10, *_bytes_in)`               | —           |
+| Duplicate Traffic (Wasted Bandwidth) | timeseries | `rate(*_duplicate_bytes_in/out[5m])` | —           |
+| All Traffic Categories (Detail)      | timeseries | `topk(15, rate(*_bytes_in[5m]))`     | —           |
 
 ### RPC & Pathfinding -- System Metrics (`rpc-pathfinding`)
 
-| Panel                     | Type       | PromQL                                                 | Labels Used |
-| ------------------------- | ---------- | ------------------------------------------------------ | ----------- |
-| RPC Request Rate          | stat       | `rate(xrpld_rpc_requests[5m])`                         | —           |
-| RPC Response Time         | timeseries | `histogram_quantile(0.95, xrpld_rpc_time_bucket)`      | —           |
-| RPC Response Size         | timeseries | `histogram_quantile(0.95, xrpld_rpc_size_bucket)`      | —           |
-| RPC Response Time Heatmap | heatmap    | `xrpld_rpc_time_bucket`                                | —           |
-| Pathfinding Fast Duration | timeseries | `histogram_quantile(0.95, xrpld_pathfind_fast_bucket)` | —           |
-| Pathfinding Full Duration | timeseries | `histogram_quantile(0.95, xrpld_pathfind_full_bucket)` | —           |
-| Resource Warnings Rate    | stat       | `rate(xrpld_warn[5m])`                                 | —           |
-| Resource Drops Rate       | stat       | `rate(xrpld_drop[5m])`                                 | —           |
+| Panel                     | Type       | PromQL                                           | Labels Used |
+| ------------------------- | ---------- | ------------------------------------------------ | ----------- |
+| RPC Request Rate          | stat       | `rate(rpc_requests[5m])`                         | —           |
+| RPC Response Time         | timeseries | `histogram_quantile(0.95, rpc_time_bucket)`      | —           |
+| RPC Response Size         | timeseries | `histogram_quantile(0.95, rpc_size_bucket)`      | —           |
+| RPC Response Time Heatmap | heatmap    | `rpc_time_bucket`                                | —           |
+| Pathfinding Fast Duration | timeseries | `histogram_quantile(0.95, pathfind_fast_bucket)` | —           |
+| Pathfinding Full Duration | timeseries | `histogram_quantile(0.95, pathfind_full_bucket)` | —           |
+| Resource Warnings Rate    | stat       | `rate(warn[5m])`                                 | —           |
+| Resource Drops Rate       | stat       | `rate(drop[5m])`                                 | —           |
 
 ### Span → Metric → Dashboard Summary
 
@@ -831,7 +831,7 @@ count_over_time({job="xrpld"} |= "trace_id=" [5m])
 2. Verify `server=otel` in the `[insight]` config section
 3. Verify the endpoint in `[insight]` points to the OTLP/HTTP port (default: `http://localhost:4318/v1/metrics`)
 4. Check that the `otlp` receiver is in the metrics pipeline receivers in `otel-collector-config.yaml`
-5. Query Prometheus directly: `curl 'http://localhost:9090/api/v1/query?query=xrpld_job_count'`
+5. Query Prometheus directly: `curl 'http://localhost:9090/api/v1/query?query=job_count'`
 
 ### High memory usage
 
