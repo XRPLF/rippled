@@ -1150,21 +1150,21 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 
 #### Synchronous Counters (Phase 7+)
 
-| Prometheus Metric           | Type    | Description                     | Increment Site   |
-| --------------------------- | ------- | ------------------------------- | ---------------- |
-| `ledgers_closed_total`      | Counter | Ledgers closed by consensus     | RCLConsensus.cpp |
-| `validations_sent_total`    | Counter | Validations sent                | RCLConsensus.cpp |
-| `validations_checked_total` | Counter | Network validations observed    | LedgerMaster.cpp |
-| `state_changes_total`       | Counter | Operating mode transitions      | NetworkOPs.cpp   |
-| `jq_trans_overflow_total`   | Counter | Job queue transaction overflows | JobQueue.cpp     |
+| Prometheus Metric           | Type    | Description                  | Increment Site   |
+| --------------------------- | ------- | ---------------------------- | ---------------- |
+| `ledgers_closed_total`      | Counter | Ledgers closed by consensus  | RCLConsensus.cpp |
+| `validations_sent_total`    | Counter | Validations sent             | RCLConsensus.cpp |
+| `validations_checked_total` | Counter | Network validations observed | LedgerMaster.cpp |
+| `state_changes_total`       | Counter | Operating mode transitions   | NetworkOPs.cpp   |
 
-Lifetime validation agreement/miss tallies are exported as monotonic **ObservableCounters**
-(not synchronous counters) observed from `ValidationTracker`'s gross lifetime totals:
+Lifetime tallies exported as monotonic **ObservableCounters** (not synchronous
+counters), observed from an existing cumulative source each collection cycle:
 
-| Prometheus Metric             | Type              | Description                                | Source                |
-| ----------------------------- | ----------------- | ------------------------------------------ | --------------------- |
-| `validation_agreements_total` | ObservableCounter | Lifetime validations that initially agreed | ValidationTracker.cpp |
-| `validation_missed_total`     | ObservableCounter | Lifetime validations that initially missed | ValidationTracker.cpp |
+| Prometheus Metric             | Type              | Description                                | Source                                               |
+| ----------------------------- | ----------------- | ------------------------------------------ | ---------------------------------------------------- |
+| `validation_agreements_total` | ObservableCounter | Lifetime validations that initially agreed | ValidationTracker.cpp                                |
+| `validation_missed_total`     | ObservableCounter | Lifetime validations that initially missed | ValidationTracker.cpp                                |
+| `jq_trans_overflow_total`     | ObservableCounter | Job queue transaction overflows            | Overlay::getJqTransOverflow (PeerImp.cpp increments) |
 
 > **Counting semantics (initial-classification only):** each reconciled ledger increments exactly
 > one of these two counters, at first classification. A later late-repair (miss → agreement) does
