@@ -241,7 +241,7 @@ SponsorshipSet::doApply()
     // Defense-in-depth: preclaim already rejects a Sponsorship left with no
     // fee or reserve budget, so this branch is unreachable in practice.
     if (!hasSponsorshipBudget(sponsorshipSle, feeAmount, remainingOwnerCount))
-        return temMALFORMED;  // LCOV_EXCL_LINE
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto reserveSponsorAccSle = getTxReserveSponsor(ctx_.getApplyViewContext());
     if (!reserveSponsorAccSle)
