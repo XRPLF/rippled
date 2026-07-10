@@ -16,7 +16,6 @@
 #include <csf/Tx.h>
 #include <csf/Validation.h>
 #include <csf/collectors.h>
-#include <csf/csf.h>
 #include <csf/events.h>
 #include <csf/random.h>
 #include <csf/submitters.h>

@@ -1,7 +1,6 @@
 #include <csf/PeerGroup.h>
 #include <csf/Sim.h>
 #include <csf/collectors.h>
-#include <csf/csf.h>
 #include <csf/random.h>
 #include <csf/submitters.h>
 #include <csf/timers.h>

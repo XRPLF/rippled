@@ -6,7 +6,6 @@
 #include <csf/SimTime.h>
 #include <csf/TrustGraph.h>
 #include <csf/collectors.h>
-#include <csf/csf.h>
 #include <gtest/gtest.h>
 
 #include <chrono>

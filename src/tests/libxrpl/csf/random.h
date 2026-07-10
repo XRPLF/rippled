@@ -129,13 +129,13 @@ class PowerLawDistribution
 {
     double xmin_;
     double a_;
-    double inv_;
+    double inv_{1.0 / (1.0 - a_)};
     std::uniform_real_distribution<double> uf_{0, 1};
 
 public:
     using result_type = double;
 
-    PowerLawDistribution(double xmin, double a) : xmin_{xmin}, a_{a}, inv_(1.0 / (1.0 - a_))
+    PowerLawDistribution(double xmin, double a) : xmin_{xmin}, a_{a}
     {
     }
 
