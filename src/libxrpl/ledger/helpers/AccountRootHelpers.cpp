@@ -200,9 +200,14 @@ adjustOwnerCountSigned(
     }
     else
     {
-        XRPL_ASSERT(sponsorSle == nullptr, "xrpl::adjustOwnerCountSigned : sponsor not enabled");
+        XRPL_ASSERT(accountSle, "xrpl::adjustOwnerCountSigned : valid account sle");
         if (!accountSle)
             return;
+        // the remaining are only asserts to preserve existing behavior
+        XRPL_ASSERT(sponsorSle == nullptr, "xrpl::adjustOwnerCountSigned : sponsor not enabled");
+        XRPL_ASSERT(
+            accountSle->getType() == ltACCOUNT_ROOT,
+            "xrpl::adjustOwnerCountSigned : valid account sle type");
         XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCount : nonzero adjustment input");
         std::uint32_t const current{accountSle->getFieldU32(sfOwnerCount)};
         AccountID const id = (*accountSle)[sfAccount];
