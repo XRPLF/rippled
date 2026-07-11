@@ -14,7 +14,6 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
-#include <unordered_map>
 #include <utility>
 
 namespace xrpl {
@@ -55,37 +54,43 @@ namespace detail {
  * compile time. Doing it at runtime would be pretty wasteful and
  * inefficient.
  */
-constexpr std::size_t kInt64Digits = 20;
-consteval std::array<std::uint64_t, kInt64Digits>
+constexpr std::size_t kUint64Digits = 20;
+[[maybe_unused]] constexpr std::size_t kUint128Digits = 39;
+
+template <typename T, std::size_t Digits>
+consteval std::array<T, Digits>
 buildPowersOfTen()
 {
-    std::array<std::uint64_t, kInt64Digits> result{};
+    std::array<T, Digits> result{};
 
-    std::uint64_t power = 1;
+    T power = 1;
     std::size_t exponent = 0;
     // end the loop early so it doesn't overflow;
     for (; exponent < result.size() - 1; ++exponent, power *= 10)
     {
         result[exponent] = power;
-        if (power > std::numeric_limits<std::uint64_t>::max() / 10)
+        if (power > std::numeric_limits<T>::max() / 10)
             throw std::logic_error("Power of 10 table is too big");
     }
     result[exponent] = power;
-    if (power < std::numeric_limits<std::uint64_t>::max() / 10)
-        throw std::logic_error("Power of 10 table is not big enough for the uint64_t type");
+    if (power < std::numeric_limits<T>::max() / 10)
+        throw std::logic_error("Power of 10 table is not big enough for the given type");
 
     return result;
 }
 
 }  // namespace detail
 
-constexpr std::array<std::uint64_t, detail::kInt64Digits> kPowerOfTen = detail::buildPowersOfTen();
+template <typename T = std::uint64_t, std::size_t Digits = detail::kUint64Digits>
+constexpr std::array<T, Digits> kPowerOfTenImpl = detail::buildPowersOfTen<T, Digits>();
+
+constexpr auto kPowerOfTen = kPowerOfTenImpl<std::uint64_t, detail::kUint64Digits>;
 
 static_assert(kPowerOfTen[0] == 1);
 static_assert(kPowerOfTen[1] == 10);
 static_assert(kPowerOfTen[10] == 10'000'000'000);
 static_assert(
-    isPowerOfTen(kPowerOfTen.back()) && *logTen(kPowerOfTen.back()) == detail::kInt64Digits - 1);
+    isPowerOfTen(kPowerOfTen.back()) && *logTen(kPowerOfTen.back()) == detail::kUint64Digits - 1);
 
 /** MantissaRange defines a range for the mantissa of a normalized Number.
  *
@@ -124,17 +129,37 @@ struct MantissaRange final
 {
     using rep = std::uint64_t;
 
+    // NOLINTBEGIN(readability-enum-initial-value)
+    // The values don't matter, except for Large
     enum class MantissaScale {
+        // Small can be removed when either featureSingleAssetVault or featureLendingProtocol are
+        // retired
         Small,
         // LargeLegacy can be removed when fixCleanup3_2_0 is retired
         LargeLegacy,
-        Large,
+        // Large320 can be removed when fixCleanup3_3_0 is retired
+        Large320,
+        // If Large330 is ever the only remaining "Large*" entry, it can be renamed to just "Large".
+        Large330,
+        // Large is a de-facto alias for "the latest", and is only here for backward compatibility
+        // in the extremely unlikely case that a downstream project made use of it. Note that
+        // because the behavior changed, this may still be a breaking change.
+        Large = Large330,
     };
+    // NOLINTEND(readability-enum-initial-value)
 
-    // This entire enum can be removed when fixCleanup3_2_0 is retired
-    enum class CuspRoundingFix : bool {
-        Disabled = false,
-        Enabled = true,
+    // This entire enum can be removed when the last relevant amendment is retired
+    enum class CuspRoundingFix : std::uint8_t {
+        // Disabled can be removed when fixCleanup3_2_0 is retired
+        Disabled = 0,
+        // Enabled320 can be removed when fixCleanup3_3_0 is retired
+        Enabled320 = 1,
+        // If we ever get to the point that there's only one entry, remove the entire enum
+        Enabled330 = 2,
+        // Enabled is a de-facto alias for "the latest", and is only here for backward compatibility
+        // in the extremely unlikely case that a downstream project made use of it. Note that
+        // because the behavior changed, this may still be a breaking change.
+        Enabled = Enabled330,
     };
 
     explicit constexpr MantissaRange(MantissaScale sc) : scale(sc)
@@ -145,13 +170,27 @@ struct MantissaRange final
     int const log{getExponent(scale)};
     rep const min{getMin(scale, log)};
     rep const max{(min * 10) - 1};
-    CuspRoundingFix const cuspRoundingFixEnabled{isCuspFixEnabled(scale)};
-
-    static MantissaRange const&
-    getMantissaRange(MantissaScale scale);
+    CuspRoundingFix const cuspRoundingFix{isCuspFixEnabled(scale)};
 
     static std::set<MantissaScale> const&
-    getAllScales();
+    getAllScales()
+    {
+        static std::set<MantissaRange::MantissaScale> const kScales = {
+            MantissaRange::MantissaScale::Small,
+            MantissaRange::MantissaScale::LargeLegacy,
+            MantissaRange::MantissaScale::Large320,
+            MantissaRange::MantissaScale::Large330,
+        };
+        return kScales;
+    }
+
+    class Access
+    {
+        static constexpr MantissaRange const&
+        mantissaRange(MantissaScale scale);
+
+        friend Number;
+    };
 
 private:
     static constexpr int
@@ -162,7 +201,8 @@ private:
             case MantissaScale::Small:
                 return 15;
             case MantissaScale::LargeLegacy:
-            case MantissaScale::Large:
+            case MantissaScale::Large320:
+            case MantissaScale::Large330:
                 return 18;
             // LCOV_EXCL_START
             default:
@@ -191,17 +231,16 @@ private:
             case MantissaScale::Small:
             case MantissaScale::LargeLegacy:
                 return CuspRoundingFix::Disabled;
-            case MantissaScale::Large:
-                return CuspRoundingFix::Enabled;
+            case MantissaScale::Large320:
+                return CuspRoundingFix::Enabled320;
+            case MantissaScale::Large330:
+                return CuspRoundingFix::Enabled330;
             default:
                 // If called in a constexpr context, this throw assures that the build fails if an
                 // invalid scale is used.
                 throw std::runtime_error("Unknown mantissa scale");  // LCOV_EXCL_LINE
         }
     }
-
-    static std::unordered_map<MantissaScale, MantissaRange> const&
-    getRanges();
 };
 
 // Like std::integral, but only 64-bit integral types.
@@ -554,8 +593,14 @@ private:
     // changing the values inside the range.
     static thread_local std::reference_wrapper<MantissaRange const> kRange;
 
+    class Guard;
+
     void
     normalize(MantissaRange const& range);
+
+    // Guard has the fields that we need, as well as MantissaRange, so if we have a guard, use that
+    void
+    normalize(Guard const& guard);
 
     /** Normalize Number components to an arbitrary range.
      *
@@ -571,7 +616,7 @@ private:
         int& exponent,
         internalrep const& minMantissa,
         internalrep const& maxMantissa,
-        MantissaRange::CuspRoundingFix cuspRoundingFixEnabled);
+        MantissaRange::CuspRoundingFix cuspRoundingFix);
 
     template <class T>
     friend void
@@ -581,7 +626,7 @@ private:
         int& exponent,
         MantissaRange::rep const& minMantissa,
         MantissaRange::rep const& maxMantissa,
-        MantissaRange::CuspRoundingFix cuspRoundingFixEnabled,
+        MantissaRange::CuspRoundingFix cuspRoundingFix,
         bool dropped);
 
     [[nodiscard]] bool
@@ -599,8 +644,6 @@ private:
     // UB, and can vary across compilers.
     static internalrep
     externalToInternal(rep mantissa);
-
-    class Guard;
 };
 
 constexpr Number::Number(bool negative, internalrep mantissa, int exponent, Unchecked) noexcept
@@ -862,21 +905,11 @@ squelch(Number const& x, Number const& limit) noexcept
     return x;
 }
 
-inline std::string
-to_string(MantissaRange::MantissaScale const& scale)
-{
-    switch (scale)
-    {
-        case MantissaRange::MantissaScale::Small:
-            return "small";
-        case MantissaRange::MantissaScale::LargeLegacy:
-            return "largeLegacy";
-        case MantissaRange::MantissaScale::Large:
-            return "large";
-        default:
-            throw std::runtime_error("Bad scale");
-    }
-}
+std::string
+to_string(MantissaRange::MantissaScale const& scale);
+
+std::string
+to_string(Number::RoundingMode const& round);
 
 class SaveNumberRoundMode
 {
