@@ -140,6 +140,33 @@ EscrowCancel::doApply()
 
     AccountID const account = (*slep)[sfAccount];
 
+    // Escrow deletion is inlined here (rather than EscrowEntry::destroy()) so the
+    // directory removals stay ordered before token delivery, matching develop
+    // for consensus.
+    // Remove escrow from owner directory
+    {
+        auto const page = (*slep)[sfOwnerNode];
+        if (!ctx_.view().dirRemove(keylet::ownerDir(account), page, k.key, true))
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.fatal()) << "Unable to delete Escrow from owner.";
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
+    }
+
+    // Remove escrow from recipient's owner directory, if present.
+    if (auto const optPage = (*slep)[~sfDestinationNode]; optPage)
+    {
+        if (!ctx_.view().dirRemove(keylet::ownerDir((*slep)[sfDestination]), *optPage, k.key, true))
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
+    }
+
     AccountRootEntry<ApplyView> sle{keylet::account(account), ctx_.view()};
     STAmount const amount = slep->getFieldAmount(sfAmount);
 
@@ -158,7 +185,7 @@ EscrowCancel::doApply()
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
-                        ctx_.view(),
+                        ctx_.getApplyViewContext(),
                         kParityRate,
                         ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle.mutableSle()
                                                                      : slep.mutableSle(),
@@ -173,14 +200,27 @@ EscrowCancel::doApply()
                 amount.asset().value());
             !isTesSuccess(ret))
             return ret;  // LCOV_EXCL_LINE
+
+        // Remove escrow from issuer's owner directory, if present.
+        if (auto const optPage = (*slep)[~sfIssuerNode]; optPage)
+        {
+            if (!ctx_.view().dirRemove(keylet::ownerDir(amount.getIssuer()), *optPage, k.key, true))
+            {
+                // LCOV_EXCL_START
+                JLOG(j_.fatal()) << "Unable to delete Escrow from issuer.";
+                return tefBAD_LEDGER;
+                // LCOV_EXCL_STOP
+            }
+        }
     }
 
-    sle.update();
+    // Decrement the owner's OwnerCount (refunding any reserve sponsor); this
+    // also persists the balance credit above.
+    decreaseOwnerCountForObject(ctx_.view(), sle.mutableSle(), slep.mutableSle(), 1, ctx_.journal);
 
-    // Unlink the escrow from the sender's owner directory (and the destination
-    // and issuer tracking directories, if present), decrement the sender's
-    // OwnerCount, and erase it. See EscrowEntry::ownerDirs().
-    return slep.destroy();
+    // Remove escrow from ledger.
+    slep.erase();
+    return tesSUCCESS;
 }
 
 void

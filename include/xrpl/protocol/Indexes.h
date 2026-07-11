@@ -141,6 +141,10 @@ ticket(uint256 const& key)
 Keylet
 signerList(AccountID const& account) noexcept;
 
+/** A Sponsorship */
+Keylet
+sponsorship(AccountID const& sponsor, AccountID const& sponsee) noexcept;
+
 /** A Check */
 /** @{ */
 Keylet

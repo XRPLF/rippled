@@ -15,6 +15,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/token.h>
 #include <test/jtx/txflags.h>
@@ -93,6 +94,8 @@ std::vector<std::pair<json::StaticString, FieldType>> gMappings{
     {jss::oracle_document_id, FieldType::UInt32Field},
     {jss::owner, FieldType::AccountField},
     {jss::seq, FieldType::UInt32Field},
+    {jss::sponsor, FieldType::AccountField},
+    {jss::sponsee, FieldType::AccountField},
     {jss::subject, FieldType::AccountField},
     {jss::ticket_seq, FieldType::UInt32Field},
 };
@@ -107,7 +110,7 @@ getFieldType(json::StaticString fieldName)
         return it->second;
     }
 
-    Throw<std::runtime_error>("`mappings` is missing field " + std::string(fieldName.cStr()));
+    Throw<std::runtime_error>("`gMappings` is missing field " + std::string(fieldName.cStr()));
 }
 
 std::string
@@ -1885,6 +1888,59 @@ class LedgerEntry_test : public beast::unit_test::Suite
     }
 
     void
+    testSponsorship()
+    {
+        testcase("Sponsorship");
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+        env(sponsor::set(alice, 0, 100), sponsor::SponseeAcc(bob));
+        env.close();
+        std::string const ledgerHash{to_string(env.closed()->header().hash)};
+        auto const sponsorshipIndex = to_string(keylet::sponsorship(alice.id(), bob.id()).key);
+
+        {
+            // Request by sponsor and sponsee.
+            json::Value jvParams;
+            jvParams[jss::sponsorship][jss::sponsor] = alice.human();
+            jvParams[jss::sponsorship][jss::sponsee] = bob.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Sponsorship);
+            BEAST_EXPECT(jrr[jss::node][sfOwner.jsonName] == alice.human());
+            BEAST_EXPECT(jrr[jss::node][sfSponsee.jsonName] == bob.human());
+            BEAST_EXPECT(sponsorshipIndex == jrr[jss::node][jss::index].asString());
+        }
+        {
+            // Request by index.
+            json::Value jvParams;
+            jvParams[jss::sponsorship] = sponsorshipIndex;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            json::Value const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Sponsorship);
+            BEAST_EXPECT(jrr[jss::node][sfOwner.jsonName] == alice.human());
+            BEAST_EXPECT(jrr[jss::node][sfSponsee.jsonName] == bob.human());
+            BEAST_EXPECT(sponsorshipIndex == jrr[jss::node][jss::index].asString());
+        }
+        {
+            // Check all malformed cases.
+            runLedgerEntryTest(
+                env,
+                jss::sponsorship,
+                {
+                    {.fieldName = jss::sponsor, .malformedErrorMsg = "malformedSponsor"},
+                    {.fieldName = jss::sponsee, .malformedErrorMsg = "malformedSponsee"},
+                });
+        }
+    }
+
+    void
     testTicket()
     {
         testcase("Ticket");
@@ -2676,6 +2732,7 @@ public:
         testPayChan();
         testRippleState();
         testSignerList();
+        testSponsorship();
         testTicket();
         testDID();
         testInvalidOracleLedgerEntry();

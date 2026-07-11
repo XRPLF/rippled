@@ -4,6 +4,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/detail/ReadViewFwdRange.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Fees.h>
@@ -13,6 +14,7 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
@@ -189,8 +191,8 @@ public:
     // changes that accounts make during a payment. `ownerCountHook` adjusts the
     // ownerCount so it returns the max value of the ownerCount so far.
     // This is required to support PaymentSandbox.
-    [[nodiscard]] virtual std::uint32_t
-    ownerCountHook(AccountID const& account, std::uint32_t count) const
+    [[nodiscard]] virtual OwnerCounts
+    ownerCountHook(AccountID const& account, OwnerCounts const& count) const
     {
         return count;
     }

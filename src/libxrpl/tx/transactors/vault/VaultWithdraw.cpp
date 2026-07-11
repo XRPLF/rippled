@@ -197,6 +197,7 @@ TER
 VaultWithdraw::doApply()
 {
     VaultEntry<ApplyView> vault{keylet::vault(ctx_.tx[sfVaultID]), view()};
+    auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -352,9 +353,10 @@ VaultWithdraw::doApply()
     vault.update();
 
     auto const& vaultAccount = vault->at(sfAccount);
+
     // Transfer shares from depositor to vault.
     if (auto const ter = accountSend(
-            view(), accountID_, vaultAccount, sharesRedeemed, j_, WaiveTransferFee::Yes);
+            view(), accountID_, vaultAccount, sharesRedeemed, j_, {}, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
@@ -363,7 +365,8 @@ VaultWithdraw::doApply()
     // Keep MPToken if holder is the vault owner.
     if (accountID_ != vault->at(sfOwner))
     {
-        if (auto const ter = removeEmptyHolding(view(), accountID_, sharesRedeemed.asset(), j_);
+        if (auto const ter =
+                removeEmptyHolding(applyViewContext, accountID_, sharesRedeemed.asset(), j_);
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
@@ -389,7 +392,7 @@ VaultWithdraw::doApply()
 
     auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
     return doWithdraw(
-        view(), ctx_.tx, accountID_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
+        applyViewContext, accountID_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
 }
 
 void

@@ -4,7 +4,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STTx.h>
@@ -88,7 +87,7 @@ private:
     destroySignerList();
 
     void
-    writeSignersToSLE(SignerListEntry<ApplyView>& ledgerEntry, std::uint32_t flags) const;
+    writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const;
 };
 
 }  // namespace xrpl

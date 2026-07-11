@@ -98,13 +98,15 @@ TER
 VaultDelete::doApply()
 {
     VaultEntry<ApplyView> vault{keylet::vault(ctx_.tx[sfVaultID]), view()};
+    auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Destroy the asset holding.
     auto asset = vault->at(sfAsset);
 
-    if (auto ter = removeEmptyHolding(view(), vault->at(sfAccount), asset, j_); !isTesSuccess(ter))
+    if (auto ter = removeEmptyHolding(applyViewContext, vault->at(sfAccount), asset, j_);
+        !isTesSuccess(ter))
         return ter;
 
     auto const& pseudoID = vault->at(sfAccount);
@@ -132,7 +134,8 @@ VaultDelete::doApply()
     // Try to remove MPToken for vault shares for the vault owner if it exists.
     if (MPTokenEntry<ApplyView> mptoken{keylet::mptoken(shareMPTID, accountID_), view()})
     {
-        if (auto const ter = removeEmptyHolding(view(), accountID_, MPTIssue(shareMPTID), j_);
+        if (auto const ter =
+                removeEmptyHolding(applyViewContext, accountID_, MPTIssue(shareMPTID), j_);
             !isTesSuccess(ter))
         {
             // LCOV_EXCL_START
@@ -153,7 +156,7 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    adjustOwnerCount(view(), pseudoAcct.mutableSle(), -1, j_);
+    decreaseOwnerCountForObject(view(), pseudoAcct.mutableSle(), mpt.mutableSle(), 1, j_);
 
     mpt.erase();
 
@@ -193,8 +196,8 @@ VaultDelete::doApply()
     vaultPseudoSLE.erase();
 
     // Unlink the vault from its owner's directory, decrement the owner's
-    // OwnerCount by 2 (the vault and its now-destroyed pseudo-account), and
-    // erase it. See VaultEntry.
+    // OwnerCount by 2 (the vault and its now-destroyed pseudo-account, refunding
+    // any reserve sponsor), and erase it. See VaultEntry.
     return vault.destroy();
 }
 

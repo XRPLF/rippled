@@ -3,7 +3,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -12,6 +11,7 @@
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -127,29 +127,29 @@ canAddHolding(ReadView const& view, MPTIssue const& mptIssue)
 
 [[nodiscard]] TER
 addEmptyHolding(
-    ApplyView& view,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     MPTIssue const& mptIssue,
     beast::Journal journal)
 {
     auto const& mptID = mptIssue.getMptID();
-    MPTokenIssuanceEntry<ApplyView> const mpt{keylet::mptokenIssuance(mptID), view};
+    MPTokenIssuanceEntry<ApplyView> const mpt{keylet::mptokenIssuance(mptID), ctx.view};
     if (!mpt)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (mpt->isFlag(lsfMPTLocked))
         return tefINTERNAL;  // LCOV_EXCL_LINE
-    if (view.peek(keylet::mptoken(mptID, accountID)))
+    if (ctx.view.peek(keylet::mptoken(mptID, accountID)))
         return tecDUPLICATE;
     if (accountID == mptIssue.getIssuer())
         return tesSUCCESS;
 
-    return authorizeMPToken(view, priorBalance, mptID, accountID, journal);
+    return authorizeMPToken(ctx, priorBalance, mptID, accountID, journal);
 }
 
 [[nodiscard]] TER
 authorizeMPToken(
-    ApplyView& view,
+    ApplyViewContext ctx,
     XRPAmount const& priorBalance,
     MPTID const& mptIssuanceID,
     AccountID const& account,
@@ -157,7 +157,7 @@ authorizeMPToken(
     std::uint32_t flags,
     std::optional<AccountID> holderID)
 {
-    AccountRootEntry<ApplyView> const sleAcct{keylet::account(account), view};
+    AccountRootEntry<ApplyView> const sleAcct{keylet::account(account), ctx.view};
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -172,14 +172,15 @@ authorizeMPToken(
         if ((flags & tfMPTUnauthorize) != 0u)
         {
             auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
-            MPTokenEntry<ApplyView> sleMpt{mptokenKey, view, journal};
+            MPTokenEntry<ApplyView> sleMpt{mptokenKey, ctx.view, journal};
             if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0 ||
-                (view.rules().enabled(fixCleanup3_1_3) &&
+                (ctx.view.rules().enabled(fixCleanup3_1_3) &&
                  (*sleMpt)[~sfLockedAmount].valueOr(0) != 0))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
             // Unlink from the holder's owner directory, decrement its
-            // OwnerCount, and erase. See MPTokenEntry.
+            // OwnerCount (refunding a reserve sponsor if present), and erase.
+            // See MPTokenEntry.
             return sleMpt.destroy();
         }
 
@@ -187,35 +188,38 @@ authorizeMPToken(
         //      - add the new mptokenKey to the owner directory
         //      - create the MPToken object for the holder
 
-        // A potential holder wants to authorize/hold a mpt. The reserve is only
-        // enforced once the holder owns two or more items (like trust lines);
-        // MPTokenEntry::create() applies that rule.
+        // A potential holder wants to authorize/hold a mpt. The trust-line-style
+        // free-tier reserve rule and reserve-sponsorship accounting are applied
+        // by MPTokenEntry::create() below.
 
         // Defensive check before we attempt to create MPToken for the issuer
-        MPTokenIssuanceEntry<ReadView> const mpt{keylet::mptokenIssuance(mptIssuanceID), view};
+        MPTokenIssuanceEntry<ReadView> const mpt{keylet::mptokenIssuance(mptIssuanceID), ctx.view};
         if (!mpt || mpt->getAccountID(sfIssuer) == account)
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::authorizeMPToken : invalid issuance or issuers token");
-            if (view.rules().enabled(featureLendingProtocol))
+            if (ctx.view.rules().enabled(featureLendingProtocol))
                 return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
 
         auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
-        MPTokenEntry<ApplyView> mptoken{mptokenKey, view, journal};
+        // Build with the ApplyViewContext so create() can apply reserve
+        // sponsorship (reserve check, OwnerCount, and sponsor stamp).
+        MPTokenEntry<ApplyView> mptoken{mptokenKey, ctx, journal};
         mptoken.newSLE();
         (*mptoken)[sfAccount] = account;
         (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
         (*mptoken)[sfFlags] = 0;
 
-        // Reserve check (trust-line style) + link into the holder's owner
-        // directory + bump the holder's OwnerCount + insert. See MPTokenEntry.
+        // Trust-line-style free-tier reserve check + link into the holder's
+        // owner directory + bump the holder's OwnerCount + stamp any reserve
+        // sponsor + insert. See MPTokenEntry::create().
         return mptoken.create(priorBalance);
     }
 
     MPTokenIssuanceEntry<ReadView> const sleMptIssuance{
-        keylet::mptokenIssuance(mptIssuanceID), view};
+        keylet::mptokenIssuance(mptIssuanceID), ctx.view};
     if (!sleMptIssuance)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -225,7 +229,7 @@ authorizeMPToken(
     if (account != (*sleMptIssuance)[sfIssuer])
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    MPTokenEntry<ApplyView> sleMpt{keylet::mptoken(mptIssuanceID, *holderID), view};
+    MPTokenEntry<ApplyView> sleMpt{keylet::mptoken(mptIssuanceID, *holderID), ctx.view};
     if (!sleMpt)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -254,7 +258,7 @@ authorizeMPToken(
 
 [[nodiscard]] TER
 removeEmptyHolding(
-    ApplyView& view,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     MPTIssue const& mptIssue,
     beast::Journal journal)
@@ -264,7 +268,7 @@ removeEmptyHolding(
     // a token does exist, it will get deleted. If not, return success.
     bool const accountIsIssuer = accountID == mptIssue.getIssuer();
     auto const& mptID = mptIssue.getMptID();
-    MPTokenEntry<ApplyView> mptoken{keylet::mptoken(mptID, accountID), view};
+    MPTokenEntry<ApplyView> mptoken{keylet::mptoken(mptID, accountID), ctx.view};
     if (!mptoken)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
     // Unlike a trust line, if the account is the issuer, and the token has a
@@ -272,7 +276,7 @@ removeEmptyHolding(
     // accounting out of balance, so fail. Since this should be impossible
     // anyway, I'm not going to put any effort into it.
     if (mptoken->at(sfMPTAmount) != 0 ||
-        (view.rules().enabled(fixCleanup3_1_3) && (*mptoken)[~sfLockedAmount].valueOr(0) != 0))
+        (ctx.view.rules().enabled(fixCleanup3_1_3) && (*mptoken)[~sfLockedAmount].valueOr(0) != 0))
         return tecHAS_OBLIGATIONS;
 
     // Don't delete if the token still has confidential balances
@@ -285,7 +289,7 @@ removeEmptyHolding(
     }
 
     return authorizeMPToken(
-        view,
+        ctx,
         {},  // priorBalance
         mptID,
         accountID,
@@ -405,13 +409,14 @@ requireAuth(
 
 [[nodiscard]] TER
 enforceMPTokenAuthorization(
-    ApplyView& view,
+    ApplyViewContext ctx,
     MPTID const& mptIssuanceID,
     AccountID const& account,
     XRPAmount const& priorBalance,  // for MPToken authorization
     beast::Journal j)
 {
-    MPTokenIssuanceEntry<ReadView> const sleIssuance{keylet::mptokenIssuance(mptIssuanceID), view};
+    MPTokenIssuanceEntry<ReadView> const sleIssuance{
+        keylet::mptokenIssuance(mptIssuanceID), ctx.view};
     if (!sleIssuance)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -423,7 +428,7 @@ enforceMPTokenAuthorization(
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const keylet = keylet::mptoken(mptIssuanceID, account);
-    MPTokenEntry<ReadView> const sleToken{keylet, view};  //  NOTE: might be null
+    MPTokenEntry<ReadView> const sleToken{keylet, ctx.view};  //  NOTE: might be null
     auto const maybeDomainID = sleIssuance->at(~sfDomainID);
     bool expired = false;
     bool const authorizedByDomain = [&]() -> bool {
@@ -431,7 +436,7 @@ enforceMPTokenAuthorization(
         if (!maybeDomainID.has_value())
             return false;  // LCOV_EXCL_LINE
 
-        auto const ter = verifyValidDomain(view, account, *maybeDomainID, j);
+        auto const ter = verifyValidDomain(ctx.view, account, *maybeDomainID, j);
         if (isTesSuccess(ter))
             return true;
         if (ter == tecEXPIRED)
@@ -486,7 +491,7 @@ enforceMPTokenAuthorization(
             maybeDomainID.has_value() && !sleToken,
             "xrpl::enforceMPTokenAuthorization : new MPToken for domain");
         if (auto const err = authorizeMPToken(
-                view,
+                ctx,
                 priorBalance,   // priorBalance
                 mptIssuanceID,  // mptIssuanceID
                 account,        // account
@@ -902,6 +907,7 @@ createMPToken(
     ApplyView& view,
     MPTID const& mptIssuanceID,
     AccountID const& account,
+    SLE::ref sponsorSle,
     std::uint32_t const flags)
 {
     auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
@@ -919,6 +925,8 @@ createMPToken(
     (*mptoken)[sfFlags] = flags;
     (*mptoken)[sfOwnerNode] = *ownerNode;
 
+    addSponsorToLedgerEntry(mptoken.mutableSle(), sponsorSle);
+
     mptoken.insert();
 
     return tesSUCCESS;
@@ -929,6 +937,7 @@ checkCreateMPT(
     xrpl::ApplyView& view,
     xrpl::MPTIssue const& mptIssue,
     xrpl::AccountID const& holder,
+    SLE::ref sponsorSle,
     beast::Journal j)
 {
     if (mptIssue.getIssuer() == holder)
@@ -938,7 +947,7 @@ checkCreateMPT(
     auto const mptokenID = keylet::mptoken(mptIssuanceID.key, holder);
     if (!view.exists(mptokenID))
     {
-        if (auto const err = createMPToken(view, mptIssue.getMptID(), holder, 0);
+        if (auto const err = createMPToken(view, mptIssue.getMptID(), holder, sponsorSle, 0);
             !isTesSuccess(err))
         {
             return err;
@@ -948,7 +957,7 @@ checkCreateMPT(
         {
             return tecINTERNAL;
         }
-        adjustOwnerCount(view, sleAcct.mutableSle(), 1, j);
+        increaseOwnerCount(view, sleAcct.mutableSle(), sponsorSle, 1, j);
     }
     return tesSUCCESS;
 }

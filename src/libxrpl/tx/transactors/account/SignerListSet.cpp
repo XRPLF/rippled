@@ -8,7 +8,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/SLEWrappers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -148,9 +148,7 @@ SignerListSet::preCompute()
     Transactor::preCompute();
 }
 
-// The return type is signed so it is compatible with the 3rd argument
-// of adjustOwnerCount() (which must be signed).
-static int
+static std::uint32_t
 signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
 {
     // We always compute the full change in OwnerCount, taking into account:
@@ -166,7 +164,7 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
     // units.  A SignerList with 8 entries would cost 10 OwnerCount units.
     //
     // The static_cast should always be safe since entryCount should always
-    // be in the range from 1 to 32.
+    // be in the range from 1 to 32, so the result is always positive.
     // We've got a lot of room to grow.
     XRPL_ASSERT(
         entryCount >= STTx::kMinMultiSigners,
@@ -188,7 +186,7 @@ removeSignersFromLedger(
 {
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
-    SignerListEntry<ApplyView> signers{signerListKeylet, view};
+    SLE::pointer const signers = view.peek(signerListKeylet);
 
     // If the signer list doesn't exist we've already succeeded in deleting it.
     if (!signers)
@@ -197,12 +195,11 @@ removeSignersFromLedger(
     // There are two different ways that the OwnerCount could be managed.
     // If the lsfOneOwnerCount bit is set then remove just one owner count.
     // Otherwise use the pre-MultiSignReserve amendment calculation.
-    int removeFromOwnerCount = -1;
+    std::uint32_t removeFromOwnerCount = 1;
     if (!signers->isFlag(lsfOneOwnerCount))
     {
         STArray const& actualList = signers->getFieldArray(sfSignerEntries);
-        removeFromOwnerCount =
-            signerCountBasedOwnerCountDelta(actualList.size(), view.rules()) * -1;
+        removeFromOwnerCount = signerCountBasedOwnerCountDelta(actualList.size(), view.rules());
     }
 
     // Remove the node from the account directory.
@@ -216,10 +213,10 @@ removeSignersFromLedger(
         // LCOV_EXCL_STOP
     }
 
-    AccountRootEntry<ApplyView> account{accountKeylet, view};
-    adjustOwnerCount(view, account.mutableSle(), removeFromOwnerCount, registry.getJournal("View"));
+    decreaseOwnerCountForObject(
+        view, view.peek(accountKeylet), signers, removeFromOwnerCount, registry.getJournal("View"));
 
-    signers.erase();
+    view.erase(signers);
 
     return tesSUCCESS;
 }
@@ -312,28 +309,28 @@ SignerListSet::replaceSignerList()
             ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_))
         return ter;
 
-    AccountRootEntry<ApplyView> const sle{accountKeylet, view()};
+    auto const sle = view().peek(accountKeylet);
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
-
-    // Compute new reserve.  Verify the account has funds to meet the reserve.
-    std::uint32_t const oldOwnerCount{(*sle)[sfOwnerCount]};
 
     static constexpr int kAddedOwnerCount = 1;
     std::uint32_t const flags{lsfOneOwnerCount};
 
-    XRPAmount const newReserve{view().fees().accountReserve(oldOwnerCount + kAddedOwnerCount)};
-
     // We check the reserve against the starting balance because we want to
     // allow dipping into the reserve to pay fees.  This behavior is consistent
     // with TicketCreate.
-    if (preFeeBalance_ < newReserve)
-        return tecINSUFFICIENT_RESERVE;
+    if (auto const ret = checkReserve(
+            ctx_.getApplyViewContext(),
+            sle,
+            preFeeBalance_,
+            {.ownerCountDelta = kAddedOwnerCount},
+            ctx_.journal);
+        !isTesSuccess(ret))
+        return ret;
 
     // Everything's ducky.  Add the ltSIGNER_LIST to the ledger.
-    SignerListEntry<ApplyView> signerList{signerListKeylet, view()};
-    signerList.newSLE();
-    signerList.insert();
+    auto signerList = std::make_shared<SLE>(signerListKeylet);
+    view().insert(signerList);
     writeSignersToSLE(signerList, flags);
 
     auto viewJ = ctx_.registry.get().getJournal("View");
@@ -351,7 +348,8 @@ SignerListSet::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    adjustOwnerCount(view(), sle.mutableSle(), kAddedOwnerCount, viewJ);
+    increaseOwnerCount(ctx_.getApplyViewContext(), sle, kAddedOwnerCount, viewJ);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), signerList);
     return tesSUCCESS;
 }
 
@@ -361,7 +359,7 @@ SignerListSet::destroySignerList()
     auto const accountKeylet = keylet::account(accountID_);
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
-    AccountRootEntry<ApplyView> const ledgerEntry{accountKeylet, view()};
+    SLE::pointer const ledgerEntry = view().peek(accountKeylet);
     if (!ledgerEntry)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -375,7 +373,7 @@ SignerListSet::destroySignerList()
 }
 
 void
-SignerListSet::writeSignersToSLE(SignerListEntry<ApplyView>& ledgerEntry, std::uint32_t flags) const
+SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const
 {
     // Assign the quorum, default SignerListID, and flags.
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))

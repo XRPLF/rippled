@@ -12,6 +12,7 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
@@ -436,16 +437,36 @@ EscrowCreate::doApply()
     // Check reserve and funds availability
     STAmount const amount{ctx_.tx[sfAmount]};
 
-    auto const reserve = ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
-
     auto const balance = sle->getFieldAmount(sfBalance).xrp();
-    if (balance < reserve)
-        return tecINSUFFICIENT_RESERVE;
+    // First check: whoever is on the hook for the new owner increment
+    // can cover it. When sponsored this hits the sponsor branch and
+    // validates the sponsor's reserve + remaining credit. When
+    // unsponsored this hits the source branch and validates the
+    // source's pre-lock balance against base + (currentOC+1)*increment.
+    if (auto const ret = checkReserve(
+            ctx_.getApplyViewContext(), sle.sle(), balance, {.ownerCountDelta = 1}, j_);
+        !isTesSuccess(ret))
+        return ret;
 
-    // Check reserve and funds availability
     if (isXRP(amount))
     {
-        if (balance < reserve + STAmount(amount).xrp())
+        // Second check (XRP escrow only): after locking the escrowed
+        // amount, the source must still meet its own reserve floor. This is
+        // always the source's own balance against the source's own reserve —
+        // the sponsor's reserve was already validated above, and a sponsor
+        // never covers the locked funds. We compare directly (rather than via
+        // checkReserve) because that helper diverts to the sponsor's balance
+        // when a sponsor is present and would ignore the source's post-lock
+        // balance entirely. ownerCountDelta differs by case:
+        // - sponsored:   0  — sponsor covers the new owner increment, so the
+        //                source only owes reserve for its current owners.
+        // - unsponsored: 1  — source owes reserve including the new increment.
+        auto const sourceReserve = accountReserve(
+            ctx_.view(),
+            sle.sle(),
+            j_,
+            {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : 1});
+        if (balance - STAmount(amount).xrp() < sourceReserve)
             return tecUNFUNDED;
     }
 
@@ -461,7 +482,8 @@ EscrowCreate::doApply()
     // Create escrow in ledger.  Note that we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
     Keylet const escrowKeylet = keylet::escrow(accountID_, ctx_.tx.getSeqValue());
-    EscrowEntry<ApplyView> slep{escrowKeylet, ctx_.view()};
+    // Build with the ApplyViewContext so create() honors reserve sponsorship.
+    EscrowEntry<ApplyView> slep{escrowKeylet, ctx_.getApplyViewContext()};
     slep.newSLE();
     (*slep)[sfAmount] = amount;
     (*slep)[sfAccount] = accountID_;
@@ -506,8 +528,8 @@ EscrowCreate::doApply()
 
     // Link the escrow into the sender's owner directory (counts toward reserve),
     // plus the destination and (for IOU) issuer tracking directories where
-    // applicable, bump the sender's OwnerCount, and insert. The recipient/issuer
-    // tracking dirs help track locked balances. See EscrowEntry::ownerDirs().
+    // applicable, bump the sender's OwnerCount, stamp any reserve sponsor, and
+    // insert. See EscrowEntry::ownerDirs() and SLEBase::create().
     return slep.create(preFeeBalance_);
 }
 

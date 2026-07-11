@@ -8,13 +8,13 @@
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -152,13 +152,15 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
 TER
 DepositPreauth::doApply()
 {
+    auto applyViewContext = ctx_.getApplyViewContext();
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
         // Preclaim already verified that the Preauth entry does not yet exist.
         // Create and populate the Preauth entry.
         AccountID const auth{ctx_.tx[sfAuthorize]};
         Keylet const preauthKeylet = keylet::depositPreauth(accountID_, auth);
-        DepositPreauthEntry<ApplyView> slePreauth{preauthKeylet, view()};
+        // Build with the ApplyViewContext so create() honors reserve sponsorship.
+        DepositPreauthEntry<ApplyView> slePreauth{preauthKeylet, applyViewContext};
         slePreauth.newSLE();
 
         slePreauth->setAccountID(sfAccount, accountID_);
@@ -189,7 +191,8 @@ DepositPreauth::doApply()
         }
 
         Keylet const preauthKey = keylet::depositPreauth(accountID_, sortedTX);
-        DepositPreauthEntry<ApplyView> slePreauth{preauthKey, view()};
+        // Build with the ApplyViewContext so create() honors reserve sponsorship.
+        DepositPreauthEntry<ApplyView> slePreauth{preauthKey, applyViewContext};
         slePreauth.newSLE();
 
         slePreauth->setAccountID(sfAccount, accountID_);

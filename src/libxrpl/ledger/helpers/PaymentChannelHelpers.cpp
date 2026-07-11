@@ -41,7 +41,8 @@ closeChannel(
     sle.update();
 
     // Unlink the channel from the owner and destination directories, decrement
-    // the owner's OwnerCount, and erase it. See PayChannelEntry::ownerDirs().
+    // the owner's OwnerCount (refunding any reserve sponsor), and erase it. See
+    // PayChannelEntry::ownerDirs().
     return slep.destroy();
 }
 

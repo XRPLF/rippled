@@ -8,6 +8,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -196,7 +197,8 @@ CheckCreate::doApply()
     // Check sequence.  For more explanation see comments in SeqProxy.h.
     std::uint32_t const seq = ctx_.tx.getSeqValue();
     Keylet const checkKeylet = keylet::check(accountID_, seq);
-    CheckEntry<ApplyView> sleCheck{checkKeylet, view()};
+    // Build with the ApplyViewContext so create() honors reserve sponsorship.
+    CheckEntry<ApplyView> sleCheck{checkKeylet, ctx_.getApplyViewContext()};
     sleCheck.newSLE();
 
     sleCheck->setAccountID(sfAccount, accountID_);
@@ -213,9 +215,10 @@ CheckCreate::doApply()
     if (auto const expiry = ctx_.tx[~sfExpiration])
         sleCheck->setFieldU32(sfExpiration, *expiry);
 
-    // Reserve check (source's pre-fee balance) + link into the source owner
-    // directory and the destination tracking directory + bump the source's
-    // OwnerCount + insert. See CheckEntry::ownerDirs().
+    // Reserve check (source's pre-fee balance, honoring any reserve sponsor) +
+    // link into the source owner directory and the destination tracking
+    // directory + bump the source's OwnerCount + stamp the reserve sponsor +
+    // insert. See CheckEntry::ownerDirs() and SLEBase::create().
     return sleCheck.create(preFeeBalance_);
 }
 

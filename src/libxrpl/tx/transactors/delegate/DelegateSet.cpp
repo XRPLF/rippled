@@ -6,10 +6,10 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -80,7 +80,8 @@ DelegateSet::doApply()
     auto const& authAccount = ctx_.tx[sfAuthorize];
     auto const delegateKey = keylet::delegate(accountID_, authAccount);
 
-    DelegateEntry<ApplyView> sle{delegateKey, ctx_.view()};
+    // Build with the ApplyViewContext so create() honors reserve sponsorship.
+    DelegateEntry<ApplyView> sle{delegateKey, ctx_.getApplyViewContext()};
     if (sle)
     {
         auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
@@ -104,9 +105,10 @@ DelegateSet::doApply()
     sle->setAccountID(sfAuthorize, authAccount);
     sle->setFieldArray(sfPermissions, permissions);
 
-    // Reserve check (delegator's pre-fee balance) + link into the delegator's
-    // owner directory and the authorized account's directory + bump the
-    // delegator's OwnerCount + insert. See DelegateEntry::ownerDirs().
+    // Reserve check (delegator's pre-fee balance, honoring any reserve sponsor)
+    // + link into the delegator's owner directory and the authorized account's
+    // directory + bump the delegator's OwnerCount + stamp the reserve sponsor +
+    // insert. See DelegateEntry::ownerDirs() and SLEBase::create().
     return sle.create(preFeeBalance_);
 }
 
@@ -117,8 +119,9 @@ DelegateSet::deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Unlink from the delegator's owner directory and the authorized account's
-    // directory, decrement the delegator's OwnerCount, and erase. Only the
-    // delegator's count was bumped on creation. See DelegateEntry::ownerDirs().
+    // directory, decrement the delegator's OwnerCount (refunding a reserve
+    // sponsor if present), and erase. Only the delegator's count was bumped on
+    // creation. See DelegateEntry::ownerDirs().
     DelegateEntry<ApplyView> delegate{sle, view, j};
     return delegate.destroy();
 }

@@ -8,6 +8,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
@@ -78,9 +79,10 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
         return terNO_ACCOUNT;
 
     // Check reserve and funds availability
+    if (!ctx.view.rules().enabled(featureSponsor))
     {
         auto const balance = (*sle)[sfBalance];
-        auto const reserve = ctx.view.fees().accountReserve((*sle)[sfOwnerCount] + 1);
+        auto const reserve = ctx.view.fees().accountReserve((*sle)[sfOwnerCount] + 1, 1);
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -132,6 +134,36 @@ PaymentChannelCreate::doApply()
             return tecEXPIRED;
     }
 
+    if (ctx_.view().rules().enabled(featureSponsor))
+    {
+        // First check: whoever is on the hook for the new owner increment
+        // can cover it. When sponsored this hits the sponsor branch and
+        // validates the sponsor's reserve + remaining credit. When
+        // unsponsored this hits the source branch and validates the
+        // source's pre-lock balance against base + (currentOC+1)*increment.
+        if (auto const ret = checkReserve(
+                ctx_.getApplyViewContext(), sle, preFeeBalance_, {.ownerCountDelta = 1}, j_);
+            !isTesSuccess(ret))
+            return ret;
+
+        // Second check: after locking sfAmount in the channel, the source
+        // must still meet its own reserve floor. This is always the
+        // source's own balance against the source's own reserve — the
+        // sponsor's reserve was already validated above, and a sponsor
+        // never covers the locked funds. We compare directly (rather than
+        // via checkReserve) because that helper diverts to the
+        // sponsor's balance when a sponsor is present and would ignore the
+        // source's post-lock balance entirely. ownerCountDelta differs by
+        // case:
+        // - sponsored:   0  — sponsor covers the new owner increment, so
+        //                the source only owes reserve for its current owners.
+        // - unsponsored: 1  — source owes reserve including the new increment.
+        auto const sourceReserve = accountReserve(
+            ctx_.view(), sle, j_, {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : 1});
+        if (preFeeBalance_ - ctx_.tx[sfAmount].xrp() < sourceReserve)
+            return tecUNFUNDED;
+    }
+
     auto const dst = ctx_.tx[sfDestination];
 
     // Create PayChan in ledger.
@@ -139,7 +171,8 @@ PaymentChannelCreate::doApply()
     // Note that we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
     Keylet const payChanKeylet = keylet::payChannel(account, dst, ctx_.tx.getSeqValue());
-    PayChannelEntry<ApplyView> slep{payChanKeylet, ctx_.view()};
+    // Build with the ApplyViewContext so create() honors reserve sponsorship.
+    PayChannelEntry<ApplyView> slep{payChanKeylet, ctx_.getApplyViewContext()};
     slep.newSLE();
 
     // Funds held in this channel
@@ -163,7 +196,8 @@ PaymentChannelCreate::doApply()
     ctx_.view().update(sle);
 
     // Reserve check + link into the owner and destination directories + bump
-    // the owner's OwnerCount + insert. See PayChannelEntry::ownerDirs().
+    // the owner's OwnerCount + stamp any reserve sponsor + insert. See
+    // PayChannelEntry::ownerDirs() and SLEBase::create().
     return slep.create(preFeeBalance_);
 }
 

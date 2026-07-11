@@ -317,6 +317,44 @@ EscrowFinish::doApply()
 
     AccountID const account = (*slep)[sfAccount];
 
+    // Escrow deletion is not expressed via EscrowEntry::destroy() here because
+    // the reserve release is consensus-ordered relative to token delivery (see
+    // below), which the wrapper cannot express.
+    //
+    // Remove escrow from owner directory
+    {
+        auto const page = (*slep)[sfOwnerNode];
+        if (!ctx_.view().dirRemove(keylet::ownerDir(account), page, k.key, true))
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.fatal()) << "Unable to delete Escrow from owner.";
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
+    }
+
+    // Remove escrow from recipient's owner directory, if present.
+    if (auto const optPage = (*slep)[~sfDestinationNode])
+    {
+        if (!ctx_.view().dirRemove(keylet::ownerDir(destID), *optPage, k.key, true))
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
+    }
+
+    // With the Sponsor amendment, release the escrow reserve before delivery.
+    // Token delivery can auto-create a destination holding, and the same
+    // sponsor (or the same account, for a self-escrow) may cover both the
+    // escrow being removed and the holding being created. Without the
+    // amendment, keep the legacy order: releasing early changes the reserve
+    // arithmetic for self-escrows and would break consensus if not gated.
+    bool const sponsorEnabled = ctx_.view().rules().enabled(featureSponsor);
+    if (sponsorEnabled)
+        decreaseOwnerCountForObject(ctx_.view(), account, slep.mutableSle(), 1, ctx_.journal);
+
     STAmount const amount = slep->getFieldAmount(sfAmount);
     // Transfer amount to destination
     if (isXRP(amount))
@@ -336,7 +374,7 @@ EscrowFinish::doApply()
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
-                        ctx_.view(),
+                        ctx_.getApplyViewContext(),
                         lockedRate,
                         sled.mutableSle(),
                         preFeeBalance_,
@@ -350,14 +388,29 @@ EscrowFinish::doApply()
                 amount.asset().value());
             !isTesSuccess(ret))
             return ret;
+
+        // Remove escrow from issuer's owner directory, if present.
+        if (auto const optPage = (*slep)[~sfIssuerNode]; optPage)
+        {
+            if (!ctx_.view().dirRemove(keylet::ownerDir(issuer), *optPage, k.key, true))
+            {
+                // LCOV_EXCL_START
+                JLOG(j_.fatal()) << "Unable to delete Escrow from issuer.";
+                return tefBAD_LEDGER;
+                // LCOV_EXCL_STOP
+            }
+        }
     }
 
     sled.update();
 
-    // Unlink the escrow from the sender's owner directory (and the destination
-    // and issuer tracking directories, if present), decrement the sender's
-    // OwnerCount, and erase it. See EscrowEntry::ownerDirs().
-    return slep.destroy();
+    // Adjust source owner count (legacy position, pre-Sponsor).
+    if (!sponsorEnabled)
+        decreaseOwnerCountForObject(ctx_.view(), account, slep.mutableSle(), 1, ctx_.journal);
+
+    // Remove escrow from ledger
+    slep.erase();
+    return tesSUCCESS;
 }
 
 void

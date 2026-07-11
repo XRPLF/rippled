@@ -18,6 +18,7 @@
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
@@ -36,6 +37,7 @@
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -672,11 +674,11 @@ protected:
             case AssetType::MPT: {
                 // Enough to cover initial fees
                 if (!env.le(keylet::account(issuer)))
-                    env.fund(env.current()->fees().accountReserve(10) * 10, issuer);
+                    env.fund(env.current()->fees().accountReserve(10, 1) * 10, issuer);
                 if (!env.le(keylet::account(lender)))
-                    env.fund(env.current()->fees().accountReserve(10) * 10, noripple(lender));
+                    env.fund(env.current()->fees().accountReserve(10, 1) * 10, noripple(lender));
                 if (!env.le(keylet::account(borrower)))
-                    env.fund(env.current()->fees().accountReserve(10) * 10, noripple(borrower));
+                    env.fund(env.current()->fees().accountReserve(10, 1) * 10, noripple(borrower));
 
                 MPTTester mptt{env, issuer, kMptInitNoFund};
                 mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
@@ -761,11 +763,11 @@ protected:
         using namespace jtx;
 
         // Enough to cover initial fees
-        env.fund(env.current()->fees().accountReserve(10) * 10, issuer);
+        env.fund(env.current()->fees().accountReserve(10, 1) * 10, issuer);
         if (lender != issuer)
-            env.fund(env.current()->fees().accountReserve(10) * 10, noripple(lender));
+            env.fund(env.current()->fees().accountReserve(10, 1) * 10, noripple(lender));
         if (borrower != issuer && borrower != lender)
-            env.fund(env.current()->fees().accountReserve(10) * 10, noripple(borrower));
+            env.fund(env.current()->fees().accountReserve(10, 1) * 10, noripple(borrower));
 
         describeLoan(env, brokerParams, loanParams, assetType, issuer, lender, borrower);
 
@@ -842,11 +844,10 @@ protected:
         // Add extra for transaction fees and reserves, if appropriate, or a
         // tiny amount for the extra paid in each transaction
         auto const totalNeeded = state.totalValue + (serviceFee * state.paymentRemaining) +
-            (broker.asset.native()
-                 ? Number(
-                       baseFee * state.paymentRemaining +
-                       env.current()->fees().accountReserve(env.ownerCount(borrower)))
-                 : broker.asset(15).number());
+            (broker.asset.native() ? Number(
+                                         baseFee * state.paymentRemaining +
+                                         accountReserve(*env.current(), borrower.id(), env.journal))
+                                   : broker.asset(15).number());
 
         auto const shortage = totalNeeded - borrowerBalance.number();
 
@@ -3073,7 +3074,7 @@ protected:
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
-                env.current()->fees().accountReserve(0).drops() / kDropsPerXrp.drops(),
+                env.current()->fees().accountReserve(0, 1).drops() / kDropsPerXrp.drops(),
                 env.current()->fees().increment.drops() / kDropsPerXrp.drops()};
         }();
 
@@ -4421,11 +4422,12 @@ protected:
         Account const lender{"lender"};
         Account const issuer{"issuer"};
         Account const borrower{"borrower"};
+        Account const sponsor{"sponsor"};
         auto const iou = issuer["IOU"];
 
         auto testWrapper = [&](auto&& test) {
             Env env(*this);
-            env.fund(XRP(1'000), lender, issuer, borrower);
+            env.fund(XRP(1'000), lender, issuer, borrower, sponsor);
             env(trust(lender, iou(10'000'000)));
             env(pay(issuer, lender, iou(5'000'000)));
             BrokerInfo const brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
@@ -4440,6 +4442,15 @@ protected:
                         BrokerInfo const& brokerInfo,
                         jtx::Fee const& loanSetFee,
                         Number const& debtMaximumRequest) {
+            for (auto const sponsorFlags : {spfSponsorReserve, spfSponsorReserve | spfSponsorFee})
+            {
+                env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
+                    sponsor::As(sponsor, sponsorFlags),
+                    Sig(sfCounterpartySignature, lender),
+                    loanSetFee,
+                    Ter(temINVALID_FLAG));
+            }
+
             // first temBAD_SIGNER: TODO
             // invalid grace period
             {
@@ -4530,8 +4541,8 @@ protected:
                         BrokerInfo const& brokerInfo,
                         jtx::Fee const& loanSetFee,
                         Number const& debtMaximumRequest) {
-            auto const amt = env.balance(borrower) -
-                env.current()->fees().accountReserve(env.ownerCount(borrower));
+            auto const amt =
+                env.balance(borrower) - accountReserve(*env.current(), borrower.id(), env.journal);
             env(pay(borrower, issuer, amt));
 
             // tecINSUFFICIENT_RESERVE

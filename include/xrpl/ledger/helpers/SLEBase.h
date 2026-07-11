@@ -3,8 +3,9 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>  // adjustOwnerCount
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>  // increaseOwnerCount, accountReserve
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>    // describeOwnerDir
+#include <xrpl/ledger/helpers/SponsorHelpers.h>      // addSponsorToLedgerEntry, checkReserve
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>  // keylet::account, keylet::ownerDir
 #include <xrpl/protocol/SField.h>
@@ -300,6 +301,14 @@ public:
     {
         XRPL_ASSERT(canModify(), "xrpl::SLEBase::create : can modify");
         auto const dirs = ownerDirs();
+        Adjustment const adj{.ownerCountDelta = static_cast<std::int32_t>(reserveCount())};
+
+        // The reserve sponsor covers only the transaction submitter's own
+        // objects, so it is resolved from the counted owner (yielding no sponsor
+        // when the owner is a pseudo-account or otherwise not the submitter).
+        // Null unless the wrapper was built with an ApplyViewContext (a create
+        // path) and the transaction carries a reserve sponsor for the owner.
+        SLE::pointer sponsorSle;
 
         for (auto const& d : dirs)
         {
@@ -308,9 +317,32 @@ public:
             auto const ownerSle = view_.peek(keylet::account(d.owner));
             if (!ownerSle)
                 return tecNO_ENTRY;  // LCOV_EXCL_LINE
-            if (ownerReserveBalance &&
-                *ownerReserveBalance <
-                    view_.fees().accountReserve((*ownerSle)[sfOwnerCount] + reserveCount()))
+            if (tx_)
+            {
+                auto const sponsorExp =
+                    getEffectiveTxReserveSponsor(ApplyViewContext{view_, *tx_}, ownerSle);
+                if (!sponsorExp)
+                    return sponsorExp.error();  // LCOV_EXCL_LINE
+                sponsorSle = *sponsorExp;
+            }
+            if (!ownerReserveBalance)
+                continue;
+            // Route the reserve check through checkReserve() so a reserve
+            // sponsor is honored; otherwise fall back to the account's own
+            // reserve.
+            if (tx_)
+            {
+                if (auto const ret = checkReserve(
+                        ApplyViewContext{view_, *tx_},
+                        ownerSle,
+                        *ownerReserveBalance,
+                        sponsorSle,
+                        adj,
+                        j_);
+                    !isTesSuccess(ret))
+                    return ret;
+            }
+            else if (*ownerReserveBalance < accountReserve(view_, ownerSle, j_, adj))
                 return tecINSUFFICIENT_RESERVE;
         }
 
@@ -319,7 +351,14 @@ public:
 
         for (auto const& d : dirs)
             if (d.countsToward)
-                adjustOwnerCount(view_, view_.peek(keylet::account(d.owner)), reserveCount(), j_);
+                increaseOwnerCount(
+                    view_, view_.peek(keylet::account(d.owner)), sponsorSle, reserveCount(), j_);
+
+        // Stamp the reserve sponsor (if any) onto the new entry so that a later
+        // delete refunds the sponsor rather than the owner. A no-op when
+        // sponsorSle is null.
+        if (tx_)
+            addSponsorToLedgerEntry(sle_, sponsorSle);
 
         view_.insert(sle_);
         return tesSUCCESS;
@@ -341,11 +380,13 @@ public:
         if (auto const ter = unlinkOwnerDirs(dirs); !isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
 
+        // decreaseOwnerCountForObject derives the reserve sponsor (if any) from
+        // the entry's sfSponsor field, refunding the sponsor rather than the
+        // owner when the object was sponsored.
         for (auto const& d : dirs)
             if (d.countsToward)
                 if (auto ownerSle = view_.peek(keylet::account(d.owner)))
-                    adjustOwnerCount(
-                        view_, ownerSle, -static_cast<std::int32_t>(reserveCount()), j_);
+                    decreaseOwnerCountForObject(view_, ownerSle, sle_, reserveCount(), j_);
 
         view_.erase(sle_);
         return tesSUCCESS;
@@ -416,6 +457,33 @@ public:
     {
     }
 
+    /** Constructor for writable context carrying the applying transaction (from
+     *  existing SLE). Providing the ApplyViewContext lets create() perform
+     *  reserve-sponsorship-aware accounting. */
+    explicit SLEBase(
+        std::shared_ptr<SLE> sle,
+        ApplyViewContext ctx,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        requires kIsWritable
+        : view_(ctx.view)
+        , key_(sle ? Keylet(sle->getType(), sle->key()) : Keylet(ltANY, uint256{}))
+        , sle_(std::move(sle))
+        , j_(j)
+        , tx_(&ctx.tx)
+    {
+    }
+
+    /** Constructor for writable context carrying the applying transaction (peek
+     *  from view by keylet). */
+    explicit SLEBase(
+        Keylet const& key,
+        ApplyViewContext ctx,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        requires kIsWritable
+        : view_(ctx.view), key_(key), sle_(view_.peek(key)), j_(j), tx_(&ctx.tx)
+    {
+    }
+
 protected:
     view_ref_type view_{};
 
@@ -429,6 +497,11 @@ protected:
 
     sle_ptr_type sle_{};
     beast::Journal j_;
+
+    // The applying transaction, when the wrapper was constructed from an
+    // ApplyViewContext. Only meaningful for writable wrappers on a create path;
+    // null otherwise. Enables reserve-sponsorship-aware create().
+    STTx const* tx_ = nullptr;
 };
 
 /** Generic (any-entry-type) SLE handles.

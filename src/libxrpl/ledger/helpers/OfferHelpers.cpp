@@ -23,7 +23,8 @@ offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j)
 
     // Unlink the offer from its owner directory and every order-book page it
     // sits in (including a hybrid offer's additional books), decrement the
-    // owner's OwnerCount, and erase it. See OfferEntry::destroy().
+    // owner's OwnerCount (refunding a reserve sponsor when present), and erase
+    // it. See OfferEntry::destroy().
     OfferEntry<ApplyView> offer{sle, view, j};
     return offer.destroy();
 }

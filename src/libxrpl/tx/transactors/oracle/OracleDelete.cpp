@@ -4,6 +4,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -13,6 +14,8 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -58,8 +61,8 @@ OracleDelete::deleteOracle(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Unlink the Oracle from its owner's directory, decrement the owner's
-    // OwnerCount by reserveCount() (1, or 2 for a large price-data series),
-    // and erase it. See OracleEntry.
+    // OwnerCount by reserveCount() (1, or 2 for a large price-data series,
+    // refunding any reserve sponsor), and erase it. See OracleEntry.
     OracleEntry<ApplyView> oracle{sle, view, j};
     return oracle.destroy();
 }

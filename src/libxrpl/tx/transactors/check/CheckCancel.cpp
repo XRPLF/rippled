@@ -64,7 +64,8 @@ CheckCancel::doApply()
     }
 
     // Unlink the check from the source (and destination) directories, decrement
-    // the source's OwnerCount, and erase it. See CheckEntry::ownerDirs().
+    // the source's OwnerCount (refunding any reserve sponsor), and erase it. See
+    // CheckEntry::ownerDirs().
     return sleCheck.destroy();
 }
 

@@ -143,11 +143,11 @@ LoanBrokerDelete::doApply()
     {
         auto const coverAvailable = STAmount{vaultAsset, broker->at(sfCoverAvailable)};
         if (auto const ter = accountSend(
-                view(), brokerPseudoID, accountID_, coverAvailable, j_, WaiveTransferFee::Yes))
+                view(), brokerPseudoID, accountID_, coverAvailable, j_, {}, WaiveTransferFee::Yes))
             return ter;
     }
 
-    if (auto ter = removeEmptyHolding(view(), brokerPseudoID, vaultAsset, j_))
+    if (auto ter = removeEmptyHolding(ctx_.getApplyViewContext(), brokerPseudoID, vaultAsset, j_))
         return ter;
 
     auto brokerPseudoSLE = view().peek(keylet::account(brokerPseudoID));
@@ -175,8 +175,8 @@ LoanBrokerDelete::doApply()
     view().erase(brokerPseudoSLE);
 
     // Unlink the broker from its owner's directory and the vault pseudo-account's
-    // directory, decrement the owner's OwnerCount by 2 (broker + pseudo-account),
-    // and erase it. See LoanBrokerEntry.
+    // directory, decrement the owner's OwnerCount by 2 (broker + pseudo-account,
+    // refunding any reserve sponsor), and erase it. See LoanBrokerEntry.
     if (auto const ter = broker.destroy(); !isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
 

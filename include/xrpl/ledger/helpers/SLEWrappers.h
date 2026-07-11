@@ -62,7 +62,8 @@ public:
             auto const acct = view.peek(acctKeylet);
             if (!acct)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
-            if (*ownerReserveBalance < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
+            if (*ownerReserveBalance <
+                accountReserve(view, acct, this->journal(), {.ownerCountDelta = 1}))
                 return tecINSUFFICIENT_RESERVE;
         }
 
@@ -90,7 +91,9 @@ public:
         (*offer)[sfNFTokenOfferNode] = *offerNode;
 
         view.insert(offer);
-        adjustOwnerCount(view, view.peek(acctKeylet), 1, this->journal());
+        // NFToken offers are never reserve-sponsored, so they count against
+        // their own owner.
+        increaseOwnerCount(view, owner, std::optional<AccountID>{}, 1, this->journal());
         return tesSUCCESS;
     }
 
@@ -116,7 +119,8 @@ public:
                 false))
             return tefBAD_LEDGER;
 
-        adjustOwnerCount(view, view.peek(keylet::account(owner)), -1, this->journal());
+        // NFToken offers are never reserve-sponsored.
+        decreaseOwnerCount(view, owner, std::optional<AccountID>{}, 1, this->journal());
         view.erase(offer);
         return tesSUCCESS;
     }
@@ -404,7 +408,7 @@ public:
             }
         }
 
-        adjustOwnerCount(view, view.peek(keylet::account(owner)), -1, this->journal());
+        decreaseOwnerCountForObject(view, owner, sle, 1, this->journal());
         view.erase(sle);
         return tesSUCCESS;
     }
@@ -718,10 +722,13 @@ public:
     /** Create an MPToken for its holder.
      *
      *  Like a trust line, an MPToken is free of reserve until the holder owns
-     *  two or more objects; only then is a reserve slot enforced. This shadows
-     *  SLEBase::create() to apply that rule, then defers the directory link,
-     *  OwnerCount bump, and insert to the base. Pass std::nullopt to skip the
-     *  reserve check (internal callers on a settled account).
+     *  two or more objects — but a reserve sponsor on the transaction must
+     *  always cover it. This shadows SLEBase::create() only to decide whether
+     *  the reserve is enforced (clearing ownerReserveBalance to skip the check
+     *  in the free tier), then defers the sponsor-aware directory link,
+     *  OwnerCount bump, sponsor stamp, and insert to the base. Pass std::nullopt
+     *  to skip the reserve check outright (internal callers on a settled
+     *  account). Mirrors authorizeMPToken.
      */
     [[nodiscard]] TER
     create(std::optional<XRPAmount> ownerReserveBalance)
@@ -733,14 +740,22 @@ public:
             auto const ownerSle = this->applyView().peek(keylet::account(owner));
             if (!ownerSle)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
-            std::uint32_t const ownerCount = (*ownerSle)[sfOwnerCount];
-            XRPAmount const reserve = ownerCount < 2
-                ? XRPAmount{0}
-                : this->applyView().fees().accountReserve(ownerCount + 1);
-            if (*ownerReserveBalance < reserve)
-                return tecINSUFFICIENT_RESERVE;
+
+            bool sponsored = false;
+            if (this->tx_)
+            {
+                auto const sponsorExp = getEffectiveTxReserveSponsor(
+                    ApplyViewContext{this->applyView(), *this->tx_}, ownerSle);
+                if (!sponsorExp)
+                    return sponsorExp.error();  // LCOV_EXCL_LINE
+                sponsored = static_cast<bool>(*sponsorExp);
+            }
+
+            // Free tier: no sponsor and fewer than two owned objects.
+            if (!sponsored && ownerCount(ownerSle, this->journal()) < 2)
+                ownerReserveBalance = std::nullopt;
         }
-        return SLEBase<ViewT>::create(std::nullopt);
+        return SLEBase<ViewT>::create(ownerReserveBalance);
     }
 };
 

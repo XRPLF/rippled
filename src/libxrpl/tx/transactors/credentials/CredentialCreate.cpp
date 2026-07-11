@@ -8,13 +8,13 @@
 #include <xrpl/ledger/helpers/CredentialHelpers.h>  // IWYU pragma: keep
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -107,7 +107,8 @@ CredentialCreate::doApply()
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const credentialKey = keylet::credential(subject, accountID_, credType);
 
-    CredentialEntry<ApplyView> sleCred{credentialKey, view()};
+    // Build with the ApplyViewContext so create() honors reserve sponsorship.
+    CredentialEntry<ApplyView> sleCred{credentialKey, ctx_.getApplyViewContext()};
     sleCred.newSLE();
     if (!sleCred)
         return tefINTERNAL;  // LCOV_EXCL_LINE

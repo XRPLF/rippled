@@ -8,6 +8,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -114,16 +115,21 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 }
 
 std::expected<MPTID, TER>
-MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreateArgs const& args)
+MPTokenIssuanceCreate::create(
+    ApplyViewContext ctx,
+    beast::Journal journal,
+    MPTCreateArgs const& args)
 {
-    if (!view.exists(keylet::account(args.account)))
+    if (!ctx.view.exists(keylet::account(args.account)))
         return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
     auto const mptId = makeMptID(args.sequence, args.account);
     auto const mptIssuanceKeylet = keylet::mptokenIssuance(mptId);
 
-    // create the MPTokenIssuance
-    MPTokenIssuanceEntry<ApplyView> mptIssuance{mptIssuanceKeylet, view, journal};
+    // create the MPTokenIssuance. Build with the ApplyViewContext so create()
+    // performs reserve-sponsorship-aware accounting (a no-op when the issuer is
+    // a pseudo-account, e.g. VaultCreate).
+    MPTokenIssuanceEntry<ApplyView> mptIssuance{mptIssuanceKeylet, ctx, journal};
     mptIssuance.newSLE();
     (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
     (*mptIssuance)[sfIssuer] = args.account;
@@ -155,7 +161,7 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
         // populate this after the pseudo-account's MPToken /
         // RippleState has been installed. A missing holding here
         // would dangle the pointer and is a programmer error.
-        auto const sleHolding = view.read(keylet::unchecked(*args.referenceHolding));
+        auto const sleHolding = ctx.view.read(keylet::unchecked(*args.referenceHolding));
         if (!sleHolding)
             return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
         auto const type = sleHolding->getType();
@@ -165,9 +171,10 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
     }
 
     // Reserve check against the issuer's pre-fee balance (skipped when
-    // priorBalance is std::nullopt, i.e. VaultCreate's pseudo-account) + link
-    // into the issuer's owner directory + bump the issuer's OwnerCount +
-    // insert. See MPTokenIssuanceEntry.
+    // priorBalance is std::nullopt, i.e. VaultCreate's pseudo-account, and
+    // honoring any reserve sponsor) + link into the issuer's owner directory +
+    // bump the issuer's OwnerCount + stamp the reserve sponsor + insert. See
+    // MPTokenIssuanceEntry and SLEBase::create().
     if (auto const ter = mptIssuance.create(args.priorBalance); !isTesSuccess(ter))
         return std::unexpected(ter);
 
@@ -179,7 +186,7 @@ MPTokenIssuanceCreate::doApply()
 {
     auto const& tx = ctx_.tx;
     auto const result = create(
-        view(),
+        ctx_.getApplyViewContext(),
         j_,
         {
             .priorBalance = preFeeBalance_,

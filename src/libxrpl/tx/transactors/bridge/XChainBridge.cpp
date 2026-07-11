@@ -436,8 +436,7 @@ transferHelper(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         {
-            auto const ownerCount = sleSrc->getFieldU32(sfOwnerCount);
-            auto const reserve = psb.fees().accountReserve(ownerCount);
+            auto const reserve = accountReserve(psb, sleSrc, j);
 
             auto const availableBalance = [&]() -> STAmount {
                 STAmount curBal = (*sleSrc)[sfBalance];
@@ -1023,7 +1022,7 @@ applyCreateAccountAttestations(
 
             // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
-            auto const reserve = psb.fees().accountReserve((*sleDoor)[sfOwnerCount] + 1);
+            auto const reserve = accountReserve(psb, sleDoor, j, {.ownerCountDelta = 1});
 
             if (balance < reserve)
                 return std::unexpected(tecINSUFFICIENT_RESERVE);
@@ -1425,7 +1424,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve = ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
+        auto const reserve = accountReserve(ctx.view, sleAcc, ctx.j, {.ownerCountDelta = 1});
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -1962,8 +1961,7 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve = ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
-
+        auto const reserve = accountReserve(ctx.view, sleAcc, ctx.j, {.ownerCountDelta = 1});
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
