@@ -15,7 +15,7 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
         "y": 0
       },
@@ -77,9 +77,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 12,
-        "y": 0
+        "w": 24,
+        "x": 0,
+        "y": 8
       },
       "options": {
         "tooltip": {
@@ -127,9 +127,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 18,
-        "y": 0
+        "w": 24,
+        "x": 0,
+        "y": 16
       },
       "options": {
         "tooltip": {
@@ -179,9 +179,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
+        "w": 24,
         "x": 0,
-        "y": 8
+        "y": 24
       },
       "options": {
         "tooltip": {
@@ -245,9 +245,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 10,
-        "x": 6,
-        "y": 8
+        "w": 24,
+        "x": 0,
+        "y": 32
       },
       "options": {
         "tooltip": {
@@ -291,9 +291,9 @@
       "type": "bargauge",
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 8
+        "w": 24,
+        "x": 0,
+        "y": 40
       },
       "options": {
         "orientation": "horizontal",
@@ -474,5 +474,5 @@
   },
   "title": "Peer Quality",
   "uid": "peer-quality",
-  "refresh": "5s"
+  "refresh": "10s"
 }

@@ -692,5 +692,6 @@
     "to": "now"
   },
   "title": "Overlay Traffic Detail",
-  "uid": "overlay-traffic-detail"
+  "uid": "overlay-traffic-detail",
+  "refresh": "10s"
 }

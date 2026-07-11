@@ -738,18 +738,18 @@ The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTe
 
 #### Gauges
 
-| Prometheus Metric                     | Source                    | Description                                                                |
-| ------------------------------------- | ------------------------- | -------------------------------------------------------------------------- |
-| `ledgermaster_validated_ledger_age`   | LedgerMaster.h:373        | Age of validated ledger (seconds)                                          |
-| `ledgermaster_published_ledger_age`   | LedgerMaster.h:374        | Age of published ledger (seconds)                                          |
-| `state_accounting_{mode}_duration`    | NetworkOPs.cpp:774        | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
-| `state_accounting_{mode}_transitions` | NetworkOPs.cpp:780        | Transition count per mode                                                  |
-| `peer_finder_active_inbound_peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                            |
-| `peer_finder_active_outbound_peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
-| `overlay_peer_disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
-| `job_count`                           | JobQueue.cpp:26           | Current job queue depth                                                    |
-| `{category}_bytes_in/out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
-| `{category}_messages_in/out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
+| Prometheus Metric                     | Source                    | Description                                                                                                                                                               |
+| ------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ledgermaster_validated_ledger_age`   | LedgerMaster.h:373        | Age of validated ledger (seconds)                                                                                                                                         |
+| `ledgermaster_published_ledger_age`   | LedgerMaster.h:374        | Age of published ledger (seconds)                                                                                                                                         |
+| `state_accounting_{mode}_duration`    | NetworkOPs.cpp:774        | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full)                                                                                                |
+| `state_accounting_{mode}_transitions` | NetworkOPs.cpp:780        | Transition count per mode                                                                                                                                                 |
+| `peer_finder_active_inbound_peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                                                                                                                           |
+| `peer_finder_active_outbound_peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                                                                                                                          |
+| `overlay_peer_disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                                                                                                                     |
+| `jobq_job_count`                      | JobQueue.cpp:26           | Current job queue depth (emitted as `jobq_job_count`: the JobQueue collector is wrapped in `group("jobq")`, so the registered `job_count` gauge gains the `jobq_` prefix) |
+| `{category}_bytes_in/out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                                                                                                                        |
+| `{category}_messages_in/out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                                                                                                                     |
 
 #### OTel MetricsRegistry Gauges
 
@@ -960,7 +960,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Operating Mode (Time Share)            | timeseries | `rate(state_accounting_X_duration) / sum(rate(all modes))` | —                |
 | Operating Mode Transitions             | timeseries | `state_accounting_*_transitions`                           | —                |
 | I/O Latency                            | timeseries | `histogram_quantile(0.95, ios_latency_bucket)`             | —                |
-| Job Queue Depth                        | timeseries | `job_count`                                                | —                |
+| Job Queue Depth                        | timeseries | `jobq_job_count`                                           | —                |
 | Ledger Fetch Rate                      | stat       | `rate(ledger_fetches[5m])`                                 | —                |
 | Ledger History Mismatches              | stat       | `rate(ledger_history_mismatch[5m])`                        | —                |
 | Key Jobs Execution Time                | timeseries | `acceptledger{quantile="$quantile"}` (+ 10 more key jobs)  | `quantile`       |
@@ -982,18 +982,28 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 ### Network Traffic -- System Metrics (`network-traffic`)
 
-| Panel                                | Type       | PromQL                                                 | Labels Used |
-| ------------------------------------ | ---------- | ------------------------------------------------------ | ----------- |
-| Active Peers                         | timeseries | `peer_finder_active_*_peers`                           | —           |
-| Peer Disconnects                     | timeseries | `increase(overlay_peer_disconnects[$__rate_interval])` | —           |
-| Total Network Bytes                  | timeseries | `rate(total_bytes_in/out[$__rate_interval])`           | —           |
-| Total Network Messages               | timeseries | `rate(total_messages_in/out[$__rate_interval])`        | —           |
-| Transaction Traffic                  | timeseries | `rate(transactions_messages_in/out[$__rate_interval])` | —           |
-| Proposal Traffic                     | timeseries | `rate(proposals_messages_in/out[$__rate_interval])`    | —           |
-| Validation Traffic                   | timeseries | `rate(validations_messages_in/out[$__rate_interval])`  | —           |
-| Traffic by Category                  | bargauge   | `topk(10, rate(*_bytes_in[$__rate_interval]))`         | —           |
-| Duplicate Traffic (Wasted Bandwidth) | timeseries | `rate(*_duplicate_bytes_in/out[$__rate_interval])`     | —           |
-| All Traffic Categories (Detail)      | timeseries | `topk(15, rate(*_bytes_in[$__rate_interval]))`         | —           |
+| Panel                                | Type       | PromQL                                                                                                                     | Labels Used |
+| ------------------------------------ | ---------- | -------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| Active Peers                         | timeseries | `peer_finder_active_*_peers`                                                                                               | —           |
+| Peer Disconnects                     | timeseries | `increase(overlay_peer_disconnects[$__rate_interval])`                                                                     | —           |
+| Total Network Bytes                  | timeseries | `rate(total_bytes_in/out[$__rate_interval])`                                                                               | —           |
+| Total Network Messages               | timeseries | `rate(total_messages_in/out[$__rate_interval])`                                                                            | —           |
+| Transaction Traffic                  | timeseries | `rate(transactions_messages_in/out[$__rate_interval])`                                                                     | —           |
+| Proposal Traffic                     | timeseries | `rate(proposals_messages_in/out[$__rate_interval])`                                                                        | —           |
+| Validation Traffic                   | timeseries | `rate(validations_messages_in/out[$__rate_interval])`                                                                      | —           |
+| Traffic by Category                  | bargauge   | `topk(10, label_replace(sum by (service_instance_id)(rate(<metric>[$__rate_interval])),"__name__","<metric>","","") or …)` | —           |
+| Duplicate Traffic (Wasted Bandwidth) | timeseries | `rate(*_duplicate_bytes_in/out[$__rate_interval])`                                                                         | —           |
+| All Traffic Categories (Detail)      | timeseries | `topk(15, label_replace(sum by (service_instance_id)(rate(<metric>[$__rate_interval])),"__name__","<metric>","","") or …)` | —           |
+
+> **Why the per-category panels enumerate each metric.** A bare
+> `rate({__name__=~".*_bytes_in"}[…])` fails on Mimir/Cloud with _"vector
+> cannot contain metrics with the same labelset"_: `rate()` drops the
+> `__name__` label, so the many matched counters collapse to identical
+> labelsets. Wrapping in `sum by (__name__, …)` does **not** help (the inner
+> vector is rejected before the outer `sum`). The working form enumerates each
+> `*_bytes_in` metric and re-attaches its name with `label_replace(...,
+"__name__", "<metric>", "", "")`, so the existing `{{__name__}}` legend and
+> the per-series display-name overrides keep working.
 
 ### RPC & Pathfinding -- System Metrics (`rpc-pathfinding`)
 
@@ -1244,7 +1254,7 @@ count_over_time({service_name="xrpld"} |= "trace_id=" [5m])
 2. Verify `server=otel` in the `[insight]` config section
 3. Verify the endpoint in `[insight]` points to the OTLP/HTTP port (default: `http://localhost:4318/v1/metrics`)
 4. Check that the `otlp` receiver is in the metrics pipeline receivers in `otel-collector-config.yaml`
-5. Query Prometheus directly: `curl 'http://localhost:9090/api/v1/query?query=job_count'`
+5. Query Prometheus directly: `curl 'http://localhost:9090/api/v1/query?query=jobq_job_count'`
 
 ### Server info gauge shows server_state=0
 

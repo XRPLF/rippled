@@ -317,7 +317,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "job_count{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
+          "expr": "jobq_job_count{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Job Queue Depth [{{service_instance_id}}]"
         }
       ],
@@ -2592,5 +2592,5 @@
   },
   "title": "Node Health",
   "uid": "node-health",
-  "refresh": "5s"
+  "refresh": "10s"
 }

@@ -508,5 +508,5 @@
   "title": "Fee Market & TxQ",
   "uid": "fee-market",
   "version": 1,
-  "refresh": "5s"
+  "refresh": "10s"
 }

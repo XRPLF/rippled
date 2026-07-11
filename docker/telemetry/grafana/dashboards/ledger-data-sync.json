@@ -635,5 +635,6 @@
     "to": "now"
   },
   "title": "Ledger Data & Sync",
-  "uid": "ledger-data-sync"
+  "uid": "ledger-data-sync",
+  "refresh": "10s"
 }

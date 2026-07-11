@@ -27,7 +27,7 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
+        "w": 12,
         "x": 0,
         "y": 1
       },
@@ -79,8 +79,8 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 6,
+        "w": 12,
+        "x": 12,
         "y": 1
       },
       "options": {
@@ -131,9 +131,9 @@
       "type": "bargauge",
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 12,
-        "y": 1
+        "w": 12,
+        "x": 0,
+        "y": 9
       },
       "options": {
         "orientation": "horizontal",
@@ -199,9 +199,9 @@
       "type": "bargauge",
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 18,
-        "y": 1
+        "w": 12,
+        "x": 12,
+        "y": 9
       },
       "options": {
         "orientation": "horizontal",
@@ -268,7 +268,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 17
       },
       "collapsed": false,
       "panels": []
@@ -279,9 +279,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
+        "w": 12,
         "x": 0,
-        "y": 10
+        "y": 18
       },
       "options": {
         "tooltip": {
@@ -329,9 +329,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 6,
-        "y": 10
+        "w": 12,
+        "x": 12,
+        "y": 18
       },
       "options": {
         "tooltip": {
@@ -363,9 +363,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 12,
-        "y": 10
+        "w": 12,
+        "x": 0,
+        "y": 26
       },
       "options": {
         "tooltip": {
@@ -429,9 +429,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 18,
-        "y": 10
+        "w": 12,
+        "x": 12,
+        "y": 26
       },
       "options": {
         "tooltip": {
@@ -479,9 +479,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
+        "w": 12,
         "x": 0,
-        "y": 18
+        "y": 34
       },
       "options": {
         "tooltip": {
@@ -545,9 +545,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 18,
-        "x": 6,
-        "y": 18
+        "w": 12,
+        "x": 12,
+        "y": 34
       },
       "options": {
         "tooltip": {
@@ -616,7 +616,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 42
       },
       "collapsed": false,
       "panels": []
@@ -627,9 +627,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
+        "w": 12,
         "x": 0,
-        "y": 27
+        "y": 43
       },
       "options": {
         "tooltip": {
@@ -661,9 +661,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 18,
-        "x": 6,
-        "y": 27
+        "w": 12,
+        "x": 12,
+        "y": 43
       },
       "options": {
         "tooltip": {
@@ -707,9 +707,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 8,
+        "w": 12,
         "x": 0,
-        "y": 35
+        "y": 51
       },
       "options": {
         "tooltip": {
@@ -741,9 +741,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 35
+        "w": 12,
+        "x": 12,
+        "y": 51
       },
       "options": {
         "tooltip": {
@@ -791,9 +791,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 35
+        "w": 12,
+        "x": 0,
+        "y": 59
       },
       "options": {
         "tooltip": {
@@ -842,8 +842,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 43
+        "x": 12,
+        "y": 59
       },
       "options": {
         "tooltip": {
@@ -893,9 +893,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 43
+        "w": 24,
+        "x": 0,
+        "y": 67
       },
       "options": {
         "tooltip": {
@@ -1041,5 +1041,5 @@
   },
   "title": "Validator Health",
   "uid": "validator-health",
-  "refresh": "5s"
+  "refresh": "10s"
 }

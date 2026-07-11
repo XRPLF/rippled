@@ -418,6 +418,6 @@
   },
   "title": "Ledger Operations",
   "uid": "ledger-operations",
-  "refresh": "5s",
+  "refresh": "10s",
   "description": "What this shows: Ledger construction, validation, and storage activity and timing for this node.\nUse it to: Confirm ledgers are being built, validated, and stored on schedule and find the slow stage when they are not."
 }

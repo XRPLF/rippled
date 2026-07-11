@@ -336,21 +336,21 @@ xrpld has a mature metrics framework (`beast::insight`) that emits StatsD-format
 
 ### Metric Inventory
 
-| Category        | Group              | Type          | Count      | Key Metrics                                            |
-| --------------- | ------------------ | ------------- | ---------- | ------------------------------------------------------ |
-| Node State      | `State_Accounting` | Gauge         | 10         | `*_duration`, `*_transitions` per operating mode       |
-| Ledger          | `LedgerMaster`     | Gauge         | 2          | `Validated_Ledger_Age`, `Published_Ledger_Age`         |
-| Ledger Fetch    | —                  | Counter       | 1          | `ledger_fetches`                                       |
-| Ledger History  | `ledger.history`   | Counter       | 1          | `mismatch`                                             |
-| RPC             | `rpc`              | Counter+Event | 3          | `requests`, `time` (histogram), `size` (histogram)     |
-| Job Queue       | —                  | Gauge+Event   | 1 + 2×N    | `job_count`, per-job `{name}` and `{name}_q`           |
-| Peer Finder     | `Peer_Finder`      | Gauge         | 2          | `Active_Inbound_Peers`, `Active_Outbound_Peers`        |
-| Overlay         | `Overlay`          | Gauge         | 1          | `Peer_Disconnects`                                     |
-| Overlay Traffic | per-category       | Gauge         | 4×57 = 228 | `Bytes_In/Out`, `Messages_In/Out` per traffic category |
-| Pathfinding     | —                  | Event         | 2          | `pathfind_fast`, `pathfind_full` (histograms)          |
-| I/O             | —                  | Event         | 1          | `ios_latency` (histogram)                              |
-| Resource Mgr    | —                  | Meter         | 2          | `warn`, `drop` (rate counters)                         |
-| Caches          | per-cache          | Gauge         | 2×N        | `{cache}.size`, `{cache}.hit_rate`                     |
+| Category        | Group              | Type          | Count      | Key Metrics                                                                                                 |
+| --------------- | ------------------ | ------------- | ---------- | ----------------------------------------------------------------------------------------------------------- |
+| Node State      | `State_Accounting` | Gauge         | 10         | `*_duration`, `*_transitions` per operating mode                                                            |
+| Ledger          | `LedgerMaster`     | Gauge         | 2          | `Validated_Ledger_Age`, `Published_Ledger_Age`                                                              |
+| Ledger Fetch    | —                  | Counter       | 1          | `ledger_fetches`                                                                                            |
+| Ledger History  | `ledger.history`   | Counter       | 1          | `mismatch`                                                                                                  |
+| RPC             | `rpc`              | Counter+Event | 3          | `requests`, `time` (histogram), `size` (histogram)                                                          |
+| Job Queue       | `jobq`             | Gauge+Event   | 1 + 2×N    | `job_count`, per-job `{name}` and `{name}_q` (emitted with the `jobq_` group prefix, e.g. `jobq_job_count`) |
+| Peer Finder     | `Peer_Finder`      | Gauge         | 2          | `Active_Inbound_Peers`, `Active_Outbound_Peers`                                                             |
+| Overlay         | `Overlay`          | Gauge         | 1          | `Peer_Disconnects`                                                                                          |
+| Overlay Traffic | per-category       | Gauge         | 4×57 = 228 | `Bytes_In/Out`, `Messages_In/Out` per traffic category                                                      |
+| Pathfinding     | —                  | Event         | 2          | `pathfind_fast`, `pathfind_full` (histograms)                                                               |
+| I/O             | —                  | Event         | 1          | `ios_latency` (histogram)                                                                                   |
+| Resource Mgr    | —                  | Meter         | 2          | `warn`, `drop` (rate counters)                                                                              |
+| Caches          | per-cache          | Gauge         | 2×N        | `{cache}.size`, `{cache}.hit_rate`                                                                          |
 
 **Total**: ~255+ unique metrics (plus dynamic job-type and cache metrics)
 
