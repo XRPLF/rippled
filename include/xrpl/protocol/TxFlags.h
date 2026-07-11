@@ -102,7 +102,8 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
     TRANSACTION(Payment,                                                                                                                                       \
         TF_FLAG(tfNoRippleDirect, 0x00010000)                                                                                                                  \
         TF_FLAG(tfPartialPayment, 0x00020000)                                                                                                                  \
-        TF_FLAG(tfLimitQuality, 0x00040000),                                                                                                                   \
+        TF_FLAG(tfLimitQuality, 0x00040000)                                                                                                                    \
+        TF_FLAG(tfSponsorCreatedAccount, 0x00080000),                                                                                                          \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(TrustSet,                                                                                                                                      \
@@ -141,7 +142,7 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfMPTCanTrade, lsfMPTCanTrade)                                                                                                                 \
         TF_FLAG(tfMPTCanTransfer, lsfMPTCanTransfer)                                                                                                           \
         TF_FLAG(tfMPTCanClawback, lsfMPTCanClawback)                                                                                                           \
-        TF_FLAG(tfMPTCanHoldConfidentialBalance, lsfMPTCanHoldConfidentialBalance),                                                                                                            \
+        TF_FLAG(tfMPTCanHoldConfidentialBalance, lsfMPTCanHoldConfidentialBalance),                                                                            \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(MPTokenAuthorize,                                                                                                                              \
@@ -215,6 +216,20 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfLoanDefault, 0x00010000)                                                                                                                     \
         TF_FLAG(tfLoanImpair, 0x00020000)                                                                                                                      \
         TF_FLAG(tfLoanUnimpair, 0x00040000),                                                                                                                   \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(SponsorshipSet,                                                                                                                                \
+        TF_FLAG(tfSponsorshipSetRequireSignForFee, 0x00010000)                                                                                                 \
+        TF_FLAG(tfSponsorshipClearRequireSignForFee, 0x00020000)                                                                                               \
+        TF_FLAG(tfSponsorshipSetRequireSignForReserve, 0x00040000)                                                                                             \
+        TF_FLAG(tfSponsorshipClearRequireSignForReserve, 0x00080000)                                                                                           \
+        TF_FLAG(tfDeleteObject, 0x00100000),                                                                                                                   \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(SponsorshipTransfer,                                                                                                                           \
+        TF_FLAG(tfSponsorshipEnd, 0x00010000)                                                                                                                  \
+        TF_FLAG(tfSponsorshipCreate, 0x00020000)                                                                                                               \
+        TF_FLAG(tfSponsorshipReassign, 0x00040000),                                                                                                            \
         MASK_ADJ(0))
 
 // clang-format on
@@ -443,6 +458,12 @@ getAsfFlagMap()
 #pragma pop_macro("ACCOUNTSET_FLAG_TO_VALUE")
 #pragma pop_macro("ACCOUNTSET_FLAG_TO_MAP")
 #pragma pop_macro("ACCOUNTSET_FLAGS")
+
+// Sponsor flags (spf)
+
+inline constexpr FlagValue spfSponsorFee = 1;
+inline constexpr FlagValue spfSponsorReserve = 2;
+inline constexpr FlagValue spfSponsorFlagMask = ~(spfSponsorFee | spfSponsorReserve);
 
 }  // namespace xrpl
 

@@ -65,7 +65,7 @@ PermissionedDomainDelete::doApply()
     XRPL_ASSERT(
         ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0,
         "xrpl::PermissionedDomainDelete::doApply : nonzero owner count");
-    adjustOwnerCount(view(), ownerSle, -1, ctx_.journal);
+    decreaseOwnerCountForObject(view(), ownerSle, slePd, 1, ctx_.journal);
     view().erase(slePd);
 
     return tesSUCCESS;

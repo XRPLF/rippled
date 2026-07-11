@@ -393,6 +393,18 @@ issuerBalance(jtx::Env& env, jtx::Account const& account, Issue const& issue);
 jtx::PrettyAmount
 issuerEscrowed(jtx::Env& env, jtx::Account const& account, Issue const& issue);
 
+// Helper function that returns the sponsored owner count on an account.
+std::uint32_t
+sponsoredOwnerCount(test::jtx::Env const& env, test::jtx::Account const& account);
+
+// Helper function that returns the sponsoring owner count on an account.
+std::uint32_t
+sponsoringOwnerCount(test::jtx::Env const& env, test::jtx::Account const& account);
+
+// Helper function that returns the sponsoring account count on an account.
+std::uint32_t
+sponsoringAccountCount(test::jtx::Env const& env, test::jtx::Account const& account);
+
 [[nodiscard]]
 inline bool
 checkVL(Slice const& result, std::string const& expected)

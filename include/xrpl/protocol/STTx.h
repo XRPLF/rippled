@@ -141,6 +141,9 @@ public:
     [[nodiscard]] std::vector<uint256> const&
     getBatchTransactionIDs() const;
 
+    [[nodiscard]] AccountID
+    getFeePayerID() const;
+
 private:
     /** Check the signature.
         @param rules The current ledger rules.

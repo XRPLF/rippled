@@ -106,7 +106,8 @@ PermissionedDomainSet::doApply()
         // Create new permissioned domain.
         // Check reserve availability for new object creation
         auto const balance = STAmount((*ownerSle)[sfBalance]).xrp();
-        auto const reserve = ctx_.view().fees().accountReserve((*ownerSle)[sfOwnerCount] + 1);
+        auto const reserve =
+            accountReserve(ctx_.view(), ownerSle, ctx_.journal, {.ownerCountDelta = 1});
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
 
@@ -125,7 +126,7 @@ PermissionedDomainSet::doApply()
 
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), ownerSle, 1, ctx_.journal);
+        increaseOwnerCount(view(), ownerSle, {}, 1, ctx_.journal);
         view().insert(slePd);
     }
 

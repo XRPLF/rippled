@@ -149,6 +149,15 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref a
                 if (isXRP((*before)[sfAmount]))
                     drops_ -= (*before)[sfAmount].xrp().drops();
                 break;
+            case ltSPONSORSHIP:
+                if (before->isFieldPresent(sfFeeAmount))
+                {
+                    XRPL_ASSERT(
+                        isXRP((*before)[sfFeeAmount]),
+                        "XRPNotCreated::visitEntry : Sponsorship.FeeAmount is XRP");
+                    drops_ -= (*before)[sfFeeAmount].xrp().drops();
+                }
+                break;
             default:
                 break;
         }
@@ -168,6 +177,15 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref a
             case ltESCROW:
                 if (!isDelete && isXRP((*after)[sfAmount]))
                     drops_ += (*after)[sfAmount].xrp().drops();
+                break;
+            case ltSPONSORSHIP:
+                if (!isDelete && after->isFieldPresent(sfFeeAmount))
+                {
+                    XRPL_ASSERT(
+                        isXRP((*after)[sfFeeAmount]),
+                        "XRPNotCreated::visitEntry : Sponsorship.FeeAmount is XRP");
+                    drops_ += (*after)[sfFeeAmount].xrp().drops();
+                }
                 break;
             default:
                 break;
@@ -513,6 +531,20 @@ AccountRootsDeletedClean::finalize(
                 enforce,
                 "xrpl::AccountRootsDeletedClean::finalize : "
                 "deleted account has zero owner count");
+            if (enforce)
+                return false;
+        }
+        // An account should not be deleted with sponsorship fields
+        if (after->isFieldPresent(sfSponsoredOwnerCount) ||
+            after->isFieldPresent(sfSponsoringOwnerCount) ||
+            after->isFieldPresent(sfSponsoringAccountCount) || after->isFieldPresent(sfSponsor))
+        {
+            JLOG(j.fatal()) << "Invariant failed: account deletion left "
+                               "behind a sponsorship field";
+            XRPL_ASSERT(
+                enforce,
+                "xrpl::AccountRootsDeletedClean::finalize : "
+                "deleted account has no sponsorship fields");
             if (enforce)
                 return false;
         }
@@ -882,8 +914,10 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const
             // 1. Exactly one of the pseudo-account fields is set.
             // 2. The sequence number is not changed.
             // 3. The lsfDisableMaster, lsfDefaultRipple, and lsfDepositAuth
-            // flags are set.
+            //    flags are set.
             // 4. The RegularKey is not set.
+            // 5. The SponsoredOwnerCount, SponsoringOwnerCount, SponsoringAccountCount, Sponsor
+            //    fields are not set.
             {
                 std::vector<SField const*> const& fields = getPseudoAccountFields();
 
@@ -908,6 +942,12 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const
             if (after->isFieldPresent(sfRegularKey))
             {
                 errors_.emplace_back("pseudo-account has a regular key");
+            }
+            if (after->isFieldPresent(sfSponsoredOwnerCount) ||
+                after->isFieldPresent(sfSponsoringOwnerCount) || after->isFieldPresent(sfSponsor) ||
+                after->isFieldPresent(sfSponsoringAccountCount))
+            {
+                errors_.emplace_back("pseudo-account has a sponsorship field");
             }
         }
     }

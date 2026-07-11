@@ -176,7 +176,7 @@ LoanBrokerCoverDeposit::doApply()
 
     // Transfer assets from depositor to pseudo-account.
     if (auto ter =
-            accountSend(view(), accountID_, brokerPseudoID, amount, j_, WaiveTransferFee::Yes))
+            accountSend(view(), accountID_, brokerPseudoID, amount, j_, {}, WaiveTransferFee::Yes))
         return ter;
 
     // Increase the LoanBroker's CoverAvailable by Amount

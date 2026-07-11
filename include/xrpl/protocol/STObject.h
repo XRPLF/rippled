@@ -229,10 +229,10 @@ public:
     [[nodiscard]] AccountID
     getAccountID(SField const& field) const;
 
-    /** The account responsible for the fee and authorization: the delegate when
+    /** The account responsible for the authorization: the delegate when
         sfDelegate is present, otherwise the account. */
     [[nodiscard]] AccountID
-    getFeePayer() const;
+    getInitiator() const;
 
     [[nodiscard]] Blob
     getFieldVL(SField const& field) const;

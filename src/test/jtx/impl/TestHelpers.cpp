@@ -137,6 +137,24 @@ issuerEscrowed(jtx::Env& env, jtx::Account const& account, Issue const& issue)
     return {amount, account.name()};
 }
 
+std::uint32_t
+sponsoredOwnerCount(Env const& env, Account const& account)
+{
+    return env.sponsoredOwnerCount(account);
+}
+
+std::uint32_t
+sponsoringOwnerCount(Env const& env, Account const& account)
+{
+    return env.sponsoringOwnerCount(account);
+}
+
+std::uint32_t
+sponsoringAccountCount(Env const& env, Account const& account)
+{
+    return env.sponsoringAccountCount(account);
+}
+
 /* Path finding */
 /******************************************************************************/
 void

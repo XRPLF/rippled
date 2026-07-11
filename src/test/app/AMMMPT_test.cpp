@@ -1003,7 +1003,7 @@ private:
 
         // Insufficient reserve, XRP/MPT
         {
-            Env env(*this);
+            Env env(*this, features);
             auto const startingXrp = reserve(env, 4) + env.current()->fees().base * 4;
             env.fund(XRP(10'000), gw_);
             env.fund(XRP(10'000), alice_);

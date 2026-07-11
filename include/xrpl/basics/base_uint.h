@@ -595,7 +595,7 @@ template <std::size_t Bits, typename Tag>
 [[nodiscard]] constexpr bool
 operator==(BaseUInt<Bits, Tag> const& lhs, BaseUInt<Bits, Tag> const& rhs)
 {
-    return (lhs <=> rhs) == 0;
+    return (lhs <=> rhs) == 0;  // NOLINT(modernize-use-nullptr)
 }
 
 //------------------------------------------------------------------------------

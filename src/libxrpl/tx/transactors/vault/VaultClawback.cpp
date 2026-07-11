@@ -389,8 +389,8 @@ VaultClawback::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from holder to vault.
-    if (auto const ter =
-            accountSend(view(), holder, vaultAccount, sharesDestroyed, j_, WaiveTransferFee::Yes);
+    if (auto const ter = accountSend(
+            view(), holder, vaultAccount, sharesDestroyed, j_, {}, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
@@ -399,7 +399,8 @@ VaultClawback::doApply()
     // Keep MPToken if holder is the vault owner.
     if (holder != vault->at(sfOwner))
     {
-        if (auto const ter = removeEmptyHolding(view(), holder, sharesDestroyed.asset(), j_);
+        if (auto const ter =
+                removeEmptyHolding(ctx_.getApplyViewContext(), holder, sharesDestroyed.asset(), j_);
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
@@ -425,7 +426,7 @@ VaultClawback::doApply()
     {
         // Transfer assets from vault to issuer.
         if (auto const ter = accountSend(
-                view(), vaultAccount, accountID_, assetsRecovered, j_, WaiveTransferFee::Yes);
+                view(), vaultAccount, accountID_, assetsRecovered, j_, {}, WaiveTransferFee::Yes);
             !isTesSuccess(ter))
             return ter;
 

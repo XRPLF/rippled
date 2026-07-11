@@ -191,7 +191,7 @@ public:
 
         auto const txFee = env.current()->fees().base;
         auto const baseReserve = env.current()->fees().reserve;
-        auto const threelineReserve = env.current()->fees().accountReserve(3);
+        auto const threelineReserve = env.current()->fees().accountReserve(3, 1);
 
         env.fund(XRP(10000), gwA, gwB, assistor);
 

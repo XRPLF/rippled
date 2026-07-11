@@ -2,7 +2,6 @@
 
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <cstddef>
 #include <cstdint>
 
 namespace xrpl {
@@ -39,13 +38,13 @@ struct Fees
 
     /** Returns the account reserve given the owner count, in drops.
 
-        The reserve is calculated as the reserve base plus
-        the reserve increment times the number of increments.
+        The reserve is calculated as the reserve base times the number of accounts plus the reserve
+        increment times the number of increments.
     */
     [[nodiscard]] XRPAmount
-    accountReserve(std::size_t ownerCount) const
+    accountReserve(std::uint32_t ownerCount, std::uint32_t accountCount) const
     {
-        return reserve + ownerCount * increment;
+        return (reserve * accountCount) + (increment * ownerCount);
     }
 };
 
