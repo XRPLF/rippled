@@ -52,6 +52,7 @@ DatabaseRotatingImp::rotate(
     // callback finishes. Only then will the archive directory be
     // deleted.
     std::shared_ptr<NodeStore::Backend> oldArchiveBackend;
+    std::uint64_t copyForwards = 0;
     {
         std::scoped_lock const lock(mutex_);
 
@@ -62,9 +63,26 @@ DatabaseRotatingImp::rotate(
         newArchiveBackendName = archiveBackend_->getName();
 
         writableBackend_ = std::move(newBackend);
+
+        copyForwards = copyForwardCount_.exchange(0, std::memory_order_acq_rel);
+    }
+
+    if (copyForwards > 0)
+    {
+        JLOG(j_.warn()) << "Rotating: copied forward " << copyForwards
+                        << " archive-served reads into the writable backend "
+                           "during the rotation window";
     }
 
     f(newWritableBackendName, newArchiveBackendName);
+}
+
+void
+DatabaseRotatingImp::setRotationInFlight(bool inFlight)
+{
+    rotationInFlight_.store(inFlight, std::memory_order_release);
+    JLOG(j_.debug()) << "Rotating: copy-forward on archive reads "
+                     << (inFlight ? "enabled" : "disabled");
 }
 
 std::string
@@ -177,9 +195,18 @@ DatabaseRotatingImp::fetchNodeObject(
                 writable = writableBackend_;
             }
 
-            // Update writable backend with data from the archive backend
-            if (duplicate)
+            // Update writable backend with data from the archive backend.
+            // While a rotation is in flight, ordinary (duplicate == false)
+            // reads served by the archive are copied forward too: the
+            // archive is about to be deleted, and a body canonicalized
+            // into the cache after the freshen getKeys() snapshot would
+            // otherwise survive only in RAM once the archive is dropped.
+            if (duplicate || rotationInFlight_.load(std::memory_order_acquire))
+            {
+                if (!duplicate)
+                    ++copyForwardCount_;
                 writable->store(nodeObject);
+            }
         }
     }
 
