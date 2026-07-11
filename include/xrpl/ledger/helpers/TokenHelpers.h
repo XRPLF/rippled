@@ -10,6 +10,7 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -312,7 +313,7 @@ canAddHolding(ReadView const& view, Asset const& asset);
 
 [[nodiscard]] TER
 addEmptyHolding(
-    ApplyView& view,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Asset const& asset,
@@ -320,7 +321,7 @@ addEmptyHolding(
 
 [[nodiscard]] TER
 removeEmptyHolding(
-    ApplyView& view,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     Asset const& asset,
     beast::Journal journal);
@@ -383,6 +384,7 @@ accountSend(
     AccountID const& to,
     STAmount const& saAmount,
     beast::Journal j,
+    SLE::ref sponsorSle = {},
     WaiveTransferFee waiveFee = WaiveTransferFee::No,
     AllowMPTOverflow allowOverflow = AllowMPTOverflow::No);
 

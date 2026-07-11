@@ -436,8 +436,7 @@ transferHelper(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         {
-            auto const ownerCount = sleSrc->getFieldU32(sfOwnerCount);
-            auto const reserve = psb.fees().accountReserve(ownerCount);
+            auto const reserve = accountReserve(psb, sleSrc, j);
 
             auto const availableBalance = [&]() -> STAmount {
                 STAmount curBal = (*sleSrc)[sfBalance];
@@ -735,9 +734,8 @@ finalizeClaimHelper(
             }
 
             // Remove the claim id from the ledger
+            decreaseOwnerCountForObject(outerSb, sleOwner, sleClaimID, 1, j);
             outerSb.erase(sleClaimID);
-
-            adjustOwnerCount(outerSb, sleOwner, -1, j);
         }
     }
 
@@ -1038,7 +1036,7 @@ applyCreateAccountAttestations(
 
             // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
-            auto const reserve = psb.fees().accountReserve((*sleDoor)[sfOwnerCount] + 1);
+            auto const reserve = accountReserve(psb, sleDoor, j, {.ownerCountDelta = 1});
 
             if (balance < reserve)
                 return std::unexpected(tecINSUFFICIENT_RESERVE);
@@ -1147,7 +1145,7 @@ applyCreateAccountAttestations(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // Reserve was already checked
-        adjustOwnerCount(psb, sleDoor, 1, j);
+        increaseOwnerCount(psb, sleDoor, {}, 1, j);
         psb.insert(createdSleClaimID);
         psb.update(sleDoor);
     }
@@ -1449,7 +1447,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve = ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
+        auto const reserve = accountReserve(ctx.view, sleAcc, ctx.j, {.ownerCountDelta = 1});
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -1494,7 +1492,7 @@ XChainCreateBridge::doApply()
         (*sleBridge)[sfOwnerNode] = *page;
     }
 
-    adjustOwnerCount(ctx_.view(), sleAcct, 1, ctx_.journal);
+    increaseOwnerCount(ctx_.view(), sleAcct, {}, 1, ctx_.journal);
 
     ctx_.view().insert(sleBridge);
     ctx_.view().update(sleAcct);
@@ -1997,8 +1995,7 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve = ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
-
+        auto const reserve = accountReserve(ctx.view, sleAcc, ctx.j, {.ownerCountDelta = 1});
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
@@ -2056,7 +2053,7 @@ XChainCreateClaimID::doApply()
         (*sleClaimID)[sfOwnerNode] = *page;
     }
 
-    adjustOwnerCount(ctx_.view(), sleAcct, 1, ctx_.journal);
+    increaseOwnerCount(ctx_.view(), sleAcct, {}, 1, ctx_.journal);
 
     ctx_.view().insert(sleClaimID);
     ctx_.view().update(sleBridge);

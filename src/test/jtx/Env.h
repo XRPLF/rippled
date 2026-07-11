@@ -592,6 +592,30 @@ public:
     ownerCount(Account const& account) const;
 
     /**
+     * Return the number of sponsored objects owned by an account.
+     *
+     * @throws if the account does not exist.
+     */
+    [[nodiscard]] std::uint32_t
+    sponsoredOwnerCount(Account const& account) const;
+
+    /**
+     * Return the number of sponsoring objects owned by an account.
+     *
+     * @throws if the account does not exist.
+     */
+    [[nodiscard]] std::uint32_t
+    sponsoringOwnerCount(Account const& account) const;
+
+    /**
+     * Return the number of sponsoring accounts owned by an account.
+     *
+     * @throws if the account does not exist.
+     */
+    [[nodiscard]] std::uint32_t
+    sponsoringAccountCount(Account const& account) const;
+
+    /**
      * Return an account root.
      * @return empty if the account does not exist.
      */
@@ -739,14 +763,14 @@ public:
     /**
      * Return metadata for the last JTx.
      *
-     *  NOTE: this has a side effect of closing the open ledger.
-     *  The ledger will only be closed if it includes transactions.
+     * NOTE: this has a side effect of closing the open ledger.
+     * The ledger will only be closed if it includes transactions.
      *
-     *  Effects:
+     * Effects:
      *
-     *      The open ledger is closed as if by a call
-     *      to close(). The metadata for the last
-     *      transaction ID, if any, is returned.
+     *     The open ledger is closed as if by a call
+     *     to close(). The metadata for the last
+     *     transaction ID, if any, is returned.
      */
     std::shared_ptr<STObject const>
     meta();

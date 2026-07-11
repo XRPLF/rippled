@@ -238,9 +238,8 @@ LoanBrokerSet::doApply()
 
         // Increases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        adjustOwnerCount(view, owner, 2, j_);
-        auto const ownerCount = owner->at(sfOwnerCount);
-        if (preFeeBalance_ < view.fees().accountReserve(ownerCount))
+        increaseOwnerCount(view, owner, {}, 2, j_);
+        if (preFeeBalance_ < accountReserve(view, owner, j_))
             return tecINSUFFICIENT_RESERVE;
 
         auto maybePseudo = createPseudoAccount(view, broker->key(), sfLoanBrokerID);
@@ -249,7 +248,8 @@ LoanBrokerSet::doApply()
         auto& pseudo = *maybePseudo;
         auto pseudoId = pseudo->at(sfAccount);
 
-        if (auto ter = addEmptyHolding(view, pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
+        if (auto ter = addEmptyHolding(
+                ctx_.getApplyViewContext(), pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
             return ter;
 
         // Initialize data fields:

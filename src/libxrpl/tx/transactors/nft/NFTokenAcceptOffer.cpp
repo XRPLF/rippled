@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -387,8 +388,7 @@ NFTokenAcceptOffer::transferNFToken(
     auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
     if (buyerOwnerCountAfter > buyerOwnerCountBefore)
     {
-        if (auto const reserve = view().fees().accountReserve(buyerOwnerCountAfter);
-            buyerBalance < reserve)
+        if (buyerBalance < accountReserve(view(), sleBuyer, j_))
             return tecINSUFFICIENT_RESERVE;
     }
 

@@ -10,8 +10,10 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/Units.h>
@@ -129,6 +131,21 @@ class TxConsequences;
 struct PreflightResult;
 // Needed for preflight specialization
 class Change;
+
+enum class FeePayerType {
+    Account,
+    Delegate,
+    SponsorCoSigned,
+    SponsorPreFunded,
+};
+
+struct FeePayer
+{
+    AccountID id;
+    Keylet keylet;
+    SF_AMOUNT const& balanceField;
+    FeePayerType type{FeePayerType::Account};
+};
 
 class Transactor
 {
@@ -305,6 +322,10 @@ public:
 
         return T::checkGranularSemantics(view, tx, heldGranularPermissions);
     }
+
+    static NotTEC
+    checkSponsor(ReadView const& view, STTx const& tx);
+
     /////////////////////////////////////////////////////
 
     // Interface used by AccountDelete
@@ -472,6 +493,9 @@ private:
 
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
+
+    static FeePayer
+    getFeePayer(ReadView const& view, STTx const& tx);
 
     TER
     consumeSeqProxy(SLE::pointer const& sleAccount);

@@ -340,6 +340,16 @@ EscrowFinish::doApply()
         }
     }
 
+    // With the Sponsor amendment, release the escrow reserve before delivery.
+    // Token delivery can auto-create a destination holding, and the same
+    // sponsor (or the same account, for a self-escrow) may cover both the
+    // escrow being removed and the holding being created. Without the
+    // amendment, keep the legacy order: releasing early changes the reserve
+    // arithmetic for self-escrows and would break consensus if not gated.
+    bool const sponsorEnabled = ctx_.view().rules().enabled(featureSponsor);
+    if (sponsorEnabled)
+        decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);
+
     STAmount const amount = slep->getFieldAmount(sfAmount);
     // Transfer amount to destination
     if (isXRP(amount))
@@ -359,7 +369,7 @@ EscrowFinish::doApply()
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
-                        ctx_.view(),
+                        ctx_.getApplyViewContext(),
                         lockedRate,
                         sled,
                         preFeeBalance_,
@@ -389,10 +399,9 @@ EscrowFinish::doApply()
 
     ctx_.view().update(sled);
 
-    // Adjust source owner count
-    auto const sle = ctx_.view().peek(keylet::account(account));
-    adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
-    ctx_.view().update(sle);
+    // Adjust source owner count (legacy position, pre-Sponsor)
+    if (!sponsorEnabled)
+        decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);
