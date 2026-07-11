@@ -37,7 +37,6 @@
 
 #include <cstdint>
 #include <exception>
-#include <format>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -177,7 +176,9 @@ SpanGuard::span(TraceCategory cat, std::string_view prefix, std::string_view nam
     auto* tel = Telemetry::getInstance();
     if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
         return {};
-    auto fullName = std::format("{}.{}", prefix, name);
+    std::string fullName;
+    fullName.reserve(prefix.size() + 1 + name.size());
+    fullName.append(prefix).append(1, '.').append(name);
     return SpanGuard(std::make_unique<Impl>(tel->startSpan(fullName, categoryToSpanKind(cat))));
 }
 
