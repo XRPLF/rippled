@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -1566,7 +1567,7 @@ struct Wasm_test : public beast::unit_test::Suite
             totalTime += duration_cast<std::chrono::nanoseconds>(end - start).count();
             BEAST_EXPECT(result);
         }
-        log << "Average time for " << runs << " runs: " << (totalTime / runs) << " ns" << std::endl;
+        log << "Average time for " << runs << " runs: " << (totalTime / runs) << " ns\n";
     }
 
     void
