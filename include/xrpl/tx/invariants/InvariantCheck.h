@@ -15,6 +15,7 @@
 #include <xrpl/tx/invariants/NFTInvariant.h>
 #include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
 #include <xrpl/tx/invariants/PermissionedDomainInvariant.h>
+#include <xrpl/tx/invariants/SponsorshipInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <cstdint>
@@ -441,7 +442,9 @@ using InvariantChecks = std::tuple<
     ValidMPTPayment,
     ValidAmounts,
     ValidMPTTransfer,
-    ObjectHasPseudoAccount>;
+    ObjectHasPseudoAccount,
+    SponsorshipOwnerCountsMatch,
+    SponsorshipAccountCountMatchesField>;
 
 /**
  * @brief get a tuple of all invariant checks
