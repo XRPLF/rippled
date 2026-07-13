@@ -376,7 +376,8 @@ public:
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 };
 
-/** Verify that MPT/XRP STAmounts are canonical in any ledger entries left after the
+/**
+ * Verify that MPT/XRP STAmounts are canonical in any ledger entries left after the
  * transaction applies.
  */
 class ValidAmounts

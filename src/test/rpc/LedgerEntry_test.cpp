@@ -2288,7 +2288,9 @@ class LedgerEntry_test : public beast::unit_test::Suite
         }
     }
 
-    /// Test the ledger entry types that don't take parameters
+    /**
+     * Test the ledger entry types that don't take parameters
+     */
     void
     testFixed()
     {
@@ -2304,7 +2306,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         env.close();
 
-        /** Verifies that the RPC result has the expected data
+        /**
+         * Verifies that the RPC result has the expected data
          *
          * @param good: Indicates that the request should have succeeded
          *   and returned a ledger object of `expectedType` type.
@@ -2339,7 +2342,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
             }
         };
 
-        /** Runs a series of tests for a given fixed-position ledger
+        /**
+         * Runs a series of tests for a given fixed-position ledger
          * entry.
          *
          * @param field: The Json request field to use.
@@ -2497,7 +2501,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         env.close();
 
-        /** Verifies that the RPC result has the expected data
+        /**
+         * Verifies that the RPC result has the expected data
          *
          * @param good: Indicates that the request should have succeeded
          *   and returned a ledger object of `expectedType` type.
@@ -2537,7 +2542,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
             }
         };
 
-        /** Runs a series of tests for a given ledger index.
+        /**
+         * Runs a series of tests for a given ledger index.
          *
          * @param ledger: The ledger index value of the "hashes" request
          *   parameter. May not necessarily be a number.

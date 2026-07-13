@@ -101,7 +101,8 @@ class Invariants_test : public beast::unit_test::Suite
         return xrpl::test::jtx::testableAmendments() | fixCleanup3_1_3 | fixCleanup3_2_0;
     }
 
-    /** Run a specific test case to put the ledger into a state that will be
+    /**
+     * Run a specific test case to put the ledger into a state that will be
      * detected by an invariant. Simulates the actions of a transaction that
      * would violate an invariant.
      *

@@ -51,11 +51,12 @@
 
 namespace xrpl::test::jtx {
 
-/** Generic helper class for helper classes that set a field on a JTx.
-
- Not every helper will be able to use this because of conversions and other
- issues, but for classes where it's straightforward, this can simplify things.
-*/
+/**
+ * Generic helper class for helper classes that set a field on a JTx.
+ *
+ * Not every helper will be able to use this because of conversions and other
+ * issues, but for classes where it's straightforward, this can simplify things.
+ */
 template <
     class SField,
     // NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
@@ -306,7 +307,8 @@ using valueUnitWrapper = JTxFieldWrapper<ValueUnitField<SField, UnitTag, ValueTy
 template <class SField, class StoredValue = typename SField::type::value_type>
 using simpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
 
-/** General field definitions, or fields used in multiple transaction namespaces
+/**
+ * General field definitions, or fields used in multiple transaction namespaces
  */
 auto const kData = JTxFieldWrapper<BlobField>(sfData);
 
@@ -707,7 +709,9 @@ equal(Strand const& strand, Args&&... args)
 /***************************************************************/
 namespace check {
 
-/** Create a check. */
+/**
+ * Create a check.
+ */
 template <typename A>
     requires std::is_same_v<A, AccountID>
 json::Value
@@ -927,7 +931,9 @@ pay(AccountID const& account,
 
 }  // namespace loan
 
-/** Set Expiration on a JTx. */
+/**
+ * Set Expiration on a JTx.
+ */
 class Expiration
 {
 private:
@@ -946,7 +952,9 @@ public:
     }
 };
 
-/** Set SourceTag on a JTx. */
+/**
+ * Set SourceTag on a JTx.
+ */
 class SourceTag
 {
 private:
@@ -964,7 +972,9 @@ public:
     }
 };
 
-/** Set DestinationTag on a JTx. */
+/**
+ * Set DestinationTag on a JTx.
+ */
 class DestTag
 {
 private:
