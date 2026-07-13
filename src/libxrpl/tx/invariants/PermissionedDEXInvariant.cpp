@@ -94,7 +94,7 @@ ValidPermissionedDEX::finalize(
 
     // for both payment and offercreate, there shouldn't be another domain
     // that's different from the domain specified
-    auto const& domains = view.rules().enabled(fixCleanup3_3_0) ? domains_ : domainsOld_;
+    auto const& domains = view.rules().enabled(fixCleanup3_4_0) ? domains_ : domainsOld_;
     for (auto const& d : domains)
     {
         if (d != domain)

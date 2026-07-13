@@ -2007,10 +2007,10 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     void
     testReplaceDomainOfferWithOtherDomainOffer(FeatureBitset features)
     {
-        bool const fixEnabled = features[fixCleanup3_3_0];
+        bool const fixEnabled = features[fixCleanup3_4_0];
 
         testcase << "Replace domain offer via OfferCreate"
-                 << (fixEnabled ? " (fixCleanup3_3_0 enabled)" : " (fixCleanup3_3_0 disabled)");
+                 << (fixEnabled ? " (fixCleanup3_4_0 enabled)" : " (fixCleanup3_4_0 disabled)");
 
         Env env(*this, features);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainA, credType] =
@@ -2097,7 +2097,7 @@ public:
         testCancelRegularOfferWithDomainCreate(all);
         testCancelRegularOfferWithDomainCreate(all - fixCleanup3_2_0);
         testReplaceDomainOfferWithOtherDomainOffer(all);
-        testReplaceDomainOfferWithOtherDomainOffer(all - fixCleanup3_3_0);
+        testReplaceDomainOfferWithOtherDomainOffer(all - fixCleanup3_4_0);
     }
 };
 
