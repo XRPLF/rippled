@@ -137,8 +137,6 @@ def main():
                 "-quiet",
                 "-p",
                 build_dir,
-                "-j",
-                str(os.cpu_count()),
                 "-export-fixes",
                 fixes_dir,
                 "-allow-no-checks",
