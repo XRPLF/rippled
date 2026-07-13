@@ -498,7 +498,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         // tecNO_LINE_INSUF_RESERVE: insufficient reserve to create line
         {
             Env env{*this, features};
-            auto const acctReserve = env.current()->fees().accountReserve(0);
+            auto const acctReserve = env.current()->fees().accountReserve(0, 1);
             auto const incReserve = env.current()->fees().increment;
             auto const alice = Account("alice");
             auto const bob = Account("bob");
@@ -2109,7 +2109,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         // tecINSUFFICIENT_RESERVE: insufficient reserve to create MPT
         {
             Env env{*this, features};
-            auto const acctReserve = env.current()->fees().accountReserve(0);
+            auto const acctReserve = env.current()->fees().accountReserve(0, 1);
             auto const incReserve = env.current()->fees().increment;
 
             auto const alice = Account("alice");

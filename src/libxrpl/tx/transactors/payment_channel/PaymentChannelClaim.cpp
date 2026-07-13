@@ -155,7 +155,11 @@ PaymentChannelClaim::doApply()
         isChannelExpired(ctx_.view(), curExpiration))
     {
         return closeChannel(
-            slep, ctx_.view(), k.key, accountID_, ctx_.registry.get().getJournal("View"));
+            slep,
+            ctx_.getApplyViewContext(),
+            k.key,
+            accountID_,
+            ctx_.registry.get().getJournal("View"));
     }
 
     if (accountID_ != src && accountID_ != dst)
@@ -231,7 +235,7 @@ PaymentChannelClaim::doApply()
             if (auto const ret = std::visit(
                     [&]<typename T>(T const&) {
                         return escrowUnlockApplyHelper<T>(
-                            ctx_.view(),
+                            ctx_.getApplyViewContext(),
                             lockedRate,
                             sled,
                             preFeeBalance_,
@@ -265,7 +269,11 @@ PaymentChannelClaim::doApply()
         if (dst == accountID_ || (*slep)[sfBalance] == (*slep)[sfAmount])
         {
             return closeChannel(
-                slep, ctx_.view(), k.key, accountID_, ctx_.registry.get().getJournal("View"));
+                slep,
+                ctx_.getApplyViewContext(),
+                k.key,
+                accountID_,
+                ctx_.registry.get().getJournal("View"));
         }
 
         auto const settleExpiration = saturatingAdd(

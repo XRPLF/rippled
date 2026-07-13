@@ -242,7 +242,10 @@ PaymentChannelCreate::doApply()
         // - unsponsored: 1  — source owes reserve including the new increment.
         auto const sourceReserve = accountReserve(
             ctx_.view(), sle, j_, {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : 1});
-        if (preFeeBalance_ - ctx_.tx[sfAmount].xrp() < sourceReserve)
+        // Token channels lock no XRP, so only a native amount reduces the
+        // source's spendable balance.
+        auto const lockedXrp = isXRP(amount) ? amount.xrp() : XRPAmount{0};
+        if (preFeeBalance_ - lockedXrp < sourceReserve)
             return tecUNFUNDED;
     }
 

@@ -122,7 +122,11 @@ PaymentChannelFund::doApply()
         isChannelExpired(ctx_.view(), curExpiration))
     {
         return closeChannel(
-            slep, ctx_.view(), k.key, accountID_, ctx_.registry.get().getJournal("View"));
+            slep,
+            ctx_.getApplyViewContext(),
+            k.key,
+            accountID_,
+            ctx_.registry.get().getJournal("View"));
     }
 
     if (src != accountID_)

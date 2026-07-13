@@ -16,19 +16,20 @@ namespace xrpl {
 /**
  * Close a payment channel and return its remaining funds to the channel owner.
  *
- *  @param slep  The SLE for the PayChannel object to close.
- *  @param view  The apply view in which ledger state modifications are made.
- *  @param key   The ledger key identifying the PayChannel entry.
- *  @param txAccount  The account submitting the transaction that closes the
- *                    channel.
- *  @param j     Journal used for fatal-level diagnostic messages.
- *  @return      tesSUCCESS on success; tefBAD_LEDGER if a directory removal
- *               fails; tefINTERNAL if the source account SLE cannot be found.
+ * @param slep The SLE for the PayChannel object to close.
+ * @param ctx The apply view context (view and transaction) in which ledger
+ *     state modifications are made.
+ * @param key The ledger key identifying the PayChannel entry.
+ * @param txAccount The account submitting the transaction that closes the
+ *     channel.
+ * @param j Journal used for fatal-level diagnostic messages.
+ * @return tesSUCCESS on success; tefBAD_LEDGER if a directory removal
+ *     fails; tefINTERNAL if the source account SLE cannot be found.
  */
 TER
 closeChannel(
     SLE::ref slep,
-    ApplyView& view,
+    ApplyViewContext ctx,
     uint256 const& key,
     AccountID const& txAccount,
     beast::Journal j);

@@ -31,11 +31,12 @@ namespace xrpl {
 TER
 closeChannel(
     SLE::ref slep,
-    ApplyView& view,
+    ApplyViewContext ctx,
     uint256 const& key,
     AccountID const& txAccount,
     beast::Journal j)
 {
+    ApplyView& view = ctx.view;
     AccountID const src = (*slep)[sfAccount];
     // Remove PayChan from owner directory
     {
@@ -97,10 +98,10 @@ closeChannel(
             if (auto const ret = std::visit(
                     [&]<typename T>(T const&) {
                         return escrowUnlockApplyHelper<T>(
-                            view,
+                            ctx,
                             kParityRate,
                             sle,
-                            (*sle)[sfBalance],
+                            STAmount{(*sle)[sfBalance]}.xrp(),
                             reqDelta,
                             issuer,
                             src,
@@ -126,7 +127,7 @@ closeChannel(
         }
     }
 
-    adjustOwnerCount(view, sle, -1, j);
+    decreaseOwnerCountForObject(view, sle, slep, 1, j);
     view.update(sle);
 
     // Remove PayChan from ledger
