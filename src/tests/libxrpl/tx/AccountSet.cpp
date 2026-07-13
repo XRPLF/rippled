@@ -67,7 +67,7 @@ TEST(AccountSet, MostFlags)
     env.createAccount(alice, XRP(10000));
 
     // Give alice a regular key so she can legally set and clear
-    // her asfDisableMaster flag.
+    // her asfDisableMasterKey flag.
     Account const aliceRegularKey{"aliceRegularKey", KeyType::Secp256k1};
 
     env.createAccount(aliceRegularKey, XRP(10000));
@@ -164,11 +164,11 @@ TEST(AccountSet, MostFlags)
         }
     };
     testFlags({
-        asfRequireDest,
-        asfRequireAuth,
-        asfDisallowXRP,
+        asfRequireDestinationTag,
+        asfRequireAuthorization,
+        asfDisallowIncomingXRP,
         asfGlobalFreeze,
-        asfDisableMaster,
+        asfDisableMasterKey,
         asfDefaultRipple,
         asfDepositAuth,
     });
@@ -484,8 +484,8 @@ TEST(AccountSet, BadInputs)
     EXPECT_EQ(
         env.submit(
                transactions::AccountSetBuilder{alice}
-                   .setSetFlag(asfDisallowXRP)
-                   .setClearFlag(asfDisallowXRP),
+                   .setSetFlag(asfDisallowIncomingXRP)
+                   .setClearFlag(asfDisallowIncomingXRP),
                alice)
             .ter,
         temINVALID_FLAG);
@@ -493,8 +493,8 @@ TEST(AccountSet, BadInputs)
     EXPECT_EQ(
         env.submit(
                transactions::AccountSetBuilder{alice}
-                   .setSetFlag(asfRequireAuth)
-                   .setClearFlag(asfRequireAuth),
+                   .setSetFlag(asfRequireAuthorization)
+                   .setClearFlag(asfRequireAuthorization),
                alice)
             .ter,
         temINVALID_FLAG);
@@ -502,8 +502,8 @@ TEST(AccountSet, BadInputs)
     EXPECT_EQ(
         env.submit(
                transactions::AccountSetBuilder{alice}
-                   .setSetFlag(asfRequireDest)
-                   .setClearFlag(asfRequireDest),
+                   .setSetFlag(asfRequireDestinationTag)
+                   .setClearFlag(asfRequireDestinationTag),
                alice)
             .ter,
         temINVALID_FLAG);
@@ -512,7 +512,7 @@ TEST(AccountSet, BadInputs)
     EXPECT_EQ(
         env.submit(
                transactions::AccountSetBuilder{alice}
-                   .setSetFlag(asfDisallowXRP)
+                   .setSetFlag(asfDisallowIncomingXRP)
                    .setFlags(tfAllowXRP),
                alice)
             .ter,
@@ -521,7 +521,7 @@ TEST(AccountSet, BadInputs)
     EXPECT_EQ(
         env.submit(
                transactions::AccountSetBuilder{alice}
-                   .setSetFlag(asfRequireAuth)
+                   .setSetFlag(asfRequireAuthorization)
                    .setFlags(tfOptionalAuth),
                alice)
             .ter,
@@ -530,7 +530,7 @@ TEST(AccountSet, BadInputs)
     EXPECT_EQ(
         env.submit(
                transactions::AccountSetBuilder{alice}
-                   .setSetFlag(asfRequireDest)
+                   .setSetFlag(asfRequireDestinationTag)
                    .setFlags(tfOptionalDestTag),
                alice)
             .ter,
@@ -540,7 +540,7 @@ TEST(AccountSet, BadInputs)
     EXPECT_EQ(
         env.submit(
                transactions::AccountSetBuilder{alice}
-                   .setSetFlag(asfRequireDest)
+                   .setSetFlag(asfRequireDestinationTag)
                    .setFlags(tfAccountSetMask),
                alice)
             .ter,
@@ -548,7 +548,8 @@ TEST(AccountSet, BadInputs)
 
     // Disabling master key without an alternative key is invalid
     EXPECT_EQ(
-        env.submit(transactions::AccountSetBuilder{alice}.setSetFlag(asfDisableMaster), alice).ter,
+        env.submit(transactions::AccountSetBuilder{alice}.setSetFlag(asfDisableMasterKey), alice)
+            .ter,
         tecNO_ALTERNATIVE_KEY);
 }
 
@@ -585,7 +586,9 @@ TEST(AccountSet, RequireAuthWithDir)
 
     // Setting RequireAuth should fail because alice has owner objects
     EXPECT_EQ(
-        env.submit(transactions::AccountSetBuilder{alice}.setSetFlag(asfRequireAuth), alice).ter,
+        env.submit(
+               transactions::AccountSetBuilder{alice}.setSetFlag(asfRequireAuthorization), alice)
+            .ter,
         tecOWNERS);
 
     // Remove the signer list (quorum = 0, no entries)
@@ -596,7 +599,9 @@ TEST(AccountSet, RequireAuthWithDir)
 
     // Now setting RequireAuth should succeed
     EXPECT_EQ(
-        env.submit(transactions::AccountSetBuilder{alice}.setSetFlag(asfRequireAuth), alice).ter,
+        env.submit(
+               transactions::AccountSetBuilder{alice}.setSetFlag(asfRequireAuthorization), alice)
+            .ter,
         tesSUCCESS);
 }
 

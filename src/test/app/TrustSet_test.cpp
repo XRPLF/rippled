@@ -114,7 +114,7 @@ public:
         env.close();
 
         // alice wants to ensure that all holders of her tokens are authorised
-        env(fset(alice, asfRequireAuth));
+        env(fset(alice, asfRequireAuthorization));
         env.close();
 
         // becky wants to hold at most 50 tokens of alice["USD"]
@@ -375,7 +375,7 @@ public:
         env.fund(XRP(10000), bob, alice);
 
         // alice wants to ensure that all holders of her tokens are authorised
-        env(fset(alice, asfRequireAuth));
+        env(fset(alice, asfRequireAuthorization));
         env.close();
 
         // create a trust line from bob to alice. bob wants to hold at most
@@ -490,7 +490,7 @@ public:
         env.fund(XRP(1000), gw, dist);
         env.close();
 
-        env(fset(gw, asfRequireAuth));
+        env(fset(gw, asfRequireAuthorization));
         env.close();
 
         env(fset(dist, asfDisallowIncomingTrustline));

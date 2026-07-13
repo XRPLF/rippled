@@ -454,7 +454,7 @@ public:
         env.close();
 
         // Disable cheri's master key to mix things up.
-        env(fset(cheri, asfDisableMaster), Sig(cheri));
+        env(fset(cheri, asfDisableMasterKey), Sig(cheri));
         env.close();
 
         // Attempt a multisigned transaction that meets the quorum.
@@ -518,7 +518,7 @@ public:
         env.close();
 
         // Disable cheri's master key to mix things up.
-        env(fset(cheri, asfDisableMaster), Sig(cheri));
+        env(fset(cheri, asfDisableMasterKey), Sig(cheri));
         env.close();
 
         auto const baseFee = env.current()->fees().base;
@@ -721,7 +721,7 @@ public:
         // alice uses a regular key with the master disabled.
         Account const alie{"alie", KeyType::Secp256k1};
         env(regkey(alice, alie));
-        env(fset(alice, asfDisableMaster), Sig(alice));
+        env(fset(alice, asfDisableMasterKey), Sig(alice));
 
         // becky is master only without a regular key.
 
@@ -732,7 +732,7 @@ public:
         // daria has a regular key and disables her master key.
         Account const dari{"dari", KeyType::Ed25519};
         env(regkey(daria, dari));
-        env(fset(daria, asfDisableMaster), Sig(daria));
+        env(fset(daria, asfDisableMasterKey), Sig(daria));
         env.close();
 
         // Attach signers to alice.
@@ -862,14 +862,14 @@ public:
 
         // Master key tests.
         // M0: A lone master key cannot be disabled.
-        env(fset(alice, asfDisableMaster), Sig(alice), Ter(tecNO_ALTERNATIVE_KEY));
+        env(fset(alice, asfDisableMasterKey), Sig(alice), Ter(tecNO_ALTERNATIVE_KEY));
 
         // Add a regular key.
         Account const alie{"alie", KeyType::Ed25519};
         env(regkey(alice, alie));
 
         // M1: The master key can be disabled if there's a regular key.
-        env(fset(alice, asfDisableMaster), Sig(alice));
+        env(fset(alice, asfDisableMasterKey), Sig(alice));
 
         // R0: A lone regular key cannot be removed.
         env(regkey(alice, kDisabled), Sig(alie), Ter(tecNO_ALTERNATIVE_KEY));
@@ -885,7 +885,7 @@ public:
         env(signers(alice, jtx::kNone), Msig(bogie_), Fee(2 * baseFee), Ter(tecNO_ALTERNATIVE_KEY));
 
         // Enable the master key.
-        env(fclear(alice, asfDisableMaster), Msig(bogie_), Fee(2 * baseFee));
+        env(fclear(alice, asfDisableMasterKey), Msig(bogie_), Fee(2 * baseFee));
 
         // L1: The signer list can be removed if the master key is enabled.
         env(signers(alice, jtx::kNone), Msig(bogie_), Fee(2 * baseFee));
@@ -894,7 +894,7 @@ public:
         env(signers(alice, 1, {{bogie_, 1}}), Sig(alice));
 
         // M2: The master key can be disabled if there's a signer list.
-        env(fset(alice, asfDisableMaster), Sig(alice));
+        env(fset(alice, asfDisableMasterKey), Sig(alice));
 
         // Add a regular key.
         env(regkey(alice, alie), Msig(bogie_), Fee(2 * baseFee));
@@ -903,7 +903,7 @@ public:
         env(signers(alice, jtx::kNone), Sig(alie));
 
         // Enable the master key.
-        env(fclear(alice, asfDisableMaster), Sig(alie));
+        env(fclear(alice, asfDisableMasterKey), Sig(alie));
 
         // R2: The regular key can be removed if the master key is enabled.
         env(regkey(alice, kDisabled), Sig(alie));
@@ -966,7 +966,7 @@ public:
         // alice uses a regular key with the master disabled.
         Account const alie{"alie", KeyType::Secp256k1};
         env(regkey(alice, alie));
-        env(fset(alice, asfDisableMaster), Sig(alice));
+        env(fset(alice, asfDisableMasterKey), Sig(alice));
 
         // Attach signers to alice.
         env(signers(alice, 2, {{becky, 1}, {bogie_, 1}}), Sig(alie));
@@ -1261,7 +1261,7 @@ public:
         env.close();
 
         // Now becky disables her master key.
-        env(fset(becky, asfDisableMaster));
+        env(fset(becky, asfDisableMasterKey));
         env.close();
 
         // Since becky's master key is disabled she can no longer

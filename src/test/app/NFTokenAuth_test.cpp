@@ -64,7 +64,7 @@ public:
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2);
-        env(fset(g1, asfRequireAuth));
+        env(fset(g1, asfRequireAuthorization));
         env.close();
 
         auto const limit = usd(10000);
@@ -117,7 +117,7 @@ public:
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2);
-        env(fset(g1, asfRequireAuth));
+        env(fset(g1, asfRequireAuthorization));
         env.close();
 
         auto const [nftID, _] = mintAndOfferNFT(env, a2, drops(1));
@@ -163,7 +163,7 @@ public:
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2);
-        env(fset(g1, asfRequireAuth));
+        env(fset(g1, asfRequireAuthorization));
         env.close();
 
         auto const limit = usd(10000);
@@ -221,7 +221,7 @@ public:
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2);
-        env(fset(g1, asfRequireAuth));
+        env(fset(g1, asfRequireAuthorization));
         env.close();
 
         auto const limit = usd(10000);
@@ -296,7 +296,7 @@ public:
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2);
-        env(fset(g1, asfRequireAuth));
+        env(fset(g1, asfRequireAuthorization));
         env.close();
 
         auto const limit = usd(10000);
@@ -339,7 +339,7 @@ public:
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2, broker);
-        env(fset(g1, asfRequireAuth));
+        env(fset(g1, asfRequireAuthorization));
         env.close();
 
         auto const limit = usd(10000);
@@ -405,7 +405,7 @@ public:
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2, broker);
-        env(fset(g1, asfRequireAuth));
+        env(fset(g1, asfRequireAuthorization));
         env.close();
 
         auto const limit = usd(10000);
@@ -465,7 +465,7 @@ public:
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2, broker);
-        env(fset(g1, asfRequireAuth));
+        env(fset(g1, asfRequireAuthorization));
         env.close();
 
         auto const limit = usd(10000);
@@ -539,7 +539,7 @@ public:
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, minter, a1, a2);
-        env(fset(g1, asfRequireAuth));
+        env(fset(g1, asfRequireAuthorization));
         env.close();
 
         auto const limit = usd(10000);

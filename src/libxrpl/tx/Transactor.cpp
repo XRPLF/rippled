@@ -1139,7 +1139,7 @@ Transactor::checkMultiSign(
         //      A. signingAcctID == signingAcctIDFromPubKey, and signingAcctID
         //         is in the ledger.
         //      B. If the signingAcctID in the ledger does not have the
-        //         asfDisableMaster flag set, then the signature is allowed.
+        //         asfDisableMasterKey flag set, then the signature is allowed.
         //
         //   3. "Regular Key"
         //      A. signingAcctID != signingAcctIDFromPubKey, and signingAcctID
@@ -1158,7 +1158,7 @@ Transactor::checkMultiSign(
             // Either Phantom or Master.  Phantoms automatically pass.
             if (sleTxSignerRoot)
             {
-                // Master Key.  Account may not have asfDisableMaster set.
+                // Master Key.  Account may not have asfDisableMasterKey set.
                 std::uint32_t const signerAccountFlags = sleTxSignerRoot->getFieldU32(sfFlags);
 
                 if ((signerAccountFlags & lsfDisableMaster) != 0u)

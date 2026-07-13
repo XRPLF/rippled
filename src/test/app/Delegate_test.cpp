@@ -1518,7 +1518,7 @@ class Delegate_test : public beast::unit_test::Suite
             Account const alice{"alice"};
             Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
-            env(fset(gw, asfRequireAuth));
+            env(fset(gw, asfRequireAuthorization));
             env.close();
 
             env(delegate::set(alice, bob, {"TrustlineUnfreeze"}));
@@ -1630,7 +1630,7 @@ class Delegate_test : public beast::unit_test::Suite
             Account const alice{"alice"};
             Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
-            env(fset(gw, asfRequireAuth));
+            env(fset(gw, asfRequireAuthorization));
             env.close();
 
             // bob does not have permission
@@ -1675,7 +1675,7 @@ class Delegate_test : public beast::unit_test::Suite
             Account const alice{"alice"};
             Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
-            env(fset(gw, asfRequireAuth));
+            env(fset(gw, asfRequireAuthorization));
             env.close();
             env(trust(alice, gw["USD"](50)));
             env.close();
@@ -1693,7 +1693,7 @@ class Delegate_test : public beast::unit_test::Suite
             Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
 
-            env(fset(gw, asfRequireAuth));
+            env(fset(gw, asfRequireAuthorization));
             env.close();
             env(trust(alice, gw["USD"](50)));
             env.close();
@@ -1835,18 +1835,22 @@ class Delegate_test : public beast::unit_test::Suite
             env(jt);
             BEAST_EXPECT((*env.le(alice))[sfTickSize] == 8);
 
-            // can not set asfRequireAuth flag for alice
-            env(fset(alice, asfRequireAuth), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
+            // can not set asfRequireAuthorization flag for alice
+            env(fset(alice, asfRequireAuthorization),
+                delegate::As(bob),
+                Ter(terNO_DELEGATE_PERMISSION));
 
             // reset Delegate will delete the Delegate
             // object
             env(delegate::set(alice, bob, {}));
-            // bib still does not have permission to set asfRequireAuth for
+            // bib still does not have permission to set asfRequireAuthorization for
             // alice
-            env(fset(alice, asfRequireAuth), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
+            env(fset(alice, asfRequireAuthorization),
+                delegate::As(bob),
+                Ter(terNO_DELEGATE_PERMISSION));
             // alice can set for herself
-            env(fset(alice, asfRequireAuth));
-            env.require(Flags(alice, asfRequireAuth));
+            env(fset(alice, asfRequireAuthorization));
+            env.require(Flags(alice, asfRequireAuthorization));
             env.close();
 
             // can not update tick size because bob no longer has permission
@@ -1890,7 +1894,7 @@ class Delegate_test : public beast::unit_test::Suite
             };
 
             // testSetClearFlag(asfNoFreeze);
-            testSetClearFlag(asfRequireAuth);
+            testSetClearFlag(asfRequireAuthorization);
             testSetClearFlag(asfAllowTrustLineClawback);
 
             // alice gives some granular permissions to bob
@@ -1904,8 +1908,8 @@ class Delegate_test : public beast::unit_test::Suite
             testSetClearFlag(asfDisallowIncomingNFTokenOffer);
             testSetClearFlag(asfDisallowIncomingPayChan);
             testSetClearFlag(asfDisallowIncomingTrustline);
-            testSetClearFlag(asfDisallowXRP);
-            testSetClearFlag(asfRequireDest);
+            testSetClearFlag(asfDisallowIncomingXRP);
+            testSetClearFlag(asfRequireDestinationTag);
             testSetClearFlag(asfGlobalFreeze);
 
             // bob can not set asfAccountTxnID on behalf of alice
@@ -1936,11 +1940,11 @@ class Delegate_test : public beast::unit_test::Suite
             // alice can not clear on behalf of bob
             env(fclear(alice, asfNoFreeze), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
 
-            // bob can not set asfDisableMaster on behalf of alice
+            // bob can not set asfDisableMasterKey on behalf of alice
             Account const bobKey{"bobKey", KeyType::Secp256k1};
             env(regkey(bob, bobKey));
             env.close();
-            env(fset(alice, asfDisableMaster),
+            env(fset(alice, asfDisableMasterKey),
                 delegate::As(bob),
                 Sig(bob),
                 Ter(terNO_DELEGATE_PERMISSION));
@@ -2683,7 +2687,7 @@ class Delegate_test : public beast::unit_test::Suite
         Account const bob{"bob"};
         env.fund(XRP(10000), gw, alice, bob);
 
-        env(fset(gw, asfRequireAuth));
+        env(fset(gw, asfRequireAuthorization));
         env.close();
         env(trust(alice, gw["USD"](50)));
         env.close();

@@ -2539,7 +2539,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         // destination requires destination tag but none provided
         {
-            env(fset(carol, asfRequireDest));
+            env(fset(carol, asfRequireDestinationTag));
             env.close();
 
             mptAlice.send({
@@ -2555,7 +2555,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 .err = tecDST_TAG_NEEDED,
             });
 
-            env(fclear(carol, asfRequireDest));
+            env(fclear(carol, asfRequireDestinationTag));
             env.close();
         }
 

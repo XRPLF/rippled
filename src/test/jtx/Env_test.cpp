@@ -269,9 +269,11 @@ public:
         env.require(Balance("alice", usd(0)));
         env(pay(gw, "alice", usd(10)), Require(Balance("alice", usd(10))));
 
-        env.require(Nflags("alice", asfRequireDest));
-        env(fset("alice", asfRequireDest), Require(Flags("alice", asfRequireDest)));
-        env(fclear("alice", asfRequireDest), Require(Nflags("alice", asfRequireDest)));
+        env.require(Nflags("alice", asfRequireDestinationTag));
+        env(fset("alice", asfRequireDestinationTag),
+            Require(Flags("alice", asfRequireDestinationTag)));
+        env(fclear("alice", asfRequireDestinationTag),
+            Require(Nflags("alice", asfRequireDestinationTag)));
     }
 
     // Signing with secp256k1 and ed25519 keys
@@ -301,12 +303,12 @@ public:
         env(noop(alice), Sig(alice));
 
         // Regular key only
-        env(fset(alice, asfDisableMaster), Sig(alice));
+        env(fset(alice, asfDisableMasterKey), Sig(alice));
         env(noop(alice));
         env(noop(alice), Sig(bob));
         env(noop(alice), Sig(alice), Ter(tefMASTER_DISABLED));
-        env(fclear(alice, asfDisableMaster), Sig(alice), Ter(tefMASTER_DISABLED));
-        env(fclear(alice, asfDisableMaster), Sig(bob));
+        env(fclear(alice, asfDisableMasterKey), Sig(alice), Ter(tefMASTER_DISABLED));
+        env(fclear(alice, asfDisableMasterKey), Sig(bob));
         env(noop(alice), Sig(alice));
     }
 
@@ -355,20 +357,20 @@ public:
         env(noop("alice"), Sig("alice"));
         env(noop("alice"), Sig("eric"));
         env(noop("alice"), Sig("bob"), Ter(tefBAD_AUTH));
-        env(fset("alice", asfDisableMaster), Ter(tecNEED_MASTER_KEY));
-        env(fset("alice", asfDisableMaster), Sig("eric"), Ter(tecNEED_MASTER_KEY));
-        env.require(Nflags("alice", asfDisableMaster));
-        env(fset("alice", asfDisableMaster), Sig("alice"));
-        env.require(Flags("alice", asfDisableMaster));
+        env(fset("alice", asfDisableMasterKey), Ter(tecNEED_MASTER_KEY));
+        env(fset("alice", asfDisableMasterKey), Sig("eric"), Ter(tecNEED_MASTER_KEY));
+        env.require(Nflags("alice", asfDisableMasterKey));
+        env(fset("alice", asfDisableMasterKey), Sig("alice"));
+        env.require(Flags("alice", asfDisableMasterKey));
         env(regkey("alice", kDisabled), Ter(tecNO_ALTERNATIVE_KEY));
         env(noop("alice"));
         env(noop("alice"), Sig("alice"), Ter(tefMASTER_DISABLED));
         env(noop("alice"), Sig("eric"));
         env(noop("alice"), Sig("bob"), Ter(tefBAD_AUTH));
-        env(fclear("alice", asfDisableMaster), Sig("bob"), Ter(tefBAD_AUTH));
-        env(fclear("alice", asfDisableMaster), Sig("alice"), Ter(tefMASTER_DISABLED));
-        env(fclear("alice", asfDisableMaster));
-        env.require(Nflags("alice", asfDisableMaster));
+        env(fclear("alice", asfDisableMasterKey), Sig("bob"), Ter(tefBAD_AUTH));
+        env(fclear("alice", asfDisableMasterKey), Sig("alice"), Ter(tefMASTER_DISABLED));
+        env(fclear("alice", asfDisableMasterKey));
+        env.require(Nflags("alice", asfDisableMasterKey));
         env(regkey("alice", kDisabled));
         env(noop("alice"), Sig("eric"), Ter(tefBAD_AUTH));
         env(noop("alice"));

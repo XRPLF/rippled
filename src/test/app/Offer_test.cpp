@@ -4172,7 +4172,7 @@ public:
         env.close();
 
         // GW requires authorization for holders of its IOUs
-        env(fset(gw, asfRequireAuth));
+        env(fset(gw, asfRequireAuthorization));
         env.close();
 
         // Properly set trust and have gw authorize bob and alice
@@ -4244,7 +4244,7 @@ public:
 
         env.require(offers(alice, 1));
         env.require(Balance(alice, gwUSD(kNone)));
-        env(fset(gw, asfRequireAuth));
+        env(fset(gw, asfRequireAuthorization));
         env.close();
 
         env(trust(gw, bobUSD(100)), Txflags(tfSetfAuth));
@@ -4354,7 +4354,7 @@ public:
         // Cold wallets require trust but will ripple by default
         for (auto const& cold : {coldUS, coldEU})
         {
-            env(fset(cold, asfRequireAuth));
+            env(fset(cold, asfRequireAuthorization));
             env(fset(cold, asfDefaultRipple));
         }
         env.close();
@@ -4432,7 +4432,7 @@ public:
         env.require(offers(gw, 1));
 
         // Since gw has an offer out, gw should not be able to set RequireAuth.
-        env(fset(gw, asfRequireAuth), Ter(tecOWNERS));
+        env(fset(gw, asfRequireAuthorization), Ter(tecOWNERS));
         env.close();
 
         // Cancel gw's offer so we can set RequireAuth.
@@ -4441,7 +4441,7 @@ public:
         env.require(offers(gw, 0));
 
         // gw now requires authorization for holders of its IOUs
-        env(fset(gw, asfRequireAuth));
+        env(fset(gw, asfRequireAuthorization));
         env.close();
 
         // Before DepositPreauth an account with lsfRequireAuth set could not

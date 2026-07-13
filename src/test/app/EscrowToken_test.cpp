@@ -403,7 +403,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const usd = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
-            env(fset(gw, asfRequireAuth));
+            env(fset(gw, asfRequireAuthorization));
             env.close();
             env.trust(usd(10'000), alice, bob);
             env.close();
@@ -427,7 +427,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const aliceUSD = alice["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
-            env(fset(gw, asfRequireAuth));
+            env(fset(gw, asfRequireAuthorization));
             env.close();
             env(trust(gw, aliceUSD(10'000)), Txflags(tfSetfAuth));
             env.trust(usd(10'000), alice, bob);
@@ -604,7 +604,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const bobUSD = bob["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
-            env(fset(gw, asfRequireAuth));
+            env(fset(gw, asfRequireAuthorization));
             env.close();
             env(trust(gw, aliceUSD(10'000)), Txflags(tfSetfAuth));
             env(trust(gw, bobUSD(10'000)), Txflags(tfSetfAuth));
@@ -854,7 +854,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const bobUSD = bob["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env(fset(gw, asfAllowTrustLineLocking));
-            env(fset(gw, asfRequireAuth));
+            env(fset(gw, asfRequireAuthorization));
             env.close();
             env(trust(gw, aliceUSD(10'000)), Txflags(tfSetfAuth));
             env(trust(gw, bobUSD(10'000)), Txflags(tfSetfAuth));
@@ -1827,7 +1827,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
         auto const baseFee = env.current()->fees().base;
         env.fund(XRP(1'000), alice, bob, gw);
         env(fset(gw, asfAllowTrustLineLocking));
-        env(fset(gw, asfRequireAuth));
+        env(fset(gw, asfRequireAuthorization));
         env.close();
         env(trust(gw, aliceUSD(10'000)), Txflags(tfSetfAuth));
         env(trust(alice, usd(10'000)));

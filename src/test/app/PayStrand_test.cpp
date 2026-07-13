@@ -859,7 +859,7 @@ struct PayStrand_test : public beast::unit_test::Suite
             // issuer
             Env env(*this, features);
             env.fund(XRP(10000), alice, bob, gw);
-            env(fset(gw, asfRequireAuth));
+            env(fset(gw, asfRequireAuthorization));
             env.trust(usd(1000), alice, bob);
             // Authorize alice but not bob
             env(trust(gw, alice["USD"](1000), tfSetfAuth));

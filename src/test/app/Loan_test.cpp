@@ -2942,7 +2942,7 @@ protected:
             env.close();
             if (args.requireAuth)
             {
-                env(fset(issuer, asfRequireAuth));
+                env(fset(issuer, asfRequireAuthorization));
                 env.close();
             }
 

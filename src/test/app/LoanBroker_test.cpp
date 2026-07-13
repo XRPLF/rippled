@@ -967,11 +967,11 @@ class LoanBroker_test : public beast::unit_test::Suite
             Account const dest{"dest"};
             env.fund(XRP(1'000), dest);
 
-            env(fset(dest, asfRequireDest));
+            env(fset(dest, asfRequireDestinationTag));
             env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
                 kDestination(dest),
                 Ter(tecDST_TAG_NEEDED));
-            env(fclear(dest, asfRequireDest));
+            env(fclear(dest, asfRequireDestinationTag));
 
             // preclaim: tecNO_PERMISSION
             env(fset(dest, asfDepositAuth));
@@ -2269,7 +2269,7 @@ class LoanBroker_test : public beast::unit_test::Suite
 
             if (trustState == TrustState::RequireAuth)
             {
-                env(fset(issuer, asfRequireAuth));
+                env(fset(issuer, asfRequireAuthorization));
                 env.close();
 
                 setTrustLine(broker, TrustState::RequireAuth);
@@ -2316,7 +2316,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             // Clearing RequireAuth shouldn't change the result
             if (trustState == TrustState::RequireAuth)
             {
-                env(fclear(issuer, asfRequireAuth));
+                env(fclear(issuer, asfRequireAuthorization));
                 env.close();
 
                 env(loanBroker::coverWithdraw(broker, brokerKeylet.key, token(100)),

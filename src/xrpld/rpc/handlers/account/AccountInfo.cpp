@@ -17,6 +17,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -24,13 +25,14 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/format/free_funcs.hpp>
 
-#include <array>
+#include <cctype>
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -121,29 +123,25 @@ doAccountInfo(RPC::JsonContext& context)
     }
     auto const accountID{id.value()};
 
-    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 9> kLsFlags{
-        {{"defaultRipple", lsfDefaultRipple},
-         {"depositAuth", lsfDepositAuth},
-         {"disableMasterKey", lsfDisableMaster},
-         {"disallowIncomingXRP", lsfDisallowXRP},
-         {"globalFreeze", lsfGlobalFreeze},
-         {"noFreeze", lsfNoFreeze},
-         {"passwordSpent", lsfPasswordSpent},
-         {"requireAuthorization", lsfRequireAuth},
-         {"requireDestinationTag", lsfRequireDestTag}}};
-
-    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 4>
-        kDisallowIncomingFlags{
-            {{"disallowIncomingNFTokenOffer", lsfDisallowIncomingNFTokenOffer},
-             {"disallowIncomingCheck", lsfDisallowIncomingCheck},
-             {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
-             {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
-
-    static constexpr std::pair<std::string_view, LedgerSpecificFlags> kAllowTrustLineClawbackFlag{
-        "allowTrustLineClawback", lsfAllowTrustLineClawback};
-
-    static constexpr std::pair<std::string_view, LedgerSpecificFlags> kAllowTrustLineLockingFlag{
-        "allowTrustLineLocking", lsfAllowTrustLineLocking};
+    // Build the flag table from ACCOUNTSET_FLAGS. The JSON key is the asf name with
+    // the "asf" prefix stripped and the first character lowercased. Entries where
+    // lsf == 0 (no ledger-state flag, or feature-gated) are skipped; the latter
+    // (asfAllowTrustLineLocking) is handled below with its feature check.
+    // lsfPasswordSpent has no asf counterpart, so it is prepended manually.
+#define ADD_ACCT_FLAG(name, asf, lsf)                                                 \
+    if constexpr ((lsf) != 0)                                                         \
+    {                                                                                 \
+        std::string key = std::string(#name).substr(3);                               \
+        key[0] = static_cast<char>(std::tolower(static_cast<unsigned char>(key[0]))); \
+        flags.emplace_back(std::move(key), LedgerSpecificFlags(lsf));                 \
+    }
+    static std::vector<std::pair<std::string, LedgerSpecificFlags>> const kAccountFlags = []() {
+        std::vector<std::pair<std::string, LedgerSpecificFlags>> flags;
+        flags.emplace_back("passwordSpent", lsfPasswordSpent);
+        ACCOUNTSET_FLAGS(ADD_ACCT_FLAG)
+        return flags;
+    }();
+#undef ADD_ACCT_FLAG
 
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
@@ -163,20 +161,11 @@ doAccountInfo(RPC::JsonContext& context)
         result[jss::account_data] = jvAccepted;
 
         json::Value acctFlags{json::ValueType::Object};
-        for (auto const& lsf : kLsFlags)
-            acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
-
-        for (auto const& lsf : kDisallowIncomingFlags)
-            acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
-
-        acctFlags[kAllowTrustLineClawbackFlag.first.data()] =
-            sleAccepted->isFlag(kAllowTrustLineClawbackFlag.second);
+        for (auto const& [name, flag] : kAccountFlags)
+            acctFlags[name.c_str()] = sleAccepted->isFlag(flag);
 
         if (ledger->rules().enabled(featureTokenEscrow))
-        {
-            acctFlags[kAllowTrustLineLockingFlag.first.data()] =
-                sleAccepted->isFlag(kAllowTrustLineLockingFlag.second);
-        }
+            acctFlags["allowTrustLineLocking"] = sleAccepted->isFlag(lsfAllowTrustLineLocking);
 
         result[jss::account_flags] = std::move(acctFlags);
 

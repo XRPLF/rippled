@@ -333,7 +333,7 @@ class CheckMPT_test : public beast::unit_test::Suite
         env.close();
 
         // Require destination tag.
-        env(fset(bob, asfRequireDest));
+        env(fset(bob, asfRequireDestinationTag));
         env.close();
 
         env(check::create(alice, bob, usd(50)), Ter(tecDST_TAG_NEEDED));
@@ -342,7 +342,7 @@ class CheckMPT_test : public beast::unit_test::Suite
         env(check::create(alice, bob, usd(50)), DestTag(11));
         env.close();
 
-        env(fclear(bob, asfRequireDest));
+        env(fclear(bob, asfRequireDestinationTag));
         env.close();
         {
             // Globally frozen asset.
@@ -654,7 +654,7 @@ class CheckMPT_test : public beast::unit_test::Suite
             BEAST_EXPECT(ownerCount(env, bob) == 1);
         }
         {
-            // Examine the effects of the asfRequireAuth flag.
+            // Examine the effects of the asfRequireAuthorization flag.
             Env env(*this, features);
 
             env.fund(XRP(1000), gw, alice, bob);
@@ -1052,7 +1052,7 @@ class CheckMPT_test : public beast::unit_test::Suite
         {
             // Set the RequireDest flag on bob's account (after the check
             // was created) then cash a check without a destination tag.
-            env(fset(bob, asfRequireDest));
+            env(fset(bob, asfRequireDestinationTag));
             env.close();
             env(check::cash(bob, chkIdNoDest1, usd(1)), Ter(tecDST_TAG_NEEDED));
             env.close();
@@ -1068,7 +1068,7 @@ class CheckMPT_test : public beast::unit_test::Suite
 
             // Clear the RequireDest flag on bob's account so he can
             // cash the check with no DestinationTag.
-            env(fclear(bob, asfRequireDest));
+            env(fclear(bob, asfRequireDestinationTag));
             env.close();
             env(check::cash(bob, chkIdNoDest1, usd(1)));
             env.close();
@@ -1998,7 +1998,7 @@ class CheckMPT_test : public beast::unit_test::Suite
 
             // Set lsfRequireAuth on gw2.  That should not stop any automatic
             // MPT from being created.
-            env(fset(gw2, asfRequireAuth));
+            env(fset(gw2, asfRequireAuthorization));
             env.close();
 
             // Use offers to automatically create MPT.

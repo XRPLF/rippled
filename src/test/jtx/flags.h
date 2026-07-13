@@ -26,16 +26,16 @@ private:
     {
         switch (flag)
         {
-            case asfRequireDest:
+            case asfRequireDestinationTag:
                 mask_ |= lsfRequireDestTag;
                 break;
-            case asfRequireAuth:
+            case asfRequireAuthorization:
                 mask_ |= lsfRequireAuth;
                 break;
-            case asfDisallowXRP:
+            case asfDisallowIncomingXRP:
                 mask_ |= lsfDisallowXRP;
                 break;
-            case asfDisableMaster:
+            case asfDisableMasterKey:
                 mask_ |= lsfDisableMaster;
                 break;
             // case asfAccountTxnID: // ???

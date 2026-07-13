@@ -89,7 +89,7 @@ XRP(Number const& xrp)
  * @throws std::runtime_error if the flag is not supported.
  *
  * Supported flags:
- *   asfRequireDest, asfRequireAuth, asfDisallowXRP, asfDisableMaster,
+ *   asfRequireDestinationTag, asfRequireAuthorization, asfDisallowIncomingXRP, asfDisableMasterKey,
  *   asfNoFreeze, asfGlobalFreeze, asfDefaultRipple, asfDepositAuth,
  *   asfAllowTrustLineClawback, asfDisallowIncomingCheck,
  *   asfDisallowIncomingNFTokenOffer, asfDisallowIncomingPayChan,
@@ -100,13 +100,13 @@ asfToLsf(std::uint32_t asf)
 {
     switch (asf)
     {
-        case asfRequireDest:
+        case asfRequireDestinationTag:
             return lsfRequireDestTag;
-        case asfRequireAuth:
+        case asfRequireAuthorization:
             return lsfRequireAuth;
-        case asfDisallowXRP:
+        case asfDisallowIncomingXRP:
             return lsfDisallowXRP;
-        case asfDisableMaster:
+        case asfDisableMasterKey:
             return lsfDisableMaster;
         case asfNoFreeze:
             return lsfNoFreeze;

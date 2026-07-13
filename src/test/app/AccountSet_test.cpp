@@ -79,7 +79,7 @@ public:
         env.fund(XRP(10000), noripple(alice));
 
         // Give alice a regular key so she can legally set and clear
-        // her asfDisableMaster flag.
+        // her asfDisableMasterKey flag.
         Account const alie{"alie", KeyType::Secp256k1};
         env(regkey(alice, alie));
         env.close();
@@ -151,11 +151,11 @@ public:
             }
         };
         testFlags(
-            {asfRequireDest,
-             asfRequireAuth,
-             asfDisallowXRP,
+            {asfRequireDestinationTag,
+             asfRequireAuthorization,
+             asfDisallowIncomingXRP,
              asfGlobalFreeze,
-             asfDisableMaster,
+             asfDisableMasterKey,
              asfDefaultRipple,
              asfDepositAuth});
     }
@@ -481,35 +481,35 @@ public:
         Account const alice("alice");
         env.fund(XRP(10000), alice);
 
-        auto jt = fset(alice, asfDisallowXRP);
-        jt[jss::ClearFlag] = asfDisallowXRP;
+        auto jt = fset(alice, asfDisallowIncomingXRP);
+        jt[jss::ClearFlag] = asfDisallowIncomingXRP;
         env(jt, Ter(temINVALID_FLAG));
 
-        jt = fset(alice, asfRequireAuth);
-        jt[jss::ClearFlag] = asfRequireAuth;
+        jt = fset(alice, asfRequireAuthorization);
+        jt[jss::ClearFlag] = asfRequireAuthorization;
         env(jt, Ter(temINVALID_FLAG));
 
-        jt = fset(alice, asfRequireDest);
-        jt[jss::ClearFlag] = asfRequireDest;
+        jt = fset(alice, asfRequireDestinationTag);
+        jt[jss::ClearFlag] = asfRequireDestinationTag;
         env(jt, Ter(temINVALID_FLAG));
 
-        jt = fset(alice, asfDisallowXRP);
+        jt = fset(alice, asfDisallowIncomingXRP);
         jt[sfFlags.fieldName] = tfAllowXRP;
         env(jt, Ter(temINVALID_FLAG));
 
-        jt = fset(alice, asfRequireAuth);
+        jt = fset(alice, asfRequireAuthorization);
         jt[sfFlags.fieldName] = tfOptionalAuth;
         env(jt, Ter(temINVALID_FLAG));
 
-        jt = fset(alice, asfRequireDest);
+        jt = fset(alice, asfRequireDestinationTag);
         jt[sfFlags.fieldName] = tfOptionalDestTag;
         env(jt, Ter(temINVALID_FLAG));
 
-        jt = fset(alice, asfRequireDest);
+        jt = fset(alice, asfRequireDestinationTag);
         jt[sfFlags.fieldName] = tfAccountSetMask;
         env(jt, Ter(temINVALID_FLAG));
 
-        env(fset(alice, asfDisableMaster), Sig(alice), Ter(tecNO_ALTERNATIVE_KEY));
+        env(fset(alice, asfDisableMasterKey), Sig(alice), Ter(tecNO_ALTERNATIVE_KEY));
     }
 
     void
@@ -533,14 +533,14 @@ public:
         env.close();
         BEAST_EXPECT(!dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
-        env(fset(alice, asfRequireAuth), Ter(tecOWNERS));
+        env(fset(alice, asfRequireAuthorization), Ter(tecOWNERS));
 
-        // Remove the signer list.  After that asfRequireAuth should succeed.
+        // Remove the signer list.  After that asfRequireAuthorization should succeed.
         env(signers(alice, test::jtx::kNone));
         env.close();
         BEAST_EXPECT(dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
-        env(fset(alice, asfRequireAuth));
+        env(fset(alice, asfRequireAuthorization));
     }
 
     void

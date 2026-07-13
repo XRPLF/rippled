@@ -925,7 +925,7 @@ class Simulate_test : public beast::unit_test::Suite
         static auto const kNewDomain = "123ABC";
         Account const alice{"alice"};
         env(regkey(env.master, alice));
-        env(fset(env.master, asfDisableMaster), Sig(env.master));
+        env(fset(env.master, asfDisableMasterKey), Sig(env.master));
         env.close();
 
         {

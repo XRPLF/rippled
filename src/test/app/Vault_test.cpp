@@ -549,11 +549,11 @@ class Vault_test : public beast::unit_test::Suite
             env.fund(XRP(1000), issuer, owner, depositor, charlie, dave);
             env.close();
             env(fset(issuer, asfAllowTrustLineClawback));
-            env(fset(issuer, asfRequireAuth));
-            env(fset(dave, asfRequireDest));
+            env(fset(issuer, asfRequireAuthorization));
+            env(fset(dave, asfRequireDestinationTag));
             env.close();
             env.require(Flags(issuer, asfAllowTrustLineClawback));
-            env.require(Flags(issuer, asfRequireAuth));
+            env.require(Flags(issuer, asfRequireAuthorization));
 
             PrettyAsset const asset = setup(env);
             testSequence(prefix, env, vault, asset);
@@ -615,7 +615,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             env(fset(issuer, asfAllowTrustLineClawback));
-            env(fset(issuer, asfRequireAuth));
+            env(fset(issuer, asfRequireAuthorization));
             env.close();
 
             PrettyAsset const asset = issuer["IOU"];

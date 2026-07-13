@@ -813,7 +813,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         auto& mptAlice = confEnv.mpt;
 
         // Set RequireDest on carol
-        env(fset(carol, asfRequireDest));
+        env(fset(carol, asfRequireDestinationTag));
         env.close();
 
         // Send without destination tag — rejected
@@ -840,7 +840,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         BEAST_EXPECT(tx->isFieldPresent(sfDestinationTag));
         BEAST_EXPECT((*tx)[sfDestinationTag] == 42);
 
-        env(fclear(carol, asfRequireDest));
+        env(fclear(carol, asfRequireDestinationTag));
         env.close();
 
         // Send without destination tag when not required — succeeds

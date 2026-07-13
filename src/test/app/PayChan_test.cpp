@@ -634,7 +634,7 @@ struct PayChan_test : public beast::unit_test::Suite
             // since it's just advisory.
             Env env{*this, features};
             env.fund(XRP(10000), alice, bob);
-            env(fset(bob, asfDisallowXRP));
+            env(fset(bob, asfDisallowIncomingXRP));
             auto const chan = channel(alice, bob, env.seq(alice));
             env(create(alice, bob, XRP(1000), 3600s, alice.pk()));
             BEAST_EXPECT(channelExists(*env.current(), chan));
@@ -650,7 +650,7 @@ struct PayChan_test : public beast::unit_test::Suite
             env(create(alice, bob, XRP(1000), 3600s, alice.pk()));
             BEAST_EXPECT(channelExists(*env.current(), chan));
 
-            env(fset(bob, asfDisallowXRP));
+            env(fset(bob, asfDisallowIncomingXRP));
             auto const reqBal = XRP(500).value();
             env(claim(alice, chan, reqBal, reqBal));
         }
@@ -668,7 +668,7 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         env.fund(XRP(10000), alice, bob);
-        env(fset(bob, asfRequireDest));
+        env(fset(bob, asfRequireDestinationTag));
         auto const pk = alice.pk();
         auto const settleDelay = 3600s;
         auto const channelFunds = XRP(1000);

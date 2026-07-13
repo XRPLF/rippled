@@ -48,7 +48,7 @@ struct SetAuth_test : public beast::unit_test::Suite
         Env env(*this);
 
         env.fund(XRP(100000), "alice", "bob", gw);
-        env(fset(gw, asfRequireAuth));
+        env(fset(gw, asfRequireAuthorization));
         env.close();
         env(auth(gw, "alice", "USD"));
         BEAST_EXPECT(env.le(keylet::trustLine(Account("alice").id(), gw.id(), usd.currency)));

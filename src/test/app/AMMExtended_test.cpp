@@ -1252,7 +1252,7 @@ private:
         env.close();
 
         // GW requires authorization for holders of its IOUs
-        env(fset(gw_, asfRequireAuth));
+        env(fset(gw_, asfRequireAuthorization));
         env.close();
 
         // Properly set trust and have gw_ authorize bob_ and alice_
@@ -1301,7 +1301,7 @@ private:
             AMM const ammAlice(env, alice_, USD(1'000), XRP(1'000), Ter(tecUNFUNDED_AMM));
         }
 
-        env(fset(gw_, asfRequireAuth));
+        env(fset(gw_, asfRequireAuthorization));
         env.close();
 
         env(trust(gw_, bob_["USD"](50)), Txflags(tfSetfAuth));
@@ -3319,7 +3319,7 @@ private:
         // alice_ uses a regular key with the master disabled.
         Account const alie{"alie", KeyType::Secp256k1};
         env(regkey(alice, alie));
-        env(fset(alice, asfDisableMaster), Sig(alice));
+        env(fset(alice, asfDisableMasterKey), Sig(alice));
 
         // Attach signers to alice_.
         env(signers(alice, 2, {{becky, 1}, {bogie, 1}}), Sig(alie));

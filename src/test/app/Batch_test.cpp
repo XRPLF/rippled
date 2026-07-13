@@ -767,7 +767,7 @@ class Batch_test : public beast::unit_test::Suite
         // tefMASTER_DISABLED: Master key disabled
         {
             env(regkey(elsa, frank));
-            env(fset(elsa, asfDisableMaster), Sig(elsa));
+            env(fset(elsa, asfDisableMasterKey), Sig(elsa));
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 3, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
@@ -911,7 +911,7 @@ class Batch_test : public beast::unit_test::Suite
         // tefMASTER_DISABLED: Signed With Master Key Disabled
         {
             env(regkey(bob, carol));
-            env(fset(bob, asfDisableMaster), Sig(bob));
+            env(fset(bob, asfDisableMasterKey), Sig(bob));
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
@@ -3390,7 +3390,7 @@ class Batch_test : public beast::unit_test::Suite
 
         // failure
         {
-            env(fset(alice, asfRequireDest));
+            env(fset(alice, asfRequireDestinationTag));
             env.close();
 
             auto const aliceSeq = env.seq(alice);
@@ -3406,7 +3406,7 @@ class Batch_test : public beast::unit_test::Suite
                 env,
                 tesSUCCESS,
                 batch::outer(alice, aliceSeq, batchFee, tfIndependent),
-                // tecDST_TAG_NEEDED - alice has enabled asfRequireDest
+                // tecDST_TAG_NEEDED - alice has enabled asfRequireDestinationTag
                 batch::Inner(check::create(bob, alice, usd(10)), bobSeq),
                 batch::Inner(check::cash(alice, chkID, usd(10)), aliceSeq + 1),
                 batch::Sig(bob));
@@ -5328,7 +5328,7 @@ class Batch_test : public beast::unit_test::Suite
             Account const alice{"alice"};
             Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
-            env(fset(gw, asfRequireAuth));
+            env(fset(gw, asfRequireAuthorization));
             env.close();
             env(trust(alice, gw["USD"](50)));
             env.close();
@@ -5382,7 +5382,7 @@ class Batch_test : public beast::unit_test::Suite
             Account const alice{"alice"};
             Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
-            env(fset(gw, asfRequireAuth));
+            env(fset(gw, asfRequireAuthorization));
             env.close();
             env(trust(alice, gw["USD"](50)));
             env.close();
@@ -5469,7 +5469,7 @@ class Batch_test : public beast::unit_test::Suite
         {
             auto const baseFee = env.current()->fees().base;
             auto const aliceSeq = env.seq(alice);
-            env(fset(bob, asfRequireDest));
+            env(fset(bob, asfRequireDestinationTag));
             auto jtx = env.jt(pay(alice, bob, XRP(1)), Seq(aliceSeq));
 
             Serializer s;

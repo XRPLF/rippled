@@ -121,7 +121,7 @@ private:
             Env env{*this};
             env.fund(XRP(30'000), gw_, alice_);
             env.close();
-            env(fset(gw_, asfRequireAuth));
+            env(fset(gw_, asfRequireAuthorization));
             env(trust(alice_, gw_["USD"](30'000), 0));
             env(trust(gw_, alice_["USD"](0), tfSetfAuth));
             env(pay(gw_, alice_, USD(10'000)));
@@ -328,7 +328,7 @@ private:
             Env env{*this};
             env.fund(XRP(30'000), gw_, alice_);
             env.close();
-            env(fset(gw_, asfRequireAuth));
+            env(fset(gw_, asfRequireAuthorization));
             env(trust(alice_, gw_["USD"](30'000), 0));
             env(trust(gw_, alice_["USD"](0), tfSetfAuth));
             env.close();

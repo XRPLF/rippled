@@ -708,7 +708,7 @@ public:
         env(fset(alice, asfDepositAuth));
 
         // carol requires a destination tag.
-        env(fset(carol, asfRequireDest));
+        env(fset(carol, asfRequireDestinationTag));
         env.close();
 
         // Close enough ledgers to be able to delete becky's account.

@@ -529,11 +529,11 @@ public:
         static constexpr std::array<std::pair<std::string_view, std::uint32_t>, 7> kAsFlags{
             {{"defaultRipple", asfDefaultRipple},
              {"depositAuth", asfDepositAuth},
-             {"disallowIncomingXRP", asfDisallowXRP},
+             {"disallowIncomingXRP", asfDisallowIncomingXRP},
              {"globalFreeze", asfGlobalFreeze},
              {"noFreeze", asfNoFreeze},
-             {"requireAuthorization", asfRequireAuth},
-             {"requireDestinationTag", asfRequireDest}}};
+             {"requireAuthorization", asfRequireAuthorization},
+             {"requireDestinationTag", asfRequireDestinationTag}}};
 
         for (auto& asf : kAsFlags)
         {

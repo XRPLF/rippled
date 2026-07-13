@@ -3333,7 +3333,7 @@ private:
         // alice uses a regular key with the master disabled.
         Account const alie{"alie", KeyType::Secp256k1};
         env(regkey(alice, alie));
-        env(fset(alice, asfDisableMaster), Sig(alice));
+        env(fset(alice, asfDisableMasterKey), Sig(alice));
 
         // Attach signers to alice.
         env(signers(alice, 2, {{becky, 1}, {bogie, 1}}), Sig(alie));

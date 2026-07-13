@@ -152,7 +152,7 @@ public:
                 BEAST_EXPECT(result[jss::result].isMember(jss::ACCOUNT_SET_FLAGS));
                 json::Value const& asFlags = result[jss::result][jss::ACCOUNT_SET_FLAGS];
 
-                BEAST_EXPECT(asFlags["asfDisallowXRP"] == 3);
+                BEAST_EXPECT(asFlags["asfDisallowIncomingXRP"] == 3);
                 BEAST_EXPECT(asFlags["asfGlobalFreeze"] == 7);
                 BEAST_EXPECT(asFlags["asfDisallowIncomingNFTokenOffer"] == 12);
                 BEAST_EXPECT(asFlags["asfDisallowIncomingTrustline"] == 15);

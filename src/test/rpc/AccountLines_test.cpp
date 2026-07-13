@@ -145,7 +145,7 @@ public:
         env.fund(XRP(10000), gw2);
 
         // gw2 requires authorization.
-        env(fset(gw2, asfRequireAuth));
+        env(fset(gw2, asfRequireAuthorization));
         env.close();
         std::vector<IOU> gw2Currencies;
 
@@ -853,7 +853,7 @@ public:
         env.fund(XRP(10000), gw2);
 
         // gw2 requires authorization.
-        env(fset(gw2, asfRequireAuth));
+        env(fset(gw2, asfRequireAuthorization));
         env.close();
         std::vector<IOU> gw2Currencies;
 

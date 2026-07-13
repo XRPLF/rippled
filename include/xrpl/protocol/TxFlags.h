@@ -414,33 +414,40 @@ inline constexpr FlagValue tfWithdrawSubTx = tfLPToken | tfSingleAsset | tfTwoAs
 inline constexpr FlagValue tfDepositSubTx =
     tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken | tfLimitLPToken | tfTwoAssetIfEmpty;
 
-#pragma push_macro("ACCOUNTSET_FLAGS")
+// AccountSet SetFlag/ClearFlag values.
+// Format: ASF_FLAG(name, asf_value, lsf_value)
+//   lsf_value is 0 when there is no corresponding ledger-state flag:
+//   - asfAccountTxnID, asfAuthorizedNFTokenMinter: stored as account fields, not flags
+//   - asfAllowTrustLineLocking: has an lsf but is feature-gated (featureTokenEscrow);
+//     callers that need it must handle it separately
+// The JSON key for account_info's account_flags is derived from the name by
+// stripping the "asf" prefix and lowercasing the first character.
+// clang-format off
+#define ACCOUNTSET_FLAGS(ASF_FLAG)                                                         \
+    ASF_FLAG(asfRequireDestinationTag,    1,  lsfRequireDestTag)                           \
+    ASF_FLAG(asfRequireAuthorization,     2,  lsfRequireAuth)                              \
+    ASF_FLAG(asfDisallowIncomingXRP,      3,  lsfDisallowXRP)                              \
+    ASF_FLAG(asfDisableMasterKey,         4,  lsfDisableMaster)                            \
+    ASF_FLAG(asfAccountTxnID,            5,  0) /* no lsf: stored as field */              \
+    ASF_FLAG(asfNoFreeze,                6,  lsfNoFreeze)                                  \
+    ASF_FLAG(asfGlobalFreeze,            7,  lsfGlobalFreeze)                              \
+    ASF_FLAG(asfDefaultRipple,           8,  lsfDefaultRipple)                             \
+    ASF_FLAG(asfDepositAuth,             9,  lsfDepositAuth)                               \
+    ASF_FLAG(asfAuthorizedNFTokenMinter, 10, 0) /* no lsf: stored as field */              \
+    /*  11 is unused */                                                                    \
+    ASF_FLAG(asfDisallowIncomingNFTokenOffer, 12, lsfDisallowIncomingNFTokenOffer)         \
+    ASF_FLAG(asfDisallowIncomingCheck,   13, lsfDisallowIncomingCheck)                     \
+    ASF_FLAG(asfDisallowIncomingPayChan, 14, lsfDisallowIncomingPayChan)                   \
+    ASF_FLAG(asfDisallowIncomingTrustline, 15, lsfDisallowIncomingTrustline)               \
+    ASF_FLAG(asfAllowTrustLineClawback,  16, lsfAllowTrustLineClawback)                    \
+    ASF_FLAG(asfAllowTrustLineLocking,   17, 0) /* feature-gated: featureTokenEscrow */
+// clang-format on
+
 #pragma push_macro("ACCOUNTSET_FLAG_TO_VALUE")
 #pragma push_macro("ACCOUNTSET_FLAG_TO_MAP")
 
-// AccountSet SetFlag/ClearFlag values
-#define ACCOUNTSET_FLAGS(ASF_FLAG)                \
-    ASF_FLAG(asfRequireDest, 1)                   \
-    ASF_FLAG(asfRequireAuth, 2)                   \
-    ASF_FLAG(asfDisallowXRP, 3)                   \
-    ASF_FLAG(asfDisableMaster, 4)                 \
-    ASF_FLAG(asfAccountTxnID, 5)                  \
-    ASF_FLAG(asfNoFreeze, 6)                      \
-    ASF_FLAG(asfGlobalFreeze, 7)                  \
-    ASF_FLAG(asfDefaultRipple, 8)                 \
-    ASF_FLAG(asfDepositAuth, 9)                   \
-    ASF_FLAG(asfAuthorizedNFTokenMinter, 10)      \
-    /*  11 is reserved for Hooks amendment */     \
-    /* ASF_FLAG(asfTshCollect, 11) */             \
-    ASF_FLAG(asfDisallowIncomingNFTokenOffer, 12) \
-    ASF_FLAG(asfDisallowIncomingCheck, 13)        \
-    ASF_FLAG(asfDisallowIncomingPayChan, 14)      \
-    ASF_FLAG(asfDisallowIncomingTrustline, 15)    \
-    ASF_FLAG(asfAllowTrustLineClawback, 16)       \
-    ASF_FLAG(asfAllowTrustLineLocking, 17)
-
-#define ACCOUNTSET_FLAG_TO_VALUE(name, value) inline constexpr FlagValue name = value;
-#define ACCOUNTSET_FLAG_TO_MAP(name, value) {#name, value},
+#define ACCOUNTSET_FLAG_TO_VALUE(name, value, lsf) inline constexpr FlagValue name = value;
+#define ACCOUNTSET_FLAG_TO_MAP(name, value, lsf) {#name, value},
 
 ACCOUNTSET_FLAGS(ACCOUNTSET_FLAG_TO_VALUE)
 
@@ -454,11 +461,9 @@ getAsfFlagMap()
 
 #undef ACCOUNTSET_FLAG_TO_VALUE
 #undef ACCOUNTSET_FLAG_TO_MAP
-#undef ACCOUNTSET_FLAGS
 
 #pragma pop_macro("ACCOUNTSET_FLAG_TO_VALUE")
 #pragma pop_macro("ACCOUNTSET_FLAG_TO_MAP")
-#pragma pop_macro("ACCOUNTSET_FLAGS")
 
 // Sponsor flags (spf)
 

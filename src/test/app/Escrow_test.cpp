@@ -217,7 +217,7 @@ struct Escrow_test : public beast::unit_test::Suite
 
         // Check to make sure that we correctly detect if tags are really
         // required:
-        env(fset(bob, asfRequireDest));
+        env(fset(bob, asfRequireDestinationTag));
         env(escrow::create(alice, bob, XRP(1000)),
             escrow::kFinishTime(env.now() + 1s),
             Ter(tecDST_TAG_NEEDED));
@@ -253,12 +253,12 @@ struct Escrow_test : public beast::unit_test::Suite
         using namespace std::chrono;
 
         {
-            // Ignore the "asfDisallowXRP" account flag, which we should
+            // Ignore the "asfDisallowIncomingXRP" account flag, which we should
             // have been doing before.
             Env env(*this, features);
 
             env.fund(XRP(5000), "bob", "george");
-            env(fset("george", asfDisallowXRP));
+            env(fset("george", asfDisallowIncomingXRP));
             env(escrow::create("bob", "george", XRP(10)), escrow::kFinishTime(env.now() + 1s));
         }
     }
@@ -393,7 +393,7 @@ struct Escrow_test : public beast::unit_test::Suite
             Ter(temBAD_EXPIRATION));
 
         // Carol now requires the use of a destination tag
-        env(fset("carol", asfRequireDest));
+        env(fset("carol", asfRequireDestinationTag));
 
         // missing destination tag
         env(escrow::create("alice", "carol", XRP(1)),

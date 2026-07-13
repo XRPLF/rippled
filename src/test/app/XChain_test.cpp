@@ -2269,7 +2269,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             }
             {
                 // B1: disabled master key
-                scEnv.tx(fset(altSigners[2].account, asfDisableMaster, 0)).close();
+                scEnv.tx(fset(altSigners[2].account, asfDisableMasterKey, 0)).close();
                 auto att = claimAttestation(
                     scAttester, jvb, mcAlice, amt, payees[2], true, claimID, dst, altSigners[2]);
                 scEnv.tx(att, Ter(tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR)).close();
@@ -3039,7 +3039,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
             scEnv.tx(createBridge(Account::kMaster, jvb))
                 .tx(jtx::signers(Account::kMaster, quorum, signers))
-                .tx(fset("scBob", asfRequireDest))  // set dest tag
+                .tx(fset("scBob", asfRequireDestinationTag))  // set dest tag
                 .close()
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
@@ -3088,7 +3088,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 // and resubmit the attestations (even though the witness
                 // servers won't do it)
                 scEnv
-                    .tx(fset("scBob", 0, asfRequireDest))  // clear dest tag
+                    .tx(fset("scBob", 0, asfRequireDestinationTag))  // clear dest tag
                     .close();
 
                 test::Balance const scBobBal(scEnv, scBob);
