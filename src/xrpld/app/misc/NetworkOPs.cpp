@@ -3880,7 +3880,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 .ledgerRange = {.min = minLedger, .max = maxLedger},
                 .marker = marker,
                 .limit = 0,
-                .bAdmin = true};
+                .bAdmin = true,
+                .delegate = std::nullopt};
             return db.newestAccountTxPage(options);
         };
 
