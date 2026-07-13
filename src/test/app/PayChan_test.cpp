@@ -126,7 +126,10 @@ struct PayChan_test : public beast::unit_test::Suite
             // asfAllowTrustLineLocking, either of which is tecNO_PERMISSION.
             env(create(alice, bob, usda(1000), settleDelay, pk),
                 Ter(features[featureTokenPaychan] ? TER(tecNO_PERMISSION) : TER(temBAD_AMOUNT)));
-            env(fund(alice, chan, usda(1000)), Ter(temBAD_AMOUNT));
+            // With TokenPaychan enabled the IOU amount passes preflight but
+            // does not match the XRP channel's asset, caught in preclaim.
+            env(fund(alice, chan, usda(1000)),
+                Ter(features[featureTokenPaychan] ? TER(tecWRONG_ASSET) : TER(temBAD_AMOUNT)));
             env(create(alice, bob, XRP(-1000), settleDelay, pk), Ter(temBAD_AMOUNT));
             env(fund(alice, chan, XRP(-1000)), Ter(temBAD_AMOUNT));
         }
@@ -147,7 +150,11 @@ struct PayChan_test : public beast::unit_test::Suite
             auto const iou = usda(100).value();
             auto const negXRP = XRP(-100).value();
             auto const posXRP = XRP(100).value();
-            env(claim(alice, chan, iou, iou), Ter(temBAD_AMOUNT));
+            // With TokenPaychan enabled matching IOU balance/amount pass
+            // preflight but do not match the XRP channel's asset, caught in
+            // preclaim.
+            env(claim(alice, chan, iou, iou),
+                Ter(features[featureTokenPaychan] ? TER(tecWRONG_ASSET) : TER(temBAD_AMOUNT)));
             env(claim(alice, chan, posXRP, iou), Ter(temBAD_AMOUNT));
             env(claim(alice, chan, iou, posXRP), Ter(temBAD_AMOUNT));
             env(claim(alice, chan, negXRP, negXRP), Ter(temBAD_AMOUNT));

@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -107,6 +108,25 @@ PaymentChannelFund::preflight(PreflightContext const& ctx)
 }
 
 TER
+PaymentChannelFund::preclaim(PreclaimContext const& ctx)
+{
+    if (ctx.view.rules().enabled(featureTokenPaychan))
+    {
+        Keylet const k(ltPAYCHAN, ctx.tx[sfChannel]);
+        auto const slep = ctx.view.read(k);
+        if (!slep)
+            return tecNO_ENTRY;
+
+        // The funded asset must match the channel's asset; otherwise the
+        // STAmount accumulation in doApply would throw on mismatched issues.
+        if (ctx.tx[sfAmount].asset() != (*slep)[sfAmount].asset())
+            return tecWRONG_ASSET;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
 PaymentChannelFund::doApply()
 {
     Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
@@ -160,11 +180,11 @@ PaymentChannelFund::doApply()
     STAmount const amount{ctx_.tx[sfAmount]};
     STAmount const chanAmt{(*slep)[sfAmount]};
 
-    // The funded asset must match the channel's asset. Without this check
-    // STAmount arithmetic below (chanAmt + amount) would throw on
-    // mismatched issues.
-    if (amount.asset() != chanAmt.asset())
-        return temBAD_AMOUNT;
+    // Asset consistency between the funded amount and the channel was
+    // validated in preclaim.
+    XRPL_ASSERT(
+        amount.asset() == chanAmt.asset(),
+        "xrpl::PaymentChannelFund::doApply : amount matches channel asset");
 
     {
         // Check reserve and funds availability

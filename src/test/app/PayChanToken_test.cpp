@@ -617,6 +617,48 @@ struct PayChanToken_test : public beast::unit_test::Suite
     }
 
     void
+    testIOUWrongAsset(FeatureBitset features)
+    {
+        testcase("IOU Wrong Asset");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account{"gateway"};
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(5'000), alice, bob, gw);
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.close();
+        env.trust(usd(10'000), alice, bob);
+        env.trust(eur(10'000), alice, bob);
+        env.close();
+        env(pay(gw, alice, usd(5'000)));
+        env(pay(gw, alice, eur(5'000)));
+        env.close();
+
+        auto const chan = paychan::channel(alice, bob, env.seq(alice));
+        env(paychan::create(alice, bob, usd(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
+        env.close();
+
+        // tecWRONG_ASSET: funding must use the channel's asset
+        env(paychan::fund(alice, chan, eur(100)), Ter(tecWRONG_ASSET));
+        env(paychan::fund(alice, chan, XRP(100)), Ter(tecWRONG_ASSET));
+        env.close();
+
+        // tecWRONG_ASSET: claims must use the channel's asset
+        env(paychan::claim(alice, chan, eur(10), eur(10)), Ter(tecWRONG_ASSET));
+        env(paychan::claim(alice, chan, XRP(10), XRP(10)), Ter(tecWRONG_ASSET));
+        env.close();
+
+        // The channel is unchanged
+        BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(1'000));
+        BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == usd(0));
+    }
+
+    void
     testIOUBalances(FeatureBitset features)
     {
         testcase("IOU Balances");
@@ -1209,7 +1251,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(bob, usd) == usd(10125));
         }
 
-        // test claim/close doesnt charge rate
+        // test claim/close doesn't charge rate
         {
             Env env{*this, features};
             env.fund(XRP(10'000), alice, bob, gw);
@@ -3842,6 +3884,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         testIOUCreatePreclaim(features);
         testIOUClaimPreclaim(features);
         testIOUClaimDoApply(features);
+        testIOUWrongAsset(features);
         // testIOUClaimClosePreclaim(features);
         testIOUBalances(features);
         testIOUMetaAndOwnership(features);

@@ -123,14 +123,26 @@ PaymentChannelClaim::preclaim(PreclaimContext const& ctx)
             return tecNO_TARGET;
 
         AccountID const dest = (*slep)[sfDestination];
-        STAmount const amount = (*slep)[sfAmount];
-        if (!isXRP(amount) && ctx.tx.isFieldPresent(sfBalance))
+        STAmount const chanFunds = (*slep)[sfAmount];
+
+        if (auto const bal = ctx.tx[~sfBalance])
+        {
+            // The requested balance (and optional amount) must match the
+            // channel's asset; otherwise STAmount comparisons/subtractions
+            // in doApply would throw on mismatched issues.
+            if (bal->asset() != chanFunds.asset())
+                return tecWRONG_ASSET;
+            if (auto const amt = ctx.tx[~sfAmount]; amt && amt->asset() != chanFunds.asset())
+                return tecWRONG_ASSET;
+        }
+
+        if (!isXRP(chanFunds) && ctx.tx.isFieldPresent(sfBalance))
         {
             if (auto const ret = std::visit(
                     [&]<typename T>(T const&) {
-                        return escrowUnlockPreclaimHelper<T>(ctx.view, dest, amount);
+                        return escrowUnlockPreclaimHelper<T>(ctx.view, dest, chanFunds);
                     },
-                    amount.asset().value());
+                    chanFunds.asset().value());
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -171,12 +183,11 @@ PaymentChannelClaim::doApply()
         auto const chanFunds = slep->getFieldAmount(sfAmount);
         auto const reqBalance = ctx_.tx[sfBalance];
 
-        // The requested balance must match the channel's asset; otherwise
-        // STAmount comparisons/subtractions below would throw.
-        if (reqBalance.asset() != chanFunds.asset())
-            return temBAD_AMOUNT;
-        if (auto const reqAmt = ctx_.tx[~sfAmount]; reqAmt && reqAmt->asset() != chanFunds.asset())
-            return temBAD_AMOUNT;
+        // Asset consistency between the requested balance/amount and the
+        // channel was validated in preclaim.
+        XRPL_ASSERT(
+            reqBalance.asset() == chanFunds.asset(),
+            "xrpl::PaymentChannelClaim::doApply : balance matches channel asset");
 
         if (accountID_ == dst && !ctx_.tx[~sfSignature])
         {
