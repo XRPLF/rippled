@@ -144,7 +144,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     static uint256
     getBookDirKey(Book const& book, STAmount const& takerPays, STAmount const& takerGets)
     {
-        return keylet::quality(keylet::kBook(book), getRate(takerGets, takerPays)).key;
+        return keylet::quality(keylet::book(book), getRate(takerGets, takerPays)).key;
     }
 
     static std::optional<uint256>
@@ -991,6 +991,83 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         // USD amount in AMM is changed
         auto [xrp, usd, lpt] = amm.balances(XRP, USD);
         BEAST_EXPECT(usd == USD(45));
+    }
+
+    void
+    testAmmQualityNotLeaked(FeatureBitset features)
+    {
+        bool const excludesAmmFromDomainQuality = features[fixCleanup3_3_0];
+
+        testcase << "AMM quality not leaked into domain BookStep"
+                 << (excludesAmmFromDomainQuality ? " (Cleanup3_3_0 enabled)"
+                                                  : " (Cleanup3_3_0 disabled)");
+
+        Env env(*this, features);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            PermissionedDEX(env);
+        auto const eur = gw["EUR"];
+
+        env.trust(eur(1000), bob, domainOwner);
+        env.close();
+        env(pay(gw, bob, eur(100)));
+        env.close();
+
+        env(pay(gw, alice, USD(500)));
+        env.close();
+
+        // The AMM makes the direct XRP->USD book look much better than it
+        // really is for domain payments. The domain LOB direct path is 1:1,
+        // while the competing XRP->EUR->USD path is 2:1.
+        AMM const amm(env, alice, XRP(10), USD(500));
+
+        auto const directOfferSeq{env.seq(bob)};
+        env(offer(bob, XRP(10), USD(10)), Domain(domainID));
+        env.close();
+
+        auto const xrpEurOfferSeq{env.seq(bob)};
+        env(offer(bob, XRP(10), eur(20)), Domain(domainID));
+        env.close();
+
+        auto const eurUsdOfferSeq{env.seq(domainOwner)};
+        env(offer(domainOwner, eur(20), USD(20)), Domain(domainID));
+        env.close();
+
+        auto const carolBalBefore = env.balance(carol, USD);
+
+        // Both paths compete for the same XRP(10) sendmax. If AMM quality leaks
+        // into the direct domain book, the engine ranks direct XRP->USD first
+        // but crossing can only consume the 1:1 LOB offer. With the fix, the
+        // direct book is ranked by its domain LOB quality, so the 2:1
+        // XRP->EUR->USD path executes first.
+        env(pay(alice, carol, USD(100)),
+            Path(~USD),
+            Path(~eur, ~USD),
+            Sendmax(XRP(10)),
+            Txflags(tfPartialPayment | tfNoRippleDirect),
+            Domain(domainID));
+        env.close();
+
+        auto const delivered = env.balance(carol, USD) - carolBalBefore;
+        if (excludesAmmFromDomainQuality)
+        {
+            BEAST_EXPECT(delivered == USD(20));
+
+            BEAST_EXPECT(checkOffer(env, bob, directOfferSeq, XRP(10), USD(10), 0, true));
+            BEAST_EXPECT(!offerExists(env, bob, xrpEurOfferSeq));
+            BEAST_EXPECT(!offerExists(env, domainOwner, eurUsdOfferSeq));
+        }
+        else
+        {
+            BEAST_EXPECT(delivered == USD(10));
+
+            BEAST_EXPECT(!offerExists(env, bob, directOfferSeq));
+            BEAST_EXPECT(checkOffer(env, bob, xrpEurOfferSeq, XRP(10), eur(20), 0, true));
+            BEAST_EXPECT(checkOffer(env, domainOwner, eurUsdOfferSeq, eur(20), USD(20), 0, true));
+        }
+
+        auto [xrp, usd, lpt] = amm.balances(XRP, USD);
+        BEAST_EXPECT(xrp == XRP(10));
+        BEAST_EXPECT(usd == USD(500));
     }
 
     void
@@ -1998,6 +2075,8 @@ public:
         testOfferTokenIssuerInDomain(all);
         testRemoveUnfundedOffer(all);
         testAmmNotUsed(all);
+        testAmmQualityNotLeaked(all);
+        testAmmQualityNotLeaked(all - fixCleanup3_3_0);
         testAutoBridge(all);
 
         // Test hybrid offers

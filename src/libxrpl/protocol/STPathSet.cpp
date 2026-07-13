@@ -127,7 +127,7 @@ STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
 {  // assemble base+tail and add it to the set if it's not a duplicate
     value_.push_back(base);
 
-    std::vector<STPath>::reverse_iterator it = value_.rbegin();
+    auto it = value_.rbegin();
 
     STPath& newPath = *it;
     newPath.pushBack(tail);
@@ -146,7 +146,7 @@ STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
 bool
 STPathSet::isEquivalent(STBase const& t) const
 {
-    STPathSet const* v = dynamic_cast<STPathSet const*>(&t);
+    auto const* v = dynamic_cast<STPathSet const*>(&t);
     return (v != nullptr) && (value_ == v->value_);
 }
 

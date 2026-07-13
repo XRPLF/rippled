@@ -3,9 +3,14 @@
 #include <xrpl/basics/DecayingSample.h>
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/core/List.h>
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/resource/detail/Key.h>
 #include <xrpl/resource/detail/Tuning.h>
+
+#include <chrono>
+#include <optional>
+#include <ostream>
+#include <string>
 
 namespace xrpl::Resource {
 
@@ -18,8 +23,8 @@ struct Entry : public beast::List<Entry>::Node
     Entry() = delete;
 
     /**
-       @param now Construction time of Entry.
-    */
+     * @param now Construction time of Entry.
+     */
     explicit Entry(clock_type::time_point const now)
         : refcount(0), localBalance(now), remoteBalance(0)
     {

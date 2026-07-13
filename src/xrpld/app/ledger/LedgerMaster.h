@@ -1,25 +1,42 @@
 #pragma once
 
 #include <xrpld/app/ledger/AbstractFetchPackContainer.h>
-#include <xrpld/app/ledger/InboundLedgers.h>
+#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerHistory.h>
 #include <xrpld/app/ledger/LedgerHolder.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/TimeKeeper.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/UptimeClock.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Gauge.h>
+#include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
-#include <xrpl/protocol/messages.h>
+#include <xrpl/protocol/Rules.h>
 
+#include <xrpl.pb.h>
+
+#include <atomic>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <mutex>
 #include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -91,10 +108,11 @@ public:
     void
     setFullLedger(std::shared_ptr<Ledger const> const& ledger, bool isSynchronous, bool isCurrent);
 
-    /** Check the sequence number and parent close time of a
-        ledger against our clock and last validated ledger to
-        see if it can be the network's current ledger
-    */
+    /**
+     * Check the sequence number and parent close time of a
+     * ledger against our clock and last validated ledger to
+     * see if it can be the network's current ledger
+     */
     bool
     canBeCurrent(std::shared_ptr<Ledger const> const& ledger);
 
@@ -107,38 +125,44 @@ public:
     std::string
     getCompleteLedgers();
 
-    /** Apply held transactions to the open ledger
-        This is normally called as we close the ledger.
-        The open ledger remains open to handle new transactions
-        until a new open ledger is built.
-    */
+    /**
+     * Apply held transactions to the open ledger
+     * This is normally called as we close the ledger.
+     * The open ledger remains open to handle new transactions
+     * until a new open ledger is built.
+     */
     void
     applyHeldTransactions();
 
-    /** Get the next transaction held for a particular account if any.
-        This is normally called when a transaction for that account is
-        successfully applied to the open ledger so the next transaction
-        can be resubmitted without waiting for ledger close.
-    */
+    /**
+     * Get the next transaction held for a particular account if any.
+     * This is normally called when a transaction for that account is
+     * successfully applied to the open ledger so the next transaction
+     * can be resubmitted without waiting for ledger close.
+     */
     std::shared_ptr<STTx const>
     popAcctTransaction(std::shared_ptr<STTx const> const& tx);
 
-    /** Get a ledger's hash by sequence number using the cache
+    /**
+     * Get a ledger's hash by sequence number using the cache
      */
     uint256
     getHashBySeq(std::uint32_t index);
 
-    /** Walk to a ledger's hash using the skip list */
+    /**
+     * Walk to a ledger's hash using the skip list
+     */
     std::optional<LedgerHash>
     walkHashBySeq(std::uint32_t index, InboundLedger::Reason reason);
 
-    /** Walk the chain of ledger hashes to determine the hash of the
-        ledger with the specified index. The referenceLedger is used as
-        the base of the chain and should be fully validated and must not
-        precede the target index. This function may throw if nodes
-        from the reference ledger or any prior ledger are not present
-        in the node store.
-    */
+    /**
+     * Walk the chain of ledger hashes to determine the hash of the
+     * ledger with the specified index. The referenceLedger is used as
+     * the base of the chain and should be fully validated and must not
+     * precede the target index. This function may throw if nodes
+     * from the reference ledger or any prior ledger are not present
+     * in the node store.
+     */
     std::optional<LedgerHash>
     walkHashBySeq(
         std::uint32_t index,
@@ -238,7 +262,9 @@ public:
     std::size_t
     getFetchPackCacheSize() const;
 
-    //! Whether we have ever fully validated a ledger.
+    /**
+     * Whether we have ever fully validated a ledger.
+     */
     bool
     haveValidated()
     {

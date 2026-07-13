@@ -1,6 +1,13 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+
+#include <cstddef>
+#include <iterator>
+#include <optional>
 
 namespace xrpl {
 

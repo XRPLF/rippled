@@ -7,9 +7,14 @@
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/protocol/PublicKey.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <mutex>
+#include <optional>
 #include <set>
+#include <string>
+#include <type_traits>
 
 namespace xrpl {
 
@@ -48,23 +53,27 @@ private:
 public:
     Cluster(beast::Journal j);
 
-    /** Determines whether a node belongs in the cluster
-        @return std::nullopt if the node isn't a member,
-                otherwise, the comment associated with the
-                node (which may be an empty string).
-    */
+    /**
+     * Determines whether a node belongs in the cluster
+     * @return std::nullopt if the node isn't a member,
+     *         otherwise, the comment associated with the
+     *         node (which may be an empty string).
+     */
     std::optional<std::string>
     member(PublicKey const& node) const;
 
-    /** The number of nodes in the cluster list. */
+    /**
+     * The number of nodes in the cluster list.
+     */
     std::size_t
     size() const;
 
-    /** Store information about the state of a cluster node.
-        @param identity The node's public identity
-        @param name The node's name (may be empty)
-        @return true if we updated our information
-    */
+    /**
+     * Store information about the state of a cluster node.
+     * @param identity The node's public identity
+     * @param name The node's name (may be empty)
+     * @return true if we updated our information
+     */
     bool
     update(
         PublicKey const& identity,
@@ -72,23 +81,25 @@ public:
         std::uint32_t loadFee = 0,
         NetClock::time_point reportTime = NetClock::time_point{});
 
-    /** Invokes the callback once for every cluster node.
-        @note You are not allowed to call `update` from
-              within the callback.
-    */
+    /**
+     * Invokes the callback once for every cluster node.
+     * @note You are not allowed to call `update` from
+     *       within the callback.
+     */
     void
     forEach(std::function<void(ClusterNode const&)> func) const;
 
-    /** Load the list of cluster nodes.
-
-        The section contains entries consisting of a base58
-        encoded node public key, optionally followed by
-        a comment.
-
-        @return false if an entry could not be parsed or
-                contained an invalid node public key,
-                true otherwise.
-    */
+    /**
+     * Load the list of cluster nodes.
+     *
+     * The section contains entries consisting of a base58
+     * encoded node public key, optionally followed by
+     * a comment.
+     *
+     * @return false if an entry could not be parsed or
+     *         contained an invalid node public key,
+     *         true otherwise.
+     */
     bool
     load(Section const& nodes);
 };
