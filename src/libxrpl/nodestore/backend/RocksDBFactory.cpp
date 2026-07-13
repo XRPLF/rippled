@@ -1,13 +1,23 @@
+#if XRPL_ROCKSDB_AVAILABLE
+#include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Factory.h>
+#include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
+#include <xrpl/nodestore/detail/BatchWriter.h>
+#include <xrpl/nodestore/detail/DecodedBlob.h>
+#include <xrpl/nodestore/detail/EncodedBlob.h>
 
 #include <rocksdb/advanced_options.h>
 #include <rocksdb/cache.h>
@@ -22,26 +32,13 @@
 #include <rocksdb/table.h>
 #include <rocksdb/write_batch.h>
 
-#include <bit>
+#include <atomic>
 #include <cstddef>
 #include <filesystem>
 #include <functional>
+#include <memory>
 #include <stdexcept>
 #include <string>
-
-#if XRPL_ROCKSDB_AVAILABLE
-#include <xrpl/basics/ByteUtilities.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/nodestore/Factory.h>
-#include <xrpl/nodestore/Manager.h>
-#include <xrpl/nodestore/detail/BatchWriter.h>
-#include <xrpl/nodestore/detail/DecodedBlob.h>
-#include <xrpl/nodestore/detail/EncodedBlob.h>
-
-#include <atomic>
-#include <memory>
 
 namespace xrpl::NodeStore {
 
@@ -81,7 +78,7 @@ public:
     void
     StartThread(void (*f)(void*), void* a) override
     {
-        ThreadParams* const p(new ThreadParams(f, a));
+        auto* const p = new ThreadParams(f, a);
         EnvWrapper::StartThread(&RocksDBEnv::threadEntry, p);
     }
 };
@@ -286,7 +283,7 @@ public:
         Status status = Status::Ok;
 
         rocksdb::ReadOptions const options;
-        rocksdb::Slice const slice(std::bit_cast<char const*>(hash.data()), keyBytes);
+        rocksdb::Slice const slice(reinterpret_cast<char const*>(hash.data()), keyBytes);
 
         std::string string;
 
@@ -349,8 +346,9 @@ public:
             EncodedBlob const encoded(e);
 
             wb.Put(
-                rocksdb::Slice(std::bit_cast<char const*>(encoded.getKey()), keyBytes),
-                rocksdb::Slice(std::bit_cast<char const*>(encoded.getData()), encoded.getSize()));
+                rocksdb::Slice(reinterpret_cast<char const*>(encoded.getKey()), keyBytes),
+                rocksdb::Slice(
+                    reinterpret_cast<char const*>(encoded.getData()), encoded.getSize()));
         }
 
         rocksdb::WriteOptions const options;
@@ -419,7 +417,9 @@ public:
         storeBatch(batch);
     }
 
-    /** Returns the number of file descriptors the backend expects to need */
+    /**
+     * Returns the number of file descriptors the backend expects to need
+     */
     [[nodiscard]] int
     fdRequired() const override
     {

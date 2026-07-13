@@ -368,7 +368,7 @@ private:
 
         try
         {
-            std::size_t const parsedBlockSize = beast::lexicalCastThrow<std::size_t>(blockSizeStr);
+            auto const parsedBlockSize = beast::lexicalCastThrow<std::size_t>(blockSizeStr);
 
             // Validate: must be power of 2 between 4K and 32K
             if (parsedBlockSize < 4096 || parsedBlockSize > 32768 ||

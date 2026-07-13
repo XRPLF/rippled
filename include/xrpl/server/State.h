@@ -2,8 +2,15 @@
 
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/rdb/DatabaseCon.h>
-#include <xrpl/server/Manifest.h>
+#include <xrpl/rdb/SociDB.h>
 
+<<<<<<< HEAD
+=======
+#include <boost/filesystem.hpp>
+
+#include <string>
+
+>>>>>>> origin/develop
 namespace xrpl {
 
 struct SavedState

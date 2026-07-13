@@ -16,6 +16,7 @@
 #include <xrpl/config/Constants.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/Protocol.h>
@@ -330,11 +331,9 @@ SHAMapStoreImp::run()
             try
             {
                 validatedLedger->stateMap().snapShot(false)->visitNodes(
-                    std::bind(
-                        &SHAMapStoreImp::copyNode,
-                        this,
-                        std::ref(nodeCount),
-                        std::placeholders::_1));
+                    [this, &nodeCount](SHAMapTreeNode const& node) {
+                        return copyNode(nodeCount, node);
+                    });
             }
             catch (SHAMapMissingNode const& e)
             {

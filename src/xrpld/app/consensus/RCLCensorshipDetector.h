@@ -1,9 +1,9 @@
 #pragma once
 
 #include <xrpl/basics/algorithm.h>
-#include <xrpl/shamap/SHAMap.h>
 
 #include <algorithm>
+#include <functional>
 #include <utility>
 #include <vector>
 
@@ -51,11 +51,12 @@ private:
 public:
     RCLCensorshipDetector() = default;
 
-    /** Add transactions being proposed for the current consensus round.
-
-        @param proposed The set of transactions that we are initially proposing
-                        for this round.
-    */
+    /**
+     * Add transactions being proposed for the current consensus round.
+     *
+     * @param proposed The set of transactions that we are initially proposing
+     *                 for this round.
+     */
     void
     propose(TxIDSeqVec proposed)
     {
@@ -74,19 +75,20 @@ public:
         tracker_ = std::move(proposed);
     }
 
-    /** Determine which transactions made it and perform censorship detection.
-
-        This function is called when the server is proposing and a consensus
-        round it participated in completed.
-
-        @param accepted The set of transactions that the network agreed
-                        should be included in the ledger being built.
-        @param pred     A predicate invoked for every transaction we've proposed
-                        but which hasn't yet made it. The predicate must be
-                        callable as:
-                            bool pred(TxID const&, Sequence)
-                        It must return true for entries that should be removed.
-    */
+    /**
+     * Determine which transactions made it and perform censorship detection.
+     *
+     * This function is called when the server is proposing and a consensus
+     * round it participated in completed.
+     *
+     * @param accepted The set of transactions that the network agreed
+     *                 should be included in the ledger being built.
+     * @param pred     A predicate invoked for every transaction we've proposed
+     *                 but which hasn't yet made it. The predicate must be
+     *                 callable as:
+     *                     bool pred(TxID const&, Sequence)
+     *                 It must return true for entries that should be removed.
+     */
     template <class Predicate>
     void
     check(std::vector<TxID> accepted, Predicate&& pred)
@@ -108,11 +110,12 @@ public:
         tracker_.erase(i, tracker_.end());
     }
 
-    /** Removes all elements from the tracker
-
-        Typically, this function might be called after we reconnect to the
-        network following an outage, or after we start tracking the network.
-    */
+    /**
+     * Removes all elements from the tracker
+     *
+     * Typically, this function might be called after we reconnect to the
+     * network following an outage, or after we start tracking the network.
+     */
     void
     reset()
     {

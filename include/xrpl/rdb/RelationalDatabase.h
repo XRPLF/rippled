@@ -1,16 +1,32 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/LedgerShortcut.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/TxSearched.h>
-#include <xrpl/rdb/DatabaseCon.h>
 
 #include <boost/variant.hpp>
+
+#include <concepts>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <map>
+#include <memory>
+#include <optional>
+#include <tuple>
+#include <utility>
+#include <variant>
+#include <vector>
 
 namespace xrpl {
 
@@ -48,8 +64,10 @@ public:
     struct AccountTxOptions
     {
         AccountID const& account;
-        /// Ledger sequence range to search. A value of 0 for min or max
-        /// means unbounded in that direction (no constraint applied).
+        /**
+         * Ledger sequence range to search. A value of 0 for min or max
+         * means unbounded in that direction (no constraint applied).
+         */
         LedgerRange ledgerRange{};
         std::uint32_t offset = 0;
         std::uint32_t limit = 0;

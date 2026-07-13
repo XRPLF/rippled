@@ -124,7 +124,7 @@ backend=sqlite
 }
 
 /**
-   Write an xrpld config file and remove when done.
+ * Write an xrpld config file and remove when done.
  */
 class FileCfgGuard : public xrpl::detail::FileDirGuard
 {
@@ -235,7 +235,7 @@ more-xrpl-validators.net
 }
 
 /**
-   Write a validators.txt file and remove when done.
+ * Write a validators.txt file and remove when done.
  */
 class ValidatorsTxtGuard : public detail::FileDirGuard
 {
@@ -1136,7 +1136,7 @@ trust-these-validators.gov
     testZeroPort()
     {
         auto const contents = std::regex_replace(
-            detail::configContents("", ""), std::regex("port\\s*=\\s*\\d+"), "port = 0");
+            detail::configContents("", ""), std::regex(R"(port\s*=\s*\d+)"), "port = 0");
 
         try
         {
@@ -1475,6 +1475,7 @@ r.ripple.com:51235
             std::string toLoad(R"xrpldConfig(
 [amendment_majority_time]
 )xrpldConfig");
+            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
             toLoad += std::to_string(val) + space + unit;
             space = space.empty() ? " " : "";
 
