@@ -55,12 +55,13 @@ public:
     explicit STTx(SerialIter&& sit);
     explicit STTx(STObject&& object);
 
-    /** Constructs a transaction.
-
-        The returned transaction will have the specified type and
-        any fields that the callback function adds to the object
-        that's passed in.
-    */
+    /**
+     * Constructs a transaction.
+     *
+     * The returned transaction will have the specified type and
+     * any fields that the callback function adds to the object
+     * that's passed in.
+     */
     STTx(TxType type, std::function<void(STObject&)> assembler);
 
     // STObject functions.
@@ -92,7 +93,9 @@ public:
     [[nodiscard]] SeqProxy
     getSeqProxy() const;
 
-    /** Returns the first non-zero value of (Sequence, TicketSequence). */
+    /**
+     * Returns the first non-zero value of (Sequence, TicketSequence).
+     */
     [[nodiscard]] std::uint32_t
     getSeqValue() const;
 
@@ -114,10 +117,11 @@ public:
         SecretKey const& secretKey,
         std::optional<std::reference_wrapper<SField const>> signatureTarget = {});
 
-    /** Check the signature.
-        @param rules The current ledger rules.
-        @return `true` if valid signature. If invalid, the error message string.
-    */
+    /**
+     * Check the signature.
+     * @param rules The current ledger rules.
+     * @return `true` if valid signature. If invalid, the error message string.
+     */
     [[nodiscard]] std::expected<void, std::string>
     checkSign(Rules const& rules) const;
 
@@ -145,12 +149,13 @@ public:
     getFeePayerID() const;
 
 private:
-    /** Check the signature.
-        @param rules The current ledger rules.
-        @param sigObject Reference to object that contains the signature fields.
-            Will be *this more often than not.
-        @return `true` if valid signature. If invalid, the error message string.
-    */
+    /**
+     * Check the signature.
+     * @param rules The current ledger rules.
+     * @param sigObject Reference to object that contains the signature fields.
+     *     Will be *this more often than not.
+     * @return `true` if valid signature. If invalid, the error message string.
+     */
     [[nodiscard]] std::expected<void, std::string>
     checkSign(Rules const& rules, STObject const& sigObject) const;
 
@@ -181,17 +186,20 @@ private:
 bool
 passesLocalChecks(STObject const& st, std::string&);
 
-/** Sterilize a transaction.
-
-    The transaction is serialized and then deserialized,
-    ensuring that all equivalent transactions are in canonical
-    form. This also ensures that program metadata such as
-    the transaction's digest, are all computed.
-*/
+/**
+ * Sterilize a transaction.
+ *
+ * The transaction is serialized and then deserialized,
+ * ensuring that all equivalent transactions are in canonical
+ * form. This also ensures that program metadata such as
+ * the transaction's digest, are all computed.
+ */
 std::shared_ptr<STTx const>
 sterilize(STTx const& stx);
 
-/** Check whether a transaction is a pseudo-transaction */
+/**
+ * Check whether a transaction is a pseudo-transaction
+ */
 bool
 isPseudoTx(STObject const& tx);
 

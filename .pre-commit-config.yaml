@@ -43,6 +43,11 @@ repos:
         language: python
         entry: ./bin/pre-commit/fix_pragma_once.py
         files: \.(h|hpp)$
+      - id: check-doxygen-style
+        name: check Doxygen comment style
+        entry: ./bin/pre-commit/check_doxygen_style.py
+        language: python
+        types_or: [c++, c]
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: dd18dad857d6133e90bbe478f4f2f22ec0030269 # frozen: v22.1.5

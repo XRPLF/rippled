@@ -63,18 +63,19 @@ struct AlwaysFalseT : std::bool_constant<false>
 
 }  // namespace detail
 
-/** Integers of any length that is a multiple of 32-bits
-
-    @note This class stores its values internally in big-endian
-          form and that internal representation is part of the
-          binary protocol of the XRP Ledger and cannot be changed
-          arbitrarily without causing breakage.
-
-          @tparam Bits The number of bits this integer should have; must
-                       be at least 64 and a multiple of 32.
-          @tparam Tag An arbitrary type that functions as a tag and allows
-                      the instantiation of "distinct" types that the same
-                      number of bits.
+/**
+ * Integers of any length that is a multiple of 32-bits
+ *
+ * @note This class stores its values internally in big-endian
+ *       form and that internal representation is part of the
+ *       binary protocol of the XRP Ledger and cannot be changed
+ *       arbitrarily without causing breakage.
+ *
+ * @tparam Bits The number of bits this integer should have; must
+ *              be at least 64 and a multiple of 32.
+ * @tparam Tag An arbitrary type that functions as a tag and allows
+ *             the instantiation of "distinct" types that the same
+ *             number of bits.
  */
 template <std::size_t Bits, class Tag = void>
 class BaseUInt
@@ -154,21 +155,23 @@ public:
         return data() + kBytes;
     }
 
-    /** Value hashing function.
-        The seed prevents crafted inputs from causing degenerate parent
-       containers.
-    */
+    /**
+     * Value hashing function.
+     *  The seed prevents crafted inputs from causing degenerate parent
+     * containers.
+     */
     using hasher = HardenedHash<>;
 
     //--------------------------------------------------------------------------
 
 private:
-    /** Construct from a raw pointer.
-        The buffer pointed to by `data` must be at least Bits/8 bytes.
-
-        @note the structure is used to disambiguate this from the std::uint64_t
-              constructor: something like base_uint(0) is ambiguous.
-    */
+    /**
+     * Construct from a raw pointer.
+     * The buffer pointed to by `data` must be at least Bits/8 bytes.
+     *
+     * @note the structure is used to disambiguate this from the std::uint64_t
+     *       constructor: something like base_uint(0) is ambiguous.
+     */
     // NIKB TODO Remove the need for this constructor.
     struct VoidHelper
     {
@@ -503,13 +506,14 @@ public:
         h(a.data_.data(), sizeof(a.data_));
     }
 
-    /** Parse a hex string into a base_uint
-
-        The input must be precisely `2 * bytes` hexadecimal characters
-        long, with one exception: the value '0'.
-
-        @param sv A null-terminated string of hexadecimal characters
-        @return true if the input was parsed properly; false otherwise.
+    /**
+     * Parse a hex string into a base_uint
+     *
+     * The input must be precisely `2 * bytes` hexadecimal characters
+     * long, with one exception: the value '0'.
+     *
+     * @param sv A null-terminated string of hexadecimal characters
+     * @return true if the input was parsed properly; false otherwise.
      */
     [[nodiscard]] constexpr bool
     parseHex(std::string_view sv)

@@ -21,7 +21,7 @@
 
 namespace xrpl {
 
-/*
+/**
  * @brief Invariants: Vault object and MPTokenIssuance for vault shares
  *
  * - vault deleted and vault created is empty
@@ -96,7 +96,7 @@ private:
      *
      * @param vaultDelta Delta of the vault's asset balance for this transaction.
      * @param rules      Active ledger rules (used to check the amendment).
-     * @returns The minimum scale to apply when rounding vault-related amounts.
+     * @return The minimum scale to apply when rounding vault-related amounts.
      */
     [[nodiscard]] std::int32_t
     computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules) const;
@@ -109,7 +109,7 @@ private:
      * to the vault asset held by @p id.
      *
      * @param id Account whose asset delta is requested.
-     * @returns The delta, or @c std::nullopt if the entry was not touched.
+     * @return The delta, or @c std::nullopt if the entry was not touched.
      */
     [[nodiscard]] std::optional<DeltaInfo>
     deltaAssets(AccountID const& id) const;
@@ -124,8 +124,8 @@ private:
      *
      * @param tx  The transaction being applied.
      * @param fee Fee charged by this transaction.
-     * @returns The fee-adjusted delta, or @c std::nullopt if the net delta is
-     *          zero or the account entry was not touched.
+     * @return The fee-adjusted delta, or @c std::nullopt if the net delta is
+     *         zero or the account entry was not touched.
      */
     [[nodiscard]] std::optional<DeltaInfo>
     deltaAssetsTxAccount(STTx const& tx, XRPAmount fee) const;
@@ -138,7 +138,7 @@ private:
      * returned.
      *
      * @param id Account whose share delta is requested.
-     * @returns The delta, or @c std::nullopt if the entry was not touched.
+     * @return The delta, or @c std::nullopt if the entry was not touched.
      */
     [[nodiscard]] std::optional<DeltaInfo>
     deltaShares(AccountID const& id) const;
@@ -147,8 +147,8 @@ private:
      * @brief Check whether a vault holds no assets.
      *
      * @param vault Snapshot of the vault to test.
-     * @returns @c true when both @c assetsAvailable and @c assetsTotal are
-     *          zero.
+     * @return @c true when both @c assetsAvailable and @c assetsTotal are
+     *         zero.
      */
     [[nodiscard]] static bool
     isVaultEmpty(Vault const& vault);

@@ -760,7 +760,8 @@ adjustLPTokensIn(
     return adjustLPTokens(lptAMMBalance, lpTokensWithdraw, IsDeposit::No);
 }
 
-/** Proportional withdrawal of pool assets for the amount of LPTokens.
+/**
+ * Proportional withdrawal of pool assets for the amount of LPTokens.
  */
 std::pair<TER, STAmount>
 AMMWithdraw::equalWithdrawTokens(
@@ -824,7 +825,8 @@ AMMWithdraw::deleteAMMAccountIfEmpty(
     return {ter, true};
 }
 
-/** Proportional withdrawal of pool assets for the amount of LPTokens.
+/**
+ * Proportional withdrawal of pool assets for the amount of LPTokens.
  */
 std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
 AMMWithdraw::equalWithdrawTokens(
@@ -910,7 +912,8 @@ AMMWithdraw::equalWithdrawTokens(
     // LCOV_EXCL_STOP
 }
 
-/** All assets withdrawal with the constraints on the maximum amount
+/**
+ * All assets withdrawal with the constraints on the maximum amount
  * of each asset that the trader is willing to withdraw.
  *       a = (t/T) * A (5)
  *       b = (t/T) * B (6)
@@ -1000,7 +1003,8 @@ AMMWithdraw::equalWithdrawLimit(
         tfee);
 }
 
-/** Withdraw single asset equivalent to the amount specified in Asset1Out.
+/**
+ * Withdraw single asset equivalent to the amount specified in Asset1Out.
  * t = T * (c - sqrt(c**2 - 4*R))/2
  *     where R = b/B, c = R*fee + 2 - fee
  * Use equation 7 to compute the t, given the amount in Asset1Out.
@@ -1046,7 +1050,8 @@ AMMWithdraw::singleWithdraw(
         tfee);
 }
 
-/** withdrawal of single asset specified in Asset1Out proportional
+/**
+ * withdrawal of single asset specified in Asset1Out proportional
  * to the share represented by the amount of LPTokens.
  * Use equation 8 to compute the amount of asset1, given the redeemed t
  *   represented by LPTokens. Let this be Y.
@@ -1090,7 +1095,8 @@ AMMWithdraw::singleWithdrawTokens(
     return {tecAMM_FAILED, STAmount{}};
 }
 
-/** Withdraw single asset with two constraints.
+/**
+ * Withdraw single asset with two constraints.
  * a. amount of asset1 if specified (not 0) in Asset1Out specifies the minimum
  *     amount of asset1 that the trader is willing to withdraw.
  * b. The effective price of asset traded out does not exceed the amount
