@@ -124,19 +124,78 @@ ValidLoan::finalize(
                                    "by an unauthorized transaction";
                 return false;
             }
+
+            // LoanAccept must be submitted by the loan's Borrower, and may only
+            // finalise a loan whose StartDate is still in the future.
+            if (lendingV11Enabled && txType == ttLOAN_ACCEPT)
+            {
+                if (after->getAccountID(sfBorrower) != tx.getAccountID(sfAccount))
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanAccept submitted "
+                                       "by an account other than the Borrower";
+                    return false;
+                }
+                if (after->getFieldU32(sfStartDate) <=
+                    view.parentCloseTime().time_since_epoch().count())
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanAccept processed a "
+                                       "Loan whose StartDate is not in the future";
+                    return false;
+                }
+            }
         }
-        // On creation, LoanSet chooses the loan's initial state from its
-        // inputs: a Borrower with no CounterpartySignature starts the two-step
-        // flow and must create a pending loan; any other LoanSet must create an
-        // active (non-pending) loan.
+        // On creation, LoanSet must use exactly one of two mutually exclusive
+        // paths: it either names a Borrower (starting the two-step flow) or
+        // carries a Counterparty together with its CounterpartySignature. A
+        // Borrower with no CounterpartySignature starts the two-step flow and
+        // must create a pending loan; any other LoanSet must create an active
+        // (non-pending) loan.
         if (lendingV11Enabled && !before && txType == ttLOAN_SET)
         {
-            bool const shouldPend =
-                tx.isFieldPresent(sfBorrower) && !tx.isFieldPresent(sfCounterpartySignature);
+            bool const hasBorrower = tx.isFieldPresent(sfBorrower);
+            bool const hasCounterparty = tx.isFieldPresent(sfCounterparty);
+            bool const hasCounterpartySig = tx.isFieldPresent(sfCounterpartySignature);
+
+            // If a LoanSet carries a Counterparty and a CounterpartySignature it
+            // must not also name a Borrower.
+            if (hasCounterparty && hasCounterpartySig && hasBorrower)
+            {
+                JLOG(j.fatal()) << "Invariant failed: LoanSet specified a "
+                                   "Counterparty and CounterpartySignature "
+                                   "together with a Borrower";
+                return false;
+            }
+            // If a LoanSet names a Borrower it must not also carry a
+            // Counterparty or a CounterpartySignature.
+            if (hasBorrower && (hasCounterparty || hasCounterpartySig))
+            {
+                JLOG(j.fatal()) << "Invariant failed: LoanSet specified a "
+                                   "Borrower together with a Counterparty or "
+                                   "CounterpartySignature";
+                return false;
+            }
+            // A LoanSet must use one of the two creation paths.
+            if (!hasBorrower && !(hasCounterparty && hasCounterpartySig))
+            {
+                JLOG(j.fatal()) << "Invariant failed: LoanSet specified neither "
+                                   "a Borrower nor a Counterparty with "
+                                   "CounterpartySignature";
+                return false;
+            }
+
+            bool const shouldPend = hasBorrower && !hasCounterpartySig;
             if (shouldPend != after->isFlag(lsfLoanPending))
             {
                 JLOG(j.fatal()) << "Invariant failed: LoanSet pending flag does "
                                    "not match Borrower and CounterpartySignature";
+                return false;
+            }
+
+            // A created loan must always record its Borrower.
+            if (!after->isFieldPresent(sfBorrower))
+            {
+                JLOG(j.fatal()) << "Invariant failed: LoanSet did not set the "
+                                   "Loan Borrower";
                 return false;
             }
         }
