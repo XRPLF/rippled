@@ -6,9 +6,9 @@
 #include <xrpl/conditions/Condition.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
@@ -34,7 +34,6 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
-#include <memory>
 #include <system_error>
 #include <variant>
 
@@ -203,14 +202,14 @@ escrowCreatePreclaimHelper<Issue>(
         return tecNO_PERMISSION;
 
     // If the lsfAllowTrustLineLocking is not enabled, return tecNO_PERMISSION
-    AccountRootEntry<ReadView> sleIssuer{keylet::account(issuer), ctx.view};
+    AccountRootEntry<ReadView> const sleIssuer{keylet::account(issuer), ctx.view};
     if (!sleIssuer)
         return tecNO_ISSUER;
     if (!sleIssuer->isFlag(lsfAllowTrustLineLocking))
         return tecNO_PERMISSION;
 
     // If the account does not have a trustline to the issuer, return tecNO_LINE
-    RippleStateEntry<ReadView> sleRippleState{
+    RippleStateEntry<ReadView> const sleRippleState{
         keylet::trustLine(account, issuer, issue.currency), ctx.view};
     if (!sleRippleState)
         return tecNO_LINE;
@@ -275,7 +274,7 @@ escrowCreatePreclaimHelper<MPTIssue>(
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
     auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
-    MPTokenIssuanceEntry<ReadView> sleIssuance{issuanceKey, ctx.view};
+    MPTokenIssuanceEntry<ReadView> const sleIssuance{issuanceKey, ctx.view};
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -344,7 +343,7 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dest{ctx.tx[sfDestination]};
 
-    AccountRootEntry<ReadView> sled{keylet::account(dest), ctx.view};
+    AccountRootEntry<ReadView> const sled{keylet::account(dest), ctx.view};
     if (!sled)
         return tecNO_DST;
 
@@ -472,7 +471,7 @@ EscrowCreate::doApply()
 
     // Check destination account
     {
-        AccountRootEntry<ReadView> sled{keylet::account(ctx_.tx[sfDestination]), ctx_.view()};
+        AccountRootEntry<ReadView> const sled{keylet::account(ctx_.tx[sfDestination]), ctx_.view()};
         if (!sled)
             return tecNO_DST;  // LCOV_EXCL_LINE
         if (sled->isFlag(lsfRequireDestTag) && !ctx_.tx[~sfDestinationTag])

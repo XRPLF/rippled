@@ -1,9 +1,10 @@
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainDelete.h>
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -29,7 +30,7 @@ TER
 PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 {
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
-    PermissionedDomainEntry<ReadView> sleDomain{keylet::permissionedDomain(domain), ctx.view};
+    PermissionedDomainEntry<ReadView> const sleDomain{keylet::permissionedDomain(domain), ctx.view};
 
     if (!sleDomain)
         return tecNO_ENTRY;

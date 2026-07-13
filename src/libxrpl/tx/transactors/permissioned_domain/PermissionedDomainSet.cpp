@@ -2,9 +2,8 @@
 
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -63,7 +62,7 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfDomainID))
     {
-        PermissionedDomainEntry<ReadView> sleDomain{
+        PermissionedDomainEntry<ReadView> const sleDomain{
             keylet::permissionedDomain(ctx.tx.getFieldH256(sfDomainID)), ctx.view};
         if (!sleDomain)
             return tecNO_ENTRY;
@@ -80,7 +79,7 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 TER
 PermissionedDomainSet::doApply()
 {
-    AccountRootEntry<ApplyView> ownerSle{keylet::account(accountID_), view()};
+    AccountRootEntry<ApplyView> const ownerSle{keylet::account(accountID_), view()};
     if (!ownerSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

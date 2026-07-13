@@ -40,7 +40,7 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer)
 {
     if (isXRP(issuer))
         return false;
-    if (AccountRootEntry<ReadView> sle{keylet::account(issuer), view})
+    if (AccountRootEntry<ReadView> const sle{keylet::account(issuer), view})
         return sle->isFlag(lsfGlobalFreeze);
     return false;
 }
@@ -270,7 +270,7 @@ ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj)
 XRPAmount
 xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j)
 {
-    AccountRootEntry<ReadView> sle{keylet::account(id), view};
+    AccountRootEntry<ReadView> const sle{keylet::account(id), view};
     if (!sle)
         return beast::kZero;
 
@@ -302,7 +302,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 Rate
 transferRate(ReadView const& view, AccountID const& issuer)
 {
-    AccountRootEntry<ReadView> sle{keylet::account(issuer), view};
+    AccountRootEntry<ReadView> const sle{keylet::account(issuer), view};
 
     if (sle && sle->isFieldPresent(sfTransferRate))
         return Rate{sle->getFieldU32(sfTransferRate)};

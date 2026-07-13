@@ -4,7 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
@@ -149,7 +149,7 @@ VaultCreate::doApply()
     auto const& tx = ctx_.tx;
     auto applyViewContext = ctx_.getApplyViewContext();
     auto const sequence = tx.getSeqValue();
-    AccountRootEntry<ApplyView> owner{keylet::account(accountID_), view()};
+    AccountRootEntry<ApplyView> const owner{keylet::account(accountID_), view()};
     if (!owner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

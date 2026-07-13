@@ -3,6 +3,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
@@ -139,7 +140,7 @@ isSoleShareholder(
 
     auto const shareMPTID =
         makeMptID(issuance->getFieldU32(sfSequence), issuance->getAccountID(sfIssuer));
-    MPTokenEntry<ReadView> sleToken{keylet::mptoken(shareMPTID, account), view};
+    MPTokenEntry<ReadView> const sleToken{keylet::mptoken(shareMPTID, account), view};
     if (!sleToken)
         return false;  // LCOV_EXCL_LINE
 

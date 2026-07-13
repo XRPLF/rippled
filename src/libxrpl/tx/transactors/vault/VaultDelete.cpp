@@ -3,6 +3,8 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
@@ -43,7 +45,7 @@ VaultDelete::preflight(PreflightContext const& ctx)
 TER
 VaultDelete::preclaim(PreclaimContext const& ctx)
 {
-    VaultEntry<ReadView> vault{keylet::vault(ctx.tx[sfVaultID]), ctx.view};
+    VaultEntry<ReadView> const vault{keylet::vault(ctx.tx[sfVaultID]), ctx.view};
     if (!vault)
         return tecNO_ENTRY;
 
@@ -66,7 +68,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     }
 
     // Verify we can destroy MPTokenIssuance
-    MPTokenIssuanceEntry<ReadView> sleMPT{
+    MPTokenIssuanceEntry<ReadView> const sleMPT{
         keylet::mptokenIssuance(vault->at(sfShareMPTID)), ctx.view};
 
     if (!sleMPT)
@@ -110,7 +112,7 @@ VaultDelete::doApply()
         return ter;
 
     auto const& pseudoID = vault->at(sfAccount);
-    AccountRootEntry<ApplyView> pseudoAcct{keylet::account(pseudoID), view()};
+    AccountRootEntry<ApplyView> const pseudoAcct{keylet::account(pseudoID), view()};
     if (!pseudoAcct)
     {
         // LCOV_EXCL_START
@@ -132,7 +134,7 @@ VaultDelete::doApply()
     }
 
     // Try to remove MPToken for vault shares for the vault owner if it exists.
-    if (MPTokenEntry<ApplyView> mptoken{keylet::mptoken(shareMPTID, accountID_), view()})
+    if (MPTokenEntry<ApplyView> const mptoken{keylet::mptoken(shareMPTID, accountID_), view()})
     {
         if (auto const ter =
                 removeEmptyHolding(applyViewContext, accountID_, MPTIssue(shareMPTID), j_);

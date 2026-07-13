@@ -1,15 +1,13 @@
 #include <xrpl/tx/transactors/did/DIDDelete.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/SLEBase.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -28,7 +26,7 @@ DIDDelete::preflight(PreflightContext const& ctx)
 TER
 DIDDelete::deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner)
 {
-    WritableSLE sle{sleKeylet, ctx.view()};
+    WritableSLE const sle{sleKeylet, ctx.view()};
     if (!sle)
         return tecNO_ENTRY;
 

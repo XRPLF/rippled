@@ -6,7 +6,9 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -1527,7 +1529,7 @@ public:
             testcase("canApplyToBrokerCover: " + tc.name);
             auto broker = std::make_shared<SLE>(Keylet{ltLOAN_BROKER, uint256{1u}});
             broker->at(sfCoverAvailable) = tc.coverAvailable;
-            LoanBrokerEntry<ReadView> sle{broker, *env.current(), env.journal};
+            LoanBrokerEntry<ReadView> const sle{broker, *env.current(), env.journal};
             BEAST_EXPECT(canApplyToBrokerCover(sle, iou, tc.amount, "test") == tc.expected);
         }
 
@@ -1537,7 +1539,7 @@ public:
             Env const envOff{*this, testableAmendments() - fixCleanup3_2_0};
             auto broker = std::make_shared<SLE>(Keylet{ltLOAN_BROKER, uint256{1u}});
             broker->at(sfCoverAvailable) = Number{10};
-            LoanBrokerEntry<ReadView> sle{broker, *envOff.current(), envOff.journal};
+            LoanBrokerEntry<ReadView> const sle{broker, *envOff.current(), envOff.journal};
             BEAST_EXPECT(
                 canApplyToBrokerCover(sle, iou, STAmount{iou, Number{0}}, "test") == tesSUCCESS);
         }

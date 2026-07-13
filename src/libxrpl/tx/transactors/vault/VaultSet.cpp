@@ -2,6 +2,8 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -64,7 +66,7 @@ VaultSet::preflight(PreflightContext const& ctx)
 TER
 VaultSet::preclaim(PreclaimContext const& ctx)
 {
-    VaultEntry<ReadView> vault{keylet::vault(ctx.tx[sfVaultID]), ctx.view};
+    VaultEntry<ReadView> const vault{keylet::vault(ctx.tx[sfVaultID]), ctx.view};
     if (!vault)
         return tecNO_ENTRY;
 
@@ -76,7 +78,8 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     }
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    MPTokenIssuanceEntry<ReadView> sleIssuance{keylet::mptokenIssuance(mptIssuanceID), ctx.view};
+    MPTokenIssuanceEntry<ReadView> const sleIssuance{
+        keylet::mptokenIssuance(mptIssuanceID), ctx.view};
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -96,7 +99,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
 
         if (*domain != beast::kZero)
         {
-            PermissionedDomainEntry<ReadView> sleDomain{
+            PermissionedDomainEntry<ReadView> const sleDomain{
                 keylet::permissionedDomain(*domain), ctx.view};
             if (!sleDomain)
                 return tecOBJECT_NOT_FOUND;

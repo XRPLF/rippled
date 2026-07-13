@@ -6,6 +6,9 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -77,7 +80,7 @@ clawbackAmount(
 TER
 VaultClawback::preclaim(PreclaimContext const& ctx)
 {
-    VaultEntry<ReadView> vault{keylet::vault(ctx.tx[sfVaultID]), ctx.view};
+    VaultEntry<ReadView> const vault{keylet::vault(ctx.tx[sfVaultID]), ctx.view};
     if (!vault)
         return tecNO_ENTRY;
 
@@ -86,7 +89,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     auto const holder = ctx.tx[sfHolder];
     auto const maybeAmount = ctx.tx[~sfAmount];
     auto const mptIssuanceID = vault->at(sfShareMPTID);
-    MPTokenIssuanceEntry<ReadView> sleShareIssuance{
+    MPTokenIssuanceEntry<ReadView> const sleShareIssuance{
         keylet::mptokenIssuance(mptIssuanceID), ctx.view};
     if (!sleShareIssuance)
     {
@@ -181,7 +184,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 
         return vaultAsset.visit(
             [&](MPTIssue const& issue) -> TER {
-                MPTokenIssuanceEntry<ReadView> mptIssue{
+                MPTokenIssuanceEntry<ReadView> const mptIssue{
                     keylet::mptokenIssuance(issue.getMptID()), ctx.view};
                 if (!mptIssue)
                     return tecOBJECT_NOT_FOUND;
@@ -196,7 +199,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
                 return tesSUCCESS;
             },
             [&](Issue const&) -> TER {
-                AccountRootEntry<ReadView> issuerSle{keylet::account(account), ctx.view};
+                AccountRootEntry<ReadView> const issuerSle{keylet::account(account), ctx.view};
                 if (!issuerSle)
                 {
                     // LCOV_EXCL_START
@@ -339,7 +342,8 @@ VaultClawback::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
-    MPTokenIssuanceEntry<ReadView> sleIssuance{keylet::mptokenIssuance(mptIssuanceID), view()};
+    MPTokenIssuanceEntry<ReadView> const sleIssuance{
+        keylet::mptokenIssuance(mptIssuanceID), view()};
     if (!sleIssuance)
     {
         // LCOV_EXCL_START

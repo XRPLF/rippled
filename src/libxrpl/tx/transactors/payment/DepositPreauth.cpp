@@ -4,11 +4,9 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -22,7 +20,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <cstdint>
 #include <memory>
 #include <optional>
 #include <set>
@@ -168,7 +165,7 @@ DepositPreauth::doApply()
 
         return slePreauth.create(preFeeBalance_);
     }
-    else if (ctx_.tx.isFieldPresent(sfUnauthorize))
+    if (ctx_.tx.isFieldPresent(sfUnauthorize))
     {
         auto const preauth = keylet::depositPreauth(accountID_, ctx_.tx[sfUnauthorize]);
 

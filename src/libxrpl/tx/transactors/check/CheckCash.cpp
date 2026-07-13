@@ -83,7 +83,7 @@ CheckCash::preflight(PreflightContext const& ctx)
 TER
 CheckCash::preclaim(PreclaimContext const& ctx)
 {
-    CheckEntry<ReadView> sleCheck{keylet::check(ctx.tx[sfCheckID]), ctx.view};
+    CheckEntry<ReadView> const sleCheck{keylet::check(ctx.tx[sfCheckID]), ctx.view};
     if (!sleCheck)
     {
         JLOG(ctx.j.warn()) << "Check does not exist.";
@@ -108,8 +108,8 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
     {
-        AccountRootEntry<ReadView> sleSrc{keylet::account(srcId), ctx.view};
-        AccountRootEntry<ReadView> sleDst{keylet::account(dstId), ctx.view};
+        AccountRootEntry<ReadView> const sleSrc{keylet::account(srcId), ctx.view};
+        AccountRootEntry<ReadView> const sleDst{keylet::account(dstId), ctx.view};
         if (!sleSrc || !sleDst)
         {
             // If the check exists this should never occur.
@@ -194,10 +194,10 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             return value.asset().visit(
                 [&](Issue const& issue) -> TER {
                     Currency const currency{issue.currency};
-                    RippleStateEntry<ReadView> sleTrustLine{
+                    RippleStateEntry<ReadView> const sleTrustLine{
                         keylet::trustLine(dstId, issuerId, currency), ctx.view};
 
-                    AccountRootEntry<ReadView> sleIssuer{keylet::account(issuerId), ctx.view};
+                    AccountRootEntry<ReadView> const sleIssuer{keylet::account(issuerId), ctx.view};
                     if (!sleIssuer)
                     {
                         JLOG(ctx.j.warn()) << "Can't receive IOUs from "
@@ -249,7 +249,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                     return tesSUCCESS;
                 },
                 [&](MPTIssue const& issue) -> TER {
-                    AccountRootEntry<ReadView> sleIssuer{keylet::account(issuerId), ctx.view};
+                    AccountRootEntry<ReadView> const sleIssuer{keylet::account(issuerId), ctx.view};
                     if (!sleIssuer)
                     {
                         JLOG(ctx.j.warn()) << "Can't receive MPTs from "

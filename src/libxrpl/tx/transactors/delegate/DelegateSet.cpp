@@ -1,12 +1,10 @@
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -73,7 +71,7 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
 TER
 DelegateSet::doApply()
 {
-    AccountRootEntry<ApplyView> sleOwner{keylet::account(accountID_), ctx_.view()};
+    AccountRootEntry<ApplyView> const sleOwner{keylet::account(accountID_), ctx_.view()};
     if (!sleOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

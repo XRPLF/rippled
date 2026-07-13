@@ -4,8 +4,10 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -67,7 +69,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
 
-    VaultEntry<ReadView> vault{keylet::vault(ctx.tx[sfVaultID]), ctx.view};
+    VaultEntry<ReadView> const vault{keylet::vault(ctx.tx[sfVaultID]), ctx.view};
     if (!vault)
         return tecNO_ENTRY;
 
@@ -94,7 +96,8 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    MPTokenIssuanceEntry<ReadView> sleIssuance{keylet::mptokenIssuance(mptIssuanceID), ctx.view};
+    MPTokenIssuanceEntry<ReadView> const sleIssuance{
+        keylet::mptokenIssuance(mptIssuanceID), ctx.view};
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -218,7 +221,8 @@ VaultDeposit::doApply()
 
     // Make sure the depositor can hold shares.
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    MPTokenIssuanceEntry<ReadView> sleIssuance{keylet::mptokenIssuance(mptIssuanceID), view()};
+    MPTokenIssuanceEntry<ReadView> const sleIssuance{
+        keylet::mptokenIssuance(mptIssuanceID), view()};
     if (!sleIssuance)
     {
         // LCOV_EXCL_START

@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -303,7 +304,7 @@ LoanManage::impairLoan(
     VaultEntry<ApplyView>& vaultSle,
     Asset const& vaultAsset)
 {
-    ApplyView& view = loanSle.applyView();
+    ApplyView const& view = loanSle.applyView();
     beast::Journal const j = loanSle.journal();
 
     Number const lossUnrealized = owedToVault(loanSle);
@@ -346,7 +347,7 @@ LoanManage::unimpairLoan(
     VaultEntry<ApplyView>& vaultSle,
     Asset const& vaultAsset)
 {
-    ApplyView& view = loanSle.applyView();
+    ApplyView const& view = loanSle.applyView();
     beast::Journal const j = loanSle.journal();
 
     // The vault may be at a different scale than the loan. Reduce rounding

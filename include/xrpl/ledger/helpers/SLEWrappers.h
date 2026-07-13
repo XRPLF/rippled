@@ -1,9 +1,29 @@
 #pragma once
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SLEBase.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
+#include <optional>
+#include <vector>
 
 namespace xrpl {
 
@@ -33,7 +53,7 @@ public:
     explicit NFTokenOfferEntry(
         AccountID const& owner,
         std::uint32_t seq,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::nftokenOffer(owner, seq), view, j)
     {
@@ -140,7 +160,7 @@ public:
     explicit CheckEntry(
         AccountID const& id,
         std::uint32_t seq,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::check(id, seq), view, j)
     {
@@ -170,7 +190,7 @@ public:
 
     explicit DIDEntry(
         AccountID const& account,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::did(account), view, j)
     {
@@ -192,7 +212,7 @@ public:
     using SLEBase<ViewT>::SLEBase;
 
     explicit NegativeUNLEntry(
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::negativeUNL(), view, j)
     {
@@ -210,7 +230,7 @@ public:
     explicit NFTokenPageEntry(
         Keylet const& page,
         uint256 const& token,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::nftokenPage(page, token), view, j)
     {
@@ -227,7 +247,7 @@ public:
 
     explicit SignerListEntry(
         AccountID const& account,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::signerList(account), view, j)
     {
@@ -245,7 +265,7 @@ public:
     explicit TicketEntry(
         AccountID const& id,
         std::uint32_t ticketSeq,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::ticket(id, ticketSeq), view, j)
     {
@@ -268,7 +288,7 @@ public:
 
     explicit AccountRootEntry(
         AccountID const& id,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::account(id), view, j)
     {
@@ -285,7 +305,7 @@ public:
 
     explicit DirectoryNodeEntry(
         AccountID const& id,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::ownerDir(id), view, j)
     {
@@ -301,7 +321,7 @@ public:
     using SLEBase<ViewT>::SLEBase;
 
     explicit AmendmentsEntry(
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::amendments(), view, j)
     {
@@ -317,7 +337,7 @@ public:
     using SLEBase<ViewT>::SLEBase;
 
     explicit LedgerHashesEntry(
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::skip(), view, j)
     {
@@ -335,7 +355,7 @@ public:
     explicit BridgeEntry(
         STXChainBridge const& bridge,
         STXChainBridge::ChainType chainType,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::bridge(bridge, chainType), view, j)
     {
@@ -359,7 +379,7 @@ public:
     explicit OfferEntry(
         AccountID const& id,
         std::uint32_t seq,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::offer(id, seq), view, j)
     {
@@ -429,7 +449,7 @@ public:
     explicit DepositPreauthEntry(
         AccountID const& owner,
         AccountID const& preauthorized,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::depositPreauth(owner, preauthorized), view, j)
     {
@@ -453,7 +473,7 @@ public:
     explicit XChainOwnedClaimIDEntry(
         STXChainBridge const& bridge,
         std::uint64_t seq,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::xChainClaimID(bridge, seq), view, j)
     {
@@ -478,7 +498,7 @@ public:
         AccountID const& id0,
         AccountID const& id1,
         Currency const& currency,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::trustLine(id0, id1, currency), view, j)
     {
@@ -522,7 +542,7 @@ public:
     using SLEBase<ViewT>::SLEBase;
 
     explicit FeeSettingsEntry(
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::feeSettings(), view, j)
     {
@@ -540,7 +560,7 @@ public:
     explicit XChainOwnedCreateAccountClaimIDEntry(
         STXChainBridge const& bridge,
         std::uint64_t seq,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::xChainCreateAccountClaimID(bridge, seq), view, j)
     {
@@ -564,7 +584,7 @@ public:
     explicit EscrowEntry(
         AccountID const& src,
         std::uint32_t seq,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::escrow(src, seq), view, j)
     {
@@ -583,13 +603,22 @@ public:
         STAmount const amount = sle.getFieldAmount(sfAmount);
 
         std::vector<OwnerDirLink> dirs;
-        dirs.push_back({account, &sfOwnerNode, /*countsToward=*/true});
+        dirs.push_back(
+            {.owner =.owner = account,
+             .node =.node = &sfOwnerNode,
+             /*countsToward=*/.countsToward =.countsToward = true});
         if (dest != account)
-            dirs.push_back({dest, &sfDestinationNode, /*countsToward=*/false});
+            dirs.push_back(
+                {.owner =.owner = dest,
+                 .node =.node = &sfDestinationNode,
+                 /*countsToward=*/.countsToward =.countsToward = false});
 
         AccountID const issuer = amount.getIssuer();
         if (!isXRP(amount) && issuer != account && issuer != dest && !amount.holds<MPTIssue>())
-            dirs.push_back({issuer, &sfIssuerNode, /*countsToward=*/false});
+            dirs.push_back(
+                {.owner =.owner = issuer,
+                 .node =.node = &sfIssuerNode,
+                 /*countsToward=*/.countsToward =.countsToward = false});
         return dirs;
     }
 };
@@ -606,7 +635,7 @@ public:
         AccountID const& src,
         AccountID const& dst,
         std::uint32_t seq,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::payChannel(src, dst, seq), view, j)
     {
@@ -634,7 +663,7 @@ public:
     explicit AMMEntry(
         Asset const& issue1,
         Asset const& issue2,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::amm(issue1, issue2), view, j)
     {
@@ -689,7 +718,7 @@ public:
     explicit MPTokenIssuanceEntry(
         std::uint32_t seq,
         AccountID const& issuer,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::mptokenIssuance(seq, issuer), view, j)
     {
@@ -713,7 +742,7 @@ public:
     explicit MPTokenEntry(
         MPTID const& issuanceID,
         AccountID const& holder,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::mptoken(issuanceID, holder), view, j)
     {
@@ -778,7 +807,7 @@ public:
         AccountID const& subject,
         AccountID const& issuer,
         Slice const& credType,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::credential(subject, issuer, credType), view, j)
     {
@@ -798,9 +827,15 @@ public:
         bool const accepted = sle.isFlag(lsfAccepted);
 
         std::vector<OwnerDirLink> dirs;
-        dirs.push_back({issuer, &sfIssuerNode, /*countsToward=*/!accepted || subject == issuer});
+        dirs.push_back(
+            {.owner =.owner = issuer,
+             .node =.node = &sfIssuerNode,
+             /*countsToward=*/.countsToward =.countsToward = !accepted || subject == issuer});
         if (subject != issuer)
-            dirs.push_back({subject, &sfSubjectNode, /*countsToward=*/accepted});
+            dirs.push_back(
+                {.owner =.owner = subject,
+                 .node =.node = &sfSubjectNode,
+                 /*countsToward=*/.countsToward =.countsToward = accepted});
         return dirs;
     }
 };
@@ -816,7 +851,7 @@ public:
     explicit PermissionedDomainEntry(
         AccountID const& account,
         std::uint32_t seq,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::permissionedDomain(account, seq), view, j)
     {
@@ -840,7 +875,7 @@ public:
     explicit DelegateEntry(
         AccountID const& account,
         AccountID const& authorizedAccount,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::delegate(account, authorizedAccount), view, j)
     {
@@ -868,7 +903,7 @@ public:
     explicit VaultEntry(
         AccountID const& owner,
         std::uint32_t seq,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::vault(owner, seq), view, j)
     {
@@ -902,7 +937,7 @@ public:
     explicit LoanBrokerEntry(
         AccountID const& owner,
         std::uint32_t seq,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::loanBroker(owner, seq), view, j)
     {
@@ -920,8 +955,12 @@ public:
         std::vector<OwnerDirLink> dirs{
             {sle.getAccountID(sfOwner), &sfOwnerNode, /*countsToward=*/true}};
         if (auto const sleVault = this->readView().read(keylet::vault(sle.getFieldH256(sfVaultID))))
-            dirs.push_back(
-                {sleVault->getAccountID(sfAccount), &sfVaultNode, /*countsToward=*/false});
+        {
+            {
+                dirs.push_back(
+                    {sleVault->getAccountID(sfAccount), &sfVaultNode, /*countsToward=*/false});
+            }
+        }
         return dirs;
     }
 
@@ -943,7 +982,7 @@ public:
     explicit LoanEntry(
         uint256 const& loanBrokerID,
         std::uint32_t loanSeq,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::loan(loanBrokerID, loanSeq), view, j)
     {

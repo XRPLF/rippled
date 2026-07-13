@@ -174,7 +174,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
     auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
-    MPTokenIssuanceEntry<ReadView> sleIssuance{issuanceKey, ctx.view};
+    MPTokenIssuanceEntry<ReadView> const sleIssuance{issuanceKey, ctx.view};
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -205,7 +205,7 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(featureTokenEscrow))
     {
         auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
-        EscrowEntry<ReadView> slep{k, ctx.view};
+        EscrowEntry<ReadView> const slep{k, ctx.view};
         if (!slep)
             return tecNO_TARGET;
 

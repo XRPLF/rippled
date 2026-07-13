@@ -3,12 +3,12 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -27,7 +27,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -81,7 +80,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
 {
     AccountID const dstId{ctx.tx[sfDestination]};
     AccountID const srcId{ctx.tx[sfAccount]};
-    AccountRootEntry<ReadView> sleDst{keylet::account(dstId), ctx.view};
+    AccountRootEntry<ReadView> const sleDst{keylet::account(dstId), ctx.view};
     if (!sleDst)
     {
         JLOG(ctx.j.warn()) << "Destination account does not exist.";
@@ -128,7 +127,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                     if (issuerId != srcId)
                     {
                         // Check if the issuer froze the line
-                        RippleStateEntry<ReadView> sleTrust{
+                        RippleStateEntry<ReadView> const sleTrust{
                             keylet::trustLine(srcId, issuerId, issue.currency), ctx.view};
                         if (sleTrust &&
                             sleTrust->isFlag((issuerId > srcId) ? lsfHighFreeze : lsfLowFreeze))
@@ -140,7 +139,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                     if (issuerId != dstId)
                     {
                         // Check if dst froze the line.
-                        RippleStateEntry<ReadView> sleTrust{
+                        RippleStateEntry<ReadView> const sleTrust{
                             keylet::trustLine(issuerId, dstId, issue.currency), ctx.view};
                         if (sleTrust &&
                             sleTrust->isFlag((dstId > issuerId) ? lsfHighFreeze : lsfLowFreeze))
@@ -189,7 +188,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
 TER
 CheckCreate::doApply()
 {
-    AccountRootEntry<ApplyView> sle{keylet::account(accountID_), view()};
+    AccountRootEntry<ApplyView> const sle{keylet::account(accountID_), view()};
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

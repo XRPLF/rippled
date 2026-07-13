@@ -8,9 +8,9 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
@@ -26,7 +26,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
-#include <memory>
 
 namespace xrpl {
 

@@ -2,8 +2,8 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -14,7 +14,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <cstdint>
 namespace xrpl {
 
 NotTEC
@@ -26,7 +25,7 @@ CheckCancel::preflight(PreflightContext const& ctx)
 TER
 CheckCancel::preclaim(PreclaimContext const& ctx)
 {
-    CheckEntry<ReadView> sleCheck{keylet::check(ctx.tx[sfCheckID]), ctx.view};
+    CheckEntry<ReadView> const sleCheck{keylet::check(ctx.tx[sfCheckID]), ctx.view};
     if (!sleCheck)
     {
         JLOG(ctx.j.warn()) << "Check does not exist.";

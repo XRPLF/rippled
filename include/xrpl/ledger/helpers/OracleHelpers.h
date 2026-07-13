@@ -1,6 +1,9 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/helpers/SLEBase.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -40,7 +43,7 @@ public:
     explicit OracleEntry(
         AccountID const& account,
         std::uint32_t documentID,
-        typename SLEBase<ViewT>::view_ref_type view,
+        SLEBase<ViewT>::view_ref_type view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : SLEBase<ViewT>(keylet::oracle(account, documentID), view, j)
     {

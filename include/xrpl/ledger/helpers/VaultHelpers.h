@@ -4,7 +4,6 @@
 #include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 
 #include <optional>
 

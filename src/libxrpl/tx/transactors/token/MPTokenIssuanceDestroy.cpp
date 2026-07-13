@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/token/MPTokenIssuanceDestroy.h>
 
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>

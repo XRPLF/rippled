@@ -8,7 +8,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -363,7 +362,7 @@ mergePages(ApplyView& view, SLE::ref p1, SLE::ref p2)
 TER
 removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID)
 {
-    NFTokenPageEntry<ApplyView> page{locatePage(view, owner, nftokenID), view};
+    NFTokenPageEntry<ApplyView> const page{locatePage(view, owner, nftokenID), view};
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)

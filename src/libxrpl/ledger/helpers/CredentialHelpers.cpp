@@ -7,7 +7,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -135,7 +134,7 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
     auto const& credIDs(tx.getFieldV256(sfCredentialIDs));
     for (auto const& h : credIDs)
     {
-        CredentialEntry<ReadView> sleCred{keylet::credential(h), view};
+        CredentialEntry<ReadView> const sleCred{keylet::credential(h), view};
         if (!sleCred)
         {
             JLOG(j.trace()) << "Credential doesn't exist. Cred: " << h;
@@ -164,7 +163,7 @@ TER
 validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
 {
     // Note, permissioned domain objects can be deleted at any time
-    PermissionedDomainEntry<ReadView> slePD{keylet::permissionedDomain(domainID), view};
+    PermissionedDomainEntry<ReadView> const slePD{keylet::permissionedDomain(domainID), view};
     if (!slePD)
         return tecOBJECT_NOT_FOUND;
 
@@ -175,7 +174,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
         auto const issuer = h.getAccountID(sfIssuer);
         auto const type = h.getFieldVL(sfCredentialType);
         auto const keyletCredential = keylet::credential(subject, issuer, makeSlice(type));
-        CredentialEntry<ReadView> sleCredential{keyletCredential, view};
+        CredentialEntry<ReadView> const sleCredential{keyletCredential, view};
 
         // We cannot delete expired credentials, that would require ApplyView&
         // However we can check if credentials are expired. Expected transaction
@@ -209,7 +208,7 @@ authorizedDepositPreauth(ReadView const& view, STVector256 const& credIDs, Accou
     lifeExtender.reserve(credIDs.size());
     for (auto const& h : credIDs)
     {
-        CredentialEntry<ReadView> sleCred{keylet::credential(h), view};
+        CredentialEntry<ReadView> const sleCred{keylet::credential(h), view};
         if (!sleCred)            // already checked in preclaim
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -287,7 +286,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
 TER
 verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, beast::Journal j)
 {
-    PermissionedDomainEntry<ReadView> slePD{keylet::permissionedDomain(domainID), view};
+    PermissionedDomainEntry<ReadView> const slePD{keylet::permissionedDomain(domainID), view};
     if (!slePD)
         return tecOBJECT_NOT_FOUND;
 
@@ -309,7 +308,7 @@ verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, b
 
     for (auto const& h : credentials)
     {
-        CredentialEntry<ReadView> sleCredential{keylet::credential(h), view};
+        CredentialEntry<ReadView> const sleCredential{keylet::credential(h), view};
         if (!sleCredential)
             continue;  // expired, i.e. deleted in credentials::removeExpired
 

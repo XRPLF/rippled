@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>

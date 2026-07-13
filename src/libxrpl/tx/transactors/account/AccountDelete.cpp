@@ -13,6 +13,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/SLEBase.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -225,7 +226,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dst{ctx.tx[sfDestination]};
 
-    AccountRootEntry<ReadView> sleDst{keylet::account(dst), ctx.view};
+    AccountRootEntry<ReadView> const sleDst{keylet::account(dst), ctx.view};
 
     if (!sleDst)
         return tecNO_DST;
@@ -249,7 +250,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    AccountRootEntry<ReadView> sleAccount{keylet::account(account), ctx.view};
+    AccountRootEntry<ReadView> const sleAccount{keylet::account(account), ctx.view};
     XRPL_ASSERT(sleAccount, "xrpl::AccountDelete::preclaim : non-null account");
     if (!sleAccount)
         return terNO_ACCOUNT;
@@ -324,7 +325,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     {
         // Make sure any directory node types that we find are the kind
         // we can delete.
-        ReadOnlySLE sleItem{keylet::child(dirEntry), ctx.view};
+        ReadOnlySLE const sleItem{keylet::child(dirEntry), ctx.view};
         if (!sleItem)
         {
             // Directory node has an invalid index.  Bail out.

@@ -32,7 +32,7 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
         // LCOV_EXCL_STOP
     }
 
-    PermissionedDomainEntry<ReadView> sleDomain{keylet::permissionedDomain(domainID), view};
+    PermissionedDomainEntry<ReadView> const sleDomain{keylet::permissionedDomain(domainID), view};
     if (!sleDomain)
         return false;
 
@@ -43,7 +43,7 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
     auto const& credentials = sleDomain->getFieldArray(sfAcceptedCredentials);
 
     bool const inDomain = std::ranges::any_of(credentials, [&](auto const& credential) {
-        CredentialEntry<ReadView> sleCred{
+        CredentialEntry<ReadView> const sleCred{
             keylet::credential(account, credential[sfIssuer], credential[sfCredentialType]), view};
         if (!sleCred || !sleCred->isFlag(lsfAccepted))
             return false;
@@ -61,7 +61,7 @@ offerInDomain(
     Domain const& domainID,
     beast::Journal j)
 {
-    OfferEntry<ReadView> sleOffer{keylet::offer(offerID), view};
+    OfferEntry<ReadView> const sleOffer{keylet::offer(offerID), view};
 
     // The following are defensive checks that should never happen, since this
     // function is used to check against the order book offers, which should not

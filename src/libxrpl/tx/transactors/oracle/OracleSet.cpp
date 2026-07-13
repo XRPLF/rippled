@@ -3,8 +3,8 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Feature.h>
@@ -65,7 +65,8 @@ OracleSet::preflight(PreflightContext const& ctx)
 TER
 OracleSet::preclaim(PreclaimContext const& ctx)
 {
-    AccountRootEntry<ReadView> sleSetter{keylet::account(ctx.tx.getAccountID(sfAccount)), ctx.view};
+    AccountRootEntry<ReadView> const sleSetter{
+        keylet::account(ctx.tx.getAccountID(sfAccount)), ctx.view};
     if (!sleSetter)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
