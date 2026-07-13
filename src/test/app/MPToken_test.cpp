@@ -4143,7 +4143,7 @@ class MPToken_test : public beast::unit_test::Suite
         auto const mptID = mptTester.issuanceID();
         MPTIssue const issue{mptID};
         STAmount const amount{issue, std::uint64_t{2}};
-        auto const max = kMaxMpTokenAmount;
+        auto const max = std::numeric_limits<std::uint64_t>::max();
 
         {
             ApplyViewImpl av(&*env.current(), TapNone);
@@ -4156,7 +4156,8 @@ class MPToken_test : public beast::unit_test::Suite
 
             auto const ter = directSendNoFee(
                 av, issuer.id(), bob.id(), amount, false, env.app().getJournal("View"));
-            BEAST_EXPECTS(ter == tecINTERNAL, "OutstandingAmount add overflow");
+            auto const expectedTer = features[featureMPTokensV2] ? tecPATH_DRY : tecINTERNAL;
+            BEAST_EXPECTS(ter == expectedTer, "OutstandingAmount add overflow");
 
             sleIssuance = av.peek(keylet::mptokenIssuance(mptID));
             if (!BEAST_EXPECT(sleIssuance))

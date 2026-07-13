@@ -28,7 +28,6 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <algorithm>
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
@@ -1190,11 +1189,12 @@ directSendNoFeeMPT(
     bool const cleanup330 = view.rules().enabled(fixCleanup3_3_0);
 
     auto const hasAdditionOverflow = [](std::uint64_t current, std::int64_t amount) {
-        auto const max = std::min(kMaxMpTokenAmount, std::numeric_limits<std::uint64_t>::max());
-        return amount > 0 && current > max - static_cast<std::uint64_t>(amount);
+        return amount > 0 &&
+            current >
+            std::numeric_limits<std::uint64_t>::max() - static_cast<std::uint64_t>(amount);
     };
     auto const hasSubtractionUnderflow = [](std::uint64_t current, std::int64_t amount) {
-        return amount > 0 && current < static_cast<std::uint64_t>(amount);
+        return amount < 0 || (amount > 0 && current < static_cast<std::uint64_t>(amount));
     };
 
     if (uSenderID == issuer)
