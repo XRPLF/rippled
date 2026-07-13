@@ -14,16 +14,13 @@
 
 #include <boost/thread/shared_mutex.hpp>
 
-<<<<<<< HEAD
-#include <filesystem>
-=======
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <map>
 #include <memory>
->>>>>>> origin/develop
 #include <mutex>
 #include <optional>
 #include <shared_mutex>

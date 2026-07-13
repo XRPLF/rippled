@@ -6,19 +6,14 @@
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/rdb/SociDB.h>
 
-<<<<<<< HEAD
-#include <filesystem>
-=======
-#include <boost/filesystem/path.hpp>
-
 #include <soci/statement.h>
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <functional>
 #include <memory>
->>>>>>> origin/develop
 #include <mutex>
 #include <string>
 #include <utility>

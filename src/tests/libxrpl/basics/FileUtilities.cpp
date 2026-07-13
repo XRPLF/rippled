@@ -1,17 +1,16 @@
 #include <xrpl/basics/FileUtilities.h>
 
 #include <xrpl/basics/ByteUtilities.h>
-
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/system/detail/errc.hpp>
-#include <boost/system/detail/error_code.hpp>
+#include <xrpl/beast/utility/temp_dir.h>
 
 #include <gtest/gtest.h>
 
+#include <cerrno>
+#include <filesystem>
 #include <fstream>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 
 namespace xrpl {
 
@@ -20,15 +19,16 @@ namespace {
 class TempFile
 {
 public:
-    explicit TempFile(boost::filesystem::path file, std::string const& contents)
-        : dir_(
-              boost::filesystem::temp_directory_path() /
-              boost::filesystem::unique_path("xrpl-file-utilities-%%%%-%%%%-%%%%"))
+    explicit TempFile(std::filesystem::path file, std::string const& contents)
+        : dir_(beast::uniqueRandomPath(
+              std::filesystem::temp_directory_path(),
+              100,
+              "xrpl-file-utilities-"))
         , file_(dir_ / file)
     {
-        boost::filesystem::create_directory(dir_);
+        std::filesystem::create_directory(dir_);
 
-        std::ofstream output(file_.string());
+        std::ofstream output(file_);
         if (!output)
             throw std::runtime_error("Unable to create temporary test file");
 
@@ -37,33 +37,31 @@ public:
 
     ~TempFile()
     {
-        boost::system::error_code ec;
-        boost::filesystem::remove(file_, ec);
-        boost::filesystem::remove(dir_, ec);
+        std::error_code ec;
+        std::filesystem::remove(file_, ec);
+        std::filesystem::remove(dir_, ec);
     }
 
-    [[nodiscard]] boost::filesystem::path const&
+    [[nodiscard]] std::filesystem::path const&
     file() const
     {
         return file_;
     }
 
 private:
-    boost::filesystem::path dir_;
-    boost::filesystem::path file_;
+    std::filesystem::path dir_;
+    std::filesystem::path file_;
 };
 
 }  // namespace
 
 TEST(FileUtilitiesTest, get_file_contents)
 {
-    using namespace boost::system;
-
     constexpr char const* kExpectedContents = "This file is very short. That's all we need.";
 
     TempFile const file("test_file", "This is temporary text that should get overwritten");
 
-    error_code ec;
+    std::error_code ec;
     auto const path = file.file();
 
     writeFileContents(ec, path, kExpectedContents);
@@ -86,7 +84,7 @@ TEST(FileUtilitiesTest, get_file_contents)
     {
         // Test with small max
         auto const bad = getFileContents(ec, path, 16);
-        EXPECT_TRUE(ec && ec.value() == boost::system::errc::file_too_large);
+        EXPECT_TRUE(ec && ec.value() == static_cast<int>(std::errc::file_too_large));
         EXPECT_TRUE(bad.empty());
     }
 }

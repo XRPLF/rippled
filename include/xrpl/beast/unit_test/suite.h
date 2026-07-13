@@ -9,12 +9,9 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/throw_exception.hpp>
 
-<<<<<<< HEAD
-#include <filesystem>
-=======
 #include <exception>
+#include <filesystem>
 #include <memory>
->>>>>>> origin/develop
 #include <ostream>
 #include <sstream>
 #include <string>

@@ -1013,19 +1013,9 @@ Config::loadFromString(std::string const& fileContents)
 
             if (!validatorsFile.empty())
             {
-<<<<<<< HEAD
-                if (!std::filesystem::exists(validatorsFile))
-                {
-                    validatorsFile.clear();
-                }
-                else if (
-                    !std::filesystem::is_regular_file(validatorsFile) &&
-                    !std::filesystem::is_symlink(validatorsFile))
-=======
-                if (!boost::filesystem::exists(validatorsFile) ||
-                    (!boost::filesystem::is_regular_file(validatorsFile) &&
-                     !boost::filesystem::is_symlink(validatorsFile)))
->>>>>>> origin/develop
+                if (!std::filesystem::exists(validatorsFile) ||
+                    (!std::filesystem::is_regular_file(validatorsFile) &&
+                     !std::filesystem::is_symlink(validatorsFile)))
                 {
                     validatorsFile.clear();
                 }

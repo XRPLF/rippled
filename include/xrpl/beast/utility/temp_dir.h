@@ -10,14 +10,14 @@
 
 namespace beast {
 
-<<<<<<< HEAD
-/** Generate a unique, non-existing path under @p base with an optional @p prefix
-    and a random hex suffix.
-
-    Attempts up to @p maxAttempts paths. Throws `std::runtime_error` if a
-    unique path cannot be found or if the filesystem returns an error while
-    checking for existence.
-*/
+/**
+ * Generate a unique, non-existing path under @p base with an optional @p prefix
+ * and a random hex suffix.
+ *
+ * Attempts up to @p maxAttempts paths. Throws `std::runtime_error` if a
+ * unique path cannot be found or if the filesystem returns an error while
+ * checking for existence.
+ */
 inline std::filesystem::path
 uniqueRandomPath(
     std::filesystem::path const& base,
@@ -44,19 +44,12 @@ uniqueRandomPath(
     throw std::runtime_error("Unable to generate a unique path under '" + base.string() + "'");
 }
 
-/** RAII temporary directory.
-
-    The directory and all its contents are deleted when
-    the instance of `TempDir` is destroyed.
-*/
-=======
 /**
  * RAII temporary directory.
  *
  * The directory and all its contents are deleted when
- * the instance of `temp_dir` is destroyed.
+ * the instance of `TempDir` is destroyed.
  */
->>>>>>> origin/develop
 class TempDir
 {
     std::filesystem::path path_;

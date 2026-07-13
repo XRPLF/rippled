@@ -3,13 +3,8 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test/suite.h>
 
-<<<<<<< HEAD
-#include <filesystem>
-=======
-#include <boost/filesystem.hpp>
-
 #include <exception>
->>>>>>> origin/develop
+#include <filesystem>
 #include <fstream>
 #include <ostream>
 #include <stdexcept>

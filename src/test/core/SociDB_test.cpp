@@ -7,8 +7,6 @@
 #include <xrpl/rdb/SociDB.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
 #include <soci/boost-optional.h>  // IWYU pragma: keep

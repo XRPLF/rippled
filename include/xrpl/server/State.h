@@ -4,13 +4,9 @@
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/SociDB.h>
 
-<<<<<<< HEAD
-=======
-#include <boost/filesystem.hpp>
-
 #include <string>
 
->>>>>>> origin/develop
+
 namespace xrpl {
 
 struct SavedState

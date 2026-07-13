@@ -1,18 +1,10 @@
 #pragma once
 
-<<<<<<< HEAD
+#include <cstddef>
 #include <filesystem>
 #include <optional>
 #include <string>
 #include <system_error>
-=======
-#include <boost/filesystem.hpp>
-#include <boost/system/error_code.hpp>
-
-#include <cstddef>
-#include <optional>
-#include <string>
->>>>>>> origin/develop
 
 namespace xrpl {
 

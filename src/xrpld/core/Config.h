@@ -11,13 +11,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
-<<<<<<< HEAD
-=======
-#include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
-
 #include <chrono>
 #include <cstddef>
->>>>>>> origin/develop
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -98,15 +93,10 @@ public:
     static char const* const kDatabaseDirName;
     static char const* const kValidatorsFileName;
 
-<<<<<<< HEAD
-    /** Returns the full path and filename of the debug log file. */
-    [[nodiscard]] std::filesystem::path
-=======
     /**
      * Returns the full path and filename of the debug log file.
      */
-    [[nodiscard]] boost::filesystem::path
->>>>>>> origin/develop
+    [[nodiscard]] std::filesystem::path
     getDebugLogFile() const;
 
 private:
