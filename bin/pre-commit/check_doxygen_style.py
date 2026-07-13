@@ -18,8 +18,7 @@ Enforces the house convention for documentation comments:
     ``@return``, ``@see``, ...) is documentation and must be a ``/** ... */``
     block (Doxygen ignores ``//``).
   * Use canonical command spellings: ``@return`` (not ``@returns``),
-    ``@throws`` (not ``@throw``), ``@see`` (not ``@sa``), ``@code`` (not
-    ``@code{...}``).
+    ``@throws`` (not ``@throw``), ``@see`` (not ``@sa``).
   * Order block tags ``@tparam`` -> ``@param`` -> ``@return``. (Whether
     ``@param`` order matches the signature is not checked here -- too fragile to
     parse; Doxygen's WARN_IF_DOC_ERROR covers name mismatches.)
@@ -161,7 +160,6 @@ WRONG_SPELLINGS = [
     (re.compile(r"@returns\b"), "@return"),
     (re.compile(r"@throw\b"), "@throws"),
     (re.compile(r"@sa\b"), "@see"),
-    (re.compile(r"@code\{"), "@code"),
 ]
 
 # Order block tags should appear in; a body out of this order is a violation.
