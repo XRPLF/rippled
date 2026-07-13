@@ -422,10 +422,7 @@ struct KeyletDesc
     bool includeInTests{};
 };
 
-// This list should include all of the keylet functions that take a single
-// AccountID parameter. Defined in Indexes.cpp so that this header does not
-// need to include jss.h (which transitively re-includes transactions.macro
-// and breaks headers processed inside the TRANSACTION_INCLUDE machinery).
+// This list should include all of the keylet functions that take a single AccountID parameter.
 extern std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets;
 
 MPTID
