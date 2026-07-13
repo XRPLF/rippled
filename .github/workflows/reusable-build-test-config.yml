@@ -341,13 +341,12 @@ jobs:
               if ! grep -E "failed" unittest.log | grep -vE "^I[0-9]|^[0-9]+> (ERR:|FTL:)"; then
                   echo "unittest.log present but no failure lines found."
               fi
-          else
-              echo "unittest.log not found; embedded tests may not have run."
-              if [ -f build.log ]; then
-                  if ! grep -E "error:" build.log; then
-                      echo "build.log present but no compile errors found."
-                  fi
+          elif [ -f build.log ]; then
+              if ! grep -E "error:" build.log; then
+                  echo "build.log present but no compile errors found."
               fi
+          else
+              echo "unittest.log/build.log not found; something went wrong."
           fi
       - name: Debug failure (Linux)
         if: ${{ failure() && runner.os == 'Linux' && !inputs.build_only }}
