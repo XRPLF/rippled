@@ -28,6 +28,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
@@ -1188,9 +1189,12 @@ directSendNoFeeMPT(
     auto const amt = saAmount.mpt().value();
     bool const cleanup330 = view.rules().enabled(fixCleanup3_3_0);
 
-    auto const additionOverflows = [](std::uint64_t current, std::int64_t amount) {
-        auto const max = std::numeric_limits<std::uint64_t>::max();
+    auto const hasAdditionOverflow = [](std::uint64_t current, std::int64_t amount) {
+        auto const max = std::min(kMaxMpTokenAmount, std::numeric_limits<std::uint64_t>::max());
         return amount > 0 && current > max - static_cast<std::uint64_t>(amount);
+    };
+    auto const hasSubtractionUnderflow = [](std::uint64_t current, std::int64_t amount) {
+        return amount > 0 && current < static_cast<std::uint64_t>(amount);
     };
 
     if (uSenderID == issuer)
@@ -1200,7 +1204,7 @@ directSendNoFeeMPT(
             if (isMPTOverflow(amt, outstanding, maxAmount, AllowMPTOverflow::Yes))
                 return tecPATH_DRY;
         }
-        if (cleanup330 && additionOverflows(outstanding, amt))
+        if (cleanup330 && hasAdditionOverflow(outstanding, amt))
             return tecINTERNAL;
         (*sleIssuance)[sfOutstandingAmount] += amt;
         view.update(sleIssuance);
@@ -1211,7 +1215,7 @@ directSendNoFeeMPT(
         if (auto sle = view.peek(mptokenID))
         {
             auto const senderBalance = sle->getFieldU64(sfMPTAmount);
-            if (senderBalance < amt)
+            if (hasSubtractionUnderflow(senderBalance, amt))
                 return tecINSUFFICIENT_FUNDS;
             view.creditHookMPT(uSenderID, uReceiverID, saAmount, (*sle)[sfMPTAmount], available);
             (*sle)[sfMPTAmount] = senderBalance - amt;
@@ -1225,24 +1229,17 @@ directSendNoFeeMPT(
 
     if (uReceiverID == issuer)
     {
-        if (outstanding >= amt)
-        {
-            sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - amt);
-            view.update(sleIssuance);
-        }
-        else
-        {
+        if (hasSubtractionUnderflow(outstanding, amt))
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
+        sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - amt);
+        view.update(sleIssuance);
     }
     else
     {
         auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
         if (auto sle = view.peek(mptokenID))
         {
-            auto const receiverBalance = sle->getFieldU64(sfMPTAmount);
-            if ((cleanup330 || view.rules().enabled(featureMPTokensV2)) &&
-                additionOverflows(receiverBalance, amt))
+            if (cleanup330 && hasAdditionOverflow(sle->getFieldU64(sfMPTAmount), amt))
                 return tecINTERNAL;
             view.creditHookMPT(uSenderID, uReceiverID, saAmount, (*sle)[sfMPTAmount], available);
             (*sle)[sfMPTAmount] += amt;

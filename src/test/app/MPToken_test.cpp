@@ -4143,11 +4143,11 @@ class MPToken_test : public beast::unit_test::Suite
         auto const mptID = mptTester.issuanceID();
         MPTIssue const issue{mptID};
         STAmount const amount{issue, std::uint64_t{2}};
-        auto const max = std::numeric_limits<std::uint64_t>::max();
+        auto const max = kMaxMpTokenAmount;
 
         {
             ApplyViewImpl av(&*env.current(), TapNone);
-            auto sleIssuance = av.peek(keylet::mptIssuance(mptID));
+            auto sleIssuance = av.peek(keylet::mptokenIssuance(mptID));
             if (!BEAST_EXPECT(sleIssuance))
                 return;
 
@@ -4156,10 +4156,9 @@ class MPToken_test : public beast::unit_test::Suite
 
             auto const ter = directSendNoFee(
                 av, issuer.id(), bob.id(), amount, false, env.app().getJournal("View"));
-            auto const expectedTer = features[featureMPTokensV2] ? tecPATH_DRY : tecINTERNAL;
-            BEAST_EXPECTS(ter == expectedTer, "OutstandingAmount add overflow");
+            BEAST_EXPECTS(ter == tecINTERNAL, "OutstandingAmount add overflow");
 
-            sleIssuance = av.peek(keylet::mptIssuance(mptID));
+            sleIssuance = av.peek(keylet::mptokenIssuance(mptID));
             if (!BEAST_EXPECT(sleIssuance))
                 return;
             BEAST_EXPECTS(
@@ -4179,6 +4178,37 @@ class MPToken_test : public beast::unit_test::Suite
             auto const ter = directSendNoFee(
                 av, issuer.id(), bob.id(), amount, false, env.app().getJournal("View"));
             BEAST_EXPECTS(ter == tecINTERNAL, "MPTAmount add overflow");
+        }
+
+        {
+            ApplyViewImpl av(&*env.current(), TapNone);
+            auto sle = av.peek(keylet::mptoken(mptID, bob.id()));
+            if (!BEAST_EXPECT(sle))
+                return;
+
+            sle->setFieldU64(sfMPTAmount, 1);
+            av.update(sle);
+
+            auto const ter = directSendNoFee(
+                av, bob.id(), issuer.id(), amount, false, env.app().getJournal("View"));
+            BEAST_EXPECTS(ter == tecINSUFFICIENT_FUNDS, "MPTAmount subtract underflow");
+        }
+
+        {
+            ApplyViewImpl av(&*env.current(), TapNone);
+            auto sleIssuance = av.peek(keylet::mptokenIssuance(mptID));
+            auto sle = av.peek(keylet::mptoken(mptID, bob.id()));
+            if (!BEAST_EXPECT(sleIssuance && sle))
+                return;
+
+            sleIssuance->setFieldU64(sfOutstandingAmount, 1);
+            sle->setFieldU64(sfMPTAmount, amount.mpt().value());
+            av.update(sleIssuance);
+            av.update(sle);
+
+            auto const ter = directSendNoFee(
+                av, bob.id(), issuer.id(), amount, false, env.app().getJournal("View"));
+            BEAST_EXPECTS(ter == tecINTERNAL, "OutstandingAmount subtract underflow");
         }
     }
 
@@ -7723,8 +7753,8 @@ public:
         FeatureBitset const all{testableAmendments()};
 
         testMultiSendMaximumAmount(all);
-        testDirectSendNoFeeMPTOverflow(all | fixCleanup3_3_0);
-        testDirectSendNoFeeMPTOverflow((all | fixCleanup3_3_0) - featureMPTokensV2);
+        testDirectSendNoFeeMPTOverflow(all);
+        testDirectSendNoFeeMPTOverflow(all - featureMPTokensV2);
         // MPTokenIssuanceCreate
         testCreateValidation(all - featureSingleAssetVault);
         testCreateValidation(all - featurePermissionedDomains);
