@@ -186,35 +186,36 @@ divu10(uint128_t& u)
 template <class T>
 concept UnsignedMantissa = std::is_unsigned_v<T> || std::is_same_v<T, uint128_t>;
 
-/** Guard
-
-    The Guard class is used to temporarily add extra digits of
-    precision to an operation.  This enables the final result
-    to be correctly rounded to the internal precision of Number.
-
-    At its core, the Guard really only needs three pieces of information to determine how to round:
-    1. The rounding mode
-    2. The last digit dropped from the mantissa (i.e. the first digit after the decimal point).
-        (first byte of digits_)
-    3. Whether any other non-zero digits were dropped from the mantissa. (remaining bytes of digits_
-   and xbit_)
-
-    Upward and Downward rounding modes round the unsigned mantissa toward or away from zero
-    depending on whether the sign is negative (sbit_). For positive values, Upward is away, and
-    Downward is toward. For negative values, that's reversed. For simplicity, I'm going to describe
-    the logic using "TowardZero" and "AwayFromZero".
-
-    * TowardZero is the easiest rounding mode. It always rounds down. digits_ and xbit_ are
-        irrelevant.
-    * AwayFromZero is almost as simple. If both "digits_" and "xbit_" are zero (0), it rounds down.
-        Else it rounds up.
-    * ToNearest is only a little more complicated. If the last dropped digit is < 5, then round
-        down. If it is > 5, round up. If it is exactly 5, and there are _any_ other digits (the
-        remainder of "digits_" or "xbit_"), round up, else round to even.
-
-    The current implementation stores 16 digits in "digits_" so that digits can be "pop"ped back
-    out if needed during subtraction (negative addition) operations.
-*/
+/**
+ * Guard
+ *
+ * The Guard class is used to temporarily add extra digits of
+ * precision to an operation.  This enables the final result
+ * to be correctly rounded to the internal precision of Number.
+ *
+ * At its core, the Guard really only needs three pieces of information to determine how to round:
+ * 1. The rounding mode
+ * 2. The last digit dropped from the mantissa (i.e. the first digit after the decimal point).
+ * (first byte of digits_)
+ * 3. Whether any other non-zero digits were dropped from the mantissa. (remaining bytes of digits_
+ * and xbit_)
+ *
+ * Upward and Downward rounding modes round the unsigned mantissa toward or away from zero
+ * depending on whether the sign is negative (sbit_). For positive values, Upward is away, and
+ * Downward is toward. For negative values, that's reversed. For simplicity, I'm going to describe
+ * the logic using "TowardZero" and "AwayFromZero".
+ *
+ * TowardZero is the easiest rounding mode. It always rounds down. digits_ and xbit_ are
+ * irrelevant.
+ * AwayFromZero is almost as simple. If both "digits_" and "xbit_" are zero (0), it rounds down.
+ * Else it rounds up.
+ * ToNearest is only a little more complicated. If the last dropped digit is < 5, then round
+ * down. If it is > 5, round up. If it is exactly 5, and there are _any_ other digits (the
+ * remainder of "digits_" or "xbit_"), round up, else round to even.
+ *
+ * The current implementation stores 16 digits in "digits_" so that digits can be "pop"ped back
+ * out if needed during subtraction (negative addition) operations.
+ */
 class Number::Guard
 {
     std::uint64_t digits_{0};    // 16 decimal guard digits
@@ -263,13 +264,14 @@ public:
     [[nodiscard]] bool
     empty() const noexcept;
 
-    /** Drop a digit from the mantissa, and increment the exponent, storing the dropped digit in
+    /**
+     * Drop a digit from the mantissa, and increment the exponent, storing the dropped digit in
      * this Guard.
      *
      * Substitute for:
-                push(mantissa % 10);
-                mantissa /= 10;
-                ++exponent;
+     * push(mantissa % 10);
+     * mantissa /= 10;
+     * ++exponent;
      */
     template <class T>
     void

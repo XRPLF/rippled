@@ -114,9 +114,10 @@ private:
         int const,
         std::function<bool(void)> const&);
 
-    /** Finds and sets a PathSet in the JSON argument.
-        Returns false if the source currencies are invalid.
-    */
+    /**
+     * Finds and sets a PathSet in the JSON argument.
+     * Returns false if the source currencies are invalid.
+     */
     bool
     findPaths(
         std::shared_ptr<AssetCache> const&,

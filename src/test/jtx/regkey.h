@@ -7,11 +7,15 @@
 
 namespace xrpl::test::jtx {
 
-/** Disable the regular key. */
+/**
+ * Disable the regular key.
+ */
 json::Value
 regkey(Account const& account, DisabledT);
 
-/** Set a regular key. */
+/**
+ * Set a regular key.
+ */
 json::Value
 regkey(Account const& account, Account const& signer);
 
