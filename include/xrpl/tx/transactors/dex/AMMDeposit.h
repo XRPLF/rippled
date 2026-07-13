@@ -1,12 +1,27 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <optional>
+#include <utility>
 
 namespace xrpl {
 
 class Sandbox;
 
-/** AMMDeposit implements AMM deposit Transactor.
+/**
+ * AMMDeposit implements AMM deposit Transactor.
  * The deposit transaction is used to add liquidity to the AMM instance pool,
  * thus obtaining some share of the instance's pools in the form of LPTokens.
  * If the trader deposits proportional values of both assets without changing
@@ -78,7 +93,8 @@ private:
     std::pair<TER, bool>
     applyGuts(Sandbox& view);
 
-    /** Deposit requested assets and token amount into LP account.
+    /**
+     * Deposit requested assets and token amount into LP account.
      * Return new total LPToken balance.
      * @param view
      * @param ammAccount
@@ -107,7 +123,8 @@ private:
         std::optional<STAmount> const& lpTokensDepositMin,
         std::uint16_t tfee);
 
-    /** Equal asset deposit (LPTokens) for the specified share of
+    /**
+     * Equal asset deposit (LPTokens) for the specified share of
      * the AMM instance pools. The trading fee is not charged.
      * @param view
      * @param ammAccount
@@ -132,7 +149,8 @@ private:
         std::optional<STAmount> const& deposit2Min,
         std::uint16_t tfee);
 
-    /** Equal asset deposit (Asset1In, Asset2In) with the constraint on
+    /**
+     * Equal asset deposit (Asset1In, Asset2In) with the constraint on
      * the maximum amount of both assets that the trader is willing to deposit.
      * The trading fee is not charged.
      * @param view
@@ -158,7 +176,8 @@ private:
         std::optional<STAmount> const& lpTokensDepositMin,
         std::uint16_t tfee);
 
-    /** Single asset deposit (Asset1In) by the amount.
+    /**
+     * Single asset deposit (Asset1In) by the amount.
      * The trading fee is charged.
      * @param view
      * @param ammAccount
@@ -179,7 +198,8 @@ private:
         std::optional<STAmount> const& lpTokensDepositMin,
         std::uint16_t tfee);
 
-    /** Single asset deposit (Asset1In, LPTokens) by the tokens.
+    /**
+     * Single asset deposit (Asset1In, LPTokens) by the tokens.
      * The trading fee is charged.
      * @param view
      * @param ammAccount
@@ -200,7 +220,8 @@ private:
         STAmount const& lpTokensDeposit,
         std::uint16_t tfee);
 
-    /** Single asset deposit (Asset1In, EPrice) with two constraints.
+    /**
+     * Single asset deposit (Asset1In, EPrice) with two constraints.
      * The trading fee is charged.
      * @param view
      * @param ammAccount
@@ -221,7 +242,8 @@ private:
         STAmount const& ePrice,
         std::uint16_t tfee);
 
-    /** Equal deposit in empty AMM state (LP tokens balance is 0)
+    /**
+     * Equal deposit in empty AMM state (LP tokens balance is 0)
      * @param view
      * @param ammAccount
      * @param amount requested asset1 deposit amount

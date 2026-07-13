@@ -1,9 +1,10 @@
 #pragma once
 
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/net/IPEndpoint.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/resource/detail/Kind.h>
 
+#include <cstddef>
 #include <utility>
 
 namespace xrpl::Resource {

@@ -1,7 +1,11 @@
 #pragma once
 
-#include <xrpl/basics/IntrusivePointer.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/shamap/detail/TaggedPointer.h>
 
 #include <atomic>
@@ -14,63 +18,72 @@ namespace xrpl {
 class SHAMapInnerNode final : public SHAMapTreeNode, public CountedObject<SHAMapInnerNode>
 {
 public:
-    /** Each inner node has 16 children (the 'radix tree' part of the map) */
+    /**
+     * Each inner node has 16 children (the 'radix tree' part of the map)
+     */
     static constexpr unsigned int kBranchFactor = 16;
 
 private:
-    /** Opaque type that contains the `hashes` array (array of type
-       `SHAMapHash`) and the `children` array (array of type
-       `intr_ptr::SharedPtr<SHAMapInnerNode>`).
+    /**
+     * Opaque type that contains the `hashes` array (array of type
+     * `SHAMapHash`) and the `children` array (array of type
+     * `intr_ptr::SharedPtr<SHAMapInnerNode>`).
      */
     TaggedPointer hashesAndChildren_;
 
     std::uint32_t fullBelowGen_ = 0;
     std::uint16_t isBranch_ = 0;
 
-    /** A bitlock for the children of this node, with one bit per child */
+    /**
+     * A bitlock for the children of this node, with one bit per child
+     */
     mutable std::atomic<std::uint16_t> lock_ = 0;
 
-    /** Convert arrays stored in `hashesAndChildren_` so they can store the
-        requested number of children.
-
-        @param toAllocate allocate space for at least this number of children
-        (must be <= branchFactor)
-
-        @note the arrays may allocate more than the requested value in
-        `toAllocate`. This is due to the implementation of TagPointer, which
-        only supports allocating arrays of 4 different sizes.
+    /**
+     * Convert arrays stored in `hashesAndChildren_` so they can store the
+     * requested number of children.
+     *
+     * @param toAllocate allocate space for at least this number of children
+     * (must be <= branchFactor)
+     *
+     * @note the arrays may allocate more than the requested value in
+     * `toAllocate`. This is due to the implementation of TagPointer, which
+     * only supports allocating arrays of 4 different sizes.
      */
     void
     resizeChildArrays(std::uint8_t toAllocate);
 
-    /** Get the child's index inside the `hashes` or `children` array (stored in
-        `hashesAndChildren_`.
-
-        These arrays may or may not be sparse). The optional will be empty is an
-        empty branch is requested and the arrays are sparse.
-
-        @param i index of the requested child
+    /**
+     * Get the child's index inside the `hashes` or `children` array (stored in
+     * `hashesAndChildren_`.
+     *
+     * These arrays may or may not be sparse). The optional will be empty is an
+     * empty branch is requested and the arrays are sparse.
+     *
+     * @param i index of the requested child
      */
     std::optional<int>
     getChildIndex(int i) const;
 
-    /** Call the `f` callback for all 16 (branchFactor) branches - even if
-        the branch is empty.
-
-        @param f a one parameter callback function. The parameter is the
-        child's hash.
-    */
+    /**
+     * Call the `f` callback for all 16 (branchFactor) branches - even if
+     * the branch is empty.
+     *
+     * @param f a one parameter callback function. The parameter is the
+     * child's hash.
+     */
     template <class F>
     void
     iterChildren(F&& f) const;
 
-    /** Call the `f` callback for all non-empty branches.
-
-        @param f a two parameter callback function. The first parameter is
-        the branch number, the second parameter is the index into the array.
-        For dense formats these are the same, for sparse they may be
-        different.
-    */
+    /**
+     * Call the `f` callback for all non-empty branches.
+     *
+     * @param f a two parameter callback function. The first parameter is
+     * the branch number, the second parameter is the index into the array.
+     * For dense formats these are the same, for sparse they may be
+     * different.
+     */
     template <class F>
     void
     iterNonEmptyChildIndexes(F&& f) const;
@@ -145,7 +158,9 @@ public:
     void
     updateHash() override;
 
-    /** Recalculate the hash of all children and this node. */
+    /**
+     * Recalculate the hash of all children and this node.
+     */
     void
     updateHashDeep();
 

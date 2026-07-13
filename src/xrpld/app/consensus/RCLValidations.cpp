@@ -46,8 +46,10 @@ RCLValidatedLedger::RCLValidatedLedger(
         ancestors_ = hashIndex->getFieldV256(sfHashes).value();
     }
     else
+    {
         JLOG(j_.warn()) << "Ledger " << ledgerSeq_ << ":" << ledgerID_
                         << " missing recent ancestor hashes";
+    }
 }
 
 auto
