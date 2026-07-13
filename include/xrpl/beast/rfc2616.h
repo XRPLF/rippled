@@ -358,12 +358,8 @@ template <class = void>
 bool
 tokenInList(boost::string_ref const& value, boost::string_ref const& token)
 {
-    for (auto const& item : makeList(value))
-    {
-        if (ciEqual(item, token))
-            return true;
-    }
-    return false;
+    return std::ranges::any_of(
+        makeList(value), [&token](auto const& item) { return ciEqual(item, token); });
 }
 
 template <bool IsRequest, class Body, class Fields>

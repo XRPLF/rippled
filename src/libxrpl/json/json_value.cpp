@@ -314,8 +314,7 @@ Value::~Value()
 
         case ValueType::Array:
         case ValueType::Object:
-            if (value_.mapVal != nullptr)
-                delete value_.mapVal;
+            delete value_.mapVal;
             break;
 
         // LCOV_EXCL_START
