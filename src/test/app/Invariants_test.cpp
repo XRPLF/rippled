@@ -2073,11 +2073,11 @@ class Invariants_test : public beast::unit_test::Suite
             ValidPermissionedDEX invariant;
             invariant.visitEntry(true, sleOffer, nullptr);
 
-            STTx tx{ttOFFER_CREATE, [&pd2, &a1](STObject& tx) {
-                        tx.setFieldH256(sfDomainID, pd2);
-                        tx.setFieldAmount(sfTakerPays, a1["USD"](10));
-                        tx.setFieldAmount(sfTakerGets, XRP(1));
-                    }};
+            STTx const tx{ttOFFER_CREATE, [&pd2, &a1](STObject& tx) {
+                              tx.setFieldH256(sfDomainID, pd2);
+                              tx.setFieldAmount(sfTakerPays, a1["USD"](10));
+                              tx.setFieldAmount(sfTakerGets, XRP(1));
+                          }};
 
             test::StreamSink sink{beast::Severity::Warning};
             beast::Journal const jlog{sink};
