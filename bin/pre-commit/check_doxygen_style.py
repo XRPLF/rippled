@@ -315,6 +315,7 @@ def _flag_doxy_block(lines: list[str], start: int) -> tuple[int, list[Finding]]:
     while cursor < line_count and "*/" not in lines[cursor]:
         body_line = lines[cursor]
         body = body_line.strip()
+        findings.extend(_flag_commands(body_line, body, cursor))
         tag = _canonical_order_tag(body)
         if tag is not None:
             first_tag_line.setdefault(tag, cursor + 1)
@@ -324,7 +325,9 @@ def _flag_doxy_block(lines: list[str], start: int) -> tuple[int, list[Finding]]:
         cursor += 1
 
     if cursor < line_count:
-        findings.extend(_flag_closer(lines[cursor], cursor + 1))
+        closer_line = lines[cursor]
+        findings.extend(_flag_commands(closer_line, closer_line.strip(), cursor))
+        findings.extend(_flag_closer(closer_line, cursor + 1))
     findings.extend(_flag_tag_order(first_tag_line))
 
     return cursor + 1, findings
@@ -339,10 +342,13 @@ def _flag_plain_block(lines: list[str], start: int) -> tuple[int, list[Finding]]
     cursor = start
     while cursor < line_count and "*/" not in lines[cursor]:
         cursor += 1
+    findings: list[Finding] = []
+    # The opener (start) is command-checked by check_file; check the rest here.
+    for i in range(start + 1, min(cursor + 1, line_count)):
+        findings.extend(_flag_commands(lines[i], lines[i].strip(), i))
     block_text = "\n".join(
         lines[start : cursor + 1] if cursor < line_count else lines[start:]
     )
-    findings: list[Finding] = []
     if RE_ANY_DOC_TAG.search(block_text):
         findings.append(Finding(start + 1, Category.PLAIN_BLOCK_DOC))
     next_index = cursor + 1 if cursor < line_count else line_count
