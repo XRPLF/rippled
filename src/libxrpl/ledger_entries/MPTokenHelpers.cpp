@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger_entries/MPTokenHelpers.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
@@ -7,11 +7,11 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger_entries/AccountRootHelpers.h>
+#include <xrpl/ledger_entries/CredentialHelpers.h>
+#include <xrpl/ledger_entries/DirectoryHelpers.h>
+#include <xrpl/ledger_entries/SponsorHelpers.h>
+#include <xrpl/ledger_entries/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>

@@ -3,9 +3,9 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger_entries/AccountRootHelpers.h>
+#include <xrpl/ledger_entries/MPTokenHelpers.h>
+#include <xrpl/ledger_entries/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>

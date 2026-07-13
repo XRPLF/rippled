@@ -13,7 +13,7 @@
 #include <test/jtx/txflags.h>
 
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger_entries/AMMHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STAmount.h>

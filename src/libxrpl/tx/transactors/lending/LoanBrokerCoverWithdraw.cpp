@@ -4,9 +4,9 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/LendingHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger_entries/AccountRootHelpers.h>
+#include <xrpl/ledger_entries/LendingHelpers.h>
+#include <xrpl/ledger_entries/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>

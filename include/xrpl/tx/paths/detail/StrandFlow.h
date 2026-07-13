@@ -5,8 +5,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/helpers/AMMHelpers.h>
-#include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger_entries/AMMHelpers.h>
+#include <xrpl/ledger_entries/OfferHelpers.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>

@@ -16,7 +16,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PaymentSandbox.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger_entries/MPTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>

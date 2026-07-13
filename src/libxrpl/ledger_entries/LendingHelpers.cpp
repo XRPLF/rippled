@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger_entries/LendingHelpers.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>

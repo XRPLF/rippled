@@ -15,7 +15,7 @@
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/ledger_entries/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>

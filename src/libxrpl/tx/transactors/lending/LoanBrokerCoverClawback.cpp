@@ -6,8 +6,8 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/LendingHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger_entries/LendingHelpers.h>
+#include <xrpl/ledger_entries/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>

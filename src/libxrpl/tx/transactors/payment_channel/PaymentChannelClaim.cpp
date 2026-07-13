@@ -3,8 +3,8 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
+#include <xrpl/ledger_entries/CredentialHelpers.h>
+#include <xrpl/ledger_entries/PaymentChannelHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>

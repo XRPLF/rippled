@@ -6,8 +6,8 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/ledger_entries/TokenHelpers.h>
+#include <xrpl/ledger_entries/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>

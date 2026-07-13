@@ -20,9 +20,9 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger_entries/AccountRootHelpers.h>
+#include <xrpl/ledger_entries/DirectoryHelpers.h>
+#include <xrpl/ledger_entries/RippleStateHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>

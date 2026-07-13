@@ -4,7 +4,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/ledger_entries/SponsorHelpers.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>

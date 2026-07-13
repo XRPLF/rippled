@@ -1,7 +1,7 @@
 #include <xrpl/tx/transactors/dex/OfferCancel.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger_entries/OfferHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>

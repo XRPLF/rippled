@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger_entries/DirectoryHelpers.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>

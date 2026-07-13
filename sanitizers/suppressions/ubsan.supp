@@ -165,7 +165,7 @@ unsigned-integer-overflow:basics/Number.h
 #   NFTokenMint checks tokenSeq + 1u == 0u; AmendmentTable does (seq - 1) / 256.
 unsigned-integer-overflow:basics/base_uint.h
 unsigned-integer-overflow:ledger/ApplyView.cpp
-unsigned-integer-overflow:ledger/helpers/AccountRootHelpers.cpp
+unsigned-integer-overflow:ledger_entries/AccountRootHelpers.cpp
 unsigned-integer-overflow:tx/transactors/nft/NFTokenMint.cpp
 unsigned-integer-overflow:app/misc/detail/AmendmentTable.cpp
 
@@ -180,7 +180,7 @@ unsigned-integer-overflow:json/json_value.cpp
 unsigned-integer-overflow:app/misc/NetworkOPs.cpp
 unsigned-integer-overflow:rpc/detail/Role.cpp
 unsigned-integer-overflow:tx/transactors/oracle/OracleSet.cpp
-unsigned-integer-overflow:ledger/helpers/MPTokenHelpers.cpp
+unsigned-integer-overflow:ledger_entries/MPTokenHelpers.cpp
 unsigned-integer-overflow:crypto/RFC1751.cpp
 unsigned-integer-overflow:tx/paths/detail/StrandFlow.h
 unsigned-integer-overflow:protocol/STObject.h

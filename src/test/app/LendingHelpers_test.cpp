@@ -6,7 +6,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
-#include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger_entries/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>

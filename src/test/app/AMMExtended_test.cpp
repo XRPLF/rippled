@@ -35,7 +35,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger_entries/OfferHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>

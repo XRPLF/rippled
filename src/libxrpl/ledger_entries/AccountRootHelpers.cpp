@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger_entries/AccountRootHelpers.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -9,7 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/ledger_entries/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>

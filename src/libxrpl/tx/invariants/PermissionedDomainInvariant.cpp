@@ -3,7 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger_entries/CredentialHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>

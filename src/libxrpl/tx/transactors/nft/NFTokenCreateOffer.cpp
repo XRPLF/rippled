@@ -3,7 +3,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/ledger_entries/NFTokenHelpers.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STLedgerEntry.h>

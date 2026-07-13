@@ -3,7 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/ledger_entries/NFTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>

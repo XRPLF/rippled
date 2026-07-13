@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/ledger_entries/VaultHelpers.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>

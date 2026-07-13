@@ -3,7 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger_entries/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>

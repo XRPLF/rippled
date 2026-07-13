@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
+#include <xrpl/ledger_entries/DelegateHelpers.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>

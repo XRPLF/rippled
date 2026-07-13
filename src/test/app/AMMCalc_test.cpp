@@ -5,7 +5,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger_entries/AMMHelpers.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>

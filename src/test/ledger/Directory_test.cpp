@@ -23,7 +23,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/BookDirs.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger_entries/DirectoryHelpers.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>

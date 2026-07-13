@@ -26,7 +26,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger_entries/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>

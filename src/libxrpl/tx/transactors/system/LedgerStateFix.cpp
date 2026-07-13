@@ -2,7 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/ledger_entries/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>

@@ -1,4 +1,4 @@
-#include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/ledger_entries/NFTokenHelpers.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
@@ -7,10 +7,10 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger_entries/AccountRootHelpers.h>
+#include <xrpl/ledger_entries/DirectoryHelpers.h>
+#include <xrpl/ledger_entries/RippleStateHelpers.h>
+#include <xrpl/ledger_entries/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
