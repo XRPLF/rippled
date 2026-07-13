@@ -153,12 +153,12 @@ ValidLoan::finalize(
         if (lendingV11Enabled && !before && txType == ttLOAN_SET)
         {
             bool const hasBorrower = tx.isFieldPresent(sfBorrower);
-            bool const hasCounterparty = tx.isFieldPresent(sfCounterparty);
             bool const hasCounterpartySig = tx.isFieldPresent(sfCounterpartySignature);
+            bool const hasStartDate = tx.isFieldPresent(sfStartDate);
 
             // If a LoanSet carries a Counterparty and a CounterpartySignature it
             // must not also name a Borrower.
-            if (hasCounterparty && hasCounterpartySig && hasBorrower)
+            if (hasCounterpartySig && hasBorrower)
             {
                 JLOG(j.fatal()) << "Invariant failed: LoanSet specified a "
                                    "Counterparty and CounterpartySignature "
@@ -167,7 +167,7 @@ ValidLoan::finalize(
             }
             // If a LoanSet names a Borrower it must not also carry a
             // Counterparty or a CounterpartySignature.
-            if (hasBorrower && (hasCounterparty || hasCounterpartySig))
+            if (hasBorrower && hasCounterpartySig)
             {
                 JLOG(j.fatal()) << "Invariant failed: LoanSet specified a "
                                    "Borrower together with a Counterparty or "
@@ -175,11 +175,10 @@ ValidLoan::finalize(
                 return false;
             }
             // A LoanSet must use one of the two creation paths.
-            if (!hasBorrower && !(hasCounterparty && hasCounterpartySig))
+            if (!hasBorrower && !hasCounterpartySig)
             {
                 JLOG(j.fatal()) << "Invariant failed: LoanSet specified neither "
-                                   "a Borrower nor a Counterparty with "
-                                   "CounterpartySignature";
+                                   "a Borrower nor a CounterpartySignature";
                 return false;
             }
             // In the two-step flow the named Borrower must be a different
@@ -191,11 +190,14 @@ ValidLoan::finalize(
                 return false;
             }
 
-            bool const shouldPend = hasBorrower && !hasCounterpartySig;
+            // The two-step flow is started (and the loan created pending) when
+            // the LoanSet names a Borrower and a StartDate but carries neither a
+            // Counterparty nor a CounterpartySignature.
+            bool const shouldPend = hasBorrower && hasStartDate && !hasCounterpartySig;
             if (shouldPend != after->isFlag(lsfLoanPending))
             {
                 JLOG(j.fatal()) << "Invariant failed: LoanSet pending flag does "
-                                   "not match Borrower and CounterpartySignature";
+                                   "not match the two-step flow inputs";
                 return false;
             }
 

@@ -4186,15 +4186,20 @@ class Invariants_test : public beast::unit_test::Suite
                 STTx{ttLOAN_SET, [](STObject&) {}},
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
 
-            // A Borrower-only LoanSet (no CounterpartySignature) must create a
-            // pending loan; creating a non-pending loan instead is a violation.
+            // A two-step LoanSet (Borrower and StartDate, no Counterparty or
+            // CounterpartySignature) must create a pending loan; creating a
+            // non-pending loan instead is a violation.
             doInvariantCheck(
                 Env{*this, defaultAmendments() | featureLendingProtocolV1_1},
-                {"LoanSet pending flag does not match Borrower and "
-                 "CounterpartySignature"},
+                {"LoanSet pending flag does not match the two-step flow inputs"},
                 createLoan(false),
                 XRPAmount{},
-                STTx{ttLOAN_SET, [&](STObject& tx) { tx.setAccountID(sfBorrower, borrower.id()); }},
+                STTx{
+                    ttLOAN_SET,
+                    [&](STObject& tx) {
+                        tx.setAccountID(sfBorrower, borrower.id());
+                        tx.setFieldU32(sfStartDate, 0xFFFF'FFFF);
+                    }},
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
 
             // A Counterparty + CounterpartySignature LoanSet must create an
@@ -4202,8 +4207,7 @@ class Invariants_test : public beast::unit_test::Suite
             // violation.
             doInvariantCheck(
                 Env{*this, defaultAmendments() | featureLendingProtocolV1_1},
-                {"LoanSet pending flag does not match Borrower and "
-                 "CounterpartySignature"},
+                {"LoanSet pending flag does not match the two-step flow inputs"},
                 createLoan(true),
                 XRPAmount{},
                 STTx{
@@ -4250,15 +4254,20 @@ class Invariants_test : public beast::unit_test::Suite
             // A pending loan created by the two-step flow must have a StartDate
             // in the future; creating one with a past StartDate is a violation.
             // createLoan(true, 1) makes a pending loan whose StartDate (1) is in
-            // the past, and the Borrower-only LoanSet keeps the pending flag
-            // consistent so this check is reached.
+            // the past, and the Borrower + StartDate LoanSet keeps the pending
+            // flag consistent so this check is reached.
             doInvariantCheck(
                 Env{*this, defaultAmendments() | featureLendingProtocolV1_1},
                 {"LoanSet created a pending Loan whose StartDate is not in the "
                  "future"},
                 createLoan(true, 1u),
                 XRPAmount{},
-                STTx{ttLOAN_SET, [&](STObject& tx) { tx.setAccountID(sfBorrower, borrower.id()); }},
+                STTx{
+                    ttLOAN_SET,
+                    [&](STObject& tx) {
+                        tx.setAccountID(sfBorrower, borrower.id());
+                        tx.setFieldU32(sfStartDate, 0xFFFF'FFFF);
+                    }},
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
         }
 

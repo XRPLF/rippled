@@ -30,17 +30,17 @@ namespace xrpl {
  *      c. the loan's `StartDate` is still in the future.
  * 5. A `LoanSet` that creates a loan must use exactly one of two mutually
  *    exclusive creation paths: it either names a `Borrower`, or it carries a
- *    `Counterparty` together with a `CounterpartySignature`. Specifically:
+ *    a `CounterpartySignature`. Specifically:
  *      a. If `Borrower` is present, `Counterparty` and `CounterpartySignature`
  *         must be absent.
- *      b. If `Counterparty` and `CounterpartySignature` are present, `Borrower`
- *         must be absent.
- *      c. Either `Borrower`, or both `Counterparty` and `CounterpartySignature`,
+ *      b. If `CounterpartySignature` is present, `Borrower` must be absent.
+ *      c. Either `Borrower`, or `CounterpartySignature`,
  *         must be present.
  *      d. If `Borrower` is present, it must differ from the submitting
  *         `Account`.
- * 6. A `LoanSet` that creates a loan must set `lsfLoanPending` if and only if
- *    `Borrower` is present and `CounterpartySignature` is absent.
+ * 6. A `LoanSet` that creates a loan must set `lsfLoanPending` if and only if it
+ *    starts the two-step flow, i.e. `Borrower` and `StartDate` are present while
+ *    `Counterparty` and `CounterpartySignature` are absent.
  * 7. A `LoanSet` that creates a loan must set the loan's `Borrower`.
  *    Additionally, a pending loan's `StartDate` must be in the future (so it is
  *    still in the future when `LoanAccept` finalizes it).

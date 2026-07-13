@@ -18,6 +18,11 @@ namespace xrpl {
 
 class LoanSet : public Transactor
 {
+private:
+    /* Returns true if the transaction is using the two-step (Borrower) flow. */
+    static bool
+    isTwoStepFlow(STTx const& tx, Rules const& rules);
+
 public:
     static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 

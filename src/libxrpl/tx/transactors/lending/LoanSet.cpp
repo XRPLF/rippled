@@ -49,6 +49,19 @@ LoanSet::getFlagsMask(PreflightContext const& ctx)
     return tfLoanSetMask;
 }
 
+bool
+LoanSet::isTwoStepFlow(STTx const& tx, Rules const& rules)
+{
+    if (!rules.enabled(featureLendingProtocolV1_1))
+        return false;
+
+    // The two-step (Borrower) flow is started when the LoanSet names a
+    // Borrower and a StartDate but carries neither a Counterparty nor a
+    // CounterpartySignature.
+    return tx.isFieldPresent(sfBorrower) && tx.isFieldPresent(sfStartDate) &&
+        !tx.isFieldPresent(sfCounterparty) && !tx.isFieldPresent(sfCounterpartySignature);
+}
+
 NotTEC
 LoanSet::preflight(PreflightContext const& ctx)
 {
@@ -72,7 +85,12 @@ LoanSet::preflight(PreflightContext const& ctx)
             return tx.getFieldObject(sfCounterpartySignature);
         return std::nullopt;
     }();
-    if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig)
+
+    bool twoStepFlow = isTwoStepFlow(tx, ctx.rules);
+    // In the two-step (Borrower) flow introduced by V1.1, a CounterpartySignature
+    // is not required even for non-batch transactions. The immediate flow still
+    // requires one.
+    if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig && !twoStepFlow)
     {
         JLOG(ctx.j.warn()) << "LoanSet transaction must have a CounterpartySignature.";
         return temBAD_SIGNER;
@@ -142,6 +160,11 @@ LoanSet::checkSign(PreclaimContext const& ctx)
 {
     if (auto ret = Transactor::checkSign(ctx))
         return ret;
+
+    // In the two-step (Borrower) flow introduced by V1.1 there is no
+    // counterparty, so there is no CounterpartySignature to check.
+    if (isTwoStepFlow(ctx.tx, ctx.view.rules()))
+        return tesSUCCESS;
 
     // Counter signer is optional. If it's not specified, it's assumed to be
     // `LoanBroker.Owner`. Note that we have not checked whether the
