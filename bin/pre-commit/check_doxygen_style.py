@@ -6,9 +6,9 @@ Enforces the house convention for documentation comments:
 
   * Use ``/** ... */`` blocks, not ``///``, ``//!`` or ``/*! ... */``; a plain
     ``/* ... */`` that contains Doxygen commands is a doc comment missing its
-    second star. Trailing member-after comments use ``///<`` (not ``//!<`` or
-    ``/**< ... */`` -- the block form gets reflowed/mis-attached by
-    clang-format on packed enum values, the line form does not).
+    second star. Trailing member-after comments use ``///<`` (not ``//!<``,
+    ``/*!< ... */`` or ``/**< ... */`` -- the block forms get reflowed and
+    mis-attached by clang-format on packed enum values, the line form does not).
   * ``/**`` sits alone on its line; the closing ``*/`` sits alone on its line.
   * Every content line is prefixed with `` * `` (no bare-indented continuation).
   * The first content line is flush (not over-indented).
@@ -65,6 +65,7 @@ class Category(Enum):
     QT_MEMBER = ("qt-member", "use ///< instead of //!<")
     QT_LINE = ("qt-line", "use a /** ... */ block instead of //!")
     BLOCK_MEMBER = ("block-member", "use ///< instead of /**<")
+    QT_BLOCK_MEMBER = ("qt-block-member", "use ///< instead of /*!<")
     DOC_IN_LINE_COMMENT = (
         "doc-in-line-comment",
         "use a /** ... */ block for documentation, not //",
@@ -155,11 +156,12 @@ RE_FIRST_OVERINDENT = re.compile(r"^\s*\*\s{2,}\S")
 # A scope marker @{ / @} sharing a comment with other text.
 RE_COMBINED_MARKER = re.compile(r"^\*\s*@[{}]\s*$")
 
-# Non-canonical command spellings -> house spelling.
+# Non-canonical command spellings -> the house spelling (bare command names).
+# Used both to flag a wrong @form and to suggest the right @form for a \wrong.
+CANONICAL_COMMAND = {"returns": "return", "throw": "throws", "sa": "see"}
 WRONG_SPELLINGS = [
-    (re.compile(r"@returns\b"), "@return"),
-    (re.compile(r"@throw\b"), "@throws"),
-    (re.compile(r"@sa\b"), "@see"),
+    (re.compile(rf"@{wrong}\b"), f"@{right}")
+    for wrong, right in CANONICAL_COMMAND.items()
 ]
 
 # Order block tags should appear in; a body out of this order is a violation.
@@ -179,18 +181,19 @@ def is_doxy_open(stripped: str) -> bool:
 
 
 def _flag_commands(raw_line: str, stripped: str, index: int) -> list[Finding]:
-    """Non-terminal: flag \\cmd and misspelled @cmd on any comment-ish line."""
+    """Flag \\cmd and misspelled @cmd on a comment line (opener, body, or closer)."""
     if not stripped.startswith(("*", "//", "/*")):
         return []
     findings: list[Finding] = []
     backslash = RE_BACKSLASH_CMD.search(raw_line)
     if backslash:
         command = backslash.group(1)
+        canonical = CANONICAL_COMMAND.get(command, command)
         findings.append(
             Finding(
                 index + 1,
                 Category.BACKSLASH_COMMAND,
-                f"use @{command} instead of \\{command}",
+                f"use @{canonical} instead of \\{command}",
             )
         )
     for pattern, replacement in WRONG_SPELLINGS:
@@ -207,7 +210,7 @@ def _flag_commands(raw_line: str, stripped: str, index: int) -> list[Finding]:
 
 
 def _flag_line_comment(raw_line: str, stripped: str, index: int) -> Finding | None:
-    """Return the finding for a terminal single-line comment form, else None."""
+    """Return the finding for a single-line comment form (///, //!, /**<, ...), else None."""
     if stripped.startswith("///") and not stripped.startswith(("////", "///<")):
         return Finding(index + 1, Category.TRIPLE_SLASH)
     if "//!<" in raw_line:
@@ -216,6 +219,8 @@ def _flag_line_comment(raw_line: str, stripped: str, index: int) -> Finding | No
         return Finding(index + 1, Category.QT_LINE)
     if "/**<" in raw_line:
         return Finding(index + 1, Category.BLOCK_MEMBER)
+    if "/*!<" in raw_line:
+        return Finding(index + 1, Category.QT_BLOCK_MEMBER)
     if stripped.startswith("//") and RE_LINE_DOC_TAG.search(stripped):
         return Finding(index + 1, Category.DOC_IN_LINE_COMMENT)
     return None
@@ -353,9 +358,9 @@ def _flag_plain_block(lines: list[str], start: int) -> tuple[int, list[Finding]]
     return next_index, findings
 
 
-def check_file(path: Path) -> list[Finding]:
-    """Return all style violations found in one file."""
-    lines = path.read_text(encoding="utf-8").split("\n")
+def check_source(text: str) -> list[Finding]:
+    """Return all style violations found in the given source text."""
+    lines = text.split("\n")
     findings: list[Finding] = []
     line_count = len(lines)
     index = 0
@@ -391,6 +396,11 @@ def check_file(path: Path) -> list[Finding]:
     return findings
 
 
+def check_file(path: Path) -> list[Finding]:
+    """Return all style violations found in one file."""
+    return check_source(path.read_text(encoding="utf-8"))
+
+
 def iter_files(paths: Iterable[str]) -> Iterator[Path]:
     """Yield every C++ source file among the given files and directories."""
     for raw_path in paths:
@@ -422,7 +432,7 @@ def main() -> int:
                 print(
                     f"{path}:{finding.line}: {finding.category.label}: {finding.message}"
                 )
-    print(f"\n{total} doc-style violation(s)", file=sys.stderr)
+    print(f"\n{total} doxygen-style violation(s)", file=sys.stderr)
     return 1 if total else 0
 
 
