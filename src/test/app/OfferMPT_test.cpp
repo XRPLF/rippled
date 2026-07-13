@@ -686,6 +686,7 @@ public:
 
             MPTTester const usd({.env = env, .issuer = gw, .holders = {alice}});
 
+            auto const aliceOfferSeq = env.seq(alice);
             env(offer(alice, usd(1), drops(1'000'000)));
             env.close();
 
@@ -705,6 +706,16 @@ public:
                 Ter(tecPATH_DRY));
             env.close();
 
+            // alice's offer sells 1,000,000 drops for usd(1) but she can fund
+            // only 999,999. Filling the clipped remainder would require a
+            // fractional usd (MPT) input that rounds down to zero, so without
+            // the fix the taker could take the funded drops for free.
+            // shouldRmSmallIncreasedQOffer() now treats the MPT input as
+            // integral (like XRP) and removes the degraded offer, so the
+            // payment goes dry. The removal happens only inside the crossing:
+            // tecPATH_DRY discards everything but the fee, so the offer itself
+            // stays in the ledger, unconsumed.
+            BEAST_EXPECT(env.le(keylet::offer(alice.id(), aliceOfferSeq)) != nullptr);
             BEAST_EXPECT(env.balance(alice) == aliceXRPBefore);
             BEAST_EXPECT(env.balance(bob) == bobXRPBefore);
         }
@@ -726,6 +737,7 @@ public:
 
             MPTTester const usd({.env = env, .issuer = mptIssuer, .holders = {alice}});
 
+            auto const aliceOfferSeq = env.seq(alice);
             env(offer(alice, usd(1), eur(1)));
             env.close();
 
@@ -739,6 +751,11 @@ public:
                 Ter(tecPATH_DRY));
             env.close();
 
+            // Same zero-input regression as the MPT/XRP case above, but with
+            // an IOU (eur) output leg: the fractional usd (MPT) input rounds
+            // to zero. The degraded offer is removed during crossing, the
+            // payment goes dry, and tecPATH_DRY leaves the offer in the ledger.
+            BEAST_EXPECT(env.le(keylet::offer(alice.id(), aliceOfferSeq)) != nullptr);
             BEAST_EXPECT(env.balance(alice, eur) == aliceEURBefore);
             BEAST_EXPECT(env.balance(bob, eur) == bobEURBefore);
         }
@@ -759,6 +776,7 @@ public:
             env(pay(issuerB, alice, eur(999'999)));
             env.close();
 
+            auto const aliceOfferSeq = env.seq(alice);
             env(offer(alice, usd(1), eur(1'000'000)));
             env.close();
 
@@ -772,8 +790,85 @@ public:
                 Ter(tecPATH_DRY));
             env.close();
 
+            // Same zero-input regression as above, but with both legs MPT: the
+            // fractional usd (MPT) input rounds to zero. The degraded offer is
+            // removed during crossing, the payment goes dry, and tecPATH_DRY
+            // leaves the offer in the ledger.
+            BEAST_EXPECT(env.le(keylet::offer(alice.id(), aliceOfferSeq)) != nullptr);
             BEAST_EXPECT(env.balance(alice, eur) == eur(aliceEURBefore));
             BEAST_EXPECT(env.balance(bob, eur) == eur(bobEURBefore));
+        }
+
+        {
+            // The dry cases above never observe the degraded offer actually
+            // being removed, because tecPATH_DRY rolls the removal back. Here a
+            // second, fully funded offer lets the crossing succeed, so the
+            // removal persists: alice's degraded offer is deleted from the
+            // book (not taken for free) while carol's good offer fills.
+            testcase(
+                "Partially funded MPT input offer is removed, not consumed, "
+                "when a funded offer crosses");
+
+            Env env{*this, features};
+            auto const gw = Account{"gw"};
+            auto const carol = Account{"carol"};
+
+            env.fund(XRP(10'000), gw, alice, carol, bob);
+            env.close();
+
+            MPTTester const usd({.env = env, .issuer = gw, .holders = {alice, carol, bob}});
+
+            // alice's offer sells 1,000,000 drops for usd(1) but, as in the
+            // dry cases above, she can fund only 999,999 drops, so filling the
+            // clipped remainder would require a fractional usd (MPT) input that
+            // rounds down to zero.
+            auto const aliceOfferSeq = env.seq(alice);
+            env(offer(alice, usd(1), drops(1'000'000)));
+            env.close();
+
+            auto const targetBalance = reserve(env, 2) + drops(999'999);
+            auto const drain = env.balance(alice).value().xrp() - targetBalance.value().xrp() -
+                env.current()->fees().base;
+            env(pay(alice, gw, drops(drain)));
+            env.close();
+
+            // carol's same-quality offer is fully funded and provides the
+            // legitimate side of the crossing.
+            auto const carolOfferSeq = env.seq(carol);
+            env(offer(carol, usd(1), drops(1'000'000)));
+            env.close();
+
+            // bob needs usd to buy drops.
+            env(pay(gw, bob, usd(2)));
+            env.close();
+
+            auto const aliceOffer = keylet::offer(alice.id(), aliceOfferSeq);
+            auto const carolOffer = keylet::offer(carol.id(), carolOfferSeq);
+            BEAST_EXPECT(env.le(aliceOffer) != nullptr);
+            BEAST_EXPECT(env.le(carolOffer) != nullptr);
+
+            auto const aliceXRPBefore = env.balance(alice);
+            auto const bobXRPBefore = env.balance(bob);
+
+            // bob buys drops with usd, wanting more than carol alone supplies so
+            // the crossing also reaches alice's offer. carol's offer fills;
+            // alice's degraded offer is removed rather than taken for free, so
+            // bob receives only carol's 1,000,000 drops and pays only usd(1).
+            env(offer(bob, drops(2'000'000), usd(2), tfImmediateOrCancel));
+            env.close();
+
+            BEAST_EXPECT(env.le(aliceOffer) == nullptr);
+            BEAST_EXPECT(env.le(carolOffer) == nullptr);
+            env.require(offers(alice, 0), offers(carol, 0), offers(bob, 0));
+
+            // alice's offer was removed, not consumed: her balances are
+            // unchanged and none of her funded 999'999 drops leaked to bob.
+            BEAST_EXPECT(env.balance(alice) == aliceXRPBefore);
+            BEAST_EXPECT(env.balance(alice, usd) == usd(0));
+            BEAST_EXPECT(env.balance(carol, usd) == usd(1));
+            BEAST_EXPECT(env.balance(bob, usd) == usd(1));
+            BEAST_EXPECT(
+                env.balance(bob) == bobXRPBefore + drops(1'000'000) - env.current()->fees().base);
         }
     }
 
