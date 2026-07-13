@@ -799,6 +799,95 @@ WasmiEngine::run(
     return Unexpected<TER>(tecFAILED_PROCESSING);
 }
 
+namespace {
+
+struct CustomSection
+{
+    std::string_view name;
+    std::span<uint8_t const> payload;
+};
+
+struct Version
+{
+    std::string_view name;
+    std::string_view version;
+};
+
+uint32_t
+readLEB128(Bytes const& wasmCode, size_t& offset)
+{
+    auto result = uint32_t{};
+    auto shift = uint32_t{};
+    while (true)
+    {
+        auto byte = wasmCode[offset++];
+        result |= (byte & 0x7F) << shift;
+        if ((byte & 0x80) == 0)
+        {
+            break;
+        }
+        shift += 7;
+    }
+    return result;
+}
+
+template <typename Filter>
+void
+filterCustomSections(Bytes const& wasmCode, Filter&& filter)
+{
+    auto offset = size_t{8};  // Skip Magic number and Version
+
+    while (offset < wasmCode.size())
+    {
+        auto sectionId = wasmCode[offset++];
+        auto sectionSize = readLEB128(wasmCode, offset);
+        auto nextSection = offset + sectionSize;
+
+        if (sectionId == 0)
+        {
+            auto customSection = CustomSection{};
+
+            auto size = readLEB128(wasmCode, offset);
+            customSection.name = std::string_view{
+                std::begin(wasmCode) + offset, std::begin(wasmCode) + offset + size};
+            offset += nameSize;
+
+            size = nextSection - offset;
+            customSection.payload = std::span<uint8_t const>{
+                std::begin(wasmCode) + offset, std::begin(wasmCode) + offset + size};
+
+            if (filter(customSection))
+            {
+                return;
+            }
+        }
+        offset = nextSection;
+    }
+}
+
+std::vector<Version>
+extractVersionInfo(Bytes const& wasmCode)
+{
+    static constexpr auto kCommonLib = "xrpl-common-stdlib";
+    static constexpr auto kEscrowLib = "xrpl-escrow-stdlib";
+
+    auto versions = std::vector<Version>{};
+    filterCustomSections(wasmCode, [&](auto const& section) {
+        if (section.name == kCommonLib || section.name == kEscrowLib)
+        {
+            versions.emplace_back(Version {
+                .name = section.name,
+                .version = std::string_view{section.payload.data(), section.payload.size()};
+            });
+        }
+
+        // Just read until we have found all the information we are looking for.
+        return versions.size() == 2;
+    });
+}
+
+}  // namespace
+
 Expected<WasmResult<int32_t>, TER>
 WasmiEngine::runHlp(
     Bytes const& wasmCode,
@@ -817,6 +906,8 @@ WasmiEngine::runHlp(
         throw std::runtime_error("empty module");
     if (!hfs.checkSelf())
         throw std::runtime_error("hfs isn't clean");
+
+    auto versionInfo = extractVersionInfo(wasmCode);
 
     // Create and instantiate the module.
     [[maybe_unused]] int const m = addModule(wasmCode, true, imports, gas);
