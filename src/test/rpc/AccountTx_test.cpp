@@ -15,6 +15,7 @@
 #include <test/jtx/pay.h>
 #include <test/jtx/regkey.h>
 #include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
@@ -773,7 +774,7 @@ class AccountTx_test : public beast::unit_test::Suite
 
         // All it takes is a large enough XRP payment to resurrect
         // becky's account.  Try too small a payment.
-        env(pay(alice, becky, drops(env.current()->fees().accountReserve(0)) - drops(1)),
+        env(pay(alice, becky, drops(env.current()->fees().accountReserve(0, 1)) - drops(1)),
             Ter(tecNO_DST_INSUF_XRP));
         env.close();
 
@@ -888,6 +889,82 @@ class AccountTx_test : public beast::unit_test::Suite
         checkAliceAcctTx(9, jss::Payment);
     }
 
+    void
+    testSponsorship()
+    {
+        // test all sponsored transactions are in sponsor and sponsee's account
+        // tx list
+        testcase("Sponsorship");
+
+        using namespace test::jtx;
+        Env env(*this);
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
+        env.fund(XRP(10000), alice, sponsor, sponsor2);
+        env.close();
+
+        // check the latest sponsorship-related txn is in account tx list
+        auto const checkTx = [&](Account const& account, json::StaticString txType) {
+            json::Value params;
+            params[jss::account] = account.human();
+            params[jss::limit] = 100;
+            auto const jv = env.rpc("json", "account_tx", to_string(params))[jss::result];
+
+            auto const& tx0(jv[jss::transactions][0u][jss::tx]);
+            BEAST_EXPECT(tx0[jss::TransactionType] == txType);
+
+            std::string const txHash{
+                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+            BEAST_EXPECT(tx0[jss::hash] == txHash);
+        };
+
+        // fee sponsorship
+        env(noop(alice), sponsor::As(sponsor, spfSponsorFee), Sig(sfSponsorSignature, sponsor));
+        env.close();
+        checkTx(alice, jss::AccountSet);
+        checkTx(sponsor, jss::AccountSet);
+
+        // set sponsor
+        env(sponsor::set(sponsor, 0, 100, XRP(100)), sponsor::SponseeAcc(alice), Ter(tesSUCCESS));
+        env.close();
+        checkTx(alice, jss::SponsorshipSet);
+        checkTx(sponsor, jss::SponsorshipSet);
+
+        // create an object with sponsor
+        auto const checkId = keylet::check(alice, env.seq(alice)).key;
+        env(check::create(alice, sponsor, XRP(1)), sponsor::As(sponsor, spfSponsorReserve));
+        env.close();
+        checkTx(alice, jss::CheckCreate);
+        checkTx(sponsor, jss::CheckCreate);
+
+        // transfer object sponsorship
+        env(sponsor::transfer(alice, tfSponsorshipReassign, checkId),
+            sponsor::As(sponsor2, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor2));
+        env.close();
+        checkTx(alice, jss::SponsorshipTransfer);
+        checkTx(sponsor, jss::SponsorshipTransfer);
+        checkTx(sponsor2, jss::SponsorshipTransfer);
+
+        // delete the sponsored object
+        env(check::cancel(alice, checkId),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor));
+        env.close();
+        checkTx(alice, jss::CheckCancel);
+        checkTx(sponsor, jss::CheckCancel);
+        checkTx(sponsor2, jss::CheckCancel);
+
+        // account sponsorship
+        env(sponsor::transfer(alice, tfSponsorshipCreate),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor));
+        env.close();
+        checkTx(alice, jss::SponsorshipTransfer);
+        checkTx(sponsor, jss::SponsorshipTransfer);
+    }
+
 public:
     void
     run() override
@@ -896,6 +973,7 @@ public:
         testContents();
         testAccountDelete();
         testMPT();
+        testSponsorship();
     }
 };
 BEAST_DEFINE_TESTSUITE(AccountTx, rpc, xrpl);

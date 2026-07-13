@@ -32,23 +32,24 @@
 
 namespace xrpl {
 
-/** Type-specific prefix for calculating ledger indices.
-
-    The identifier for a given object within the ledger is calculated based
-    on some object-specific parameters. To ensure that different types of
-    objects have different indices, even if they happen to use the same set
-    of parameters, we use "tagged hashing" by adding a type-specific prefix.
-
-    @note These values are part of the protocol and *CANNOT* be arbitrarily
-          changed. If they were, on-ledger objects may no longer be able to
-          be located or addressed.
-
-          Additions to this list are OK, but changing existing entries to
-          assign them a different values should never be needed.
-
-          Entries that are removed should be moved to the bottom of the enum
-          and marked as [[deprecated]] to prevent accidental reuse.
-*/
+/**
+ * Type-specific prefix for calculating ledger indices.
+ *
+ * The identifier for a given object within the ledger is calculated based
+ * on some object-specific parameters. To ensure that different types of
+ * objects have different indices, even if they happen to use the same set
+ * of parameters, we use "tagged hashing" by adding a type-specific prefix.
+ *
+ * @note These values are part of the protocol and *CANNOT* be arbitrarily
+ *       changed. If they were, on-ledger objects may no longer be able to
+ *       be located or addressed.
+ *
+ *       Additions to this list are OK, but changing existing entries to
+ *       assign them a different values should never be needed.
+ *
+ *       Entries that are removed should be moved to the bottom of the enum
+ *       and marked as [[deprecated]] to prevent accidental reuse.
+ */
 enum class LedgerNameSpace : std::uint16_t {
     Account = 'a',
     DirNode = 'd',
@@ -84,6 +85,7 @@ enum class LedgerNameSpace : std::uint16_t {
     Vault = 'V',
     LoanBroker = 'l',  // lower-case L
     Loan = 'L',
+    Sponsorship = '>',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',
@@ -324,6 +326,12 @@ Keylet
 signerList(AccountID const& account) noexcept
 {
     return signerList(account, 0);
+}
+
+Keylet
+sponsorship(AccountID const& sponsor, AccountID const& sponsee) noexcept
+{
+    return {ltSPONSORSHIP, indexHash(LedgerNameSpace::Sponsorship, sponsor, sponsee)};
 }
 
 Keylet

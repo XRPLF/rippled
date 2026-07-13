@@ -18,66 +18,95 @@ struct PeerLimitConfig
     std::optional<std::size_t> outPeers;
 };
 
-/** PeerFinder configuration settings. */
+/**
+ * PeerFinder configuration settings.
+ */
 struct Config
 {
-    /** The largest number of public peer slots to allow.
-        This includes both inbound and outbound, but does not include
-        fixed peers.
-    */
+    /**
+     * The largest number of public peer slots to allow.
+     * This includes both inbound and outbound, but does not include
+     * fixed peers.
+     */
     std::size_t maxPeers{Tuning::kDefaultMaxPeers};
 
-    /** The number of automatic outbound connections to maintain.
-        Outbound connections are only maintained if autoConnect
-        is `true`.
-    */
+    /**
+     * The number of automatic outbound connections to maintain.
+     * Outbound connections are only maintained if autoConnect
+     * is `true`.
+     */
     std::size_t outPeers;
 
-    /** The number of automatic inbound connections to maintain.
-        Inbound connections are only maintained if wantIncoming
-        is `true`.
-    */
+    /**
+     * The number of automatic inbound connections to maintain.
+     * Inbound connections are only maintained if wantIncoming
+     * is `true`.
+     */
     std::size_t inPeers{0};
 
-    /** `true` if we want our IP address kept private. */
+    /**
+     * `true` if we want our IP address kept private.
+     */
     bool peerPrivate = true;
 
-    /** `true` if we want to accept incoming connections. */
+    /**
+     * `true` if we want to accept incoming connections.
+     */
     bool wantIncoming{true};
 
-    /** `true` if we want to establish connections automatically */
+    /**
+     * `true` if we want to establish connections automatically
+     */
     bool autoConnect{true};
 
-    /** The listening port number. */
+    /**
+     * The listening port number.
+     */
     std::uint16_t listeningPort{0};
 
-    /** The set of features we advertise. */
+    /**
+     * The set of features we advertise.
+     */
     std::string features;
 
-    /** Limit how many incoming connections we allow per IP */
+    /**
+     * Limit how many incoming connections we allow per IP
+     */
     int ipLimit{0};
 
-    /** `true` if we want to verify endpoints in TMEndpoints messages */
+    /**
+     * `true` if we want to verify endpoints in TMEndpoints messages
+     */
     bool verifyEndpoints = true;
 
     //--------------------------------------------------------------------------
 
-    /** Create a configuration with default values. */
+    /**
+     * Create a configuration with default values.
+     */
     Config();
 
-    /** Returns a suitable value for outPeers according to the rules. */
+    /**
+     * Returns a suitable value for outPeers according to the rules.
+     */
     [[nodiscard]] std::size_t
     calcOutPeers() const;
 
-    /** Adjusts the values so they follow the business rules. */
+    /**
+     * Adjusts the values so they follow the business rules.
+     */
     void
     applyTuning();
 
-    /** Write the configuration into a property stream */
+    /**
+     * Write the configuration into a property stream
+     */
     void
     onWrite(beast::PropertyStream::Map& map) const;
 
-    /** Make PeerFinder::Config from peer limit and server mode parameters. */
+    /**
+     * Make PeerFinder::Config from peer limit and server mode parameters.
+     */
     static Config
     makeConfig(
         bool peerPrivate,
@@ -94,7 +123,9 @@ struct Config
 
 //------------------------------------------------------------------------------
 
-/** Possible results from activating a slot. */
+/**
+ * Possible results from activating a slot.
+ */
 enum class Result { InboundDisabled, DuplicatePeer, IpLimitExceeded, Full, Success };
 
 /**

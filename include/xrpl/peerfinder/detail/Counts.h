@@ -12,28 +12,38 @@
 
 namespace xrpl::PeerFinder {
 
-/** Direction of a slot count adjustment. */
+/**
+ * Direction of a slot count adjustment.
+ */
 enum class CountAdjustment : int { Decrement = -1, Increment = 1 };
 
-/** Manages the count of available connections for the various slots. */
+/**
+ * Manages the count of available connections for the various slots.
+ */
 class Counts
 {
 public:
-    /** Adds the slot state and properties to the slot counts. */
+    /**
+     * Adds the slot state and properties to the slot counts.
+     */
     void
     add(Slot const& s)
     {
         adjust(s, CountAdjustment::Increment);
     }
 
-    /** Removes the slot state and properties from the slot counts. */
+    /**
+     * Removes the slot state and properties from the slot counts.
+     */
     void
     remove(Slot const& s)
     {
         adjust(s, CountAdjustment::Decrement);
     }
 
-    /** Returns `true` if the slot can become active. */
+    /**
+     * Returns `true` if the slot can become active.
+     */
     [[nodiscard]] bool
     canActivate(Slot const& s) const
     {
@@ -51,7 +61,9 @@ public:
         return outActive_ < outMax_;
     }
 
-    /** Returns the number of attempts needed to bring us to the max. */
+    /**
+     * Returns the number of attempts needed to bring us to the max.
+     */
     [[nodiscard]] std::size_t
     attemptsNeeded() const
     {
@@ -60,37 +72,46 @@ public:
         return Tuning::kMaxConnectAttempts - attempts_;
     }
 
-    /** Returns the number of outbound connection attempts. */
+    /**
+     * Returns the number of outbound connection attempts.
+     */
     [[nodiscard]] std::size_t
     attempts() const
     {
         return attempts_;
     }
 
-    /** Returns the total number of outbound slots. */
+    /**
+     * Returns the total number of outbound slots.
+     */
     [[nodiscard]] int
     outMax() const
     {
         return outMax_;
     }
 
-    /** Returns the number of outbound peers assigned an open slot.
-        Fixed peers do not count towards outbound slots used.
-    */
+    /**
+     * Returns the number of outbound peers assigned an open slot.
+     * Fixed peers do not count towards outbound slots used.
+     */
     [[nodiscard]] int
     outActive() const
     {
         return outActive_;
     }
 
-    /** Returns the number of fixed connections. */
+    /**
+     * Returns the number of fixed connections.
+     */
     [[nodiscard]] std::size_t
     fixed() const
     {
         return fixed_;
     }
 
-    /** Returns the number of active fixed connections. */
+    /**
+     * Returns the number of active fixed connections.
+     */
     [[nodiscard]] std::size_t
     fixedActive() const
     {
@@ -99,7 +120,9 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Called when the config is set or changed. */
+    /**
+     * Called when the config is set or changed.
+     */
     void
     onConfig(Config const& config)
     {
@@ -108,51 +131,64 @@ public:
             inMax_ = config.inPeers;
     }
 
-    /** Returns the number of accepted connections that haven't handshaked. */
+    /**
+     * Returns the number of accepted connections that haven't handshaked.
+     */
     [[nodiscard]] int
     acceptCount() const
     {
         return acceptCount_;
     }
 
-    /** Returns the number of connection attempts currently active. */
+    /**
+     * Returns the number of connection attempts currently active.
+     */
     [[nodiscard]] int
     connectCount() const
     {
         return attempts_;
     }
 
-    /** Returns the number of connections that are gracefully closing. */
+    /**
+     * Returns the number of connections that are gracefully closing.
+     */
     [[nodiscard]] int
     closingCount() const
     {
         return closingCount_;
     }
 
-    /** Returns the total number of inbound slots. */
+    /**
+     * Returns the total number of inbound slots.
+     */
     [[nodiscard]] int
     inMax() const
     {
         return inMax_;
     }
 
-    /** Returns the number of inbound peers assigned an open slot. */
+    /**
+     * Returns the number of inbound peers assigned an open slot.
+     */
     [[nodiscard]] int
     inboundActive() const
     {
         return inActive_;
     }
 
-    /** Returns the total number of active peers excluding fixed peers. */
+    /**
+     * Returns the total number of active peers excluding fixed peers.
+     */
     [[nodiscard]] int
     totalActive() const
     {
         return inActive_ + outActive_;
     }
 
-    /** Returns the number of unused inbound slots.
-        Fixed peers do not deduct from inbound slots or count towards totals.
-    */
+    /**
+     * Returns the number of unused inbound slots.
+     * Fixed peers do not deduct from inbound slots or count towards totals.
+     */
     [[nodiscard]] int
     inboundSlotsFree() const
     {
@@ -161,9 +197,10 @@ public:
         return 0;
     }
 
-    /** Returns the number of unused outbound slots.
-        Fixed peers do not deduct from outbound slots or count towards totals.
-    */
+    /**
+     * Returns the number of unused outbound slots.
+     * Fixed peers do not deduct from outbound slots or count towards totals.
+     */
     [[nodiscard]] int
     outboundSlotsFree() const
     {
@@ -174,7 +211,8 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Returns true if the slot logic considers us "connected" to the network.
+    /**
+     * Returns true if the slot logic considers us "connected" to the network.
      */
     [[nodiscard]] bool
     isConnectedToNetwork() const
@@ -188,7 +226,9 @@ public:
         return outMax_ <= 0;
     }
 
-    /** Output statistics. */
+    /**
+     * Output statistics.
+     */
     void
     onWrite(beast::PropertyStream::Map& map) const
     {
@@ -202,7 +242,9 @@ public:
         map["total"] = active_;
     }
 
-    /** Records the state for diagnostics. */
+    /**
+     * Records the state for diagnostics.
+     */
     [[nodiscard]] std::string
     stateString() const
     {
@@ -214,7 +256,9 @@ public:
 
     //--------------------------------------------------------------------------
 private:
-    /** Increments or decrements a counter based on the adjustment direction. */
+    /**
+     * Increments or decrements a counter based on the adjustment direction.
+     */
     template <typename T>
     static void
     adjustCounter(T& counter, CountAdjustment dir)
@@ -294,31 +338,49 @@ private:
     }
 
 private:
-    /** Outbound connection attempts. */
+    /**
+     * Outbound connection attempts.
+     */
     int attempts_{0};
 
-    /** Active connections, including fixed and reserved. */
+    /**
+     * Active connections, including fixed and reserved.
+     */
     std::size_t active_{0};
 
-    /** Total number of inbound slots. */
+    /**
+     * Total number of inbound slots.
+     */
     std::size_t inMax_{0};
 
-    /** Number of inbound slots assigned to active peers. */
+    /**
+     * Number of inbound slots assigned to active peers.
+     */
     std::size_t inActive_{0};
 
-    /** Maximum desired outbound slots. */
+    /**
+     * Maximum desired outbound slots.
+     */
     std::size_t outMax_{0};
 
-    /** Active outbound slots. */
+    /**
+     * Active outbound slots.
+     */
     std::size_t outActive_{0};
 
-    /** Fixed connections. */
+    /**
+     * Fixed connections.
+     */
     std::size_t fixed_{0};
 
-    /** Active fixed connections. */
+    /**
+     * Active fixed connections.
+     */
     std::size_t fixedActive_{0};
 
-    /** Reserved connections. */
+    /**
+     * Reserved connections.
+     */
     std::size_t reserved_{0};
 
     // Number of inbound connections that are

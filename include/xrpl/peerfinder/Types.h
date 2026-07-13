@@ -12,12 +12,16 @@ namespace xrpl::PeerFinder {
 
 using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
-/** Represents a set of addresses. */
+/**
+ * Represents a set of addresses.
+ */
 using IPAddresses = std::vector<beast::IP::Endpoint>;
 
 //------------------------------------------------------------------------------
 
-/** Describes a connectable peer address along with some metadata. */
+/**
+ * Describes a connectable peer address along with some metadata.
+ */
 struct Endpoint
 {
     Endpoint() = default;
@@ -34,7 +38,9 @@ operator<(Endpoint const& lhs, Endpoint const& rhs)
     return lhs.address < rhs.address;
 }
 
-/** A set of Endpoint used for connecting. */
+/**
+ * A set of Endpoint used for connecting.
+ */
 using Endpoints = std::vector<Endpoint>;
 
 }  // namespace xrpl::PeerFinder

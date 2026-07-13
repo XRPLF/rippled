@@ -937,7 +937,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
 
             auto const expectedResult = env.current()->rules().enabled(fixCleanup3_2_0)
                 ? Ter(tesSUCCESS)
-                : Ter(tefEXCEPTION);
+                : Ter(tefINTERNAL);
             env(escrow::cancel(alice, alice, seq), Fee(baseFee), expectedResult);
             env.close();
 

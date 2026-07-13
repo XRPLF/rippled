@@ -16,10 +16,11 @@ namespace xrpl::PeerFinder {
 
 namespace detail {
 
-/** Try to insert one object in the target.
-    When an item is handed out it is moved to the end of the container.
-    @return The number of objects inserted
-*/
+/**
+ * Try to insert one object in the target.
+ * When an item is handed out it is moved to the end of the container.
+ * @return The number of objects inserted
+ */
 // VFALCO TODO specialization that handles std::list for SequenceContainer
 //             using splice for optimization over erase/push_back
 //
@@ -42,10 +43,11 @@ handoutOne(Target& t, HopContainer& h)
 
 }  // namespace detail
 
-/** Distributes objects to targets according to business rules.
-    A best effort is made to evenly distribute items in the sequence
-    container list into the target sequence list.
-*/
+/**
+ * Distributes objects to targets according to business rules.
+ * A best effort is made to evenly distribute items in the sequence
+ * container list into the target sequence list.
+ */
 template <class TargetFwdIter, class SeqFwdIter>
 void
 handout(TargetFwdIter first, TargetFwdIter last, SeqFwdIter seqFirst, SeqFwdIter seqLast)
@@ -76,9 +78,10 @@ handout(TargetFwdIter first, TargetFwdIter last, SeqFwdIter seqFirst, SeqFwdIter
 
 //------------------------------------------------------------------------------
 
-/** Receives handouts for redirecting a connection.
-    An incoming connection request is redirected when we are full on slots.
-*/
+/**
+ * Receives handouts for redirecting a connection.
+ * An incoming connection request is redirected when we are full on slots.
+ */
 class RedirectHandouts
 {
 public:
@@ -162,7 +165,9 @@ RedirectHandouts::tryInsert(Endpoint const& ep)
 
 //------------------------------------------------------------------------------
 
-/** Receives endpoints for a slot during periodic handouts. */
+/**
+ * Receives endpoints for a slot during periodic handouts.
+ */
 class SlotHandouts
 {
 public:
@@ -246,7 +251,9 @@ SlotHandouts::tryInsert(Endpoint const& ep)
 
 //------------------------------------------------------------------------------
 
-/** Receives handouts for making automatic connections. */
+/**
+ * Receives handouts for making automatic connections.
+ */
 class ConnectHandouts
 {
 public:
