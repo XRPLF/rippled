@@ -1012,6 +1012,15 @@ class AccountTx_test : public beast::unit_test::Suite
             BEAST_EXPECT(countTxs(bob.id(), p) == 1);
         }
 
+        // Filter: Authorizer. Expect: None.
+        // TX #2 has sfDelegate present, but Alice is the delegator/owner, not
+        // the delegate signer
+        {
+            json::Value p;
+            p[jss::delegate_filter] = "authorizer";
+            BEAST_EXPECT(countTxs(alice.id(), p) == 0);
+        }
+
         // Query Bob (Signer), Filter: Delegator, Counterparty: Carol
         // Expect: None (Alice is Owner, not Carol)
         {
@@ -1254,6 +1263,56 @@ class AccountTx_test : public beast::unit_test::Suite
     }
 
     void
+    testDelegationMarkerWithinPage()
+    {
+        testcase("Delegation filter marker within a single query page");
+
+        using namespace test::jtx;
+
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+
+        env.fund(XRP(10000), alice, bob, carol);
+        env.close();
+
+        env(delegate::set(alice, bob, {"Payment"}));
+        env.close();
+
+        auto const startLedger = env.closed()->header().seq + 1;
+
+        env(pay(alice, carol, XRP(1)), delegate::As(bob));
+        env.close();
+        env(pay(alice, carol, XRP(1)), delegate::As(bob));
+        env.close();
+
+        json::Value p;
+        p[jss::delegate_filter] = "actor";
+
+        json::Value params;
+        params[jss::account] = alice.human();
+        params[jss::ledger_index_min] = startLedger;
+        params[jss::ledger_index_max] = -1;
+        params[jss::delegate] = p;
+        params[jss::limit] = 1;
+
+        auto const res = env.rpc("json", "account_tx", to_string(params));
+        auto const& result = res[jss::result];
+
+        // The first page emits only the first delegated payment. (as page limit is set to 1)
+        BEAST_EXPECT(result[jss::transactions].size() == 1);
+        BEAST_EXPECT(result.isMember(jss::marker));
+
+        // Following the marker resumes right after the first payment and
+        // returns the second one.
+        json::Value page2 = params;
+        page2[jss::marker] = result[jss::marker];
+        auto const res2 = env.rpc("json", "account_tx", to_string(page2));
+        BEAST_EXPECT(res2[jss::result][jss::transactions].size() == 1);
+    }
+
+    void
     testSponsorship()
     {
         // test all sponsored transactions are in sponsor and sponsee's account
@@ -1339,6 +1398,7 @@ public:
         testMPT();
         testDelegation();
         testDelegationMultiSign();
+        testDelegationMarkerWithinPage();
         testSponsorship();
     }
 };
