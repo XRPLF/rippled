@@ -4,11 +4,15 @@
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/protocol/STVector256.h>
 
+#include <memory>
+#include <optional>
 #include <unordered_set>
+#include <utility>
 
 namespace xrpl {
 
-/** Check whether a feature is enabled in the current ledger rules
+/**
+ * Check whether a feature is enabled in the current ledger rules
  *
  * @param feature The feature to be tested.
  * @param resultIfNoRules What to return if called from outside a Transactor context.
@@ -16,7 +20,8 @@ namespace xrpl {
 bool
 isFeatureEnabled(uint256 const& feature, bool resultIfNoRules);
 
-/** Check whether a feature is enabled in the current ledger rules
+/**
+ * Check whether a feature is enabled in the current ledger rules
  *
  * @param feature The feature to be tested.
  *
@@ -28,7 +33,9 @@ isFeatureEnabled(uint256 const& feature);
 
 class DigestAwareReadView;
 
-/** Rules controlling protocol behavior. */
+/**
+ * Rules controlling protocol behavior.
+ */
 class Rules
 {
 private:
@@ -51,11 +58,12 @@ public:
 
     Rules() = delete;
 
-    /** Construct an empty rule set.
-
-        These are the rules reflected by
-        the genesis ledger.
-    */
+    /**
+     * Construct an empty rule set.
+     *
+     * These are the rules reflected by
+     * the genesis ledger.
+     */
     explicit Rules(std::unordered_set<uint256, beast::Uhash<>> const& presets);
 
 private:
@@ -77,14 +85,17 @@ private:
     presets() const;
 
 public:
-    /** Returns `true` if a feature is enabled. */
+    /**
+     * Returns `true` if a feature is enabled.
+     */
     [[nodiscard]] bool
     enabled(uint256 const& feature) const;
 
-    /** Returns `true` if two rule sets are identical.
-
-        @note This is for diagnostics.
-    */
+    /**
+     * Returns `true` if two rule sets are identical.
+     *
+     * @note This is for diagnostics.
+     */
     bool
     operator==(Rules const&) const;
 
@@ -98,7 +109,8 @@ getCurrentTransactionRules();
 void
 setCurrentTransactionRules(std::optional<Rules> r);
 
-/** RAII class to set and restore the current transaction rules
+/**
+ * RAII class to set and restore the current transaction rules
  */
 class CurrentTransactionRulesGuard
 {

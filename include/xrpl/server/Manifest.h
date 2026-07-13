@@ -1,14 +1,22 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 
+#include <atomic>
+#include <cstdint>
+#include <functional>
 #include <optional>
 #include <shared_mutex>
 #include <string>
+#include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -60,22 +68,32 @@ namespace xrpl {
 
 struct Manifest
 {
-    /// The manifest in serialized form.
+    /**
+     * The manifest in serialized form.
+     */
     std::string serialized;
 
-    /// The master key associated with this manifest.
+    /**
+     * The master key associated with this manifest.
+     */
     PublicKey masterKey;
 
-    /// The ephemeral key associated with this manifest.
+    /**
+     * The ephemeral key associated with this manifest.
+     */
     // A revoked manifest does not have a signingKey
     // This field is specified as "optional" in manifestFormat's
     // SOTemplate
     std::optional<PublicKey> signingKey;
 
-    /// The sequence number of this manifest.
+    /**
+     * The sequence number of this manifest.
+     */
     std::uint32_t sequence = 0;
 
-    /// The domain, if one was specified in the manifest; empty otherwise.
+    /**
+     * The domain, if one was specified in the manifest; empty otherwise.
+     */
     std::string domain;
 
     Manifest() = delete;
@@ -101,46 +119,61 @@ struct Manifest
     Manifest&
     operator=(Manifest&& other) = default;
 
-    /// Returns `true` if manifest signature is valid
+    /**
+     * Returns `true` if manifest signature is valid
+     */
     [[nodiscard]] bool
     verify() const;
 
-    /// Returns hash of serialized manifest data
+    /**
+     * Returns hash of serialized manifest data
+     */
     [[nodiscard]] uint256
     hash() const;
 
-    /// Returns `true` if manifest revokes master key
+    /**
+     * Returns `true` if manifest revokes master key
+     */
     // The maximum possible sequence number means that the master key has
     // been revoked
     static bool
     revoked(std::uint32_t sequence);
 
-    /// Returns `true` if manifest revokes master key
+    /**
+     * Returns `true` if manifest revokes master key
+     */
     [[nodiscard]] bool
     revoked() const;
 
-    /// Returns manifest signature
+    /**
+     * Returns manifest signature
+     */
     [[nodiscard]] std::optional<Blob>
     getSignature() const;
 
-    /// Returns manifest master key signature
+    /**
+     * Returns manifest master key signature
+     */
     [[nodiscard]] Blob
     getMasterSignature() const;
 };
 
-/** Format the specified manifest to a string for debugging purposes. */
+/**
+ * Format the specified manifest to a string for debugging purposes.
+ */
 std::string
 to_string(Manifest const& m);
 
-/** Constructs Manifest from serialized string
-
-    @param s Serialized manifest string
-
-    @return `std::nullopt` if string is invalid
-
-    @note This does not verify manifest signatures.
-          `Manifest::verify` should be called after constructing manifest.
-*/
+/**
+ * Constructs Manifest from serialized string
+ *
+ * @param s Serialized manifest string
+ *
+ * @return `std::nullopt` if string is invalid
+ *
+ * @note This does not verify manifest signatures.
+ *       `Manifest::verify` should be called after constructing manifest.
+ */
 /** @{ */
 std::optional<Manifest>
 deserializeManifest(Slice s, beast::Journal journal);
@@ -153,13 +186,12 @@ deserializeManifest(
     return deserializeManifest(makeSlice(s), journal);
 }
 
-template <
-    class T,
-    class = std::enable_if_t<std::is_same_v<T, char> || std::is_same_v<T, unsigned char>>>
+template <class T>
 std::optional<Manifest>
 deserializeManifest(
     std::vector<T> const& v,
     beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
+    requires(std::is_same_v<T, char> || std::is_same_v<T, unsigned char>)
 {
     return deserializeManifest(makeSlice(v), journal);
 }
@@ -193,19 +225,29 @@ loadValidatorToken(
     beast::Journal journal = beast::Journal(beast::Journal::getNullSink()));
 
 enum class ManifestDisposition {
-    /// Manifest is valid
+    /**
+     * Manifest is valid
+     */
     Accepted = 0,
 
-    /// Sequence is too old
+    /**
+     * Sequence is too old
+     */
     Stale,
 
-    /// The master key is not acceptable to us
+    /**
+     * The master key is not acceptable to us
+     */
     BadMasterKey,
 
-    /// The ephemeral key is not acceptable to us
+    /**
+     * The ephemeral key is not acceptable to us
+     */
     BadEphemeralKey,
 
-    /// Timely, but invalid signature
+    /**
+     * Timely, but invalid signature
+     */
     Invalid
 };
 
@@ -231,17 +273,23 @@ to_string(ManifestDisposition m)
 
 class DatabaseCon;
 
-/** Remembers manifests with the highest sequence number. */
+/**
+ * Remembers manifests with the highest sequence number.
+ */
 class ManifestCache
 {
 private:
     beast::Journal j_;
     std::shared_mutex mutable mutex_;
 
-    /** Active manifests stored by master public key. */
+    /**
+     * Active manifests stored by master public key.
+     */
     hash_map<PublicKey, Manifest> map_;
 
-    /** Master public keys stored by current ephemeral public key. */
+    /**
+     * Master public keys stored by current ephemeral public key.
+     */
     hash_map<PublicKey, PublicKey> signingToMasterKeys_;
 
     std::atomic<std::uint32_t> seq_{0};
@@ -251,104 +299,114 @@ public:
     {
     }
 
-    /** A monotonically increasing number used to detect new manifests. */
+    /**
+     * A monotonically increasing number used to detect new manifests.
+     */
     std::uint32_t
     sequence() const
     {
         return seq_.load();
     }
 
-    /** Returns master key's current signing key.
-
-        @param pk Master public key
-
-        @return pk if no known signing key from a manifest
-
-        @par Thread Safety
-
-        May be called concurrently
-    */
+    /**
+     * Returns master key's current signing key.
+     *
+     * @param pk Master public key
+     *
+     * @return pk if no known signing key from a manifest
+     *
+     * @par Thread Safety
+     *
+     * May be called concurrently
+     */
     std::optional<PublicKey>
     getSigningKey(PublicKey const& pk) const;
 
-    /** Returns ephemeral signing key's master public key.
-
-        @param pk Ephemeral signing public key
-
-        @return pk if signing key is not in a valid manifest
-
-        @par Thread Safety
-
-        May be called concurrently
-    */
+    /**
+     * Returns ephemeral signing key's master public key.
+     *
+     * @param pk Ephemeral signing public key
+     *
+     * @return pk if signing key is not in a valid manifest
+     *
+     * @par Thread Safety
+     *
+     * May be called concurrently
+     */
     PublicKey
     getMasterKey(PublicKey const& pk) const;
 
-    /** Returns master key's current manifest sequence.
-
-        @return sequence corresponding to Master public key
-          if configured or std::nullopt otherwise
-    */
+    /**
+     * Returns master key's current manifest sequence.
+     *
+     * @return sequence corresponding to Master public key
+     *   if configured or std::nullopt otherwise
+     */
     std::optional<std::uint32_t>
     getSequence(PublicKey const& pk) const;
 
-    /** Returns domain claimed by a given public key
-
-        @return domain corresponding to Master public key
-          if present, otherwise std::nullopt
-    */
+    /**
+     * Returns domain claimed by a given public key
+     *
+     * @return domain corresponding to Master public key
+     *   if present, otherwise std::nullopt
+     */
     std::optional<std::string>
     getDomain(PublicKey const& pk) const;
 
-    /** Returns manifest corresponding to a given public key
-
-        @return manifest corresponding to Master public key
-          if present, otherwise std::nullopt
-    */
+    /**
+     * Returns manifest corresponding to a given public key
+     *
+     * @return manifest corresponding to Master public key
+     *   if present, otherwise std::nullopt
+     */
     std::optional<std::string>
     getManifest(PublicKey const& pk) const;
 
-    /** Returns `true` if master key has been revoked in a manifest.
-
-        @param pk Master public key
-
-        @par Thread Safety
-
-        May be called concurrently
-    */
+    /**
+     * Returns `true` if master key has been revoked in a manifest.
+     *
+     * @param pk Master public key
+     *
+     * @par Thread Safety
+     *
+     * May be called concurrently
+     */
     bool
     revoked(PublicKey const& pk) const;
 
-    /** Add manifest to cache.
-
-        @param m Manifest to add
-
-        @return `ManifestDisposition::accepted` if successful, or
-                `stale` or `invalid` otherwise
-
-        @par Thread Safety
-
-        May be called concurrently
-    */
+    /**
+     * Add manifest to cache.
+     *
+     * @param m Manifest to add
+     *
+     * @return `ManifestDisposition::accepted` if successful, or
+     *         `stale` or `invalid` otherwise
+     *
+     * @par Thread Safety
+     *
+     * May be called concurrently
+     */
     ManifestDisposition
     applyManifest(Manifest m);
 
-    /** Populate manifest cache with manifests in database and config.
-
-        @param dbCon Database connection with dbTable
-
-        @param dbTable Database table
-
-        @param configManifest Base64 encoded manifest for local node's
-            validator keys
-
-        @param configRevocation Base64 encoded validator key revocation
-            from the config
-
-        @par Thread Safety
-
-        May be called concurrently
-    */
+    /**
+     * Populate manifest cache with manifests in database and config.
+     *
+     * @param dbCon Database connection with dbTable
+     *
+     * @param dbTable Database table
+     *
+     * @param configManifest Base64 encoded manifest for local node's
+     *     validator keys
+     *
+     * @param configRevocation Base64 encoded validator key revocation
+     *     from the config
+     *
+     * @par Thread Safety
+     *
+     * May be called concurrently
+     */
     bool
     load(
         DatabaseCon& dbCon,
@@ -356,48 +414,51 @@ public:
         std::string const& configManifest,
         std::vector<std::string> const& configRevocation);
 
-    /** Populate manifest cache with manifests in database.
-
-        @param dbCon Database connection with dbTable
-
-        @param dbTable Database table
-
-        @par Thread Safety
-
-        May be called concurrently
-    */
+    /**
+     * Populate manifest cache with manifests in database.
+     *
+     * @param dbCon Database connection with dbTable
+     *
+     * @param dbTable Database table
+     *
+     * @par Thread Safety
+     *
+     * May be called concurrently
+     */
     void
     load(DatabaseCon& dbCon, std::string const& dbTable);
 
-    /** Save cached manifests to database.
-
-        @param dbCon Database connection with `ValidatorManifests` table
-
-        @param isTrusted Function that returns true if manifest is trusted
-
-        @par Thread Safety
-
-        May be called concurrently
-    */
+    /**
+     * Save cached manifests to database.
+     *
+     * @param dbCon Database connection with `ValidatorManifests` table
+     *
+     * @param isTrusted Function that returns true if manifest is trusted
+     *
+     * @par Thread Safety
+     *
+     * May be called concurrently
+     */
     void
     save(
         DatabaseCon& dbCon,
         std::string const& dbTable,
         std::function<bool(PublicKey const&)> const& isTrusted);
 
-    /** Invokes the callback once for every populated manifest.
-
-        @note Do not call ManifestCache member functions from within the
-        callback. This can re-lock the mutex from the same thread, which is UB.
-        @note Do not write ManifestCache member variables from within the
-        callback. This can lead to data races.
-
-        @param f Function called for each manifest
-
-        @par Thread Safety
-
-        May be called concurrently
-    */
+    /**
+     * Invokes the callback once for every populated manifest.
+     *
+     * @note Do not call ManifestCache member functions from within the
+     * callback. This can re-lock the mutex from the same thread, which is UB.
+     * @note Do not write ManifestCache member variables from within the
+     * callback. This can lead to data races.
+     *
+     * @param f Function called for each manifest
+     *
+     * @par Thread Safety
+     *
+     * May be called concurrently
+     */
     template <class Function>
     void
     forEachManifest(Function&& f) const
@@ -410,22 +471,23 @@ public:
         }
     }
 
-    /** Invokes the callback once for every populated manifest.
-
-        @note Do not call ManifestCache member functions from within the
-        callback. This can re-lock the mutex from the same thread, which is UB.
-        @note Do not write ManifestCache member variables from
-        within the callback. This can lead to data races.
-
-        @param pf Pre-function called with the maximum number of times f will be
-            called (useful for memory allocations)
-
-        @param f Function called for each manifest
-
-        @par Thread Safety
-
-        May be called concurrently
-    */
+    /**
+     * Invokes the callback once for every populated manifest.
+     *
+     * @note Do not call ManifestCache member functions from within the
+     * callback. This can re-lock the mutex from the same thread, which is UB.
+     * @note Do not write ManifestCache member variables from
+     * within the callback. This can lead to data races.
+     *
+     * @param pf Pre-function called with the maximum number of times f will be
+     *     called (useful for memory allocations)
+     *
+     * @param f Function called for each manifest
+     *
+     * @par Thread Safety
+     *
+     * May be called concurrently
+     */
     template <class PreFun, class EachFun>
     void
     forEachManifest(PreFun&& pf, EachFun&& f) const

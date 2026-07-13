@@ -580,7 +580,9 @@ RCLConsensus::Adaptor::doAccept(
         JLOG(j_.info()) << "CNF Val " << newLCLHash;
     }
     else
+    {
         JLOG(j_.info()) << "CNF buildLCL " << newLCLHash;
+    }
 
     // See if we can accept a ledger as fully-validated
     ledgerMaster_.consensusBuilt(built.ledger, result.txns.id(), std::move(consensusJson));
@@ -688,7 +690,7 @@ RCLConsensus::Adaptor::doAccept(
 
         JLOG(j_.info()) << "We closed at " << closeTime.time_since_epoch().count();
         using usec64_t = std::chrono::duration<std::uint64_t>;
-        usec64_t closeTotal = std::chrono::duration_cast<usec64_t>(closeTime.time_since_epoch());
+        auto closeTotal = std::chrono::duration_cast<usec64_t>(closeTime.time_since_epoch());
         int closeCount = 1;
 
         for (auto const& [t, v] : rawCloseTimes.peers)
@@ -796,7 +798,9 @@ RCLConsensus::Adaptor::buildLCL(
         JLOG(j_.debug()) << "Consensus built ledger we were acquiring";
     }
     else
+    {
         JLOG(j_.debug()) << "Consensus built new ledger";
+    }
     return RCLCxLedger{std::move(built)};
 }
 
@@ -951,7 +955,9 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
     }
 }
 
-//! @see Consensus::simulate
+/**
+ * @see Consensus::simulate
+ */
 
 void
 RCLConsensus::simulate(

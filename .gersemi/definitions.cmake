@@ -51,6 +51,12 @@ endfunction()
 function(add_module parent name)
 endfunction()
 
+function(verify_target_headers target headers_dir)
+endfunction()
+
+function(_verify_add_headers target dir)
+endfunction()
+
 function(setup_protocol_autogen)
 endfunction()
 
@@ -98,4 +104,7 @@ function(verbose_find_path variable name)
         "${multiValueArgs}"
         ${ARGN}
     )
+endfunction()
+
+function(patch_nix_binary target)
 endfunction()

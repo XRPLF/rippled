@@ -136,7 +136,7 @@ public:
 
         std::scoped_lock const _(db_->mutex);
 
-        Map::iterator const iter = db_->table.find(hash);
+        auto const iter = db_->table.find(hash);
         if (iter == db_->table.end())
         {
             pObject->reset();

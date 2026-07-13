@@ -5,8 +5,10 @@
 #include <xrpl/json/Output.h>
 #include <xrpl/json/Writer.h>
 
-namespace xrpl {
-namespace test {
+#include <memory>
+#include <string>
+
+namespace xrpl::test {
 
 class TestOutputSuite : public TestSuite
 {
@@ -32,5 +34,4 @@ protected:
     }
 };
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

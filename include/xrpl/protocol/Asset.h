@@ -2,10 +2,19 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/UintTypes.h>
+
+#include <compare>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <variant>
 
 namespace xrpl {
 
@@ -53,7 +62,8 @@ private:
 public:
     Asset() = default;
 
-    /** Conversions to Asset are implicit and conversions to specific issue
+    /**
+     * Conversions to Asset are implicit and conversions to specific issue
      *  type are explicit. This design facilitates the use of Asset.
      */
     Asset(Issue const& issue) : issue_(issue)
@@ -140,7 +150,8 @@ public:
     friend constexpr bool
     operator==(BadAsset const& lhs, Asset const& rhs);
 
-    /** Return true if both assets refer to the same currency (regardless of
+    /**
+     * Return true if both assets refer to the same currency (regardless of
      * issuer) or MPT issuance. Otherwise return false.
      */
     friend constexpr bool

@@ -546,7 +546,7 @@ private:
         //  1 for each trust limit == 3 (alice_ < mtgox/amazon/bitstamp) +
         //  1 for payment          == 4
         auto const startingXrp =
-            XRP(100) + env.current()->fees().accountReserve(3) + env.current()->fees().base * 4;
+            XRP(100) + env.current()->fees().accountReserve(3, 1) + env.current()->fees().base * 4;
 
         env.fund(startingXrp, gw1, gw2, gw3, localAlice);
         env.fund(XRP(2'000), localBob);
@@ -2420,8 +2420,10 @@ private:
                 // 1,400 - 56.3368*1.25 = 1400 - 70.4210 = 1329.5789GBP
                 BEAST_EXPECT(
                     expectHolding(env, alice_, STAmount{GBP, UINT64_C(1'329'578947368421), -12}));
-                //// 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
-                ///= 70.4210EUR
+                /**
+                 * / 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
+                 * = 70.4210EUR
+                 */
                 // 56.3368GBP is swapped in for 53.3322EUR
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount{GBP, UINT64_C(1'056'336842105263), -12},
@@ -2435,8 +2437,10 @@ private:
                 // 1,400 - 56.3368*1.25 = 1400 - 70.4210 = 1329.5789GBP
                 BEAST_EXPECT(
                     expectHolding(env, alice_, STAmount{GBP, UINT64_C(1'329'57894736842), -11}));
-                //// 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
-                ///= 70.4210EUR
+                /**
+                 * / 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
+                 * = 70.4210EUR
+                 */
                 // 56.3368GBP is swapped in for 53.3322EUR
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount{GBP, UINT64_C(1'056'336842105264), -12},

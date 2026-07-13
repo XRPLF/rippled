@@ -1,11 +1,8 @@
 #pragma once
 
-#include <test/csf/Proposal.h>
 #include <test/csf/Tx.h>
 #include <test/csf/Validation.h>
 #include <test/csf/ledgers.h>
-
-#include <chrono>
 
 namespace xrpl::test::csf {
 
@@ -32,58 +29,81 @@ namespace xrpl::test::csf {
 // CollectorRef.f defines a type-erased holder for arbitrary Collectors.  If
 // any new events are added, the interface there needs to be updated.
 
-/** A value to be flooded to all other peers starting from this peer.
+/**
+ * A value to be flooded to all other peers starting from this peer.
  */
 template <class V>
 struct Share
 {
-    //! Event that is shared
+    /**
+     * Event that is shared
+     */
     V val;
 };
 
-/** A value relayed to another peer as part of flooding
+/**
+ * A value relayed to another peer as part of flooding
  */
 template <class V>
 struct Relay
 {
-    //! Peer relaying to
+    /**
+     * Peer relaying to
+     */
     PeerID to;
 
-    //! The value to relay
+    /**
+     * The value to relay
+     */
     V val;
 };
 
-/** A value received from another peer as part of flooding
+/**
+ * A value received from another peer as part of flooding
  */
 template <class V>
 struct Receive
 {
-    //! Peer that sent the value
+    /**
+     * Peer that sent the value
+     */
     PeerID from;
 
-    //! The received value
+    /**
+     * The received value
+     */
     V val;
 };
 
-/** A transaction submitted to a peer */
+/**
+ * A transaction submitted to a peer
+ */
 struct SubmitTx
 {
-    //! The submitted transaction
+    /**
+     * The submitted transaction
+     */
     Tx tx;
 };
 
-/** Peer starts a new consensus round
+/**
+ * Peer starts a new consensus round
  */
 struct StartRound
 {
-    //! The preferred ledger for the start of consensus
-    Ledger::ID bestLedger;
+    /**
+     * The preferred ledger for the start of consensus
+     */
+    Ledger::ID bestLedger{};
 
-    //! The prior ledger on hand
+    /**
+     * The prior ledger on hand
+     */
     Ledger prevLedger;
 };
 
-/** Peer closed the open ledger
+/**
+ * Peer closed the open ledger
  */
 struct CloseLedger
 {
@@ -94,7 +114,9 @@ struct CloseLedger
     TxSetType txs;
 };
 
-//! Peer accepted consensus results
+/**
+ * Peer accepted consensus results
+ */
 struct AcceptLedger
 {
     // The newly created ledger
@@ -104,7 +126,9 @@ struct AcceptLedger
     Ledger prior;
 };
 
-//! Peer detected a wrong prior ledger during consensus
+/**
+ * Peer detected a wrong prior ledger during consensus
+ */
 struct WrongPrevLedger
 {
     // ID of wrong ledger we had
@@ -113,14 +137,20 @@ struct WrongPrevLedger
     Ledger::ID right;
 };
 
-//! Peer fully validated a new ledger
+/**
+ * Peer fully validated a new ledger
+ */
 struct FullyValidateLedger
 {
-    //! The new fully validated ledger
+    /**
+     * The new fully validated ledger
+     */
     Ledger ledger;
 
-    //! The prior fully validated ledger
-    //! This is a jump if prior.id() != ledger.parentID()
+    /**
+     * The prior fully validated ledger
+     * This is a jump if prior.id() != ledger.parentID()
+     */
     Ledger prior;
 };
 

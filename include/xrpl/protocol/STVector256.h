@@ -1,9 +1,15 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
-#include <xrpl/protocol/STBitString.h>
-#include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstddef>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -44,7 +50,9 @@ public:
     void
     setValue(STVector256 const& v);
 
-    /** Retrieve a copy of the vector we contain */
+    /**
+     * Retrieve a copy of the vector we contain
+     */
     explicit
     operator std::vector<uint256>() const;
 
@@ -132,7 +140,9 @@ STVector256::setValue(STVector256 const& v)
     value_ = v.value_;
 }
 
-/** Retrieve a copy of the vector we contain */
+/**
+ * Retrieve a copy of the vector we contain
+ */
 inline STVector256::
 operator std::vector<uint256>() const
 {
