@@ -10,20 +10,27 @@ namespace xrpl {
 // This was the reference fee units used in the old fee calculation.
 inline constexpr std::uint32_t kFeeUnitsDeprecated = 10;
 
-/** Reflects the fee settings for a particular ledger.
-
-    The fees are always the same for any transactions applied
-    to a ledger. Changes to fees occur in between ledgers.
-*/
+/**
+ * Reflects the fee settings for a particular ledger.
+ *
+ * The fees are always the same for any transactions applied
+ * to a ledger. Changes to fees occur in between ledgers.
+ */
 struct Fees
 {
-    /** @brief Cost of a reference transaction in drops. */
+    /**
+     * @brief Cost of a reference transaction in drops.
+     */
     XRPAmount base{0};
 
-    /** @brief Minimum XRP an account must hold to exist on the ledger. */
+    /**
+     * @brief Minimum XRP an account must hold to exist on the ledger.
+     */
     XRPAmount reserve{0};
 
-    /** @brief Additional XRP reserve required per owned ledger object. */
+    /**
+     * @brief Additional XRP reserve required per owned ledger object.
+     */
     XRPAmount increment{0};
 
     explicit Fees() = default;
@@ -36,11 +43,12 @@ struct Fees
     {
     }
 
-    /** Returns the account reserve given the owner count, in drops.
-
-        The reserve is calculated as the reserve base times the number of accounts plus the reserve
-        increment times the number of increments.
-    */
+    /**
+     * Returns the account reserve given the owner count, in drops.
+     *
+     * The reserve is calculated as the reserve base times the number of accounts plus the reserve
+     * increment times the number of increments.
+     */
     [[nodiscard]] XRPAmount
     accountReserve(std::uint32_t ownerCount, std::uint32_t accountCount) const
     {

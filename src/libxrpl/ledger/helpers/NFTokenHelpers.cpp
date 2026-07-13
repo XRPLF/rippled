@@ -258,7 +258,9 @@ changeTokenURI(
     return tesSUCCESS;
 }
 
-/** Insert the token in the owner's token directory. */
+/**
+ * Insert the token in the owner's token directory.
+ */
 TER
 insertToken(ApplyView& view, AccountID owner, STObject&& nft)
 {
@@ -347,7 +349,9 @@ mergePages(ApplyView& view, SLE::ref p1, SLE::ref p2)
     return true;
 }
 
-/** Remove the token from the owner's token directory. */
+/**
+ * Remove the token from the owner's token directory.
+ */
 TER
 removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID)
 {
@@ -360,7 +364,9 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID)
     return removeToken(view, owner, nftokenID, page);
 }
 
-/** Remove the token from the owner's token directory. */
+/**
+ * Remove the token from the owner's token directory.
+ */
 TER
 removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, SLE::ref curr)
 {
