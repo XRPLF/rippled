@@ -32,11 +32,11 @@ public:
     {
         results.addresses.resize(0);
         results.addresses.reserve(strings_.size());
-        for (int i = 0; i < strings_.size(); ++i)
+        for (auto const& str : strings_)
         {
-            beast::IP::Endpoint ep(beast::IP::Endpoint::fromString(strings_[i]));
+            beast::IP::Endpoint ep(beast::IP::Endpoint::fromString(str));
             if (isUnspecified(ep))
-                ep = beast::IP::Endpoint::fromString(strings_[i]);
+                ep = beast::IP::Endpoint::fromString(str);
             if (!isUnspecified(ep))
                 results.addresses.push_back(ep);
         }

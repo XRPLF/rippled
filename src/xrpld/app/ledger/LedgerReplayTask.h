@@ -4,6 +4,11 @@
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
+
+#include <cstdint>
+#include <memory>
 #include <vector>
 
 namespace xrpl {
@@ -59,7 +64,9 @@ public:
         bool
         update(uint256 const& hash, std::uint32_t seq, std::vector<uint256> const& sList);
 
-        /** check if this task can be merged into an existing task */
+        /**
+         * check if this task can be merged into an existing task
+         */
         [[nodiscard]] bool
         canMergeInto(TaskParameter const& existingTask) const;
     };
@@ -82,7 +89,9 @@ public:
 
     ~LedgerReplayTask() override;
 
-    /** Start the task */
+    /**
+     * Start the task
+     */
     void
     init();
 
@@ -100,7 +109,9 @@ public:
         return parameter_;
     }
 
-    /** return if the task is finished */
+    /**
+     * return if the task is finished
+     */
     bool
     finished() const;
 

@@ -1,6 +1,13 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/Scheduler.h>
+
+#include <functional>
+#include <memory>
+#include <string>
 
 namespace xrpl::NodeStore {
 
@@ -21,13 +28,14 @@ public:
     {
     }
 
-    /** Rotates the backends.
-
-        @param newBackend New writable backend
-        @param f A function executed after the rotation outside of lock. The
-       values passed to f will be the new backend database names _after_
-       rotation.
-    */
+    /**
+     * Rotates the backends.
+     *
+     * @param newBackend New writable backend
+     * @param f A function executed after the rotation outside of lock. The
+     * values passed to f will be the new backend database names _after_
+     * rotation.
+     */
     virtual void
     rotate(
         std::unique_ptr<NodeStore::Backend>&& newBackend,
