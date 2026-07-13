@@ -537,7 +537,7 @@ doAccountTx(RPC::JsonContext& context)
             RPC::Status const status{
                 RpcInvalidParams,
                 "Do not mix delegate and non-delegate pagination markers in account_tx; "
-                "repeat the `delegate` object when using a delegate marker."};
+                "repeat the same `delegate` object when using a delegate marker."};
             status.inject(response);
             return response;
         }
