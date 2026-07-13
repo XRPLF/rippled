@@ -988,7 +988,7 @@ checkCreateMPT(
     xrpl::AccountID const& holder,
     beast::Journal j)
 {
-    return checkCreateMPT(view, mptIssue, holder, 0, j);
+    return checkCreateMPT(view, mptIssue, holder, {}, 0, j);
 }
 
 std::int64_t
