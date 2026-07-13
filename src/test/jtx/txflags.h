@@ -7,7 +7,9 @@
 
 namespace xrpl::test::jtx {
 
-/** Set the flags on a JTx. */
+/**
+ * Set the flags on a JTx.
+ */
 class Txflags
 {
 private:

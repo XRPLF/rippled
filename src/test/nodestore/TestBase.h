@@ -20,13 +20,14 @@
 
 namespace xrpl::NodeStore {
 
-/** Binary function that satisfies the strict-weak-ordering requirement.
-
-    This compares the hashes of both objects and returns true if
-    the first hash is considered to go before the second.
-
-    @see std::sort
-*/
+/**
+ * Binary function that satisfies the strict-weak-ordering requirement.
+ *
+ * This compares the hashes of both objects and returns true if
+ * the first hash is considered to go before the second.
+ *
+ * @see std::sort
+ */
 struct LessThan
 {
     bool
@@ -37,7 +38,9 @@ struct LessThan
     }
 };
 
-/** Returns `true` if objects are identical. */
+/**
+ * Returns `true` if objects are identical.
+ */
 inline bool
 isSame(std::shared_ptr<NodeObject> const& lhs, std::shared_ptr<NodeObject> const& rhs)
 {
