@@ -803,18 +803,29 @@ Multiple xrpld instances can send telemetry to per-tier collectors that all
 forward to one Grafana stack. Four resource attributes segregate the data so
 one dashboard set serves every deployment:
 
-| Dimension   | Attribute                | Set by     | Example values                 |
-| ----------- | ------------------------ | ---------- | ------------------------------ |
-| Node        | `service.instance.id`    | xrpld cfg  | `alice-laptop`, `ci-runner-7`  |
-| Service     | `service.name`           | xrpld cfg  | `xrpld`, `xrpld-validator`     |
-| Network     | `xrpl.network.type`      | xrpld node | `mainnet`, `testnet`, `devnet` |
-| Environment | `deployment.environment` | collector  | `local`, `test`, `ci`, `prod`  |
+| Dimension   | Attribute                | Set by     | Example values                                   |
+| ----------- | ------------------------ | ---------- | ------------------------------------------------ |
+| Node        | `service.instance.id`    | xrpld cfg  | `alice-laptop`, `ci-runner-7`                    |
+| Service     | `service.name`           | xrpld cfg  | `xrpld`, `xrpld-validator`                       |
+| Network     | `xrpl.network.type`      | xrpld node | `mainnet`, `testnet`, `devnet`, `perf`           |
+| Environment | `deployment.environment` | collector  | `local`, `test`, `ci`, `prod`                    |
+| Work Item   | `xrpl.work.item`         | perf-iac   | `RIPD-7455` (empty outside perf runs)            |
+| Branch      | `xrpl.branch`            | perf-iac   | `baseline:<ref>:<commit>`, `test:<ref>:<commit>` |
+| Node Role   | `xrpl.node.role`         | perf-iac   | `validator`, `peer`                              |
 
 Dashboards expose these as the template variables `$node`, `$service_name`,
-`$xrpl_network_type`, and `$deployment_environment` (each variable name
-matches its Prometheus label). Select them top-down — environment → network
-→ service → node. Selecting **All** matches every value, including series
-lacking the label, so mixed old/new data never disappears.
+`$xrpl_network_type`, `$deployment_environment`, `$xrpl_work_item`,
+`$xrpl_branch`, and `$xrpl_node_role` (each variable name matches its
+Prometheus label). Select them top-down — work item → branch → node role →
+node for a perf comparison run, or environment → network → service → node for
+general use. Selecting **All** matches every value, including series lacking
+the label, so mixed old/new data never disappears.
+
+The last three (`$xrpl_work_item`, `$xrpl_branch`, `$xrpl_node_role`) are
+populated only during perf-iac comparison runs, which stamp them as resource
+attributes from their own alloy pipeline. Outside those runs the labels are
+absent; leaving the filters on **All** keeps every dashboard rendering
+normally.
 
 ### Who owns which attribute
 

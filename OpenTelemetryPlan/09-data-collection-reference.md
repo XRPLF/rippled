@@ -621,15 +621,24 @@ For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), fo
 
 ### 3.3 Deployment-Tier Template Variables
 
-Every dashboard carries four filtering template variables (each variable name
-matches its Prometheus label), letting one Grafana stack be sliced by tier:
+Every dashboard carries seven filtering template variables (each variable name
+matches its Prometheus label), letting one Grafana stack be sliced by tier and
+by perf-comparison run:
 
-| Variable                  | Source label             | Description                                                  |
-| ------------------------- | ------------------------ | ------------------------------------------------------------ |
-| `$node`                   | `service_instance_id`    | Filter by xrpld node instance                                |
-| `$service_name`           | `service_name`           | Filter by service (`service.name`, e.g. `xrpld`)             |
-| `$deployment_environment` | `deployment_environment` | Filter by deployment tier (`local` / `test` / `ci` / `prod`) |
-| `$xrpl_network_type`      | `xrpl_network_type`      | Filter by network (`mainnet` / `testnet` / `devnet`)         |
+| Variable                  | Source label             | Description                                                      |
+| ------------------------- | ------------------------ | ---------------------------------------------------------------- |
+| `$node`                   | `service_instance_id`    | Filter by xrpld node instance                                    |
+| `$service_name`           | `service_name`           | Filter by service (`service.name`, e.g. `xrpld`)                 |
+| `$deployment_environment` | `deployment_environment` | Filter by deployment tier (`local` / `test` / `ci` / `prod`)     |
+| `$xrpl_network_type`      | `xrpl_network_type`      | Filter by network (`mainnet` / `testnet` / `devnet` / `perf`)    |
+| `$xrpl_work_item`         | `xrpl_work_item`         | Filter by perf-iac work item / ticket (e.g. `RIPD-7455`)         |
+| `$xrpl_branch`            | `xrpl_branch`            | Filter by comparison side (`baseline:<ref>:<commit>` / `test:…`) |
+| `$xrpl_node_role`         | `xrpl_node_role`         | Filter by node role (`validator` / `peer`)                       |
+
+The last three are populated only during perf-iac comparison runs (stamped as
+resource attributes by perf-iac's own alloy pipeline, not the repo collector).
+Outside those runs the labels are absent; the filters default to **All**, which
+matches series lacking the label so every dashboard still renders.
 
 See [telemetry-runbook.md](../docs/telemetry-runbook.md) "Deployment Tiers"
 for how the tier attributes are set and reach metrics.
