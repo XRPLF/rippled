@@ -56,7 +56,7 @@ rngcpy(void* buffer, std::size_t bytes, Generator& g)
 }
 
 /**
- * Deterministic generator of a reproducible sequence of random NodeObjects.
+ * @brief Deterministic generator of a reproducible sequence of random NodeObjects.
  *
  * Indexing is stable: `obj(n)` and `key(n)` always return the same value for a
  * given `n`, regardless of call order, because the engine is reseeded from `n`
@@ -226,11 +226,12 @@ sliceBatches(Batch const& pool, std::size_t batchSize)
     return batches;
 }
 
-/** RAII owner of a NodeStore Backend opened on a private temporary directory.
-
-    Member declaration order matters: `tempDir` is declared first so it is
-    destroyed last, after the backend has closed and released its files.
-*/
+/**
+ * @brief RAII owner of a NodeStore Backend opened on a private temporary directory.
+ *
+ * Member declaration order matters: `tempDir` is declared first so it is
+ * destroyed last, after the backend has closed and released its files.
+ */
 struct BackendHarness
 {
     beast::TempDir tempDir;
@@ -257,9 +258,10 @@ struct BackendHarness
     }
 };
 
-/** RAII owner of a NodeStore Database - the application-facing wrapper around a
-    Backend, which adds fetch/store accounting and the async read-thread pool.
-*/
+/**
+ * RAII owner of a NodeStore Database - the application-facing wrapper around a
+ * Backend, which adds fetch/store accounting and the async read-thread pool.
+ */
 struct DatabaseHarness
 {
     beast::TempDir tempDir;
