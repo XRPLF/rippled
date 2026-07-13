@@ -279,6 +279,8 @@ words:
   - sles
   - soci
   - socidb
+  - sponsee
+  - sponsees
   - SRPMS
   - sslws
   - statsd
@@ -300,6 +302,7 @@ words:
   - takerpays
   - ters
   - TMEndpointv2
+  - tparam
   - trixie
   - tx
   - txid
@@ -327,6 +330,7 @@ words:
   - unserviced
   - unshareable
   - unshares
+  - unsponsored
   - unsquelch
   - unsquelched
   - unsquelching
