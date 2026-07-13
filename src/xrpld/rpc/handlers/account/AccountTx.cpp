@@ -443,7 +443,7 @@ populateJsonResponse(
 // `delegate_filter` and `counter_party`) must be supplied unchanged on every
 // paginated request until the query completes. A marker returned by a
 // delegate-filtered query is only valid for a follow-up request that repeats
-// the same delegate filter;
+// the same `delegate` object
 json::Value
 doAccountTx(RPC::JsonContext& context)
 {
@@ -525,7 +525,7 @@ doAccountTx(RPC::JsonContext& context)
 
     // A marker produced by a delegate-filtered query uses a different
     // pagination cursor than a normal query, so it is only valid when the same
-    // delegate filter is supplied again. Reject any mismatch so pagination
+    // `delegate` object is supplied again. Reject any mismatch so pagination
     // cannot silently skip or duplicate results.
     if (args.marker)
     {
@@ -536,8 +536,8 @@ doAccountTx(RPC::JsonContext& context)
         {
             RPC::Status const status{
                 RpcInvalidParams,
-                "The delegate filter must be supplied unchanged across "
-                "paginated account_tx requests."};
+                "Do not mix delegate and non-delegate pagination markers in account_tx; "
+                "repeat the `delegate` object when using a delegate marker."};
             status.inject(response);
             return response;
         }
