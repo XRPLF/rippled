@@ -37,7 +37,8 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     static TER
     defaultLoan(
@@ -46,7 +47,8 @@ public:
         VaultEntry<ApplyView>& vaultSle,
         Asset const& vaultAsset);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     static TER
     impairLoan(
@@ -54,7 +56,8 @@ public:
         VaultEntry<ApplyView>& vaultSle,
         Asset const& vaultAsset);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     [[nodiscard]] static TER
     unimpairLoan(

@@ -43,7 +43,9 @@ PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-/** Attempt to delete the Permissioned Domain. */
+/**
+ * Attempt to delete the Permissioned Domain.
+ */
 TER
 PermissionedDomainDelete::doApply()
 {

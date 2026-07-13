@@ -12,29 +12,30 @@
 
 namespace xrpl {
 
-/** Transaction flags.
-
-    These flags are specified in a transaction's 'Flags' field and modify
-    the behavior of that transaction.
-
-    There are two types of flags:
-
-        (1) Universal flags: these are flags which apply to, and are interpreted the same way by,
-            all transactions, except, perhaps, to special pseudo-transactions.
-
-        (2) Tx-Specific flags: these are flags which are interpreted according to the type of the
-            transaction being executed. That is, the same numerical flag value may have different
-            effects, depending on the transaction being executed.
-
-    @note The universal transaction flags occupy the high-order 8 bits.
-          The tx-specific flags occupy the remaining 24 bits.
-
-    @warning Transaction flags form part of the protocol.
-             **Changing them should be avoided because without special handling, this will result in
-             a hard fork.**
-
-    @ingroup protocol
-*/
+/**
+ * Transaction flags.
+ *
+ * These flags are specified in a transaction's 'Flags' field and modify
+ * the behavior of that transaction.
+ *
+ * There are two types of flags:
+ *
+ *     (1) Universal flags: these are flags which apply to, and are interpreted the same way by,
+ *         all transactions, except, perhaps, to special pseudo-transactions.
+ *
+ *     (2) Tx-Specific flags: these are flags which are interpreted according to the type of the
+ *         transaction being executed. That is, the same numerical flag value may have different
+ *         effects, depending on the transaction being executed.
+ *
+ * @note The universal transaction flags occupy the high-order 8 bits.
+ *       The tx-specific flags occupy the remaining 24 bits.
+ *
+ * @warning Transaction flags form part of the protocol.
+ *          **Changing them should be avoided because without special handling, this will result in
+ *          a hard fork.**
+ *
+ * @ingroup protocol
+ */
 
 using FlagValue = std::uint32_t;
 

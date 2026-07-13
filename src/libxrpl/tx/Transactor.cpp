@@ -56,7 +56,9 @@
 
 namespace xrpl {
 
-/** Performs early sanity checks on the txid */
+/**
+ * Performs early sanity checks on the txid
+ */
 NotTEC
 preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 {
@@ -111,7 +113,8 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 
 namespace detail {
 
-/** Checks the validity of the transactor signing key.
+/**
+ * Checks the validity of the transactor signing key.
  *
  * Normally called from preflight1.
  */
@@ -221,7 +224,9 @@ preflight1Sponsor(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-/** Performs early sanity checks on the account and fee fields */
+/**
+ * Performs early sanity checks on the account and fee fields
+ */
 NotTEC
 Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 {
@@ -290,7 +295,9 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     return tesSUCCESS;
 }
 
-/** Checks whether the signature appears valid */
+/**
+ * Checks whether the signature appears valid
+ */
 NotTEC
 Transactor::preflight2(PreflightContext const& ctx)
 {
@@ -1276,10 +1283,11 @@ removeDeletedTrustLines(
     }
 }
 
-/** Reset the context, discarding any changes made and adjust the fee.
-
-    @param fee The transaction fee to be charged.
-    @return A pair containing the transaction result and the actual fee charged.
+/**
+ * Reset the context, discarding any changes made and adjust the fee.
+ *
+ * @param fee The transaction fee to be charged.
+ * @return A pair containing the transaction result and the actual fee charged.
  */
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
