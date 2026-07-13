@@ -203,10 +203,11 @@ class Invariants_test : public beast::unit_test::Suite
         for (TER const& terExpect : ters)
         {
             terActual = transactor->checkInvariants(terActual, fee);
+            auto const messages = sink.messages().str();
             BEAST_EXPECTS(
                 terExpect == terActual,
-                "expected: " + transToken(terExpect) + " got: " + transToken(terActual));
-            auto const messages = sink.messages().str();
+                "expected: " + transToken(terExpect) + " got: " + transToken(terActual) +
+                    " expected logs: " + expectLogs.front() + " messages: " + messages);
 
             if (!isTesSuccess(terActual))
             {
@@ -219,7 +220,7 @@ class Invariants_test : public beast::unit_test::Suite
             // std::cerr << messages << '\n';
             for (auto const& m : expectLogs)
             {
-                BEAST_EXPECTS(messages.contains(m), m);
+                BEAST_EXPECTS(messages.contains(m), m + "got: " + messages);
             }
         }
     }
@@ -2676,6 +2677,7 @@ class Invariants_test : public beast::unit_test::Suite
             int principalOutstanding = 0;
             int totalValueOutstanding = 0;
             int managementFeeOutstanding = 0;
+            AccountID borrower = beast::kZero;
         };
         struct Adjustments
         {
@@ -2807,6 +2809,8 @@ class Invariants_test : public beast::unit_test::Suite
                     // loan with payments remaining is not fully paid off.
                     sleLoan->at(sfPeriodicPayment) = Number(1);
                     sleLoan->setFieldU32(sfPaymentRemaining, anyOutstanding ? 1 : 0);
+                    sleLoan->setAccountID(sfBorrower, lp.borrower);
+                    sleLoan->makeFieldPresent(sfOwnerNode);
                     ac.insert(sleLoan);
                 }
             }
@@ -3450,11 +3454,19 @@ class Invariants_test : public beast::unit_test::Suite
                         .assetsAvailable = -100,
                         .vaultAssets = -100,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = 100},
-                        .createLoan =
-                            LoanParams{.principalOutstanding = 200, .totalValueOutstanding = 200}});
+                        .createLoan = LoanParams{
+                            .principalOutstanding = 200,
+                            .totalValueOutstanding = 200,
+                            .borrower = a1.id(),
+                        }});
             },
             XRPAmount{},
-            STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
+            STTx{
+                ttLOAN_SET,
+                [](STObject& tx) {
+                    tx.at(sfPrincipalRequested) = Number(200);
+                    tx.makeFieldPresent(sfCounterpartySignature);
+                }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
@@ -3488,7 +3500,12 @@ class Invariants_test : public beast::unit_test::Suite
                         .assetsAvailable = -200,
                         .vaultAssets = -200,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
-                        .createLoan = LoanParams{},
+                        .createLoan =
+                            LoanParams{
+                                .principalOutstanding = 100,
+                                .totalValueOutstanding = 100,
+                                .borrower = a1.id(),
+                            },
                         .loanCount = 2});
             },
             XRPAmount{},
@@ -3510,11 +3527,19 @@ class Invariants_test : public beast::unit_test::Suite
                         .assetsAvailable = -200,
                         .vaultAssets = -200,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
-                        .createLoan =
-                            LoanParams{.principalOutstanding = 200, .totalValueOutstanding = 200}});
+                        .createLoan = LoanParams{
+                            .principalOutstanding = 200,
+                            .totalValueOutstanding = 200,
+                            .borrower = a1.id(),
+                        }});
             },
             XRPAmount{},
-            STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
+            STTx{
+                ttLOAN_SET,
+                [](STObject& tx) {
+                    tx.at(sfPrincipalRequested) = Number(200);
+                    tx.makeFieldPresent(sfCounterpartySignature);
+                }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
@@ -3532,11 +3557,19 @@ class Invariants_test : public beast::unit_test::Suite
                         .vaultAssets = -200,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
                         .accountShares = AccountAmount{.account = a2.id(), .amount = 10},
-                        .createLoan =
-                            LoanParams{.principalOutstanding = 200, .totalValueOutstanding = 200}});
+                        .createLoan = LoanParams{
+                            .principalOutstanding = 200,
+                            .totalValueOutstanding = 200,
+                            .borrower = a1.id(),
+                        }});
             },
             XRPAmount{},
-            STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
+            STTx{
+                ttLOAN_SET,
+                [](STObject& tx) {
+                    tx.at(sfPrincipalRequested) = Number(200);
+                    tx.makeFieldPresent(sfCounterpartySignature);
+                }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
@@ -3556,11 +3589,19 @@ class Invariants_test : public beast::unit_test::Suite
                         .assetsMaximum = 1,
                         .vaultAssets = -200,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
-                        .createLoan =
-                            LoanParams{.principalOutstanding = 200, .totalValueOutstanding = 200}});
+                        .createLoan = LoanParams{
+                            .principalOutstanding = 200,
+                            .totalValueOutstanding = 200,
+                            .borrower = a1.id(),
+                        }});
             },
             XRPAmount{},
-            STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
+            STTx{
+                ttLOAN_SET,
+                [](STObject& tx) {
+                    tx.at(sfPrincipalRequested) = Number(200);
+                    tx.makeFieldPresent(sfCounterpartySignature);
+                }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
@@ -3582,8 +3623,11 @@ class Invariants_test : public beast::unit_test::Suite
                         .assetsAvailable = -200,
                         .vaultAssets = -200,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
-                        .createLoan =
-                            LoanParams{.principalOutstanding = 300, .totalValueOutstanding = 300}});
+                        .createLoan = LoanParams{
+                            .principalOutstanding = 300,
+                            .totalValueOutstanding = 300,
+                            .borrower = a1.id(),
+                        }});
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
@@ -4120,22 +4164,66 @@ class Invariants_test : public beast::unit_test::Suite
             Account const borrower{"borrower"};
             Account const counterparty{"counterparty"};
 
+            // Principal released by the synthetic LoanSet. The vault is
+            // funded up front and its pseudo-account balance and
+            // AssetsAvailable are both reduced by this amount, matching the
+            // sfPrincipalRequested carried on the transaction.
+            constexpr int kPrincipal = 200;
+
+            Preclose const createVault = [](Account const& a1, Account const&, Env& env) {
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+                env(tx);
+                env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = XRP(10)}));
+                return true;
+            };
+
             // Creates a fully paid-off loan, optionally flagged pending, so the
             // earlier loan checks pass and only the LoanSet creation checks
-            // fire.
+            // fire. Moves kPrincipal drops from the vault pseudo-account to a2
+            // and reduces AssetsAvailable accordingly, mirroring a real LoanSet
+            // that releases principal to the borrower.
             auto const createLoan = [](bool pending,
-                                       std::optional<std::uint32_t> startDate = std::nullopt) {
-                return [pending, startDate](Account const& a1, Account const&, ApplyContext& ac) {
+                                       std::optional<std::uint32_t> startDate = std::nullopt,
+                                       std::optional<AccountID> borrower = std::nullopt) {
+                return [pending, startDate, borrower](
+                           Account const& a1, Account const& a2, ApplyContext& ac) {
                     auto const vaultKeylet = keylet::vault(a1.id(), ac.view().seq());
+                    auto sleVault = ac.view().peek(vaultKeylet);
+                    if (!sleVault)
+                        return false;
+                    (*sleVault)[sfAssetsAvailable] = *(*sleVault)[sfAssetsAvailable] - kPrincipal;
+                    ac.view().update(sleVault);
+
+                    auto sleVaultAccount = ac.view().peek(keylet::account(sleVault->at(sfAccount)));
+                    if (!sleVaultAccount)
+                        return false;
+                    sleVaultAccount->at(sfBalance) -= XRPAmount(kPrincipal);
+                    ac.view().update(sleVaultAccount);
+
+                    auto sleA2 = ac.view().peek(keylet::account(a2.id()));
+                    if (!sleA2)
+                        return false;
+                    sleA2->at(sfBalance) += XRPAmount(kPrincipal);
+                    ac.view().update(sleA2);
+
                     auto const loanKeylet = keylet::loan(vaultKeylet.key, 1);
                     auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                    sleLoan->at(sfPrincipalOutstanding) = Number(0);
-                    sleLoan->at(sfTotalValueOutstanding) = Number(0);
+                    sleLoan->at(sfPrincipalOutstanding) = Number(kPrincipal);
+                    sleLoan->at(sfTotalValueOutstanding) = Number(kPrincipal);
                     sleLoan->at(sfManagementFeeOutstanding) = Number(0);
                     sleLoan->at(sfPeriodicPayment) = Number(1);
-                    sleLoan->setFieldU32(sfPaymentRemaining, 0);
+                    if (borrower)
+                        sleLoan->at(sfBorrower) = *borrower;
+                    sleLoan->setFieldU32(sfPaymentRemaining, 1);
                     if (pending)
+                    {
                         sleLoan->setFlag(lsfLoanPending);
+                    }
+                    else
+                    {
+                        sleLoan->makeFieldPresent(sfOwnerNode);
+                    }
                     if (startDate)
                         sleLoan->setFieldU32(sfStartDate, *startDate);
                     ac.view().insert(sleLoan);
@@ -4143,48 +4231,50 @@ class Invariants_test : public beast::unit_test::Suite
                 };
             };
 
-            // A Counterparty and CounterpartySignature must not be accompanied
-            // by a Borrower.
+            // One-step flow must not be accompanied by a Borrower.
             doInvariantCheck(
                 Env{*this, defaultAmendments() | featureLendingProtocolV1_1},
-                {"LoanSet specified a Counterparty and CounterpartySignature "
-                 "together with a Borrower"},
-                createLoan(false),
+                {"Invariant failed: LoanSet specified a Borrower with a CounterpartySignature"},
+                createLoan(false, std::nullopt, borrower.id()),
                 XRPAmount{},
                 STTx{
                     ttLOAN_SET,
                     [&](STObject& tx) {
-                        tx.setAccountID(sfBorrower, borrower.id());
-                        tx.setAccountID(sfCounterparty, counterparty.id());
                         tx.makeFieldPresent(sfCounterpartySignature);
+                        tx.makeFieldPresent(sfBorrower);
+                        tx.at(sfPrincipalRequested) = kPrincipal;
                     }},
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createVault);
 
-            // A Borrower must not be accompanied by a Counterparty or a
-            // CounterpartySignature.
+            // Two-step flow must not be accompanied by a Counterparty.
             doInvariantCheck(
                 Env{*this, defaultAmendments() | featureLendingProtocolV1_1},
-                {"LoanSet specified a Borrower together with a Counterparty or "
-                 "CounterpartySignature"},
-                createLoan(false),
+                {"Invariant failed: LoanSet specified a Borrower with a StartDate and a "
+                 "Counterparty"},
+                createLoan(false, std::nullopt, borrower.id()),
                 XRPAmount{},
                 STTx{
                     ttLOAN_SET,
                     [&](STObject& tx) {
                         tx.setAccountID(sfBorrower, borrower.id());
+                        tx.at(sfStartDate) = 0;
                         tx.setAccountID(sfCounterparty, counterparty.id());
+                        tx.at(sfPrincipalRequested) = kPrincipal;
                     }},
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createVault);
 
             // A LoanSet must use one of the two creation paths.
             doInvariantCheck(
                 Env{*this, defaultAmendments() | featureLendingProtocolV1_1},
-                {"LoanSet specified neither a Borrower nor a Counterparty with "
+                {"Invariant failed: LoanSet specified neither a Borrower with a StartDate nor a "
                  "CounterpartySignature"},
-                createLoan(false),
+                createLoan(false, std::nullopt, borrower.id()),
                 XRPAmount{},
-                STTx{ttLOAN_SET, [](STObject&) {}},
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+                STTx{ttLOAN_SET, [&](STObject& tx) { tx.at(sfPrincipalRequested) = kPrincipal; }},
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createVault);
 
             // A two-step LoanSet (Borrower and StartDate, no Counterparty or
             // CounterpartySignature) must create a pending loan; creating a
@@ -4192,15 +4282,17 @@ class Invariants_test : public beast::unit_test::Suite
             doInvariantCheck(
                 Env{*this, defaultAmendments() | featureLendingProtocolV1_1},
                 {"LoanSet pending flag does not match the two-step flow inputs"},
-                createLoan(false),
+                createLoan(false, std::nullopt, borrower.id()),
                 XRPAmount{},
                 STTx{
                     ttLOAN_SET,
                     [&](STObject& tx) {
                         tx.setAccountID(sfBorrower, borrower.id());
                         tx.setFieldU32(sfStartDate, 0xFFFF'FFFF);
+                        tx.at(sfPrincipalRequested) = kPrincipal;
                     }},
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createVault);
 
             // A Counterparty + CounterpartySignature LoanSet must create an
             // active (non-pending) loan; creating a pending loan instead is a
@@ -4208,15 +4300,17 @@ class Invariants_test : public beast::unit_test::Suite
             doInvariantCheck(
                 Env{*this, defaultAmendments() | featureLendingProtocolV1_1},
                 {"LoanSet pending flag does not match the two-step flow inputs"},
-                createLoan(true),
+                createLoan(true, std::nullopt, borrower.id()),
                 XRPAmount{},
                 STTx{
                     ttLOAN_SET,
                     [&](STObject& tx) {
                         tx.setAccountID(sfCounterparty, counterparty.id());
                         tx.makeFieldPresent(sfCounterpartySignature);
+                        tx.at(sfPrincipalRequested) = kPrincipal;
                     }},
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createVault);
 
             // A created loan must record its Borrower: an otherwise well-formed
             // LoanSet that leaves the loan without a Borrower is a violation.
@@ -4226,30 +4320,35 @@ class Invariants_test : public beast::unit_test::Suite
             doInvariantCheck(
                 Env{*this, defaultAmendments() | featureLendingProtocolV1_1},
                 {"LoanSet did not set the Loan Borrower"},
-                createLoan(false),
+                createLoan(false, std::nullopt, std::nullopt),
                 XRPAmount{},
                 STTx{
                     ttLOAN_SET,
                     [&](STObject& tx) {
                         tx.setAccountID(sfCounterparty, counterparty.id());
                         tx.makeFieldPresent(sfCounterpartySignature);
+                        tx.at(sfPrincipalRequested) = kPrincipal;
                     }},
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createVault);
 
             // In the two-step flow the named Borrower must differ from the
             // submitting account; a LoanSet where they are equal is a violation.
             doInvariantCheck(
                 Env{*this, defaultAmendments() | featureLendingProtocolV1_1},
                 {"LoanSet Borrower is the submitting account"},
-                createLoan(false),
+                createLoan(false, std::nullopt, borrower.id()),
                 XRPAmount{},
                 STTx{
                     ttLOAN_SET,
                     [&](STObject& tx) {
                         tx.setAccountID(sfAccount, borrower.id());
                         tx.setAccountID(sfBorrower, borrower.id());
+                        tx.setFieldU32(sfStartDate, 0xFFFF'FFFF);
+                        tx.at(sfPrincipalRequested) = kPrincipal;
                     }},
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createVault);
 
             // A pending loan created by the two-step flow must have a StartDate
             // in the future; creating one with a past StartDate is a violation.
@@ -4267,8 +4366,10 @@ class Invariants_test : public beast::unit_test::Suite
                     [&](STObject& tx) {
                         tx.setAccountID(sfBorrower, borrower.id());
                         tx.setFieldU32(sfStartDate, 0xFFFF'FFFF);
+                        tx.at(sfPrincipalRequested) = kPrincipal;
                     }},
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                createVault);
         }
 
         // Loan interest due (total value less principal and management fee)

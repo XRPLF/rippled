@@ -1002,7 +1002,6 @@ NoModifiedUnmodifiableFields::finalize(
                 bad = kFieldChanged(before, after, sfLedgerEntryType) ||
                     kFieldChanged(before, after, sfLedgerIndex) ||
                     kFieldChanged(before, after, sfSequence) ||
-                    kFieldChanged(before, after, sfOwnerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerID) ||
                     kFieldChanged(before, after, sfBorrower) ||

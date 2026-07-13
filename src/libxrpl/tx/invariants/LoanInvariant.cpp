@@ -34,7 +34,7 @@ ValidLoan::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after
 bool
 ValidLoan::finalize(
     STTx const& tx,
-    TER const,
+    TER const result,
     XRPAmount const,
     ReadView const& view,
     beast::Journal const& j)
@@ -145,124 +145,119 @@ ValidLoan::finalize(
             }
         }
         // On creation, LoanSet must use exactly one of two mutually exclusive
-        // paths: it either names a Borrower (starting the two-step flow) or
-        // carries a Counterparty together with its CounterpartySignature. A
-        // Borrower with no CounterpartySignature starts the two-step flow and
-        // must create a pending loan; any other LoanSet must create an active
-        // (non-pending) loan.
-        if (lendingV11Enabled && !before && txType == ttLOAN_SET)
+        // paths: it either names a Borrower with a StartDate (starting the
+        // two-step flow) or carries a CounterpartySignature. A Borrower with a
+        // StartDate and no CounterpartySignature or Counterparty starts the
+        // two-step flow and must create a pending loan; any other LoanSet must
+        // create an active (non-pending) loan.
+        if (isTesSuccess(result))
         {
-            bool const hasBorrower = tx.isFieldPresent(sfBorrower);
-            bool const hasCounterpartySig = tx.isFieldPresent(sfCounterpartySignature);
-            bool const hasStartDate = tx.isFieldPresent(sfStartDate);
+            if (lendingV11Enabled && !before && txType == ttLOAN_SET)
+            {
+                bool const hasBorrower = tx.isFieldPresent(sfBorrower);
+                bool const hasCounterpartySig = tx.isFieldPresent(sfCounterpartySignature);
+                bool const hasStartDate = tx.isFieldPresent(sfStartDate);
+                bool const hasCounterparty = tx.isFieldPresent(sfCounterparty);
+                bool isTwoStepFlow = hasBorrower && hasStartDate;
+                bool isOneStepFlow = hasCounterpartySig;
 
-            // If a LoanSet carries a Counterparty and a CounterpartySignature it
-            // must not also name a Borrower.
-            if (hasCounterpartySig && hasBorrower)
-            {
-                JLOG(j.fatal()) << "Invariant failed: LoanSet specified a "
-                                   "Counterparty and CounterpartySignature "
-                                   "together with a Borrower";
-                return false;
-            }
-            // If a LoanSet names a Borrower it must not also carry a
-            // Counterparty or a CounterpartySignature.
-            if (hasBorrower && hasCounterpartySig)
-            {
-                JLOG(j.fatal()) << "Invariant failed: LoanSet specified a "
-                                   "Borrower together with a Counterparty or "
-                                   "CounterpartySignature";
-                return false;
-            }
-            // A LoanSet must use one of the two creation paths.
-            if (!hasBorrower && !hasCounterpartySig)
-            {
-                JLOG(j.fatal()) << "Invariant failed: LoanSet specified neither "
-                                   "a Borrower nor a CounterpartySignature";
-                return false;
-            }
-            // In the two-step flow the named Borrower must be a different
-            // account from the one submitting the LoanSet.
-            if (hasBorrower && tx.getAccountID(sfBorrower) == tx.getAccountID(sfAccount))
-            {
-                JLOG(j.fatal()) << "Invariant failed: LoanSet Borrower is the "
-                                   "submitting account";
-                return false;
-            }
+                if (!isTwoStepFlow && !isOneStepFlow)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanSet specified neither "
+                                       "a Borrower with a StartDate nor a CounterpartySignature";
+                    return false;
+                }
 
-            // The two-step flow is started (and the loan created pending) when
-            // the LoanSet names a Borrower and a StartDate but carries neither a
-            // Counterparty nor a CounterpartySignature.
-            bool const shouldPend = hasBorrower && hasStartDate && !hasCounterpartySig;
-            if (shouldPend != after->isFlag(lsfLoanPending))
-            {
-                JLOG(j.fatal()) << "Invariant failed: LoanSet pending flag does "
-                                   "not match the two-step flow inputs";
-                return false;
-            }
+                if (isTwoStepFlow && isOneStepFlow)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanSet specified both "
+                                       "a Borrower with a StartDate and a CounterpartySignature";
+                    return false;
+                }
 
-            // A pending loan (the two-step flow) is accepted in a later ledger,
-            // so its StartDate must be strictly in the future at creation to
-            // remain in the future when LoanAccept finalizes it.
-            if (shouldPend &&
-                after->getFieldU32(sfStartDate) <=
-                    view.parentCloseTime().time_since_epoch().count())
-            {
-                JLOG(j.fatal()) << "Invariant failed: LoanSet created a pending "
-                                   "Loan whose StartDate is not in the future";
-                return false;
-            }
+                if (isOneStepFlow && hasBorrower)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanSet specified a "
+                                       "Borrower with a CounterpartySignature";
+                    return false;
+                }
 
-            // A created loan must always record its Borrower.
-            if (!after->isFieldPresent(sfBorrower))
-            {
-                JLOG(j.fatal()) << "Invariant failed: LoanSet did not set the "
-                                   "Loan Borrower";
-                return false;
+                if (isTwoStepFlow && hasCounterparty)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanSet specified a "
+                                       "Borrower with a StartDate and a Counterparty";
+                    return false;
+                }
+
+                // In the two-step flow the named Borrower must be a different
+                // account from the one submitting the LoanSet.
+                if (hasBorrower && tx.getAccountID(sfBorrower) == tx.getAccountID(sfAccount))
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanSet Borrower is the "
+                                       "submitting account";
+                    return false;
+                }
+
+                // The two-step flow is started (and the loan created pending) when
+                // the LoanSet names a Borrower and a StartDate but carries neither a
+                // Counterparty nor a CounterpartySignature.
+                bool const shouldPend =
+                    hasBorrower && hasStartDate && !hasCounterpartySig && !hasCounterparty;
+                if (shouldPend != after->isFlag(lsfLoanPending))
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanSet pending flag does "
+                                       "not match the two-step flow inputs";
+                    return false;
+                }
+
+                // A pending loan (the two-step flow) is accepted in a later ledger,
+                // so its StartDate must be strictly in the future at creation to
+                // remain in the future when LoanAccept finalizes it.
+                if (shouldPend &&
+                    after->getFieldU32(sfStartDate) <=
+                        view.parentCloseTime().time_since_epoch().count())
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanSet created a pending "
+                                       "Loan whose StartDate is not in the future";
+                    return false;
+                }
+
+                // A created loan must always record its Borrower. As sfBorrower is a
+                // required field it is always present (defaulting to the zero
+                // account), so a loan whose Borrower was never set carries the zero
+                // account.
+                if (!after->isFieldPresent(sfBorrower) ||
+                    after->getAccountID(sfBorrower) == beast::kZero)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanSet did not set the "
+                                       "Loan Borrower";
+                    return false;
+                }
             }
-        }
-        // Without the two-step flow amendment, LoanSet must not make use of any
-        // of its inputs: it must not create a pending loan, must not be given a
-        // Borrower, and must always carry a CounterpartySignature.
-        if (!lendingV11Enabled && !before && txType == ttLOAN_SET)
-        {
-            if (after->isFlag(lsfLoanPending))
+            // Without the two-step flow amendment, LoanSet must not make use of any
+            // of its inputs: it must not create a pending loan, must not be given a
+            // Borrower, and must always carry a CounterpartySignature.
+            if (!lendingV11Enabled && !before && txType == ttLOAN_SET)
             {
-                JLOG(j.fatal()) << "Invariant failed: LoanSet set the Loan "
-                                   "Pending flag when the amendment is not enabled";
-                return false;
-            }
-            if (tx.isFieldPresent(sfBorrower))
-            {
-                JLOG(j.fatal()) << "Invariant failed: LoanSet specified a "
-                                   "Borrower when the amendment is not enabled";
-                return false;
-            }
-            if (!tx.isFieldPresent(sfCounterpartySignature))
-            {
-                JLOG(j.fatal()) << "Invariant failed: LoanSet omitted the "
-                                   "CounterpartySignature when the amendment is "
-                                   "not enabled";
-                return false;
-            }
-        }
-        // A pending loan must not be linked into the borrower's directory, and
-        // a non-pending loan must be linked.
-        if (lendingV11Enabled)
-        {
-            bool const isPending = after->isFlag(lsfLoanPending);
-            bool const hasNode = after->isFieldPresent(sfOwnerNode);
-            if (isPending && hasNode)
-            {
-                JLOG(j.fatal()) << "Invariant failed: pending Loan is linked "
-                                   "into the borrower's directory";
-                return false;
-            }
-            if (!isPending && !hasNode)
-            {
-                JLOG(j.fatal()) << "Invariant failed: active Loan is not linked "
-                                   "into the borrower's directory";
-                return false;
+                if (after->isFlag(lsfLoanPending))
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanSet set the Loan "
+                                       "Pending flag when the amendment is not enabled";
+                    return false;
+                }
+                if (tx.isFieldPresent(sfBorrower))
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanSet specified a "
+                                       "Borrower when the amendment is not enabled";
+                    return false;
+                }
+                if (!tx.isFieldPresent(sfCounterpartySignature))
+                {
+                    JLOG(j.fatal()) << "Invariant failed: LoanSet omitted the "
+                                       "CounterpartySignature when the amendment is "
+                                       "not enabled";
+                    return false;
+                }
             }
         }
         // Must not be negative - STNumber
@@ -298,6 +293,25 @@ ValidLoan::finalize(
             {
                 JLOG(j.fatal()) << "Invariant failed: " << field->getName()
                                 << " is zero or negative ";
+                return false;
+            }
+        }
+        // A pending loan must not be linked into the borrower's directory, and
+        // a non-pending loan must be linked.
+        if (lendingV11Enabled)
+        {
+            bool const isPending = after->isFlag(lsfLoanPending);
+            bool const hasNode = after->isFieldPresent(sfOwnerNode);
+            if (isPending && hasNode)
+            {
+                JLOG(j.fatal()) << "Invariant failed: pending Loan is linked "
+                                   "into the borrower's directory";
+                return false;
+            }
+            if (!isPending && !hasNode)
+            {
+                JLOG(j.fatal()) << "Invariant failed: active Loan is not linked "
+                                   "into the borrower's directory";
                 return false;
             }
         }

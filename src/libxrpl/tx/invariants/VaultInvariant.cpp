@@ -201,7 +201,9 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
             }
             case ltLOAN:
                 // A loan carries no vault balance of its own; capture it so the
-                // loan set invariant can verify the interest booked to the vault.
+                // loan set and loan pay invariants can verify the interest
+                // booked to the vault and the change in the vault's claim on
+                // the loan.
                 afterLoan_.push_back(Loan::make(*after));
                 break;
             default:;
@@ -1442,8 +1444,8 @@ ValidVault::finalize(
 
     if (!result)
     {
-        // The comment at the top of this file starting with "assert(enforce)"
-        // explains this assert.
+        // The comment in InvariantCheckPrivilege.h starting with
+        // "assert(enforce)" explains this assert.
         XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : vault invariants");
         return !enforce;
     }
