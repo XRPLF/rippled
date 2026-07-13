@@ -127,6 +127,13 @@ processors:
 connectors:
   spanmetrics:
     namespace: "span"
+    # Emit span-derived metrics every 15s (default is 60s). Grafana Cloud
+    # ingests these as one datapoint per flush, and dashboard rate() panels
+    # use [$__rate_interval], which at short ranges (<=1h) can be shorter than
+    # the flush interval. A 60s flush left <2 samples per rate window on Cloud,
+    # so those panels rendered "No data". 15s keeps >=2 samples per window at
+    # every dashboard range, at the cost of ~4x span-metric datapoints to Cloud.
+    metrics_flush_interval: 15s
     # Resource attributes that define the resource-metrics grouping key.
     # All resource attributes propagate to the output metrics regardless;
     # label promotion is handled by resource_to_telemetry_conversion on the
