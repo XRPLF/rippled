@@ -43,7 +43,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "custom": {
             "axisLabel": "Transactions",
             "drawStyle": "line",
@@ -91,7 +91,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "custom": {
             "axisLabel": "Transactions",
             "drawStyle": "line",
@@ -153,7 +153,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "custom": {
             "axisLabel": "Fee Level",
             "drawStyle": "line",
@@ -219,7 +219,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "custom": {
             "axisLabel": "Multiplier",
             "drawStyle": "line",
@@ -290,7 +290,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "custom": {
             "axisLabel": "Multiplier",
             "drawStyle": "line",
@@ -410,7 +410,7 @@
       {
         "name": "deployment_environment",
         "label": "Environment",
-        "description": "Filter by deployment tier (local/ci/test/prod)",
+        "description": "Filter by deployment tier [local / ci / test / prod]",
         "type": "query",
         "query": "label_values(deployment_environment)",
         "datasource": {
@@ -430,7 +430,7 @@
       {
         "name": "xrpl_network_type",
         "label": "Network",
-        "description": "Filter by XRPL network (mainnet/testnet/devnet)",
+        "description": "Filter by XRPL network [mainnet / testnet / devnet / perf / unknown]",
         "type": "query",
         "query": "label_values(xrpl_network_type)",
         "datasource": {

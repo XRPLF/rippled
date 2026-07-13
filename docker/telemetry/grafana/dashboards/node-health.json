@@ -803,7 +803,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "custom": {
             "axisLabel": "Entries",
             "drawStyle": "line",
@@ -1027,7 +1027,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "custom": {}
         },
         "overrides": []
@@ -1365,7 +1365,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "cpm",
           "custom": {}
         },
         "overrides": []
@@ -1398,7 +1398,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
@@ -1450,7 +1450,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "si:drops",
           "custom": {}
         },
         "overrides": []
@@ -1483,7 +1483,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "si:drops",
           "custom": {}
         },
         "overrides": []
@@ -1516,7 +1516,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "si:drops",
           "custom": {}
         },
         "overrides": []
@@ -1610,7 +1610,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "cps",
           "custom": {
             "axisLabel": "Transactions",
             "drawStyle": "line",
@@ -2374,7 +2374,7 @@
       {
         "name": "deployment_environment",
         "label": "Environment",
-        "description": "Filter by deployment tier (local/ci/test/prod)",
+        "description": "Filter by deployment tier [local / ci / test / prod]",
         "type": "query",
         "query": "label_values(deployment_environment)",
         "datasource": {
@@ -2394,7 +2394,7 @@
       {
         "name": "xrpl_network_type",
         "label": "Network",
-        "description": "Filter by XRPL network (mainnet/testnet/devnet)",
+        "description": "Filter by XRPL network [mainnet / testnet / devnet / perf / unknown]",
         "type": "query",
         "query": "label_values(xrpl_network_type)",
         "datasource": {

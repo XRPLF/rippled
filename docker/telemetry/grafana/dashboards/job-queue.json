@@ -417,7 +417,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "cpm",
           "thresholds": {
             "steps": [
               {
@@ -480,7 +480,7 @@
       {
         "name": "deployment_environment",
         "label": "Environment",
-        "description": "Filter by deployment tier (local/ci/test/prod)",
+        "description": "Filter by deployment tier [local / ci / test / prod]",
         "type": "query",
         "query": "label_values(deployment_environment)",
         "datasource": {
@@ -500,7 +500,7 @@
       {
         "name": "xrpl_network_type",
         "label": "Network",
-        "description": "Filter by XRPL network (mainnet/testnet/devnet)",
+        "description": "Filter by XRPL network [mainnet / testnet / devnet / perf / unknown]",
         "type": "query",
         "query": "label_values(xrpl_network_type)",
         "datasource": {

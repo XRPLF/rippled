@@ -27,7 +27,7 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
+        "w": 24,
         "x": 0,
         "y": 1
       },
@@ -78,9 +78,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 6,
-        "y": 1
+        "w": 24,
+        "x": 0,
+        "y": 9
       },
       "options": {
         "tooltip": {
@@ -129,9 +129,9 @@
       "type": "bargauge",
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 12,
-        "y": 1
+        "w": 24,
+        "x": 0,
+        "y": 17
       },
       "options": {
         "orientation": "horizontal",
@@ -159,7 +159,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "thresholds": {
             "steps": [
               {
@@ -195,9 +195,9 @@
       "type": "bargauge",
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 18,
-        "y": 1
+        "w": 24,
+        "x": 0,
+        "y": 25
       },
       "options": {
         "orientation": "horizontal",
@@ -225,7 +225,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "thresholds": {
             "steps": [
               {
@@ -262,7 +262,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 33
       },
       "collapsed": false,
       "panels": []
@@ -273,9 +273,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
+        "w": 24,
         "x": 0,
-        "y": 10
+        "y": 34
       },
       "options": {
         "tooltip": {
@@ -294,7 +294,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "cpm",
           "thresholds": {
             "steps": [
               {
@@ -322,9 +322,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 6,
-        "y": 10
+        "w": 24,
+        "x": 0,
+        "y": 42
       },
       "options": {
         "tooltip": {
@@ -343,7 +343,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "cpm",
           "custom": {}
         },
         "overrides": []
@@ -355,9 +355,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 12,
-        "y": 10
+        "w": 24,
+        "x": 0,
+        "y": 50
       },
       "options": {
         "tooltip": {
@@ -420,9 +420,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
-        "x": 18,
-        "y": 10
+        "w": 24,
+        "x": 0,
+        "y": 58
       },
       "options": {
         "tooltip": {
@@ -441,7 +441,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "d",
           "thresholds": {
             "steps": [
               {
@@ -469,9 +469,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
+        "w": 24,
         "x": 0,
-        "y": 18
+        "y": 66
       },
       "options": {
         "tooltip": {
@@ -534,9 +534,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 18,
-        "x": 6,
-        "y": 18
+        "w": 24,
+        "x": 0,
+        "y": 74
       },
       "options": {
         "tooltip": {
@@ -562,7 +562,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "cpm",
           "custom": {
             "axisLabel": "Per Minute",
             "drawStyle": "line",
@@ -603,7 +603,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 82
       },
       "collapsed": false,
       "panels": []
@@ -614,9 +614,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 6,
+        "w": 24,
         "x": 0,
-        "y": 27
+        "y": 83
       },
       "options": {
         "tooltip": {
@@ -647,9 +647,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 18,
-        "x": 6,
-        "y": 27
+        "w": 24,
+        "x": 0,
+        "y": 91
       },
       "options": {
         "tooltip": {
@@ -668,7 +668,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "custom": {
             "axisLabel": "State",
             "drawStyle": "line",
@@ -692,9 +692,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 8,
+        "w": 24,
         "x": 0,
-        "y": 35
+        "y": 99
       },
       "options": {
         "tooltip": {
@@ -725,9 +725,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 35
+        "w": 24,
+        "x": 0,
+        "y": 107
       },
       "options": {
         "tooltip": {
@@ -746,7 +746,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "suffix:/hr",
           "thresholds": {
             "steps": [
               {
@@ -774,9 +774,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 35
+        "w": 24,
+        "x": 0,
+        "y": 115
       },
       "options": {
         "tooltip": {
@@ -795,7 +795,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "cpm",
           "thresholds": {
             "steps": [
               {
@@ -823,9 +823,9 @@
       "type": "stat",
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
-        "y": 43
+        "y": 123
       },
       "options": {
         "tooltip": {
@@ -874,9 +874,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 43
+        "w": 24,
+        "x": 0,
+        "y": 131
       },
       "options": {
         "tooltip": {
@@ -902,7 +902,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "custom": {
             "axisLabel": "Count",
             "spanNulls": true,
@@ -942,7 +942,7 @@
       {
         "name": "deployment_environment",
         "label": "Environment",
-        "description": "Filter by deployment tier (local/ci/test/prod)",
+        "description": "Filter by deployment tier [local / ci / test / prod]",
         "type": "query",
         "query": "label_values(deployment_environment)",
         "datasource": {
@@ -962,7 +962,7 @@
       {
         "name": "xrpl_network_type",
         "label": "Network",
-        "description": "Filter by XRPL network (mainnet/testnet/devnet)",
+        "description": "Filter by XRPL network [mainnet / testnet / devnet / perf / unknown]",
         "type": "query",
         "query": "label_values(xrpl_network_type)",
         "datasource": {
