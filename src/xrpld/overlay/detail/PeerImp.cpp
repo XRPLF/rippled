@@ -2506,42 +2506,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
             return;
         }
 
-        // Dispatch heavy synchronous NodeStore lookups off the peer's
-        // I/O strand and onto the bounded job queue, mirroring the pattern
-        // used by processLedgerRequest.
-        std::weak_ptr<PeerImp> const weak = shared_from_this();
-        bool const queued = app_.getJobQueue().addJob(JtLedgerReq, "RcvGetObjByHash", [weak, m]() {
-            auto peer = weak.lock();
-            if (!peer)
-                return;
-            try
-            {
-                peer->processGetObjectByHash(m);
-            }
-            catch (std::exception const& e)
-            {
-                // Surface backend failures (NodeStore I/O, allocation)
-                // back through the resource model so a misbehaving peer
-                // is still accountable rather than silently dropped.
-                JLOG(peer->pJournal_.warn()) << "GetObj: handler threw: " << e.what();
-                peer->charge(Resource::kFeeRequestNoReply, "get object handler exception");
-            }
-        });
-        if (!queued)
-        {
-            // The JobQueue is no longer accepting new work (typically
-            // because it is shutting down / has been joined).
-            JLOG(pJournal_.warn()) << "GetObj: job queue refused request from peer " << id_;
-            return;
-        }
-
-        // Admission-time charge: a peer that floods enqueues would
-        // otherwise be billed only the trivial onMessageEnd fee per
-        // message until the JobQueue catches up, re-creating an
-        // uncharged DoS window. Charge the base burden up-front (after
-        // a successful enqueue); the per-lookup differential is added
-        // in the worker.
         fee_.update(Resource::kFeeModerateBurdenPeer, "received a get object by hash request");
+        try
+        {
+            processGetObjectByHash(m);
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(pJournal_.warn()) << "GetObj: handler threw: " << e.what();
+            charge(Resource::kFeeRequestNoReply, "get object handler exception");
+        }
     }
     else
     {
