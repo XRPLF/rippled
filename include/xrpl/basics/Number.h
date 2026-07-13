@@ -47,7 +47,8 @@ isPowerOfTen(T value)
 
 namespace detail {
 
-/** Builds a table of the powers of 10
+/**
+ * Builds a table of the powers of 10
  *
  * This function is marked consteval, so it can only be run in
  * a constexpr context. This assures that it is and can only be run at
@@ -92,7 +93,8 @@ static_assert(kPowerOfTen[10] == 10'000'000'000);
 static_assert(
     isPowerOfTen(kPowerOfTen.back()) && *logTen(kPowerOfTen.back()) == detail::kUint64Digits - 1);
 
-/** MantissaRange defines a range for the mantissa of a normalized Number.
+/**
+ * MantissaRange defines a range for the mantissa of a normalized Number.
  *
  * The mantissa is in the range [min, max], where
  * * min is a power of 10, and
@@ -247,7 +249,8 @@ private:
 template <class T>
 concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::uint64_t>;
 
-/** Number is a floating point type that can represent a wide range of values.
+/**
+ * Number is a floating point type that can represent a wide range of values.
  *
  * It can represent all values that can be represented by an STAmount -
  * regardless of asset type - XRPAmount, MPTAmount, and IOUAmount, with at least
@@ -343,7 +346,6 @@ concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::u
  * disable the amendments that control the mantissa range choice
  * (SingleAssetVault and LendingProtocol), and/or check if either of those
  * amendments are enabled to determine which result to expect.
- *
  */
 class Number final
 {
@@ -431,10 +433,11 @@ public:
     static Number
     lowest() noexcept;
 
-    /** Conversions to Number are implicit and conversions away from Number
-     *  are explicit. This design encourages and facilitates the use of Number
-     *  as the preferred type for floating point arithmetic as it makes
-     *  "mixed mode" more convenient, e.g. MPTAmount + Number.
+    /**
+     * Conversions to Number are implicit and conversions away from Number
+     * are explicit. This design encourages and facilitates the use of Number
+     * as the preferred type for floating point arithmetic as it makes
+     * "mixed mode" more convenient, e.g. MPTAmount + Number.
      */
     explicit
     operator rep() const;  // round to nearest, even on tie
@@ -489,7 +492,9 @@ public:
         return l.mantissa_ < r.mantissa_;
     }
 
-    /** Return the sign of the amount */
+    /**
+     * Return the sign of the amount
+     */
     [[nodiscard]] constexpr int
     signum() const noexcept
     {
@@ -543,14 +548,16 @@ public:
     static RoundingMode
     setround(RoundingMode inMode);
 
-    /** Returns which mantissa scale is currently in use for normalization.
+    /**
+     * Returns which mantissa scale is currently in use for normalization.
      *
      * If you think you need to call this outside of unit tests, no you don't.
      */
     static MantissaRange::MantissaScale
     getMantissaScale();
 
-    /** Changes which mantissa scale is used for normalization.
+    /**
+     * Changes which mantissa scale is used for normalization.
      *
      * If you think you need to call this outside of unit tests, no you don't.
      */
@@ -611,7 +618,8 @@ private:
     void
     normalize(Guard const& guard);
 
-    /** Normalize Number components to an arbitrary range.
+    /**
+     * Normalize Number components to an arbitrary range.
      *
      * min/maxMantissa are parameters because this function is used by both
      * normalize(), which reads from kRange, and by normalizeToRange,
@@ -680,7 +688,8 @@ inline Number::Number(rep mantissa) : Number{mantissa, 0}
 {
 }
 
-/** Returns the mantissa of the external view of the Number.
+/**
+ * Returns the mantissa of the external view of the Number.
  *
  * Please see the "---- External Interface ----" section of the class
  * documentation for an explanation of why the internal value may be modified.
@@ -701,7 +710,8 @@ Number::mantissa() const noexcept
     return sign * static_cast<Number::rep>(m);
 }
 
-/** Returns the exponent of the external view of the Number.
+/**
+ * Returns the exponent of the external view of the Number.
  *
  * Please see the "---- External Interface ----" section of the class
  * documentation for an explanation of why the internal value may be modified.
@@ -950,10 +960,10 @@ public:
     operator=(NumberRoundModeGuard const&) = delete;
 };
 
-/** Sets the new scale and restores the old scale when it leaves scope.
+/**
+ * Sets the new scale and restores the old scale when it leaves scope.
  *
  * If you think you need to use this class outside of unit tests, no you don't.
- *
  */
 class NumberMantissaScaleGuard
 {

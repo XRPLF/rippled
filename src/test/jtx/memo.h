@@ -8,11 +8,12 @@
 
 namespace xrpl::test::jtx {
 
-/** Add a memo to a JTx.
-
-    If a memo already exists, the new
-    memo is appended to the array.
-*/
+/**
+ * Add a memo to a JTx.
+ *
+ * If a memo already exists, the new
+ * memo is appended to the array.
+ */
 class Memo
 {
 private:

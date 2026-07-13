@@ -47,7 +47,9 @@ struct Handler
 Handler const*
 getHandler(unsigned int version, bool betaEnabled, std::string const&);
 
-/** Return a json::ValueType::Object with a single entry. */
+/**
+ * Return a json::ValueType::Object with a single entry.
+ */
 template <class Value>
 json::Value
 makeObjectValue(Value const& value, json::StaticString const& field = jss::message)
@@ -57,7 +59,9 @@ makeObjectValue(Value const& value, json::StaticString const& field = jss::messa
     return result;
 }
 
-/** Return names of all methods. */
+/**
+ * Return names of all methods.
+ */
 std::set<char const*>
 getHandlerNames();
 
