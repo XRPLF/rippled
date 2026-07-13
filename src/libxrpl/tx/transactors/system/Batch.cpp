@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -227,6 +228,16 @@ Batch::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
+    if (ctx.tx.isFieldPresent(sfSponsorFlags))
+    {
+        if (isReserveSponsored(ctx.tx))
+        {
+            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
+                                << "spfSponsorReserve is not allowed on outer Batch.";
+            return temINVALID_FLAG;
+        }
+    }
+
     auto const& rawTxns = ctx.tx.getFieldArray(sfRawTransactions);
     if (rawTxns.size() <= 1)
     {
@@ -331,6 +342,14 @@ Batch::preflight(PreflightContext const& ctx)
                 return ret;
             }
         }
+        if (stx.isFieldPresent(sfSponsorSignature))
+        {
+            auto const sponsorSignature = stx.getFieldObject(sfSponsorSignature);
+            if (auto const ret = checkSignatureFields(sponsorSignature, hash, "sponsor signature "))
+            {
+                return ret;
+            }
+        }
 
         // Check that the Fee is native asset (XRP) and zero
         if (auto const fee = stx.getFieldAmount(sfFee); !fee.native() || fee.xrp() != beast::kZero)
@@ -340,6 +359,10 @@ Batch::preflight(PreflightContext const& ctx)
                                 << "txID: " << hash;
             return temBAD_FEE;
         }
+
+        // Disallow fee sponsorship on Batch inner txs
+        if (stx.isFieldPresent(sfSponsor) && isFeeSponsored(stx))
+            return temINVALID_FLAG;
 
         auto const innerAccount = stx.getAccountID(sfAccount);
         if (auto const preflightResult =
@@ -422,7 +445,7 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
     {
         // A delegated inner is signed by the delegate, not the account holder,
         // so the delegate is the required signer when present.
-        AccountID const authorizer = rb.getFeePayer();
+        AccountID const authorizer = rb.getInitiator();
 
         // The outer account signs the batch itself, so it is never added to the
         // required signers.
@@ -433,6 +456,10 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         if (auto const counterparty = rb[~sfCounterparty];
             counterparty && counterparty != outerAccount)
             requiredSigners.push_back(*counterparty);
+
+        if (auto const sponsor = rb.at(~sfSponsor);
+            sponsor && rb.isFieldPresent(sfSponsorSignature) && sponsor != outerAccount)
+            requiredSigners.push_back(*sponsor);
     }
     std::ranges::sort(requiredSigners);
     auto const dupes = std::ranges::unique(requiredSigners);
