@@ -136,7 +136,7 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
                     !sleIssuer->isFlag(lsfNoFreeze);
             },
             [&](MPTIssue const& issue) {
-                auto const sleIssuance = ctx.view.read(keylet::mptIssuance(issue.getMptID()));
+                auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(issue.getMptID()));
 
                 return sleIssuance && sleIssuance->isFlag(lsfMPTCanClawback) &&
                     sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount];

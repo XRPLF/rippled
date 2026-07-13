@@ -6,13 +6,32 @@
 #include <test/jtx/seq.h>
 #include <test/jtx/ter.h>
 
-#include <xrpld/rpc/GRPCHandlers.h>
-
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>  // IWYU pragma: keep
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
 #include <nudb/detail/stream.hpp>
+
+#include <cstdint>
+#include <iostream>
+#include <optional>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <variant>
+#include <vector>
 
 namespace xrpl::test::jtx {
 
@@ -112,7 +131,8 @@ struct ClawbackArg
     std::optional<Ter> err = std::nullopt;
 };
 
-/** Convenience class to test AMM functionality.
+/**
+ * Convenience class to test AMM functionality.
  */
 class AMM
 {
@@ -168,7 +188,8 @@ public:
         STAmount const& asset2,
         std::uint16_t const& tfee);
 
-    /** Send amm_info RPC command
+    /**
+     * Send amm_info RPC command
      */
     [[nodiscard]] json::Value
     ammRpcInfo(
@@ -190,7 +211,8 @@ public:
         bool ignoreParams,
         unsigned apiVersion) const;
 
-    /** Verify the AMM balances.
+    /**
+     * Verify the AMM balances.
      */
     [[nodiscard]] bool
     expectBalances(
@@ -199,7 +221,8 @@ public:
         IOUAmount const& lpt,
         std::optional<AccountID> const& account = std::nullopt) const;
 
-    /** Get AMM balances for the token pair.
+    /**
+     * Get AMM balances for the token pair.
      */
     [[nodiscard]] std::tuple<STAmount, STAmount, STAmount>
     balances(

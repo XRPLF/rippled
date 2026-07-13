@@ -214,9 +214,7 @@ doAMMInfo(RPC::JsonContext& context)
     }
     if (voteSlots.size() > 0)
         ammResult[jss::vote_slots] = std::move(voteSlots);
-    XRPL_ASSERT(
-        !ledger->rules().enabled(fixInnerObjTemplate) || amm->isFieldPresent(sfAuctionSlot),
-        "xrpl::doAMMInfo : auction slot is set");
+    XRPL_ASSERT(amm->isFieldPresent(sfAuctionSlot), "xrpl::doAMMInfo : auction slot is present");
     if (amm->isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot = safeDowncast<STObject const&>(amm->peekAtField(sfAuctionSlot));

@@ -1,10 +1,14 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/detail/BaseWSPeer.h>
 
 #include <boost/beast/core/tcp_stream.hpp>
 
+#include <chrono>
 #include <memory>
+#include <utility>
 
 namespace xrpl {
 

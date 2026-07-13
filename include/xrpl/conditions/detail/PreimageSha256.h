@@ -7,30 +7,36 @@
 #include <xrpl/conditions/detail/error.h>
 #include <xrpl/protocol/digest.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <system_error>
+#include <utility>
 
 namespace xrpl::cryptoconditions {
 
 class PreimageSha256 final : public Fulfillment
 {
 public:
-    /** The maximum allowed length of a preimage.
-
-        The specification does not specify a minimum supported
-        length, nor does it require all conditions to support
-        the same minimum length.
-
-        While future versions of this code will never lower
-        this limit, they may opt to raise it.
-    */
+    /**
+     * The maximum allowed length of a preimage.
+     *
+     * The specification does not specify a minimum supported
+     * length, nor does it require all conditions to support
+     * the same minimum length.
+     *
+     * While future versions of this code will never lower
+     * this limit, they may opt to raise it.
+     */
     static constexpr std::size_t kMaxPreimageLength = 128;
 
-    /** Parse the payload for a PreimageSha256 condition
-
-        @param s A slice containing the DER encoded payload
-        @param ec indicates success or failure of the operation
-        @return the preimage, if successful; empty pointer otherwise.
-    */
+    /**
+     * Parse the payload for a PreimageSha256 condition
+     *
+     * @param s A slice containing the DER encoded payload
+     * @param ec indicates success or failure of the operation
+     * @return the preimage, if successful; empty pointer otherwise.
+     */
     static std::unique_ptr<Fulfillment>
     deserialize(Slice s, std::error_code& ec)
     {

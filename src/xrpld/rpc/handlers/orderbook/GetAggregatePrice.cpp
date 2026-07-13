@@ -17,6 +17,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/jss.h>
@@ -39,10 +40,10 @@ namespace xrpl {
 
 using namespace boost::bimaps;
 // sorted descending by lastUpdateTime, ascending by AssetPrice
-using Prices =
-    bimap<multiset_of<std::uint32_t, std::greater<std::uint32_t>>, multiset_of<STAmount>>;
+using Prices = bimap<multiset_of<std::uint32_t, std::greater<>>, multiset_of<STAmount>>;
 
-/** Calls callback "f" on the ledger-object sle and up to three previous
+/**
+ * Calls callback "f" on the ledger-object sle and up to three previous
  * metadata objects. Stops early if the callback returns true.
  */
 static void

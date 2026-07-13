@@ -35,6 +35,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <string>
 #include <vector>
 
 namespace xrpl {
@@ -62,6 +63,23 @@ hasPrivilege(STTx const& tx, Privilege priv)
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
+
+// Returns the human-readable name of a ledger entry's type, falling back to
+// the numeric type if the format is somehow unknown.
+static std::string
+ledgerEntryTypeName(SLE const& sle)
+{
+    auto const item = LedgerFormats::getInstance().findByType(sle.getType());
+
+    if (item == nullptr)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::ledgerEntryTypeName : ledger entry has no known ledger format");
+        return std::to_string(sle.getType());
+        // LCOV_EXCL_STOP
+    }
+    return item->getName();
+}
 
 void
 TransactionFeeCheck::visitEntry(bool, SLE::const_ref, SLE::const_ref)
@@ -130,6 +148,15 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref a
                 if (isXRP((*before)[sfAmount]))
                     drops_ -= (*before)[sfAmount].xrp().drops();
                 break;
+            case ltSPONSORSHIP:
+                if (before->isFieldPresent(sfFeeAmount))
+                {
+                    XRPL_ASSERT(
+                        isXRP((*before)[sfFeeAmount]),
+                        "XRPNotCreated::visitEntry : Sponsorship.FeeAmount is XRP");
+                    drops_ -= (*before)[sfFeeAmount].xrp().drops();
+                }
+                break;
             default:
                 break;
         }
@@ -149,6 +176,15 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref a
             case ltESCROW:
                 if (!isDelete && isXRP((*after)[sfAmount]))
                     drops_ += (*after)[sfAmount].xrp().drops();
+                break;
+            case ltSPONSORSHIP:
+                if (!isDelete && after->isFieldPresent(sfFeeAmount))
+                {
+                    XRPL_ASSERT(
+                        isXRP((*after)[sfFeeAmount]),
+                        "XRPNotCreated::visitEntry : Sponsorship.FeeAmount is XRP");
+                    drops_ += (*after)[sfFeeAmount].xrp().drops();
+                }
                 break;
             default:
                 break;
@@ -457,16 +493,8 @@ AccountRootsDeletedClean::finalize(
         if (auto const sle = view.read(keylet))
         {
             // Finding the object is bad
-            auto const typeName = [&sle]() {
-                auto item = LedgerFormats::getInstance().findByType(sle->getType());
-
-                if (item != nullptr)
-                    return item->getName();
-                return std::to_string(sle->getType());
-            }();
-
-            JLOG(j.fatal()) << "Invariant failed: account deletion left behind a " << typeName
-                            << " object";
+            JLOG(j.fatal()) << "Invariant failed: account deletion left behind a "
+                            << ledgerEntryTypeName(*sle) << " object";
             // The comment above starting with "assert(enforce)" explains this
             // assert.
             XRPL_ASSERT(
@@ -505,6 +533,20 @@ AccountRootsDeletedClean::finalize(
             if (enforce)
                 return false;
         }
+        // An account should not be deleted with sponsorship fields
+        if (after->isFieldPresent(sfSponsoredOwnerCount) ||
+            after->isFieldPresent(sfSponsoringOwnerCount) ||
+            after->isFieldPresent(sfSponsoringAccountCount) || after->isFieldPresent(sfSponsor))
+        {
+            JLOG(j.fatal()) << "Invariant failed: account deletion left "
+                               "behind a sponsorship field";
+            XRPL_ASSERT(
+                enforce,
+                "xrpl::AccountRootsDeletedClean::finalize : "
+                "deleted account has no sponsorship fields");
+            if (enforce)
+                return false;
+        }
         // Simple types
         for (auto const& [keyletfunc, _1, _2] : kDirectAccountKeylets)
         {
@@ -518,8 +560,8 @@ AccountRootsDeletedClean::finalize(
             // checked above as entries in directAccountKeylets. This uses
             // view.succ() to check for any NFT pages in between the two
             // endpoints.
-            Keylet const first = keylet::nftpageMin(accountID);
-            Keylet const last = keylet::nftpageMax(accountID);
+            Keylet const first = keylet::nftokenPageMin(accountID);
+            Keylet const last = keylet::nftokenPageMax(accountID);
 
             std::optional<uint256> key = view.succ(first.key, last.key.next());
 
@@ -871,15 +913,16 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const
             // 1. Exactly one of the pseudo-account fields is set.
             // 2. The sequence number is not changed.
             // 3. The lsfDisableMaster, lsfDefaultRipple, and lsfDepositAuth
-            // flags are set.
+            //    flags are set.
             // 4. The RegularKey is not set.
+            // 5. The SponsoredOwnerCount, SponsoringOwnerCount, SponsoringAccountCount, Sponsor
+            //    fields are not set.
             {
                 std::vector<SField const*> const& fields = getPseudoAccountFields();
 
-                auto const numFields =
-                    std::count_if(fields.begin(), fields.end(), [&after](SField const* sf) -> bool {
-                        return after->isFieldPresent(*sf);
-                    });
+                auto const numFields = std::ranges::count_if(
+                    fields,
+                    [&after](SField const* sf) -> bool { return after->isFieldPresent(*sf); });
                 if (numFields != 1)
                 {
                     std::stringstream error;
@@ -898,6 +941,12 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const
             if (after->isFieldPresent(sfRegularKey))
             {
                 errors_.emplace_back("pseudo-account has a regular key");
+            }
+            if (after->isFieldPresent(sfSponsoredOwnerCount) ||
+                after->isFieldPresent(sfSponsoringOwnerCount) || after->isFieldPresent(sfSponsor) ||
+                after->isFieldPresent(sfSponsoringAccountCount))
+            {
+                errors_.emplace_back("pseudo-account has a sponsorship field");
             }
         }
     }
@@ -1069,6 +1118,71 @@ ValidAmounts::finalize(
     }
 
     return true;
+}
+
+void
+ObjectHasPseudoAccount::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+{
+    if (!isDelete)
+        return;
+
+    // Before should never be null when isDelete = true
+    if (!before)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE(
+            "xrpl::ObjectHasPseudoAccount::visitEntry : deleted ledger entry missing before state");
+        return;
+        // LCOV_EXCL_STOP
+    }
+
+    switch (before->getType())
+    {
+        case ltAMM:
+        case ltVAULT:
+        case ltLOAN_BROKER:
+            deletedObjSles_.push_back(before);
+            break;
+        default:
+            return;
+    }
+}
+
+[[nodiscard]] bool
+ObjectHasPseudoAccount::finalize(
+    STTx const&,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j) const
+{
+    if (!view.rules().enabled(fixCleanup3_3_0))
+        return true;
+
+    if (deletedObjSles_.empty())
+        return true;
+
+    bool failed = false;
+    for (auto const& sle : deletedObjSles_)
+    {
+        if (!sle->isFieldPresent(sfAccount))
+        {
+            JLOG(j.fatal()) << "Invariant failed: deleted " << ledgerEntryTypeName(*sle)
+                            << " is missing pseudo-account field";
+            failed = true;
+            continue;
+        }
+
+        // The pseudo-account must NOT exist on the ledger after the object is deleted.
+        if (view.exists(keylet::account(sle->getAccountID(sfAccount))))
+        {
+            JLOG(j.fatal()) << "Invariant failed: deleted " << ledgerEntryTypeName(*sle)
+                            << " without deleting its pseudo-account";
+            failed = true;
+        }
+    }
+
+    return !failed;
 }
 
 }  // namespace xrpl

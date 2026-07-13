@@ -14,7 +14,7 @@ on:
         description: "The URL of the Conan endpoint to use."
         required: false
         type: string
-        default: https://conan.ripplex.io
+        default: https://conan.xrplf.org/repository/conan/
 
     secrets:
       remote_username:
@@ -41,6 +41,10 @@ jobs:
   upload:
     runs-on: ubuntu-latest
     container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-e29b523
+    env:
+      REMOTE_NAME: ${{ inputs.remote_name }}
+      CONAN_LOGIN_USERNAME_XRPLF: ${{ secrets.remote_username }}
+      CONAN_PASSWORD_XRPLF: ${{ secrets.remote_password }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -56,15 +60,9 @@ jobs:
           remote_url: ${{ inputs.remote_url }}
 
       - name: Log into Conan remote
-        env:
-          REMOTE_NAME: ${{ inputs.remote_name }}
-          REMOTE_USERNAME: ${{ secrets.remote_username }}
-          REMOTE_PASSWORD: ${{ secrets.remote_password }}
-        run: conan remote login "${REMOTE_NAME}" "${REMOTE_USERNAME}" --password "${REMOTE_PASSWORD}"
+        run: conan remote login "${REMOTE_NAME}" "${CONAN_LOGIN_USERNAME_XRPLF}" --password "${CONAN_PASSWORD_XRPLF}"
 
       - name: Upload Conan recipe (version)
-        env:
-          REMOTE_NAME: ${{ inputs.remote_name }}
         run: |
           conan export . --version=${{ steps.version.outputs.version }}
           conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/${{ steps.version.outputs.version }}
@@ -73,8 +71,6 @@ jobs:
       # 'develop' branch, see on-trigger.yml.
       - name: Upload Conan recipe (develop)
         if: ${{ github.event_name == 'push' }}
-        env:
-          REMOTE_NAME: ${{ inputs.remote_name }}
         run: |
           conan export . --version=develop
           conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/develop
@@ -83,8 +79,6 @@ jobs:
       # one of the 'release' branches, see on-pr.yml.
       - name: Upload Conan recipe (rc)
         if: ${{ github.event_name == 'pull_request' }}
-        env:
-          REMOTE_NAME: ${{ inputs.remote_name }}
         run: |
           conan export . --version=rc
           conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/rc
@@ -93,8 +87,6 @@ jobs:
       # release, see on-tag.yml.
       - name: Upload Conan recipe (release)
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
-        env:
-          REMOTE_NAME: ${{ inputs.remote_name }}
         run: |
           conan export . --version=release
           conan upload --confirm --check --remote="${REMOTE_NAME}" xrpl/release

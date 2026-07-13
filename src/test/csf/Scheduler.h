@@ -6,22 +6,24 @@
 #include <boost/container/pmr/monotonic_buffer_resource.hpp>
 #include <boost/intrusive/set.hpp>
 
+#include <chrono>
 #include <type_traits>
 #include <utility>
 
 namespace xrpl::test::csf {
 
-/** Simulated discrete-event scheduler.
-
-    Simulates the behavior of events using a single common clock.
-
-    An event is modeled using a lambda function and is scheduled to occur at a
-    specific time. Events may be canceled using a token returned when the
-    event is scheduled.
-
-    The caller uses one or more of the step, stepOne, stepFor, stepUntil and
-    stepWhile functions to process scheduled events.
-*/
+/**
+ * Simulated discrete-event scheduler.
+ *
+ * Simulates the behavior of events using a single common clock.
+ *
+ * An event is modeled using a lambda function and is scheduled to occur at a
+ * specific time. Events may be canceled using a token returned when the
+ * event is scheduled.
+ *
+ * The caller uses one or more of the step, stepOne, stepFor, stepUntil and
+ * stepWhile functions to process scheduled events.
+ */
 class Scheduler
 {
 public:
@@ -134,116 +136,127 @@ public:
 
     Scheduler();
 
-    /** Return the clock. (aged_containers want a non-const ref =( */
+    /**
+     * Return the clock. (aged_containers want a non-const ref =(
+     */
     clock_type&
     clock() const;
 
-    /** Return the current network time.
-
-        @note The epoch is unspecified
-    */
+    /**
+     * Return the current network time.
+     *
+     * @note The epoch is unspecified
+     */
     time_point
     now() const;
 
     // Used to cancel timers
     struct CancelToken;
 
-    /** Schedule an event at a specific time
-
-        Effects:
-
-            When the network time is reached,
-            the function will be called with
-            no arguments.
-    */
+    /**
+     * Schedule an event at a specific time
+     *
+     * Effects:
+     *
+     *     When the network time is reached,
+     *     the function will be called with
+     *     no arguments.
+     */
     template <class Function>
     CancelToken
     at(time_point const& when, Function&& f);
 
-    /** Schedule an event after a specified duration passes
-
-        Effects:
-
-            When the specified time has elapsed,
-            the function will be called with
-            no arguments.
-    */
+    /**
+     * Schedule an event after a specified duration passes
+     *
+     * Effects:
+     *
+     *     When the specified time has elapsed,
+     *     the function will be called with
+     *     no arguments.
+     */
     template <class Function>
     CancelToken
     in(duration const& delay, Function&& f);
 
-    /** Cancel a timer.
-
-        Preconditions:
-
-            `token` was the return value of a call
-            timer() which has not yet been invoked.
-    */
+    /**
+     * Cancel a timer.
+     *
+     * Preconditions:
+     *
+     *     `token` was the return value of a call
+     *     timer() which has not yet been invoked.
+     */
     void
     cancel(CancelToken const& token);
 
-    /** Run the scheduler for up to one event.
-
-        Effects:
-
-            The clock is advanced to the time
-            of the last delivered event.
-
-        @return `true` if an event was processed.
-    */
+    /**
+     * Run the scheduler for up to one event.
+     *
+     * Effects:
+     *
+     *     The clock is advanced to the time
+     *     of the last delivered event.
+     *
+     * @return `true` if an event was processed.
+     */
     bool
     stepOne();
 
-    /** Run the scheduler until no events remain.
-
-        Effects:
-
-            The clock is advanced to the time
-            of the last event.
-
-        @return `true` if an event was processed.
-    */
+    /**
+     * Run the scheduler until no events remain.
+     *
+     * Effects:
+     *
+     *     The clock is advanced to the time
+     *     of the last event.
+     *
+     * @return `true` if an event was processed.
+     */
     bool
     step();
 
-    /** Run the scheduler while a condition is true.
-
-        Function takes no arguments and will be called
-        repeatedly after each event is processed to
-        decide whether to continue.
-
-        Effects:
-
-            The clock is advanced to the time
-            of the last delivered event.
-
-        @return `true` if any event was processed.
-    */
+    /**
+     * Run the scheduler while a condition is true.
+     *
+     * Function takes no arguments and will be called
+     * repeatedly after each event is processed to
+     * decide whether to continue.
+     *
+     * Effects:
+     *
+     *     The clock is advanced to the time
+     *     of the last delivered event.
+     *
+     * @return `true` if any event was processed.
+     */
     template <class Function>
     bool
     stepWhile(Function&& func);
 
-    /** Run the scheduler until the specified time.
-
-        Effects:
-
-            The clock is advanced to the
-            specified time.
-
-        @return `true` if any event remain.
-    */
+    /**
+     * Run the scheduler until the specified time.
+     *
+     * Effects:
+     *
+     *     The clock is advanced to the
+     *     specified time.
+     *
+     * @return `true` if any event remain.
+     */
     bool
     stepUntil(time_point const& until);
 
-    /** Run the scheduler until time has elapsed.
-
-        Effects:
-
-            The clock is advanced by the
-            specified duration.
-
-        @return `true` if any event remain.
-    */
+    /**
+     * Run the scheduler until time has elapsed.
+     *
+     * Effects:
+     *
+     *     The clock is advanced by the
+     *     specified duration.
+     *
+     * @return `true` if any event remain.
+     */
     template <class Period, class Rep>
     bool
     stepFor(std::chrono::duration<Period, Rep> const& amount);

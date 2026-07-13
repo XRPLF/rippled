@@ -43,7 +43,9 @@
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 #include <boost/system/detail/error_code.hpp>
 
+#include <soci/blob-exchange.h>  // IWYU pragma: keep
 #include <soci/blob.h>
+#include <soci/boost-optional.h>  // IWYU pragma: keep
 #include <soci/into.h>
 #include <soci/soci-backend.h>
 #include <soci/statement.h>
@@ -1271,7 +1273,7 @@ getTransaction(
         if (!ledgerSeq)
             return std::pair{std::move(txn), nullptr};
 
-        std::uint32_t const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value());
+        auto const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value());
 
         auto txMeta = std::make_shared<TxMeta>(id, inLedger, rawMeta);
 

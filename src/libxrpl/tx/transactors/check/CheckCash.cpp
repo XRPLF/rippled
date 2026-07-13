@@ -3,11 +3,13 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -30,7 +32,7 @@
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <algorithm>
-#include <cstdint>
+#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -175,7 +177,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             // once the check is cashed, since the check's reserve will no
             // longer be required.  So, if we're dealing in XRP, we add one
             // reserve's worth to the available funds.
-            if (value.native())
+            if (value.native() && !sleCheck->isFieldPresent(sfSponsor))
                 availableFunds += XRPAmount{ctx.view.fees().increment};
 
             if (value > availableFunds)
@@ -192,7 +194,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 [&](Issue const& issue) -> TER {
                     Currency const currency{issue.currency};
                     auto const sleTrustLine =
-                        ctx.view.read(keylet::line(dstId, issuerId, currency));
+                        ctx.view.read(keylet::trustLine(dstId, issuerId, currency));
 
                     auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
                     if (!sleIssuer)
@@ -307,6 +309,8 @@ CheckCash::doApply()
         // LCOV_EXCL_STOP
     }
 
+    auto const sponsorCheckSle = getLedgerEntryReserveSponsor(psb, sleCheck);
+
     // Preclaim already checked that source has at least the requested
     // funds.
     //
@@ -335,7 +339,7 @@ CheckCash::doApply()
             // from src's directory, we allow them to send that additional
             // incremental reserve amount in the transfer.  Hence the -1
             // argument.
-            STAmount const srcLiquid{xrpLiquid(psb, srcId, -1, viewJ)};
+            STAmount const srcLiquid{xrpLiquid(psb, srcId, sponsorCheckSle ? 0 : -1, viewJ)};
 
             // Now, how much do they need in order to be successful?
             STAmount const xrpDeliver{
@@ -385,14 +389,25 @@ CheckCash::doApply()
             STAmount const flowDeliver{
                 optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount)};
 
+            auto applyViewContext = ApplyViewContext({.view = psb, .tx = ctx_.tx});
+            auto const sponsorSle = getTxReserveSponsor(applyViewContext);
+            if (!sponsorSle)
+                return sponsorSle.error();  // LCOV_EXCL_LINE
+
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
-            auto checkReserve = [&]() -> SLE::pointer {
+            auto checkDstReserve = [&]() -> SLE::pointer {
                 auto sleDst = psb.peek(keylet::account(accountID_));
 
                 // Can the account cover the trust line's or MPT reserve?
-                if (std::uint32_t const ownerCount = {sleDst->at(sfOwnerCount)};
-                    preFeeBalance_ < psb.fees().accountReserve(ownerCount + 1))
+                if (auto const ret = checkReserve(
+                        applyViewContext,
+                        sleDst,
+                        preFeeBalance_,
+                        *sponsorSle,
+                        {.ownerCountDelta = 1},
+                        j_);
+                    !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
                                         "Insufficient reserve to create line.";
@@ -411,7 +426,7 @@ CheckCash::doApply()
                     // If a trust line does not exist yet create one.
                     Issue const& trustLineIssue = issue;
                     AccountID const truster = deliverIssuer == accountID_ ? srcId : accountID_;
-                    trustLineKey = keylet::line(truster, trustLineIssue);
+                    trustLineKey = keylet::trustLine(truster, trustLineIssue);
                     destLow = deliverIssuer > accountID_;
 
                     if (!psb.exists(*trustLineKey))
@@ -426,7 +441,7 @@ CheckCash::doApply()
                         //     a. this (destination) account and
                         //     b. issuing account (not sending account).
 
-                        auto const sleDst = checkReserve();
+                        auto const sleDst = checkDstReserve();
                         if (sleDst == nullptr)
                             return tecNO_LINE_INSUF_RESERVE;
 
@@ -449,6 +464,7 @@ CheckCash::doApply()
                                 Issue(currency, accountID_),        // limit of zero
                                 0,                                  // quality in
                                 0,                                  // quality out
+                                *sponsorSle,                        // sponsor
                                 viewJ);                             // journal
                             !isTesSuccess(ter))
                         {
@@ -491,11 +507,12 @@ CheckCash::doApply()
                         auto const mptokenKey = keylet::mptoken(mptID, accountID_);
                         if (!psb.exists(mptokenKey))
                         {
-                            auto sleDst = checkReserve();
+                            auto sleDst = checkDstReserve();
                             if (sleDst == nullptr)
                                 return tecINSUFFICIENT_RESERVE;
 
-                            if (auto const err = checkCreateMPT(psb, mptID, accountID_, j_);
+                            if (auto const err =
+                                    checkCreateMPT(psb, mptID, accountID_, *sponsorSle, j_);
                                 !isTesSuccess(err))
                             {
                                 return err;
@@ -581,7 +598,7 @@ CheckCash::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    adjustOwnerCount(psb, psb.peek(keylet::account(srcId)), -1, viewJ);
+    decreaseOwnerCountForObject(psb, srcId, sleCheck, 1, viewJ);
 
     // Remove check from ledger.
     psb.erase(sleCheck);

@@ -3,60 +3,62 @@
 #include <test/csf/Digraph.h>
 #include <test/csf/Scheduler.h>
 
+#include <cassert>
+
 namespace xrpl::test::csf {
-/** Peer to peer network simulator.
-
-    The network is formed from a set of Peer objects representing
-    vertices and configurable connections representing edges.
-    The caller is responsible for creating the Peer objects ahead
-    of time.
-
-    Peer objects cannot be destroyed once the BasicNetwork is
-    constructed. To handle peers going online and offline,
-    callers can simply disconnect all links and reconnect them
-    later. Connections are directed, one end is the inbound
-    Peer and the other is the outbound Peer.
-
-    Peers may send messages along their connections. To simulate
-    the effects of latency, these messages can be delayed by a
-    configurable duration set when the link is established.
-    Messages always arrive in the order they were sent on a
-    particular connection.
-
-    A message is modeled using a lambda function. The caller
-    provides the code to execute upon delivery of the message.
-    If a Peer is disconnected, all messages pending delivery
-    at either end of the connection will not be delivered.
-
-    When creating the Peer set, the caller needs to provide a
-    Scheduler object for managing the timing and delivery
-    of messages. After constructing the network, and establishing
-    connections, the caller uses the scheduler's step* functions
-    to drive messages through the network.
-
-    The graph of peers and connections is internally represented
-    using Digraph<Peer,BasicNetwork::LinkType>. Clients have
-    const access to that graph to perform additional operations not
-    directly provided by BasicNetwork.
-
-    Peer Requirements:
-
-        Peer should be a lightweight type, cheap to copy
-        and/or move. A good candidate is a simple pointer to
-        the underlying user defined type in the simulation.
-
-        Expression      Type        Requirements
-        ----------      ----        ------------
-        P               Peer
-        u, v                        Values of type P
-        P u(v)                      CopyConstructible
-        u.~P()                      Destructible
-        u == v          bool        EqualityComparable
-        u < v           bool        LessThanComparable
-        std::hash<P>    class       std::hash is defined for P
-        ! u             bool        true if u is not-a-peer
-
-*/
+/**
+ * Peer to peer network simulator.
+ *
+ * The network is formed from a set of Peer objects representing
+ * vertices and configurable connections representing edges.
+ * The caller is responsible for creating the Peer objects ahead
+ * of time.
+ *
+ * Peer objects cannot be destroyed once the BasicNetwork is
+ * constructed. To handle peers going online and offline,
+ * callers can simply disconnect all links and reconnect them
+ * later. Connections are directed, one end is the inbound
+ * Peer and the other is the outbound Peer.
+ *
+ * Peers may send messages along their connections. To simulate
+ * the effects of latency, these messages can be delayed by a
+ * configurable duration set when the link is established.
+ * Messages always arrive in the order they were sent on a
+ * particular connection.
+ *
+ * A message is modeled using a lambda function. The caller
+ * provides the code to execute upon delivery of the message.
+ * If a Peer is disconnected, all messages pending delivery
+ * at either end of the connection will not be delivered.
+ *
+ * When creating the Peer set, the caller needs to provide a
+ * Scheduler object for managing the timing and delivery
+ * of messages. After constructing the network, and establishing
+ * connections, the caller uses the scheduler's step* functions
+ * to drive messages through the network.
+ *
+ * The graph of peers and connections is internally represented
+ * using Digraph<Peer,BasicNetwork::LinkType>. Clients have
+ * const access to that graph to perform additional operations not
+ * directly provided by BasicNetwork.
+ *
+ * Peer Requirements:
+ *
+ *     Peer should be a lightweight type, cheap to copy
+ *     and/or move. A good candidate is a simple pointer to
+ *     the underlying user defined type in the simulation.
+ *
+ *     Expression      Type        Requirements
+ *     ----------      ----        ------------
+ *     P               Peer
+ *     u, v                        Values of type P
+ *     P u(v)                      CopyConstructible
+ *     u.~P()                      Destructible
+ *     u == v          bool        EqualityComparable
+ *     u < v           bool        LessThanComparable
+ *     std::hash<P>    class       std::hash is defined for P
+ *     ! u             bool        true if u is not-a-peer
+ */
 template <class Peer>
 class BasicNetwork
 {
@@ -90,79 +92,84 @@ public:
 
     BasicNetwork(Scheduler& s);
 
-    /** Connect two peers.
-
-        The link is directed, with `from` establishing
-        the outbound connection and `to` receiving the
-        incoming connection.
-
-        Preconditions:
-
-            from != to (self connect disallowed).
-
-            A link between from and to does not
-            already exist (duplicates disallowed).
-
-        Effects:
-
-            Creates a link between from and to.
-
-        @param `from` The source of the outgoing connection
-        @param `to` The recipient of the incoming connection
-        @param `delay` The time delay of all delivered messages
-        @return `true` if a new connection was established
-    */
+    /**
+     * Connect two peers.
+     *
+     * The link is directed, with `from` establishing
+     * the outbound connection and `to` receiving the
+     * incoming connection.
+     *
+     * Preconditions:
+     *
+     *     from != to (self connect disallowed).
+     *
+     *     A link between from and to does not
+     *     already exist (duplicates disallowed).
+     *
+     * Effects:
+     *
+     *     Creates a link between from and to.
+     *
+     * @param `from` The source of the outgoing connection
+     * @param `to` The recipient of the incoming connection
+     * @param `delay` The time delay of all delivered messages
+     * @return `true` if a new connection was established
+     */
     bool
     connect(Peer const& from, Peer const& to, duration const& delay = std::chrono::seconds{0});
 
-    /** Break a link.
-
-        Effects:
-
-            If a connection is present, both ends are
-            disconnected.
-
-            Any pending messages on the connection
-            are discarded.
-
-        @return `true` if a connection was broken.
-    */
+    /**
+     * Break a link.
+     *
+     * Effects:
+     *
+     *     If a connection is present, both ends are
+     *     disconnected.
+     *
+     *     Any pending messages on the connection
+     *     are discarded.
+     *
+     * @return `true` if a connection was broken.
+     */
     bool
     disconnect(Peer const& peer1, Peer const& peer2);
 
-    /** Send a message to a peer.
-
-        Preconditions:
-
-            A link exists between from and to.
-
-        Effects:
-
-            If the link is not broken when the
-            link's `delay` time has elapsed,
-            the function will be invoked with
-            no arguments.
-
-        @note Its the caller's responsibility to
-        ensure that the body of the function performs
-        activity consistent with `from`'s receipt of
-        a message from `to`.
-    */
+    /**
+     * Send a message to a peer.
+     *
+     * Preconditions:
+     *
+     *     A link exists between from and to.
+     *
+     * Effects:
+     *
+     *     If the link is not broken when the
+     *     link's `delay` time has elapsed,
+     *     the function will be invoked with
+     *     no arguments.
+     *
+     * @note Its the caller's responsibility to
+     * ensure that the body of the function performs
+     * activity consistent with `from`'s receipt of
+     * a message from `to`.
+     */
     template <class Function>
     void
     send(Peer const& from, Peer const& to, Function&& f);
 
-    /** Return the range of active links.
-
-        @return A random access range over Digraph::Edge instances
-    */
+    /**
+     * Return the range of active links.
+     *
+     * @return A random access range over Digraph::Edge instances
+     */
     auto
     links(Peer const& from)
     {
         return links_.outEdges(from);
     }
 
-    /** Return the underlying digraph
+    /**
+     * Return the underlying digraph
      */
     [[nodiscard]] Digraph<Peer, LinkType> const&
     graph() const

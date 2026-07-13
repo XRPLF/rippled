@@ -1,5 +1,7 @@
 #include <xrpld/perflog/detail/PerfLogImp.h>
 
+#include <xrpld/app/main/Application.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
@@ -12,6 +14,7 @@
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/filesystem/operations.hpp>
