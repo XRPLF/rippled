@@ -110,6 +110,7 @@ JSS(accounts);                    // in: LedgerEntry, Subscribe, handlers/Ledger
 JSS(accounts_proposed);           // in: Subscribe, Unsubscribe
 JSS(action);                      //
 JSS(active);                      // out: OverlayImpl
+JSS(actor);                       // in/out: AccountTx
 JSS(acquiring);                   // out: LedgerRequest
 JSS(address);                     // out: PeerImp
 JSS(affected);                    // out: AcceptedLedgerTx
@@ -133,6 +134,7 @@ JSS(attestation_reward_account);  //
 JSS(auction_slot);                // out: amm_info
 JSS(authorized);                  // out: AccountLines
 JSS(authorize);                   // out: delegate
+JSS(authorizer);                  // in/out: AccountTx
 JSS(authorized_credentials);      // in: ledger_entry DepositPreauth
 JSS(auth_accounts);               // out: amm_info
 JSS(auth_change);                 // out: AccountInfo
@@ -191,6 +193,7 @@ JSS(converge_time);                  // out: NetworkOPs
 JSS(converge_time_s);                // out: NetworkOPs
 JSS(cookie);                         // out: NetworkOPs
 JSS(count);                          // in: AccountTx*, ValidatorList
+JSS(counter_party);                  // in/out: AccountTx
 JSS(counters);                       // in/out: retrieve counters
 JSS(credentials);                    // in: deposit_authorized
 JSS(credential_type);                // in: LedgerEntry DepositPreauth
@@ -270,6 +273,7 @@ JSS(freeze);                         // out: AccountLines
 JSS(freeze_peer);                    // out: AccountLines
 JSS(deep_freeze);                    // out: AccountLines
 JSS(deep_freeze_peer);               // out: AccountLines
+JSS(delegate_filter);                // in/out: AccountTx
 JSS(frozen_balances);                // out: GatewayBalances
 JSS(full);                           // in: LedgerClearer, handlers/Ledger
 JSS(full_reply);                     // out: PathFind
