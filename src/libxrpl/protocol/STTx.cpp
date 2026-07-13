@@ -72,7 +72,7 @@ STTx::STTx(STObject&& object)
 {
     applyTemplate(getTxFormat(txType_)->getSOTemplate());  //  may throw
     tid_ = getHash(HashPrefix::TransactionId);
-    buildBatchTxnIds();
+    buildBatchTxns();
 }
 
 STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
@@ -89,7 +89,7 @@ STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
 
     applyTemplate(getTxFormat(txType_)->getSOTemplate());  // May throw
     tid_ = getHash(HashPrefix::TransactionId);
-    buildBatchTxnIds();
+    buildBatchTxns();
 }
 
 STTx::STTx(TxType type, std::function<void(STObject&)> assembler) : STObject(sfTransaction)
@@ -110,7 +110,7 @@ STTx::STTx(TxType type, std::function<void(STObject&)> assembler) : STObject(sfT
         logicError("Transaction type was mutated during assembly");
 
     tid_ = getHash(HashPrefix::TransactionId);
-    buildBatchTxnIds();
+    buildBatchTxns();
 }
 
 STBase*
@@ -281,10 +281,14 @@ STTx::checkSign(Rules const& rules) const
 
     // Verify the batch signer signatures here too, so they are cached with the
     // rest of signature checking (checkValidity / SF_SIGGOOD) and stay out of
-    // the transaction engine. Gated on a batch (batchTxnIds_ seated) that
-    // actually carries signers; a batch whose inners are all from the outer
-    // account has no sfBatchSigners and needs no signer crypto.
-    if (batchTxnIds_ && isFieldPresent(sfBatchSigners))
+    // the transaction engine. Keyed only on sfBatchSigners being present (which
+    // only a Batch can carry). Deliberately NOT gated on batchTxnIds_ or any
+    // other transaction data: signature checking must never be skipped based on
+    // whether some size check passed, otherwise an oversized batch could slip
+    // through as validly signed by leaning on the later local / preflight
+    // checks (which are bypassed on several paths). A batch whose inners are all
+    // from the outer account has no sfBatchSigners and needs no signer crypto.
+    if (isFieldPresent(sfBatchSigners))
     {
         if (auto const ret = checkBatchSign(rules); !ret)
             return ret;
@@ -307,6 +311,24 @@ STTx::checkBatchSign(Rules const& rules) const
         if (!isFieldPresent(sfBatchSigners))
             return std::unexpected("Missing BatchSigners field.");  // LCOV_EXCL_LINE
         STArray const& signers{getFieldArray(sfBatchSigners)};
+        // Bound signature verification to the protocol cap. This runs in
+        // checkValidity (via checkSign) at relay / submit time, BEFORE preflight
+        // and passesLocalChecks enforce the cap. Without this guard a malicious
+        // peer could put an oversized sfBatchSigners array in a 1 MB blob and
+        // force one signature verification per entry before any of those checks
+        // (or the fee charge) runs.
+        if (signers.size() > kMaxBatchSigners)
+            return std::unexpected("BatchSigners array exceeds max entries.");
+        // The signers sign over the inner transaction ids, which are seated at
+        // construction whenever sfRawTransactions is present (required for a
+        // Batch). Guard against a future format change that made it optional.
+        if (!batchTxnIds_)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("STTx::checkBatchSign : batch transaction IDs not built");
+            return std::unexpected("Missing inner transactions.");
+            // LCOV_EXCL_STOP
+        }
         for (auto const& signer : signers)
         {
             Blob const& signingPubKey = signer.getFieldVL(sfSigningPubKey);
@@ -577,25 +599,45 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
 }
 
 void
-STTx::buildBatchTxnIds()
+STTx::buildBatchTxns()
 {
-    // Precondition: the template must have been applied first, so the fields
-    // (including sfRawTransactions) are canonical before the inner txns are
-    // hashed. The constructors call this immediately after applying the
-    // template; isFree() being false confirms a template is set.
-    XRPL_ASSERT(!isFree(), "STTx::buildBatchTxnIds : template applied");
-    if (getTxnType() != ttBATCH || !isFieldPresent(sfRawTransactions))
+    XRPL_ASSERT(!isFree(), "STTx::buildBatchTxns : template applied");
+    if (getTxnType() != ttBATCH)
         return;
+    // A Batch always seats its inner ids and transactions here, so every
+    // downstream consumer can rely on them. sfRawTransactions is required by the
+    // format (applyTemplate rejects a Batch without it); this guards a future
+    // change that made it optional.
+    if (!isFieldPresent(sfRawTransactions))
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("STTx::buildBatchTxns : missing RawTransactions");
+        Throw<std::runtime_error>("Batch has no RawTransactions.");
+        // LCOV_EXCL_STOP
+    }
 
     auto const& raw = getFieldArray(sfRawTransactions);
+    if (raw.size() > kMaxBatchTxCount)
+        Throw<std::runtime_error>("Batch has too many inner transactions.");
 
-    // Seated for any batch with raw transactions. The count is validated in
-    // preflight and at the relay boundary, so build every id here; this keeps
-    // the invariant batchTxnIds_->size() == rawTransactions.size().
+    // Build and validate each inner as an STTx once. A malformed inner throws;
+    // a nested batch is rejected before building it (a batch cannot contain a
+    // batch, and building one would recurse). ids are cached alongside the
+    // transactions so checkBatchSign, which signs over them once per signer,
+    // does not reallocate.
     auto& ids = batchTxnIds_.emplace();
+    auto& txns = batchTxns_.emplace();
     ids.reserve(raw.size());
+    txns.reserve(raw.size());
     for (STObject const& rb : raw)
-        ids.push_back(rb.getHash(HashPrefix::TransactionId));
+    {
+        if (rb.getFieldU16(sfTransactionType) == ttBATCH)
+            Throw<std::runtime_error>("Batch inner transaction cannot be a Batch.");
+
+        auto stx = std::make_shared<STTx const>(STObject{rb});
+        ids.push_back(stx->getTransactionID());
+        txns.push_back(std::move(stx));
+    }
 }
 
 std::vector<uint256> const&
@@ -609,6 +651,18 @@ STTx::getBatchTransactionIDs() const
         "STTx::getBatchTransactionIDs : batch transaction IDs size mismatch");
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access): guarded by assert above
     return *batchTxnIds_;
+}
+
+std::vector<std::shared_ptr<STTx const>> const&
+STTx::getBatchTransactions() const
+{
+    XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::getBatchTransactions : batch transaction");
+    XRPL_ASSERT(
+        batchTxns_.has_value(), "STTx::getBatchTransactions : batch transactions built");
+    XRPL_ASSERT(
+        batchTxns_->size() == getFieldArray(sfRawTransactions).size(),
+        "STTx::getBatchTransactions : batch transactions size mismatch");
+    return *batchTxns_;
 }
 
 AccountID
@@ -775,36 +829,12 @@ isBatchRawTransactionOkay(STObject const& st, std::string& reason)
         return false;
     }
 
-    auto const& rawTxns = st.getFieldArray(sfRawTransactions);
-    if (rawTxns.size() > kMaxBatchTxCount)
+    // Inner structure (type, template, no nesting, count) is validated when the
+    // batch STTx is constructed; here we only run each inner's local checks.
+    for (STObject const& raw : st.getFieldArray(sfRawTransactions))
     {
-        reason = "Raw Transactions array exceeds max entries.";
-        return false;
-    }
-    for (STObject raw : rawTxns)
-    {
-        try
-        {
-            auto const tt = safeCast<TxType>(raw.getFieldU16(sfTransactionType));
-            if (tt == ttBATCH)
-            {
-                reason = "Raw Transactions may not contain batch transactions.";
-                return false;
-            }
-
-            raw.applyTemplate(getTxFormat(tt)->getSOTemplate());
-
-            // passesLocalChecks recurses back into isBatchRawTransactionOkay,
-            // but an inner can never be a batch (rejected above), so the
-            // recursion terminates at depth 1.
-            if (!passesLocalChecks(raw, reason))
-                return false;
-        }
-        catch (std::exception const& e)
-        {
-            reason = e.what();
+        if (!passesLocalChecks(raw, reason))
             return false;
-        }
     }
     return true;
 }

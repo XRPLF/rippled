@@ -10,6 +10,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
@@ -419,7 +420,19 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
 XRPAmount
 calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    return invokeCalculateBaseFee(view, tx);
+    try
+    {
+        return invokeCalculateBaseFee(view, tx);
+    }
+    catch (std::exception const& e)
+    {
+        // LCOV_EXCL_START
+        // A fee calc should not throw; return an unpayable fee so the
+        // transaction fails the fee check.
+        JLOG(debugLog().error()) << "apply (calculateBaseFee): " << e.what();
+        return XRPAmount{kInitialXrp};
+        // LCOV_EXCL_STOP
+    }
 }
 
 XRPAmount

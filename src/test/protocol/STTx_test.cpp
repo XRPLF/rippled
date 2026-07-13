@@ -59,6 +59,9 @@ public:
 
         testcase("STObject constructor errors");
         testObjectCtorErrors();
+
+        testcase("Batch inner transaction validation");
+        testBatchInnerCtorErrors();
     }
 
     void
@@ -1461,6 +1464,73 @@ public:
                 got = err.what();
             }
             BEAST_EXPECT(got == "Field 'Fee' is required but missing.");
+        }
+    }
+
+    void
+    testBatchInnerCtorErrors()
+    {
+        auto const kp1 = randomKeyPair(KeyType::Secp256k1);
+        auto const id1 = calcAccountID(kp1.first);
+
+        auto const kp2 = randomKeyPair(KeyType::Secp256k1);
+        auto const id2 = calcAccountID(kp2.first);
+
+        // A raw inner transaction object of the given transaction type.
+        auto makeInner = [&](std::uint16_t txType) {
+            STObject inner(sfRawTransaction);
+            inner.setFieldU16(sfTransactionType, txType);
+            inner.setAccountID(sfAccount, id1);
+            inner.setAccountID(sfDestination, id2);
+            inner.setFieldAmount(sfAmount, STAmount(10000000000ull));
+            inner.setFieldAmount(sfFee, STAmount(0ull));
+            inner.setFieldU32(sfSequence, 1);
+            inner.setFieldVL(sfSigningPubKey, Slice(kp1.first.data(), kp1.first.size()));
+            return inner;
+        };
+
+        // An outer Batch STObject wrapping the given inner.
+        auto makeBatch = [&](STObject inner) {
+            STArray rawTxns(sfRawTransactions);
+            rawTxns.push_back(std::move(inner));
+
+            STObject batch(sfGeneric);
+            batch.setFieldU16(sfTransactionType, ttBATCH);
+            batch.setAccountID(sfAccount, id1);
+            batch.setFieldAmount(sfFee, STAmount(20ull));
+            batch.setFieldU32(sfSequence, 1);
+            batch.setFieldVL(sfSigningPubKey, Slice(kp1.first.data(), kp1.first.size()));
+            batch.setFieldArray(sfRawTransactions, rawTxns);
+            return batch;
+        };
+
+        {
+            // A batch whose inner is a well-formed transaction constructs.
+            std::string got;
+            try
+            {
+                STTx{makeBatch(makeInner(ttPAYMENT))};
+            }
+            catch (std::exception const& err)
+            {
+                got = err.what();
+            }
+            BEAST_EXPECT(got.empty());
+        }
+        {
+            // A batch whose inner carries an unregistered transaction type is
+            // rejected at construction, rather than surviving as a raw STObject
+            // and throwing later from an unprotected fee-calculation path.
+            std::string got;
+            try
+            {
+                STTx{makeBatch(makeInner(60000))};
+            }
+            catch (std::exception const& err)
+            {
+                got = err.what();
+            }
+            BEAST_EXPECT(matches(got.c_str(), "Invalid transaction type 60000"));
         }
     }
 };

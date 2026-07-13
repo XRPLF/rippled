@@ -145,6 +145,13 @@ public:
     [[nodiscard]] std::vector<uint256> const&
     getBatchTransactionIDs() const;
 
+    /**
+     * The inner transactions of a Batch, built and validated at construction.
+     * Seated only when the batch is within the size cap.
+     */
+    [[nodiscard]] std::vector<std::shared_ptr<STTx const>> const&
+    getBatchTransactions() const;
+
     [[nodiscard]] AccountID
     getFeePayerID() const;
 
@@ -172,7 +179,7 @@ private:
     checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const;
 
     void
-    buildBatchTxnIds();
+    buildBatchTxns();
 
     STBase*
     copy(std::size_t n, void* buf) const override;
@@ -181,6 +188,7 @@ private:
 
     friend class detail::STVar;
     std::optional<std::vector<uint256>> batchTxnIds_;
+    std::optional<std::vector<std::shared_ptr<STTx const>>> batchTxns_;
 };
 
 bool

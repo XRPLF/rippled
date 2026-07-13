@@ -73,43 +73,20 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     XRPAmount const batchBase = view.fees().base + baseFee;
 
-    // Calculate the Inner Txn Fees
+    // Calculate the Inner Txn Fees. Inners are built and validated (count,
+    // no nesting) at construction, so they are reused here directly.
     XRPAmount txnFees{0};
-    if (tx.isFieldPresent(sfRawTransactions))
+    for (auto const& stx : tx.getBatchTransactions())
     {
-        auto const& txns = tx.getFieldArray(sfRawTransactions);
-
+        auto const fee = xrpl::calculateBaseFee(view, *stx);
         // LCOV_EXCL_START
-        if (txns.size() > kMaxBatchTxCount)
+        if (txnFees > maxAmount - fee)
         {
-            JLOG(debugLog().error()) << "BatchTrace: Raw Transactions array exceeds max entries.";
+            JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in txnFees calculation.";
             return XRPAmount{kInitialXrp};
         }
         // LCOV_EXCL_STOP
-
-        for (STObject txn : txns)
-        {
-            STTx const stx = STTx{std::move(txn)};
-
-            // LCOV_EXCL_START
-            if (stx.getTxnType() == ttBATCH)
-            {
-                JLOG(debugLog().error()) << "BatchTrace: Inner Batch transaction found.";
-                return XRPAmount{kInitialXrp};
-            }
-            // LCOV_EXCL_STOP
-
-            auto const fee = xrpl::calculateBaseFee(view, stx);
-            // LCOV_EXCL_START
-            if (txnFees > maxAmount - fee)
-            {
-                JLOG(debugLog().error())
-                    << "BatchTrace: XRPAmount overflow in txnFees calculation.";
-                return XRPAmount{kInitialXrp};
-            }
-            // LCOV_EXCL_STOP
-            txnFees += fee;
-        }
+        txnFees += fee;
     }
 
     // Calculate the Signers/BatchSigners Fees
@@ -140,7 +117,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
                 {
                     JLOG(debugLog().error())
                         << "BatchTrace: Nested Signers array exceeds max entries.";
-                    return kInitialXrp;
+                    return XRPAmount{kInitialXrp};
                 }
                 // LCOV_EXCL_STOP
                 signerCount += nestedSigners.size();
@@ -246,13 +223,6 @@ Batch::preflight(PreflightContext const& ctx)
         return temARRAY_EMPTY;
     }
 
-    if (rawTxns.size() > kMaxBatchTxCount)
-    {
-        JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
-                            << "txns array exceeds 8 entries.";
-        return temARRAY_TOO_LARGE;
-    }
-
     if (ctx.tx.isFieldPresent(sfBatchSigners) &&
         ctx.tx.getFieldArray(sfBatchSigners).size() > kMaxBatchSigners)
     {
@@ -293,9 +263,9 @@ Batch::preflight(PreflightContext const& ctx)
 
         return tesSUCCESS;
     };
-    for (STObject rb : rawTxns)
+    for (auto const& stxPtr : ctx.tx.getBatchTransactions())
     {
-        STTx const stx = STTx{std::move(rb)};
+        STTx const& stx = *stxPtr;
         auto const hash = stx.getTransactionID();
         if (!uniqueHashes.emplace(hash).second)
         {
@@ -306,14 +276,6 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         auto const txType = stx.getFieldU16(sfTransactionType);
-        if (txType == ttBATCH)
-        {
-            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "batch cannot have an inner batch txn. "
-                                << "txID: " << hash;
-            return temINVALID;
-        }
-
         if (std::ranges::any_of(
                 kDisabledTxTypes, [txType](auto const& disabled) { return txType == disabled; }))
         {
@@ -434,15 +396,14 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         ctx.tx.getTxnType() == ttBATCH, "xrpl::Batch::preflightSigValidated : batch transaction");
     auto const parentBatchId = ctx.tx.getTransactionID();
     auto const outerAccount = ctx.tx.getAccountID(sfAccount);
-    auto const& rawTxns = ctx.tx.getFieldArray(sfRawTransactions);
-
     // Accounts that must sign the batch: each inner authorizer and counterparty
     // (excluding the outer account), sorted and de-duplicated to match against
     // the ascending, unique batch signers.
     std::vector<AccountID> requiredSigners;
     requiredSigners.reserve(kMaxBatchSigners);
-    for (STObject const& rb : rawTxns)
+    for (auto const& stxPtr : ctx.tx.getBatchTransactions())
     {
+        STTx const& rb = *stxPtr;
         // A delegated inner is signed by the delegate, not the account holder,
         // so the delegate is the required signer when present.
         AccountID const authorizer = rb.getInitiator();
