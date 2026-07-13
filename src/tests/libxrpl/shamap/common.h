@@ -4,7 +4,6 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/beast/clock/manual_clock.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
@@ -92,13 +91,17 @@ public:
     }
 
     void
-    missingNodeAcquireBySeq(std::uint32_t refNum, uint256 const& nodeHash) override
+    missingNodeAcquireBySeq(
+        [[maybe_unused]] std::uint32_t refNum,
+        [[maybe_unused]] uint256 const& nodeHash) override
     {
         Throw<std::runtime_error>("missing node");
     }
 
     void
-    missingNodeAcquireByHash(uint256 const& refHash, std::uint32_t refNum) override
+    missingNodeAcquireByHash(
+        [[maybe_unused]] uint256 const& refHash,
+        [[maybe_unused]] std::uint32_t refNum) override
     {
         Throw<std::runtime_error>("missing node");
     }
@@ -110,7 +113,7 @@ public:
         (*tnCache_).reset();
     }
 
-    beast::ManualClock<std::chrono::steady_clock>
+    TestStopwatch&
     clock()
     {
         return clock_;

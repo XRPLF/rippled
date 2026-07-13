@@ -356,10 +356,12 @@ class LedgerRPC_test : public beast::unit_test::Suite
             BEAST_EXPECT((*mptOfferTx)[jss::owner_funds] == "100");
     }
 
-    /// @brief ledger RPC requests as a way to drive
-    /// input options to lookupLedger. The point of this test is
-    /// coverage for lookupLedger, not so much the ledger
-    /// RPC request.
+    /**
+     * @brief ledger RPC requests as a way to drive
+     * input options to lookupLedger. The point of this test is
+     * coverage for lookupLedger, not so much the ledger
+     * RPC request.
+     */
     void
     testLookupLedger()
     {

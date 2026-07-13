@@ -268,7 +268,9 @@ class NetworkOPsImp final : public NetworkOPs
         }
     };
 
-    //! Server fees published on `server` subscription
+    /**
+     * Server fees published on `server` subscription
+     */
     struct ServerFeeSummary
     {
         ServerFeeSummary() = default;
@@ -471,9 +473,10 @@ public:
     void
     setStandAlone() override;
 
-    /** Called to initially start our timers.
-        Not called for stand-alone mode.
-    */
+    /**
+     * Called to initially start our timers.
+     * Not called for stand-alone mode.
+     */
     void
     setStateTimer() override;
 
@@ -840,7 +843,8 @@ private:
 
     LedgerMaster& ledgerMaster_;
 
-    /** Maps each order book to its current set of subscribers.
+    /**
+     * Maps each order book to its current set of subscribers.
      *  Outer key: the Book (currency pair + optional domain).
      *  Inner key: InfoSub::seq (unique per connection).
      *  Inner value: weak_ptr so that a dropped connection does not prevent
