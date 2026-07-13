@@ -21,6 +21,7 @@
 
 #include <xrpl.pb.h>
 
+#include <cstdint>
 #include <cstring>
 #include <exception>
 #include <memory>

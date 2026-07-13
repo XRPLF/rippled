@@ -657,8 +657,7 @@ std::vector<std::shared_ptr<STTx const>> const&
 STTx::getBatchTransactions() const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::getBatchTransactions : batch transaction");
-    XRPL_ASSERT(
-        batchTxns_.has_value(), "STTx::getBatchTransactions : batch transactions built");
+    XRPL_ASSERT(batchTxns_.has_value(), "STTx::getBatchTransactions : batch transactions built");
     XRPL_ASSERT(
         batchTxns_->size() == getFieldArray(sfRawTransactions).size(),
         "STTx::getBatchTransactions : batch transactions size mismatch");
