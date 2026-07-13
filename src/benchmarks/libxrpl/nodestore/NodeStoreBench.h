@@ -32,11 +32,6 @@
 
 // Shared helpers for the NodeStore benchmarks.
 //
-// The deterministic data generators (`rngcpy`, `Sequence`) were lifted from
-// `src/test/nodestore/Timing_test.cpp`. The duplication is intentional and
-// short-lived: Timing_test is scheduled for removal once this suite reaches
-// throughput parity, and introducing a shared header in the meantime is
-// pointless work.
 namespace xrpl::NodeStore {
 
 // Fill `bytes` of memory at `buffer` with random bits drawn from `g`.
@@ -60,18 +55,16 @@ rngcpy(void* buffer, std::size_t bytes, Generator& g)
     }
 }
 
-/** Deterministic generator of a reproducible sequence of random NodeObjects.
-
-    Indexing is stable: `obj(n)` and `key(n)` always return the same value for a
-    given `n`, regardless of call order, because the engine is reseeded from `n`
-    on every call.
-
-    `prefix` selects a key space. The benchmarks use prefix 1 for the "present"
-    objects that get stored, and prefix 2 for the "missing" keys that never are.
-    `obj(n)` and `key(n)` lay their bytes out differently, so an object's hash
-    and a same-index key never collide - that is what keeps the two spaces
-    disjoint for the fetch-miss workloads.
-*/
+/**
+ * Deterministic generator of a reproducible sequence of random NodeObjects.
+ *
+ * Indexing is stable: `obj(n)` and `key(n)` always return the same value for a
+ * given `n`, regardless of call order, because the engine is reseeded from `n`
+ * on every call.
+ *
+ * Using different prefixes guarantees the two key spaces are disjoint for the fetch-miss
+ * workloads.
+ */
 class Sequence
 {
 private:

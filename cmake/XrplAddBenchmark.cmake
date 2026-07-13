@@ -2,9 +2,9 @@ include(isolate_headers)
 
 # Define a benchmark executable for the module `name`.
 #
-# This mirrors `xrpl_add_test` (see XrplAddTest.cmake), but the target is
-# prefixed `bench` instead of `test`, and no `add_test(...)` is registered -
-# benchmarks are slow and run on demand, not as part of `ctest`.
+# This follows the same general pattern as other build helpers in this repo
+# (e.g. `add_module`): create a target and isolate headers, but here the target
+# is a benchmark executable and no `add_test(...)` is registered.
 #
 # `isolate_headers` exposes only `${CMAKE_CURRENT_SOURCE_DIR}/${name}` on the
 # include path, rooted at `src`, so a benchmark's own headers are reached as
