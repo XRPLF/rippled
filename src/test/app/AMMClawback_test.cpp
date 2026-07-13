@@ -2526,9 +2526,9 @@ class AMMClawback_test : public beast::unit_test::Suite
             return;
 
         Env env(*this, features);
-        Account const gw{"gateway"};    // issuer + clawback authority (rich)
-        Account const carol{"carol"};   // liquidity provider / AMM creator (rich)
-        Account const alice{"alice"};   // under-reserved holder
+        Account const gw{"gateway"};   // issuer + clawback authority (rich)
+        Account const carol{"carol"};  // liquidity provider / AMM creator (rich)
+        Account const alice{"alice"};  // under-reserved holder
 
         auto const usd = gw["USD"];
         auto const eur = gw["EUR"];
@@ -2570,10 +2570,9 @@ class AMMClawback_test : public beast::unit_test::Suite
 
         // CONTROL: the holder-signed withdrawal path correctly refuses to create
         // the EUR trustline the holder cannot afford.
-        amm.withdraw(WithdrawArg{
-            .account = alice,
-            .asset1Out = eur(1),
-            .err = Ter(tecINSUFFICIENT_RESERVE)});
+        amm.withdraw(
+            WithdrawArg{
+                .account = alice, .asset1Out = eur(1), .err = Ter(tecINSUFFICIENT_RESERVE)});
         env.close();
         BEAST_EXPECT(env.ownerCount(alice) == 2);
 
@@ -2583,8 +2582,7 @@ class AMMClawback_test : public beast::unit_test::Suite
         {
             // With the fix, the clawback fails exactly like the control
             // withdrawal above: no forced trustline, OwnerCount unchanged.
-            env(amm::ammClawback(gw, alice, usd, eur, usd(10)),
-                Ter(tecINSUFFICIENT_RESERVE));
+            env(amm::ammClawback(gw, alice, usd, eur, usd(10)), Ter(tecINSUFFICIENT_RESERVE));
             env.close();
             BEAST_EXPECT(env.ownerCount(alice) == 2);
         }
