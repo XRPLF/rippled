@@ -182,12 +182,32 @@ ValidLoan::finalize(
                                    "CounterpartySignature";
                 return false;
             }
+            // In the two-step flow the named Borrower must be a different
+            // account from the one submitting the LoanSet.
+            if (hasBorrower && tx.getAccountID(sfBorrower) == tx.getAccountID(sfAccount))
+            {
+                JLOG(j.fatal()) << "Invariant failed: LoanSet Borrower is the "
+                                   "submitting account";
+                return false;
+            }
 
             bool const shouldPend = hasBorrower && !hasCounterpartySig;
             if (shouldPend != after->isFlag(lsfLoanPending))
             {
                 JLOG(j.fatal()) << "Invariant failed: LoanSet pending flag does "
                                    "not match Borrower and CounterpartySignature";
+                return false;
+            }
+
+            // A pending loan (the two-step flow) is accepted in a later ledger,
+            // so its StartDate must be strictly in the future at creation to
+            // remain in the future when LoanAccept finalizes it.
+            if (shouldPend &&
+                after->getFieldU32(sfStartDate) <=
+                    view.parentCloseTime().time_since_epoch().count())
+            {
+                JLOG(j.fatal()) << "Invariant failed: LoanSet created a pending "
+                                   "Loan whose StartDate is not in the future";
                 return false;
             }
 

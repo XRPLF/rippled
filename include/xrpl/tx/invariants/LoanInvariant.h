@@ -37,9 +37,13 @@ namespace xrpl {
  *         must be absent.
  *      c. Either `Borrower`, or both `Counterparty` and `CounterpartySignature`,
  *         must be present.
+ *      d. If `Borrower` is present, it must differ from the submitting
+ *         `Account`.
  * 6. A `LoanSet` that creates a loan must set `lsfLoanPending` if and only if
  *    `Borrower` is present and `CounterpartySignature` is absent.
  * 7. A `LoanSet` that creates a loan must set the loan's `Borrower`.
+ *    Additionally, a pending loan's `StartDate` must be in the future (so it is
+ *    still in the future when `LoanAccept` finalizes it).
  * 8. A pending loan (`lsfLoanPending` set) must not be linked into the
  *    borrower's directory (`OwnerNode` absent), and a non-pending loan must
  *    be linked (`OwnerNode` present).
