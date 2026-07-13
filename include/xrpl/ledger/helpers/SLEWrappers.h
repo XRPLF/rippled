@@ -39,7 +39,8 @@ public:
     {
     }
 
-    /** Create an NFToken offer.
+    /**
+     * Create an NFToken offer.
      *
      *  An NFToken offer lives in its owner's directory (sfOwnerNode) and in the
      *  NFToken's buy or sell offer directory (sfNFTokenOfferNode), the latter
@@ -97,8 +98,10 @@ public:
         return tesSUCCESS;
     }
 
-    /** Remove an NFToken offer from the ledger (inverse of create()). Mirrors
-     *  the former deleteTokenOffer() helper. */
+    /**
+     * Remove an NFToken offer from the ledger (inverse of create()). Mirrors
+     *  the former deleteTokenOffer() helper.
+     */
     [[nodiscard]] TER
     destroy()
         requires SLEBase<ViewT>::kIsWritable
@@ -362,7 +365,8 @@ public:
     {
     }
 
-    /** Remove an offer from the ledger.
+    /**
+     * Remove an offer from the ledger.
      *
      *  An offer lives in its owner's directory (sfOwnerNode) and in one or more
      *  order-book page directories (sfBookDirectory/sfBookNode, plus the
@@ -480,7 +484,8 @@ public:
     {
     }
 
-    /** Remove a trust line from the ledger.
+    /**
+     * Remove a trust line from the ledger.
      *
      *  A trust line sits in both endpoints' directories (sfLowNode/sfHighNode,
      *  not sfOwnerNode) and, unlike single-owner entries, does not adjust
@@ -645,7 +650,8 @@ public:
         return {{this->sle()->getAccountID(sfAccount), &sfOwnerNode, /*countsToward=*/false}};
     }
 
-    /** Remove the AMM object from its pseudo-account's directory.
+    /**
+     * Remove the AMM object from its pseudo-account's directory.
      *
      *  Unlike the default destroy(), this also collapses the pseudo-account's
      *  now-empty owner directory root and reports tecINTERNAL on failure. The
@@ -719,7 +725,8 @@ public:
         return sfAccount;
     }
 
-    /** Create an MPToken for its holder.
+    /**
+     * Create an MPToken for its holder.
      *
      *  Like a trust line, an MPToken is free of reserve until the holder owns
      *  two or more objects — but a reserve sponsor on the transaction must
@@ -756,37 +763,6 @@ public:
                 ownerReserveBalance = std::nullopt;
         }
         return SLEBase<ViewT>::create(ownerReserveBalance);
-    }
-};
-
-template <typename ViewT>
-class OracleEntry : public SLEBase<ViewT>
-{
-public:
-    // Inherit base constructors: adopt an existing SLE, or resolve one from a
-    // Keylet against the view.
-    using SLEBase<ViewT>::SLEBase;
-
-    explicit OracleEntry(
-        AccountID const& account,
-        std::uint32_t documentID,
-        typename SLEBase<ViewT>::view_ref_type view,
-        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : SLEBase<ViewT>(keylet::oracle(account, documentID), view, j)
-    {
-    }
-
-    [[nodiscard]] SField const&
-    ownerField() const override
-    {
-        return sfOwner;
-    }
-
-    // An Oracle with more than five price-data pairs occupies two reserve slots.
-    [[nodiscard]] std::uint32_t
-    reserveCount() const override
-    {
-        return this->sle()->getFieldArray(sfPriceDataSeries).size() > 5 ? 2 : 1;
     }
 };
 
@@ -973,7 +949,8 @@ public:
     {
     }
 
-    /** Materialize the loan and link it into both directories it lives in: its
+    /**
+     * Materialize the loan and link it into both directories it lives in: its
      *  LoanBroker's pseudo-account directory (sfLoanBrokerNode) and its
      *  borrower's directory (sfOwnerNode).
      *
@@ -996,9 +973,11 @@ public:
         return this->linkOwnerDirs(dirs);
     }
 
-    /** Unlink the loan from both directories and erase it (inverse of the
+    /**
+     * Unlink the loan from both directories and erase it (inverse of the
      *  directory work in create()). OwnerCount decrements on the borrower and
-     *  LoanBroker object are handled by the transactor. Mirrors LoanDelete. */
+     *  LoanBroker object are handled by the transactor. Mirrors LoanDelete.
+     */
     [[nodiscard]] TER
     destroy()
         requires SLEBase<ViewT>::kIsWritable

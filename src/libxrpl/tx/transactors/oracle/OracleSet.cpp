@@ -85,7 +85,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         return tecINVALID_UPDATE_TIME;
 
     OracleEntry<ReadView> sle{
-        keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]), ctx.view};
+        ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID], ctx.view, ctx.j};
 
     // token pairs to add/update
     std::set<std::pair<Currency, Currency>> pairs;
@@ -154,7 +154,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         if (!pairsDel.empty())
             return tecTOKEN_PAIR_NOT_FOUND;
 
-        auto const oldCount = calculateOracleReserve(sle.sle());
+        auto const oldCount = sle.reserveCount();
         auto const newCount = calculateOracleReserve(pairs);
 
         adjustReserve = newCount - oldCount;
@@ -217,8 +217,6 @@ setPriceDataInnerObjTemplate(STObject& obj)
 TER
 OracleSet::doApply()
 {
-    auto const oracleID = keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID]);
-
     auto populatePriceData = [](STObject& priceData, STObject const& entry) {
         setPriceDataInnerObjTemplate(priceData);
         priceData.setFieldCurrency(sfBaseAsset, entry.getFieldCurrency(sfBaseAsset));
@@ -228,7 +226,7 @@ OracleSet::doApply()
             priceData.setFieldU8(sfScale, entry.getFieldU8(sfScale));
     };
 
-    OracleEntry<ApplyView> sle{oracleID, ctx_.view()};
+    OracleEntry<ApplyView> sle{accountID_, ctx_.tx[sfOracleDocumentID], ctx_.view()};
     if (sle)
     {
         // update

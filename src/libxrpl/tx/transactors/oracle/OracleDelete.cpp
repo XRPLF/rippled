@@ -28,12 +28,10 @@ OracleDelete::preflight(PreflightContext const& ctx)
 TER
 OracleDelete::preclaim(PreclaimContext const& ctx)
 {
-    if (!ctx.view.exists(keylet::account(ctx.tx.getAccountID(sfAccount))))
-        return terNO_ACCOUNT;  // LCOV_EXCL_LINE
+    auto const sle = OracleEntry<ReadView>{
+        ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID], ctx.view, ctx.j};
 
-    auto const sle =
-        ctx.view.read(keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
-    if (!sle)
+    if (!sle.exists())
     {
         JLOG(ctx.j.debug()) << "Oracle Delete: Oracle does not exist.";
         return tecNO_ENTRY;
@@ -70,11 +68,11 @@ OracleDelete::deleteOracle(
 TER
 OracleDelete::doApply()
 {
-    if (OracleEntry<ApplyView> sle{
-            keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID]), ctx_.view()})
-        return deleteOracle(ctx_.view(), sle.mutableSle(), accountID_, j_);
+    auto const sle = OracleEntry<ApplyView>{accountID_, ctx_.tx[sfOracleDocumentID], ctx_.view()};
+    if (!sle.exists())
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    return tecINTERNAL;  // LCOV_EXCL_LINE
+    return deleteOracle(ctx_.view(), sle.mutableSle(), accountID_, j_);
 }
 
 void
