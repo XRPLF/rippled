@@ -358,8 +358,12 @@ template <class = void>
 bool
 tokenInList(boost::string_ref const& value, boost::string_ref const& token)
 {
-    return std::ranges::any_of(
-        makeList(value), [&token](auto const& item) { return ciEqual(item, token); });
+    auto const list = makeList(value);
+    // boost::iterator_range's ListIterator is not a std::ranges iterator, so the
+    // iterator form is used.
+    // NOLINTNEXTLINE(modernize-use-ranges)
+    return std::any_of(
+        list.begin(), list.end(), [&token](auto const& item) { return ciEqual(item, token); });
 }
 
 template <bool IsRequest, class Body, class Fields>
