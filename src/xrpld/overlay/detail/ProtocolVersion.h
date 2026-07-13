@@ -10,11 +10,12 @@
 
 namespace xrpl {
 
-/** Represents a particular version of the peer-to-peer protocol.
-
-    The protocol is represented as two pairs of 16-bit integers; a major
-    and a minor.
- * */
+/**
+ * Represents a particular version of the peer-to-peer protocol.
+ *
+ * The protocol is represented as two pairs of 16-bit integers; a major
+ * and a minor.
+ */
 using ProtocolVersion = std::pair<std::uint16_t, std::uint16_t>;
 
 constexpr ProtocolVersion
@@ -23,37 +24,48 @@ makeProtocol(std::uint16_t major, std::uint16_t minor)
     return {major, minor};
 }
 
-/** Print a protocol version a human-readable string. */
+/**
+ * Print a protocol version a human-readable string.
+ */
 std::string
 to_string(ProtocolVersion const& p);
 
-/** Parse a set of protocol versions.
-
-    Given a comma-separated string, extract and return all those that look
-    like valid protocol versions (i.e. XRPL/2.0 and later). Strings that are
-    not parsable as valid protocol strings are excluded from the result set.
-
-    @return A list of all apparently valid protocol versions.
-
-    @note The returned list of protocol versions is guaranteed to contain
-          no duplicates and will be sorted in ascending protocol order.
-*/
+/**
+ * Parse a set of protocol versions.
+ *
+ * Given a comma-separated string, extract and return all those that look
+ * like valid protocol versions (i.e. XRPL/2.0 and later). Strings that are
+ * not parsable as valid protocol strings are excluded from the result set.
+ *
+ * @return A list of all apparently valid protocol versions.
+ *
+ * @note The returned list of protocol versions is guaranteed to contain
+ *       no duplicates and will be sorted in ascending protocol order.
+ */
 std::vector<ProtocolVersion>
 parseProtocolVersions(boost::beast::string_view const& s);
 
-/** Given a list of supported protocol versions, choose the one we prefer. */
+/**
+ * Given a list of supported protocol versions, choose the one we prefer.
+ */
 std::optional<ProtocolVersion>
 negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions);
 
-/** Given a list of supported protocol versions, choose the one we prefer. */
+/**
+ * Given a list of supported protocol versions, choose the one we prefer.
+ */
 std::optional<ProtocolVersion>
 negotiateProtocolVersion(boost::beast::string_view const& versions);
 
-/** The list of all the protocol versions we support. */
+/**
+ * The list of all the protocol versions we support.
+ */
 std::string const&
 supportedProtocolVersions();
 
-/** Determine whether we support a specific protocol version. */
+/**
+ * Determine whether we support a specific protocol version.
+ */
 bool
 isProtocolSupported(ProtocolVersion const& v);
 

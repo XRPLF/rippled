@@ -141,7 +141,7 @@ struct SEnv
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return env.current()->fees().accountReserve(count);
+        return env.current()->fees().accountReserve(count, 1);
     }
 
     XRPAmount
@@ -370,7 +370,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return XEnv(*this).env.current()->fees().accountReserve(count);
+        return XEnv(*this).env.current()->fees().accountReserve(count, 1);
     }
 
     XRPAmount
