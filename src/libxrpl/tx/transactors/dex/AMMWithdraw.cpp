@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -658,15 +659,15 @@ AMMWithdraw::withdraw(
             auto sleAccount = view.peek(keylet::account(account));
             if (!sleAccount)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
-            STAmount const balance = (*sleAccount)[sfBalance];
-            std::uint32_t const ownerCount = sleAccount->at(sfOwnerCount);
 
+            auto const balance = (*sleAccount)[sfBalance]->xrp();
             // See also TrustSet::doApply() and MPTokenAuthorize::authorize()
             XRPAmount const reserve(
-                (ownerCount < 2) ? XRPAmount(beast::kZero)
-                                 : view.fees().accountReserve(ownerCount + 1));
+                (ownerCount(sleAccount, journal) < 2)
+                    ? XRPAmount(beast::kZero)
+                    : accountReserve(view, sleAccount, journal, {.ownerCountDelta = 1}));
 
-            auto const balanceAdj = isIssue ? std::max(priorBalance, balance.xrp()) : priorBalance;
+            auto const balanceAdj = isIssue ? std::max(priorBalance, balance) : priorBalance;
             if (balanceAdj < reserve)
                 return tecINSUFFICIENT_RESERVE;
         }
@@ -683,7 +684,7 @@ AMMWithdraw::withdraw(
                 !isTesSuccess(err))
                 return err;
 
-            if (auto const err = checkCreateMPT(view, mptIssue, account, journal);
+            if (auto const err = checkCreateMPT(view, mptIssue, account, {}, journal);
                 !isTesSuccess(err))
             {
                 return err;
@@ -700,7 +701,7 @@ AMMWithdraw::withdraw(
 
     // Withdraw amountWithdraw
     auto res = accountSend(
-        view, ammAccount, account, amountWithdrawActual, journal, WaiveTransferFee::Yes);
+        view, ammAccount, account, amountWithdrawActual, journal, {}, WaiveTransferFee::Yes);
     if (!isTesSuccess(res))
     {
         // LCOV_EXCL_START
@@ -719,7 +720,7 @@ AMMWithdraw::withdraw(
             return {res, STAmount{}, STAmount{}, STAmount{}};
 
         res = accountSend(
-            view, ammAccount, account, *amount2WithdrawActual, journal, WaiveTransferFee::Yes);
+            view, ammAccount, account, *amount2WithdrawActual, journal, {}, WaiveTransferFee::Yes);
         if (!isTesSuccess(res))
         {
             // LCOV_EXCL_START

@@ -74,9 +74,9 @@ operator==(Book const& lhs, Book const& rhs)
 [[nodiscard]] constexpr std::weak_ordering
 operator<=>(Book const& lhs, Book const& rhs)
 {
-    if (auto const c{lhs.in <=> rhs.in}; c != 0)
+    if (auto const c{lhs.in <=> rhs.in}; c != 0)  // NOLINT(modernize-use-nullptr)
         return c;
-    if (auto const c{lhs.out <=> rhs.out}; c != 0)
+    if (auto const c{lhs.out <=> rhs.out}; c != 0)  // NOLINT(modernize-use-nullptr)
         return c;
 
     // Manually compare optionals

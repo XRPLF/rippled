@@ -84,7 +84,7 @@ operator==(Issue const& lhs, Issue const& rhs)
 [[nodiscard]] constexpr std::weak_ordering
 operator<=>(Issue const& lhs, Issue const& rhs)
 {
-    if (auto const c{lhs.currency <=> rhs.currency}; c != 0)
+    if (auto const c{lhs.currency <=> rhs.currency}; c != 0)  // NOLINT(modernize-use-nullptr)
         return c;
 
     if (isXRP(lhs.currency))

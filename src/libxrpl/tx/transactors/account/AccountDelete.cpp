@@ -35,7 +35,6 @@
 #include <utility>
 
 namespace xrpl {
-
 bool
 AccountDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
@@ -268,6 +267,15 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (cp)
         return tecHAS_OBLIGATIONS;
 
+    if (sleAccount->isFieldPresent(sfSponsor))
+    {
+        if (dst != sleAccount->getAccountID(sfSponsor))
+            return tecNO_SPONSOR_PERMISSION;
+    }
+    if (sleAccount->isFieldPresent(sfSponsoringOwnerCount) ||
+        sleAccount->isFieldPresent(sfSponsoringAccountCount))
+        return tecHAS_OBLIGATIONS;
+
     // We don't allow an account to be deleted if its sequence number
     // is within 256 of the current ledger.  This prevents replay of old
     // transactions if this account is resurrected after it is deleted.
@@ -393,6 +401,35 @@ AccountDelete::doApply()
     (*dst)[sfBalance] = (*dst)[sfBalance] + remainingBalance;
     (*src)[sfBalance] = (*src)[sfBalance] - remainingBalance;
     ctx_.deliver(remainingBalance);
+
+    if (src->isFieldPresent(sfSponsor))
+    {
+        auto const sponsorID = src->getAccountID(sfSponsor);
+        auto sponsorSle = view().peek(keylet::account(sponsorID));
+
+        if (!sponsorSle)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        auto const sponsoringAccountCount = sponsorSle->getFieldU32(sfSponsoringAccountCount);
+
+        XRPL_ASSERT(
+            sponsoringAccountCount != 0,
+            "xrpl::AccountDelete::doApply : sponsoring account count is present");
+        if (sponsoringAccountCount == 0)
+        {
+            // sanity check
+            // Since sfSponsoringAccountCount is set to soeDEFAULT, the field will not be
+            // present with a value of 0.
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+        }
+        sponsorSle->at(sfSponsoringAccountCount) = sponsoringAccountCount - 1;
+        view().update(sponsorSle);
+
+        // Following line might look redundant, but without it, sfSponsor
+        // would end up remaining in after-ltAccountRoot during the
+        // InvariantCheck.
+        src->makeFieldAbsent(sfSponsor);
+    }
 
     XRPL_ASSERT(
         (*src)[sfBalance] == XRPAmount(0), "xrpl::AccountDelete::doApply : source balance is zero");

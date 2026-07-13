@@ -3,6 +3,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Issue.h>  // IWYU pragma: keep
@@ -11,6 +12,7 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STVector256.h>
 
 #include <cstdint>
@@ -288,7 +290,7 @@ public:
     // Called when the owner count changes
     // This is required to support PaymentSandbox
     virtual void
-    adjustOwnerCountHook(AccountID const& account, std::uint32_t cur, std::uint32_t next)
+    adjustOwnerCountHook(AccountID const& account, OwnerCounts const& cur, OwnerCounts const& next)
     {
     }
 
@@ -409,6 +411,23 @@ public:
     */
     bool
     emptyDirDelete(Keylet const& directory);
+};
+
+/** Bundles the mutable ledger view and the transaction being applied.
+
+    Passed together to avoid threading two separate parameters through every
+    helper that needs both the view (for state reads/writes) and the
+    transaction (for field inspection and metadata).
+
+    Both members are non-owning references; the caller is responsible for
+    ensuring that the referenced objects outlive the ApplyViewContext.
+
+    TODO: replace with ApplyContext after it's untangled with xrpl/tx
+*/
+struct ApplyViewContext
+{
+    ApplyView& view;
+    STTx const& tx;
 };
 
 namespace directory {
