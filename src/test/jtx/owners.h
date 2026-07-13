@@ -48,7 +48,9 @@ public:
     }
 };
 
-/** Match the number of items in the account's owner directory */
+/**
+ * Match the number of items in the account's owner directory
+ */
 class Owners
 {
 private:
@@ -64,8 +66,10 @@ public:
     operator()(Env& env) const;
 };
 
-/** Match the account's SponsoredOwnerCount field: the number of owned
-    objects whose reserve is sponsored by another account. */
+/**
+ * Match the account's SponsoredOwnerCount field: the number of owned
+ * objects whose reserve is sponsored by another account.
+ */
 class SponsoredOwners
 {
 private:
@@ -82,8 +86,10 @@ public:
     operator()(Env& env) const;
 };
 
-/** Match the account's SponsoringOwnerCount field: the number of objects
-    (owned by other accounts) whose reserve this account sponsors. */
+/**
+ * Match the account's SponsoringOwnerCount field: the number of objects
+ * (owned by other accounts) whose reserve this account sponsors.
+ */
 class SponsoringOwners
 {
 private:
@@ -100,8 +106,10 @@ public:
     operator()(Env& env) const;
 };
 
-/** Match the account's SponsoringAccountCount field: the number of accounts
-    whose base reserve this account sponsors. */
+/**
+ * Match the account's SponsoringAccountCount field: the number of accounts
+ * whose base reserve this account sponsors.
+ */
 class SponsoringAccountCount
 {
 private:
@@ -118,13 +126,19 @@ public:
     operator()(Env& env) const;
 };
 
-/** Match the number of trust lines in the account's owner directory */
+/**
+ * Match the number of trust lines in the account's owner directory
+ */
 using lines = OwnerCount<ltRIPPLE_STATE>;
 
-/** Match the number of offers in the account's owner directory */
+/**
+ * Match the number of offers in the account's owner directory
+ */
 using offers = OwnerCount<ltOFFER>;
 
-/** Match the number of MPToken in the account's owner directory */
+/**
+ * Match the number of MPToken in the account's owner directory
+ */
 using mptokens = OwnerCount<ltMPTOKEN>;
 
 }  // namespace test::jtx

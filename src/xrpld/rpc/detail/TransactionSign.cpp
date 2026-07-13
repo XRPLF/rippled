@@ -993,7 +993,9 @@ checkFee(
 
 //------------------------------------------------------------------------------
 
-/** Returns a json::ValueType::Object. */
+/**
+ * Returns a json::ValueType::Object.
+ */
 json::Value
 transactionSign(
     json::Value jvRequest,
@@ -1027,7 +1029,9 @@ transactionSign(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-/** Returns a json::ValueType::Object. */
+/**
+ * Returns a json::ValueType::Object.
+ */
 json::Value
 transactionSubmit(
     json::Value jvRequest,
@@ -1150,7 +1154,9 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
 
 }  // namespace detail
 
-/** Returns a json::ValueType::Object. */
+/**
+ * Returns a json::ValueType::Object.
+ */
 json::Value
 transactionSignFor(
     json::Value jvRequest,
@@ -1271,7 +1277,9 @@ transactionSignFor(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-/** Returns a json::ValueType::Object. */
+/**
+ * Returns a json::ValueType::Object.
+ */
 json::Value
 transactionSubmitMultiSigned(
     json::Value jvRequest,

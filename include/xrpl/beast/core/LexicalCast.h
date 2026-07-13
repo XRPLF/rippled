@@ -163,17 +163,19 @@ struct LexicalCast<Out, char*>
 
 //------------------------------------------------------------------------------
 
-/** Thrown when a conversion is not possible with LexicalCast.
-    Only used in the throw variants of lexicalCast.
-*/
+/**
+ * Thrown when a conversion is not possible with LexicalCast.
+ * Only used in the throw variants of lexicalCast.
+ */
 struct BadLexicalCast : public std::bad_cast
 {
     explicit BadLexicalCast() = default;
 };
 
-/** Intelligently convert from one type to another.
-    @return `false` if there was a parsing or range error
-*/
+/**
+ * Intelligently convert from one type to another.
+ * @return `false` if there was a parsing or range error
+ */
 template <class Out, class In>
 bool
 lexicalCastChecked(Out& out, In in)
@@ -181,12 +183,13 @@ lexicalCastChecked(Out& out, In in)
     return detail::LexicalCast<Out, In>()(out, in);
 }
 
-/** Convert from one type to another, throw on error
-
-    An exception of type BadLexicalCast is thrown if the conversion fails.
-
-    @return The new type.
-*/
+/**
+ * Convert from one type to another, throw on error
+ *
+ * An exception of type BadLexicalCast is thrown if the conversion fails.
+ *
+ * @return The new type.
+ */
 template <class Out, class In>
 Out
 lexicalCastThrow(In in)
@@ -197,11 +200,12 @@ lexicalCastThrow(In in)
     throw BadLexicalCast();
 }
 
-/** Convert from one type to another.
-
-    @param defaultValue The value returned if parsing fails
-    @return The new type.
-*/
+/**
+ * Convert from one type to another.
+ *
+ * @param defaultValue The value returned if parsing fails
+ * @return The new type.
+ */
 template <class Out, class In>
 Out
 lexicalCast(In in, Out defaultValue = Out())

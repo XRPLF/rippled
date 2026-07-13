@@ -502,7 +502,8 @@ LedgerHistory::validatedLedger(
     entry->validatedConsensusHash = consensusHash;
 }
 
-/** Ensure ledgers_by_hash_ doesn't have the wrong hash for a particular index
+/**
+ * Ensure ledgers_by_hash_ doesn't have the wrong hash for a particular index
  */
 bool
 LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
