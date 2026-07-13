@@ -413,9 +413,7 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
         doInvariantCheck(
-            Env{*this,
-                (defaultAmendments() | featureSponsor) - fixCleanup3_2_0 - featureSingleAssetVault -
-                    featureLendingProtocol},
+            Env{*this, FeatureBitset{featureSponsor}},
             {{"account deletion left behind a sponsorship field"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleA1 = ac.view().peek(keylet::account(a1.id()));
