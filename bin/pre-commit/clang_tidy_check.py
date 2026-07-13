@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""Pre-commit hook that runs clang-tidy on changed files using run-clang-tidy.
+"""Pre-commit hook that runs clang-tidy on staged files using run-clang-tidy.
 
-The set of files is chosen by pre-commit (see .pre-commit-config.yaml), which
-filters to C/C++ sources and excludes `.ipp` fragments. Headers are linted
-directly: the `verify_headers` build option (ON by default) compiles every
-`.h`/`.hpp` on its own, so each header is the main file of its own
-compile_commands.json entry and run-clang-tidy can analyse it just like a
-`.cpp`.
+The script determines the staged files itself (see `pass_filenames: false` in
+.pre-commit-config.yaml) so run-clang-tidy is run once and handles parallelism
+internally: pre-commit would otherwise split the files across parallel hook
+invocations that race when `--fix` edits a shared header.
 """
 
 from __future__ import annotations
@@ -18,6 +16,11 @@ import sys
 from pathlib import Path
 
 CLANG_TIDY_VERSION = 22
+
+# Extensions run-clang-tidy can analyse: `.cpp` translation units and, thanks to
+# the `verify_headers` build option, `.h`/`.hpp` headers (each has its own
+# compile_commands.json entry). `.ipp` fragments have no entry and are skipped.
+TIDY_EXTENSIONS = {".cpp", ".h", ".hpp"}
 
 
 def find_run_clang_tidy() -> str | None:
@@ -35,11 +38,33 @@ def find_build_dir(repo_root: Path) -> Path | None:
     return None
 
 
+def staged_files(repo_root: Path) -> list[Path]:
+    """Return absolute paths of staged, lint-able C/C++ files.
+
+    `--diff-filter=d` excludes deletions so we never lint a removed file.
+    """
+    output = subprocess.check_output(
+        ["git", "diff", "--staged", "--name-only", "--diff-filter=d", "--"]
+        + [f"*{ext}" for ext in TIDY_EXTENSIONS],
+        text=True,
+        cwd=repo_root,
+    )
+    return [repo_root / rel for rel in output.splitlines() if rel]
+
+
 def main():
     if not os.environ.get("TIDY"):
         return 0
 
-    files = sys.argv[1:]
+    repo_root = Path(
+        subprocess.check_output(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=Path(__file__).parent,
+            text=True,
+        ).strip()
+    )
+
+    files = staged_files(repo_root)
     if not files:
         return 0
 
@@ -52,13 +77,6 @@ def main():
         )
         return 1
 
-    repo_root = Path(
-        subprocess.check_output(
-            ["git", "rev-parse", "--show-toplevel"],
-            cwd=Path(__file__).parent,
-            text=True,
-        ).strip()
-    )
     build_dir = find_build_dir(repo_root)
     if not build_dir:
         print(
@@ -69,7 +87,16 @@ def main():
         return 1
 
     result = subprocess.run(
-        [run_clang_tidy, "-quiet", "-p", str(build_dir), "-fix", "-allow-no-checks"]
+        [
+            run_clang_tidy,
+            "-quiet",
+            "-p",
+            build_dir,
+            "-j",
+            str(os.cpu_count()),
+            "-fix",
+            "-allow-no-checks",
+        ]
         + files
     )
     return result.returncode
