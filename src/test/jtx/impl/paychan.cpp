@@ -26,7 +26,9 @@
 #include <cstdint>
 #include <optional>
 
-/** Paychan operations. */
+/**
+ * Paychan operations.
+ */
 namespace xrpl::test::jtx::paychan {
 
 json::Value

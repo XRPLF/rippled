@@ -27,15 +27,16 @@
 
 namespace xrpl {
 
-/** Validate that @p account may lock @p amount of a token for later delivery
- *  to @p dest.
+/**
+ * Validate that @p account may lock @p amount of a token for later delivery
+ * to @p dest.
  *
- *  The lock-side counterpart of escrowUnlockPreclaimHelper: every issuer
- *  control (locking opt-in, authorization, freeze/lock, transferability,
- *  spendable balance) that gates locking token value lives here, so any
- *  transactor that locks funds applies the same rules. The signature is
- *  view-based rather than PreclaimContext-based so it can also run from
- *  doApply.
+ * The lock-side counterpart of escrowUnlockPreclaimHelper: every issuer
+ * control (locking opt-in, authorization, freeze/lock, transferability,
+ * spendable balance) that gates locking token value lives here, so any
+ * transactor that locks funds applies the same rules. The signature is
+ * view-based rather than PreclaimContext-based so it can also run from
+ * doApply.
  */
 template <ValidIssueType T>
 TER
