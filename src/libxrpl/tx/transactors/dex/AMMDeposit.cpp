@@ -618,7 +618,13 @@ AMMDeposit::deposit(
     }
 
     auto res = accountSend(
-        view, accountID_, ammAccount, amountDepositActual, ctx_.journal, WaiveTransferFee::Yes);
+        view,
+        accountID_,
+        ammAccount,
+        amountDepositActual,
+        ctx_.journal,
+        {},  // don't sponsor for AMM Trustline
+        WaiveTransferFee::Yes);
     if (!isTesSuccess(res))
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: failed to deposit " << amountDepositActual;
@@ -642,6 +648,7 @@ AMMDeposit::deposit(
             ammAccount,
             *amount2DepositActual,
             ctx_.journal,
+            {},  // don't sponsor for AMM Trustline
             WaiveTransferFee::Yes);
         if (!isTesSuccess(res))
         {
