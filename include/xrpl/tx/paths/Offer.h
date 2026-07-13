@@ -44,38 +44,44 @@ public:
 
     TOffer(SLE::pointer entry, Quality quality);
 
-    /** Returns the quality of the offer.
-        Conceptually, the quality is the ratio of output to input currency.
-        The implementation calculates it as the ratio of input to output
-        currency (so it sorts ascending). The quality is computed at the time
-        the offer is placed, and never changes for the lifetime of the offer.
-        This is an important business rule that maintains accuracy when an
-        offer is partially filled; Subsequent partial fills will use the
-        original quality.
-    */
+    /**
+     * Returns the quality of the offer.
+     * Conceptually, the quality is the ratio of output to input currency.
+     * The implementation calculates it as the ratio of input to output
+     * currency (so it sorts ascending). The quality is computed at the time
+     * the offer is placed, and never changes for the lifetime of the offer.
+     * This is an important business rule that maintains accuracy when an
+     * offer is partially filled; Subsequent partial fills will use the
+     * original quality.
+     */
     [[nodiscard]] Quality
     quality() const noexcept
     {
         return quality_;
     }
 
-    /** Returns the account id of the offer's owner. */
+    /**
+     * Returns the account id of the offer's owner.
+     */
     [[nodiscard]] AccountID const&
     owner() const
     {
         return accountID_;
     }
 
-    /** Returns the in and out amounts.
-        Some or all of the out amount may be unfunded.
-    */
+    /**
+     * Returns the in and out amounts.
+     * Some or all of the out amount may be unfunded.
+     */
     [[nodiscard]] TAmounts<TIn, TOut> const&
     amount() const
     {
         return amounts_;
     }
 
-    /** Returns `true` if no more funds can flow through this offer. */
+    /**
+     * Returns `true` if no more funds can flow through this offer.
+     */
     [[nodiscard]] bool
     fullyConsumed() const
     {
@@ -86,7 +92,9 @@ public:
         return false;
     }
 
-    /** Adjusts the offer to indicate that we consumed some (or all) of it. */
+    /**
+     * Adjusts the offer to indicate that we consumed some (or all) of it.
+     */
     void
     consume(ApplyView& view, TAmounts<TIn, TOut> const& consumed)
     {
@@ -142,7 +150,8 @@ public:
         return {ofrInRate, ofrOutRate};
     }
 
-    /** Check any required invariant. Limit order book offer
+    /**
+     * Check any required invariant. Limit order book offer
      * always returns true.
      */
     [[nodiscard]] bool
@@ -234,7 +243,8 @@ template <typename... Args>
 TER
 TOffer<TIn, TOut>::send(Args&&... args)
 {
-    return accountSend(std::forward<Args>(args)..., WaiveTransferFee::No, AllowMPTOverflow::Yes);
+    return accountSend(
+        std::forward<Args>(args)..., SLE::pointer(), WaiveTransferFee::No, AllowMPTOverflow::Yes);
 }
 
 template <StepAmount TIn, StepAmount TOut>

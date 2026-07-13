@@ -281,6 +281,8 @@ words:
   - sles
   - soci
   - socidb
+  - sponsee
+  - sponsees
   - SRPMS
   - sslws
   - statsd
@@ -329,6 +331,7 @@ words:
   - unserviced
   - unshareable
   - unshares
+  - unsponsored
   - unsquelch
   - unsquelched
   - unsquelching

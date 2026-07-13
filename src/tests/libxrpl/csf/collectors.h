@@ -32,12 +32,13 @@ namespace xrpl::test::csf {
 //  This file contains helper functions for composing different collectors
 //  and also defines several standard collectors available for simulations.
 
-/** Group of collectors.
-
-    Presents a group of collectors as a single collector which process an event
-    by calling each collector sequentially. This is analogous to CollectorRefs
-    in CollectorRef.h, but does *not* erase the type information of the combined
-    collectors.
+/**
+ * Group of collectors.
+ *
+ * Presents a group of collectors as a single collector which process an event
+ * by calling each collector sequentially. This is analogous to CollectorRefs
+ * in CollectorRef.h, but does *not* erase the type information of the combined
+ * collectors.
  */
 template <class... Cs>
 class Collectors
@@ -59,10 +60,11 @@ class Collectors
     }
 
 public:
-    /** Constructor
-
-        @param cs References to the collectors to call together
-    */
+    /**
+     * Constructor
+     *
+     * @param cs References to the collectors to call together
+     */
     Collectors(Cs&... cs) : cs_(std::tie(cs...))
     {
     }
@@ -75,7 +77,9 @@ public:
     }
 };
 
-/** Create an instance of Collectors<Cs...> */
+/**
+ * Create an instance of Collectors<Cs...>
+ */
 template <class... Cs>
 Collectors<Cs...>
 makeCollectors(Cs&... cs)
@@ -83,14 +87,15 @@ makeCollectors(Cs&... cs)
     return Collectors<Cs...>(cs...);
 }
 
-/** Maintain an instance of a Collector per peer
-
-    For each peer that emits events, this class maintains a corresponding
-    instance of CollectorType, only forwarding events emitted by the peer to
-    the related instance.
-
-    CollectorType should be default constructible.
-*/
+/**
+ * Maintain an instance of a Collector per peer
+ *
+ * For each peer that emits events, this class maintains a corresponding
+ * instance of CollectorType, only forwarding events emitted by the peer to
+ * the related instance.
+ *
+ * CollectorType should be default constructible.
+ */
 template <class CollectorType>
 struct CollectByNode
 {
@@ -115,7 +120,9 @@ struct CollectByNode
     }
 };
 
-/** Collector which ignores all events */
+/**
+ * Collector which ignores all events
+ */
 struct NullCollector
 {
     template <class E>
@@ -125,7 +132,9 @@ struct NullCollector
     }
 };
 
-/** Tracks the overall duration of a simulation */
+/**
+ * Tracks the overall duration of a simulation
+ */
 struct SimDurationCollector
 {
     bool init = false;
@@ -148,15 +157,16 @@ struct SimDurationCollector
     }
 };
 
-/** Tracks the submission -> accepted -> validated evolution of transactions.
-
-    This collector tracks transactions through the network by monitoring the
-    *first* time the transaction is seen by any node in the network, or
-    seen by any node's accepted or fully validated ledger.
-
-    If transactions submitted to the network do not have unique IDs, this
-    collector will not track subsequent submissions.
-*/
+/**
+ * Tracks the submission -> accepted -> validated evolution of transactions.
+ *
+ * This collector tracks transactions through the network by monitoring the
+ * *first* time the transaction is seen by any node in the network, or
+ * seen by any node's accepted or fully validated ledger.
+ *
+ * If transactions submitted to the network do not have unique IDs, this
+ * collector will not track subsequent submissions.
+ */
 struct TxCollector
 {
     // Counts
@@ -381,12 +391,12 @@ struct TxCollector
     }
 };
 
-/** Tracks the accepted -> validated evolution of ledgers.
-
-    This collector tracks ledgers through the network by monitoring the
-    *first* time the ledger is accepted or fully validated by ANY node.
-
-*/
+/**
+ * Tracks the accepted -> validated evolution of ledgers.
+ *
+ * This collector tracks ledgers through the network by monitoring the
+ * *first* time the ledger is accepted or fully validated by ANY node.
+ */
 struct LedgerCollector
 {
     std::size_t accepted{0};
@@ -580,11 +590,12 @@ struct LedgerCollector
     }
 };
 
-/** Write out stream of ledger activity
-
-    Writes information about every accepted and fully-validated ledger to a
-    provided std::ostream.
-*/
+/**
+ * Write out stream of ledger activity
+ *
+ * Writes information about every accepted and fully-validated ledger to a
+ * provided std::ostream.
+ */
 struct StreamCollector
 {
     std::ostream& out;
@@ -611,11 +622,12 @@ struct StreamCollector
     }
 };
 
-/** Saves information about Jumps for closed and fully validated ledgers. A
-    jump occurs when a node closes/fully validates a new ledger that is not the
-    immediate child of the prior closed/fully validated ledgers. This includes
-    jumps across branches and jumps ahead in the same branch of ledger history.
-*/
+/**
+ * Saves information about Jumps for closed and fully validated ledgers. A
+ * jump occurs when a node closes/fully validates a new ledger that is not the
+ * immediate child of the prior closed/fully validated ledgers. This includes
+ * jumps across branches and jumps ahead in the same branch of ledger history.
+ */
 struct JumpCollector
 {
     struct Jump

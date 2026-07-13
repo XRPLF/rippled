@@ -13,7 +13,9 @@ namespace xrpl::test::csf {
 // Submitters are classes for simulating submission of transactions to the
 // network
 
-/** Represents rate as a count/duration */
+/**
+ * Represents rate as a count/duration
+ */
 struct Rate
 {
     std::size_t count;
@@ -26,23 +28,24 @@ struct Rate
     }
 };
 
-/** Submits transactions to a specified peer
-
-    Submits successive transactions beginning at start, then spaced according
-    to successive calls of distribution(), until stop.
-
-    @tparam Distribution is a `UniformRandomBitGenerator` from the STL that
-            is used by random distributions to generate random samples
-    @tparam Generator is an object with member
-
-            T operator()(Generator &g)
-
-            which generates the delay T in SimDuration units to the next
-            transaction. For the current definition of SimDuration, this is
-            currently the number of nanoseconds. Submitter internally casts
-            arithmetic T to SimDuration::rep units to allow using standard
-            library distributions as a Distribution.
-*/
+/**
+ * Submits transactions to a specified peer
+ *
+ * Submits successive transactions beginning at start, then spaced according
+ * to successive calls of distribution(), until stop.
+ *
+ * @tparam Distribution is a `UniformRandomBitGenerator` from the STL that
+ *         is used by random distributions to generate random samples
+ * @tparam Generator is an object with member
+ *
+ *         T operator()(Generator &g)
+ *
+ *         which generates the delay T in SimDuration units to the next
+ *         transaction. For the current definition of SimDuration, this is
+ *         currently the number of nanoseconds. Submitter internally casts
+ *         arithmetic T to SimDuration::rep units to allow using standard
+ *         library distributions as a Distribution.
+ */
 template <class Distribution, class Generator, class Selector>
 class Submitter
 {
