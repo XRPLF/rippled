@@ -50,12 +50,10 @@ struct LedgerRange
  * @brief Enumeration of possible delegate types that can occur during filtering in account_tx
  */
 enum class DelegateType {
-    /**< Another account signed and submitted transactions on behalf of this account (this account
-       is the owner/delegator). */
-    Actor,
-    /**< This account signed and submitted transactions on behalf of another account (this account
-       is the signer/delegatee). */
-    Authorizer
+    Actor,  ///< Another account signed and submitted transactions on behalf of this account (this
+            ///< account is the owner/delegator).
+    Authorizer  ///< This account signed and submitted transactions on behalf of another account
+                ///< (this account is the signer/delegatee).
 };
 
 struct DelegateFilter
