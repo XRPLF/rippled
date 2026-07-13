@@ -156,11 +156,12 @@ RE_FIRST_OVERINDENT = re.compile(r"^\s*\*\s{2,}\S")
 # A scope marker @{ / @} sharing a comment with other text.
 RE_COMBINED_MARKER = re.compile(r"^\*\s*@[{}]\s*$")
 
-# Non-canonical command spellings -> house spelling.
+# Non-canonical command spellings -> the house spelling (bare command names).
+# Used both to flag a wrong @form and to suggest the right @form for a \wrong.
+CANONICAL_COMMAND = {"returns": "return", "throw": "throws", "sa": "see"}
 WRONG_SPELLINGS = [
-    (re.compile(r"@returns\b"), "@return"),
-    (re.compile(r"@throw\b"), "@throws"),
-    (re.compile(r"@sa\b"), "@see"),
+    (re.compile(rf"@{wrong}\b"), f"@{right}")
+    for wrong, right in CANONICAL_COMMAND.items()
 ]
 
 # Order block tags should appear in; a body out of this order is a violation.
@@ -187,11 +188,12 @@ def _flag_commands(raw_line: str, stripped: str, index: int) -> list[Finding]:
     backslash = RE_BACKSLASH_CMD.search(raw_line)
     if backslash:
         command = backslash.group(1)
+        canonical = CANONICAL_COMMAND.get(command, command)
         findings.append(
             Finding(
                 index + 1,
                 Category.BACKSLASH_COMMAND,
-                f"use @{command} instead of \\{command}",
+                f"use @{canonical} instead of \\{command}",
             )
         )
     for pattern, replacement in WRONG_SPELLINGS:

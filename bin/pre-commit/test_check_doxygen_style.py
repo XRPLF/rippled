@@ -238,6 +238,24 @@ def test_backslash_command_on_body_line() -> None:
     assert labels_for(code) == ["backslash-command"]
 
 
+def test_backslash_command_suggests_canonical_spelling() -> None:
+    # a backslash + non-canonical spelling is fixed in one pass, not two:
+    # \sa -> @see (not @sa), \returns -> @return (not @returns)
+    sa = r"""
+    /**
+     * \sa other
+     */
+    """
+    assert messages_for(sa) == [r"use @see instead of \sa"]
+
+    returns = r"""
+    /**
+     * \returns x
+     */
+    """
+    assert messages_for(returns) == [r"use @return instead of \returns"]
+
+
 def test_wrong_command_on_body_line() -> None:
     code = """
     /**
