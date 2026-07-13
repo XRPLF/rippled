@@ -174,7 +174,8 @@ Value::CZString::isStaticString() const
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 
-/*! \internal Default constructor initialization must be equivalent to:
+/**
+ * @internal Default constructor initialization must be equivalent to:
  * memset( this, 0, sizeof(Value) )
  * This optimization is used in ValueInternalMap fast allocator.
  */
@@ -794,7 +795,9 @@ Value::isConvertibleTo(ValueType other) const
     return false;  // unreachable;
 }
 
-/// Number of values in array or object
+/**
+ * Number of values in array or object
+ */
 Value::UInt
 Value::size() const
 {
