@@ -212,8 +212,7 @@ completeTrustScaleFreeConnectFixedDelay(
 
 }  // namespace
 
-/** In progress simulations for diversifying and distributing validators
- */
+// In progress simulations for diversifying and distributing validators
 TEST(DistributedValidatorsTest, DISABLED_distributed_validators)
 {
     std::string const defaultArgs = "5 200";
@@ -229,24 +228,20 @@ TEST(DistributedValidatorsTest, DISABLED_distributed_validators)
 
     std::cout << "DistributedValidators: 1 to " << maxNumValidators << " Peers" << std::endl;
 
-    /**
-     * Simulate with N = 1 to N
-     * - complete trust graph is complete
-     * - complete network connectivity
-     * - fixed delay for network links
-     */
+    // Simulate with N = 1 to N
+    // - complete trust graph is complete
+    // - complete network connectivity
+    // - fixed delay for network links
     completeTrustCompleteConnectFixedDelay(1, delay, true);
     for (int i = 2; i <= maxNumValidators; i++)
     {
         completeTrustCompleteConnectFixedDelay(i, delay);
     }
 
-    /**
-     * Simulate with N = 1 to N
-     * - complete trust graph is complete
-     * - scale-free network connectivity
-     * - fixed delay for network links
-     */
+    // Simulate with N = 1 to N
+    // - complete trust graph is complete
+    // - scale-free network connectivity
+    // - fixed delay for network links
     completeTrustScaleFreeConnectFixedDelay(1, delay, true);
     for (int i = 2; i <= maxNumValidators; i++)
     {
