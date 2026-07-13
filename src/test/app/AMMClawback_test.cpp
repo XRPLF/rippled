@@ -2511,6 +2511,95 @@ class AMMClawback_test : public beast::unit_test::Suite
     }
 
     void
+    testHolderReserveBypass(FeatureBitset features)
+    {
+        // AMMClawback must not let the *issuer's* XRP balance satisfy
+        // the *holder-side* owner-reserve check that auto-creates the paired
+        // asset's trustline. The equivalent holder-signed AMMWithdraw fails with
+        // tecINSUFFICIENT_RESERVE; AMMClawback must fail the same way.
+        testcase("test holder reserve not bypassed by issuer balance");
+        using namespace jtx;
+
+        // The reserve gate exercised here only exists once fixAMMv1_2 is on
+        // (AMMWithdraw::withdraw -> sufficientReserve).
+        if (!features[fixAMMv1_2])
+            return;
+
+        Env env(*this, features);
+        Account const gw{"gateway"};    // issuer + clawback authority (rich)
+        Account const carol{"carol"};   // liquidity provider / AMM creator (rich)
+        Account const alice{"alice"};   // under-reserved holder
+
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+
+        auto const baseFee = env.current()->fees().base;
+        // Reserve for exactly TWO owner objects: the USD trustline and the LP
+        // token trustline. This leaves the holder unable to afford a THIRD
+        // object (the EUR trustline that clawing back USD would auto-create).
+        auto const holderReserve = env.current()->fees().accountReserve(2, 1);
+
+        env.fund(XRP(1'000'000), gw, carol);
+        env.fund(holderReserve + baseFee * 5, alice);
+        env.close();
+
+        env(fset(gw, asfAllowTrustLineClawback));
+        env(fset(gw, asfDefaultRipple));
+        env.close();
+
+        // carol seeds a USD/EUR pool (both assets issued by gw).
+        env.trust(usd(1'000'000), carol);
+        env.trust(eur(1'000'000), carol);
+        env(pay(gw, carol, usd(100'000)));
+        env(pay(gw, carol, eur(100'000)));
+        env.close();
+        AMM amm(env, carol, usd(1'000), eur(1'000), Ter(tesSUCCESS));
+        env.close();
+
+        // Holder gets ONLY a USD trustline + USD, then single-sided-deposits
+        // USD: now holds LP tokens and a USD trustline, but no EUR trustline.
+        env.trust(usd(100'000), alice);
+        env(pay(gw, alice, usd(1'000)));
+        env.close();
+        amm.deposit(alice, usd(100));
+        env.close();
+
+        // Two owner objects (USD trustline + LP token trustline); holder cannot
+        // afford a third.
+        BEAST_EXPECT(env.ownerCount(alice) == 2);
+
+        // CONTROL: the holder-signed withdrawal path correctly refuses to create
+        // the EUR trustline the holder cannot afford.
+        amm.withdraw(WithdrawArg{
+            .account = alice,
+            .asset1Out = eur(1),
+            .err = Ter(tecINSUFFICIENT_RESERVE)});
+        env.close();
+        BEAST_EXPECT(env.ownerCount(alice) == 2);
+
+        // the issuer-signed clawback must gate the auto-created EUR
+        // trustline on the *holder's* balance, not on gw's preFeeBalance_.
+        if (features[fixAMMClawbackReserve1])
+        {
+            // With the fix, the clawback fails exactly like the control
+            // withdrawal above: no forced trustline, OwnerCount unchanged.
+            env(amm::ammClawback(gw, alice, usd, eur, usd(10)),
+                Ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+            BEAST_EXPECT(env.ownerCount(alice) == 2);
+        }
+        else
+        {
+            // Legacy bug: gw's large XRP balance wrongly clears the holder-side
+            // gate, so the clawback succeeds, force-creating alice's EUR
+            // trustline and bumping OwnerCount to 3 (under-reserved holder).
+            env(amm::ammClawback(gw, alice, usd, eur, usd(10)), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.ownerCount(alice) == 3);
+        }
+    }
+
+    void
     run() override
     {
         // For now, just disable SAV entirely, which locks in the small Number
@@ -2542,7 +2631,11 @@ class AMMClawback_test : public beast::unit_test::Suite
             testAssetFrozen(features);
             testSingleDepositAndClawback(features);
             testLastHolderLPTokenBalance(features);
+            testHolderReserveBypass(features);
         }
+
+        // exercise the pre-amendment (legacy) reserve-bypass path.
+        testHolderReserveBypass(all - fixAMMClawbackReserve1);
     }
 };
 BEAST_DEFINE_TESTSUITE(AMMClawback, app, xrpl);

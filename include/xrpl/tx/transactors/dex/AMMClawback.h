@@ -65,6 +65,8 @@ private:
      * @param amount2Balance current AMM asset2 balance
      * @param lptAMMBalance current AMM LPT balance
      * @param amount asset1 withdraw amount
+     * @param reserveBalance holder's XRP balance used to gate auto-creating the
+     *        paired asset's trustline (see reserveBalance in applyGuts)
      * @return
      */
     std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
@@ -77,7 +79,8 @@ private:
         STAmount const& amount2Balance,
         STAmount const& lptAMMBalance,
         STAmount const& holdLPtokens,
-        STAmount const& amount);
+        STAmount const& amount,
+        XRPAmount const& reserveBalance);
 };
 
 }  // namespace xrpl
