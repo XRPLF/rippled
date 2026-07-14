@@ -163,6 +163,18 @@ otelcol.processor.transform "tier" {
       `delete_key(attributes, "telemetry.sdk.language")`,
       `delete_key(attributes, "telemetry.sdk.name")`,
       `delete_key(attributes, "telemetry.sdk.version")`,
+      // Grouped legend labels for the Grafana dashboards (kept in sync with the
+      // reference collector's transform/legendgroups). The Cloud gateway
+      // promotes these resource attributes to Prometheus labels server-side.
+      //   * resource_group: node id, optionally suffixed with network type.
+      //   * iac_group: perf-iac branch/role/work-item. A generic node like this
+      //     one does not set those attrs, so the guard leaves iac_group unset;
+      //     it is built only on perf-comparison nodes. The guard checks != ""
+      //     as well as != nil because OTTL Concat emits a stray separator for an
+      //     empty element.
+      `set(attributes["resource_group"], attributes["service.instance.id"]) where attributes["service.instance.id"] != nil and attributes["service.instance.id"] != ""`,
+      `set(attributes["resource_group"], Concat([attributes["resource_group"], attributes["xrpl.network.type"]], "-")) where attributes["resource_group"] != nil and attributes["xrpl.network.type"] != nil and attributes["xrpl.network.type"] != ""`,
+      `set(attributes["iac_group"], Concat([attributes["xrpl.branch"], attributes["xrpl.node.role"], attributes["xrpl.work.item"]], "-")) where attributes["xrpl.branch"] != nil and attributes["xrpl.branch"] != "" and attributes["xrpl.node.role"] != nil and attributes["xrpl.node.role"] != "" and attributes["xrpl.work.item"] != nil and attributes["xrpl.work.item"] != ""`,
     ]
   }
 
