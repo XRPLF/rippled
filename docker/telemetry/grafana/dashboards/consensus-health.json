@@ -373,7 +373,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         },
         "legend": {
           "displayMode": "table",
