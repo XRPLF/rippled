@@ -156,7 +156,7 @@ _ARCHS: dict[str, Architecture] = {
 }
 
 
-def expand_linux_matrix(linux: LinuxFile, minimal: bool = False) -> list[MatrixEntry]:
+def expand_linux_matrix(linux: LinuxFile, minimal: bool) -> list[MatrixEntry]:
     """Expand a LinuxFile into a flat list of matrix entries.
 
     Each config entry is expanded over the cross-product of its
@@ -226,9 +226,7 @@ def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
     return entries
 
 
-def expand_platform_matrix(
-    pf: PlatformFile, minimal: bool = False
-) -> list[MatrixEntry]:
+def expand_platform_matrix(pf: PlatformFile, minimal: bool) -> list[MatrixEntry]:
     """Expand a PlatformFile (macOS or Windows) into matrix entries.
 
     When 'minimal' is true, only configs flagged as minimal are included.
