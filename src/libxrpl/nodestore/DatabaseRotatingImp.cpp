@@ -65,7 +65,7 @@ DatabaseRotatingImp::rotate(
 
         writableBackend_ = std::move(newBackend);
 
-        copyForwards = copyForwardCount_.exchange(0, std::memory_order_acq_rel);
+        copyForwards = copyForwardCount_.exchange(0, std::memory_order_relaxed);
     }
 
     if (copyForwards > 0)
@@ -205,7 +205,7 @@ DatabaseRotatingImp::fetchNodeObject(
             if (duplicate || rotationInFlight_.load(std::memory_order_acquire))
             {
                 if (!duplicate)
-                    ++copyForwardCount_;
+                    copyForwardCount_.fetch_add(1, std::memory_order_relaxed);
                 writable->store(nodeObject);
             }
         }
