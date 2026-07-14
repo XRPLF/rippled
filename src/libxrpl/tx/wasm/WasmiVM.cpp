@@ -804,7 +804,7 @@ namespace {
 struct CustomSection
 {
     std::string_view name;
-    std::span<uint8_t const> payload;
+    std::span<char const> payload;
 };
 
 struct Version
@@ -853,8 +853,8 @@ filterCustomSections(Bytes const& wasmCode, Filter&& filter)
             offset += size;
 
             size = nextSection - offset;
-            customSection.payload = std::span<uint8_t const>{
-                reinterpret_cast<uint8_t const*>(wasmCode.data()) + offset, size};
+            customSection.payload = std::span<char const>{
+                reinterpret_cast<char const*>(wasmCode.data()) + offset, size};
 
             if (filter(customSection))
             {
@@ -879,7 +879,7 @@ extractVersionInfo(Bytes const& wasmCode)
                 Version{
                     .name = section.name,
                     .version = std::string_view{
-                        reinterpret_cast<char const*>(section.payload.data()),
+                        section.payload.data(),
                         section.payload.size()}});
         }
 
