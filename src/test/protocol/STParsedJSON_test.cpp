@@ -1980,7 +1980,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
             json::Value j;
             json::Value obj(json::ValueType::Object);
             json::Value* current = &obj;
-            for (std::size_t i = 0; i < 63; ++i)
+            for (std::size_t i = 1; i < kMaxParsedJsonDepth; ++i)
             {
                 json::Value const next(json::ValueType::Object);
                 (*current)[sfTransactionMetaData] = next;
@@ -1999,7 +1999,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
             json::Value j;
             json::Value obj(json::ValueType::Object);
             json::Value* current = &obj;
-            for (std::size_t i = 0; i < 64; ++i)
+            for (std::size_t i = 1; i <= kMaxParsedJsonDepth; ++i)
             {
                 json::Value const next(json::ValueType::Object);
                 (*current)[sfTransactionMetaData] = next;
