@@ -479,7 +479,11 @@ ValidVault::finalize(
         // pending loan (Borrower present, CounterpartySignature absent).
         if (afterVault.assetsReserved != beforeVault.assetsReserved)
         {
-            bool const pendingLoanSet = txnType == ttLOAN_SET && tx.isFieldPresent(sfBorrower) &&
+            bool const pendingLoanSet = txnType == ttLOAN_SET &&
+                tx.isFieldPresent(sfBorrower) &&
+                tx.isFieldPresent(sfStartDate) &&
+                !tx.isFieldPresent(sfCounterpartySignature) &&
+                !tx.isFieldPresent(sfCounterparty);
                 !tx.isFieldPresent(sfCounterpartySignature);
             if (txnType != ttLOAN_DELETE && txnType != ttLOAN_ACCEPT && !pendingLoanSet)
             {
