@@ -437,7 +437,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.job_type}] [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "\u00b5s",
           "custom": {
             "drawStyle": "line",

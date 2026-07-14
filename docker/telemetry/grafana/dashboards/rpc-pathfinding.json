@@ -462,7 +462,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.method}] [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ops",
           "custom": {
             "axisLabel": "Calls / Sec",
@@ -512,7 +512,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.method}] [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -562,7 +562,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.grpc_status}] [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ops",
           "custom": {
             "axisLabel": "Calls / Sec",

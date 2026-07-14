@@ -137,7 +137,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.proposal_trusted}] [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ops"
         },
         "overrides": []
@@ -180,7 +180,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.validation_trusted}] [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ops"
         },
         "overrides": []

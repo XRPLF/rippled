@@ -80,7 +80,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.consensus_mode}] [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ops",
           "custom": {
             "axisLabel": "Events / Sec",
@@ -664,7 +664,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.close_time_correct}] [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ops",
           "custom": {
             "axisLabel": "Rounds / Sec",
@@ -930,7 +930,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.consensus_state}] [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "short"
         },
         "overrides": []
@@ -1090,7 +1090,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.mode_new}] [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ops",
           "custom": {
             "axisLabel": "Mode Changes / Sec",
@@ -1141,7 +1141,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.reason}] [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ops",
           "custom": {
             "axisLabel": "Mismatches / Sec",
