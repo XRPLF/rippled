@@ -484,7 +484,6 @@ ValidVault::finalize(
                 tx.isFieldPresent(sfStartDate) &&
                 !tx.isFieldPresent(sfCounterpartySignature) &&
                 !tx.isFieldPresent(sfCounterparty);
-                !tx.isFieldPresent(sfCounterpartySignature);
             if (txnType != ttLOAN_DELETE && txnType != ttLOAN_ACCEPT && !pendingLoanSet)
             {
                 JLOG(j.fatal()) << "Invariant failed: vault AssetsReserved changed "
