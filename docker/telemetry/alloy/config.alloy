@@ -157,9 +157,9 @@ otelcol.processor.transform "tier" {
       // TRACES and go straight to the batch processor, bypassing the metric
       // resource statements. Building the labels on the span resource keeps
       // span-based dashboard panels' legends consistent with native metrics.
-      `set(attributes["resource_group"], attributes["service.instance.id"]) where attributes["service.instance.id"] != nil and attributes["service.instance.id"] != ""`,
-      `set(attributes["resource_group"], Concat([attributes["resource_group"], attributes["xrpl.network.type"]], "-")) where attributes["resource_group"] != nil and attributes["xrpl.network.type"] != nil and attributes["xrpl.network.type"] != ""`,
-      `set(attributes["iac_group"], Concat([attributes["xrpl.branch"], attributes["xrpl.node.role"], attributes["xrpl.work.item"]], "-")) where attributes["xrpl.branch"] != nil and attributes["xrpl.branch"] != "" and attributes["xrpl.node.role"] != nil and attributes["xrpl.node.role"] != "" and attributes["xrpl.work.item"] != nil and attributes["xrpl.work.item"] != ""`,
+      `set(attributes["resource_group"], Concat(["[", attributes["service.instance.id"], "]"], "")) where attributes["service.instance.id"] != nil and attributes["service.instance.id"] != ""`,
+      `set(attributes["resource_group"], Concat(["[", attributes["service.instance.id"], ", ", attributes["xrpl.network.type"], "]"], "")) where attributes["service.instance.id"] != nil and attributes["service.instance.id"] != "" and attributes["xrpl.network.type"] != nil and attributes["xrpl.network.type"] != ""`,
+      `set(attributes["iac_group"], Concat(["[", Concat([attributes["xrpl.branch"], attributes["xrpl.node.role"], attributes["xrpl.work.item"]], ", "), "]"], "")) where attributes["xrpl.branch"] != nil and attributes["xrpl.branch"] != "" and attributes["xrpl.node.role"] != nil and attributes["xrpl.node.role"] != "" and attributes["xrpl.work.item"] != nil and attributes["xrpl.work.item"] != ""`,
     ]
   }
 
@@ -181,9 +181,9 @@ otelcol.processor.transform "tier" {
       //     it is built only on perf-comparison nodes. The guard checks != ""
       //     as well as != nil because OTTL Concat emits a stray separator for an
       //     empty element.
-      `set(attributes["resource_group"], attributes["service.instance.id"]) where attributes["service.instance.id"] != nil and attributes["service.instance.id"] != ""`,
-      `set(attributes["resource_group"], Concat([attributes["resource_group"], attributes["xrpl.network.type"]], "-")) where attributes["resource_group"] != nil and attributes["xrpl.network.type"] != nil and attributes["xrpl.network.type"] != ""`,
-      `set(attributes["iac_group"], Concat([attributes["xrpl.branch"], attributes["xrpl.node.role"], attributes["xrpl.work.item"]], "-")) where attributes["xrpl.branch"] != nil and attributes["xrpl.branch"] != "" and attributes["xrpl.node.role"] != nil and attributes["xrpl.node.role"] != "" and attributes["xrpl.work.item"] != nil and attributes["xrpl.work.item"] != ""`,
+      `set(attributes["resource_group"], Concat(["[", attributes["service.instance.id"], "]"], "")) where attributes["service.instance.id"] != nil and attributes["service.instance.id"] != ""`,
+      `set(attributes["resource_group"], Concat(["[", attributes["service.instance.id"], ", ", attributes["xrpl.network.type"], "]"], "")) where attributes["service.instance.id"] != nil and attributes["service.instance.id"] != "" and attributes["xrpl.network.type"] != nil and attributes["xrpl.network.type"] != ""`,
+      `set(attributes["iac_group"], Concat(["[", Concat([attributes["xrpl.branch"], attributes["xrpl.node.role"], attributes["xrpl.work.item"]], ", "), "]"], "")) where attributes["xrpl.branch"] != nil and attributes["xrpl.branch"] != "" and attributes["xrpl.node.role"] != nil and attributes["xrpl.node.role"] != "" and attributes["xrpl.work.item"] != nil and attributes["xrpl.work.item"] != ""`,
     ]
   }
 
