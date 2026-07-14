@@ -353,6 +353,7 @@ Number::Guard::isNegative() const noexcept
 inline void
 Number::Guard::doPush(unsigned d) noexcept
 {
+    XRPL_ASSERT(d < 10, "xrpl::Number::Guard::doPush : valid digit");
     xbit_ = xbit_ || ((digits_ & 0x0000'0000'0000'000F) != 0);
     digits_ >>= 4;
     digits_ |= (d & 0x0000'0000'0000'000FULL) << 60;
@@ -449,9 +450,9 @@ Number::Guard::pushOverflow(T mantissa)
         // * For round toward zero, always rounds down to kMaxRep.
 
         auto const diff = mantissa - kMaxRep;
-        unsigned const digit = (diff * 10) / spread;
+        auto const digit = static_cast<unsigned>((diff * 10) / spread);
         XRPL_ASSERT(
-            digit < 10 && digit != 5, "xrpl::Number::Guard::pushOverflow : valid overflow digit");
+            digit < 10u && digit != 5, "xrpl::Number::Guard::pushOverflow : valid overflow digit");
 
         // Don't remove the digit from the mantissa, but add it to the guard as if it was.
         push(digit);
