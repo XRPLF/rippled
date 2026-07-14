@@ -4004,15 +4004,37 @@ class Invariants_test : public beast::unit_test::Suite
                 Account const a1{"A1"};
                 Account const a2{"A2"};
                 env.fund(XRP(1000), a1, a2);
-                BEAST_EXPECT(precloseXrp(a1, a2, env));
+                // Create a real vault so a LoanAccept - which must modify the
+                // vault it lends from - can apply a self-consistent vault delta
+                // alongside the loan mutation under test.
+                Vault const vault{env};
+                auto [createTx, vaultKeylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+                env(createTx);
+                env(vault.deposit({.depositor = a1, .id = vaultKeylet.key, .amount = XRP(10)}));
                 env.close();
 
+                // The disbursed principal shared by the loan and the vault
+                // delta for every LoanAccept case below.
+                Number const principal{100};
+
                 OpenView ov{*env.current()};
-                auto const vaultKeylet = keylet::vault(a1.id(), ov.seq());
                 auto const loanKeylet = keylet::loan(vaultKeylet.key, 1);
+
+                // Seed the vault with reserved principal (as if a pending loan
+                // had already set it aside) so LoanAccept can release it.
+                AccountID vaultPseudo;
+                {
+                    auto const sleVaultBase = ov.read(vaultKeylet);
+                    if (!BEAST_EXPECT(sleVaultBase))
+                        return;
+                    vaultPseudo = sleVaultBase->getAccountID(sfAccount);
+                    auto sleVault = std::make_shared<SLE>(*sleVaultBase);
+                    sleVault->at(sfAssetsReserved) = principal;
+                    ov.rawReplace(sleVault);
+                }
                 {
                     auto sleLoan = std::make_shared<SLE>(loanKeylet);
-                    sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                    sleLoan->at(sfPrincipalOutstanding) = principal;
                     sleLoan->at(sfTotalValueOutstanding) = Number(150);
                     sleLoan->at(sfManagementFeeOutstanding) = Number(0);
                     sleLoan->at(sfPeriodicPayment) = Number(1);
@@ -4037,6 +4059,31 @@ class Invariants_test : public beast::unit_test::Suite
                     return;
                 mutate(sleLoan);
                 ac.view().update(sleLoan);
+
+                // A LoanAccept must modify the vault it lends from: release the
+                // reserved principal and disburse it from the vault
+                // pseudo-account. The disbursed XRP is credited to a2 so the
+                // XRP-conservation invariant is satisfied.
+                if (tx.getTxnType() == ttLOAN_ACCEPT)
+                {
+                    auto sleVault = ac.view().peek(vaultKeylet);
+                    auto slePseudo = ac.view().peek(keylet::account(vaultPseudo));
+                    auto sleDest = ac.view().peek(keylet::account(a2.id()));
+                    if (!BEAST_EXPECT(sleVault && slePseudo && sleDest))
+                        return;
+
+                    auto reservedProxy = sleVault->at(sfAssetsReserved);
+                    reservedProxy -= principal;
+                    ac.view().update(sleVault);
+
+                    STAmount const disbursed{100};
+                    slePseudo->setFieldAmount(
+                        sfBalance, slePseudo->getFieldAmount(sfBalance) - disbursed);
+                    ac.view().update(slePseudo);
+                    sleDest->setFieldAmount(
+                        sfBalance, sleDest->getFieldAmount(sfBalance) + disbursed);
+                    ac.view().update(sleDest);
+                }
 
                 auto transactor = makeTransactor(ac);
                 if (!BEAST_EXPECT(transactor))
