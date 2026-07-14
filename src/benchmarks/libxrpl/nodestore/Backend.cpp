@@ -5,53 +5,25 @@
 #include <benchmark/benchmark.h>
 #include <benchmarks/libxrpl/nodestore/NodeStoreBench.h>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
-// Backend-layer NodeStore benchmarks.
-//
-// Workloads (Insert / Fetch / Missing / Mixed / Work / StoreBatch) cover the
-// throughput cases the retired Timing_test suite used to. Correctness of the
-// fetch and store paths is verified by
-// test/nodestore/Backend_test.cpp's round-trip assertions, so these
-// benchmarks are deliberately measurement-only: they do not check return
-// values, only DoNotOptimize them.
-//
-// Microbenchmark conventions followed by every body below:
-//   - the object pool, keys, and access permutation are pre-generated before
-//     the timed loop; the loop only indexes into them (no allocation, no RNG
-//     inside the loop);
-//   - fetch workloads pre-populate the backend and sync() it untimed, so the
-//     timed fetch exercises the real read path rather than a write buffer
-//     (caveat: NuDB sync() is a no-op, see prepopulate's comment);
-//   - workloads that would otherwise wrap the pool and degrade into duplicate
-//     no-op stores (Insert, StoreBatch, Work) pin total iterations to one
-//     pool sweep via Iterations(poolSize); fetch workloads keep autotune
-//     since repeating a fetch is the realistic steady-state read pattern;
-//   - benchmark::DoNotOptimize / ClobberMemory keep results live;
-//   - the harness is built once per run, before the loop.
 namespace xrpl::NodeStore {
 namespace {
 
-// Pool sizes registered for every workload. The smallest is a Debug-mode
-// spot-check size; the largest matches Timing_test's release workload.
 constexpr std::size_t kPoolSizes[] = {1000, 10000, 100000};
-
-// Thread counts for the thread axis, mirroring Timing_test's 1 / 4 / 8.
 constexpr int kThreadCounts[] = {1, 4, 8};
-
-// Objects per storeBatch call. Owned by the benchmark - do not
-// couple this to libxrpl's kBatchWritePreallocationSize, which is documented
-// as a vector::reserve hint that does not affect the amount written.
 constexpr std::size_t kBatchSize = 256;
 
-// State shared by every thread of a single benchmark run. Thread 0 builds it
-// before the timed loop; Google Benchmark's loop-entry barrier then publishes
-// it to the other threads, and the loop-exit barrier lets thread 0 tear it
-// down safely.
+constexpr std::string_view kNamePrefix = "BM_Backend_";
+constexpr std::string_view kNameSeparator = "/";
+
 struct RunState
 {
     std::unique_ptr<BackendHarness> harness;
@@ -61,9 +33,6 @@ struct RunState
     std::vector<std::size_t> shuffle;  // [0, poolSize) permutation for random-like access
     std::size_t avgPayload = 0;        // mean getData().size() over `present`
 
-    // Tear down the harness and free the per-run pools (which are large -
-    // 100k * ~700B each) so the process resident set drops after each benchmark
-    // completes, instead of all RunStates piling up until exit.
     void
     release()
     {
@@ -75,264 +44,213 @@ struct RunState
     }
 };
 
-// Apply the (size, threads) axes to a read workload. Read workloads can
-// safely repeat their access pattern across iterations, so Google Benchmark's
-// iteration autotune is left in place. UseRealTime() reports wall-clock so
-// concurrency speedups are visible.
-void
-applyReadAxes(benchmark::Benchmark* b)
+struct SetupContext
 {
-    b->RangeMultiplier(10)->Range(kPoolSizes[0], kPoolSizes[std::size(kPoolSizes) - 1]);
-    b->Threads(1)->Threads(4)->Threads(8)->UseRealTime();
-}
+    RunState& rs;
+    Backend& backend;
+    std::size_t poolSize;
+};
 
-// --- Insert ------------------------------------------------------------------
-
-// One store() per iteration. Total stores across all threads are pinned to
-// poolSize (Iterations(N) is the per-thread iteration count in Google
-// Benchmark, so we divide by threads) - otherwise the per-thread index would
-// wrap past the pre-generated pool, NuDB::doInsert would silently swallow
-// key_exists, and the workload would degenerate into duplicate-detection
-// no-ops past one sweep.
-void
-registerInsert(BackendConfig const& bc)
+struct IterateContext
 {
-    std::string const cfg = bc.config;
-    for (auto const poolSize : kPoolSizes)
-    {
-        for (auto const threads : kThreadCounts)
-        {
-            if (poolSize % static_cast<std::size_t>(threads) != 0)
-                continue;
-            auto rs = std::make_shared<RunState>();
-            benchmark::RegisterBenchmark(
-                std::string("BM_Backend_Insert/") + bc.name,
-                [rs, cfg](benchmark::State& state) {
-                    auto const poolSize = static_cast<std::size_t>(state.range(0));
-                    if (state.thread_index() == 0)
-                    {
-                        rs->harness = std::make_unique<BackendHarness>(cfg);
-                        rs->present = makePool(1, poolSize);
-                        rs->avgPayload = averagePayload(rs->present);
-                    }
+    RunState& rs;
+    Backend& backend;
+    std::size_t index;
+    std::size_t poolSize;
+};
 
-                    std::size_t index = state.thread_index();
-                    for (auto _ : state)
-                    {
-                        rs->harness->backend->store(rs->present[index % poolSize]);
-                        index += state.threads();
-                    }
+struct Workload
+{
+    std::string_view name;
+    std::function<void(SetupContext const&)> setup;
+    std::function<void(IterateContext const&)> iterate;
+    bool reportBytes = false;  // SetBytesProcessed from rs.avgPayload
+    bool clobber = true;       // ClobberMemory after the loop (false for pure stores)
+    bool pinToPool = false;    // pin iterations to one pool sweep instead of autotuning
+};
 
-                    state.SetItemsProcessed(state.iterations());
-                    state.SetBytesProcessed(
-                        static_cast<std::int64_t>(state.iterations() * rs->avgPayload));
-                    if (state.thread_index() == 0)
-                    {
-                        rs->release();
-                    }
-                })
-                ->Arg(poolSize)
-                ->Iterations(poolSize / static_cast<std::size_t>(threads))
-                ->Threads(threads)
-                ->UseRealTime();
-        }
-    }
-}
-
-// --- Fetch -------------------------------------------------------------------
+// One store() per iteration. Iterations are pinned to one pool sweep (per
+// thread) so the index never wraps past the pool - otherwise NuDB::doInsert
+// swallows key_exists and the workload degenerates into duplicate-detection
+// no-ops.
+Workload const kInsert{
+    .name = "Insert",
+    .setup =
+        [](SetupContext const& ctx) {
+            ctx.rs.present = makePool(1, ctx.poolSize);
+            ctx.rs.avgPayload = averagePayload(ctx.rs.present);
+        },
+    .iterate =
+        [](IterateContext const& ctx) {
+            auto& [rs, backend, index, poolSize] = ctx;
+            backend.store(rs.present[index % poolSize]);
+        },
+    .reportBytes = true,
+    .clobber = false,
+    .pinToPool = true,
+};
 
 // One fetch() of a present key (a hit) per iteration.
-void
-registerFetch(BackendConfig const& bc)
-{
-    auto rs = std::make_shared<RunState>();
-    std::string const cfg = bc.config;
-    auto* b = benchmark::RegisterBenchmark(
-        std::string("BM_Backend_Fetch/") + bc.name, [rs, cfg](benchmark::State& state) {
-            auto const poolSize = static_cast<std::size_t>(state.range(0));
-            if (state.thread_index() == 0)
-            {
-                rs->harness = std::make_unique<BackendHarness>(cfg);
-                rs->present = makePool(1, poolSize);
-                rs->avgPayload = averagePayload(rs->present);
-                prepopulate(*rs->harness->backend, rs->present);
-            }
+Workload const kFetch{
+    .name = "Fetch",
+    .setup =
+        [](SetupContext const& ctx) {
+            ctx.rs.present = makePool(1, ctx.poolSize);
+            ctx.rs.avgPayload = averagePayload(ctx.rs.present);
+            prepopulate(ctx.backend, ctx.rs.present);
+        },
+    .iterate =
+        [](IterateContext const& ctx) {
+            auto& [rs, backend, index, poolSize] = ctx;
+            std::shared_ptr<NodeObject> result;
+            backend.fetch(rs.present[index % poolSize]->getHash(), &result);
+            benchmark::DoNotOptimize(result);
+        },
+    .reportBytes = true,
+};
 
-            std::size_t index = state.thread_index();
-            for (auto _ : state)
+// One fetch() of a never-stored key (a miss); the backend is left empty.
+Workload const kMissing{
+    .name = "Missing",
+    .setup = [](SetupContext const& ctx) { ctx.rs.missing = makeMissingKeys(ctx.poolSize); },
+    .iterate =
+        [](IterateContext const& ctx) {
+            auto& [rs, backend, index, poolSize] = ctx;
+            std::shared_ptr<NodeObject> result;
+            backend.fetch(rs.missing[index % poolSize], &result);
+            benchmark::DoNotOptimize(result);
+        },
+};
+
+// 80% hits / 20% misses. The fetch index comes from a shuffle table so access
+// is random-like without per-iteration RNG cost; sequential `index % poolSize`
+// would be artificially cache-friendly to RocksDB's block cache.
+Workload const kMixed{
+    .name = "Mixed",
+    .setup =
+        [](SetupContext const& ctx) {
+            ctx.rs.present = makePool(1, ctx.poolSize);
+            ctx.rs.missing = makeMissingKeys(ctx.poolSize);
+            ctx.rs.shuffle = makeShuffle(ctx.poolSize, /*seed=*/1);
+            prepopulate(ctx.backend, ctx.rs.present);
+        },
+    .iterate =
+        [](IterateContext const& ctx) {
+            auto& [rs, backend, index, poolSize] = ctx;
+            std::shared_ptr<NodeObject> result;
+            auto const pick = rs.shuffle[index % poolSize];
+            if (index % 5 == 0)
             {
-                std::shared_ptr<NodeObject> result;
-                rs->harness->backend->fetch(rs->present[index % poolSize]->getHash(), &result);
-                benchmark::DoNotOptimize(result);
-                index += state.threads();
+                backend.fetch(rs.missing[pick], &result);
             }
+            else
+            {
+                backend.fetch(rs.present[pick]->getHash(), &result);
+            }
+            benchmark::DoNotOptimize(result);
+        },
+};
+
+// An xrpld-like cycle: a hit, a maybe-miss recent fetch, and a store. The
+// recent fetch uses the shuffle table (not `slot`) so it doesn't fetch the item
+// it's about to store this iteration - which would give an all-miss-then-hit
+// step instead of a smooth ramp. The store walks sequentially so each recent
+// object is stored once.
+Workload const kWork{
+    .name = "Work",
+    .setup =
+        [](SetupContext const& ctx) {
+            ctx.rs.present = makePool(1, ctx.poolSize);
+            ctx.rs.recent = makePool(1, ctx.poolSize, ctx.poolSize);
+            ctx.rs.shuffle = makeShuffle(ctx.poolSize, /*seed=*/2);
+            prepopulate(ctx.backend, ctx.rs.present);
+        },
+    .iterate =
+        [](IterateContext const& ctx) {
+            auto& [rs, backend, index, poolSize] = ctx;
+            auto const slot = index % poolSize;
+            auto const pick = rs.shuffle[slot];
+
+            std::shared_ptr<NodeObject> historical;
+            backend.fetch(rs.present[pick]->getHash(), &historical);
+            benchmark::DoNotOptimize(historical);
+
+            std::shared_ptr<NodeObject> recent;
+            backend.fetch(rs.recent[pick]->getHash(), &recent);
+            benchmark::DoNotOptimize(recent);
+
+            backend.store(rs.recent[slot]);
+        },
+    .clobber = true,
+    .pinToPool = true,
+};
+
+auto
+makeRunner(Workload w, std::string cfg, std::shared_ptr<RunState> rs)
+{
+    return [w = std::move(w), cfg = std::move(cfg), rs = std::move(rs)](benchmark::State& state) {
+        auto const poolSize = static_cast<std::size_t>(state.range(0));
+        if (state.thread_index() == 0)
+        {
+            rs->harness = std::make_unique<BackendHarness>(cfg);
+            w.setup(
+                SetupContext{.rs = *rs, .backend = *rs->harness->backend, .poolSize = poolSize});
+        }
+
+        std::size_t index = state.thread_index();
+        for (auto _ : state)
+        {
+            w.iterate(
+                IterateContext{
+                    .rs = *rs,
+                    .backend = *rs->harness->backend,
+                    .index = index,
+                    .poolSize = poolSize});
+            index += state.threads();
+        }
+
+        if (w.clobber)
             benchmark::ClobberMemory();
 
-            state.SetItemsProcessed(state.iterations());
+        state.SetItemsProcessed(state.iterations());
+        if (w.reportBytes)
             state.SetBytesProcessed(static_cast<std::int64_t>(state.iterations() * rs->avgPayload));
-            if (state.thread_index() == 0)
-            {
-                rs->release();
-            }
-        });
-    applyReadAxes(b);
+
+        if (state.thread_index() == 0)
+            rs->release();
+    };
 }
 
-// --- Missing -----------------------------------------------------------------
-
-// One fetch() of a prefix-2 key (a miss) per iteration. The backend is left
-// empty, so every lookup misses.
+// Register workload `w` against backend `bc`, choosing the registration shape
+// from `w.pinToPool`.
 void
-registerMissing(BackendConfig const& bc)
-{
-    auto rs = std::make_shared<RunState>();
-    std::string const cfg = bc.config;
-    auto* b = benchmark::RegisterBenchmark(
-        std::string("BM_Backend_Missing/") + bc.name, [rs, cfg](benchmark::State& state) {
-            auto const poolSize = static_cast<std::size_t>(state.range(0));
-            if (state.thread_index() == 0)
-            {
-                rs->harness = std::make_unique<BackendHarness>(cfg);
-                rs->missing = makeMissingKeys(poolSize);
-            }
-
-            std::size_t index = state.thread_index();
-            for (auto _ : state)
-            {
-                std::shared_ptr<NodeObject> result;
-                rs->harness->backend->fetch(rs->missing[index % poolSize], &result);
-                benchmark::DoNotOptimize(result);
-                index += state.threads();
-            }
-            benchmark::ClobberMemory();
-
-            state.SetItemsProcessed(state.iterations());
-            if (state.thread_index() == 0)
-            {
-                rs->release();
-            }
-        });
-    applyReadAxes(b);
-}
-
-// --- Mixed -------------------------------------------------------------------
-
-// 80% present-key hits, 20% missing-key misses. The fetch index is taken from
-// a pre-built shuffle table so the access pattern is random-like (matching
-// Timing_test's per-fetch uniform_int_distribution) without paying for the
-// distribution inside the timed region. A sequential `index % poolSize` would
-// be artificially cache-friendly to RocksDB's block cache.
-void
-registerMixed(BackendConfig const& bc)
-{
-    auto rs = std::make_shared<RunState>();
-    std::string const cfg = bc.config;
-    auto* b = benchmark::RegisterBenchmark(
-        std::string("BM_Backend_Mixed/") + bc.name, [rs, cfg](benchmark::State& state) {
-            auto const poolSize = static_cast<std::size_t>(state.range(0));
-            if (state.thread_index() == 0)
-            {
-                rs->harness = std::make_unique<BackendHarness>(cfg);
-                rs->present = makePool(1, poolSize);
-                rs->missing = makeMissingKeys(poolSize);
-                rs->shuffle = makeShuffle(poolSize, /*seed=*/1);
-                prepopulate(*rs->harness->backend, rs->present);
-            }
-
-            std::size_t index = state.thread_index();
-            for (auto _ : state)
-            {
-                std::shared_ptr<NodeObject> result;
-                auto const pick = rs->shuffle[index % poolSize];
-                if (index % 5 == 0)
-                {
-                    rs->harness->backend->fetch(rs->missing[pick], &result);
-                }
-                else
-                {
-                    rs->harness->backend->fetch(rs->present[pick]->getHash(), &result);
-                }
-                benchmark::DoNotOptimize(result);
-                index += state.threads();
-            }
-            benchmark::ClobberMemory();
-
-            state.SetItemsProcessed(state.iterations());
-            if (state.thread_index() == 0)
-            {
-                rs->release();
-            }
-        });
-    applyReadAxes(b);
-}
-
-// --- Work --------------------------------------------------------------------
-
-// An xrpld-like cycle per iteration: a historical lookup that always hits, a
-// recent lookup whose hit rate grows smoothly with iteration progress, and
-// the insert of a new (recent) object.
-//
-// The recent fetch picks its index via a shuffle table so the lookup is
-// random within the recent space - if it used `index % poolSize` directly it
-// would fetch the very item it is about to store at the same iteration body,
-// producing an all-miss-then-all-hit step function instead of a smooth ramp.
-// Total stores across all threads are pinned to poolSize (see registerInsert
-// for the per-thread-vs-total accounting) so the store side does not wrap
-// into duplicate-detection no-ops.
-void
-registerWork(BackendConfig const& bc)
+registerWorkload(BackendConfig const& bc, Workload const& w)
 {
     std::string const cfg = bc.config;
+    std::string name{kNamePrefix};
+    name += w.name;
+    name += kNameSeparator;
+    name += bc.name;
+
+    if (!w.pinToPool)
+    {
+        auto rs = std::make_shared<RunState>();
+        auto* b = benchmark::RegisterBenchmark(name, makeRunner(w, cfg, rs));
+        b->RangeMultiplier(10)->Range(kPoolSizes[0], kPoolSizes[std::size(kPoolSizes) - 1]);
+        b->Threads(1)->Threads(4)->Threads(8)->UseRealTime();
+
+        return;
+    }
+
     for (auto const poolSize : kPoolSizes)
     {
         for (auto const threads : kThreadCounts)
         {
             if (poolSize % static_cast<std::size_t>(threads) != 0)
                 continue;
+
             auto rs = std::make_shared<RunState>();
-            benchmark::RegisterBenchmark(
-                std::string("BM_Backend_Work/") + bc.name,
-                [rs, cfg](benchmark::State& state) {
-                    auto const poolSize = static_cast<std::size_t>(state.range(0));
-                    if (state.thread_index() == 0)
-                    {
-                        rs->harness = std::make_unique<BackendHarness>(cfg);
-                        rs->present = makePool(1, poolSize);
-                        // "recent" objects live in the future key space and are
-                        // not stored yet; the insert step below populates them
-                        // over time.
-                        rs->recent = makePool(1, poolSize, poolSize);
-                        rs->shuffle = makeShuffle(poolSize, /*seed=*/2);
-                        prepopulate(*rs->harness->backend, rs->present);
-                    }
-
-                    std::size_t index = state.thread_index();
-                    for (auto _ : state)
-                    {
-                        auto const slot = index % poolSize;
-                        auto const pick = rs->shuffle[slot];
-
-                        std::shared_ptr<NodeObject> historical;
-                        rs->harness->backend->fetch(rs->present[pick]->getHash(), &historical);
-                        benchmark::DoNotOptimize(historical);
-
-                        std::shared_ptr<NodeObject> recent;
-                        rs->harness->backend->fetch(rs->recent[pick]->getHash(), &recent);
-                        benchmark::DoNotOptimize(recent);
-
-                        rs->harness->backend->store(rs->recent[slot]);
-
-                        index += state.threads();
-                    }
-                    benchmark::ClobberMemory();
-
-                    // One "item" is one cycle: fetch-hit + fetch-recent + store.
-                    state.SetItemsProcessed(state.iterations());
-                    if (state.thread_index() == 0)
-                    {
-                        rs->release();
-                    }
-                })
+            benchmark::RegisterBenchmark(name, makeRunner(w, cfg, rs))
                 ->Arg(poolSize)
                 ->Iterations(poolSize / static_cast<std::size_t>(threads))
                 ->Threads(threads)
@@ -341,28 +259,28 @@ registerWork(BackendConfig const& bc)
     }
 }
 
-// --- StoreBatch --------------------------------------------------------------
-
 // One storeBatch() of kBatchSize objects per iteration. Single-threaded:
-// Backend::storeBatch must not be called concurrently with itself or store().
-// Iterations are pinned to batches.size() so the batch index never wraps -
-// otherwise per-batch stores degenerate into key_exists no-ops, same as
-// BM_Backend_Insert.
+// Backend::storeBatch must not run concurrently with itself or store().
+// Iterations are pinned to the batch count so the index never wraps into
+// key_exists no-ops. Kept separate from Workload: batch slicing and the
+// per-batch item/byte accounting don't fit the thread-axis mold.
 void
 registerStoreBatch(BackendConfig const& bc)
 {
     std::string const cfg = bc.config;
+    std::string name{kNamePrefix};
+    name += "StoreBatch";
+    name += kNameSeparator;
+    name += bc.name;
     for (auto const poolSize : kPoolSizes)
     {
-        // The pre-flight skip below relies on this; keep the registration in
-        // sync with sliceBatches' "drop trailing remainder" rule.
         auto const numBatches = poolSize / kBatchSize;
         if (numBatches == 0)
             continue;
 
         auto rs = std::make_shared<RunState>();
         benchmark::RegisterBenchmark(
-            std::string("BM_Backend_StoreBatch/") + bc.name,
+            name,
             [rs, cfg](benchmark::State& state) {
                 auto const poolSize = static_cast<std::size_t>(state.range(0));
                 rs->harness = std::make_unique<BackendHarness>(cfg);
@@ -392,16 +310,13 @@ registerStoreBatch(BackendConfig const& bc)
     }
 }
 
-// Register every workload against every configured backend. Google Benchmark
-// collects benchmarks from static initializers, before main() runs.
 [[maybe_unused]] bool const kRegistered = [] {
+    auto const workloads = std::to_array({&kInsert, &kFetch, &kMissing, &kMixed, &kWork});
     for (auto const& bc : backendConfigs())
     {
-        registerInsert(bc);
-        registerFetch(bc);
-        registerMissing(bc);
-        registerMixed(bc);
-        registerWork(bc);
+        for (auto const* w : workloads)
+            registerWorkload(bc, *w);
+
         registerStoreBatch(bc);
     }
     return true;
