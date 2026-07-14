@@ -31,8 +31,8 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "peer_quality{metric=\"peer_latency_p90_ms\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}",
-          "legendFormat": "P90 Latency [{{service_instance_id}}]"
+          "expr": "label_replace(peer_quality{metric=\"peer_latency_p90_ms\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"P90 Latency\", \"\", \"\")",
+          "legendFormat": "__auto"
         }
       ],
       "fieldConfig": {
@@ -43,7 +43,7 @@
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 10,
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -69,7 +69,86 @@
           }
         },
         "overrides": []
-      }
+      },
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
+            "renamePattern": "$1 [$2, $4]-[$3, $5]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/,\\s*\\]/g",
+            "renamePattern": "]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[,\\s*/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]-\\[/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/-\\[\\]/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]\\s*$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s*\\[\\]\\s*$/g",
+            "renamePattern": "all"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\s{2,}/g",
+            "renamePattern": " "
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s+|\\s+$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^$/g",
+            "renamePattern": "all"
+          }
+        }
+      ]
     },
     {
       "title": "Insane/Diverged Peers",
@@ -93,8 +172,8 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "peer_quality{metric=\"peers_insane_count\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}",
-          "legendFormat": "Insane Peers [{{service_instance_id}}]"
+          "expr": "label_replace(peer_quality{metric=\"peers_insane_count\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Insane Peers\", \"\", \"\")",
+          "legendFormat": "__auto"
         }
       ],
       "fieldConfig": {
@@ -119,7 +198,86 @@
           "custom": {}
         },
         "overrides": []
-      }
+      },
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
+            "renamePattern": "$1 [$2, $4]-[$3, $5]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/,\\s*\\]/g",
+            "renamePattern": "]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[,\\s*/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]-\\[/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/-\\[\\]/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]\\s*$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s*\\[\\]\\s*$/g",
+            "renamePattern": "all"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\s{2,}/g",
+            "renamePattern": " "
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s+|\\s+$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^$/g",
+            "renamePattern": "all"
+          }
+        }
+      ]
     },
     {
       "title": "Higher Version Peers %",
@@ -143,8 +301,8 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "peer_quality{metric=\"peers_higher_version_pct\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}",
-          "legendFormat": "Higher Version % [{{service_instance_id}}]"
+          "expr": "label_replace(peer_quality{metric=\"peers_higher_version_pct\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Higher Version %\", \"\", \"\")",
+          "legendFormat": "__auto"
         }
       ],
       "fieldConfig": {
@@ -171,7 +329,86 @@
           "custom": {}
         },
         "overrides": []
-      }
+      },
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
+            "renamePattern": "$1 [$2, $4]-[$3, $5]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/,\\s*\\]/g",
+            "renamePattern": "]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[,\\s*/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]-\\[/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/-\\[\\]/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]\\s*$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s*\\[\\]\\s*$/g",
+            "renamePattern": "all"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\s{2,}/g",
+            "renamePattern": " "
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s+|\\s+$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^$/g",
+            "renamePattern": "all"
+          }
+        }
+      ]
     },
     {
       "title": "Upgrade Recommended",
@@ -195,8 +432,8 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "peer_quality{metric=\"upgrade_recommended\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}",
-          "legendFormat": "Upgrade [{{service_instance_id}}]"
+          "expr": "label_replace(peer_quality{metric=\"upgrade_recommended\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Upgrade\", \"\", \"\")",
+          "legendFormat": "__auto"
         }
       ],
       "fieldConfig": {
@@ -237,7 +474,86 @@
           "custom": {}
         },
         "overrides": []
-      }
+      },
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
+            "renamePattern": "$1 [$2, $4]-[$3, $5]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/,\\s*\\]/g",
+            "renamePattern": "]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[,\\s*/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]-\\[/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/-\\[\\]/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]\\s*$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s*\\[\\]\\s*$/g",
+            "renamePattern": "all"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\s{2,}/g",
+            "renamePattern": " "
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s+|\\s+$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^$/g",
+            "renamePattern": "all"
+          }
+        }
+      ]
     },
     {
       "title": "Resource Disconnects",
@@ -261,8 +577,8 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "server_info{metric=\"peer_disconnects_resources\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}",
-          "legendFormat": "Disconnects [{{service_instance_id}}]"
+          "expr": "label_replace(server_info{metric=\"peer_disconnects_resources\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Disconnects\", \"\", \"\")",
+          "legendFormat": "__auto"
         }
       ],
       "fieldConfig": {
@@ -273,7 +589,7 @@
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 10,
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
@@ -283,7 +599,86 @@
           }
         },
         "overrides": []
-      }
+      },
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
+            "renamePattern": "$1 [$2, $4]-[$3, $5]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/,\\s*\\]/g",
+            "renamePattern": "]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[,\\s*/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]-\\[/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/-\\[\\]/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]\\s*$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s*\\[\\]\\s*$/g",
+            "renamePattern": "all"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\s{2,}/g",
+            "renamePattern": " "
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s+|\\s+$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^$/g",
+            "renamePattern": "all"
+          }
+        }
+      ]
     },
     {
       "title": "Inbound vs Outbound Peers",
@@ -309,16 +704,16 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "peer_finder_active_inbound_peers{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}",
-          "legendFormat": "Inbound [{{service_instance_id}}]"
+          "expr": "label_replace(peer_finder_active_inbound_peers{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Inbound\", \"\", \"\")",
+          "legendFormat": "__auto"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "peer_finder_active_outbound_peers{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}",
-          "legendFormat": "Outbound [{{service_instance_id}}]"
+          "expr": "label_replace(peer_finder_active_outbound_peers{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Outbound\", \"\", \"\")",
+          "legendFormat": "__auto"
         }
       ],
       "fieldConfig": {
@@ -366,7 +761,86 @@
             ]
           }
         ]
-      }
+      },
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
+            "renamePattern": "$1 [$2, $4]-[$3, $5]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/,\\s*\\]/g",
+            "renamePattern": "]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[,\\s*/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]-\\[/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/-\\[\\]/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]\\s*$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s*\\[\\]\\s*$/g",
+            "renamePattern": "all"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\s{2,}/g",
+            "renamePattern": " "
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s+|\\s+$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^$/g",
+            "renamePattern": "all"
+          }
+        }
+      ]
     }
   ],
   "schemaVersion": 39,
