@@ -8,3 +8,4 @@ data/
 !.env.alerting.example
 !.env.grafanacloud.example
 !.env.grafanacloud-alloy.example
+grafanacloud/*.json
