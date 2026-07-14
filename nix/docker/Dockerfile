@@ -76,7 +76,7 @@ RUN /tmp/check-tools.sh
 
 # Sanity-check that the g++/clang++ are able to build binaries, including sanitizer-instrumented ones.
 COPY nix/docker/test_files/cpp/ /tmp/test_files/cpp/
-RUN /tmp/test_files/cpp/compile-sources.sh /tmp/test_files/cpp/sources /tmp/bins
+RUN /tmp/test_files/cpp/compile-sources.sh /tmp/test_files/cpp/sources /tmp/cpp-bins
 
 # Sanity-check that rustc is able to build binaries, including ones that rely on
 # the runtime overflow check.
@@ -100,7 +100,7 @@ SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 COPY bin/install-sanitizer-libs.sh /tmp/install-sanitizer-libs.sh
 COPY nix/docker/test_files/cpp/run-binaries.sh /tmp/test_files/cpp/run-binaries.sh
 COPY nix/docker/test_files/rust/run-binaries.sh /tmp/test_files/rust/run-binaries.sh
-COPY --from=final /tmp/bins /tmp/bins
+COPY --from=final /tmp/cpp-bins /tmp/cpp-bins
 COPY --from=final /tmp/rust-bins /tmp/rust-bins
 
 RUN <<EOF
@@ -108,7 +108,7 @@ if echo "${BASE_IMAGE}" | grep -qiE 'nixos'; then
     echo "Skipping runnning binaries on NixOS."
 else
     /tmp/install-sanitizer-libs.sh
-    /tmp/test_files/cpp/run-binaries.sh /tmp/bins
+    /tmp/test_files/cpp/run-binaries.sh /tmp/cpp-bins
     /tmp/test_files/rust/run-binaries.sh /tmp/rust-bins
 fi
 touch /tmp/tests-passed

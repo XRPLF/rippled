@@ -42,7 +42,7 @@ work without `ca-certificates` being installed in the base image.
    - installs the dynamic linker if the base image lacks one (see
      [How libc is handled](#how-libc-is-handled)),
    - runs [`bin/check-tools.sh`](../../bin/check-tools.sh) to verify every
-     expected tool is present and runnable, and
+     expected tool is present and runnable.
    - compiles the C++ test programs in
      [`test_files/cpp/sources/`](./test_files/cpp/sources) with both `g++` and
      `clang++`, and sanitizers, and

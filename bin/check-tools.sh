@@ -118,13 +118,13 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
     echo
     echo "Rust toolchain:"
     check cargo
-    check rustc
-    check rustfmt
+    check cargo-audit cargo audit --version
+    check cargo-llvm-cov cargo llvm-cov --version
+    check cargo-nextest cargo nextest --version
     check clippy clippy-driver --version
     check rust-analyzer
-    check cargo-audit cargo audit --version
-    check cargo-nextest cargo nextest --version
-    check cargo-llvm-cov cargo llvm-cov --version
+    check rustc
+    check rustfmt
 fi
 
 # GCC is the default compiler on Linux. macOS uses the system Apple Clang
