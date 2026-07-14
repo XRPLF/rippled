@@ -52,7 +52,7 @@ jobs:
   should-run:
     if: >-
       ${{
-        (github.event.action != 'labeled' && github.event.action != 'unlabeled'
+        ((github.event.action != 'labeled' && github.event.action != 'unlabeled')
           || github.event.label.name == 'Ready to merge'
           || github.event.label.name == 'DraftRunCI'
           || github.event.label.name == 'Full CI build')
