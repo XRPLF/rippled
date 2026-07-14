@@ -1,3 +1,5 @@
+#include <xrpl/nodestore/Backend.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Types.h>
@@ -12,6 +14,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace xrpl::NodeStore {
