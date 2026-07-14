@@ -147,7 +147,7 @@ public:
 
     /**
      * The inner transactions of a Batch, built and validated at construction.
-     * Seated only when the batch is within the size cap.
+     * Always seated for Batch STTx instances (construction throws if oversized).
      */
     [[nodiscard]] std::vector<std::shared_ptr<STTx const>> const&
     getBatchTransactions() const;
