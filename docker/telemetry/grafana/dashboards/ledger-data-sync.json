@@ -42,7 +42,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes In",
@@ -54,16 +54,7 @@
         },
         "overrides": []
       },
-      "id": 1,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 1
     },
     {
       "title": "Ledger Data \u2014 Transaction",
@@ -110,7 +101,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes In",
@@ -122,16 +113,7 @@
         },
         "overrides": []
       },
-      "id": 2,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 2
     },
     {
       "title": "Ledger Data \u2014 Account State",
@@ -166,7 +148,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes In",
@@ -178,16 +160,7 @@
         },
         "overrides": []
       },
-      "id": 3,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 3
     },
     {
       "title": "Ledger Traffic \u2014 Ledger",
@@ -222,7 +195,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes In",
@@ -234,16 +207,7 @@
         },
         "overrides": []
       },
-      "id": 4,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 4
     },
     {
       "title": "Ledger Traffic \u2014 Transaction",
@@ -290,7 +254,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes In",
@@ -302,16 +266,7 @@
         },
         "overrides": []
       },
-      "id": 5,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 5
     },
     {
       "title": "Ledger Traffic \u2014 Account State",
@@ -346,7 +301,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes In",
@@ -358,16 +313,7 @@
         },
         "overrides": []
       },
-      "id": 6,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 6
     },
     {
       "title": "GetObject \u2014 Ledger",
@@ -402,7 +348,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes In",
@@ -414,16 +360,7 @@
         },
         "overrides": []
       },
-      "id": 7,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 7
     },
     {
       "title": "GetObject \u2014 Transaction",
@@ -470,7 +407,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes In",
@@ -482,16 +419,7 @@
         },
         "overrides": []
       },
-      "id": 8,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 8
     },
     {
       "title": "GetObject \u2014 Account State",
@@ -526,7 +454,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes In",
@@ -538,16 +466,7 @@
         },
         "overrides": []
       },
-      "id": 9,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 9
     },
     {
       "title": "GetObject Messages \u2014 Ledger",
@@ -576,7 +495,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "cps",
           "custom": {
             "axisLabel": "Messages In",
@@ -588,16 +507,7 @@
         },
         "overrides": []
       },
-      "id": 10,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 10
     },
     {
       "title": "GetObject Messages \u2014 Transaction",
@@ -632,7 +542,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "cps",
           "custom": {
             "axisLabel": "Messages In",
@@ -644,16 +554,7 @@
         },
         "overrides": []
       },
-      "id": 11,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 11
     },
     {
       "title": "GetObject Messages \u2014 Account State",
@@ -682,7 +583,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "cps",
           "custom": {
             "axisLabel": "Messages In",
@@ -694,16 +595,7 @@
         },
         "overrides": []
       },
-      "id": 12,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 12
     },
     {
       "title": "GetObject Messages \u2014 Specials",
@@ -744,7 +636,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "cps",
           "custom": {
             "axisLabel": "Messages In",
@@ -756,16 +648,7 @@
         },
         "overrides": []
       },
-      "id": 13,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 13
     },
     {
       "title": "GetObject \u2014 Specials",
@@ -830,7 +713,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes In",
@@ -842,16 +725,7 @@
         },
         "overrides": []
       },
-      "id": 14,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 14
     },
     {
       "title": "Overlay Traffic Heatmap (All Categories, Bytes In)",
@@ -887,7 +761,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "decbytes",
           "thresholds": {
             "mode": "absolute",
@@ -909,16 +783,7 @@
         },
         "overrides": []
       },
-      "id": 15,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 15
     }
   ],
   "schemaVersion": 39,
