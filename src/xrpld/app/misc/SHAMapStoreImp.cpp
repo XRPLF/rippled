@@ -437,15 +437,15 @@ SHAMapStoreImp::dbPaths()
          it != boost::filesystem::directory_iterator();
          ++it)
     {
-        if (state.writableDb.compare(it->path().string()) == 0)
+        if (state.writableDb == it->path().string())
         {
             writableDbExists = true;
         }
-        else if (state.archiveDb.compare(it->path().string()) == 0)
+        else if (state.archiveDb == it->path().string())
         {
             archiveDbExists = true;
         }
-        else if (dbPrefix_.compare(it->path().stem().string()) == 0)
+        else if (dbPrefix_ == it->path().stem().string())
         {
             pathsToDelete.push_back(it->path());
         }

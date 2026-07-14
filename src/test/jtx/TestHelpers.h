@@ -464,12 +464,8 @@ same(STPathSet const& st1, Args const&... args)
     if (st1.size() != st2.size())
         return false;
 
-    for (auto const& p : st2)
-    {
-        if (std::ranges::find(st1, p) == st1.end())
-            return false;
-    }
-    return true;
+    return std::ranges::all_of(
+        st2, [&st1](auto const& p) { return std::ranges::find(st1, p) != st1.end(); });
 }
 
 json::Value
