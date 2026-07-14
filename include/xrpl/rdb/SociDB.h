@@ -13,7 +13,7 @@
 #include <soci/session.h>
 
 #include <memory>
-#if defined(__clang__)
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated"
 #endif
@@ -120,6 +120,6 @@ makeCheckpointer(std::uintptr_t id, std::weak_ptr<soci::session>, JobQueue&, Ser
 
 }  // namespace xrpl
 
-#if defined(__clang__)
+#ifdef __clang__
 #pragma clang diagnostic pop
 #endif

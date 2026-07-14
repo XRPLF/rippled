@@ -710,7 +710,7 @@ STObject::getFieldNumber(SField const& field) const
 void
 STObject::set(std::unique_ptr<STBase> v)
 {
-    set(std::move(*v.get()));
+    set(std::move(*v));
 }
 
 void
