@@ -231,6 +231,8 @@ struct Wasm_test : public beast::unit_test::Suite
     testVersion()
     {
         testcase("wasm lib test");
+        // wat2wasm --enable-annotations mymodule.wat -o mymodule.wasm
+        // xxd -p mymodule.wasm | tr -d '\n'
         static auto const kWasmModule = hexToBytes(
             "0061736d010000000105016000017f03020100040401700000070a010666696e69736800000a0601040041"
             "010b0018127872706c2d657363726f772d7374646c6962342e352e360018127872706c2d636f6d6d6f6e2d"
