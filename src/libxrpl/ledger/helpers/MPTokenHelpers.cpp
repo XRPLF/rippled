@@ -30,6 +30,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
@@ -83,13 +84,9 @@ isAnyFrozen(
             return true;
     }
 
-    for (auto const& account : accounts)
-    {
-        if (isVaultPseudoAccountFrozen(view, account, mptIssue, depth))
-            return true;
-    }
-
-    return false;
+    return std::ranges::any_of(accounts, [&](auto const& account) {
+        return isVaultPseudoAccountFrozen(view, account, mptIssue, depth);
+    });
 }
 
 Rate

@@ -56,32 +56,17 @@ Checks: "-*,
 
   readability-*,
   -readability-avoid-const-params-in-decls,
-  -readability-avoid-unconditional-preprocessor-if,
   -readability-container-data-pointer,
-  -readability-delete-null-pointer,
   -readability-function-cognitive-complexity,
-  -readability-function-size,
   -readability-identifier-length,
   -readability-inconsistent-declaration-parameter-name,
   -readability-isolate-declaration,
   -readability-magic-numbers,
-  -readability-misplaced-array-index,
   -readability-named-parameter,
-  -readability-operators-representation,
   -readability-qualified-auto,
   -readability-redundant-access-specifiers,
-  -readability-redundant-control-flow,
-  -readability-redundant-function-ptr-dereference,
-  -readability-redundant-preprocessor,
-  -readability-redundant-smartptr-get,
-  -readability-redundant-string-cstr,
-  -readability-simplify-subscript-expr,
   -readability-static-accessed-through-instance,
-  -readability-string-compare,
-  -readability-uniqueptr-delete-release,
-  -readability-uppercase-literal-suffix,
-  -readability-use-anyofallof,
-  -readability-use-concise-preprocessor-directives
+  -readability-uppercase-literal-suffix
   "
 # ---
 # bugprone-narrowing-conversions,                      # This will break a lot of code but we should enable it in the future because it can eliminate a lot of bugs

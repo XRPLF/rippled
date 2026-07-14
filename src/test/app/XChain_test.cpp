@@ -3923,12 +3923,10 @@ private:
         [[nodiscard]] bool
         verify() const
         {
-            for (auto const& [acct, state] : accounts)
-            {
-                if (!state.verify(env, acct))
-                    return false;
-            }
-            return true;
+            return std::ranges::all_of(accounts, [&](auto const& entry) {
+                auto const& [acct, state] = entry;
+                return state.verify(env, acct);
+            });
         }
 
         struct BridgeCounters
