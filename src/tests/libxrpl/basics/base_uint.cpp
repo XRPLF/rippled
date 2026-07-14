@@ -272,25 +272,6 @@ TEST_F(BaseUintTest, base_uint)
         static_assert(BaseUInt96("000000000000000000000001").signum() == 1);
         static_assert(BaseUInt96("800000000000000000000000").signum() == 1);
 
-// Everything within the #if should fail during compilation.
-#if 0
-            // Too few characters
-            static_assert(BaseUInt96("00000000000000000000000").signum() == 0);
-
-            // Too many characters
-            static_assert(BaseUInt96("0000000000000000000000000").signum() == 0);
-
-            // Non-hex characters
-            static_assert(BaseUInt96("00000000000000000000000 ").signum() == 1);
-            static_assert(BaseUInt96("00000000000000000000000/").signum() == 1);
-            static_assert(BaseUInt96("00000000000000000000000:").signum() == 1);
-            static_assert(BaseUInt96("00000000000000000000000@").signum() == 1);
-            static_assert(BaseUInt96("00000000000000000000000G").signum() == 1);
-            static_assert(BaseUInt96("00000000000000000000000`").signum() == 1);
-            static_assert(BaseUInt96("00000000000000000000000g").signum() == 1);
-            static_assert(BaseUInt96("00000000000000000000000~").signum() == 1);
-#endif  // 0
-
         // Using the constexpr constructor in a non-constexpr context
         // with an error in the parsing throws an exception.
         {

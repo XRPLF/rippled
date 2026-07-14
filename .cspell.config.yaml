@@ -67,6 +67,7 @@ words:
   - Btrfs
   - Buildx
   - canonicality
+  - canonicalised
   - changespq
   - checkme
   - choco
@@ -74,6 +75,7 @@ words:
   - citardauq
   - clawback
   - clawbacks
+  - clippy
   - cmaketoolchain
   - coeffs
   - coldwallet
@@ -261,6 +263,7 @@ words:
   - rocksdb
   - Rohrs
   - roundings
+  - rustc
   - sahyadri
   - Satoshi
   - scons

@@ -413,12 +413,8 @@ struct Peer
     bool
     trusts(PeerID const& oId)
     {
-        for (auto const p : trustGraph.trustedPeers(this))
-        {
-            if (p->id == oId)
-                return true;
-        }
-        return false;
+        return std::ranges::any_of(
+            trustGraph.trustedPeers(this), [&oId](auto const p) { return p->id == oId; });
     }
 
     /**
