@@ -9,7 +9,9 @@
 
 namespace xrpl::PeerFinder {
 
-/** Metadata for a Fixed slot. */
+/**
+ * Metadata for a Fixed slot.
+ */
 class Fixed
 {
 public:
@@ -19,14 +21,18 @@ public:
 
     Fixed(Fixed const&) = default;
 
-    /** Returns the time after which we should allow a connection attempt. */
+    /**
+     * Returns the time after which we should allow a connection attempt.
+     */
     [[nodiscard]] clock_type::time_point const&
     when() const
     {
         return when_;
     }
 
-    /** Updates metadata to reflect a failed connection. */
+    /**
+     * Updates metadata to reflect a failed connection.
+     */
     void
     failure(clock_type::time_point const& now)
     {
@@ -34,7 +40,9 @@ public:
         when_ = now + std::chrono::minutes(Tuning::kConnectionBackoff[failures_]);
     }
 
-    /** Updates metadata to reflect a successful connection. */
+    /**
+     * Updates metadata to reflect a successful connection.
+     */
     void
     success(clock_type::time_point const& now)
     {

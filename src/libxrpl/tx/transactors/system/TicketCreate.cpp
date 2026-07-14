@@ -75,13 +75,12 @@ TicketCreate::doApply()
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
     std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
-    {
-        XRPAmount const reserve =
-            view().fees().accountReserve(sleAccountRoot->getFieldU32(sfOwnerCount) + ticketCount);
-
-        if (preFeeBalance_ < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
+    if (preFeeBalance_ < accountReserve(
+                             view(),
+                             sleAccountRoot,
+                             j_,
+                             {.ownerCountDelta = static_cast<std::int32_t>(ticketCount)}))
+        return tecINSUFFICIENT_RESERVE;
 
     beast::Journal const viewJ{ctx_.registry.get().getJournal("View")};
 
@@ -105,6 +104,7 @@ TicketCreate::doApply()
 
         sleTicket->setAccountID(sfAccount, accountID_);
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);
+
         view().insert(sleTicket);
 
         auto const page = view().dirInsert(
@@ -125,7 +125,7 @@ TicketCreate::doApply()
     sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 
     // Every added Ticket counts against the creator's reserve.
-    adjustOwnerCount(view(), sleAccountRoot, ticketCount, viewJ);
+    increaseOwnerCount(view(), sleAccountRoot, {}, ticketCount, viewJ);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.
