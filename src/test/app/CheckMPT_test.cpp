@@ -793,15 +793,6 @@ class CheckMPT_test : public beast::unit_test::Suite
         env(check::create(alice, bob, usd(125)));
         env.close();
 
-        // alice writes another check that won't get cashed until the transfer
-        // rate changes so we can see the rate applies when the check is
-        // cashed, not when it is created.
-#if 0
-        uint256 const chkId120{getCheckIndex(alice, env.Seq(alice))};
-        env(check::create(alice, bob, USD(120)));
-        env.close();
-#endif
-
         // bob attempts to cash the check for face value.  Should fail.
         env(check::cash(bob, chkId125, usd(125)), Ter(tecPATH_PARTIAL));
         env.close();
@@ -816,21 +807,6 @@ class CheckMPT_test : public beast::unit_test::Suite
         env.require(Balance(bob, usd(0 + 100)));
         BEAST_EXPECT(checksOnAccount(env, alice).empty());
         BEAST_EXPECT(checksOnAccount(env, bob).empty());
-
-#if 0
-        // Adjust gw's rate...
-        env(rate(gw, 1.2));
-        env.close();
-
-        // bob cashes the second check for less than the face value.  The new
-        // rate applies to the actual value transferred.
-        env(check::cash(bob, chkId120, USD(50)));
-        env.close();
-        env.Require(Balance(alice, USD(1000 - 125 - 60)));
-        env.Require(Balance(bob, USD(0 + 100 + 50)));
-        BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-        BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
-#endif
     }
 
     void
