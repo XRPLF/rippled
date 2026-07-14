@@ -359,8 +359,9 @@ bool
 tokenInList(boost::string_ref const& value, boost::string_ref const& token)
 {
     auto const list = makeList(value);
-    // boost::iterator_range's ListIterator is not a std::ranges iterator, so the
-    // iterator form is used.
+    // ListIterator is not default-constructible, so it does not model a std::ranges
+    // sentinel/range; the classic std::any_of (which only needs an input iterator)
+    // is used instead.
     // NOLINTNEXTLINE(modernize-use-ranges)
     return std::any_of(
         list.begin(), list.end(), [&token](auto const& item) { return ciEqual(item, token); });
