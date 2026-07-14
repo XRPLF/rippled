@@ -37,6 +37,7 @@
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -126,12 +127,7 @@ class ElementComboIter
     [[nodiscard]] bool
     hasAny(std::initializer_list<SB> sb) const
     {
-        for (auto const s : sb)
-        {
-            if (has(s))
-                return true;
-        }
-        return false;
+        return std::ranges::any_of(sb, [this](auto const s) { return has(s); });
     }
 
     [[nodiscard]] size_t
