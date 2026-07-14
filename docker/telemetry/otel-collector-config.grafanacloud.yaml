@@ -138,15 +138,17 @@ processors:
   #     none), so one guard covers them. Unset outside perf runs -> the legend
   #     shows nothing for it.
   #   - resource_group: node id, optionally suffixed with network type.
-  # Concat is guarded on presence because OTTL Concat renders "<nil>" for an
-  # absent attribute (it does not skip it).
+  # Concat is guarded on presence (!= nil and != "") because OTTL Concat renders
+  # "<nil>" for an absent attribute and a stray separator for an empty one. The
+  # perf-iac collector stamps these with an empty-string default when a run has
+  # no work item, so the empty-string check matters, not just the nil check.
   transform/legendgroups:
     metric_statements:
       - context: resource
         statements:
-          - set(attributes["iac_group"], Concat([attributes["xrpl.branch"], attributes["xrpl.node.role"], attributes["xrpl.work.item"]], "-")) where attributes["xrpl.branch"] != nil and attributes["xrpl.node.role"] != nil and attributes["xrpl.work.item"] != nil
-          - set(attributes["resource_group"], attributes["service.instance.id"]) where attributes["service.instance.id"] != nil
-          - set(attributes["resource_group"], Concat([attributes["resource_group"], attributes["xrpl.network.type"]], "-")) where attributes["resource_group"] != nil and attributes["xrpl.network.type"] != nil
+          - set(attributes["iac_group"], Concat([attributes["xrpl.branch"], attributes["xrpl.node.role"], attributes["xrpl.work.item"]], "-")) where attributes["xrpl.branch"] != nil and attributes["xrpl.branch"] != "" and attributes["xrpl.node.role"] != nil and attributes["xrpl.node.role"] != "" and attributes["xrpl.work.item"] != nil and attributes["xrpl.work.item"] != ""
+          - set(attributes["resource_group"], attributes["service.instance.id"]) where attributes["service.instance.id"] != nil and attributes["service.instance.id"] != ""
+          - set(attributes["resource_group"], Concat([attributes["resource_group"], attributes["xrpl.network.type"]], "-")) where attributes["resource_group"] != nil and attributes["xrpl.network.type"] != nil and attributes["xrpl.network.type"] != ""
 
 connectors:
   spanmetrics:
