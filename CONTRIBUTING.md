@@ -84,7 +84,9 @@ If you create new source files, they must be organized as follows:
 - All other non-test files must go under `src/xrpld`.
 - All test source files must go under `src/test`.
 
-The source must be formatted according to the style guide below.
+The source must be formatted according to the style guide below. The easiest
+way to satisfy this is to install the [`pre-commit`](#pre-commit-hooks) hooks,
+which format and lint your changes automatically on every commit.
 
 Header includes must be [levelized](.github/scripts/levelization).
 
