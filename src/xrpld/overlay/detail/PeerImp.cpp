@@ -105,13 +105,19 @@ using namespace std::chrono_literals;
 namespace xrpl {
 
 namespace {
-/** The threshold above which we treat a peer connection as high latency */
+/**
+ * The threshold above which we treat a peer connection as high latency
+ */
 constexpr std::chrono::milliseconds kPeerHighLatency{300};
 
-/** How often we PING the peer to check for latency and sendq probe */
+/**
+ * How often we PING the peer to check for latency and sendq probe
+ */
 constexpr std::chrono::seconds kPeerTimerInterval{60};
 
-/** How often we process duplicate incoming TMGetLedger messages */
+/**
+ * How often we process duplicate incoming TMGetLedger messages
+ */
 std::chrono::seconds constexpr kGetLedgerInterval{15};
 
 }  // namespace

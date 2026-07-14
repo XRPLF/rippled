@@ -13,7 +13,9 @@
 
 namespace xrpl::test::jtx {
 
-/** Set the fee on a JTx. */
+/**
+ * Set the fee on a JTx.
+ */
 class Fee
 {
 private:
