@@ -13,6 +13,7 @@
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
 
+#include <atomic>
 #include <cstdint>
 #include <exception>
 #include <functional>
