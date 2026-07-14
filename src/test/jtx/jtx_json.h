@@ -9,7 +9,9 @@
 
 namespace xrpl::test::jtx {
 
-/** Inject raw JSON. */
+/**
+ * Inject raw JSON.
+ */
 class Json
 {
 private:

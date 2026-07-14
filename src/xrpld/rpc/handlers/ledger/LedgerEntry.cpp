@@ -720,6 +720,28 @@ parseSignerList(
 }
 
 static std::expected<uint256, json::Value>
+parseSponsorship(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+        return parseObjectID(params, fieldName);
+
+    auto const sponsorID =
+        LedgerEntryHelpers::requiredAccountID(params, jss::sponsor, "malformedSponsor");
+    if (!sponsorID)
+        return std::unexpected(sponsorID.error());
+
+    auto const sponseeID =
+        LedgerEntryHelpers::requiredAccountID(params, jss::sponsee, "malformedSponsee");
+    if (!sponseeID)
+        return std::unexpected(sponseeID.error());
+
+    return keylet::sponsorship(*sponsorID, *sponseeID).key;
+}
+
+static std::expected<uint256, json::Value>
 parseTicket(
     json::Value const& params,
     json::StaticString const fieldName,

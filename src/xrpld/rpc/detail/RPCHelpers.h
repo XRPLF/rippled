@@ -162,7 +162,8 @@ keypairForSignature(
     json::Value& error,
     unsigned int apiVersion = kApiVersionIfUnspecified);
 
-/** Parse subscribe/unsubscribe parameters
+/**
+ * Parse subscribe/unsubscribe parameters
  */
 ErrorCodeI
 parseSubUnsubJson(
