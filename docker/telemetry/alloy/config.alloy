@@ -175,12 +175,15 @@ otelcol.processor.transform "tier" {
       // Grouped legend labels for the Grafana dashboards (kept in sync with the
       // reference collector's transform/legendgroups). The Cloud gateway
       // promotes these resource attributes to Prometheus labels server-side.
-      //   * resource_group: node id, optionally suffixed with network type.
-      //   * iac_group: perf-iac branch/role/work-item. A generic node like this
-      //     one does not set those attrs, so the guard leaves iac_group unset;
-      //     it is built only on perf-comparison nodes. The guard checks != ""
-      //     as well as != nil because OTTL Concat emits a stray separator for an
-      //     empty element.
+      // Brackets and ", " separators are baked into the VALUE (e.g.
+      // "[node, mainnet]") so the dashboard Display name needs no literal
+      // brackets and an absent group renders as nothing.
+      //   * resource_group: "[node]" or "[node, network]".
+      //   * iac_group: "[branch, role, work-item]". A generic node like this one
+      //     does not set those attrs, so the guard leaves iac_group unset; it is
+      //     built only on perf-comparison nodes. The guard checks != "" as well
+      //     as != nil because OTTL Concat emits "<nil>"/a stray separator for an
+      //     absent or empty element.
       `set(attributes["resource_group"], Concat(["[", attributes["service.instance.id"], "]"], "")) where attributes["service.instance.id"] != nil and attributes["service.instance.id"] != ""`,
       `set(attributes["resource_group"], Concat(["[", attributes["service.instance.id"], ", ", attributes["xrpl.network.type"], "]"], "")) where attributes["service.instance.id"] != nil and attributes["service.instance.id"] != "" and attributes["xrpl.network.type"] != nil and attributes["xrpl.network.type"] != ""`,
       `set(attributes["iac_group"], Concat(["[", Concat([attributes["xrpl.branch"], attributes["xrpl.node.role"], attributes["xrpl.work.item"]], ", "), "]"], "")) where attributes["xrpl.branch"] != nil and attributes["xrpl.branch"] != "" and attributes["xrpl.node.role"] != nil and attributes["xrpl.node.role"] != "" and attributes["xrpl.work.item"] != nil and attributes["xrpl.work.item"] != ""`,
