@@ -316,17 +316,26 @@ public:
 };
 
 /**
- * @brief Invariant: Token holder's trustline balance cannot be negative after
- * Clawback.
+ * @brief Invariant: Token holder's trustline/MPT balance cannot be invalid
+ * after Clawback.
  *
  * We iterate all the trust lines affected by this transaction and ensure
  * that no more than one trustline is modified, and also holder's balance is
- * non-negative.
+ * non-negative. When featureMPTokensV2 is enabled, also verify the holder's
+ * raw trustline/MPToken balance decreased by the clawed amount.
  */
 class ValidClawback
 {
+    struct EntryChange
+    {
+        SLE::const_pointer before;
+        SLE::const_pointer after;
+    };
+
     std::uint32_t trustlinesChanged_ = 0;
     std::uint32_t mptokensChanged_ = 0;
+    EntryChange iou_;
+    EntryChange mpt_;
 
 public:
     void
@@ -440,7 +449,7 @@ using InvariantChecks = std::tuple<
     ValidLoan,
     ValidVault,
     ValidConfidentialMPToken,
-    ValidMPTPayment,
+    ValidMPTBalanceChanges,
     ValidAmounts,
     ValidMPTTransfer,
     ObjectHasPseudoAccount,
