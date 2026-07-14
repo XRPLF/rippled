@@ -28,6 +28,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
@@ -105,12 +106,9 @@ isAnyFrozen(
     std::initializer_list<AccountID> const& accounts,
     Issue const& issue)
 {
-    for (auto const& account : accounts)
-    {
-        if (isFrozen(view, account, issue.currency, issue.account))
-            return true;
-    }
-    return false;
+    return std::ranges::any_of(accounts, [&](auto const& account) {
+        return isFrozen(view, account, issue.currency, issue.account);
+    });
 }
 
 bool

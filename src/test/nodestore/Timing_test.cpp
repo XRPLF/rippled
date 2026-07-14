@@ -693,9 +693,6 @@ public:
             ";type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"
             "file_size_mb=8,file_size_mult=2"
 #endif
-#if 0
-            ";type=memory|path=NodeStore"
-#endif
             ;
 
         test_list const tests = {

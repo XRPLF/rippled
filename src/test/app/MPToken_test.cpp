@@ -2115,7 +2115,7 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[jss::Account] = alice.human();
                 jv[sfSponsee.fieldName] = carol.human();
                 jv[sfFeeAmount.fieldName] = mpt.getJson(JsonOptions::Values::None);
-                test(jv, sfFeeAmount.fieldName.c_str());
+                test(jv, sfFeeAmount.fieldName);
             }
         }
         BEAST_EXPECT(txWithAmounts.empty());

@@ -3819,10 +3819,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                     return true;
             }
 
-            for (auto& node : meta->getNodes())
-            {
+            return std::ranges::any_of(meta->getNodes(), [&](auto& node) {
                 if (node.getFieldU16(sfLedgerEntryType) != ltACCOUNT_ROOT)
-                    continue;
+                    return false;
 
                 if (node.isFieldPresent(sfNewFields))
                 {
@@ -3836,9 +3835,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         }
                     }
                 }
-            }
-
-            return false;
+                return false;
+            });
         };
 
         auto send = [&](json::Value const& jvObj, bool unsubscribe) -> bool {
