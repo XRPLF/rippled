@@ -60,6 +60,26 @@ processors:
         action: hash
       - key: pathfind_dest_account
         action: hash
+  # Build grouped legend labels from the tier / perf-iac resource attributes so
+  # dashboards reference one pre-built label per group instead of a per-panel
+  # renameByRegex chain. resource_to_telemetry_conversion (below) promotes these
+  # resource attributes to Prometheus labels automatically.
+  #   - iac_group: the perf-iac branch/role/work-item. These three are stamped
+  #     together by the perf-iac pipeline (all present, or all absent), so one
+  #     guard covers them. Left UNSET outside perf runs -> Prometheus drops the
+  #     empty label -> the dashboard legend shows nothing for it.
+  #   - resource_group: node id, optionally suffixed with network type. The id
+  #     is always present; network may be absent, so it is appended separately
+  #     to avoid a trailing separator.
+  # Concat is guarded on presence because OTTL Concat renders the literal text
+  # "<nil>" for an absent attribute (it does not skip it).
+  transform/legendgroups:
+    metric_statements:
+      - context: resource
+        statements:
+          - set(attributes["iac_group"], Concat([attributes["xrpl.branch"], attributes["xrpl.node.role"], attributes["xrpl.work.item"]], "-")) where attributes["xrpl.branch"] != nil and attributes["xrpl.node.role"] != nil and attributes["xrpl.work.item"] != nil
+          - set(attributes["resource_group"], attributes["service.instance.id"]) where attributes["service.instance.id"] != nil
+          - set(attributes["resource_group"], Concat([attributes["resource_group"], attributes["xrpl.network.type"]], "-")) where attributes["resource_group"] != nil and attributes["xrpl.network.type"] != nil
 
 connectors:
   spanmetrics:
@@ -129,5 +149,5 @@ service:
       exporters: [debug, otlp/tempo, spanmetrics]
     metrics:
       receivers: [otlp, spanmetrics]
-      processors: [resource/tier, resource/stripsdk]
+      processors: [resource/tier, resource/stripsdk, transform/legendgroups]
       exporters: [prometheus]
