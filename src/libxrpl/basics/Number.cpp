@@ -449,8 +449,7 @@ Number::Guard::pushOverflow(T mantissa)
         // * For round toward zero, always rounds down to kMaxRep.
 
         auto const diff = mantissa - kMaxRep;
-        auto const digit = (diff * 10) / spread;
-        static_assert(std::unsigned_integral<decltype(digit)>);
+        unsigned const digit = (diff * 10) / spread;
         XRPL_ASSERT(
             digit < 10 && digit != 5, "xrpl::Number::Guard::pushOverflow : valid overflow digit");
 
