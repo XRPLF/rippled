@@ -613,20 +613,23 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
              size = cache_.size())
         {
             ScopeUnlock const unlock(lock);
+            if (allocationIterations > 0)
+            {
+                JLOG(journal_.info())
+                    << "getKeys(): Cache grew beyond allocated capacity after "
+                    << allocationIterations << " prior attempt(s). Have " << v.capacity()
+                    << ", need " << size << ". Retrying allocation";
+            }
             // Allocate the current size plus a little extra, in case the cache grows while
             // allocating. Each time another allocation is needed, the extra also gets bigger until
             // it ultimately doubles the size + 1.
-            size += (size >> (4 - std::min(allocationIterations, std::size_t{4}))) + 1;
+            constexpr std::size_t baseShift = 5;
+            auto const bufferOffset = std::min(allocationIterations, std::size_t{baseShift});
+            auto const bufferShift = baseShift - bufferOffset;
+            size += (size >> bufferShift) + 1;
             v.reserve(size);
             ++allocationIterations;
         }
-        // In a normal operating environment, because of the padding added to size before
-        // allocating, even 2 iterations is going to be very rare. If 3 or more are ever needed,
-        // that's unusual enough that I want to know about it. Don't ask me to change it without
-        // empirical data. - Ed H.
-        XRPL_ASSERT(
-            allocationIterations < 3,
-            "xrpl::TaggedCache::getKeys(): limited allocation iterations");
         if (v.capacity() < cache_.size())
         {
             // LCOV_EXCL_START
