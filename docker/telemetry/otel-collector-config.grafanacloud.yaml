@@ -123,6 +123,30 @@ processors:
           - set(attributes["service_instance_id"], resource.attributes["service.instance.id"])
           - set(attributes["deployment_environment"], resource.attributes["deployment.environment"])
           - set(attributes["xrpl_network_type"], resource.attributes["xrpl.network.type"])
+          # Copy the grouped legend labels built by transform/legendgroups onto
+          # datapoint attributes too (same reason as the tier attrs above: Cloud
+          # OTLP ingest does not promote resource attributes to labels). Guarded
+          # so a group absent on the resource is not created as an empty label.
+          - set(attributes["resource_group"], resource.attributes["resource_group"]) where resource.attributes["resource_group"] != nil
+          - set(attributes["iac_group"], resource.attributes["iac_group"]) where resource.attributes["iac_group"] != nil
+  # Build grouped legend labels from the tier / perf-iac resource attributes so
+  # dashboards reference one pre-built label per group instead of a per-panel
+  # renameByRegex chain. On the local scrape these resource attributes are
+  # promoted to labels by resource_to_telemetry_conversion; on the Cloud path
+  # transform/cloudlabels (above) copies them onto datapoint attributes.
+  #   - iac_group: perf-iac branch/role/work-item, stamped together (all or
+  #     none), so one guard covers them. Unset outside perf runs -> the legend
+  #     shows nothing for it.
+  #   - resource_group: node id, optionally suffixed with network type.
+  # Concat is guarded on presence because OTTL Concat renders "<nil>" for an
+  # absent attribute (it does not skip it).
+  transform/legendgroups:
+    metric_statements:
+      - context: resource
+        statements:
+          - set(attributes["iac_group"], Concat([attributes["xrpl.branch"], attributes["xrpl.node.role"], attributes["xrpl.work.item"]], "-")) where attributes["xrpl.branch"] != nil and attributes["xrpl.node.role"] != nil and attributes["xrpl.work.item"] != nil
+          - set(attributes["resource_group"], attributes["service.instance.id"]) where attributes["service.instance.id"] != nil
+          - set(attributes["resource_group"], Concat([attributes["resource_group"], attributes["xrpl.network.type"]], "-")) where attributes["resource_group"] != nil and attributes["xrpl.network.type"] != nil
 
 connectors:
   spanmetrics:
@@ -224,12 +248,19 @@ service:
     # the transform both writing a service_instance_id label on the same series.
     metrics/local:
       receivers: [otlp, spanmetrics]
-      processors: [resource/tier, resource/stripsdk, batch]
+      processors:
+        [resource/tier, resource/stripsdk, transform/legendgroups, batch]
       exporters: [prometheus]
     metrics/cloud:
       receivers: [otlp, spanmetrics]
       processors:
-        [resource/tier, resource/stripsdk, transform/cloudlabels, batch]
+        [
+          resource/tier,
+          resource/stripsdk,
+          transform/legendgroups,
+          transform/cloudlabels,
+          batch,
+        ]
       exporters: [otlphttp/grafanacloud]
     logs:
       receivers: [filelog]
