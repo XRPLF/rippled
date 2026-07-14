@@ -44,7 +44,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "short",
           "custom": {
             "axisLabel": "Peers",
@@ -55,16 +55,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Peer Disconnects",
@@ -94,7 +85,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "short",
           "custom": {
             "axisLabel": "Disconnects per interval",
@@ -105,16 +96,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Total Network Bytes",
@@ -151,7 +133,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes",
@@ -162,16 +144,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Total Network Messages",
@@ -208,7 +181,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "cps",
           "custom": {
             "axisLabel": "Messages",
@@ -219,16 +192,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Transaction Traffic",
@@ -272,7 +236,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "cps",
           "custom": {
             "axisLabel": "Messages",
@@ -283,16 +247,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Proposal Traffic",
@@ -343,7 +298,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "cps",
           "custom": {
             "axisLabel": "Messages",
@@ -354,16 +309,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Validation Traffic",
@@ -414,7 +360,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "cps",
           "custom": {
             "axisLabel": "Messages",
@@ -425,16 +371,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Overlay Traffic by Category (Bytes In)",
@@ -797,7 +734,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Throughput",
@@ -808,16 +745,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "All Traffic Categories (Detail)",
@@ -847,7 +775,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Throughput",
@@ -858,16 +786,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     }
   ],
   "schemaVersion": 39,

@@ -36,7 +36,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "thresholds": {
             "steps": [
@@ -57,16 +57,7 @@
         },
         "overrides": []
       },
-      "id": 1,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 1
     },
     {
       "title": "Transaction Processing Latency by Type",
@@ -101,7 +92,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Latency (ms)",
@@ -113,16 +104,7 @@
         },
         "overrides": []
       },
-      "id": 2,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 2
     },
     {
       "title": "Transaction Rate by Type",
@@ -157,7 +139,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "TX / Sec",
@@ -169,16 +151,7 @@
         },
         "overrides": []
       },
-      "id": 3,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 3
     },
     {
       "title": "Transaction Results by Type",
@@ -255,7 +228,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Transactions / Sec",
@@ -267,16 +240,7 @@
         },
         "overrides": []
       },
-      "id": 5,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 5
     },
     {
       "title": "Transaction Processing Rate",
@@ -313,7 +277,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Transactions / Sec",
@@ -325,16 +289,7 @@
         },
         "overrides": []
       },
-      "id": 6,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 6
     },
     {
       "title": "Transaction Path Distribution",
@@ -348,7 +303,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "cps"
         },
         "overrides": []
@@ -369,16 +324,7 @@
           "expr": "label_replace(sum by (local, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", local=~\"$tx_origin\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[$__rate_interval])), \"series\", \"Local $1\", \"local\", \"(.*)\")"
         }
       ],
-      "id": 7,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 7
     },
     {
       "title": "Transaction Processing Duration Heatmap",
@@ -452,7 +398,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -464,16 +410,7 @@
         },
         "overrides": []
       },
-      "id": 10,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 10
     },
     {
       "title": "TxQ Accept: Applied Ratio per Node (State Timeline)",
@@ -577,7 +514,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -589,16 +526,7 @@
         },
         "overrides": []
       },
-      "id": 12,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 12
     },
     {
       "title": "Tx Apply Pipeline Failure Rate by Stage",
@@ -633,7 +561,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Failed Spans / Sec",
@@ -645,16 +573,7 @@
         },
         "overrides": []
       },
-      "id": 13,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 13
     },
     {
       "title": "Tx Apply Pipeline Latency by Type and Stage (p95)",
@@ -731,7 +650,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Latency (ms)",
@@ -743,16 +662,7 @@
         },
         "overrides": []
       },
-      "id": 15,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 15
     },
     {
       "title": "TxQ Enqueue Rate by Transaction Type",
@@ -782,7 +692,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Enqueues / Sec",
@@ -794,16 +704,7 @@
         },
         "overrides": []
       },
-      "id": 16,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 16
     },
     {
       "title": "Queue Bypass Ratio (Direct Apply vs Enqueue)",
@@ -833,7 +734,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "percentunit",
           "custom": {
             "axisLabel": "Bypass Fraction",
@@ -845,16 +746,7 @@
         },
         "overrides": []
       },
-      "id": 18,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 18
     },
     {
       "title": "Queue Accept (Drain) Duration per Ledger",
@@ -884,7 +776,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -896,16 +788,7 @@
         },
         "overrides": []
       },
-      "id": 19,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 19
     },
     {
       "title": "Queue Cleanup Rate (Expired Entries)",
@@ -935,7 +818,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Cleanups / Sec",
@@ -947,16 +830,7 @@
         },
         "overrides": []
       },
-      "id": 20,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 20
     }
   ],
   "schemaVersion": 39,

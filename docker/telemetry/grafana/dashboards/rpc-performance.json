@@ -49,7 +49,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "reqps",
           "custom": {
             "axisLabel": "Requests / Sec",
@@ -61,16 +61,7 @@
         },
         "overrides": []
       },
-      "id": 1,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 1
     },
     {
       "title": "RPC Latency P95 by Command",
@@ -100,7 +91,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Latency (ms)",
@@ -112,16 +103,7 @@
         },
         "overrides": []
       },
-      "id": 2,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 2
     },
     {
       "title": "RPC Error Rate",
@@ -151,7 +133,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "percent",
           "thresholds": {
             "steps": [
@@ -172,16 +154,7 @@
         },
         "overrides": []
       },
-      "id": 3,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 3
     },
     {
       "title": "RPC Latency Heatmap",
@@ -256,7 +229,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "reqps",
           "custom": {
             "axisLabel": "Requests / Sec",
@@ -268,16 +241,7 @@
         },
         "overrides": []
       },
-      "id": 5,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 5
     },
     {
       "title": "RPC Success vs Error",
@@ -314,7 +278,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Commands / Sec",
@@ -326,16 +290,7 @@
         },
         "overrides": []
       },
-      "id": 6,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 6
     },
     {
       "title": "Top Commands by Volume",
@@ -365,21 +320,12 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "short"
         },
         "overrides": []
       },
-      "id": 7,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 7
     },
     {
       "title": "WebSocket Message Rate",
@@ -409,21 +355,12 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops"
         },
         "overrides": []
       },
-      "id": 8,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 8
     },
     {
       "title": "RPC Resource Cost by Command",
@@ -458,7 +395,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Requests / Sec",
@@ -470,16 +407,7 @@
         },
         "overrides": []
       },
-      "id": 9,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 9
     },
     {
       "title": "Batch vs Single RPC Requests",
@@ -516,7 +444,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Requests / Sec",
@@ -528,16 +456,7 @@
         },
         "overrides": []
       },
-      "id": 10,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 10
     },
     {
       "id": 12,
@@ -594,7 +513,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "drawStyle": "line",
@@ -612,16 +531,7 @@
         },
         "overrides": []
       },
-      "id": 13,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 13
     },
     {
       "title": "Per-Method Call Rate (Top 10)",
@@ -656,7 +566,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "drawStyle": "line",
@@ -674,16 +584,7 @@
         },
         "overrides": []
       },
-      "id": 14,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 14
     },
     {
       "title": "Per-Method Error Rate (Top 10)",
@@ -718,7 +619,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "drawStyle": "line",
@@ -736,16 +637,7 @@
         },
         "overrides": []
       },
-      "id": 15,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 15
     },
     {
       "title": "RPC Latency - All Methods",
@@ -782,7 +674,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "\u00b5s",
           "custom": {
             "drawStyle": "line",
@@ -800,16 +692,7 @@
         },
         "overrides": []
       },
-      "id": 16,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 16
     },
     {
       "title": "Per-Method Latency (p99, Top 10 Slowest)",
@@ -844,7 +727,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "\u00b5s",
           "custom": {
             "drawStyle": "line",
@@ -862,16 +745,7 @@
         },
         "overrides": []
       },
-      "id": 17,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 17
     },
     {
       "title": "RPC Error Ratio by Method",
@@ -906,7 +780,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "percentunit",
           "min": 0,
           "max": 1,
@@ -942,16 +816,7 @@
         },
         "overrides": []
       },
-      "id": 18,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 18
     },
     {
       "title": "Current RPC Latency (p99 Gauge)",
@@ -984,7 +849,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "\u00b5s",
           "min": 0,
           "thresholds": {
@@ -1007,16 +872,7 @@
         },
         "overrides": []
       },
-      "id": 19,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 19
     }
   ],
   "schemaVersion": 39,

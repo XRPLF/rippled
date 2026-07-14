@@ -44,7 +44,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "short",
           "custom": {
             "axisLabel": "Transactions",
@@ -58,16 +58,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Transactions Per Ledger",
@@ -104,7 +95,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "short",
           "custom": {
             "axisLabel": "Transactions",
@@ -118,16 +109,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Fee Escalation Levels",
@@ -178,7 +160,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "short",
           "custom": {
             "axisLabel": "Fee Level",
@@ -196,16 +178,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Load Factor Breakdown",
@@ -256,7 +229,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "short",
           "custom": {
             "axisLabel": "Multiplier",
@@ -286,16 +259,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Load Factor Components",
@@ -339,7 +303,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "short",
           "custom": {
             "axisLabel": "Multiplier",
@@ -353,16 +317,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Queue Abandonment Rate (Expired)",
@@ -392,7 +347,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Expired / Sec",
@@ -403,16 +358,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Queue Admission Rejections (Dropped)",
@@ -442,7 +388,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Dropped / Sec",
@@ -453,16 +399,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     }
   ],
   "schemaVersion": 39,

@@ -72,7 +72,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "cps",
           "custom": {
             "axisLabel": "Messages",
@@ -83,16 +83,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Overhead Traffic Breakdown (Bytes)",
@@ -157,7 +148,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes",
@@ -168,16 +159,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Validator List Traffic",
@@ -228,7 +210,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "cps",
           "custom": {
             "axisLabel": "Count",
@@ -256,16 +238,7 @@
             ]
           }
         ]
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Set Get/Share Traffic (Bytes)",
@@ -316,7 +289,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes",
@@ -327,16 +300,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Have/Requested Transactions (Messages)",
@@ -387,7 +351,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "cps",
           "custom": {
             "axisLabel": "Messages",
@@ -398,16 +362,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Unknown / Unclassified Traffic",
@@ -458,7 +413,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "short",
           "custom": {
             "axisLabel": "Count",
@@ -486,16 +441,7 @@
             ]
           }
         ]
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Proof Path Traffic",
@@ -546,7 +492,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes",
@@ -557,16 +503,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Replay Delta Traffic",
@@ -617,7 +554,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes",
@@ -628,16 +565,7 @@
           }
         },
         "overrides": []
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     }
   ],
   "schemaVersion": 39,
