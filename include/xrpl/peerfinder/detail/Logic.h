@@ -970,12 +970,8 @@ public:
     bool
     fixed(beast::IP::Endpoint const& endpoint) const
     {
-        for (auto const& entry : fixed_)
-        {
-            if (entry.first == endpoint)
-                return true;
-        }
-        return false;
+        return std::ranges::any_of(
+            fixed_, [&endpoint](auto const& entry) { return entry.first == endpoint; });
     }
 
     // Returns `true` if the address matches a fixed slot address
@@ -984,12 +980,8 @@ public:
     bool
     fixed(beast::IP::Address const& address) const
     {
-        for (auto const& entry : fixed_)
-        {
-            if (entry.first.address() == address)
-                return true;
-        }
-        return false;
+        return std::ranges::any_of(
+            fixed_, [&address](auto const& entry) { return entry.first.address() == address; });
     }
 
     //--------------------------------------------------------------------------
