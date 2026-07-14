@@ -482,6 +482,32 @@ public:
     {
         return this->tx_->isFieldPresent(sfGracePeriod);
     }
+
+    /**
+     * @brief Get sfStartDate (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getStartDate() const
+    {
+        if (hasStartDate())
+        {
+            return this->tx_->at(sfStartDate);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfStartDate is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasStartDate() const
+    {
+        return this->tx_->isFieldPresent(sfStartDate);
+    }
 };
 
 /**
@@ -723,6 +749,17 @@ public:
     setGracePeriod(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfGracePeriod] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfStartDate (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    LoanSetBuilder&
+    setStartDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfStartDate] = value;
         return *this;
     }
 

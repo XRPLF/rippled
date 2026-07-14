@@ -47,6 +47,7 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
     auto const paymentTotalValue = canonical_UINT32();
     auto const paymentIntervalValue = canonical_UINT32();
     auto const gracePeriodValue = canonical_UINT32();
+    auto const startDateValue = canonical_UINT32();
 
     LoanSetBuilder builder{
         accountValue,
@@ -73,6 +74,7 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
     builder.setPaymentTotal(paymentTotalValue);
     builder.setPaymentInterval(paymentIntervalValue);
     builder.setGracePeriod(gracePeriodValue);
+    builder.setStartDate(startDateValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -230,6 +232,14 @@ TEST(TransactionsLoanSetTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasGracePeriod());
     }
 
+    {
+        auto const& expected = startDateValue;
+        auto const actualOpt = tx.getStartDate();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfStartDate should be present";
+        expectEqualField(expected, *actualOpt, "sfStartDate");
+        EXPECT_TRUE(tx.hasStartDate());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -264,6 +274,7 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
     auto const paymentTotalValue = canonical_UINT32();
     auto const paymentIntervalValue = canonical_UINT32();
     auto const gracePeriodValue = canonical_UINT32();
+    auto const startDateValue = canonical_UINT32();
 
     // Build an initial transaction
     LoanSetBuilder initialBuilder{
@@ -290,6 +301,7 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
     initialBuilder.setPaymentTotal(paymentTotalValue);
     initialBuilder.setPaymentInterval(paymentIntervalValue);
     initialBuilder.setGracePeriod(gracePeriodValue);
+    initialBuilder.setStartDate(startDateValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -432,6 +444,13 @@ TEST(TransactionsLoanSetTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfGracePeriod");
     }
 
+    {
+        auto const& expected = startDateValue;
+        auto const actualOpt = rebuiltTx.getStartDate();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfStartDate should be present";
+        expectEqualField(expected, *actualOpt, "sfStartDate");
+    }
+
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -523,6 +542,8 @@ TEST(TransactionsLoanSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getPaymentInterval().has_value());
     EXPECT_FALSE(tx.hasGracePeriod());
     EXPECT_FALSE(tx.getGracePeriod().has_value());
+    EXPECT_FALSE(tx.hasStartDate());
+    EXPECT_FALSE(tx.getStartDate().has_value());
 }
 
 }
