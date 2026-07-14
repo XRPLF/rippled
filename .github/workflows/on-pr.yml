@@ -31,10 +31,10 @@ concurrency:
   # group so real builds keep running. Keep this list in sync with `should-run`.
   group: >-
     ${{ github.workflow }}-${{ github.ref }}${{
-      (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+      ((github.event.action == 'labeled' || github.event.action == 'unlabeled')
       && github.event.label.name != 'Ready to merge'
       && github.event.label.name != 'DraftRunCI'
-      && github.event.label.name != 'Full CI build'
+      && github.event.label.name != 'Full CI build')
       && format('-{0}', github.run_id) || ''
     }}
   cancel-in-progress: true
