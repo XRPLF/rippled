@@ -232,7 +232,7 @@ ValidatorSite::setTimer(
         // If all of the sites have been handled at least once (including
         // errors and timeouts), call missingSite, which will load the cache
         // files for any lists that are still unavailable.
-        missingSite(site_lock);
+        missingSite(siteLock);
     }
 
     auto const next = std::ranges::min_element(
@@ -358,7 +358,7 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
         }
         if (!site.lastRefreshStatus)
             site.lastRefreshStatus.emplace(
-                Site::Status{clock_type::now(), ListDisposition::invalid, "timeout"});
+                Site::Status{clock_type::now(), ListDisposition::Invalid, "timeout"});
     }
 
     std::scoped_lock const lockState{stateMutex_};
@@ -406,7 +406,7 @@ ValidatorSite::parseJsonResponse(
     json::Value const body = [&res, siteIdx, this]() {
         json::Reader r;
         json::Value body;
-        if (!r.parse(res.data(), body))
+        if (!r.parse(res, body))
         {
             JLOG(j_.warn()) << "Unable to parse JSON response from  "
                             << sites_[siteIdx].activeResource->uri;

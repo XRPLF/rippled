@@ -15,6 +15,7 @@
 #include <xrpl/tx/invariants/NFTInvariant.h>
 #include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
 #include <xrpl/tx/invariants/PermissionedDomainInvariant.h>
+#include <xrpl/tx/invariants/SponsorshipInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <cstdint>
@@ -315,17 +316,26 @@ public:
 };
 
 /**
- * @brief Invariant: Token holder's trustline balance cannot be negative after
- * Clawback.
+ * @brief Invariant: Token holder's trustline/MPT balance cannot be invalid
+ * after Clawback.
  *
  * We iterate all the trust lines affected by this transaction and ensure
  * that no more than one trustline is modified, and also holder's balance is
- * non-negative.
+ * non-negative. When featureMPTokensV2 is enabled, also verify the holder's
+ * raw trustline/MPToken balance decreased by the clawed amount.
  */
 class ValidClawback
 {
+    struct EntryChange
+    {
+        SLE::const_pointer before;
+        SLE::const_pointer after;
+    };
+
     std::uint32_t trustlinesChanged_ = 0;
     std::uint32_t mptokensChanged_ = 0;
+    EntryChange iou_;
+    EntryChange mpt_;
 
 public:
     void
@@ -375,7 +385,8 @@ public:
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 };
 
-/** Verify that MPT/XRP STAmounts are canonical in any ledger entries left after the
+/**
+ * Verify that MPT/XRP STAmounts are canonical in any ledger entries left after the
  * transaction applies.
  */
 class ValidAmounts
@@ -438,10 +449,12 @@ using InvariantChecks = std::tuple<
     ValidLoan,
     ValidVault,
     ValidConfidentialMPToken,
-    ValidMPTPayment,
+    ValidMPTBalanceChanges,
     ValidAmounts,
     ValidMPTTransfer,
-    ObjectHasPseudoAccount>;
+    ObjectHasPseudoAccount,
+    SponsorshipOwnerCountsMatch,
+    SponsorshipAccountCountMatchesField>;
 
 /**
  * @brief get a tuple of all invariant checks

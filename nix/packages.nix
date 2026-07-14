@@ -62,5 +62,15 @@ in
     runClangTidy
     vim
     zip
+    # Rust packages
+    cargo
+    cargo-audit
+    cargo-llvm-cov
+    cargo-nextest
+    clippy
+    corrosion
+    rust-analyzer
+    rustc
+    rustfmt
   ];
 }
