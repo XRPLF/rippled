@@ -259,7 +259,8 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
     auto obj = dbRotating_->fetchNodeObject(
         node.getHash().asUInt256(), 0, NodeStore::FetchType::Synchronous, true);
     if (!obj)
-    {
+    {XRPL_ASSERT(node.cowid() == 0, 
+               "SHAMapStoreImp::copyNode : rescued node must be clean");
         // Reachable from the validated state map in memory, but present in
         // neither backend: its only on-disk copy lived in a backend removed by
         // an earlier rotation, and it was never rewritten because it is clean
