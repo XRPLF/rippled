@@ -24,7 +24,9 @@
 
 namespace xrpl::perf {
 
-/** A box coupling data with a mutex for locking access to it. */
+/**
+ * A box coupling data with a mutex for locking access to it.
+ */
 template <typename T>
 struct Locked
 {
