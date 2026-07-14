@@ -1,0 +1,102 @@
+# Package the "all amendments Supported::Yes" build into a runtime Docker image
+# and push it to GHCR, as a drop-in for the rippleci/xrpld image xrpl.js uses
+# for standalone testing -- except every amendment is built Supported::Yes.
+#
+# This does NOT build or package anything: the Trigger workflow already builds
+# the supported binary and the supported .deb (the force_supported build config
+# and the matching supported package config in linux.json). This workflow waits
+# for a successful Trigger run on develop, downloads that run's supported .deb
+# artifact, installs it into a slim base (docker/supported.Dockerfile, which
+# replicates rippleci's layout), and pushes ghcr.io/xrplf/xrpld/supported.
+#
+# Perf/test artifact only -- never run it on a production validator.
+name: Build supported Docker image
+
+on:
+  workflow_run:
+    workflows: ["Trigger"]
+    types: [completed]
+    branches: [develop]
+  # Manual runs: point at a specific completed Trigger run via its run id.
+  workflow_dispatch:
+    inputs:
+      trigger_run_id:
+        description: "Run id of the Trigger workflow whose supported .deb to package."
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  # The supported .deb artifact uploaded by reusable-package.yml:
+  # <artifact_name>-pkg, where artifact_name carries the -supported suffix.
+  DEB_ARTIFACT: xrpld-ubuntu-gcc-release-amd64-supported-pkg
+  SOURCE_RUN_ID: ${{ github.event.workflow_run.id || github.event.inputs.trigger_run_id }}
+jobs:
+  image:
+    # Only for successful Trigger runs (workflow_run), and only on the canonical
+    # repo where GITHUB_TOKEN can push to ghcr.io/xrplf/*.
+    if: ${{ github.repository == 'XRPLF/rippled' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Download the supported .deb from the Trigger run
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ env.DEB_ARTIFACT }}
+          path: dl
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Assemble build context
+        run: |
+          set -euo pipefail
+          mkdir -p docker-context
+          deb="$(find dl -name '*.deb' | head -n1)"
+          [ -n "${deb}" ] || {
+              echo "::error::no supported .deb found in run ${SOURCE_RUN_ID}"
+              exit 1
+          }
+          mv "${deb}" docker-context/xrpld.deb
+          echo "Packaging $(basename "${deb}") into ${IMAGE_NAME}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: docker-context
+          file: docker/supported.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

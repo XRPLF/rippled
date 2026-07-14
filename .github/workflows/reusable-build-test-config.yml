@@ -63,6 +63,12 @@ on:
         type: string
         default: ""
 
+      force_supported:
+        description: "Flip every amendment to Supported::Yes before building. For perf/test builds only; never for release artifacts."
+        required: false
+        type: boolean
+        default: false
+
     secrets:
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
@@ -111,6 +117,20 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Force all amendments to Supported::Yes
+        if: ${{ inputs.force_supported && runner.os == 'Linux' }}
+        run: |
+          set -euo pipefail
+          MACRO="include/xrpl/protocol/detail/features.macro"
+          echo "Flipping Supported::No -> Supported::Yes in ${MACRO}:"
+          grep -n 'Supported::No,' "${MACRO}" || echo "  (none found)"
+          sed -i 's/Supported::No,/Supported::Yes,/g' "${MACRO}"
+          if grep -q 'Supported::No,' "${MACRO}"; then
+              echo "::error::Supported::No entries remain after sed"
+              exit 1
+          fi
+          git diff -- "${MACRO}" || true
 
       - name: Prepare runner
         uses: XRPLF/actions/prepare-runner@64ec3cf3b152b4444638f470bbd6df7a7a30c81c

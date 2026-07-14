@@ -54,6 +54,8 @@ class LinuxConfig:
     suffix: str = ""
     extra_cmake_args: str = ""
     image: str = ""  # only used by package_configs entries
+    # Flip every amendment to Supported::Yes before building (perf/test only).
+    force_supported: bool = False
     # List of GitHub event names (e.g. "pull_request") on which this config
     # should NOT run. Empty means it runs on every event.
     exclude_event_types: list[str] = dataclasses.field(default_factory=list)
@@ -142,6 +144,7 @@ class MatrixEntry:
     sanitizers: str
     image: str = ""  # container image; empty for macOS/Windows (runs natively)
     compiler: str = ""  # compiler name ("gcc" or "clang"); empty for macOS/Windows
+    force_supported: bool = False  # flip amendments to Supported::Yes before build
 
 
 @dataclasses.dataclass
@@ -211,6 +214,7 @@ def expand_linux_matrix(
                         architecture=arch_info,
                         sanitizers=sanitizer,
                         compiler=compiler,
+                        force_supported=cfg.force_supported,
                     )
                 )
 
@@ -229,9 +233,14 @@ def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
     for distro, configs in linux.package_configs.items():
         for cfg in configs:
             for compiler, build_type in itertools.product(cfg.compiler, cfg.build_type):
+                # Keep in sync with build config_name so the packaging job finds
+                # the matching binary artifact (e.g. the -supported variant).
+                artifact_name = f"xrpld-{distro}-{compiler}-{build_type.lower()}-amd64"
+                if cfg.suffix:
+                    artifact_name += f"-{cfg.suffix}"
                 entries.append(
                     PackagingEntry(
-                        artifact_name=f"xrpld-{distro}-{compiler}-{build_type.lower()}-amd64",
+                        artifact_name=artifact_name,
                         image=cfg.image,
                         distro=distro,
                     )
