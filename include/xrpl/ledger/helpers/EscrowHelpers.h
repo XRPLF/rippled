@@ -136,9 +136,13 @@ escrowUnlockApplyHelper<Issue>(
     auto finalAmt = amount;
     if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
     {
+        // Round the net delivered amount down so the transfer fee is rounded
+        // up in favor of the issuer. Rounding the net up (the legacy behavior)
+        // rounds the fee down, which collapses to zero for small amounts.
+        bool const roundUp = !ctx.view.rules().enabled(fixCleanup3_4_0);
         // compute transfer fee, if any
         auto const xferFee =
-            amount.value() - divideRound(amount, lockedRate, amount.get<Issue>(), true);
+            amount.value() - divideRound(amount, lockedRate, amount.get<Issue>(), roundUp);
         // compute balance to transfer
         finalAmt = amount.value() - xferFee;
     }
@@ -241,8 +245,14 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto finalAmt = amount;
     if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
     {
+        // Round the net delivered amount down so the transfer fee is rounded
+        // up in favor of the issuer. Rounding the net up (the legacy behavior)
+        // rounds the fee down, which for integral MPT amounts collapses the
+        // fee to zero for small amounts and bypasses the transfer fee.
+        bool const roundUp = !ctx.view.rules().enabled(fixCleanup3_4_0);
         // compute transfer fee, if any
-        auto const xferFee = amount.value() - divideRound(amount, lockedRate, amount.asset(), true);
+        auto const xferFee =
+            amount.value() - divideRound(amount, lockedRate, amount.asset(), roundUp);
         // compute balance to transfer
         finalAmt = amount.value() - xferFee;
     }

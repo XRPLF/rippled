@@ -3724,6 +3724,76 @@ struct EscrowToken_test : public beast::unit_test::Suite
     }
 
     void
+    testMPTTransferFeeRoundingBypass(FeatureBitset features)
+    {
+        testcase("MPT Transfer Fee Rounding Bypass");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        bool const withV1 = features[fixTokenEscrowV1];
+        bool const withV2 = features[fixCleanup3_4_0];
+
+        // Escrow a small MPT amount with a non-zero transfer fee, then finish
+        // it. Before fixCleanup3_4_0, the net delivered amount is rounded up
+        // which rounds the fee down to zero for small amounts, letting a sender
+        // deliver the full amount to the receiver while the issuer collects no
+        // fee. With the fix the fee is rounded up in the issuer's favor.
+        auto testChunk = [&](std::uint16_t transferFee,
+                             std::uint64_t amount,
+                             std::uint64_t feeWithoutV2,
+                             std::uint64_t feeWithV2) {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create(
+                {.transferFee = transferFee,
+                 .ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
+            env.close();
+
+            auto const preAlice = env.balance(alice, mpt);
+            auto const preBob = env.balance(bob, mpt);
+            auto const preOutstanding = env.balance(gw, mpt);
+
+            auto const seq1 = env.seq(alice);
+            env(escrow::create(alice, bob, mpt(amount)),
+                escrow::kFinishTime(env.now() + 1s),
+                Fee(baseFee * 150));
+            env.close();
+
+            env(escrow::finish(bob, alice, seq1), Fee(baseFee * 150));
+            env.close();
+
+            std::uint64_t const fee = withV2 ? feeWithV2 : feeWithoutV2;
+            std::uint64_t const net = amount - fee;
+            // The fee is only burned from OutstandingAmount when the gross vs.
+            // net accounting fix (fixTokenEscrowV1) is active.
+            std::uint64_t const burn = withV1 ? fee : 0;
+
+            BEAST_EXPECT(env.balance(alice, mpt) == preAlice - mpt(amount));
+            BEAST_EXPECT(env.balance(bob, mpt) == preBob + mpt(net));
+            BEAST_EXPECT(env.balance(gw, mpt) == preOutstanding + mpt(burn));
+        };
+
+        // 25% fee, MPT(4): bug delivers 4 with zero fee; fix charges fee 1.
+        testChunk(25000, 4, 0, 1);
+        // 1% fee, MPT(90): max zero-fee chunk under the bug; fix charges fee 1.
+        testChunk(1000, 90, 0, 1);
+        // 1% fee, MPT(91): boundary just above the window; fee 1 either way.
+        testChunk(1000, 91, 1, 1);
+    }
+
+    void
     testMPTLock(FeatureBitset features)
     {
         testcase("MPT Lock");
@@ -3978,6 +4048,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
         testMPTMetaAndOwnership(features);
         testMPTGateway(features);
         testMPTLockedRate(features);
+        testMPTTransferFeeRoundingBypass(features);
         testMPTRequireAuth(features);
         testMPTLock(features);
         testMPTCanTransfer(features);
@@ -3997,6 +4068,7 @@ public:
             testIOUWithFeats(feats - fixCleanup3_2_0);
             testMPTWithFeats(feats);
             testMPTWithFeats(feats - fixTokenEscrowV1);
+            testMPTTransferFeeRoundingBypass(feats - fixCleanup3_4_0);
         }
     }
 };
