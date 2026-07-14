@@ -848,13 +848,13 @@ filterCustomSections(Bytes const& wasmCode, Filter&& filter)
             auto customSection = CustomSection{};
 
             auto size = readLEB128(wasmCode, offset);
-            customSection.name = std::string_view{
-                std::begin(wasmCode) + offset, std::begin(wasmCode) + offset + size};
-            offset += nameSize;
+            customSection.name =
+                std::string_view{reinterpret_cast<char const*>(wasmCode.data()) + offset, size};
+            offset += size;
 
             size = nextSection - offset;
             customSection.payload = std::span<uint8_t const>{
-                std::begin(wasmCode) + offset, std::begin(wasmCode) + offset + size};
+                reinterpret_cast<uint8_t const*>(wasmCode.data()) + offset, size};
 
             if (filter(customSection))
             {
@@ -875,15 +875,18 @@ extractVersionInfo(Bytes const& wasmCode)
     filterCustomSections(wasmCode, [&](auto const& section) {
         if (section.name == kCommonLib || section.name == kEscrowLib)
         {
-            versions.emplace_back(Version {
-                .name = section.name,
-                .version = std::string_view{section.payload.data(), section.payload.size()};
-            });
+            versions.emplace_back(
+                Version{
+                    .name = section.name,
+                    .version = std::string_view{
+                        reinterpret_cast<char const*>(section.payload.data()),
+                        section.payload.size()}});
         }
 
         // Just read until we have found all the information we are looking for.
         return versions.size() == 2;
     });
+    return versions;
 }
 
 }  // namespace
@@ -908,6 +911,11 @@ WasmiEngine::runHlp(
         throw std::runtime_error("hfs isn't clean");
 
     auto versionInfo = extractVersionInfo(wasmCode);
+
+    for (auto const& version : versionInfo)
+    {
+        std::cout << version.name << " " << version.version << "\n";
+    }
 
     // Create and instantiate the module.
     [[maybe_unused]] int const m = addModule(wasmCode, true, imports, gas);

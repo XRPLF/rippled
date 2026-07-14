@@ -228,6 +228,26 @@ struct Wasm_test : public beast::unit_test::Suite
     }
 
     void
+    testVersion()
+    {
+        testcase("wasm lib test");
+        static auto const kWasmModule = hexToBytes(
+            "0061736d010000000105016000017f03020100040401700000070a010666696e69736800000a0601040041"
+            "010b0018127872706c2d657363726f772d7374646c6962342e352e360018127872706c2d636f6d6d6f6e2d"
+            "7374646c6962312e322e33");
+
+        auto& vm = WasmEngine::instance();
+
+        HostFunctions hfs;
+        ImportVec imports;
+        WasmImpFunc<Add_proto>(imports, "func-add", reinterpret_cast<void*>(&add), &hfs);
+
+        auto re = vm.run(kWasmModule, hfs, 10'000'000, "finish", wasmParams(1234), imports);
+
+        checkResult(re, 1, 59);
+    }
+
+    void
     testBadWasm()
     {
         testcase("bad wasm test");
@@ -1548,6 +1568,8 @@ struct Wasm_test : public beast::unit_test::Suite
     run() override
     {
         using namespace test::jtx;
+
+        testVersion();
 
         testGetDataHelperFunctions();
         testWasmLib();
