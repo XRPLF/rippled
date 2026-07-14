@@ -21,6 +21,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -30,47 +31,42 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(squelch_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Squelch In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(squelch_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Squelch In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(squelch_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Squelch Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(squelch_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Squelch Out\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(squelch_suppressed_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Suppressed In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(squelch_suppressed_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Suppressed In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(squelch_suppressed_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Suppressed Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(squelch_suppressed_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Suppressed Out\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(squelch_ignored_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Ignored In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(squelch_ignored_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Ignored In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(squelch_ignored_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Ignored Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(squelch_ignored_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Ignored Out\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "cps",
           "custom": {
             "axisLabel": "Messages",
@@ -86,78 +82,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -174,6 +100,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -183,47 +110,42 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(overhead_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Base Overhead In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(overhead_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Base Overhead In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(overhead_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Base Overhead Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(overhead_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Base Overhead Out\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(overhead_cluster_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Cluster In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(overhead_cluster_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Cluster In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(overhead_cluster_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Cluster Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(overhead_cluster_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Cluster Out\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(overhead_manifest_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Manifest In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(overhead_manifest_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Manifest In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(overhead_manifest_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Manifest Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(overhead_manifest_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Manifest Out\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes",
@@ -239,78 +161,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -327,6 +179,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -336,33 +189,30 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(validator_lists_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Bytes In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(validator_lists_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Bytes In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(validator_lists_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Bytes Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(validator_lists_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Bytes Out\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(validator_lists_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Messages In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(validator_lists_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Messages In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(validator_lists_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Messages Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(validator_lists_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Messages Out\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "cps",
           "custom": {
             "axisLabel": "Count",
@@ -395,78 +245,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -483,6 +263,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -492,33 +273,30 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(set_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Set Get In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(set_get_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Set Get In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(set_get_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Set Get Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(set_get_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Set Get Out\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(set_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Set Share In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(set_share_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Set Share In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(set_share_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Set Share Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(set_share_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Set Share Out\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes",
@@ -534,78 +312,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -622,6 +330,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -631,33 +340,30 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(have_transactions_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Have TX In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(have_transactions_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Have TX In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(have_transactions_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Have TX Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(have_transactions_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Have TX Out\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(requested_transactions_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Requested TX In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(requested_transactions_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Requested TX In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(requested_transactions_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Requested TX Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(requested_transactions_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Requested TX Out\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "cps",
           "custom": {
             "axisLabel": "Messages",
@@ -673,78 +379,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -761,6 +397,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -770,33 +407,30 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(unknown_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Unknown Bytes In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(unknown_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Unknown Bytes In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(unknown_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Unknown Bytes Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(unknown_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Unknown Bytes Out\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(unknown_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Unknown Messages In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(unknown_messages_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Unknown Messages In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(unknown_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Unknown Messages Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(unknown_messages_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Unknown Messages Out\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "short",
           "custom": {
             "axisLabel": "Count",
@@ -829,78 +463,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -917,6 +481,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -926,33 +491,30 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(proof_path_request_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Request Bytes In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(proof_path_request_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Request Bytes In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(proof_path_request_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Request Bytes Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(proof_path_request_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Request Bytes Out\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(proof_path_response_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Response Bytes In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(proof_path_response_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Response Bytes In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(proof_path_response_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Response Bytes Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(proof_path_response_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Response Bytes Out\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes",
@@ -968,78 +530,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -1056,6 +548,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -1065,33 +558,30 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(replay_delta_request_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Request Bytes In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(replay_delta_request_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Request Bytes In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(replay_delta_request_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Request Bytes Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(replay_delta_request_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Request Bytes Out\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(replay_delta_response_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Response Bytes In\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(replay_delta_response_bytes_in{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Response Bytes In\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "label_replace(rate(replay_delta_response_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Response Bytes Out\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(replay_delta_response_bytes_out{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Response Bytes Out\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes",
@@ -1107,78 +597,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
