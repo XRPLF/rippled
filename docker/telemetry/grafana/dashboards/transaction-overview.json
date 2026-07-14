@@ -22,7 +22,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -82,7 +82,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         },
         "legend": {
           "displayMode": "table",
@@ -138,7 +138,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         },
         "legend": {
           "displayMode": "table",
@@ -194,7 +194,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         },
         "legend": {
           "displayMode": "table",
@@ -241,7 +241,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -292,7 +292,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -357,7 +357,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -394,7 +394,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         },
         "yAxis": {
           "axisLabel": "Duration (ms)",
@@ -433,7 +433,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         },
         "legend": {
           "displayMode": "table",
@@ -558,7 +558,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         },
         "legend": {
           "displayMode": "table",
@@ -614,7 +614,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         },
         "legend": {
           "displayMode": "table",
@@ -670,7 +670,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         },
         "legend": {
           "displayMode": "table",
@@ -717,7 +717,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -768,7 +768,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -819,7 +819,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -870,7 +870,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         }
       },
       "targets": [
@@ -921,7 +921,7 @@
         "tooltip": {
           "mode": "multi",
           "sort": "desc",
-          "maxHeight": 500
+          "maxHeight": 600
         }
       },
       "targets": [
