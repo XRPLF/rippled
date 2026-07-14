@@ -30,8 +30,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"peer.proposal.receive\"}[$__rate_interval]))",
-          "legendFormat": "Proposals Received / Sec [{{service_instance_id}}]"
+          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"peer.proposal.receive\"}[$__rate_interval])), \"series\", \"Proposals Received / Sec\", \"\", \"\")",
+          "legendFormat": "__auto"
         }
       ],
       "fieldConfig": {
@@ -39,14 +39,93 @@
           "unit": "ops",
           "custom": {
             "axisLabel": "Proposals / Sec",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
           }
         },
         "overrides": []
-      }
+      },
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
+            "renamePattern": "$1 [$2, $4]-[$3, $5]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/,\\s*\\]/g",
+            "renamePattern": "]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[,\\s*/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]-\\[/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/-\\[\\]/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]\\s*$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s*\\[\\]\\s*$/g",
+            "renamePattern": "all"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\s{2,}/g",
+            "renamePattern": " "
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s+|\\s+$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^$/g",
+            "renamePattern": "all"
+          }
+        }
+      ]
     },
     {
       "title": "Peer Validation Receive Rate",
@@ -69,8 +148,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"peer.validation.receive\"}[$__rate_interval]))",
-          "legendFormat": "Validations Received / Sec [{{service_instance_id}}]"
+          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"peer.validation.receive\"}[$__rate_interval])), \"series\", \"Validations Received / Sec\", \"\", \"\")",
+          "legendFormat": "__auto"
         }
       ],
       "fieldConfig": {
@@ -78,14 +157,93 @@
           "unit": "ops",
           "custom": {
             "axisLabel": "Validations / Sec",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
           }
         },
         "overrides": []
-      }
+      },
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
+            "renamePattern": "$1 [$2, $4]-[$3, $5]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/,\\s*\\]/g",
+            "renamePattern": "]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[,\\s*/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]-\\[/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/-\\[\\]/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]\\s*$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s*\\[\\]\\s*$/g",
+            "renamePattern": "all"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\s{2,}/g",
+            "renamePattern": " "
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s+|\\s+$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^$/g",
+            "renamePattern": "all"
+          }
+        }
+      ]
     },
     {
       "title": "Proposals Trusted vs Untrusted",
@@ -108,8 +266,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (proposal_trusted, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", proposal_trusted=~\"$proposal_trusted\", span_name=\"peer.proposal.receive\"}[$__rate_interval]))",
-          "legendFormat": "Trusted = {{proposal_trusted}} [{{service_instance_id}}]"
+          "expr": "label_replace(sum by (proposal_trusted, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", proposal_trusted=~\"$proposal_trusted\", span_name=\"peer.proposal.receive\"}[$__rate_interval])), \"series\", \"Trusted = $1\", \"proposal_trusted\", \"(.*)\")",
+          "legendFormat": "__auto"
         }
       ],
       "fieldConfig": {
@@ -117,7 +275,86 @@
           "unit": "ops"
         },
         "overrides": []
-      }
+      },
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type|proposal_trusted)=\"[^\"]*\",?\\s*/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
+            "renamePattern": "$1 [$2, $4]-[$3, $5]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/,\\s*\\]/g",
+            "renamePattern": "]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[,\\s*/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]-\\[/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/-\\[\\]/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]\\s*$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s*\\[\\]\\s*$/g",
+            "renamePattern": "all"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\s{2,}/g",
+            "renamePattern": " "
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s+|\\s+$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^$/g",
+            "renamePattern": "all"
+          }
+        }
+      ]
     },
     {
       "title": "Validations Trusted vs Untrusted",
@@ -140,8 +377,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (validation_trusted, service_instance_id) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", validation_trusted=~\"$validation_trusted\", span_name=\"peer.validation.receive\"}[$__rate_interval]))",
-          "legendFormat": "Trusted = {{validation_trusted}} [{{service_instance_id}}]"
+          "expr": "label_replace(sum by (validation_trusted, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", validation_trusted=~\"$validation_trusted\", span_name=\"peer.validation.receive\"}[$__rate_interval])), \"series\", \"Trusted = $1\", \"validation_trusted\", \"(.*)\")",
+          "legendFormat": "__auto"
         }
       ],
       "fieldConfig": {
@@ -149,7 +386,86 @@
           "unit": "ops"
         },
         "overrides": []
-      }
+      },
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type|validation_trusted)=\"[^\"]*\",?\\s*/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
+            "renamePattern": "$1 [$2, $4]-[$3, $5]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/,\\s*\\]/g",
+            "renamePattern": "]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[,\\s*/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]-\\[/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/-\\[\\]/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]\\s*$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s*\\[\\]\\s*$/g",
+            "renamePattern": "all"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\s{2,}/g",
+            "renamePattern": " "
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s+|\\s+$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^$/g",
+            "renamePattern": "all"
+          }
+        }
+      ]
     },
     {
       "title": "Reduce-Relay Peer Selection",
@@ -172,22 +488,22 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "reduce_relay_metrics{metric=\"selected_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}",
-          "legendFormat": "Selected [{{service_instance_id}}]"
+          "expr": "label_replace(reduce_relay_metrics{metric=\"selected_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Selected\", \"\", \"\")",
+          "legendFormat": "__auto"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "reduce_relay_metrics{metric=\"suppressed_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}",
-          "legendFormat": "Suppressed [{{service_instance_id}}]"
+          "expr": "label_replace(reduce_relay_metrics{metric=\"suppressed_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Suppressed\", \"\", \"\")",
+          "legendFormat": "__auto"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "reduce_relay_metrics{metric=\"not_enabled_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}",
-          "legendFormat": "Not Enabled [{{service_instance_id}}]"
+          "expr": "label_replace(reduce_relay_metrics{metric=\"not_enabled_peers\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Not Enabled\", \"\", \"\")",
+          "legendFormat": "__auto"
         }
       ],
       "fieldConfig": {
@@ -195,14 +511,93 @@
           "unit": "short",
           "custom": {
             "axisLabel": "Peer Count",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
           }
         },
         "overrides": []
-      }
+      },
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
+            "renamePattern": "$1 [$2, $4]-[$3, $5]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/,\\s*\\]/g",
+            "renamePattern": "]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[,\\s*/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]-\\[/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/-\\[\\]/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]\\s*$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s*\\[\\]\\s*$/g",
+            "renamePattern": "all"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\s{2,}/g",
+            "renamePattern": " "
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s+|\\s+$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^$/g",
+            "renamePattern": "all"
+          }
+        }
+      ]
     },
     {
       "title": "Reduce-Relay Missing-Tx Frequency",
@@ -225,8 +620,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "reduce_relay_metrics{metric=\"missing_tx_freq\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}",
-          "legendFormat": "Missing Tx Freq [{{service_instance_id}}]"
+          "expr": "label_replace(reduce_relay_metrics{metric=\"missing_tx_freq\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Missing Tx Freq\", \"\", \"\")",
+          "legendFormat": "__auto"
         }
       ],
       "fieldConfig": {
@@ -234,14 +629,93 @@
           "unit": "short",
           "custom": {
             "axisLabel": "Frequency",
-            "spanNulls": true,
+            "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
           }
         },
         "overrides": []
-      }
+      },
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
+            "renamePattern": "$1 [$2, $4]-[$3, $5]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/,\\s*\\]/g",
+            "renamePattern": "]"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[,\\s*/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]-\\[/g",
+            "renamePattern": "["
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/-\\[\\]/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\[\\]\\s*$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s*\\[\\]\\s*$/g",
+            "renamePattern": "all"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/\\s{2,}/g",
+            "renamePattern": " "
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^\\s+|\\s+$/g",
+            "renamePattern": ""
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "/^$/g",
+            "renamePattern": "all"
+          }
+        }
+      ]
     }
   ],
   "schemaVersion": 39,
@@ -371,7 +845,7 @@
       {
         "name": "node",
         "label": "Node",
-        "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
+        "description": "Filter by rippled node (service.instance.id \u2014 e.g. Node-1)",
         "type": "query",
         "query": "label_values(target_info, service_instance_id)",
         "datasource": {
