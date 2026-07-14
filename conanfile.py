@@ -47,7 +47,7 @@ class Xrpl(ConanFile):
 
     default_options = {
         "assertions": False,
-        "benchmark": False,
+        "benchmark": True,
         "coverage": False,
         "fPIC": True,
         "jemalloc": False,

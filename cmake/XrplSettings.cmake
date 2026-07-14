@@ -30,10 +30,7 @@ if(tests)
     endif()
 endif()
 
-# Benchmarks are slow and depend on Google Benchmark, so they are off by
-# default and excluded from every default/CI build. When built via Conan the
-# toolchain cache variable set from the `benchmark` Conan option wins.
-option(benchmark "Build benchmarks" OFF)
+option(benchmark "Build benchmarks" ON)
 
 # Enabled by default so every header is compiled on its own as the main file of
 # its own compile_commands.json entry - this is what lets clang-tidy (and clangd
