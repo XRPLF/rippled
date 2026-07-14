@@ -5203,8 +5203,8 @@ public:
                 BEAST_EXPECT(secondOffer[jss::taker_pays_funded] == "500000000");
             });
 
-        // An MPT global lock removes the locked MPT book liquidity from the
-        // public snapshot instead of reporting it as funded.
+        // An MPT global lock makes book_offers report the locked MPT book
+        // liquidity as zero-funded instead of funded.
         {
             Env env{*this, features};
 
@@ -5221,6 +5221,7 @@ public:
 
             auto const offerSeq = env.seq(maker);
             env(offer(maker, XRP(100), usd(100)));
+            env.close();
 
             {
                 json::Value const jrr = getBookOffers(env, XRP, usd);
@@ -5240,10 +5241,19 @@ public:
             musd.set({.flags = tfMPTLock});
 
             {
-                json::Value const jrr = getBookOffers(env, XRP, usd);
-                json::Value const& bookOffers = jrr[jss::offers];
-                BEAST_EXPECT(bookOffers.isArray());
-                BEAST_EXPECT(bookOffers.size() == 0);
+                // The lock does not remove the offer from the ledger;
+                // book_offers must report it as zero-funded liquidity.
+                auto const bookOffers = getBookOffers(env, XRP, usd)[jss::offers];
+                BEAST_EXPECT(bookOffers.isArray() && bookOffers.size() == 1);
+
+                json::Value const& offer = bookOffers[0u];
+                BEAST_EXPECT(offer[sfAccount] == maker.human());
+                BEAST_EXPECT(offer[sfSequence] == offerSeq);
+                BEAST_EXPECT(offer[jss::owner_funds] == "0");
+                BEAST_EXPECT(offer.isMember(jss::taker_gets_funded));
+                BEAST_EXPECT(offer[jss::taker_gets_funded][jss::value] == "0");
+                BEAST_EXPECT(offer.isMember(jss::taker_pays_funded));
+                BEAST_EXPECT(offer[jss::taker_pays_funded] == "0");
             }
         }
     }

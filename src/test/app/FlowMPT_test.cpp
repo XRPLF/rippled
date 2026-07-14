@@ -658,6 +658,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
             std::int64_t constexpr offerAmount = deliverAmount + (deliverAmount / 2);
 
             env.fund(XRP(10'000), iouGW, mptGW, alice, bob);
+            env.close();
 
             auto const usd = iouGW["USD"];
             env.trust(usd(offerAmount), alice);
@@ -686,6 +687,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
             std::int64_t constexpr overflowAmount = 7'000'000'000'000'000'000LL;
 
             env.fund(XRP(10'000), iouGW, mptGW, alice, bob);
+            env.close();
 
             auto const usd = iouGW["USD"];
             env.trust(usd(overflowAmount), alice);
