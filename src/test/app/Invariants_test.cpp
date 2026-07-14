@@ -4049,7 +4049,9 @@ class Invariants_test : public beast::unit_test::Suite
                 }
                 else
                 {
-                    BEAST_EXPECTS(result == tesSUCCESS, sink.messages().str());
+                    BEAST_EXPECTS(
+                        result == tesSUCCESS,
+                        sink.messages().str() + " expected logs: " + expected.value_or("<none>"));
                 }
             };
 

@@ -1070,14 +1070,14 @@ TRANSACTION(ttLOAN_MANAGE, 82, LoanManage,
     {sfLoanID, SoeRequired},
 }))
 
-/** This transaction accepts a Loan. Currently a no-op. */
+/** The Borrower uses this transaction to accept a pending Loan. */
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/lending/LoanAccept.h>
 #endif
 TRANSACTION(ttLOAN_ACCEPT, 83, LoanAccept,
     Delegation::NotDelegable,
     featureLendingProtocolV1_1,
-    NoPriv, ({
+    MayAuthorizeMpt | MustModifyVault, ({
     {sfLoanID, SoeRequired},
 }))
 

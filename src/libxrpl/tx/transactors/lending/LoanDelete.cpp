@@ -47,7 +47,10 @@ LoanDelete::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Loan does not exist.";
         return tecNO_ENTRY;
     }
-    if (loanSle->at(sfPaymentRemaining) > 0)
+    // A pending loan (created in the two-step flow) can be deleted at any time
+    // by either the LoanBroker owner or the Borrower, regardless of remaining
+    // payments. An active loan can only be deleted once it is fully paid.
+    if (!loanSle->isFlag(lsfLoanPending) && loanSle->at(sfPaymentRemaining) > 0)
     {
         JLOG(ctx.j.warn()) << "Active loan can not be deleted.";
         return tecHAS_OBLIGATIONS;
@@ -79,10 +82,6 @@ LoanDelete::doApply()
     auto const loanSle = view.peek(keylet::loan(loanID));
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    auto const borrower = loanSle->at(sfBorrower);
-    auto const borrowerSle = view.peek(keylet::account(borrower));
-    if (!borrowerSle)
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     auto const brokerID = loanSle->at(sfLoanBrokerID);
     auto const brokerSle = view.peek(keylet::loanBroker(brokerID));
@@ -94,6 +93,61 @@ LoanDelete::doApply()
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);
+
+    // A pending loan reverses the bookkeeping performed by LoanSet at proposal
+    // time and releases the owner reserve charged to the LoanBroker owner. It is
+    // only linked into the broker pseudo-account's directory, and the borrower
+    // was never charged a reserve.
+    if (loanSle->isFlag(lsfLoanPending))
+    {
+        auto const brokerOwner = brokerSle->at(sfOwner);
+        auto const brokerOwnerSle = view.peek(keylet::account(brokerOwner));
+        if (!brokerOwnerSle)
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+        auto const vaultScale = getAssetsTotalScale(vaultSle);
+        Number const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
+        auto const state = constructRoundedLoanState(loanSle);
+
+        // Remove LoanID from the broker pseudo-account's directory.
+        if (!view.dirRemove(
+                keylet::ownerDir(brokerPseudoAccount),
+                loanSle->at(sfLoanBrokerNode),
+                loanID,
+                false))
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+        // Delete the Loan object
+        view.erase(loanSle);
+
+        // Reverse the vault bookkeeping from the proposal.
+        auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
+        auto vaultReservedProxy = vaultSle->at(sfAssetsReserved);
+        auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
+        vaultAvailableProxy += principalOutstanding;
+        vaultReservedProxy -= principalOutstanding;
+        vaultTotalProxy -= state.interestDue;
+        view.update(vaultSle);
+
+        // Reverse the broker debt and outstanding loan count.
+        adjustBrokerDebtTotal(
+            brokerSle, -(principalOutstanding + state.interestDue), vaultAsset, vaultScale);
+        adjustOwnerCount(view, brokerSle, -1, j_);
+
+        // Release the owner reserve charged to the LoanBroker owner when the
+        // loan was proposed.
+        adjustOwnerCount(view, brokerOwnerSle, -1, j_);
+
+        associateAsset(*brokerSle, vaultAsset);
+        associateAsset(*vaultSle, vaultAsset);
+
+        return tesSUCCESS;
+    }
+
+    auto const borrower = loanSle->at(sfBorrower);
+    auto const borrowerSle = view.peek(keylet::account(borrower));
+    if (!borrowerSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     // Remove LoanID from Directory of the LoanBroker pseudo-account.
     if (!view.dirRemove(
