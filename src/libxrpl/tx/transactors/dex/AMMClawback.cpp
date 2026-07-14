@@ -218,20 +218,6 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (holdLPtokens == beast::kZero)
         return tecAMM_BALANCE;
 
-    // Balance used to gate auto-creating the holder's paired-asset trustline.
-    // Before fixAMMClawbackReserve1 this incorrectly used the issuer's
-    // preFeeBalance_ (sfAccount is the issuer), so the issuer's XRP could
-    // wrongly satisfy the holder's reserve requirement. Use the
-    // holder's own XRP balance instead.
-    XRPAmount reserveBalance = preFeeBalance_;
-    if (sb.rules().enabled(fixAMMClawbackReserve1))
-    {
-        auto const sleHolder = sb.read(keylet::account(holder));
-        if (!sleHolder)
-            return tecINTERNAL;  // LCOV_EXCL_LINE - holder validated in preclaim
-        reserveBalance = STAmount{(*sleHolder)[sfBalance]}.xrp();
-    }
-
     if (!clawAmount)
     {
         // Because we are doing a two-asset withdrawal,
@@ -251,7 +237,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 FreezeHandling::IgnoreFreeze,
                 AuthHandling::IgnoreAuth,
                 WithdrawAll::Yes,
-                reserveBalance,
+                preFeeBalance_,
                 ctx_.journal);
     }
     else
@@ -266,8 +252,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 amount2Balance,
                 lptAMMBalance,
                 holdLPtokens,
-                *clawAmount,
-                reserveBalance);
+                *clawAmount);
     }
 
     if (!isTesSuccess(result))
@@ -324,8 +309,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     STAmount const& amount2Balance,
     STAmount const& lptAMMBalance,
     STAmount const& holdLPtokens,
-    STAmount const& amount,
-    XRPAmount const& reserveBalance)
+    STAmount const& amount)
 {
     auto frac = Number{amount} / amountBalance;
     auto amount2Withdraw = amount2Balance * frac;
@@ -350,7 +334,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
             WithdrawAll::Yes,
-            reserveBalance,
+            preFeeBalance_,
             ctx_.journal);
     }
 
@@ -383,7 +367,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
             WithdrawAll::No,
-            reserveBalance,
+            preFeeBalance_,
             ctx_.journal);
     }
 
@@ -403,7 +387,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         FreezeHandling::IgnoreFreeze,
         AuthHandling::IgnoreAuth,
         WithdrawAll::No,
-        reserveBalance,
+        preFeeBalance_,
         ctx_.journal);
 }
 

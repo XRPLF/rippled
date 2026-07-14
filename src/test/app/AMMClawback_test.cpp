@@ -2511,13 +2511,18 @@ class AMMClawback_test : public beast::unit_test::Suite
     }
 
     void
-    testHolderReserveBypass(FeatureBitset features)
+    testClawbackBypassesReserve(FeatureBitset features)
     {
-        // AMMClawback must not let the *issuer's* XRP balance satisfy
-        // the *holder-side* owner-reserve check that auto-creates the paired
-        // asset's trustline. The equivalent holder-signed AMMWithdraw fails with
-        // tecINSUFFICIENT_RESERVE; AMMClawback must fail the same way.
-        testcase("test holder reserve not bypassed by issuer balance");
+        // AMMClawback is a compliance recovery that returns the holder's own
+        // paired asset without their cooperation (IgnoreFreeze/IgnoreAuth). It
+        // must not be blockable by the recipient's owner reserve: the trustline
+        // it auto-creates holds the holder's own returned asset, so refusing to
+        // create it neither protects the holder nor serves the issuer -- it
+        // just lets a holder veto the clawback and, for MPT, lets a low-XRP
+        // issuer be blocked. With fixAMMClawbackReserve1 the reserve check on
+        // the clawback path is skipped outright, so the outcome no longer
+        // depends on either account incidentally holding enough XRP.
+        testcase("test clawback bypasses recipient reserve");
         using namespace jtx;
 
         // The reserve gate exercised here only exists once fixAMMv1_2 is on
@@ -2526,7 +2531,7 @@ class AMMClawback_test : public beast::unit_test::Suite
             return;
 
         Env env(*this, features);
-        Account const gw{"gateway"};   // issuer + clawback authority (rich)
+        Account const gw{"gateway"};   // issuer + clawback authority (low XRP)
         Account const carol{"carol"};  // liquidity provider / AMM creator (rich)
         Account const alice{"alice"};  // under-reserved holder
 
@@ -2539,7 +2544,12 @@ class AMMClawback_test : public beast::unit_test::Suite
         // object (the EUR trustline that clawing back USD would auto-create).
         auto const holderReserve = env.current()->fees().accountReserve(2, 1);
 
-        env.fund(XRP(1'000'000), gw, carol);
+        env.fund(XRP(1'000'000), carol);
+        // The issuer holds no owner objects, so fund it with only the base
+        // account reserve plus a little for fees. Under the legacy path the
+        // reserve check compares against the issuer's balance, so a low-XRP
+        // issuer would (wrongly) be unable to clear the holder-side gate.
+        env.fund(env.current()->fees().accountReserve(0, 1) + baseFee * 10, gw);
         env.fund(holderReserve + baseFee * 5, alice);
         env.close();
 
@@ -2568,32 +2578,36 @@ class AMMClawback_test : public beast::unit_test::Suite
         // afford a third.
         BEAST_EXPECT(env.ownerCount(alice) == 2);
 
-        // CONTROL: the holder-signed withdrawal path correctly refuses to create
-        // the EUR trustline the holder cannot afford.
+        // CONTROL: the holder-signed withdrawal path correctly refuses to
+        // create the EUR trustline the holder cannot afford. The reserve gate
+        // is a real protection for *voluntary* withdrawals -- the amendment
+        // does not touch this path.
         amm.withdraw(
             WithdrawArg{
                 .account = alice, .asset1Out = eur(1), .err = Ter(tecINSUFFICIENT_RESERVE)});
         env.close();
         BEAST_EXPECT(env.ownerCount(alice) == 2);
 
-        // the issuer-signed clawback must gate the auto-created EUR
-        // trustline on the *holder's* balance, not on gw's preFeeBalance_.
         if (features[fixAMMClawbackReserve1])
         {
-            // With the fix, the clawback fails exactly like the control
-            // withdrawal above: no forced trustline, OwnerCount unchanged.
-            env(amm::ammClawback(gw, alice, usd, eur, usd(10)), Ter(tecINSUFFICIENT_RESERVE));
-            env.close();
-            BEAST_EXPECT(env.ownerCount(alice) == 2);
-        }
-        else
-        {
-            // Legacy bug: gw's large XRP balance wrongly clears the holder-side
-            // gate, so the clawback succeeds, force-creating alice's EUR
-            // trustline and bumping OwnerCount to 3 (under-reserved holder).
+            // The issuer-signed clawback intentionally bypasses the recipient
+            // reserve check: neither the low-XRP issuer nor the under-reserved
+            // holder can satisfy it, yet the clawback still succeeds, returning
+            // the paired EUR to the issuer and auto-creating alice's EUR
+            // trustline (OwnerCount 2 -> 3). A holder cannot veto clawback.
             env(amm::ammClawback(gw, alice, usd, eur, usd(10)), Ter(tesSUCCESS));
             env.close();
             BEAST_EXPECT(env.ownerCount(alice) == 3);
+        }
+        else
+        {
+            // Legacy path: the reserve check runs and compares against the
+            // issuer's (preFeeBalance_) XRP, which here is too low to clear the
+            // holder-side gate, so the clawback is wrongly blocked and the
+            // OwnerCount is unchanged.
+            env(amm::ammClawback(gw, alice, usd, eur, usd(10)), Ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+            BEAST_EXPECT(env.ownerCount(alice) == 2);
         }
     }
 
@@ -2629,11 +2643,11 @@ class AMMClawback_test : public beast::unit_test::Suite
             testAssetFrozen(features);
             testSingleDepositAndClawback(features);
             testLastHolderLPTokenBalance(features);
-            testHolderReserveBypass(features);
+            testClawbackBypassesReserve(features);
         }
 
-        // exercise the pre-amendment (legacy) reserve-bypass path.
-        testHolderReserveBypass(all - fixAMMClawbackReserve1);
+        // exercise the pre-amendment (legacy) reserve-check path.
+        testClawbackBypassesReserve(all - fixAMMClawbackReserve1);
     }
 };
 BEAST_DEFINE_TESTSUITE(AMMClawback, app, xrpl);
