@@ -2741,7 +2741,7 @@ class Invariants_test : public beast::unit_test::Suite
     }
 
     void
-    testVault()
+    testVault()  // NOLINT(readability-function-size)
     {
         using namespace test::jtx;
 

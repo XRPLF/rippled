@@ -83,7 +83,7 @@ TEST_F(BufferTest, buffer)
         x = b0;
         EXPECT_EQ(x, b0);
         EXPECT_TRUE(sane(x));
-#if defined(__clang__)
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wself-assign-overloaded"
 #endif
@@ -95,7 +95,7 @@ TEST_F(BufferTest, buffer)
         EXPECT_EQ(y, b3);
         EXPECT_TRUE(sane(y));
 
-#if defined(__clang__)
+#ifdef __clang__
 #pragma clang diagnostic pop
 #endif
     }
