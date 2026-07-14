@@ -464,7 +464,6 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "Bps"
         },
         "overrides": [
@@ -733,16 +732,7 @@
             ]
           }
         ]
-      },
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      }
     },
     {
       "title": "Duplicate Traffic (Wasted Bandwidth)",
