@@ -21,6 +21,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -31,12 +32,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(rate(rpc_requests_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Requests / Sec\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(rpc_requests_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Requests / Sec\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "reqps"
         },
         "overrides": []
@@ -45,78 +46,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -133,6 +64,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -143,12 +75,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Response Time\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Response Time\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ms",
           "custom": {
             "axisLabel": "Latency (ms)",
@@ -164,78 +96,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -252,6 +114,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -262,12 +125,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(rpc_size_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Response Size\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(rpc_size_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Response Size\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "decbytes",
           "custom": {
             "axisLabel": "Size (Bytes)",
@@ -283,78 +146,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -371,6 +164,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -381,28 +175,26 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.9, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P90\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(histogram_quantile(0.9, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P90\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.99, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P99\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(histogram_quantile(0.99, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(rpc_time_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P99\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ms",
           "custom": {
             "axisLabel": "Latency (ms)",
@@ -418,78 +210,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -506,6 +228,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -516,12 +239,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(pathfind_fast_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Fast Pathfind\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(pathfind_fast_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Fast Pathfind\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -537,78 +260,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -625,6 +278,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -635,12 +289,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(pathfind_full_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Full Pathfind\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(pathfind_full_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Full Pathfind\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -656,78 +310,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -744,6 +328,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -754,12 +339,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(rate(warn_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Warnings / Sec\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(warn_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Warnings / Sec\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ops",
           "thresholds": {
             "steps": [
@@ -784,78 +369,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -872,6 +387,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -882,12 +398,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(rate(drop_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Drops / Sec\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(rate(drop_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Drops / Sec\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ops",
           "thresholds": {
             "steps": [
@@ -912,78 +428,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -1000,6 +446,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -1010,12 +457,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (method, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[$__rate_interval])), \"series\", \"$1\", \"method\", \"(.*)\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(sum by (method, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[$__rate_interval])), \"series\", \"$1\", \"method\", \"(.*)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.method}] [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ops",
           "custom": {
             "axisLabel": "Calls / Sec",
@@ -1031,78 +478,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type|method)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -1119,6 +496,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -1129,12 +507,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, method, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m]))), \"series\", \"$1\", \"method\", \"(.*)\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(histogram_quantile(0.95, sum by (le, method, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m]))), \"series\", \"$1\", \"method\", \"(.*)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.method}] [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -1150,78 +528,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type|method)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -1238,6 +546,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -1248,12 +557,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (grpc_status, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=~\"grpc\\\\..*\", grpc_status!=\"\"}[$__rate_interval])), \"series\", \"$1\", \"grpc_status\", \"(.*)\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(sum by (grpc_status, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=~\"grpc\\\\..*\", grpc_status!=\"\"}[$__rate_interval])), \"series\", \"$1\", \"grpc_status\", \"(.*)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.grpc_status}] [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ops",
           "custom": {
             "axisLabel": "Calls / Sec",
@@ -1269,78 +578,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type|grpc_status)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -1357,6 +596,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -1367,12 +607,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"pathfind.compute\"}[5m]))), \"series\", \"P95 Compute\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"pathfind.compute\"}[5m]))), \"series\", \"P95 Compute\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -1388,78 +628,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
@@ -1476,6 +646,7 @@
       },
       "options": {
         "tooltip": {
+          "maxHeight": 600,
           "mode": "multi",
           "sort": "desc"
         }
@@ -1486,20 +657,19 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"pathfind.request\"}[$__rate_interval])), \"series\", \"Requests / Sec\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"pathfind.request\"}[$__rate_interval])), \"series\", \"Requests / Sec\", \"\", \"\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"pathfind.discover\"}[$__rate_interval])), \"series\", \"Discoveries / Sec\", \"\", \"\")",
-          "legendFormat": "__auto"
+          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"pathfind.discover\"}[$__rate_interval])), \"series\", \"Discoveries / Sec\", \"\", \"\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
           "unit": "ops",
           "custom": {
             "axisLabel": "Operations / Sec",
@@ -1515,78 +685,8 @@
         {
           "id": "renameByRegex",
           "options": {
-            "regex": "/\\b(?:__name__|job|metric|service_name|service_version|deployment_environment|instance|xrpl_network_type)=\"[^\"]*\",?\\s*/g",
+            "regex": "/\\s*\\[\\]/g",
             "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\{(?:series=\"([^\"]*)\",?\\s*)?(?:service_instance_id=\"([^\"]*)\",?\\s*)?(?:xrpl_branch=\"([^\"]*)\",?\\s*)?(?:xrpl_node_role=\"([^\"]*)\",?\\s*)?(?:xrpl_work_item=\"([^\"]*)\",?\\s*)?\\}/g",
-            "renamePattern": "$1 [$2, $4]-[$3, $5]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/,\\s*\\]/g",
-            "renamePattern": "]"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[,\\s*/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]-\\[/g",
-            "renamePattern": "["
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/-\\[\\]/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\[\\]\\s*$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s*\\[\\]\\s*$/g",
-            "renamePattern": "all"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s{2,}/g",
-            "renamePattern": " "
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^\\s+|\\s+$/g",
-            "renamePattern": ""
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/^$/g",
-            "renamePattern": "all"
           }
         }
       ]
