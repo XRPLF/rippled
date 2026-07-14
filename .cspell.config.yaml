@@ -73,6 +73,7 @@ words:
   - citardauq
   - clawback
   - clawbacks
+  - clippy
   - cmaketoolchain
   - coeffs
   - coldwallet
@@ -260,6 +261,7 @@ words:
   - rocksdb
   - Rohrs
   - roundings
+  - rustc
   - sahyadri
   - Satoshi
   - scons
