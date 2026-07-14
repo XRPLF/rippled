@@ -35,21 +35,12 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops"
         },
         "overrides": []
       },
-      "id": 1,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 1
     },
     {
       "title": "Consensus Mode Over Time",
@@ -78,7 +69,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Events / Sec",
@@ -90,16 +81,7 @@
         },
         "overrides": []
       },
-      "id": 2,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 2
     },
     {
       "title": "Consensus Proposals Sent Rate",
@@ -128,7 +110,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Proposals / Sec",
@@ -140,16 +122,7 @@
         },
         "overrides": []
       },
-      "id": 3,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 3
     },
     {
       "title": "Accept vs Close Rate",
@@ -184,7 +157,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Events / Sec",
@@ -196,16 +169,7 @@
         },
         "overrides": []
       },
-      "id": 4,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 4
     },
     {
       "title": "Validation vs Close Rate",
@@ -240,7 +204,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Events / Sec",
@@ -252,16 +216,7 @@
         },
         "overrides": []
       },
-      "id": 5,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 5
     },
     {
       "title": "Time to Reach Consensus (p50/p95)",
@@ -479,7 +434,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -491,16 +446,7 @@
         },
         "overrides": []
       },
-      "id": 10,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 10
     },
     {
       "title": "Ledger Close Duration",
@@ -529,7 +475,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -541,16 +487,7 @@
         },
         "overrides": []
       },
-      "id": 11,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 11
     },
     {
       "title": "Ledger Apply Duration (doAccept)",
@@ -572,7 +509,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -584,16 +521,7 @@
         },
         "overrides": []
       },
-      "id": 12,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 12
     },
     {
       "title": "Consensus Accept Duration Heatmap",
@@ -652,7 +580,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Rounds / Sec",
@@ -664,16 +592,7 @@
         },
         "overrides": []
       },
-      "id": 14,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 14
     },
     {
       "title": "Close Time Vote Bins & Resolution",
@@ -917,21 +836,12 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "short"
         },
         "overrides": []
       },
-      "id": 18,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 18
     },
     {
       "title": "Consensus Failures Over Time",
@@ -966,7 +876,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Failures / Sec",
@@ -978,16 +888,7 @@
         },
         "overrides": []
       },
-      "id": 19,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 19
     },
     {
       "title": "Consensus Stall Rate",
@@ -1022,7 +923,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Checks / Sec",
@@ -1034,16 +935,7 @@
         },
         "overrides": []
       },
-      "id": 20,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 20
     },
     {
       "title": "Consensus Mode-Change Rate by Target Mode",
@@ -1072,7 +964,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Mode Changes / Sec",
@@ -1084,16 +976,7 @@
         },
         "overrides": []
       },
-      "id": 21,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 21
     },
     {
       "title": "Ledger History Mismatch Rate by Reason",
@@ -1122,7 +1005,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Mismatches / Sec",
@@ -1134,16 +1017,7 @@
         },
         "overrides": []
       },
-      "id": 22,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 22
     }
   ],
   "schemaVersion": 39,

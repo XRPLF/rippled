@@ -45,7 +45,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "\u00b5s",
           "min": 0,
           "thresholds": {
@@ -68,16 +68,7 @@
         },
         "overrides": []
       },
-      "id": 1,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 1
     },
     {
       "title": "Job Throughput Rate (Per Second)",
@@ -118,7 +109,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "drawStyle": "line",
@@ -136,16 +127,7 @@
         },
         "overrides": []
       },
-      "id": 2,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 2
     },
     {
       "title": "Per-Job-Type Queued Rate",
@@ -179,7 +161,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "drawStyle": "line",
@@ -197,16 +179,7 @@
         },
         "overrides": []
       },
-      "id": 3,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 3
     },
     {
       "title": "Per-Job-Type Finish Rate",
@@ -240,7 +213,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "ops",
           "custom": {
             "drawStyle": "line",
@@ -258,16 +231,7 @@
         },
         "overrides": []
       },
-      "id": 4,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 4
     },
     {
       "title": "Job Queue Wait Time",
@@ -302,7 +266,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "\u00b5s",
           "custom": {
             "drawStyle": "line",
@@ -320,16 +284,7 @@
         },
         "overrides": []
       },
-      "id": 5,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 5
     },
     {
       "title": "Job Execution Time",
@@ -364,7 +319,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "\u00b5s",
           "custom": {
             "drawStyle": "line",
@@ -382,16 +337,7 @@
         },
         "overrides": []
       },
-      "id": 6,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 6
     },
     {
       "title": "Per-Job-Type Execution Time (p99)",
@@ -425,7 +371,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "\u00b5s",
           "custom": {
             "drawStyle": "line",
@@ -443,16 +389,7 @@
         },
         "overrides": []
       },
-      "id": 7,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 7
     },
     {
       "title": "Transaction Overflow Rate",
@@ -481,7 +418,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.resource_group}] [${__field.labels.iac_group}]",
+          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
           "unit": "cpm",
           "thresholds": {
             "steps": [
@@ -515,16 +452,7 @@
         },
         "overrides": []
       },
-      "id": 8,
-      "transformations": [
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "/\\s*\\[\\]/g",
-            "renamePattern": ""
-          }
-        }
-      ]
+      "id": 8
     }
   ],
   "schemaVersion": 39,
