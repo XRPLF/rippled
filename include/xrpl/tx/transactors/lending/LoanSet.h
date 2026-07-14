@@ -24,9 +24,11 @@ class LoanSet : public Transactor
 private:
     static std::uint32_t
     getStartDate(ReadView const& view, STTx const& tx);
+    static bool
+    isTwoStepFlowEnabled(Rules const& rules);
     /* Returns true if the transaction is using the two-step flow. */
     static bool
-    isTwoStepFlow(STTx const& tx, Rules const& rules);
+    isTwoStepFlow(STTx const& tx);
     /* Returns true if the transaction is using the one-step flow. */
     static bool
     isOneStepFlow(STTx const& tx);

@@ -96,6 +96,7 @@ class ValidVault
         Number principalOutstanding = 0;
         Number totalValueOutstanding = 0;
         Number managementFeeOutstanding = 0;
+        uint32_t flags = 0;
 
         // Interest booked to the vault at loan creation: the portion of the
         // total value owed that is neither principal nor broker management fee.

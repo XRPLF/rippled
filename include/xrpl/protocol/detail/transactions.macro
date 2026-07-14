@@ -1052,7 +1052,7 @@ TRANSACTION(ttLOAN_SET, 80, LoanSet,
 TRANSACTION(ttLOAN_DELETE, 81, LoanDelete,
     Delegation::NotDelegable,
     featureLendingProtocol,
-    NoPriv, ({
+    MayModifyVault, ({
     {sfLoanID, SoeRequired},
 }))
 

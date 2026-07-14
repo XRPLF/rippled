@@ -3461,6 +3461,277 @@ protected:
             nullptr);
     }
 
+    // Exercises the two-step (LendingProtocolV1_1) flow, where the LoanBroker
+    // owner proposes a pending Loan (LoanSet with a Borrower and StartDate) that
+    // the Borrower later accepts (LoanAccept) or that either party cancels
+    // (LoanDelete). Requires the LendingProtocolV1_1 amendment.
+    void
+    testTwoStep(FeatureBitset features)
+    {
+        using namespace jtx;
+        using namespace jtx::loan;
+        using namespace std::chrono_literals;
+
+        Account const lender{"lender"};  // Vault + LoanBroker owner
+        Account const borrower{"borrower"};
+        Account const evan{"evan"};  // unrelated third party
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+
+        // Loan terms shared across the scenarios.
+        Number const principal = xrpAsset(200).number();
+        auto const interest = TenthBips32{50'000};
+        std::uint32_t const payTotal = 10;
+        std::uint32_t const payInterval = 200;
+
+        // Build a funded environment with a Vault + LoanBroker owned by
+        // `lender`, and return the broker.
+        auto const makeBroker = [&](Env& env) -> BrokerInfo {
+            env.fund(XRP(100'000'000), noripple(lender));
+            env.fund(XRP(1'000'000), borrower, evan);
+            env.close();
+            return createVaultAndBroker(env, xrpAsset, lender);
+        };
+
+        // The keylet of the next loan the broker will create.
+        auto const nextLoanKeylet = [&](Env& env, BrokerInfo const& broker) -> Keylet {
+            auto const brokerSle = env.le(broker.brokerKeylet());
+            return keylet::loan(broker.brokerID, brokerSle->at(sfLoanSequence));
+        };
+
+        // A StartDate comfortably in the future.
+        auto const futureStart = [&](Env& env) -> std::uint32_t {
+            return (env.now() + 1h).time_since_epoch().count();
+        };
+
+        // Snapshot of the vault's asset accounting.
+        struct VaultAmounts
+        {
+            Number available;
+            Number reserved;
+            Number total;
+        };
+        auto const readVault = [&](Env& env, BrokerInfo const& broker) -> VaultAmounts {
+            auto const v = env.le(broker.vaultKeylet());
+            return {
+                .available = v->at(sfAssetsAvailable),
+                .reserved = v->at(sfAssetsReserved),
+                .total = v->at(sfAssetsTotal)};
+        };
+
+        // Submit a valid two-step proposal from `proposer` on behalf of
+        // `theBorrower`, with the supplied StartDate and any extra functors.
+        auto const propose = [&](Env& env,
+                                 BrokerInfo const& broker,
+                                 Account const& proposer,
+                                 Account const& theBorrower,
+                                 std::uint32_t startDate,
+                                 auto const&... extra) {
+            env(set(proposer, broker.brokerID, principal),
+                kBorrower(theBorrower),
+                kStartDate(startDate),
+                kInterestRate(interest),
+                kPaymentTotal(payTotal),
+                kPaymentInterval(payInterval),
+                extra...);
+        };
+
+        auto const featureEnabled = [&]() -> bool {
+            return (features & featureLendingProtocolV1_1).any();
+        }();
+
+        if (!featureEnabled)
+        {
+            testcase("Two-step: rejected as before");
+
+            Env env(*this, features);
+            auto const broker = makeBroker(env);
+            propose(env, broker, lender, borrower, futureStart(env), Ter(temBAD_SIGNER));
+
+            // Rest of the tests are not applicable
+            return;
+        }
+
+        {
+            testcase("Two-step: propose then accept");
+
+            Env env(*this, features);
+            auto const broker = makeBroker(env);
+
+            auto const vault0 = readVault(env, broker);
+            auto const lenderOwners0 = env.ownerCount(lender);
+            auto const borrowerOwners0 = env.ownerCount(borrower);
+
+            auto const loanKeylet = nextLoanKeylet(env, broker);
+            propose(env, broker, lender, borrower, futureStart(env));
+            env.close();
+
+            // The proposal creates a pending Loan, linked only into the broker
+            // pseudo-account's directory.
+            if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+            {
+                BEAST_EXPECT(loan->isFlag(lsfLoanPending));
+                BEAST_EXPECT(loan->at(sfBorrower) == borrower.id());
+                BEAST_EXPECT(loan->isFieldPresent(sfLoanBrokerNode));
+                BEAST_EXPECT(!loan->isFieldPresent(sfOwnerNode));
+            }
+
+            // The owner reserve is charged to the broker owner, not the
+            // borrower.
+            BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0 + 1);
+            BEAST_EXPECT(env.ownerCount(borrower) == borrowerOwners0);
+
+            // Vault bookkeeping: Available -= P, Reserved += P, Total +=
+            // InterestDue.
+            auto const vault1 = readVault(env, broker);
+            BEAST_EXPECT(vault1.available == vault0.available - principal);
+            BEAST_EXPECT(vault1.reserved == vault0.reserved + principal);
+            BEAST_EXPECT(vault1.total > vault0.total);
+            Number const interestDue = vault1.total - vault0.total;
+
+            // Capture pre-acceptance balances to verify disbursement.
+            auto const vaultPseudo = [&]() {
+                auto const v = env.le(broker.vaultKeylet());
+                return Account("vault pseudo-account", v->at(sfAccount));
+            }();
+            STAmount const pseudoBal0 = env.balance(vaultPseudo).value();
+            STAmount const borrowerBal0 = env.balance(borrower).value();
+
+            env(accept(borrower, loanKeylet.key));
+            env.close();
+
+            // The loan is now active and linked into the borrower's directory.
+            if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+            {
+                BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
+                BEAST_EXPECT(loan->isFieldPresent(sfLoanBrokerNode));
+                BEAST_EXPECT(loan->isFieldPresent(sfOwnerNode));
+            }
+
+            // The reserve is swapped from the broker owner to the borrower.
+            BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0);
+            BEAST_EXPECT(env.ownerCount(borrower) == borrowerOwners0 + 1);
+
+            // Reserved principal is released; Available and Total are unchanged
+            // from the proposal.
+            auto const vault2 = readVault(env, broker);
+            BEAST_EXPECT(vault2.reserved == vault0.reserved);
+            BEAST_EXPECT(vault2.available == vault0.available - principal);
+            BEAST_EXPECT(vault2.total == vault0.total + interestDue);
+
+            // The principal is disbursed from the vault pseudo-account to the
+            // borrower (origination fee is zero, so the borrower receives it
+            // all, less the transaction fee it paid).
+            BEAST_EXPECT(env.balance(vaultPseudo).value() == pseudoBal0 - xrpAsset(200).value());
+            BEAST_EXPECT(env.balance(borrower).value() > borrowerBal0);
+        }
+
+        {
+            testcase("Two-step: proposal failures");
+
+            Env env(*this, features);
+            auto const epoch = env.now();
+            auto const broker = makeBroker(env);
+
+            // The submitter must be the LoanBroker owner
+            propose(env, broker, evan, borrower, futureStart(env), Ter(tecNO_PERMISSION));
+
+            // The StartDate must be in the future.
+            std::uint32_t const pastDate = epoch.time_since_epoch().count();
+            propose(env, broker, lender, borrower, pastDate, Ter(tecEXPIRED));
+        }
+
+        {
+            testcase("Two-step: LoanAccept validation");
+
+            Env env(*this, features);
+            auto const broker = makeBroker(env);
+
+            // Zero LoanID fails preflight.
+            env(accept(borrower, uint256{}), Ter(temINVALID));
+
+            // A LoanID that does not resolve to a Loan object.
+            env(accept(borrower, keylet::loan(broker.brokerID, 999).key), Ter(tecNO_ENTRY));
+
+            auto const loanKeylet = nextLoanKeylet(env, broker);
+            propose(env, broker, lender, borrower, futureStart(env));
+            env.close();
+
+            // Only the borrower may accept.
+            env(accept(evan, loanKeylet.key), Ter(tecNO_PERMISSION));
+            env(accept(lender, loanKeylet.key), Ter(tecNO_PERMISSION));
+
+            // The borrower accepts successfully.
+            env(accept(borrower, loanKeylet.key));
+            env.close();
+
+            // The loan is no longer pending, so it cannot be accepted again.
+            env(accept(borrower, loanKeylet.key), Ter(tecNO_PERMISSION));
+        }
+
+        {
+            testcase("Two-step: LoanAccept after expiry");
+
+            Env env(*this, features);
+            auto const broker = makeBroker(env);
+
+            auto const loanKeylet = nextLoanKeylet(env, broker);
+            std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
+            propose(env, broker, lender, borrower, startDate);
+            env.close();
+
+            // Advance the ledger beyond the StartDate.
+            env.close(NetClock::time_point{NetClock::duration{startDate}} + 1h);
+
+            env(accept(borrower, loanKeylet.key), Ter(tecEXPIRED));
+        }
+
+        // Deleting a pending loan reverses the proposal-time bookkeeping and
+        // releases the broker owner's reserve. It can be done by either the
+        // broker owner or the borrower.
+        auto const testDeletePending = [&](Account const& deleter) {
+            Env env(*this, features);
+            auto const broker = makeBroker(env);
+
+            auto const vault0 = readVault(env, broker);
+            auto const lenderOwners0 = env.ownerCount(lender);
+            auto const borrowerOwners0 = env.ownerCount(borrower);
+
+            auto const loanKeylet = nextLoanKeylet(env, broker);
+            propose(env, broker, lender, borrower, futureStart(env));
+            env.close();
+
+            BEAST_EXPECT(env.le(loanKeylet));
+            BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0 + 1);
+
+            // An unrelated account cannot delete the loan.
+            env(del(evan, loanKeylet.key), Ter(tecNO_PERMISSION));
+
+            env(del(deleter, loanKeylet.key));
+            env.close();
+
+            // The loan is gone, the reserve is released, and the vault
+            // bookkeeping is fully reversed.
+            BEAST_EXPECT(!env.le(loanKeylet));
+            BEAST_EXPECT(env.ownerCount(lender) == lenderOwners0);
+            BEAST_EXPECT(env.ownerCount(borrower) == borrowerOwners0);
+
+            auto const vault1 = readVault(env, broker);
+            BEAST_EXPECT(vault1.available == vault0.available);
+            BEAST_EXPECT(vault1.reserved == vault0.reserved);
+            BEAST_EXPECT(vault1.total == vault0.total);
+        };
+
+        {
+            testcase("Two-step: LoanDelete of pending loan by broker owner");
+            testDeletePending(lender);
+        }
+        {
+            testcase("Two-step: LoanDelete of pending loan by borrower");
+            testDeletePending(borrower);
+        }
+    }
+
     void
     testLifecycle(FeatureBitset features)
     {
@@ -8560,6 +8831,7 @@ protected:
         // Lifecycle
         testLifecycle(features);
         testLoanSet(features);
+        testTwoStep(features);
         testDosLoanPay(features);
         testSelfLoan(features);
 
@@ -8608,7 +8880,8 @@ public:
     {
         runAmendmentIndependent();
         for (auto const& features : jtx::amendmentCombinations(
-                 {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
+                 {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2, featureLendingProtocolV1_1},
+                 all_))
             runAmendmentSensitive(features);
     }
 };

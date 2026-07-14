@@ -824,6 +824,17 @@ manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
 }
 
 json::Value
+accept(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
+{
+    json::Value jv;
+    jv[sfTransactionType] = jss::LoanAccept;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanID] = to_string(loanID);
+    jv[sfFlags] = flags;
+    return jv;
+}
+
+json::Value
 del(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
 {
     json::Value jv;

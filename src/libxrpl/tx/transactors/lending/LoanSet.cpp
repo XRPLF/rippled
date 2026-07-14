@@ -45,7 +45,7 @@ currentLedgerCloseTime(ReadView const& view)
 std::uint32_t
 LoanSet::getStartDate(ReadView const& view, STTx const& tx)
 {
-    if (isTwoStepFlow(tx, view.rules()))
+    if (isTwoStepFlow(tx) && isTwoStepFlowEnabled(view.rules()))
     {
         return tx[sfStartDate];
     }
@@ -65,11 +65,14 @@ LoanSet::getFlagsMask(PreflightContext const& ctx)
 }
 
 bool
-LoanSet::isTwoStepFlow(STTx const& tx, Rules const& rules)
+LoanSet::isTwoStepFlowEnabled(Rules const& rules)
 {
-    if (!rules.enabled(featureLendingProtocolV1_1))
-        return false;
+    return rules.enabled(featureLendingProtocolV1_1);
+}
 
+bool
+LoanSet::isTwoStepFlow(STTx const& tx)
+{
     // The two-step (Borrower) flow is started when the LoanSet names a
     // Borrower and a StartDate but carries neither a Counterparty nor a
     // CounterpartySignature.
@@ -107,41 +110,54 @@ LoanSet::preflight(PreflightContext const& ctx)
         return std::nullopt;
     }();
 
-    bool twoStepFlow = isTwoStepFlow(tx, ctx.rules);
-    bool oneStepFlow = isOneStepFlow(tx);
+    bool const twoStepFlowEnabled = isTwoStepFlowEnabled(ctx.rules);
+    bool const twoStepFlow = isTwoStepFlow(tx);
+    bool const oneStepFlow = isOneStepFlow(tx);
     // In the two-step (Borrower) flow introduced by V1.1, a CounterpartySignature
     // is not required even for non-batch transactions. The immediate flow still
     // requires one.
-    if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig && !twoStepFlow)
+    if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig && !twoStepFlowEnabled)
     {
         JLOG(ctx.j.warn()) << "LoanSet transaction must have a CounterpartySignature.";
         return temBAD_SIGNER;
     }
 
-    if (!twoStepFlow && !oneStepFlow)
+    if (twoStepFlowEnabled)
     {
-        JLOG(ctx.j.warn()) << "LoanSet transaction must specify either a Borrower with a "
-                              "StartDate or a CounterpartySignature.";
-        return temINVALID;
-    }
+        if (!twoStepFlow && !oneStepFlow)
+        {
+            JLOG(ctx.j.warn()) << "LoanSet transaction must specify either a Borrower with a "
+                                  "StartDate or a CounterpartySignature.";
+            return temINVALID;
+        }
 
-    if (oneStepFlow)
+        if (oneStepFlow)
+        {
+            if (tx.isFieldPresent(sfBorrower) || tx.isFieldPresent(sfStartDate))
+            {
+                JLOG(ctx.j.warn()) << "LoanSet transaction cannot specify both a Borrower with a "
+                                      "StartDate and a CounterpartySignature.";
+                return temINVALID;
+            }
+        }
+
+        if (twoStepFlow)
+        {
+            if (tx.isFieldPresent(sfCounterpartySignature))
+            {
+                JLOG(ctx.j.warn()) << "LoanSet transaction cannot specify both a Borrower with a "
+                                      "StartDate and a CounterpartySignature.";
+                return temINVALID;
+            }
+        }
+    }
+    else
     {
         if (tx.isFieldPresent(sfBorrower) || tx.isFieldPresent(sfStartDate))
         {
-            JLOG(ctx.j.warn()) << "LoanSet transaction cannot specify both a Borrower with a "
-                                  "StartDate and a CounterpartySignature.";
-            return temINVALID;
-        }
-    }
-
-    if (twoStepFlow)
-    {
-        if (tx.isFieldPresent(sfCounterpartySignature))
-        {
-            JLOG(ctx.j.warn()) << "LoanSet transaction cannot specify both a Borrower with a "
-                                  "StartDate and a CounterpartySignature.";
-            return temINVALID;
+            JLOG(ctx.j.warn()) << "LoanSet transaction cannot specify a Borrower with a "
+                                  "StartDate without the two-step flow being enabled.";
+            return temDISABLED;
         }
     }
 
@@ -212,7 +228,7 @@ LoanSet::checkSign(PreclaimContext const& ctx)
 
     // In the two-step (Borrower) flow introduced by V1.1 there is no
     // counterparty, so there is no CounterpartySignature to check.
-    if (isTwoStepFlow(ctx.tx, ctx.view.rules()))
+    if (isTwoStepFlowEnabled(ctx.view.rules()) && isTwoStepFlow(ctx.tx))
         return tesSUCCESS;
 
     // Counter signer is optional. If it's not specified, it's assumed to be
@@ -343,7 +359,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
     auto const brokerOwner = brokerSle->at(sfOwner);
-    bool const twoStepFlow = isTwoStepFlow(tx, ctx.view.rules());
+    bool const twoStepFlow = isTwoStepFlow(tx);
 
     // Determine the Borrower and validate the submitter's permission. In the
     // two-step flow the LoanBroker owner proposes the loan on behalf of the
@@ -422,7 +438,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         if (tx[sfStartDate] <= currentLedgerCloseTime(ctx.view))
         {
             JLOG(ctx.j.warn()) << "Start date is in the past.";
-            return tecTOO_SOON;
+            return tecEXPIRED;
         }
     }
 
@@ -434,7 +450,7 @@ LoanSet::doApply()
 {
     auto const& tx = ctx_.tx;
     auto& view = ctx_.view();
-    bool const twoStepFlow = isTwoStepFlow(tx, view.rules());
+    bool const twoStepFlow = isTwoStepFlow(tx);
 
     auto const brokerID = tx[sfLoanBrokerID];
 
