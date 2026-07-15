@@ -1,6 +1,36 @@
 {
   "annotations": {
-    "list": []
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(70, 70, 70)",
+        "name": "Perf runs (perf-iac)",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac"],
+          "type": "tags"
+        },
+        "type": "tags"
+      }
+    ]
   },
   "description": "What this shows: Validator agreement rates, validation counts, amendment and UNL status, server state tracking, and ledger close rate.\nUse it to: Confirm the validator is participating, agreeing with the network, and closing ledgers at the expected cadence.",
   "editable": true,

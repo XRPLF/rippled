@@ -1,6 +1,36 @@
 {
   "annotations": {
-    "list": []
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(70, 70, 70)",
+        "name": "Perf runs (perf-iac)",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac"],
+          "type": "tags"
+        },
+        "type": "tags"
+      }
+    ]
   },
   "description": "What this shows: Peer connectivity and overlay bandwidth for this node: peer counts, disconnects, total bytes and messages exchanged, and the transaction, proposal, and validation traffic that flows across the peer-to-peer network.\nUse it to: Gauge peer health and overall overlay bandwidth and see which message types dominate network traffic.",
   "editable": true,

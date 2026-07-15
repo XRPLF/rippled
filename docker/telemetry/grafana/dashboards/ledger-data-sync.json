@@ -1,6 +1,36 @@
 {
   "annotations": {
-    "list": []
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(70, 70, 70)",
+        "name": "Perf runs (perf-iac)",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac"],
+          "type": "tags"
+        },
+        "type": "tags"
+      }
+    ]
   },
   "description": "What this shows: Ledger data exchange and object-fetch traffic between this node and its peers: ledger sync, tree-node retrieval, and transaction-set exchange.\nUse it to: See how much ledger data the node is pulling or serving and spot catch-up activity.",
   "editable": true,
