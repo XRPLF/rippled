@@ -255,8 +255,47 @@ numberFromJson(SField const& field, json::Value const& value)
         Throw<std::runtime_error>("not a number");
     }
 
-    return STNumber{
-        field, Number{parts.negative, parts.mantissa, parts.exponent, Number::Normalized{}}};
+    Number const num{parts.negative, parts.mantissa, parts.exponent, Number::Normalized{}};
+
+    // Canonicalize "parts" and "num" with each other by getting rid of trailing 0s until either the
+    // exponents match, or there are no more 0s. If the two results don't match exactly, then the
+    // value has been rounded one way or another, and should not be used, because it may lead to an
+    // unexpected result. canonicalizeParts is not to be confused with Number::canonicalize, because
+    // they have completely different goals.
+    auto canonicalizeParts = [](NumberParts p, int otherExponent) {
+        if (p.mantissa == 0)
+            return NumberParts{};
+
+        while (p.exponent < otherExponent && p.mantissa % 10 == 0)
+        {
+            p.mantissa /= 10;
+            ++p.exponent;
+        }
+
+        return p;
+    };
+
+    auto const numberMantissa = num.mantissa();
+    auto const numberExponent = num.exponent();
+
+    auto const canonicalParts = canonicalizeParts(parts, numberExponent);
+
+    auto const canonicalNum = canonicalizeParts(
+        NumberParts{
+            .mantissa = Number::externalToInternal(numberMantissa),
+            .exponent = numberExponent,
+            .negative = numberMantissa < 0,
+        },
+        canonicalParts.exponent);
+
+    if (canonicalParts.mantissa != canonicalNum.mantissa ||
+        canonicalParts.exponent != canonicalNum.exponent ||
+        canonicalParts.negative != canonicalNum.negative)
+    {
+        Throw<std::runtime_error>("number cannot be represented");
+    }
+
+    return STNumber{field, num};
 }
 
 }  // namespace xrpl
