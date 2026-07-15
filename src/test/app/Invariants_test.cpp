@@ -414,6 +414,23 @@ class Invariants_test : public beast::unit_test::Suite
             XRPAmount{},
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
+        doInvariantCheck(
+            Env{*this, FeatureBitset{featureSponsor}},
+            {{"account deletion left behind a sponsorship field"}},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sleA1 = ac.view().peek(keylet::account(a1.id()));
+                if (!sleA1)
+                    return false;
+                sleA1->at(sfBalance) = beast::kZero;
+                sleA1->setAccountID(sfSponsor, a2.id());
+
+                ac.view().erase(sleA1);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
+
         for (auto const& keyletInfo : kDirectAccountKeylets)
         {
             // TODO: Use structured binding once LLVM 16 is the minimum

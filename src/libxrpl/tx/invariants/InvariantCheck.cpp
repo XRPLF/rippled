@@ -489,7 +489,7 @@ AccountRootsDeletedClean::finalize(
     // feature is enabled. Enabled, or not, though, a fatal-level message will
     // be logged
     [[maybe_unused]] bool const enforce = view.rules().enabled(fixCleanup3_2_0) ||
-        view.rules().enabled(featureSingleAssetVault) ||
+        view.rules().enabled(featureSponsor) || view.rules().enabled(featureSingleAssetVault) ||
         view.rules().enabled(featureLendingProtocol);
 
     auto const objectExists = [&view, enforce, &j](auto const& keylet) {
