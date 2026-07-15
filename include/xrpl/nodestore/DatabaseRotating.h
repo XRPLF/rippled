@@ -41,6 +41,19 @@ public:
         std::unique_ptr<NodeStore::Backend>&& newBackend,
         std::function<void(std::string const& writableName, std::string const& archiveName)> const&
             f) = 0;
+
+    /**
+     * Marks an online-delete rotation as in progress (or completed).
+     *
+     * While in flight, a read served by the archive backend is copied
+     * forward into the writable backend even for ordinary
+     * (duplicate == false) fetches: the archive is about to be deleted,
+     * and a node body canonicalized into caches during the rotation
+     * window would otherwise survive only in RAM once the archive is
+     * dropped.
+     */
+    virtual void
+    setRotationInFlight(bool inFlight) = 0;
 };
 
 }  // namespace xrpl::NodeStore
