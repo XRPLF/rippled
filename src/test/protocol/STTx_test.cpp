@@ -1520,7 +1520,7 @@ public:
             // A batch whose inner carries an unregistered transaction type is
             // rejected at construction, rather than surviving as a raw STObject
             // and throwing later from an unprotected fee-calculation path.
-            std::string got;
+            std::string errorMsg;
             try
             {
                 STTx{makeBatch(makeInner(60000))};
