@@ -54,15 +54,16 @@ escrowDeductTransferFee(
     if ((senderIssuer || receiverIssuer) || lockedRate == kParityRate)
         return amount;
 
-    bool const v2 = view.rules().enabled(fixCleanup3_4_0);
-    auto const netAmt = v2 ? divideRoundStrict(amount, lockedRate, amount.asset(), false)
-                           : divideRound(amount, lockedRate, amount.asset(), true);
+    bool const strictRounding = view.rules().enabled(fixCleanup3_4_0);
+    auto const netAmt = strictRounding
+        ? divideRoundStrict(amount, lockedRate, amount.asset(), false)
+        : divideRound(amount, lockedRate, amount.asset(), true);
     // compute transfer fee, if any
     auto const xferFee = amount.value() - netAmt;
     // compute balance to transfer
     STAmount finalAmt = amount.value() - xferFee;
 
-    if (v2 && finalAmt <= beast::kZero)
+    if (strictRounding && finalAmt <= beast::kZero)
         return std::unexpected(tecPRECISION_LOSS);
 
     return finalAmt;
