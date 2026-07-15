@@ -260,6 +260,11 @@ public:
     unsigned
     pop() noexcept;
 
+    // if true, there are no recoverable digits in the guard, though there may be dropped digits
+    // (xbit_)
+    [[nodiscard]] bool
+    unrecoverable() const noexcept;
+
     // if true, there are no digits in the guard, including dropped digits (xbit_)
     [[nodiscard]] bool
     empty() const noexcept;
@@ -276,6 +281,17 @@ public:
     template <class T>
     void
     doDropDigit(T& mantissa, int& exponent) noexcept;
+
+    /**
+     * Drop a digit from the mantissa, and increment the exponent, storing the dropped digit in
+     * this Guard.
+     *
+     * If a drop will not do anything meaningful (there are no recoverable digits in the guard, and
+     * the mantissa is 0), and if targetExponent > exponent, simply set exponent to targetExponent.
+     */
+    template <class T>
+    void
+    doDropDigitWithTarget(T& mantissa, int& exponent, int const targetExponent) noexcept;
 
     // Modify the result to the correctly rounded value
     template <UnsignedMantissa T>
@@ -375,9 +391,15 @@ Number::Guard::pop() noexcept
 }
 
 inline bool
+Number::Guard::unrecoverable() const noexcept
+{
+    return digits_ == 0;
+}
+
+inline bool
 Number::Guard::empty() const noexcept
 {
-    return digits_ == 0 && !xbit_;
+    return unrecoverable() && !xbit_;
 }
 
 template <class T>
@@ -399,6 +421,22 @@ Number::Guard::doDropDigit<uint128_t>(uint128_t& mantissa, int& exponent) noexce
     // mantissa /= 10;
     push(divu10(mantissa));
     ++exponent;
+}
+
+template <class T>
+void
+Number::Guard::doDropDigitWithTarget(T& mantissa, int& exponent, int const targetExponent) noexcept
+{
+    XRPL_ASSERT(
+        targetExponent > exponent, "Number::Guard::doDropDigitWithTarget : something to do");
+    if (mantissa == 0 && unrecoverable() && targetExponent >= exponent)
+    {
+        // No number of dropped digits is going to change any of the operative parameters at this
+        // point
+        exponent = targetExponent;
+        return;
+    }
+    doDropDigit(mantissa, exponent);
 }
 
 template <UnsignedMantissa T>
@@ -935,6 +973,8 @@ Number::operator+=(Number const& y)
             // 1. First, shrink the mantissa of shrinkM/shrinkE while shrinkM ends in 0.
             while (shrinkE < expandE && shrinkM % 10 == 0)
             {
+                // Don't use doDropDigitWithTarget here, because the loop will stop before the
+                // mantissa gets to 0.
                 g.doDropDigit(shrinkM, shrinkE);
             }
 
@@ -952,7 +992,7 @@ Number::operator+=(Number const& y)
         // digits will be put into the Guard. This is the only step for non-Enabled330 modes.
         while (shrinkE < expandE)
         {
-            g.doDropDigit(shrinkM, shrinkE);
+            g.doDropDigitWithTarget(shrinkM, shrinkE, expandE);
         }
     };
 

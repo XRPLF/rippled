@@ -183,6 +183,17 @@ TEST(NumberTest, limits)
         }
         EXPECT_TRUE(caught);
 
+        try
+        {
+            Number{1, 2000000, Number::Normalized{}};
+            ADD_FAILURE();
+        }
+        catch (std::overflow_error const& e)
+        {
+            std::string const expected = "Number::normalize 2";
+            EXPECT_EQ(e.what(), expected) << e.what();
+        }
+
         if (scale == MantissaRange::MantissaScale::Large330)
         {
             // Normalization with the other scales, including the older large mantissa scales, will
@@ -402,6 +413,37 @@ TEST(NumberTest, add)
                 caught = true;
             }
             EXPECT_TRUE(caught);
+        }
+
+        // Special case: Exponents at each end of the allowable range
+        for (auto const round :
+             {Number::RoundingMode::ToNearest,
+              Number::RoundingMode::TowardsZero,
+              Number::RoundingMode::Downward,
+              Number::RoundingMode::Upward})
+        {
+            NumberRoundModeGuard const rg{round};
+            auto const x =
+                Number{Number::minMantissa(), Number::kMaxExponent, Number::Normalized{}};
+            auto const y =
+                Number{Number::minMantissa(), Number::kMinExponent, Number::Normalized{}};
+            EXPECT_EQ(x.exponent(), Number::kMaxExponent);
+            EXPECT_NE(x, beast::kZero);
+            EXPECT_EQ(y.exponent(), Number::kMinExponent);
+            EXPECT_NE(y, beast::kZero);
+            auto const result = x + y;
+
+            if (round == Number::RoundingMode::Upward)
+            {
+                // Rounding upward will take that little x-bit and round result up to the next
+                // representable value.
+                EXPECT_NE(result, x);
+                EXPECT_EQ(result, (Number{x.mantissa() + 1, x.exponent()}));
+            }
+            else
+            {
+                EXPECT_EQ(result, x);
+            }
         }
     }
 }
