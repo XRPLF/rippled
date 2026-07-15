@@ -35,7 +35,9 @@
 
 namespace xrpl {
 
-/** Represents an active connection. */
+/**
+ * Represents an active connection.
+ */
 template <class Handler, class Impl>
 class BaseHTTPPeer : public IOList::Work, public Session
 {

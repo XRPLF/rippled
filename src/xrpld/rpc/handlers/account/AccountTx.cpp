@@ -30,6 +30,7 @@
 #include <xrpl/resource/Fees.h>
 
 #include <cstdint>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <type_traits>
@@ -37,6 +38,48 @@
 #include <variant>
 
 namespace xrpl {
+
+static std::expected<DelegateFilter, json::Value>
+parseDelegateFilter(json::Value const& delegateNode)
+{
+    if (!delegateNode.isObject())
+        return std::unexpected(RPC::invalidFieldError(jss::delegate));
+
+    if (!delegateNode.isMember(jss::delegate_filter) ||
+        !delegateNode[jss::delegate_filter].isString())
+        return std::unexpected(RPC::invalidFieldError(jss::delegate_filter));
+
+    auto const& delegateFilterStr = delegateNode[jss::delegate_filter].asString();
+
+    auto typeResult = [&] -> std::expected<DelegateType, json::Value> {
+        if (delegateFilterStr == "actor")
+            return DelegateType::Actor;
+
+        if (delegateFilterStr == "authorizer")
+            return DelegateType::Authorizer;
+
+        return std::unexpected(RPC::invalidFieldError(jss::delegate_filter));
+    }();
+
+    if (!typeResult)
+        return std::unexpected(typeResult.error());
+
+    DelegateType const type = *typeResult;
+
+    std::optional<AccountID> counterparty;
+    if (delegateNode.isMember(jss::counter_party))
+    {
+        if (!delegateNode[jss::counter_party].isString())
+            return std::unexpected(RPC::invalidFieldError(jss::counter_party));
+
+        counterparty = parseBase58<AccountID>(delegateNode[jss::counter_party].asString());
+
+        if (!counterparty)
+            return std::unexpected(rpcError(RpcActMalformed));
+    }
+
+    return DelegateFilter{.type = type, .counterparty = counterparty};
+}
 
 using TxnsData = RelationalDatabase::AccountTxs;
 using TxnsDataBinary = RelationalDatabase::MetaTxsList;
@@ -231,7 +274,8 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
         .ledgerRange = result.ledgerRange,
         .marker = result.marker,
         .limit = args.limit,
-        .bAdmin = isUnlimited(context.role)};
+        .bAdmin = isUnlimited(context.role),
+        .delegate = args.delegate};
 
     auto& db = context.app.getRelationalDatabase();
 
@@ -370,6 +414,9 @@ populateJsonResponse(
             response[jss::marker] = json::ValueType::Object;
             response[jss::marker][jss::ledger] = result.marker->ledgerSeq;
             response[jss::marker][jss::seq] = result.marker->txnSeq;
+
+            if (args.delegate)
+                response[jss::marker][jss::delegate] = true;
         }
     }
 
@@ -386,7 +433,17 @@ populateJsonResponse(
 //   limit: integer,                 // optional
 //   marker: object {ledger: ledger_index, seq: txn_sequence} // optional,
 //   resume previous query
+//   delegate: object {              // optional
+//     delegate_filter: string,      // required; "actor" or "authorizer"
+//     counter_party: account        // optional
+//   }
 // }
+//
+// Pagination note for delegate-filtered queries: the `delegate` object (both
+// `delegate_filter` and `counter_party`) must be supplied unchanged on every
+// paginated request until the query completes. A marker returned by a
+// delegate-filtered query is only valid for a follow-up request that repeats
+// the same `delegate` object
 json::Value
 doAccountTx(RPC::JsonContext& context)
 {
@@ -452,6 +509,38 @@ doAccountTx(RPC::JsonContext& context)
         }
         args.marker = {
             .ledgerSeq = token[jss::ledger].asUInt(), .txnSeq = token[jss::seq].asUInt()};
+    }
+
+    if (params.isMember(jss::delegate))
+    {
+        if (auto const filter = parseDelegateFilter(params[jss::delegate]); filter.has_value())
+        {
+            args.delegate = *filter;
+        }
+        else
+        {
+            return filter.error();
+        }
+    }
+
+    // A marker produced by a delegate-filtered query uses a different
+    // pagination cursor than a normal query, so it is only valid when the same
+    // `delegate` object is supplied again. Reject any mismatch so pagination
+    // cannot silently skip or duplicate results.
+    if (args.marker)
+    {
+        bool const markerFromDelegate = params[jss::marker].isMember(jss::delegate) &&
+            params[jss::marker][jss::delegate].isBool() &&
+            params[jss::marker][jss::delegate].asBool();
+        if (markerFromDelegate != args.delegate.has_value())
+        {
+            RPC::Status const status{
+                RpcInvalidParams,
+                "Do not mix delegate and non-delegate pagination markers in account_tx; "
+                "repeat the same `delegate` object when using a delegate marker."};
+            status.inject(response);
+            return response;
+        }
     }
 
     auto res = doAccountTxHelp(context, args);

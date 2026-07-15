@@ -539,7 +539,8 @@ LedgerHistory::validatedLedger(
     }
 }
 
-/** Ensure byHash doesn't have the wrong hash for a particular index
+/**
+ * Ensure byHash doesn't have the wrong hash for a particular index
  */
 bool
 LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)

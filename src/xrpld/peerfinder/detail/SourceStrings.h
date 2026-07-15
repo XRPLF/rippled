@@ -8,7 +8,9 @@
 
 namespace xrpl::PeerFinder {
 
-/** Provides addresses from a static set of strings. */
+/**
+ * Provides addresses from a static set of strings.
+ */
 class SourceStrings : public Source
 {
 public:
