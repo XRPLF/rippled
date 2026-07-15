@@ -634,16 +634,16 @@ STObject::getAccountID(SField const& field) const
 }
 
 AccountID
-STObject::getFeePayer() const
+STObject::getInitiator() const
 {
-    // If sfDelegate is present, the delegate account is the payer
+    // If sfDelegate is present, the delegate account is the initiator
     // note: if a delegate is specified, its authorization to act on behalf of the account is
     // enforced in `Transactor::invokeCheckPermission`
     // cryptographic signature validity is checked separately (e.g., in `Transactor::checkSign`)
     if (isFieldPresent(sfDelegate))
         return getAccountID(sfDelegate);
 
-    // Default payer
+    // Default initiator
     return getAccountID(sfAccount);
 }
 
@@ -710,7 +710,7 @@ STObject::getFieldNumber(SField const& field) const
 void
 STObject::set(std::unique_ptr<STBase> v)
 {
-    set(std::move(*v.get()));
+    set(std::move(*v));
 }
 
 void

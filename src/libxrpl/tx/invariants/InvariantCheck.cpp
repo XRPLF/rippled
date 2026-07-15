@@ -148,29 +148,51 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref a
                 if (isXRP((*before)[sfAmount]))
                     drops_ -= (*before)[sfAmount].xrp().drops();
                 break;
+            case ltSPONSORSHIP:
+                if (before->isFieldPresent(sfFeeAmount))
+                {
+                    XRPL_ASSERT(
+                        isXRP((*before)[sfFeeAmount]),
+                        "XRPNotCreated::visitEntry : Sponsorship.FeeAmount is XRP");
+                    drops_ -= (*before)[sfFeeAmount].xrp().drops();
+                }
+                break;
             default:
                 break;
         }
     }
 
-    if (after)
+    if (!after)
     {
-        switch (after->getType())
-        {
-            case ltACCOUNT_ROOT:
-                drops_ += (*after)[sfBalance].xrp().drops();
-                break;
-            case ltPAYCHAN:
-                if (!isDelete)
-                    drops_ += ((*after)[sfAmount] - (*after)[sfBalance]).xrp().drops();
-                break;
-            case ltESCROW:
-                if (!isDelete && isXRP((*after)[sfAmount]))
-                    drops_ += (*after)[sfAmount].xrp().drops();
-                break;
-            default:
-                break;
-        }
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::XRPNotCreated::visitEntry : after can't be null");
+        return;
+        // LCOV_EXCL_STOP
+    }
+    switch (after->getType())
+    {
+        case ltACCOUNT_ROOT:
+            drops_ += (*after)[sfBalance].xrp().drops();
+            break;
+        case ltPAYCHAN:
+            if (!isDelete)
+                drops_ += ((*after)[sfAmount] - (*after)[sfBalance]).xrp().drops();
+            break;
+        case ltESCROW:
+            if (!isDelete && isXRP((*after)[sfAmount]))
+                drops_ += (*after)[sfAmount].xrp().drops();
+            break;
+        case ltSPONSORSHIP:
+            if (!isDelete && after->isFieldPresent(sfFeeAmount))
+            {
+                XRPL_ASSERT(
+                    isXRP((*after)[sfFeeAmount]),
+                    "XRPNotCreated::visitEntry : Sponsorship.FeeAmount is XRP");
+                drops_ += (*after)[sfFeeAmount].xrp().drops();
+            }
+            break;
+        default:
+            break;
     }
 }
 
@@ -467,7 +489,7 @@ AccountRootsDeletedClean::finalize(
     // feature is enabled. Enabled, or not, though, a fatal-level message will
     // be logged
     [[maybe_unused]] bool const enforce = view.rules().enabled(fixCleanup3_2_0) ||
-        view.rules().enabled(featureSingleAssetVault) ||
+        view.rules().enabled(featureSponsor) || view.rules().enabled(featureSingleAssetVault) ||
         view.rules().enabled(featureLendingProtocol);
 
     auto const objectExists = [&view, enforce, &j](auto const& keylet) {
@@ -512,6 +534,20 @@ AccountRootsDeletedClean::finalize(
                 enforce,
                 "xrpl::AccountRootsDeletedClean::finalize : "
                 "deleted account has zero owner count");
+            if (enforce)
+                return false;
+        }
+        // An account should not be deleted with sponsorship fields
+        if (after->isFieldPresent(sfSponsoredOwnerCount) ||
+            after->isFieldPresent(sfSponsoringOwnerCount) ||
+            after->isFieldPresent(sfSponsoringAccountCount) || after->isFieldPresent(sfSponsor))
+        {
+            JLOG(j.fatal()) << "Invariant failed: account deletion left "
+                               "behind a sponsorship field";
+            XRPL_ASSERT(
+                enforce,
+                "xrpl::AccountRootsDeletedClean::finalize : "
+                "deleted account has no sponsorship fields");
             if (enforce)
                 return false;
         }
@@ -767,14 +803,49 @@ ValidNewAccountRoot::finalize(
 
 //------------------------------------------------------------------------------
 
+static std::optional<STAmount>
+clawbackTrustLineBalanceInHolderTerms(
+    SLE::const_pointer const& sle,
+    AccountID const& holder,
+    AccountID const& issuer,
+    Currency const& currency)
+{
+    if (!sle)
+        return STAmount{Issue{currency, issuer}};
+
+    if (sle->getType() != ltRIPPLE_STATE ||
+        sle->key() != keylet::trustLine(holder, issuer, currency).key)
+    {
+        return std::nullopt;
+    }
+
+    STAmount balance = sle->getFieldAmount(sfBalance);
+    if (holder > issuer)
+        balance.negate();
+    balance.get<Issue>().account = issuer;
+    return balance;
+}
+
 void
-ValidClawback::visitEntry(bool, SLE::const_ref before, SLE::const_ref)
+ValidClawback::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     if (before && before->getType() == ltRIPPLE_STATE)
+    {
         trustlinesChanged_++;
+        iou_.before = before;
+    }
+
+    if (!isDelete && after && after->getType() == ltRIPPLE_STATE)
+        iou_.after = after;
 
     if (before && before->getType() == ltMPTOKEN)
+    {
         mptokensChanged_++;
+        mpt_.before = before;
+    }
+
+    if (!isDelete && after && after->getType() == ltMPTOKEN)
+        mpt_.after = after;
 }
 
 bool
@@ -803,31 +874,109 @@ ValidClawback::finalize(
         }
 
         bool const mptV2Enabled = view.rules().enabled(featureMPTokensV2);
+        if (trustlinesChanged_ != 0 && mptokensChanged_ != 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: trustline and MPToken both changed.";
+            if (mptV2Enabled)
+                return false;
+        }
+
         if (trustlinesChanged_ == 1 || (mptV2Enabled && mptokensChanged_ == 1))
         {
-            AccountID const issuer = tx.getAccountID(sfAccount);
             STAmount const& amount = tx.getFieldAmount(sfAmount);
-            AccountID const& holder = amount.getIssuer();
-            STAmount const holderBalance = amount.asset().visit(
+
+            return amount.asset().visit(
                 [&](Issue const& issue) {
-                    return accountHolds(
+                    AccountID const issuer = tx.getAccountID(sfAccount);
+                    AccountID const& holder = amount.getIssuer();
+                    STAmount const holderBalance = accountHolds(
                         view, holder, issue.currency, issuer, FreezeHandling::IgnoreFreeze, j);
+
+                    if (holderBalance.signum() < 0)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: trustline or MPT balance is negative";
+                        return false;
+                    }
+
+                    if (!iou_.before)
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: trustline clawback changed the wrong line";
+                        return !mptV2Enabled;
+                    }
+
+                    auto const beforeBalance = clawbackTrustLineBalanceInHolderTerms(
+                        iou_.before, holder, issuer, issue.currency);
+                    auto const afterBalance = clawbackTrustLineBalanceInHolderTerms(
+                        iou_.after, holder, issuer, issue.currency);
+                    if (!beforeBalance || !afterBalance)
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: trustline clawback changed the wrong line";
+                        return !mptV2Enabled;
+                    }
+
+                    STAmount clawAmount = amount;
+                    clawAmount.get<Issue>().account = issuer;
+                    if (clawAmount <= beast::kZero)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: trustline clawback amount is invalid";
+                        return !mptV2Enabled;
+                    }
+
+                    if (*afterBalance > *beforeBalance ||
+                        (*beforeBalance - *afterBalance) != std::min(*beforeBalance, clawAmount))
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: trustline clawback balance change is invalid";
+                        return !mptV2Enabled;
+                    }
+
+                    return true;
                 },
                 [&](MPTIssue const& issue) {
-                    return accountHolds(
-                        view,
-                        holder,
-                        issue,
-                        FreezeHandling::IgnoreFreeze,
-                        AuthHandling::IgnoreAuth,
-                        j);
-                });
+                    auto const holder = tx[~sfHolder];
+                    if (!holder)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: MPT clawback missing holder";
+                        return !mptV2Enabled;
+                    }
 
-            if (holderBalance.signum() < 0)
-            {
-                JLOG(j.fatal()) << "Invariant failed: trustline or MPT balance is negative";
-                return false;
-            }
+                    if (!mpt_.before || !mpt_.after)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: MPT clawback token is missing";
+                        return !mptV2Enabled;
+                    }
+
+                    if (mpt_.before->getAccountID(sfAccount) != *holder ||
+                        mpt_.after->getAccountID(sfAccount) != *holder ||
+                        (*mpt_.before)[sfMPTokenIssuanceID] != issue.getMptID() ||
+                        (*mpt_.after)[sfMPTokenIssuanceID] != issue.getMptID())
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: MPT clawback changed the wrong token";
+                        return !mptV2Enabled;
+                    }
+
+                    auto const before = mpt_.before->getFieldU64(sfMPTAmount);
+                    auto const after = mpt_.after->getFieldU64(sfMPTAmount);
+                    if (amount.negative() || amount.mantissa() == 0)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: MPT clawback amount is invalid";
+                        return !mptV2Enabled;
+                    }
+                    auto const clawAmount = amount.mantissa();
+
+                    // MPT balances are unsigned, so validate the raw holder
+                    // debit instead of routing through accountHolds().
+                    if (after > before || (before - after) != std::min(before, clawAmount))
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: MPT clawback balance change is invalid";
+                        return !mptV2Enabled;
+                    }
+
+                    return true;
+                });
         }
     }
     else
@@ -881,8 +1030,10 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const
             // 1. Exactly one of the pseudo-account fields is set.
             // 2. The sequence number is not changed.
             // 3. The lsfDisableMaster, lsfDefaultRipple, and lsfDepositAuth
-            // flags are set.
+            //    flags are set.
             // 4. The RegularKey is not set.
+            // 5. The SponsoredOwnerCount, SponsoringOwnerCount, SponsoringAccountCount, Sponsor
+            //    fields are not set.
             {
                 std::vector<SField const*> const& fields = getPseudoAccountFields();
 
@@ -907,6 +1058,12 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const
             if (after->isFieldPresent(sfRegularKey))
             {
                 errors_.emplace_back("pseudo-account has a regular key");
+            }
+            if (after->isFieldPresent(sfSponsoredOwnerCount) ||
+                after->isFieldPresent(sfSponsoringOwnerCount) || after->isFieldPresent(sfSponsor) ||
+                after->isFieldPresent(sfSponsoringAccountCount))
+            {
+                errors_.emplace_back("pseudo-account has a sponsorship field");
             }
         }
     }
