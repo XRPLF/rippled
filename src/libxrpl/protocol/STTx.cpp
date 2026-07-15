@@ -597,10 +597,10 @@ STTx::buildBatchTxns()
     XRPL_ASSERT(!isFree(), "STTx::buildBatchTxns : template applied");
     if (getTxnType() != ttBATCH)
         return;
-    // A Batch always seats its inner ids and transactions here, so every
-    // downstream consumer can rely on them. sfRawTransactions is required by the
-    // format (applyTemplate rejects a Batch without it); this guards a future
-    // change that made it optional.
+    // A Batch always seats its inner transactions here, so every downstream
+    // consumer can rely on them. sfRawTransactions is required by the format
+    // (applyTemplate rejects a Batch without it); this guards a future change
+    // that made it optional.
     if (!isFieldPresent(sfRawTransactions))
     {
         // LCOV_EXCL_START
