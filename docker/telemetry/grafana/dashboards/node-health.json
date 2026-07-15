@@ -37,7 +37,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "s",
           "thresholds": {
             "steps": [
@@ -88,7 +88,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "s",
           "thresholds": {
             "steps": [
@@ -167,7 +167,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "percentunit",
           "min": 0,
           "max": 1,
@@ -238,7 +238,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "short",
           "custom": {
             "axisLabel": "Transitions",
@@ -279,7 +279,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Latency (ms)",
@@ -320,7 +320,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "short",
           "custom": {
             "axisLabel": "Jobs",
@@ -361,7 +361,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ops",
           "custom": {}
         },
@@ -396,7 +396,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ops",
           "thresholds": {
             "steps": [
@@ -472,7 +472,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Operations / Sec",
@@ -517,7 +517,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "percentunit",
           "custom": {
             "axisLabel": "Operations / Sec",
@@ -568,7 +568,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "short",
           "custom": {
             "axisLabel": "Count",
@@ -635,7 +635,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Throughput",
@@ -696,7 +696,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "short",
           "custom": {
             "axisLabel": "Threads / Bundle",
@@ -741,7 +741,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "percentunit",
           "custom": {
             "axisLabel": "Threads / Bundle",
@@ -811,7 +811,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "percentunit",
           "min": 0,
           "max": 1,
@@ -881,7 +881,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "short",
           "custom": {
             "axisLabel": "Entries",
@@ -942,7 +942,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "short",
           "custom": {
             "axisLabel": "Instances",
@@ -998,7 +998,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "none",
           "mappings": [
             {
@@ -1080,7 +1080,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "s",
           "custom": {}
         },
@@ -1115,7 +1115,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "short",
           "custom": {}
         },
@@ -1150,7 +1150,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "none",
           "custom": {}
         },
@@ -1186,7 +1186,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "short",
           "custom": {
             "axisLabel": "Proposers",
@@ -1231,7 +1231,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Proposers",
@@ -1310,7 +1310,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "none",
           "custom": {}
         },
@@ -1345,7 +1345,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "decbytes",
           "custom": {
             "axisLabel": "Size",
@@ -1448,7 +1448,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "deckbytes",
           "custom": {
             "axisLabel": "Size (KB)",
@@ -1492,7 +1492,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "cpm",
           "custom": {}
         },
@@ -1527,7 +1527,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "short",
           "custom": {
             "drawStyle": "line",
@@ -1582,7 +1582,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "si:drops",
           "custom": {}
         },
@@ -1617,7 +1617,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "si:drops",
           "custom": {}
         },
@@ -1652,7 +1652,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "si:drops",
           "custom": {}
         },
@@ -1687,7 +1687,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "s",
           "thresholds": {
             "steps": [
@@ -1750,7 +1750,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "cps",
           "custom": {
             "axisLabel": "Transactions",
@@ -1879,7 +1879,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -1990,7 +1990,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Wait Time (ms)",
@@ -2031,7 +2031,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "short",
           "custom": {
             "axisLabel": "Entries",
@@ -2072,7 +2072,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "percent",
           "min": 0,
           "max": 100,
@@ -2124,7 +2124,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "s",
           "thresholds": {
             "steps": [
@@ -2181,7 +2181,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "short",
           "custom": {
             "axisLabel": "Rate (s/s)",
@@ -2222,7 +2222,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -2263,7 +2263,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Wait Time (ms)",
@@ -2304,7 +2304,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -2345,7 +2345,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Acquisitions / Sec",
@@ -2482,7 +2482,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "percentunit",
           "min": 0,
           "max": 1,

@@ -36,7 +36,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ops"
         },
         "overrides": []
@@ -70,7 +70,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -111,7 +111,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ops"
         },
         "overrides": []
@@ -182,7 +182,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -223,7 +223,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Operations / Sec",
@@ -264,7 +264,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ops"
         },
         "overrides": []
@@ -305,7 +305,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
