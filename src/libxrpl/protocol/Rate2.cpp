@@ -98,4 +98,15 @@ divideRound(STAmount const& amount, Rate const& rate, Asset const& asset, bool r
     return divRound(amount, detail::asAmount(rate), asset, roundUp);
 }
 
+STAmount
+divideRoundStrict(STAmount const& amount, Rate const& rate, Asset const& asset, bool roundUp)
+{
+    XRPL_ASSERT(rate.value, "xrpl::nft::divideRoundStrict(Issue) : nonzero rate input");
+
+    if (rate == kParityRate)
+        return amount;
+
+    return divRoundStrict(amount, detail::asAmount(rate), asset, roundUp);
+}
+
 }  // namespace xrpl

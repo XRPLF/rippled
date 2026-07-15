@@ -136,15 +136,23 @@ escrowUnlockApplyHelper<Issue>(
     auto finalAmt = amount;
     if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
     {
-        // Round the net delivered amount down so the transfer fee is rounded
-        // up in favor of the issuer. Rounding the net up (the legacy behavior)
-        // rounds the fee down, which collapses to zero for small amounts.
-        bool const roundUp = !ctx.view.rules().enabled(fixCleanup3_4_0);
+        // Round the net delivered amount down (fee rounded up in the issuer's
+        // favor). Rounding the net up (the legacy behavior) rounds the fee
+        // down, which collapses to zero for small amounts. Note that the
+        // legacy divideRound rounds to nearest, so the strict variant is used
+        // to floor the net.
+        bool const v2 = ctx.view.rules().enabled(fixCleanup3_4_0);
+        auto const netAmt = v2 ? divideRoundStrict(amount, lockedRate, amount.get<Issue>(), false)
+                               : divideRound(amount, lockedRate, amount.get<Issue>(), true);
         // compute transfer fee, if any
-        auto const xferFee =
-            amount.value() - divideRound(amount, lockedRate, amount.get<Issue>(), roundUp);
+        auto const xferFee = amount.value() - netAmt;
         // compute balance to transfer
         finalAmt = amount.value() - xferFee;
+
+        // If the fee would consume the entire amount, the net delivered rounds
+        // to zero. Fail rather than silently delivering nothing to the receiver.
+        if (v2 && finalAmt <= beast::kZero)
+            return tecPRECISION_LOSS;
     }
 
     // validate the line limit if the account submitting txn is not the receiver
@@ -245,16 +253,24 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto finalAmt = amount;
     if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
     {
-        // Round the net delivered amount down so the transfer fee is rounded
-        // up in favor of the issuer. Rounding the net up (the legacy behavior)
-        // rounds the fee down, which for integral MPT amounts collapses the
-        // fee to zero for small amounts and bypasses the transfer fee.
-        bool const roundUp = !ctx.view.rules().enabled(fixCleanup3_4_0);
+        // Round the net delivered amount down (fee rounded up in the issuer's
+        // favor). Rounding the net up (the legacy behavior) rounds the fee
+        // down, which for integral MPT amounts collapses the fee to zero for
+        // small amounts and bypasses the transfer fee. Note that the legacy
+        // divideRound rounds to nearest, so the strict variant is used to
+        // floor the net.
+        bool const v2 = ctx.view.rules().enabled(fixCleanup3_4_0);
+        auto const netAmt = v2 ? divideRoundStrict(amount, lockedRate, amount.asset(), false)
+                               : divideRound(amount, lockedRate, amount.asset(), true);
         // compute transfer fee, if any
-        auto const xferFee =
-            amount.value() - divideRound(amount, lockedRate, amount.asset(), roundUp);
+        auto const xferFee = amount.value() - netAmt;
         // compute balance to transfer
         finalAmt = amount.value() - xferFee;
+
+        // If the fee would consume the entire amount, the net delivered rounds
+        // to zero. Fail rather than silently delivering nothing to the receiver.
+        if (v2 && finalAmt <= beast::kZero)
+            return tecPRECISION_LOSS;
     }
     return unlockEscrowMPT(
         ctx.view,

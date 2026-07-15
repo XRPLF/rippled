@@ -65,6 +65,9 @@ divideRound(STAmount const& amount, Rate const& rate, bool roundUp);
 STAmount
 divideRound(STAmount const& amount, Rate const& rate, Asset const& asset, bool roundUp);
 
+STAmount
+divideRoundStrict(STAmount const& amount, Rate const& rate, Asset const& asset, bool roundUp);
+
 namespace nft {
 /**
  * Given a transfer fee (in basis points) convert it to a transfer rate.

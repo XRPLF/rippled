@@ -3785,12 +3785,74 @@ struct EscrowToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(gw, mpt) == preOutstanding + mpt(burn));
         };
 
+        // 25% fee, MPT(2): net 2/1.25 = 1.6. The bug (round up) delivers 2 with
+        // zero fee; rounding to nearest would also deliver 2 (fee 0); only
+        // flooring the net charges a fee (net 1, fee 1).
+        testChunk(25000, 2, 0, 1);
         // 25% fee, MPT(4): bug delivers 4 with zero fee; fix charges fee 1.
         testChunk(25000, 4, 0, 1);
         // 1% fee, MPT(90): max zero-fee chunk under the bug; fix charges fee 1.
         testChunk(1000, 90, 0, 1);
         // 1% fee, MPT(91): boundary just above the window; fee 1 either way.
         testChunk(1000, 91, 1, 1);
+
+        // When the escrowed amount is so small that the net delivered rounds to
+        // zero (the entire amount would be consumed by the fee), the legacy
+        // behavior silently delivers the full amount to the receiver with no
+        // fee. With fixCleanup3_4_0 the finish fails with tecPRECISION_LOSS
+        // instead of delivering nothing to the receiver.
+        {
+            std::uint16_t const transferFee = 25000;  // 25%
+            std::uint64_t const amount = 1;
+
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create(
+                {.transferFee = transferFee,
+                 .ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
+            env.close();
+
+            auto const preAlice = env.balance(alice, mpt);
+            auto const preBob = env.balance(bob, mpt);
+
+            auto const seq1 = env.seq(alice);
+            env(escrow::create(alice, bob, mpt(amount)),
+                escrow::kFinishTime(env.now() + 1s),
+                Fee(baseFee * 150));
+            env.close();
+
+            if (withV2)
+            {
+                // The net delivered rounds to zero; the finish is rejected and
+                // the escrowed amount remains locked (alice down by amount,
+                // bob unchanged).
+                env(escrow::finish(bob, alice, seq1), Fee(baseFee * 150), Ter(tecPRECISION_LOSS));
+                env.close();
+                BEAST_EXPECT(env.balance(alice, mpt) == preAlice - mpt(amount));
+                BEAST_EXPECT(env.balance(bob, mpt) == preBob);
+            }
+            else
+            {
+                // Legacy behavior: the net rounds up to the full amount with a
+                // zero fee, so bob receives everything.
+                env(escrow::finish(bob, alice, seq1), Fee(baseFee * 150));
+                env.close();
+                BEAST_EXPECT(env.balance(alice, mpt) == preAlice - mpt(amount));
+                BEAST_EXPECT(env.balance(bob, mpt) == preBob + mpt(amount));
+            }
+        }
     }
 
     void
