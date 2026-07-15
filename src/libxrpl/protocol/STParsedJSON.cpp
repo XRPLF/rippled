@@ -69,6 +69,17 @@ toUnsigned(U2 value)
     return static_cast<U1>(value);
 }
 
+static std::string
+joinName(std::string const& jsonName, std::string const& fieldName)
+{
+    std::string result;
+    result.reserve(jsonName.size() + 1 + fieldName.size());
+    result += jsonName;
+    result += '.';
+    result += fieldName;
+    return result;
+}
+
 // LCOV_EXCL_START
 static inline std::string
 makeName(std::string const& object, std::string const& field)
@@ -76,7 +87,7 @@ makeName(std::string const& object, std::string const& field)
     if (field.empty())
         return object;
 
-    return object + "." + field;
+    return joinName(object, field);
 }
 
 static inline json::Value
@@ -1036,8 +1047,8 @@ parseObject(
 
                     try
                     {
-                        auto ret =
-                            parseObject(jsonName + "." + fieldName, value, field, depth + 1, error);
+                        auto ret = parseObject(
+                            joinName(jsonName, fieldName), value, field, depth + 1, error);
                         if (!ret)
                             return std::nullopt;
                         data.emplaceBack(std::move(*ret));
@@ -1054,8 +1065,8 @@ parseObject(
                 case STI_ARRAY:
                     try
                     {
-                        auto array =
-                            parseArray(jsonName + "." + fieldName, value, field, depth + 1, error);
+                        auto array = parseArray(
+                            joinName(jsonName, fieldName), value, field, depth + 1, error);
                         if (!array.has_value())
                             return std::nullopt;
                         data.emplaceBack(std::move(*array));

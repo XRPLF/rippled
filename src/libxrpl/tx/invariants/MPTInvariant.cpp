@@ -403,7 +403,7 @@ ValidMPTIssuance::finalize(
 }
 
 void
-ValidMPTPayment::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+ValidMPTBalanceChanges::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
 {
     if (overflow_)
         return;
@@ -465,7 +465,7 @@ ValidMPTPayment::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
 }
 
 bool
-ValidMPTPayment::finalize(
+ValidMPTBalanceChanges::finalize(
     STTx const& tx,
     TER const result,
     XRPAmount const,

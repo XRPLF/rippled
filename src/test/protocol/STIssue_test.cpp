@@ -1,10 +1,16 @@
 
 #include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/amount.h>  // IWYU pragma: keep
+#include <test/jtx/envconfig.h>
+
+#include <xrpld/core/Config.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -13,6 +19,9 @@
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
+
+#include <memory>
 
 #include <array>
 #include <cstdint>
@@ -144,6 +153,133 @@ public:
     }
 
     void
+    testNoAccountIssuerRpc()
+    {
+        testcase("noAccount issuer rejected via RPC sign");
+
+        using namespace jtx;
+        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->loadFromString("[signing_support]\ntrue");
+                    return cfg;
+                })};
+
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        json::Value txJson;
+        txJson[jss::TransactionType] = "AMMDelete";
+        txJson[jss::Account] = alice.human();
+        txJson[jss::Asset][jss::currency] = "USD";
+        txJson[jss::Asset][jss::issuer] = to_string(noAccount());
+        txJson[jss::Asset2][jss::currency] = "XRP";
+
+        json::Value req;
+        req[jss::tx_json] = txJson;
+        req[jss::secret] = alice.name();
+
+        auto const result = env.rpc("json", "sign", to_string(req))[jss::result];
+
+        BEAST_EXPECT(result[jss::error] == "invalidParams");
+        BEAST_EXPECT(result[jss::error_message] == "Field 'tx_json.Asset' has invalid data.");
+    }
+
+    void
+    testNoAccountIssuer()
+    {
+        testcase("noAccount issuer rejection");
+
+        {
+            json::Value jv;
+            jv[jss::currency] = "USD";
+            jv[jss::issuer] = to_string(noAccount());
+
+            try
+            {
+                issueFromJson(sfAsset, jv);
+                fail("issueFromJson accepted noAccount() as IOU issuer");
+            }
+            catch (...)
+            {
+                pass();
+            }
+        }
+
+        {
+            Serializer s;
+            s.addBitString(toCurrency("USD"));
+            s.addBitString(noAccount());
+            SerialIter iter(s.slice());
+
+            try
+            {
+                STIssue const stissue(iter, sfAsset);
+                fail(
+                    "STIssue deserialization of [USD][noAccount()] should "
+                    "throw");
+            }
+            catch (...)
+            {
+                pass();
+            }
+        }
+    }
+
+    void
+    testXrpAccountIssuerRpc()
+    {
+        testcase("xrpAccount issuer rejected via RPC sign");
+
+        using namespace jtx;
+        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->loadFromString("[signing_support]\ntrue");
+                    return cfg;
+                })};
+
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        json::Value txJson;
+        txJson[jss::TransactionType] = "AMMDelete";
+        txJson[jss::Account] = alice.human();
+        txJson[jss::Asset][jss::currency] = "USD";
+        txJson[jss::Asset][jss::issuer] = to_string(xrpAccount());
+        txJson[jss::Asset2][jss::currency] = "XRP";
+
+        json::Value req;
+        req[jss::tx_json] = txJson;
+        req[jss::secret] = alice.name();
+
+        auto const result = env.rpc("json", "sign", to_string(req))[jss::result];
+
+        BEAST_EXPECT(result[jss::error] == "invalidParams");
+        BEAST_EXPECT(result[jss::error_message] == "Field 'tx_json.Asset' has invalid data.");
+    }
+
+    void
+    testXrpAccountIssuer()
+    {
+        testcase("xrpAccount issuer rejection");
+
+        {
+            json::Value jv;
+            jv[jss::currency] = "USD";
+            jv[jss::issuer] = to_string(xrpAccount());
+
+            try
+            {
+                issueFromJson(sfAsset, jv);
+                fail("issueFromJson accepted xrpAccount() as IOU issuer");
+            }
+            catch (...)
+            {
+                pass();
+            }
+        }
+    }
+
+    void
     testMPTSerialization()
     {
         testcase("MPT serialization");
@@ -197,6 +333,10 @@ public:
         // compliments other unit tests to ensure complete coverage
         testConstructor();
         testCompare();
+        testNoAccountIssuerRpc();
+        testNoAccountIssuer();
+        testXrpAccountIssuerRpc();
+        testXrpAccountIssuer();
         testMPTSerialization();
     }
 };
