@@ -571,6 +571,120 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             BEAST_EXPECT(aliceLpAfter < aliceLpBefore);
             BEAST_EXPECT(bobLpAfter == bobLpBefore);
         }
+
+        // The pool above only ever rounds the clawed asset (amountRounded) to
+        // zero; its XRP counterpart is always large. Exercise the other operand
+        // of the guard (amount2Rounded == 0) with an MPT/MPT pool where the
+        // *paired* asset is the tiny integer that floors to zero while the
+        // clawed asset still rounds non-zero.
+        {
+            Account const gw2{"gateway2"};
+            Account const carol{"carol"};
+            Account const dan{"dan"};
+            env.fund(XRP(10'000'000), gw2, carol, dan);
+            env.close();
+
+            env(fset(gw2, asfAllowTrustLineClawback));
+            env.close();
+
+            MPTTester const mptBtc2(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {carol, dan},
+                 .pay = 100'000,
+                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc2 = mptBtc2;
+
+            MPTTester const mptEth(
+                {.env = env,
+                 .issuer = gw2,
+                 .holders = {carol, dan},
+                 .pay = 1'000,
+                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const eth = mptEth;
+
+            // btc2 pool dwarfs the eth pool, so a ~1/12th claw withdraws a
+            // non-zero btc2 amount while the eth counterpart rounds to zero.
+            AMM amm2(env, carol, btc2(3'000), eth(3));
+            env.close();
+            amm2.deposit(dan, btc2(3'000), eth(3));
+            env.close();
+
+            auto const [poolBtc2Before, poolEthBefore, lpt2Before] = amm2.balances();
+            BEAST_EXPECT(poolBtc2Before == btc2(6'000));
+            BEAST_EXPECT(poolEthBefore == eth(6));
+
+            auto const carolLpBefore = amm2.getLPTokensBalance(carol.id());
+            auto const danLpBefore = amm2.getLPTokensBalance(dan.id());
+
+            env(amm::ammClawback(gw, carol, btc2, eth, btc2(500)),
+                Ter(features[fixCleanup3_3_0] ? TER{tecAMM_FAILED} : TER{tesSUCCESS}));
+            env.close();
+
+            auto const [poolBtc2After, poolEthAfter, lpt2After] = amm2.balances();
+            auto const carolLpAfter = amm2.getLPTokensBalance(carol.id());
+            auto const danLpAfter = amm2.getLPTokensBalance(dan.id());
+
+            if (features[fixCleanup3_3_0])
+            {
+                // Guard fired via amount2Rounded == 0. Nothing moved.
+                BEAST_EXPECT(poolBtc2After == poolBtc2Before);
+                BEAST_EXPECT(poolEthAfter == poolEthBefore);
+                BEAST_EXPECT(carolLpAfter == carolLpBefore);
+                BEAST_EXPECT(danLpAfter == danLpBefore);
+            }
+            else
+            {
+                // fixCleanup3_3_0 disabled: the asymmetric round-off goes
+                // through. btc2 is clawed (non-zero) but eth rounds to zero, so
+                // the eth pool is untouched while carol's LP is burned. This
+                // asymmetry proves amount2Rounded == 0 is the trigger.
+                BEAST_EXPECT(poolBtc2After < poolBtc2Before);
+                BEAST_EXPECT(poolEthAfter == poolEthBefore);
+                BEAST_EXPECT(carolLpAfter < carolLpBefore);
+                BEAST_EXPECT(danLpAfter == danLpBefore);
+            }
+        }
+
+        // A clawback that rounds NON-zero must behave identically whether
+        // fixCleanup3_3_0 is enabled or not: the guard is scoped strictly to
+        // the zero-rounding case and must not perturb adjacent withdrawals.
+        // The assertions below are unconditional, so passing under both `all`
+        // and `all - fixCleanup3_3_0` proves the outcomes are identical.
+        {
+            Account const emma{"emma"};
+            Account const finn{"finn"};
+            env.fund(XRP(10'000'000), emma, finn);
+            env.close();
+
+            MPTTester const mptBtc3(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {emma, finn},
+                 .pay = 1'000,
+                 .flags = tfMPTCanClawback | kMptDexFlags});
+            MPT const btc3 = mptBtc3;
+
+            AMM amm3(env, emma, btc3(3), XRP(333'000));
+            env.close();
+            amm3.deposit(finn, btc3(3), XRP(333'000));
+            env.close();
+
+            auto const issuer3OABefore = mptBtc3.getBalance(gw);
+            auto const finnLpBefore = amm3.getLPTokensBalance(finn.id());
+
+            // Claw btc3(2): rounds down to a single BTC clawed (non-zero), so
+            // the guard never fires. Same result with fixCleanup3_3_0 on/off.
+            env(amm::ammClawback(gw, emma, btc3, XRP, btc3(2)), Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT((amm3.expectBalances(
+                btc3(5), XRPAmount(444'000'000'001), IOUAmount{1332666499916614, -9})));
+            BEAST_EXPECT(mptBtc3.getBalance(gw) == issuer3OABefore - 1);
+            BEAST_EXPECT((amm3.getLPTokensBalance(emma.id()) == IOUAmount{3331666249791539, -10}));
+            // Counterparty untouched.
+            BEAST_EXPECT(amm3.getLPTokensBalance(finn.id()) == finnLpBefore);
+        }
     }
 
     void
