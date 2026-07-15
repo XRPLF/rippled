@@ -44,7 +44,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
+          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
           "unit": "short",
           "custom": {
             "axisLabel": "Peers",
@@ -85,7 +85,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
+          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
           "unit": "short",
           "custom": {
             "axisLabel": "Disconnects per interval",
@@ -133,7 +133,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
+          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Bytes",
@@ -181,7 +181,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
+          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
           "unit": "cps",
           "custom": {
             "axisLabel": "Messages",
@@ -236,7 +236,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
+          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
           "unit": "cps",
           "custom": {
             "axisLabel": "Messages",
@@ -298,7 +298,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
+          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
           "unit": "cps",
           "custom": {
             "axisLabel": "Messages",
@@ -360,7 +360,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
+          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
           "unit": "cps",
           "custom": {
             "axisLabel": "Messages",
@@ -734,7 +734,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
+          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Throughput",
@@ -775,7 +775,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
+          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
           "unit": "Bps",
           "custom": {
             "axisLabel": "Throughput",
