@@ -86,7 +86,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     auto const holder = ctx.tx[sfHolder];
     auto const maybeAmount = ctx.tx[~sfAmount];
     auto const mptIssuanceID = vault->at(sfShareMPTID);
-    auto const sleShareIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleShareIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleShareIssuance)
     {
         // LCOV_EXCL_START
@@ -180,7 +180,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 
         return vaultAsset.visit(
             [&](MPTIssue const& issue) -> TER {
-                auto const mptIssue = ctx.view.read(keylet::mptIssuance(issue.getMptID()));
+                auto const mptIssue = ctx.view.read(keylet::mptokenIssuance(issue.getMptID()));
                 if (mptIssue == nullptr)
                     return tecOBJECT_NOT_FOUND;
 
@@ -337,7 +337,7 @@ VaultClawback::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
-    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -389,8 +389,8 @@ VaultClawback::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from holder to vault.
-    if (auto const ter =
-            accountSend(view(), holder, vaultAccount, sharesDestroyed, j_, WaiveTransferFee::Yes);
+    if (auto const ter = accountSend(
+            view(), holder, vaultAccount, sharesDestroyed, j_, {}, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
@@ -399,7 +399,8 @@ VaultClawback::doApply()
     // Keep MPToken if holder is the vault owner.
     if (holder != vault->at(sfOwner))
     {
-        if (auto const ter = removeEmptyHolding(view(), holder, sharesDestroyed.asset(), j_);
+        if (auto const ter =
+                removeEmptyHolding(ctx_.getApplyViewContext(), holder, sharesDestroyed.asset(), j_);
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
@@ -425,7 +426,7 @@ VaultClawback::doApply()
     {
         // Transfer assets from vault to issuer.
         if (auto const ter = accountSend(
-                view(), vaultAccount, accountID_, assetsRecovered, j_, WaiveTransferFee::Yes);
+                view(), vaultAccount, accountID_, assetsRecovered, j_, {}, WaiveTransferFee::Yes);
             !isTesSuccess(ter))
             return ter;
 

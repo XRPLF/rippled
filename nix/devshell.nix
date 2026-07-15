@@ -1,147 +1,57 @@
 { pkgs, ... }:
 let
-  # conan is in the binary cache for Linux but not for Darwin, so on Darwin
-  # it is always built from source — and its bundled test suite is unreliable
-  # in the sandbox: `test_qbsprofile_rcflags` needs gcc (absent on Darwin, see
-  # https://github.com/NixOS/nixpkgs/pull/528995) and the patch tests are
-  # flaky from source. We only use conan as a build tool, so skip its tests on
-  # Darwin. Scoped to the dev shell (not the CI env, which builds conan on
-  # Linux from the cache). Drop once the fix reaches nixos-unstable and the
-  # lock is bumped.
-  pkgs_patched =
-    if pkgs.stdenv.isDarwin then
-      pkgs.extend (
-        final: prev: {
-          conan = prev.conan.overridePythonAttrs (_: {
-            doCheck = false;
-          });
-        }
-      )
-    else
-      pkgs;
+  inherit (import ./packages.nix { inherit pkgs; })
+    commonPackages
+    gccVersion
+    llvmPackages
+    ;
 
-  inherit (import ./packages.nix { pkgs = pkgs_patched; }) commonPackages;
+  # Plain nixpkgs stdenvs — no custom glibc, unlike ci-env.nix.
+  gccStdenv = pkgs."gcc${toString gccVersion}Stdenv";
+  clangStdenv = llvmPackages.stdenv;
 
-  # Supported compiler versions
-  gccVersion = pkgs.lib.range 13 15;
-  clangVersions = pkgs.lib.range 18 21;
-
-  defaultCompiler = if pkgs.stdenv.isDarwin then "apple-clang" else "gcc";
-  defaultGccVersion = pkgs.lib.last gccVersion;
-  defaultClangVersion = pkgs.lib.last clangVersions;
-
-  strToCompilerEnv =
-    compiler: version:
-    (
-      if compiler == "gcc" then
-        let
-          gccPkg = pkgs."gcc${toString version}Stdenv" or null;
-        in
-        if gccPkg != null && builtins.elem version gccVersion then
-          gccPkg
-        else
-          throw "Invalid GCC version: ${toString version}. Must be one of: ${toString gccVersion}"
-      else if compiler == "clang" then
-        let
-          clangPkg = pkgs."llvmPackages_${toString version}".stdenv or null;
-        in
-        if clangPkg != null && builtins.elem version clangVersions then
-          clangPkg
-        else
-          throw "Invalid Clang version: ${toString version}. Must be one of: ${toString clangVersions}"
-      else if compiler == "apple-clang" || compiler == "none" then
-        pkgs.stdenvNoCC
-      else
-        throw "Invalid compiler: ${compiler}. Must be one of: gcc, clang, apple-clang, none"
-    );
-
-  # Helper function to create a shell with a specific compiler
+  # compilerName is the command used to print the version, or null for none.
   makeShell =
     {
-      compiler ? defaultCompiler,
-      version ? (
-        if compiler == "gcc" then
-          defaultGccVersion
-        else if compiler == "clang" then
-          defaultClangVersion
-        else
-          null
-      ),
+      stdenv,
+      compilerName,
     }:
     let
-      compilerStdEnv = strToCompilerEnv compiler version;
-
-      compilerName =
-        if compiler == "apple-clang" then
-          "clang"
-        else if compiler == "none" then
-          null
-        else
-          compiler;
-
-      gccOnMacWarning =
-        if pkgs.stdenv.isDarwin && compiler == "gcc" then
-          ''
-            echo "WARNING: Using GCC on macOS with Conan may not work."
-            echo "         Consider using 'nix develop .#clang' or the default shell instead."
-            echo ""
-          ''
-        else
-          "";
-
       compilerVersion =
-        if compilerName != null then
+        if compilerName == null then
+          ''echo "No compiler specified - using system compiler"''
+        else
           ''
             echo "Compiler: "
             ${compilerName} --version
-          ''
-        else
-          ''
-            echo "No compiler specified - using system compiler"
           '';
-
-      shellAttrs = {
-        packages = commonPackages;
-
-        shellHook = ''
-          echo "Welcome to xrpld development shell";
-          ${gccOnMacWarning}${compilerVersion}
-        '';
-      };
     in
-    pkgs.mkShell.override { stdenv = compilerStdEnv; } shellAttrs;
-
-  # Generate shells for each compiler version
-  gccShells = builtins.listToAttrs (
-    map (version: {
-      name = "gcc${toString version}";
-      value = makeShell {
-        compiler = "gcc";
-        version = version;
-      };
-    }) gccVersion
-  );
-
-  clangShells = builtins.listToAttrs (
-    map (version: {
-      name = "clang${toString version}";
-      value = makeShell {
-        compiler = "clang";
-        version = version;
-      };
-    }) clangVersions
-  );
-
+    (pkgs.mkShell.override { inherit stdenv; }) {
+      packages = commonPackages;
+      shellHook = ''
+        echo "Welcome to xrpld development shell";
+        ${compilerVersion}
+      '';
+    };
 in
-gccShells
-// clangShells
-// {
-  # Default shells
-  default = makeShell { };
-  gcc = makeShell { compiler = "gcc"; };
-  clang = makeShell { compiler = "clang"; };
+rec {
+  # macOS: Nix Clang. Linux: Nix GCC.
+  default = if pkgs.stdenv.isDarwin then clang else gcc;
 
-  # No compiler
-  no-compiler = makeShell { compiler = "none"; };
-  apple-clang = makeShell { compiler = "apple-clang"; };
+  gcc = makeShell {
+    stdenv = gccStdenv;
+    compilerName = "gcc";
+  };
+
+  clang = makeShell {
+    stdenv = clangStdenv;
+    compilerName = "clang";
+  };
+
+  # Nix provides no compiler; use the one from your system (e.g. Apple Clang).
+  no-compiler = makeShell {
+    stdenv = pkgs.stdenvNoCC;
+    compilerName = null;
+  };
+  apple-clang = no-compiler;
 }

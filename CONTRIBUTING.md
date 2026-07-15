@@ -14,9 +14,9 @@ The following branches exist in the main project repository:
 
 - `develop`: The latest set of unreleased features, and the most common
   starting point for contributions.
-- `release`: The latest beta release or release candidate.
-- `master`: The latest stable release.
-- `gh-pages`: The documentation for this project, built by Doxygen.
+- `release/*` (e.g. `release/3.2.x`): Release branches, one per release line,
+  holding the latest release candidate, or stable release for that line.
+  Stable releases are published as [tagged releases](https://github.com/XRPLF/rippled/releases).
 
 The tip of each branch must be signed. In order for GitHub to sign a
 squashed commit that it builds from your pull request, GitHub must know
@@ -84,7 +84,9 @@ If you create new source files, they must be organized as follows:
 - All other non-test files must go under `src/xrpld`.
 - All test source files must go under `src/test`.
 
-The source must be formatted according to the style guide below.
+The source must be formatted according to the style guide below. The easiest
+way to satisfy this is to install the [`pre-commit`](#pre-commit-hooks) hooks,
+which format and lint your changes automatically on every commit.
 
 Header includes must be [levelized](.github/scripts/levelization).
 
@@ -130,11 +132,9 @@ tl;dr
 ## Pull requests
 
 In general, pull requests use `develop` as the base branch.
-The exceptions are
 
-- Fixes and improvements to a release candidate use `release` as the
-  base.
-- Hotfixes use `master` as the base.
+The exceptions are fixes, improvements, and hotfixes for an existing release,
+which use that release's branch (e.g. `release/3.2.x`) as the base.
 
 If your changes are not quite ready, but you want to make it easily available
 for preliminary examination or review, you can create a "Draft" pull request.
@@ -214,13 +214,61 @@ This is a non-exhaustive list of recommended style guidelines. These are
 not always strictly enforced and serve as a way to keep the codebase
 coherent rather than a set of _thou shalt not_ commandments.
 
+## Pre-commit hooks
+
+We use the [`pre-commit`](https://pre-commit.com/) framework to run the
+formatting and linting tools that keep the codebase consistent. `pre-commit`
+runs each tool configured in
+[`.pre-commit-config.yaml`](./.pre-commit-config.yaml) in its own isolated
+environment, so you don't need to install most of the individual tools
+yourself. The version of each hook sourced from an external repository
+(`clang-format`, `gersemi`, etc.) is pinned in that file, so running the hooks
+locally uses exactly the same versions as CI. A few `local` hooks — most notably
+`clang-tidy` — run tools from your own environment; see
+[Installing clang-tidy](#installing-clang-tidy) for how to get those.
+
+To get started, install `pre-commit` and enable the git hook scripts:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Once installed, the hooks run automatically on your staged files every time you
+`git commit`. You can also run them on demand:
+
+```bash
+# Run all hooks against only the staged files
+pre-commit run
+
+# Run all hooks against every file in the repository
+pre-commit run --all-files
+
+# Run a single hook (e.g. clang-format) against all files
+pre-commit run clang-format --all-files
+```
+
+The hooks configured in this repository include, among others:
+
+- `clang-format` — C++/proto formatting (see [Formatting](#formatting))
+- `clang-tidy` — C++ static analysis (see [Clang-tidy](#clang-tidy)); opt in with `TIDY=1`
+- `fix-include-style`, `fix-pragma-once`, `check-doxygen-style` — C++ hygiene
+- `gersemi` — CMake formatting
+- `prettier`, `black`, `shfmt` — formatting for JavaScript/JSON/Markdown, Python, and shell
+- `cspell` — spell checking
+
+The same hooks run in CI on every pull request, so running them locally before
+you push helps you avoid CI failures.
+
 ## Formatting
 
-All code must conform to `clang-format` version 21,
-according to the settings in [`.clang-format`](./.clang-format),
-unless the result would be unreasonably difficult to read or maintain.
-To demarcate lines that should be left as-is, surround them with comments like
-this:
+All code must conform to `clang-format`, according to the settings in
+[`.clang-format`](./.clang-format), unless the result would be unreasonably
+difficult to read or maintain. The `clang-format` version is pinned in
+[`.pre-commit-config.yaml`](./.pre-commit-config.yaml), so the
+[`pre-commit`](#pre-commit-hooks) hook always formats with the same version as
+CI. To demarcate lines that should be left as-is, surround them with comments
+like this:
 
 ```
 // clang-format off
@@ -228,8 +276,20 @@ this:
 // clang-format on
 ```
 
-You can format individual files in place by running `clang-format -i <file>...`
+The easiest way to format your changes is to let the `pre-commit` hook run
+automatically on commit, or to run it manually:
+
+```bash
+pre-commit run clang-format --all-files
+```
+
+You can also format individual files in place by running `clang-format -i <file>...`
 from any directory within this project.
+
+> [!NOTE]
+> This uses whatever `clang-format` version is installed locally, which may
+> differ from the pinned version used by `pre-commit` and CI, so the results
+> can vary.
 
 There is a Continuous Integration job that runs clang-format on pull requests. If the code doesn't comply, a patch file that corrects auto-fixable formatting issues is generated.
 
@@ -240,13 +300,6 @@ To download the patch file:
 3. Scroll down to near the bottom-right under `Artifacts` -> click **clang-format.patch**
 4. Download the zip file and extract it to your local git repository. Run `git apply [patch-file-name]`.
 5. Commit and push.
-
-You can install a pre-commit hook to automatically run `clang-format` before every commit:
-
-```
-pip3 install pre-commit
-pre-commit install
-```
 
 ## Clang-tidy
 
@@ -261,7 +314,7 @@ This ensures that configuration changes don't introduce new warnings across the 
 
 ### Installing clang-tidy
 
-See the [environment setup guide](./docs/build/environment.md#clang-tidy) for platform-specific installation instructions.
+See the [environment setup guide](./docs/build/environment.md#clang-tidy) for how to get clang-tidy.
 
 ### Running clang-tidy locally
 
@@ -269,7 +322,7 @@ Before running clang-tidy, you must build the project to generate required files
 
 #### Via pre-commit (recommended)
 
-If you have already installed the pre-commit hooks (see above), you can run clang-tidy on your staged files using:
+If you have already installed the [`pre-commit`](#pre-commit-hooks) hooks, you can run clang-tidy on your staged files using:
 
 ```
 TIDY=1 pre-commit run clang-tidy

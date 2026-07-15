@@ -1,9 +1,12 @@
 #pragma once
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/Serializer.h>
 
+#include <concepts>
+#include <cstddef>
 #include <ostream>
 #include <string>
 #include <type_traits>
@@ -12,7 +15,9 @@
 
 namespace xrpl {
 
-/// Note, should be treated as flags that can be | and &
+/**
+ * Note, should be treated as flags that can be | and &
+ */
 struct JsonOptions
 {
     using underlying_t = unsigned int;
@@ -50,22 +55,28 @@ struct JsonOptions
     [[nodiscard]] constexpr auto friend
     operator!=(JsonOptions lh, JsonOptions rh) noexcept -> bool = default;
 
-    /// Returns JsonOptions union of lh and rh
+    /**
+     * Returns JsonOptions union of lh and rh
+     */
     [[nodiscard]] constexpr JsonOptions friend
     operator|(JsonOptions lh, JsonOptions rh) noexcept
     {
         return {lh.value | rh.value};
     }
 
-    /// Returns JsonOptions intersection of lh and rh
+    /**
+     * Returns JsonOptions intersection of lh and rh
+     */
     [[nodiscard]] constexpr JsonOptions friend
     operator&(JsonOptions lh, JsonOptions rh) noexcept
     {
         return {lh.value & rh.value};
     }
 
-    /// Returns JsonOptions binary negation, can be used with & (above) for set
-    /// difference e.g. `(options & ~JsonOptions::kIncludeDate)`
+    /**
+     * Returns JsonOptions binary negation, can be used with & (above) for set
+     * difference e.g. `(options & ~JsonOptions::kIncludeDate)`
+     */
     [[nodiscard]] constexpr JsonOptions friend
     operator~(JsonOptions v) noexcept
     {
@@ -100,19 +111,20 @@ class STVar;
 
 //------------------------------------------------------------------------------
 
-/** A type which can be exported to a well known binary format.
-
-    A STBase:
-        - Always a field
-        - Can always go inside an eligible enclosing STBase
-            (such as STArray)
-        - Has a field name
-
-    Like JSON, a SerializedObject is a basket which has rules
-    on what it can hold.
-
-    @note "ST" stands for "Serialized Type."
-*/
+/**
+ * A type which can be exported to a well known binary format.
+ *
+ * A STBase:
+ *     - Always a field
+ *     - Can always go inside an eligible enclosing STBase
+ *         (such as STArray)
+ *     - Has a field name
+ *
+ * Like JSON, a SerializedObject is a basket which has rules
+ * on what it can hold.
+ *
+ * @note "ST" stands for "Serialized Type."
+ */
 class STBase
 {
     SField const* fName_;
@@ -159,9 +171,10 @@ public:
     [[nodiscard]] virtual bool
     isDefault() const;
 
-    /** A STBase is a field.
-        This sets the name.
-    */
+    /**
+     * A STBase is a field.
+     * This sets the name.
+     */
     void
     setFName(SField const& n);
 

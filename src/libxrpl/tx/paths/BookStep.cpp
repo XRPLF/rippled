@@ -66,13 +66,14 @@ protected:
     bool const ownerPaysTransferFee_;
     // Mark as inactive (dry) if too many offers are consumed
     bool inactive_ = false;
-    /** Number of offers consumed or partially consumed the last time
-        the step ran, including expired and unfunded offers.
-
-        N.B. This is not the total number offers consumed by this step for the
-        entire payment, it is only the number the last time it ran. Offers may
-        be partially consumed multiple times during a payment.
-    */
+    /**
+     * Number of offers consumed or partially consumed the last time
+     * the step ran, including expired and unfunded offers.
+     *
+     * N.B. This is not the total number offers consumed by this step for the
+     * entire payment, it is only the number the last time it ran. Offers may
+     * be partially consumed multiple times during a payment.
+     */
     std::uint32_t offersUsed_ = 0;
     // If set, AMM liquidity might be available
     // if AMM offer quality is better than CLOB offer
@@ -731,7 +732,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             // Create MPToken for the offer's owner. No need to check
             // for the reserve since the offer is removed if it is consumed.
             // Therefore, the owner count remains the same.
-            if (auto const err = checkCreateMPT(sb, assetIn.get<MPTIssue>(), owner, j_);
+            if (auto const err = checkCreateMPT(sb, assetIn.get<MPTIssue>(), owner, {}, j_);
                 !isTesSuccess(err))
             {
                 return true;
@@ -905,6 +906,11 @@ BookStep<TIn, TOut, TDerived>::getAMMOffer(
     ReadView const& view,
     std::optional<Quality> const& clobQuality) const
 {
+    // AMM doesn't support domain books. When fixCleanup3_3_0 is enabled, exclude
+    // AMM liquidity so quality estimation matches actual crossing (tryAMM skips
+    // AMM for domain books).
+    if (book_.domain && view.rules().enabled(fixCleanup3_3_0))
+        return std::nullopt;
     if (ammLiquidity_)
         return ammLiquidity_->getOffer(view, clobQuality);
     return std::nullopt;
@@ -1354,7 +1360,7 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
 
             auto const err = book_.in.visit(
                 [&](Issue const& issue) -> std::optional<TER> {
-                    auto sle = view.read(keylet::line(*prev, cur, issue.currency));
+                    auto sle = view.read(keylet::trustLine(*prev, cur, issue.currency));
                     if (!sle)
                         return terNO_LINE;
                     if (sle->isFlag((cur > *prev) ? lsfHighNoRipple : lsfLowNoRipple))
@@ -1472,8 +1478,8 @@ bookStepEqual(Step const& step, xrpl::Book const& book)
 {
     return std::visit(
         [&]<typename TIn, typename TOut>(TIn const&, TOut const&) {
-            using TIn_ = typename TIn::amount_type;
-            using TOut_ = typename TOut::amount_type;
+            using TIn_ = TIn::amount_type;
+            using TOut_ = TOut::amount_type;
 
             if constexpr (ValidTaker<TIn_, TOut_>)
             {

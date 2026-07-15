@@ -2,8 +2,12 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/Session.h>
+#include <xrpl/server/Writer.h>
 #include <xrpl/server/detail/Spawn.h>
 #include <xrpl/server/detail/io_list.h>
 
@@ -20,15 +24,20 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstddef>
+#include <cstring>
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <utility>
 #include <vector>
 
 namespace xrpl {
 
-/** Represents an active connection. */
+/**
+ * Represents an active connection.
+ */
 template <class Handler, class Impl>
 class BaseHTTPPeer : public IOList::Work, public Session
 {
@@ -216,10 +225,7 @@ BaseHTTPPeer<Handler, Impl>::close()
 {
     if (!strand_.running_in_this_thread())
     {
-        return post(
-            strand_,
-            std::bind(
-                (void (BaseHTTPPeer::*)(void))&BaseHTTPPeer::close, impl().shared_from_this()));
+        return post(strand_, [self = impl().shared_from_this()] { self->close(); });
     }
     boost::beast::get_lowest_layer(impl().stream_).close();
 }
@@ -315,22 +321,18 @@ BaseHTTPPeer<Handler, Impl>::onWrite(error_code const& ec, std::size_t bytesTran
             v,
             bind_executor(
                 strand_,
-                std::bind(
-                    &BaseHTTPPeer::onWrite,
-                    impl().shared_from_this(),
-                    std::placeholders::_1,
-                    std::placeholders::_2)));
+                [self = impl().shared_from_this()](
+                    error_code const& ec, std::size_t bytesTransferred) {
+                    self->onWrite(ec, bytesTransferred);
+                }));
     }
     if (!complete_)
         return;
     if (graceful_)
         return doClose();
-    util::spawn(
-        strand_,
-        std::bind(
-            &BaseHTTPPeer<Handler, Impl>::doRead,
-            impl().shared_from_this(),
-            std::placeholders::_1));
+    util::spawn(strand_, [self = impl().shared_from_this()](yield_context doYield) {
+        self->doRead(doYield);
+    });
 }
 
 template <class Handler, class Impl>
@@ -344,14 +346,9 @@ BaseHTTPPeer<Handler, Impl>::doWriter(
     {
         auto const p = impl().shared_from_this();
         resume = std::function<void(void)>([this, p, writer, keepAlive]() {
-            util::spawn(
-                strand_,
-                std::bind(
-                    &BaseHTTPPeer<Handler, Impl>::doWriter,
-                    p,
-                    writer,
-                    keepAlive,
-                    std::placeholders::_1));
+            util::spawn(strand_, [p, writer, keepAlive](yield_context doYield) {
+                p->doWriter(writer, keepAlive, doYield);
+            });
         });
     }
 
@@ -372,12 +369,9 @@ BaseHTTPPeer<Handler, Impl>::doWriter(
     if (!keepAlive)
         return doClose();
 
-    util::spawn(
-        strand_,
-        std::bind(
-            &BaseHTTPPeer<Handler, Impl>::doRead,
-            impl().shared_from_this(),
-            std::placeholders::_1));
+    util::spawn(strand_, [self = impl().shared_from_this()](yield_context doYield) {
+        self->doRead(doYield);
+    });
 }
 
 //------------------------------------------------------------------------------
@@ -392,14 +386,13 @@ BaseHTTPPeer<Handler, Impl>::write(void const* buf, std::size_t bytes)
     if ([&] {
             std::scoped_lock const lock(mutex_);
             wq_.emplace_back(buf, bytes);
-            return wq_.size() == 1 && wq2_.size() == 0;
+            return wq_.size() == 1 && wq2_.empty();
         }())
     {
         if (!strand_.running_in_this_thread())
         {
             return post(
-                strand_,
-                std::bind(&BaseHTTPPeer::onWrite, impl().shared_from_this(), error_code{}, 0));
+                strand_, [self = impl().shared_from_this()] { self->onWrite(error_code{}, 0); });
         }
         return onWrite(error_code{}, 0);
     }
@@ -410,13 +403,9 @@ void
 BaseHTTPPeer<Handler, Impl>::write(std::shared_ptr<Writer> const& writer, bool keepAlive)
 {
     util::spawn(
-        strand_,
-        std::bind(
-            &BaseHTTPPeer<Handler, Impl>::doWriter,
-            impl().shared_from_this(),
-            writer,
-            keepAlive,
-            std::placeholders::_1));
+        strand_, [self = impl().shared_from_this(), writer, keepAlive](yield_context doYield) {
+            self->doWriter(writer, keepAlive, doYield);
+        });
 }
 
 // DEPRECATED
@@ -436,8 +425,7 @@ BaseHTTPPeer<Handler, Impl>::complete()
 {
     if (!strand_.running_in_this_thread())
     {
-        return post(
-            strand_, std::bind(&BaseHTTPPeer<Handler, Impl>::complete, impl().shared_from_this()));
+        return post(strand_, [self = impl().shared_from_this()] { self->complete(); });
     }
 
     message_ = {};
@@ -450,12 +438,9 @@ BaseHTTPPeer<Handler, Impl>::complete()
     }
 
     // keep-alive
-    util::spawn(
-        strand_,
-        std::bind(
-            &BaseHTTPPeer<Handler, Impl>::doRead,
-            impl().shared_from_this(),
-            std::placeholders::_1));
+    util::spawn(strand_, [self = impl().shared_from_this()](yield_context doYield) {
+        self->doRead(doYield);
+    });
 }
 
 // DEPRECATED
@@ -467,11 +452,7 @@ BaseHTTPPeer<Handler, Impl>::close(bool graceful)
     if (!strand_.running_in_this_thread())
     {
         return post(
-            strand_,
-            std::bind(
-                (void (BaseHTTPPeer::*)(bool))&BaseHTTPPeer<Handler, Impl>::close,
-                impl().shared_from_this(),
-                graceful));
+            strand_, [self = impl().shared_from_this(), graceful] { self->close(graceful); });
     }
 
     complete_ = true;

@@ -247,6 +247,7 @@ target_link_modules(
 
 if(xrpld)
     add_executable(xrpld)
+    patch_nix_binary(xrpld)
     if(tests)
         target_compile_definitions(xrpld PUBLIC ENABLE_TESTS)
     endif()
@@ -287,5 +288,14 @@ if(xrpld)
             xrpld
             PRIVATE ${CMAKE_SOURCE_DIR}/external/antithesis-sdk
         )
+    endif()
+
+    # The xrpld headers are not built with add_module, so verify them against
+    # the executable's own compile environment.
+    if(verify_headers)
+        verify_target_headers(xrpld "${CMAKE_CURRENT_SOURCE_DIR}/src/xrpld")
+        if(tests)
+            verify_target_headers(xrpld "${CMAKE_CURRENT_SOURCE_DIR}/src/test")
+        endif()
     endif()
 endif()

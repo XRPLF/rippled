@@ -14,7 +14,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
-#include <functional>
 #include <memory>
 #include <string>
 
@@ -352,7 +351,7 @@ public:
     {
         testLedgerRequest();
         testEvolution();
-        forAllApiVersions(std::bind_front(&LedgerRequest_test::testBadInput, this));
+        forAllApiVersions([this](unsigned apiVersion) { testBadInput(apiVersion); });
         testMoreThan256Closed();
         testNonAdmin();
     }

@@ -6,23 +6,29 @@
 
 namespace beast::IP {
 
-/** Convert to Endpoint.
-    The port is set to zero.
-*/
+/**
+ * Convert to Endpoint.
+ * The port is set to zero.
+ */
 Endpoint
 fromAsio(boost::asio::ip::address const& address);
 
-/** Convert to Endpoint. */
+/**
+ * Convert to Endpoint.
+ */
 Endpoint
 fromAsio(boost::asio::ip::tcp::endpoint const& endpoint);
 
-/** Convert to asio::ip::address.
-    The port is ignored.
-*/
+/**
+ * Convert to asio::ip::address.
+ * The port is ignored.
+ */
 boost::asio::ip::address
 toAsioAddress(Endpoint const& endpoint);
 
-/** Convert to asio::ip::tcp::endpoint. */
+/**
+ * Convert to asio::ip::tcp::endpoint.
+ */
 boost::asio::ip::tcp::endpoint
 toAsioEndpoint(Endpoint const& endpoint);
 
