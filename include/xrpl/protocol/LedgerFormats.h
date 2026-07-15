@@ -191,15 +191,15 @@ enum LedgerEntryType : std::uint16_t {
         LSF_FLAG(lsfMPTCanHoldConfidentialBalance, 0x00000080))                                                                         \
                                                                                                                                    \
     LEDGER_OBJECT(MPTokenIssuanceMutable,                                                                                          \
-        LSF_FLAG(lsmfMPTCanEnableCanLock, 0x00000002)                                                                              \
-        LSF_FLAG(lsmfMPTCanEnableRequireAuth, 0x00000004)                                                                          \
-        LSF_FLAG(lsmfMPTCanEnableCanEscrow, 0x00000008)                                                                            \
-        LSF_FLAG(lsmfMPTCanEnableCanTrade, 0x00000010)                                                                             \
-        LSF_FLAG(lsmfMPTCanEnableCanTransfer, 0x00000020)                                                                          \
-        LSF_FLAG(lsmfMPTCanEnableCanClawback, 0x00000040)                                                                          \
-        LSF_FLAG(lsmfMPTCannotEnableCanHoldConfidentialBalance, 0x00000080)                                                                          \
-        LSF_FLAG(lsmfMPTCanMutateMetadata, 0x00010000)                                                                             \
-        LSF_FLAG(lsmfMPTCanMutateTransferFee, 0x00020000))                                                            \
+        LSF_FLAG(lsifMPTCannotEnableCanLock, 0x00000002)                                                                              \
+        LSF_FLAG(lsifMPTCannotEnableRequireAuth, 0x00000004)                                                                          \
+        LSF_FLAG(lsifMPTCannotEnableCanEscrow, 0x00000008)                                                                            \
+        LSF_FLAG(lsifMPTCannotEnableCanTrade, 0x00000010)                                                                             \
+        LSF_FLAG(lsifMPTCannotEnableCanTransfer, 0x00000020)                                                                          \
+        LSF_FLAG(lsifMPTCannotEnableCanClawback, 0x00000040)                                                                          \
+        LSF_FLAG(lsifMPTCannotEnableCanHoldConfidentialBalance, 0x00000080)                                                                          \
+        LSF_FLAG(lsifMPTCannotMutateMetadata, 0x00010000)                                                                             \
+        LSF_FLAG(lsifMPTCannotMutateTransferFee, 0x00020000))                                                            \
                                                                                                                                    \
     LEDGER_OBJECT(MPToken,                                                                                                         \
         LSF_FLAG2(lsfMPTLocked, 0x00000001)                                                                                        \

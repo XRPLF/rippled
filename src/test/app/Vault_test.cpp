@@ -1603,7 +1603,7 @@ class Vault_test : public beast::unit_test::Suite
                 {.flags = tfMPTCanTransfer | tfMPTCanLock |
                      (args.enableClawback ? tfMPTCanClawback : kNone) |
                      (args.requireAuth ? tfMPTRequireAuth : kNone),
-                 .mutableFlags = tmfMPTCanEnableCanTransfer});
+                 .immutableFlags = tifMPTCannotEnableCanTransfer});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = depositor});
@@ -2208,7 +2208,7 @@ class Vault_test : public beast::unit_test::Suite
             MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock,
-                 .mutableFlags = tmfMPTCanEnableCanTrade});
+                 .immutableFlags = tifMPTCannotEnableCanTrade});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = alice});

@@ -705,7 +705,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate,
     {sfMaximumAmount, SoeOptional},
     {sfMPTokenMetadata, SoeOptional},
     {sfDomainID, SoeOptional},
-    {sfMutableFlags, SoeOptional},
+    {sfImmutableFlags, SoeOptional},
 }))
 
 /** This transaction type destroys a MPTokensIssuance instance */

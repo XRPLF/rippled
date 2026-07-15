@@ -3393,26 +3393,26 @@ class MPToken_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Account const alice("alice");
 
-        // Can not provide MutableFlags when DynamicMPT amendment is not enabled
+        // Can not provide ImmutableFlags when DynamicMPT amendment is not enabled
         {
             Env env{*this, features - featureDynamicMPT};
             MPTTester mptAlice(env, alice);
-            mptAlice.create({.ownerCount = 0, .mutableFlags = 2, .err = temDISABLED});
-            mptAlice.create({.ownerCount = 0, .mutableFlags = 0, .err = temDISABLED});
+            mptAlice.create({.ownerCount = 0, .immutableFlags = 2, .err = temDISABLED});
+            mptAlice.create({.ownerCount = 0, .immutableFlags = 0, .err = temDISABLED});
         }
 
-        // MutableFlags contains invalid values
+        // ImmutableFlags contains invalid values
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
 
             // Value 1 is reserved for MPT lock.
-            mptAlice.create({.ownerCount = 0, .mutableFlags = 1, .err = temINVALID_FLAG});
-            mptAlice.create({.ownerCount = 0, .mutableFlags = 17, .err = temINVALID_FLAG});
-            mptAlice.create({.ownerCount = 0, .mutableFlags = 65535, .err = temINVALID_FLAG});
+            mptAlice.create({.ownerCount = 0, .immutableFlags = 1, .err = temINVALID_FLAG});
+            mptAlice.create({.ownerCount = 0, .immutableFlags = 17, .err = temINVALID_FLAG});
+            mptAlice.create({.ownerCount = 0, .immutableFlags = 65535, .err = temINVALID_FLAG});
 
-            // MutableFlags can not be 0
-            mptAlice.create({.ownerCount = 0, .mutableFlags = 0, .err = temINVALID_FLAG});
+            // ImmutableFlags can not be 0
+            mptAlice.create({.ownerCount = 0, .immutableFlags = 0, .err = temINVALID_FLAG});
         }
     }
 
@@ -3484,8 +3484,8 @@ class MPToken_test : public beast::unit_test::Suite
             MPTTester mptAlice(env, alice, {.holders = {bob}});
             mptAlice.create(
                 {.ownerCount = 1,
-                 .mutableFlags = tmfMPTCanMutateMetadata | tmfMPTCanEnableCanLock |
-                     tmfMPTCanMutateTransferFee});
+                 .immutableFlags = tifMPTCannotMutateMetadata | tifMPTCannotEnableCanLock |
+                     tifMPTCannotMutateTransferFee});
 
             // Setting flags is not allowed when MutableFlags is present
             mptAlice.set(
@@ -3509,14 +3509,10 @@ class MPToken_test : public beast::unit_test::Suite
                 {.transferFee = 10,
                  .ownerCount = 1,
                  .flags = tfMPTCanTransfer,
-                 .mutableFlags = tmfMPTCanMutateTransferFee | tmfMPTCanMutateMetadata});
+                 .immutableFlags = tifMPTCannotMutateTransferFee});
 
-            mptAlice.set({.account = alice, .flags = 0, .transferFee = 100, .metadata = "test"});
-            mptAlice.set(
-                {.account = alice,
-                 .flags = tfFullyCanonicalSig,
-                 .transferFee = 200,
-                 .metadata = "test2"});
+            mptAlice.set({.account = alice, .flags = 0, .metadata = "test"});
+            mptAlice.set({.account = alice, .flags = tfFullyCanonicalSig, .metadata = "test2"});
         }
 
         // Invalid MutableFlags
@@ -3532,12 +3528,17 @@ class MPToken_test : public beast::unit_test::Suite
             }
         }
 
-        // Can not mutate flag which is not mutable
+        // Can not mutate flag which is immutable
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-            mptAlice.create({.ownerCount = 1});
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .immutableFlags = tifMPTCannotEnableCanLock | tifMPTCannotEnableCanTrade |
+                     tifMPTCannotEnableCanTransfer | tifMPTCannotEnableCanClawback |
+                     tifMPTCannotEnableCanEscrow | tifMPTCannotEnableRequireAuth |
+                     tifMPTCannotEnableCanHoldConfidentialBalance});
 
             auto const mutableFlags = {
                 tmfMPTSetCanLock,
@@ -3545,7 +3546,8 @@ class MPToken_test : public beast::unit_test::Suite
                 tmfMPTSetCanEscrow,
                 tmfMPTSetCanTrade,
                 tmfMPTSetCanTransfer,
-                tmfMPTSetCanClawback};
+                tmfMPTSetCanClawback,
+                tmfMPTSetCanHoldConfidentialBalance};
 
             for (auto const& mutableFlag : mutableFlags)
             {
@@ -3559,18 +3561,18 @@ class MPToken_test : public beast::unit_test::Suite
             Env env{*this, features};
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-            mptAlice.create({.ownerCount = 1, .mutableFlags = tmfMPTCanMutateMetadata});
+            mptAlice.create({.ownerCount = 1});
 
             std::string const metadata(kMaxMpTokenMetadataLength + 1, 'a');
             mptAlice.set({.account = alice, .metadata = metadata, .err = temMALFORMED});
         }
 
-        // Can not mutate metadata when it is not mutable
+        // Can not mutate metadata when it is immutable
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-            mptAlice.create({.ownerCount = 1});
+            mptAlice.create({.ownerCount = 1, .immutableFlags = tifMPTCannotMutateMetadata});
             mptAlice.set({.account = alice, .metadata = "test", .err = tecNO_PERMISSION});
         }
 
@@ -3580,7 +3582,7 @@ class MPToken_test : public beast::unit_test::Suite
             MPTTester mptAlice(env, alice, {.holders = {bob}});
             auto const mptID = makeMptID(env.seq(alice), alice);
 
-            mptAlice.create({.ownerCount = 1, .mutableFlags = tmfMPTCanMutateTransferFee});
+            mptAlice.create({.ownerCount = 1});
 
             mptAlice.set(
                 {.account = alice,
@@ -3594,9 +3596,7 @@ class MPToken_test : public beast::unit_test::Suite
             Env env{*this, features};
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-            mptAlice.create(
-                {.ownerCount = 1,
-                 .mutableFlags = tmfMPTCanMutateTransferFee | tmfMPTCanEnableCanTransfer});
+            mptAlice.create({.ownerCount = 1});
 
             mptAlice.set({.account = alice, .transferFee = 100, .err = tecNO_PERMISSION});
 
@@ -3615,45 +3615,41 @@ class MPToken_test : public beast::unit_test::Suite
             Env env{*this, features};
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-            mptAlice.create({.transferFee = 10, .ownerCount = 1, .flags = tfMPTCanTransfer});
+            mptAlice.create(
+                {.transferFee = 10,
+                 .ownerCount = 1,
+                 .flags = tfMPTCanTransfer,
+                 .immutableFlags = tifMPTCannotMutateTransferFee});
 
             mptAlice.set({.account = alice, .transferFee = 100, .err = tecNO_PERMISSION});
 
             mptAlice.set({.account = alice, .transferFee = 0, .err = tecNO_PERMISSION});
         }
 
-        // Set some flags mutable. Can not mutate the others
+        // Set some flags immutable. Others can still be mutated (enable once).
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create(
                 {.ownerCount = 1,
-                 .mutableFlags = tmfMPTCanEnableCanTrade | tmfMPTCanEnableCanTransfer |
-                     tmfMPTCanMutateMetadata});
+                 .immutableFlags = tifMPTCannotEnableCanTrade | tifMPTCannotEnableCanTransfer |
+                     tifMPTCannotMutateMetadata});
 
-            // Can not mutate transfer fee
-            mptAlice.set({.account = alice, .transferFee = 100, .err = tecNO_PERMISSION});
-
-            auto const invalidFlags = {
+            auto const canEnableFlags = {
                 tmfMPTSetCanLock, tmfMPTSetRequireAuth, tmfMPTSetCanEscrow, tmfMPTSetCanClawback};
 
-            // Can not mutate flags which are not mutable
-            for (auto const& mutableFlag : invalidFlags)
+            // Can not enable immutable flags
+            mptAlice.set(
+                {.account = alice, .mutableFlags = tmfMPTSetCanTrade, .err = tecNO_PERMISSION});
+            mptAlice.set(
+                {.account = alice, .mutableFlags = tmfMPTSetCanTransfer, .err = tecNO_PERMISSION});
+
+            // Can enable flags which are not immutable
+            for (auto const& mutableFlag : canEnableFlags)
             {
-                mptAlice.set(
-                    {.account = alice, .mutableFlags = mutableFlag, .err = tecNO_PERMISSION});
+                mptAlice.set({.account = alice, .mutableFlags = mutableFlag});
             }
-
-            // Can mutate MPTCanTrade
-            mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetCanTrade});
-
-            // Can mutate MPTCanTransfer
-            mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetCanTransfer});
-
-            // Can mutate metadata
-            mptAlice.set({.account = alice, .metadata = "test"});
-            mptAlice.set({.account = alice, .metadata = ""});
         }
     }
 
@@ -3669,8 +3665,7 @@ class MPToken_test : public beast::unit_test::Suite
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
-            mptAlice.create(
-                {.metadata = "test", .ownerCount = 1, .mutableFlags = tmfMPTCanMutateMetadata});
+            mptAlice.create({.metadata = "test", .ownerCount = 1});
 
             std::vector<std::string> const metadatas = {
                 "mutate metadata",
@@ -3699,8 +3694,7 @@ class MPToken_test : public beast::unit_test::Suite
                 {.transferFee = 100,
                  .metadata = "test",
                  .ownerCount = 1,
-                 .flags = tfMPTCanTransfer,
-                 .mutableFlags = tmfMPTCanMutateTransferFee});
+                 .flags = tfMPTCanTransfer});
 
             for (std::uint16_t const fee :
                  std::initializer_list<std::uint16_t>{1, 10, 100, 200, 500, 1000, kMaxTransferFee})
@@ -3725,19 +3719,19 @@ class MPToken_test : public beast::unit_test::Suite
                 MPTTester mptAlice(env, alice);
 
                 // Create the MPT object with the specified initial flags
-                mptAlice.create({.metadata = "test", .ownerCount = 1, .mutableFlags = createFlags});
+                mptAlice.create({.metadata = "test", .ownerCount = 1});
 
                 // Setting the same mutable capability more than once is harmless.
                 mptAlice.set({.account = alice, .mutableFlags = setFlags});
                 mptAlice.set({.account = alice, .mutableFlags = setFlags});
             };
 
-            testFlagSet(tmfMPTCanEnableCanLock, tmfMPTSetCanLock);
-            testFlagSet(tmfMPTCanEnableRequireAuth, tmfMPTSetRequireAuth);
-            testFlagSet(tmfMPTCanEnableCanEscrow, tmfMPTSetCanEscrow);
-            testFlagSet(tmfMPTCanEnableCanTrade, tmfMPTSetCanTrade);
-            testFlagSet(tmfMPTCanEnableCanTransfer, tmfMPTSetCanTransfer);
-            testFlagSet(tmfMPTCanEnableCanClawback, tmfMPTSetCanClawback);
+            testFlagSet(tifMPTCannotEnableCanLock, tmfMPTSetCanLock);
+            testFlagSet(tifMPTCannotEnableRequireAuth, tmfMPTSetRequireAuth);
+            testFlagSet(tifMPTCannotEnableCanEscrow, tmfMPTSetCanEscrow);
+            testFlagSet(tifMPTCannotEnableCanTrade, tmfMPTSetCanTrade);
+            testFlagSet(tifMPTCannotEnableCanTransfer, tmfMPTSetCanTransfer);
+            testFlagSet(tifMPTCannotEnableCanClawback, tmfMPTSetCanClawback);
         }
     }
 
@@ -3754,71 +3748,34 @@ class MPToken_test : public beast::unit_test::Suite
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice, {.holders = {bob}});
-            mptAlice.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanLock | tfMPTCanTransfer,
-                 .mutableFlags = tmfMPTCanEnableCanLock | tmfMPTCanEnableCanTrade |
-                     tmfMPTCanMutateTransferFee});
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
             mptAlice.authorize({.account = bob, .holderCount = 1});
 
-            // Lock bob's mptoken
-            mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+            // Lock bob's mptoken fails because alice has not enabled MPTCanLock
+            mptAlice.set(
+                {.account = alice, .holder = bob, .flags = tfMPTLock, .err = tecNO_PERMISSION});
 
             // Can mutate the mutable flags and fields
             mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetCanLock});
-            mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetCanTrade});
-            mptAlice.set({.account = alice, .transferFee = 200});
+
+            // Now can lock
+            mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
         }
 
         // Global lock
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice, {.holders = {bob}});
-            mptAlice.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanLock,
-                 .mutableFlags = tmfMPTCanEnableCanLock | tmfMPTCanEnableCanClawback |
-                     tmfMPTCanMutateMetadata});
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
             mptAlice.authorize({.account = bob, .holderCount = 1});
 
-            // Lock issuance
-            mptAlice.set({.account = alice, .flags = tfMPTLock});
+            // Lock issuance fails because alice has not enabled MPTCanLock
+            mptAlice.set({.account = alice, .flags = tfMPTLock, .err = tecNO_PERMISSION});
 
             // Can mutate the mutable flags and fields
             mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetCanLock});
-            mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetCanClawback});
-            mptAlice.set({.account = alice, .metadata = "mutate"});
-        }
-
-        // Test lock and unlock after enabling MPTCanLock
-        {
-            Env env{*this, features};
-            MPTTester mptAlice(env, alice, {.holders = {bob}});
-            mptAlice.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .mutableFlags = tmfMPTCanEnableCanLock | tmfMPTCanEnableCanClawback |
-                     tmfMPTCanMutateMetadata});
-            mptAlice.authorize({.account = bob, .holderCount = 1});
-
-            // Can not lock or unlock before MPTCanLock is enabled
-            mptAlice.set({.account = alice, .flags = tfMPTLock, .err = tecNO_PERMISSION});
-            mptAlice.set({.account = alice, .flags = tfMPTUnlock, .err = tecNO_PERMISSION});
-            mptAlice.set(
-                {.account = alice, .holder = bob, .flags = tfMPTLock, .err = tecNO_PERMISSION});
-            mptAlice.set(
-                {.account = alice, .holder = bob, .flags = tfMPTUnlock, .err = tecNO_PERMISSION});
-
-            // Set MPTCanLock
-            mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetCanLock});
-
-            // Can lock and unlock
+            // Now can lock
             mptAlice.set({.account = alice, .flags = tfMPTLock});
-            mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
-            mptAlice.set({.account = alice, .flags = tfMPTUnlock});
-            mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTUnlock});
         }
     }
 
@@ -3835,10 +3792,7 @@ class MPToken_test : public beast::unit_test::Suite
         Account const bob("bob");
 
         MPTTester mptAlice(env, alice, {.holders = {bob}});
-        mptAlice.create(
-            {.ownerCount = 1,
-             .flags = tfMPTCanTransfer,
-             .mutableFlags = tmfMPTCanEnableRequireAuth});
+        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
 
         mptAlice.authorize({.account = bob});
         mptAlice.pay(alice, bob, 1000);
@@ -3868,11 +3822,7 @@ class MPToken_test : public beast::unit_test::Suite
         auto const carol = Account("carol");
 
         MPTTester mptAlice(env, alice, {.holders = {carol, bob}});
-        mptAlice.create(
-            {.ownerCount = 1,
-             .holderCount = 0,
-             .flags = tfMPTCanTransfer,
-             .mutableFlags = tmfMPTCanEnableCanEscrow});
+        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
         mptAlice.authorize({.account = carol});
         mptAlice.authorize({.account = bob});
 
@@ -3910,9 +3860,7 @@ class MPToken_test : public beast::unit_test::Suite
             Env env{*this, features};
 
             MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
-            mptAlice.create(
-                {.ownerCount = 1,
-                 .mutableFlags = tmfMPTCanEnableCanTransfer | tmfMPTCanMutateTransferFee});
+            mptAlice.create({.ownerCount = 1});
 
             mptAlice.authorize({.account = bob});
             mptAlice.authorize({.account = carol});
@@ -3958,16 +3906,13 @@ class MPToken_test : public beast::unit_test::Suite
             }
         }
 
-        // Can set transfer fee to zero when tmfMPTCanMutateTransferFee is set.
+        // Can set transfer fee to zero when transfer fee is mutable (i.e.
+        // tifMPTCannotMutateTransferFee is not set).
         {
             Env env{*this, features};
 
             MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
-            mptAlice.create(
-                {.transferFee = 100,
-                 .ownerCount = 1,
-                 .flags = tfMPTCanTransfer,
-                 .mutableFlags = tmfMPTCanMutateTransferFee});
+            mptAlice.create({.transferFee = 100, .ownerCount = 1, .flags = tfMPTCanTransfer});
 
             BEAST_EXPECT(mptAlice.checkTransferFee(100));
 
@@ -3989,8 +3934,7 @@ class MPToken_test : public beast::unit_test::Suite
 
         MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-        mptAlice.create(
-            {.ownerCount = 1, .holderCount = 0, .mutableFlags = tmfMPTCanEnableCanClawback});
+        mptAlice.create({.ownerCount = 1, .holderCount = 0});
 
         // Bob creates an MPToken
         mptAlice.authorize({.account = bob});
@@ -4398,14 +4342,14 @@ class MPToken_test : public beast::unit_test::Suite
                  .holders = {alice, carol},
                  .pay = 100,
                  .flags = tfMPTCanTransfer,
-                 .mutableFlags = tmfMPTCanEnableCanTrade});
+                 .immutableFlags = tifMPTCannotEnableCanTrade});
             MPTTester const eth(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol},
                  .pay = 100,
                  .flags = tfMPTCanTrade,
-                 .mutableFlags = tmfMPTCanEnableCanTrade});
+                 .immutableFlags = tifMPTCannotEnableCanTrade});
 
             // Can't create
             env(offer(gw, eth(10), btc(10)), Ter(tecNO_PERMISSION));
@@ -4641,30 +4585,25 @@ class MPToken_test : public beast::unit_test::Suite
                  .issuer = gw,
                  .holders = {alice, carol, bob},
                  .pay = 1'000,
-                 .flags = tfMPTCanLock | kMptDexFlags,
-                 .mutableFlags = tmfMPTCanEnableRequireAuth | tmfMPTCanEnableCanTrade |
-                     tmfMPTCanEnableCanTransfer});
+                 .flags = tfMPTCanLock | kMptDexFlags});
             MPTTester eth(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol, bob},
                  .pay = 1'000,
-                 .flags = tfMPTCanLock | kMptDexFlags,
-                 .mutableFlags = tmfMPTCanEnableCanTransfer});
+                 .flags = tfMPTCanLock | kMptDexFlags});
             MPTTester const usd(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol, bob},
                  .pay = 1'000,
-                 .flags = kMptDexFlags | tfMPTCanLock,
-                 .mutableFlags = tmfMPTCanEnableCanTransfer});
+                 .flags = kMptDexFlags | tfMPTCanLock});
             MPTTester const cad(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol, bob},
                  .pay = 1'000,
-                 .flags = kMptDexFlags | tfMPTCanLock,
-                 .mutableFlags = tmfMPTCanEnableCanTransfer});
+                 .flags = kMptDexFlags | tfMPTCanLock});
 
             env(offer(bob, eth(1'000), btc(1'000)), Txflags(tfPassive));
             env.close();
@@ -4932,8 +4871,7 @@ class MPToken_test : public beast::unit_test::Suite
                  .issuer = gw,
                  .holders = {alice, carol, bob},
                  .pay = 1'000,
-                 .flags = tfMPTCanTransfer,
-                 .mutableFlags = tmfMPTCanEnableCanTrade});
+                 .flags = tfMPTCanTransfer});
             MPTTester const eth(
                 {.env = env,
                  .issuer = gw,
@@ -6753,11 +6691,7 @@ class MPToken_test : public beast::unit_test::Suite
             env.close();
 
             MPTTester mpt(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, carol},
-                 .flags = tfMPTCanTrade,
-                 .mutableFlags = tmfMPTCanEnableCanTransfer});
+                {.env = env, .issuer = gw, .holders = {alice, carol}, .flags = tfMPTCanTrade});
 
             // src is issuer
             uint256 checkId{keylet::check(gw, env.seq(gw)).key};
@@ -7223,37 +7157,26 @@ class MPToken_test : public beast::unit_test::Suite
             auto const txfee = Fee(drops(increment));
             auto const badMPT = MPT(gw, 1'000);
 
-            auto const makeMPT = [&](std::uint32_t const flags,
-                                     Holders holders = {},
-                                     std::uint64_t const pay = 0,
-                                     std::optional<std::uint32_t> const mutableFlags =
-                                         std::nullopt) {
-                return MPTTester(
-                    {.env = env,
-                     .issuer = gw,
-                     .holders = holders,
-                     .pay = pay ? std::optional<std::uint64_t>{pay} : std::nullopt,
-                     .flags = flags,
-                     .mutableFlags = mutableFlags});
-            };
+            auto const makeMPT =
+                [&](std::uint32_t const flags, Holders holders = {}, std::uint64_t const pay = 0) {
+                    return MPTTester(
+                        {.env = env,
+                         .issuer = gw,
+                         .holders = holders,
+                         .pay = pay ? std::optional<std::uint64_t>{pay} : std::nullopt,
+                         .flags = flags});
+                };
 
             auto const makeDexMPT = [&](Holders holders = {}, std::uint64_t const pay = 0) {
-                return makeMPT(
-                    tfMPTCanLock | kMptDexFlags,
-                    holders,
-                    pay,
-                    tmfMPTCanEnableRequireAuth | tmfMPTCanEnableCanTransfer |
-                        tmfMPTCanEnableCanTrade);
+                return makeMPT(tfMPTCanLock | kMptDexFlags, holders, pay);
             };
 
             auto const makeNoTransferMPT = [&](Holders holders = {}, std::uint64_t const pay = 0) {
-                return makeMPT(
-                    tfMPTCanLock | tfMPTCanTrade, holders, pay, tmfMPTCanEnableCanTransfer);
+                return makeMPT(tfMPTCanLock | tfMPTCanTrade, holders, pay);
             };
 
             auto const makeNoTradeMPT = [&](Holders holders = {}, std::uint64_t const pay = 0) {
-                return makeMPT(
-                    tfMPTCanLock | tfMPTCanTransfer, holders, pay, tmfMPTCanEnableCanTrade);
+                return makeMPT(tfMPTCanLock | tfMPTCanTransfer, holders, pay);
             };
 
             // AMMCreate
@@ -7750,7 +7673,7 @@ public:
         // Test offer crossing
         testOfferCrossing(all);
 
-        // Test cross asset payment
+        // // Test cross asset payment
         testCrossAssetPayment(all);
 
         // Test path finding

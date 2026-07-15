@@ -147,7 +147,7 @@ struct MPTCreate
     // if empty vector then pay to either authorize or all holders.
     std::optional<std::pair<std::vector<Account>, std::uint64_t>> pay = std::nullopt;
     std::optional<std::uint32_t> flags = {0};
-    std::optional<std::uint32_t> mutableFlags = std::nullopt;
+    std::optional<std::uint32_t> immutableFlags = std::nullopt;
     bool authHolder = false;
     std::optional<uint256> domainID = std::nullopt;
     std::optional<TER> err = std::nullopt;
@@ -183,7 +183,7 @@ struct MPTInitDef
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
     std::uint32_t flags = kMptDexFlags;
-    std::optional<std::uint32_t> mutableFlags = std::nullopt;
+    std::optional<std::uint32_t> immutableFlags = std::nullopt;
     bool authHolder = false;
     bool fund = false;
     bool close = true;

@@ -35,17 +35,17 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
           ctx.rules.enabled(featureSingleAssetVault)))
         return false;
 
-    if (ctx.tx.isFieldPresent(sfMutableFlags) && !ctx.rules.enabled(featureDynamicMPT))
+    if (ctx.tx.isFieldPresent(sfImmutableFlags) && !ctx.rules.enabled(featureDynamicMPT))
         return false;
 
     if (ctx.tx.isFlag(tfMPTCanHoldConfidentialBalance) &&
         !ctx.rules.enabled(featureConfidentialTransfer))
         return false;
 
-    // can not set tmfMPTCannotEnableCanHoldConfidentialBalance without featureConfidentialTransfer
-    auto const mutableFlags = ctx.tx[~sfMutableFlags];
-    return !mutableFlags ||
-        ((*mutableFlags & tmfMPTCannotEnableCanHoldConfidentialBalance) == 0u) ||
+    // can not set tifMPTCannotEnableCanHoldConfidentialBalance without featureConfidentialTransfer
+    auto const immutableFlags = ctx.tx[~sfImmutableFlags];
+    return !immutableFlags ||
+        ((*immutableFlags & tifMPTCannotEnableCanHoldConfidentialBalance) == 0u) ||
         ctx.rules.enabled(featureConfidentialTransfer);
 }
 
@@ -64,10 +64,11 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx.isFieldPresent(sfReferenceHolding))
         return temMALFORMED;
 
-    // If the mutable flags field is included, at least one flag must be
+    // If the immutable flags field is included, at least one flag must be
     // specified.
-    if (auto const mutableFlags = ctx.tx[~sfMutableFlags]; mutableFlags &&
-        ((*mutableFlags == 0u) || ((*mutableFlags & tmfMPTokenIssuanceCreateMutableMask) != 0u)))
+    if (auto const immutableFlags = ctx.tx[~sfImmutableFlags]; immutableFlags &&
+        ((*immutableFlags == 0u) ||
+         ((*immutableFlags & tmfMPTokenIssuanceCreateImmutableMask) != 0u)))
         return temINVALID_FLAG;
 
     if (auto const fee = ctx.tx[~sfTransferFee])
@@ -170,8 +171,8 @@ MPTokenIssuanceCreate::create(
         if (args.domainId)
             (*mptIssuance)[sfDomainID] = *args.domainId;
 
-        if (args.mutableFlags)
-            (*mptIssuance)[sfMutableFlags] = *args.mutableFlags;
+        if (args.immutableFlags)
+            (*mptIssuance)[sfImmutableFlags] = *args.immutableFlags;
 
         if (args.referenceHolding)
         {
@@ -217,7 +218,7 @@ MPTokenIssuanceCreate::doApply()
             .transferFee = tx[~sfTransferFee],
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
-            .mutableFlags = tx[~sfMutableFlags],
+            .immutableFlags = tx[~sfImmutableFlags],
         });
     return result ? tesSUCCESS : result.error();
 }
