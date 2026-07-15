@@ -61,12 +61,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.transactor\", stage=\"apply\", ter_result!~\"tesSUCCESS|\"}[$__rate_interval])), \"series\", \"Failed / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.transactor\", stage=\"apply\", ter_result!~\"tesSUCCESS|\"}[$__rate_interval])), \"series\", \"Failed / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "thresholds": {
             "steps": [
@@ -117,12 +117,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, tx_type, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m]))), \"series\", \"$1\", \"tx_type\", \"(.*)\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, tx_type, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m]))), \"series\", \"$1\", \"tx_type\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Latency (ms)",
@@ -164,12 +164,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (tx_type, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[$__rate_interval])), \"series\", \"$1\", \"tx_type\", \"(.*)\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(sum by (tx_type, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[$__rate_interval])), \"series\", \"$1\", \"tx_type\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "TX / Sec",
@@ -211,8 +211,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum by (tx_type, ter_result, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.process\", tx_type=~\"$tx_type\", ter_result=~\"$ter_result\", ter_result!=\"tesSUCCESS\"}[$__rate_interval]))",
-          "legendFormat": "{{tx_type}} [{{ter_result}}, {{service_instance_id}}] [{{xrpl_branch}}, {{xrpl_node_role}}]"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(sum by (tx_type, ter_result, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.process\", tx_type=~\"$tx_type\", ter_result=~\"$ter_result\", ter_result!=\"tesSUCCESS\"}[$__rate_interval])), \"series\", \"$1\", \"tx_type\", \"(.*)\"), \"xrpl_ident\", \", \", \"ter_result\", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
@@ -224,7 +223,8 @@
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
-          }
+          },
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}"
         },
         "overrides": []
       },
@@ -253,12 +253,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (suppressed, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{span_name=\"tx.receive\", tx_type=~\"$tx_type\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"Suppressed $1\", \"suppressed\", \"(.*)\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(sum by (suppressed, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{span_name=\"tx.receive\", tx_type=~\"$tx_type\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"Suppressed $1\", \"suppressed\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Transactions / Sec",
@@ -295,19 +295,19 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[$__rate_interval])), \"series\", \"tx.process / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[$__rate_interval])), \"series\", \"tx.process / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.receive\", tx_type=~\"$tx_type\"}[$__rate_interval])), \"series\", \"tx.receive / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.receive\", tx_type=~\"$tx_type\"}[$__rate_interval])), \"series\", \"tx.receive / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Transactions / Sec",
@@ -333,7 +333,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "cps"
         },
         "overrides": []
@@ -351,7 +351,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (local, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", local=~\"$tx_origin\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[$__rate_interval])), \"series\", \"Local $1\", \"local\", \"(.*)\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(sum by (local, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", local=~\"$tx_origin\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[$__rate_interval])), \"series\", \"Local $1\", \"local\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "id": 7
@@ -423,12 +423,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, tx_type, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.transactor\", tx_type=~\"$tx_type\"}[5m]))), \"series\", \"$1\", \"tx_type\", \"(.*)\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, tx_type, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.transactor\", tx_type=~\"$tx_type\"}[5m]))), \"series\", \"$1\", \"tx_type\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -539,12 +539,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_replace(label_replace(label_replace(histogram_quantile(0.95, sum by (le, stage, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\"}[5m]))), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\"), \"series\", \"$1\", \"stage\", \"(.*)\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(label_replace(label_replace(label_replace(histogram_quantile(0.95, sum by (le, stage, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\"}[5m]))), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\"), \"series\", \"$1\", \"stage\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -586,12 +586,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_replace(label_replace(label_replace(sum by (stage, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\", ter_result!~\"tesSUCCESS|\"}[$__rate_interval])), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\"), \"series\", \"$1\", \"stage\", \"(.*)\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(label_replace(label_replace(label_replace(sum by (stage, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\", ter_result!~\"tesSUCCESS|\"}[$__rate_interval])), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\"), \"series\", \"$1\", \"stage\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Failed Spans / Sec",
@@ -633,8 +633,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_replace(label_replace(histogram_quantile(0.95, sum by (le, tx_type, stage, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", tx_type=~\"$tx_type\", stage=~\"$stage\"}[5m]))), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\")",
-          "legendFormat": "{{tx_type}} [{{stage}}, {{service_instance_id}}] [{{xrpl_branch}}, {{xrpl_node_role}}]"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(label_replace(label_replace(label_replace(histogram_quantile(0.95, sum by (le, tx_type, stage, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", tx_type=~\"$tx_type\", stage=~\"$stage\"}[5m]))), \"stage\", \"Preflight\", \"stage\", \"preflight\"), \"stage\", \"Preclaim\", \"stage\", \"preclaim\"), \"stage\", \"Apply\", \"stage\", \"apply\"), \"series\", \"$1\", \"tx_type\", \"(.*)\"), \"xrpl_ident\", \", \", \"stage\", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
@@ -646,7 +645,8 @@
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
-          }
+          },
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}"
         },
         "overrides": []
       },
@@ -675,12 +675,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.apply\"}[5m]))), \"series\", \"tx.apply\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.apply\"}[5m]))), \"series\", \"tx.apply\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Latency (ms)",
@@ -717,12 +717,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (tx_type, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.enqueue\"}[$__rate_interval])), \"series\", \"$1\", \"tx_type\", \"(.*)\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(sum by (tx_type, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.enqueue\"}[$__rate_interval])), \"series\", \"$1\", \"tx_type\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Enqueues / Sec",
@@ -759,12 +759,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.apply_direct\"}[$__rate_interval])) / clamp_min(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.apply_direct\"}[$__rate_interval])) + sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.enqueue\"}[$__rate_interval])), 1), \"series\", \"Direct-Apply Fraction\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.apply_direct\"}[$__rate_interval])) / clamp_min(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.apply_direct\"}[$__rate_interval])) + sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.enqueue\"}[$__rate_interval])), 1), \"series\", \"Direct-Apply Fraction\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "percentunit",
           "custom": {
             "axisLabel": "Bypass Fraction",
@@ -801,12 +801,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.accept\"}[5m]))), \"series\", \"Drain\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.accept\"}[5m]))), \"series\", \"Drain\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -843,12 +843,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.cleanup\"}[$__rate_interval])), \"series\", \"Cleanups / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"txq.cleanup\"}[$__rate_interval])), \"series\", \"Cleanups / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Cleanups / Sec",

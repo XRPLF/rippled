@@ -62,19 +62,19 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(txq_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"txq_count\"}, \"series\", \"Queue Depth\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(txq_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"txq_count\"}, \"series\", \"Queue Depth\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(txq_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"txq_max_size\"}, \"series\", \"Max Capacity\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(txq_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"txq_max_size\"}, \"series\", \"Max Capacity\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "short",
           "custom": {
             "axisLabel": "Transactions",
@@ -113,19 +113,19 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(txq_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"txq_in_ledger\"}, \"series\", \"In Ledger\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(txq_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"txq_in_ledger\"}, \"series\", \"In Ledger\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(txq_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"txq_per_ledger\"}, \"series\", \"Expected Per Ledger\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(txq_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"txq_per_ledger\"}, \"series\", \"Expected Per Ledger\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "short",
           "custom": {
             "axisLabel": "Transactions",
@@ -164,33 +164,33 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(txq_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"txq_reference_fee_level\"}, \"series\", \"Reference Fee Level\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(txq_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"txq_reference_fee_level\"}, \"series\", \"Reference Fee Level\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(txq_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"txq_min_processing_fee_level\"}, \"series\", \"Min Processing Fee Level\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(txq_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"txq_min_processing_fee_level\"}, \"series\", \"Min Processing Fee Level\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(txq_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"txq_med_fee_level\"}, \"series\", \"Median Fee Level\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(txq_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"txq_med_fee_level\"}, \"series\", \"Median Fee Level\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(txq_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"txq_open_ledger_fee_level\"}, \"series\", \"Open Ledger Fee Level\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(txq_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"txq_open_ledger_fee_level\"}, \"series\", \"Open Ledger Fee Level\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "short",
           "custom": {
             "axisLabel": "Fee Level",
@@ -233,33 +233,33 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(load_factor_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"load_factor\"}, \"series\", \"Combined Load Factor\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(load_factor_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"load_factor\"}, \"series\", \"Combined Load Factor\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(load_factor_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"load_factor_server\"}, \"series\", \"Server\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(load_factor_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"load_factor_server\"}, \"series\", \"Server\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(load_factor_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"load_factor_fee_escalation\"}, \"series\", \"Fee Escalation\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(load_factor_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"load_factor_fee_escalation\"}, \"series\", \"Fee Escalation\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(load_factor_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"load_factor_fee_queue\"}, \"series\", \"Fee Queue\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(load_factor_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"load_factor_fee_queue\"}, \"series\", \"Fee Queue\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "short",
           "custom": {
             "axisLabel": "Multiplier",
@@ -314,26 +314,26 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(load_factor_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"load_factor_local\"}, \"series\", \"Local\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(load_factor_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"load_factor_local\"}, \"series\", \"Local\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(load_factor_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"load_factor_net\"}, \"series\", \"Network\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(load_factor_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"load_factor_net\"}, \"series\", \"Network\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(load_factor_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"load_factor_cluster\"}, \"series\", \"Cluster\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(load_factor_metrics{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"load_factor_cluster\"}, \"series\", \"Cluster\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "short",
           "custom": {
             "axisLabel": "Multiplier",
@@ -372,12 +372,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(txq_expired_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"Expired / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(txq_expired_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"Expired / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Expired / Sec",
@@ -413,12 +413,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (reason, service_instance_id, xrpl_branch, xrpl_node_role) (rate(txq_dropped_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"$1\", \"reason\", \"(.*)\")"
+          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(sum by (reason, service_instance_id, xrpl_branch, xrpl_node_role) (rate(txq_dropped_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"$1\", \"reason\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Dropped / Sec",
