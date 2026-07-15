@@ -1,7 +1,17 @@
 #pragma once
 
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
+
+#include <algorithm>
+#include <array>
+#include <bit>
+#include <compare>
+#include <cstdint>
+#include <functional>
+#include <ostream>
+#include <string>
 
 namespace xrpl {
 
@@ -72,7 +82,8 @@ operator<=>(MPTIssue const& lhs, MPTIssue const& rhs)
     return lhs.mptID_ <=> rhs.mptID_;
 }
 
-/** MPT is a non-native token.
+/**
+ * MPT is a non-native token.
  */
 inline bool
 isXRP(MPTID const&)

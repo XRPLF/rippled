@@ -813,7 +813,7 @@ doOverpayment(
     //   3. The overpayment's penalty interest part (= untrackedInterest
     //      for the overpayment path; see computeOverpaymentComponents):
     //        trackedInterestPart()
-    bool const fix320Enabled = rules.enabled(fixCleanup3_2_0);
+    [[maybe_unused]] bool const fix320Enabled = rules.enabled(fixCleanup3_2_0);
     XRPL_ASSERT_IF(
         fix320Enabled,
         overpaymentComponents.trackedPrincipalDelta ==

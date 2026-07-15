@@ -1,7 +1,19 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <cstdint>
+#include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -21,8 +33,9 @@ struct ApplyResult
     }
 };
 
-/** Return true if the transaction can claim a fee (tec),
-    and the `ApplyFlags` do not allow soft failures.
+/**
+ * Return true if the transaction can claim a fee (tec),
+ * and the `ApplyFlags` do not allow soft failures.
  */
 inline bool
 isTecClaimHardFail(TER ter, ApplyFlags flags)
@@ -30,34 +43,51 @@ isTecClaimHardFail(TER ter, ApplyFlags flags)
     return isTecClaim(ter) && ((flags & TapRetry) == 0u);
 }
 
-/** Class describing the consequences to the account
-    of applying a transaction if the transaction consumes
-    the maximum XRP allowed.
-*/
+/**
+ * Class describing the consequences to the account
+ * of applying a transaction if the transaction consumes
+ * the maximum XRP allowed.
+ */
 class TxConsequences
 {
 public:
-    /// Describes how the transaction affects subsequent
-    /// transactions
+    /**
+     * Describes how the transaction affects subsequent
+     * transactions
+     */
     enum class Category {
-        /// Moves currency around, creates offers, etc.
+        /**
+         * Moves currency around, creates offers, etc.
+         */
         Normal = 0,
-        /// Affects the ability of subsequent transactions
-        /// to claim a fee. Eg. `SetRegularKey`
+        /**
+         * Affects the ability of subsequent transactions
+         * to claim a fee. Eg. `SetRegularKey`
+         */
         Blocker
     };
 
 private:
-    /// Describes how the transaction affects subsequent
-    /// transactions
+    /**
+     * Describes how the transaction affects subsequent
+     * transactions
+     */
     bool isBlocker_;
-    /// Transaction fee
+    /**
+     * Transaction fee
+     */
     XRPAmount fee_;
-    /// Does NOT include the fee.
+    /**
+     * Does NOT include the fee.
+     */
     XRPAmount potentialSpend_;
-    /// SeqProxy of transaction.
+    /**
+     * SeqProxy of transaction.
+     */
     SeqProxy seqProx_;
-    /// Number of sequences consumed.
+    /**
+     * Number of sequences consumed.
+     */
     std::uint32_t sequencesConsumed_;
 
 public:
@@ -65,58 +95,84 @@ public:
     // Asserts if tesSUCCESS is passed.
     explicit TxConsequences(NotTEC pfResult);
 
-    /// Constructor if the STTx has no notable consequences for the TxQ.
+    /**
+     * Constructor if the STTx has no notable consequences for the TxQ.
+     */
     explicit TxConsequences(STTx const& tx);
 
-    /// Constructor for a blocker.
+    /**
+     * Constructor for a blocker.
+     */
     TxConsequences(STTx const& tx, Category category);
 
-    /// Constructor for an STTx that may consume more XRP than the fee.
+    /**
+     * Constructor for an STTx that may consume more XRP than the fee.
+     */
     TxConsequences(STTx const& tx, XRPAmount potentialSpend);
 
-    /// Constructor for an STTx that consumes more than the usual sequences.
+    /**
+     * Constructor for an STTx that consumes more than the usual sequences.
+     */
     TxConsequences(STTx const& tx, std::uint32_t sequencesConsumed);
 
-    /// Copy constructor
+    /**
+     * Copy constructor
+     */
     TxConsequences(TxConsequences const&) = default;
-    /// Copy assignment operator
+    /**
+     * Copy assignment operator
+     */
     TxConsequences&
     operator=(TxConsequences const&) = default;
-    /// Move constructor
+    /**
+     * Move constructor
+     */
     TxConsequences(TxConsequences&&) = default;
-    /// Move assignment operator
+    /**
+     * Move assignment operator
+     */
     TxConsequences&
     operator=(TxConsequences&&) = default;
 
-    /// Fee
+    /**
+     * Fee
+     */
     [[nodiscard]] XRPAmount
     fee() const
     {
         return fee_;
     }
 
-    /// Potential Spend
+    /**
+     * Potential Spend
+     */
     [[nodiscard]] XRPAmount const&
     potentialSpend() const
     {
         return potentialSpend_;
     }
 
-    /// SeqProxy
+    /**
+     * SeqProxy
+     */
     [[nodiscard]] SeqProxy
     seqProxy() const
     {
         return seqProx_;
     }
 
-    /// Sequences consumed
+    /**
+     * Sequences consumed
+     */
     [[nodiscard]] std::uint32_t
     sequencesConsumed() const
     {
         return sequencesConsumed_;
     }
 
-    /// Returns true if the transaction is a blocker.
+    /**
+     * Returns true if the transaction is a blocker.
+     */
     [[nodiscard]] bool
     isBlocker() const
     {
@@ -133,32 +189,49 @@ public:
     }
 };
 
-/** Describes the results of the `preflight` check
-
-    @note All members are const to make it more difficult
-        to "fake" a result without calling `preflight`.
-    @see preflight, preclaim, doApply, apply
-*/
+/**
+ * Describes the results of the `preflight` check
+ *
+ * @note All members are const to make it more difficult
+ *     to "fake" a result without calling `preflight`.
+ * @see preflight, preclaim, doApply, apply
+ */
 struct PreflightResult
 {
 public:
-    /// From the input - the transaction
+    /**
+     * From the input - the transaction
+     */
     STTx const& tx;
-    /// From the input - the batch identifier, if part of a batch
+    /**
+     * From the input - the batch identifier, if part of a batch
+     */
     std::optional<uint256 const> const parentBatchId;
-    /// From the input - the rules
+    /**
+     * From the input - the rules
+     */
     Rules const rules;
-    /// Consequences of the transaction
+    /**
+     * Consequences of the transaction
+     */
     TxConsequences const consequences;
-    /// From the input - the flags
+    /**
+     * From the input - the flags
+     */
     ApplyFlags const flags;
-    /// From the input - the journal
+    /**
+     * From the input - the journal
+     */
     beast::Journal const j;
 
-    /// Intermediate transaction result
+    /**
+     * Intermediate transaction result
+     */
     NotTEC const ter;
 
-    /// Constructor
+    /**
+     * Constructor
+     */
     template <class Context>
     PreflightResult(Context const& ctx, std::pair<NotTEC, TxConsequences> const& result)
         : tx(ctx.tx)
@@ -172,39 +245,58 @@ public:
     }
 
     PreflightResult(PreflightResult const&) = default;
-    /// Deleted copy assignment operator
+    /**
+     * Deleted copy assignment operator
+     */
     PreflightResult&
     operator=(PreflightResult const&) = delete;
 };
 
-/** Describes the results of the `preclaim` check
-
-    @note All members are const to make it more difficult
-        to "fake" a result without calling `preclaim`.
-    @see preflight, preclaim, doApply, apply
-*/
+/**
+ * Describes the results of the `preclaim` check
+ *
+ * @note All members are const to make it more difficult
+ *     to "fake" a result without calling `preclaim`.
+ * @see preflight, preclaim, doApply, apply
+ */
 struct PreclaimResult
 {
 public:
-    /// From the input - the ledger view
+    /**
+     * From the input - the ledger view
+     */
     ReadView const& view;
-    /// From the input - the transaction
+    /**
+     * From the input - the transaction
+     */
     STTx const& tx;
-    /// From the input - the batch identifier, if part of a batch
+    /**
+     * From the input - the batch identifier, if part of a batch
+     */
     std::optional<uint256 const> const parentBatchId;
-    /// From the input - the flags
+    /**
+     * From the input - the flags
+     */
     ApplyFlags const flags;
-    /// From the input - the journal
+    /**
+     * From the input - the journal
+     */
     beast::Journal const j;
 
-    /// Intermediate transaction result
+    /**
+     * Intermediate transaction result
+     */
     TER const ter;
 
-    /// Success flag - whether the transaction is likely to
-    /// claim a fee
+    /**
+     * Success flag - whether the transaction is likely to
+     * claim a fee
+     */
     bool const likelyToClaimFee{};
 
-    /// Constructor
+    /**
+     * Constructor
+     */
     template <class Context>
     PreclaimResult(Context const& ctx, TER ter)
         : view(ctx.view)
@@ -218,27 +310,30 @@ public:
     }
 
     PreclaimResult(PreclaimResult const&) = default;
-    /// Deleted copy assignment operator
+    /**
+     * Deleted copy assignment operator
+     */
     PreclaimResult&
     operator=(PreclaimResult const&) = delete;
 };
 
-/** Gate a transaction based on static information.
-
-    The transaction is checked against all possible
-    validity constraints that do not require a ledger.
-
-    @param app The current running `Application`.
-    @param rules The `Rules` in effect at the time of the check.
-    @param tx The transaction to be checked.
-    @param flags `ApplyFlags` describing processing options.
-    @param j A journal.
-
-    @see PreflightResult, preclaim, doApply, apply
-
-    @return A `PreflightResult` object containing, among
-    other things, the `TER` code.
-*/
+/**
+ * Gate a transaction based on static information.
+ *
+ * The transaction is checked against all possible
+ * validity constraints that do not require a ledger.
+ *
+ * @param app The current running `Application`.
+ * @param rules The `Rules` in effect at the time of the check.
+ * @param tx The transaction to be checked.
+ * @param flags `ApplyFlags` describing processing options.
+ * @param j A journal.
+ *
+ * @see PreflightResult, preclaim, doApply, apply
+ *
+ * @return A `PreflightResult` object containing, among
+ * other things, the `TER` code.
+ */
 /** @{ */
 PreflightResult
 preflight(
@@ -258,86 +353,90 @@ preflight(
     beast::Journal j);
 /** @} */
 
-/** Gate a transaction based on static ledger information.
-
-    The transaction is checked against all possible
-    validity constraints that DO require a ledger.
-
-    If preclaim succeeds, then the transaction is very
-    likely to claim a fee. This will determine if the
-    transaction is safe to relay without being applied
-    to the open ledger.
-
-    "Succeeds" in this case is defined as returning a
-    `tes` or `tec`, since both lead to claiming a fee.
-
-    @pre The transaction has been checked
-    and validated using `preflight`
-
-    @param preflightResult The result of a previous
-        call to `preflight` for the transaction.
-    @param app The current running `Application`.
-    @param view The open ledger that the transaction
-        will attempt to be applied to.
-
-    @see PreclaimResult, preflight, doApply, apply
-
-    @return A `PreclaimResult` object containing, among
-    other things the `TER` code and the base fee value for
-    this transaction.
-*/
+/**
+ * Gate a transaction based on static ledger information.
+ *
+ * The transaction is checked against all possible
+ * validity constraints that DO require a ledger.
+ *
+ * If preclaim succeeds, then the transaction is very
+ * likely to claim a fee. This will determine if the
+ * transaction is safe to relay without being applied
+ * to the open ledger.
+ *
+ * "Succeeds" in this case is defined as returning a
+ * `tes` or `tec`, since both lead to claiming a fee.
+ *
+ * @pre The transaction has been checked
+ * and validated using `preflight`
+ *
+ * @param preflightResult The result of a previous
+ *     call to `preflight` for the transaction.
+ * @param app The current running `Application`.
+ * @param view The open ledger that the transaction
+ *     will attempt to be applied to.
+ *
+ * @see PreclaimResult, preflight, doApply, apply
+ *
+ * @return A `PreclaimResult` object containing, among
+ * other things the `TER` code and the base fee value for
+ * this transaction.
+ */
 PreclaimResult
 preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, OpenView const& view);
 
-/** Compute only the expected base fee for a transaction.
-
-    Base fees are transaction specific, so any calculation
-    needing them must get the base fee for each transaction.
-
-    No validation is done or implied by this function.
-
-    Caller is responsible for handling any exceptions.
-    Since none should be thrown, that will usually
-    mean terminating.
-
-    @param view The current open ledger.
-    @param tx The transaction to be checked.
-
-    @return The base fee.
-*/
+/**
+ * Compute only the expected base fee for a transaction.
+ *
+ * Base fees are transaction specific, so any calculation
+ * needing them must get the base fee for each transaction.
+ *
+ * No validation is done or implied by this function.
+ *
+ * Caller is responsible for handling any exceptions.
+ * Since none should be thrown, that will usually
+ * mean terminating.
+ *
+ * @param view The current open ledger.
+ * @param tx The transaction to be checked.
+ *
+ * @return The base fee.
+ */
 XRPAmount
 calculateBaseFee(ReadView const& view, STTx const& tx);
 
-/** Return the minimum fee that an "ordinary" transaction would pay.
-
-    When computing the FeeLevel for a transaction the TxQ sometimes needs
-    the know what an "ordinary" or reference transaction would be required
-    to pay.
-
-    @param view The current open ledger.
-    @param tx The transaction so the correct multisigner count is used.
-
-    @return The base fee in XRPAmount.
-*/
+/**
+ * Return the minimum fee that an "ordinary" transaction would pay.
+ *
+ * When computing the FeeLevel for a transaction the TxQ sometimes needs
+ * the know what an "ordinary" or reference transaction would be required
+ * to pay.
+ *
+ * @param view The current open ledger.
+ * @param tx The transaction so the correct multisigner count is used.
+ *
+ * @return The base fee in XRPAmount.
+ */
 XRPAmount
 calculateDefaultBaseFee(ReadView const& view, STTx const& tx);
 
-/** Apply a prechecked transaction to an OpenView.
-
-    @pre The transaction has been checked
-    and validated using `preflight` and `preclaim`
-
-    @param preclaimResult The result of a previous
-    call to `preclaim` for the transaction.
-    @param registry The service registry.
-    @param view The open ledger that the transaction
-    will attempt to be applied to.
-
-    @see preflight, preclaim, apply
-
-    @return A pair with the `TER` and a `bool` indicating
-    whether or not the transaction was applied.
-*/
+/**
+ * Apply a prechecked transaction to an OpenView.
+ *
+ * @pre The transaction has been checked
+ * and validated using `preflight` and `preclaim`
+ *
+ * @param preclaimResult The result of a previous
+ * call to `preclaim` for the transaction.
+ * @param registry The service registry.
+ * @param view The open ledger that the transaction
+ * will attempt to be applied to.
+ *
+ * @see preflight, preclaim, apply
+ *
+ * @return A pair with the `TER` and a `bool` indicating
+ * whether or not the transaction was applied.
+ */
 ApplyResult
 doApply(PreclaimResult const& preclaimResult, ServiceRegistry& registry, OpenView& view);
 

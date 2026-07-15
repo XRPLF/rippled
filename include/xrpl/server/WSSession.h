@@ -2,7 +2,6 @@
 
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Port.h>
-#include <xrpl/server/Writer.h>
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -11,7 +10,9 @@
 #include <boost/logic/tribool.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <functional>
+#include <iterator>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -27,23 +28,24 @@ public:
     operator=(WSMsg const&) = delete;
     virtual ~WSMsg() = default;
 
-    /** Retrieve message data.
-
-        Returns a tribool indicating whether or not
-        data is available, and a ConstBufferSequence
-        representing the data.
-
-        tribool values:
-            maybe:      Data is not ready yet
-            false:      Data is available
-            true:       Data is available, and
-                        it is the last chunk of bytes.
-
-        Derived classes that do not know when the data
-        ends (for example, when returning the output of a
-        paged database query) may return `true` and an
-        empty vector.
-    */
+    /**
+     * Retrieve message data.
+     *
+     * Returns a tribool indicating whether or not
+     * data is available, and a ConstBufferSequence
+     * representing the data.
+     *
+     * tribool values:
+     *     maybe:      Data is not ready yet
+     *     false:      Data is available
+     *     true:       Data is available, and
+     *                 it is the last chunk of bytes.
+     *
+     * Derived classes that do not know when the data
+     * ends (for example, when returning the output of a
+     * paged database query) may return `true` and an
+     * empty vector.
+     */
     virtual std::pair<boost::tribool, std::vector<boost::asio::const_buffer>>
     prepare(std::size_t bytes, std::function<void(void)> resume) = 0;
 };
@@ -105,7 +107,9 @@ struct WSSession
     [[nodiscard]] virtual boost::asio::ip::tcp::endpoint const&
     remoteEndpoint() const = 0;
 
-    /** Send a WebSockets message. */
+    /**
+     * Send a WebSockets message.
+     */
     virtual void
     send(std::shared_ptr<WSMsg> w) = 0;
 
@@ -115,10 +119,11 @@ struct WSSession
     virtual void
     close(boost::beast::websocket::close_reason const& reason) = 0;
 
-    /** Indicate that the response is complete.
-        The handler should call this when it has completed writing
-        the response.
-    */
+    /**
+     * Indicate that the response is complete.
+     * The handler should call this when it has completed writing
+     * the response.
+     */
     virtual void
     complete() = 0;
 };

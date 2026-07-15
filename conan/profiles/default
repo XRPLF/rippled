@@ -10,16 +10,18 @@
 os={{ os }}
 arch={{ arch }}
 build_type=Debug
-compiler={{compiler}}
+compiler={{ compiler }}
 compiler.version={{ compiler_version }}
 compiler.cppstd=23
 {% if os == "Windows" %}
 compiler.runtime=static
 {% else %}
-compiler.libcxx={{detect_api.detect_libcxx(compiler, version, compiler_exe)}}
+compiler.libcxx={{ detect_api.detect_libcxx(compiler, version, compiler_exe) }}
 {% endif %}
 
 [conf]
-{% if compiler == "gcc" and compiler_version < 13 %}
-tools.build:cxxflags+=['-Wno-restrict']
-{% endif %}
+{# By default, Conan tries to reuse binaries built with different cppstd versions. #}
+{# We want to avoid that to improve reproduceability, so we add the cppstd version to the package ID. #}
+{# More info: https://docs.conan.io/2/reference/extensions/binary_compatibility.html #}
+user.package:cppstd_version=23
+tools.info.package_id:confs+=["user.package:cppstd_version"]

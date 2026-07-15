@@ -3,8 +3,9 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/protocol/BuildInfo.h>
 
 #include <boost/asio/ssl.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
@@ -13,8 +14,9 @@
 #include <boost/beast/http/fields.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 
+#include <cstdint>
 #include <optional>
-#include <utility>
+#include <string>
 
 namespace xrpl {
 
@@ -24,19 +26,21 @@ using request_type = boost::beast::http::request<boost::beast::http::empty_body>
 using http_request_type = boost::beast::http::request<boost::beast::http::dynamic_body>;
 using http_response_type = boost::beast::http::response<boost::beast::http::dynamic_body>;
 
-/** Computes a shared value based on the SSL connection state.
-
-    When there is no man in the middle, both sides will compute the same
-    value. In the presence of an attacker, the computed values will be
-    different.
-
-    @param ssl the SSL/TLS connection state.
-    @return A 256-bit value on success; an unseated optional otherwise.
-*/
+/**
+ * Computes a shared value based on the SSL connection state.
+ *
+ * When there is no man in the middle, both sides will compute the same
+ * value. In the presence of an attacker, the computed values will be
+ * different.
+ *
+ * @param ssl the SSL/TLS connection state.
+ * @return A 256-bit value on success; an unseated optional otherwise.
+ */
 std::optional<uint256>
 makeSharedValue(stream_type& ssl, beast::Journal journal);
 
-/** Insert fields headers necessary for upgrading the link to the peer protocol.
+/**
+ * Insert fields headers necessary for upgrading the link to the peer protocol.
  */
 void
 buildHandshake(
@@ -47,17 +51,18 @@ buildHandshake(
     beast::IP::Address remoteIp,
     Application& app);
 
-/** Validate header fields necessary for upgrading the link to the peer
-   protocol.
-
-    This performs critical security checks that ensure that prevent
-    MITM attacks on our peer-to-peer links and that the remote peer
-    has the private keys that correspond to the public identity it
-    claims.
-
-    @return The public key of the remote peer.
-    @throw A class derived from std::exception.
-*/
+/**
+ * Validate header fields necessary for upgrading the link to the peer
+ * protocol.
+ *
+ * This performs critical security checks that ensure that prevent
+ * MITM attacks on our peer-to-peer links and that the remote peer
+ * has the private keys that correspond to the public identity it
+ * claims.
+ *
+ * @return The public key of the remote peer.
+ * @throws A class derived from std::exception.
+ */
 PublicKey
 verifyHandshake(
     boost::beast::http::fields const& headers,
@@ -67,16 +72,17 @@ verifyHandshake(
     beast::IP::Address remote,
     Application& app);
 
-/** Make outbound http request
-
-   @param crawlPublic if true then server's IP/Port are included in crawl
-   @param comprEnabled if true then compression feature is enabled
-   @param ledgerReplayEnabled if true then ledger-replay feature is enabled
-   @param txReduceRelayEnabled if true then transaction reduce-relay feature is
-   enabled
-   @param vpReduceRelayEnabled if true then validation/proposal reduce-relay
-   feature is enabled
-   @return http request with empty body
+/**
+ * Make outbound http request
+ *
+ * @param crawlPublic if true then server's IP/Port are included in crawl
+ * @param comprEnabled if true then compression feature is enabled
+ * @param ledgerReplayEnabled if true then ledger-replay feature is enabled
+ * @param txReduceRelayEnabled if true then transaction reduce-relay feature is
+ * enabled
+ * @param vpReduceRelayEnabled if true then validation/proposal reduce-relay
+ * feature is enabled
+ * @return http request with empty body
  */
 request_type
 makeRequest(
@@ -86,17 +92,18 @@ makeRequest(
     bool txReduceRelayEnabled,
     bool vpReduceRelayEnabled);
 
-/** Make http response
-
-   @param crawlPublic if true then server's IP/Port are included in crawl
-   @param req incoming http request
-   @param publicIp server's public IP
-   @param remoteIp peer's IP
-   @param sharedValue shared value based on the SSL connection state
-   @param networkID specifies what network we intend to connect to
-   @param version supported protocol version
-   @param app Application's reference to access some common properties
-   @return http response
+/**
+ * Make http response
+ *
+ * @param crawlPublic if true then server's IP/Port are included in crawl
+ * @param req incoming http request
+ * @param publicIp server's public IP
+ * @param remoteIp peer's IP
+ * @param sharedValue shared value based on the SSL connection state
+ * @param networkID specifies what network we intend to connect to
+ * @param version supported protocol version
+ * @param app Application's reference to access some common properties
+ * @return http response
  */
 http_response_type
 makeResponse(
@@ -125,22 +132,24 @@ static constexpr char kFeatureLedgerReplay[] = "ledgerreplay";
 static constexpr char kDelimFeature[] = ";";
 static constexpr char kDelimValue[] = ",";
 
-/** Get feature's header value
-   @param headers request/response header
-   @param feature name
-   @return seated optional with feature's value if the feature
-      is found in the header, unseated optional otherwise
+/**
+ * Get feature's header value
+ * @param headers request/response header
+ * @param feature name
+ * @return seated optional with feature's value if the feature
+ *    is found in the header, unseated optional otherwise
  */
 std::optional<std::string>
 getFeatureValue(boost::beast::http::fields const& headers, std::string const& feature);
 
-/** Check if a feature's value is equal to the specified value
-   @param headers request/response header
-   @param feature to check
-   @param value of the feature to check, must be a single value; i.e. not
-        value1,value2...
-   @return true if the feature's value matches the specified value, false if
-   doesn't match or the feature is not found in the header
+/**
+ * Check if a feature's value is equal to the specified value
+ * @param headers request/response header
+ * @param feature to check
+ * @param value of the feature to check, must be a single value; i.e. not
+ *      value1,value2...
+ * @return true if the feature's value matches the specified value, false if
+ * doesn't match or the feature is not found in the header
  */
 bool
 isFeatureValue(
@@ -148,23 +157,25 @@ isFeatureValue(
     std::string const& feature,
     std::string const& value);
 
-/** Check if a feature is enabled
-   @param headers request/response header
-   @param feature to check
-   @return true if enabled
+/**
+ * Check if a feature is enabled
+ * @param headers request/response header
+ * @param feature to check
+ * @return true if enabled
  */
 bool
 featureEnabled(boost::beast::http::fields const& headers, std::string const& feature);
 
-/** Check if a feature should be enabled for a peer. The feature
-    is enabled if its configured value is true and the http header
-    has the specified feature value.
-   @tparam headers request (inbound) or response (outbound) header
-   @param request http headers
-   @param feature to check
-   @param config feature's configuration value
-   @param value feature's value to check in the headers
-   @return true if the feature is enabled
+/**
+ * Check if a feature should be enabled for a peer. The feature
+ *  is enabled if its configured value is true and the http header
+ *  has the specified feature value.
+ * @tparam Headers request (inbound) or response (outbound) header
+ * @param request http headers
+ * @param feature to check
+ * @param value feature's value to check in the headers
+ * @param config feature's configuration value
+ * @return true if the feature is enabled
  */
 template <typename Headers>
 bool
@@ -177,7 +188,9 @@ peerFeatureEnabled(
     return config && isFeatureValue(request, feature, value);
 }
 
-/** Wrapper for enable(1)/disable type(0) of feature */
+/**
+ * Wrapper for enable(1)/disable type(0) of feature
+ */
 template <typename Headers>
 bool
 peerFeatureEnabled(Headers const& request, std::string const& feature, bool config)
@@ -185,14 +198,15 @@ peerFeatureEnabled(Headers const& request, std::string const& feature, bool conf
     return config && peerFeatureEnabled(request, feature, "1", config);
 }
 
-/** Make request header X-Protocol-Ctl value with supported features
-   @param comprEnabled if true then compression feature is enabled
-   @param ledgerReplayEnabled if true then ledger-replay feature is enabled
-   @param txReduceRelayEnabled if true then transaction reduce-relay feature is
-   enabled
-   @param vpReduceRelayEnabled if true then validation/proposal reduce-relay
-   base squelch feature is enabled
-   @return X-Protocol-Ctl header value
+/**
+ * Make request header X-Protocol-Ctl value with supported features
+ * @param comprEnabled if true then compression feature is enabled
+ * @param ledgerReplayEnabled if true then ledger-replay feature is enabled
+ * @param txReduceRelayEnabled if true then transaction reduce-relay feature is
+ * enabled
+ * @param vpReduceRelayEnabled if true then validation/proposal reduce-relay
+ * base squelch feature is enabled
+ * @return X-Protocol-Ctl header value
  */
 std::string
 makeFeaturesRequestHeader(
@@ -201,18 +215,19 @@ makeFeaturesRequestHeader(
     bool txReduceRelayEnabled,
     bool vpReduceRelayEnabled);
 
-/** Make response header X-Protocol-Ctl value with supported features.
-    If the request has a feature that we support enabled
-    and the feature's configuration is enabled then enable this feature in
-    the response header.
-   @param header request's header
-   @param comprEnabled if true then compression feature is enabled
-   @param ledgerReplayEnabled if true then ledger-replay feature is enabled
-   @param txReduceRelayEnabled if true then transaction reduce-relay feature is
-   enabled
-   @param vpReduceRelayEnabled if true then validation/proposal reduce-relay
-   base squelch feature is enabled
-   @return X-Protocol-Ctl header value
+/**
+ * Make response header X-Protocol-Ctl value with supported features.
+ *  If the request has a feature that we support enabled
+ *  and the feature's configuration is enabled then enable this feature in
+ *  the response header.
+ * @param header request's header
+ * @param comprEnabled if true then compression feature is enabled
+ * @param ledgerReplayEnabled if true then ledger-replay feature is enabled
+ * @param txReduceRelayEnabled if true then transaction reduce-relay feature is
+ * enabled
+ * @param vpReduceRelayEnabled if true then validation/proposal reduce-relay
+ * base squelch feature is enabled
+ * @return X-Protocol-Ctl header value
  */
 std::string
 makeFeaturesResponseHeader(

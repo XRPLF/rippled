@@ -20,8 +20,6 @@ _SANITIZER_SUFFIX: dict[str, str] = {
 def get_cmake_args(build_type: str, extra_args: str) -> str:
     """Get the full list of CMake arguments for a config."""
     args = _BASE_CMAKE_ARGS.copy()
-    if build_type == "Release":
-        args.append("-Dassert=ON")
     if extra_args:
         args.extend(extra_args.split())
     return " ".join(args)
@@ -32,6 +30,11 @@ def get_cmake_args(build_type: str, extra_args: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+# Every config must declare 'minimal'. Minimal configs form the reduced matrix
+# built for pull requests by default; the full matrix adds the rest. Packaging
+# configs declare it too, but packaging is gated in the workflow, not by it.
+
+
 @dataclasses.dataclass
 class LinuxConfig:
     """One entry in linux.json's 'configs' or 'package_configs' arrays."""
@@ -39,6 +42,7 @@ class LinuxConfig:
     compiler: list[str]
     build_type: list[str]
     arch: list[str]
+    minimal: bool
     sanitizers: list[str] = dataclasses.field(default_factory=list)
     suffix: str = ""
     extra_cmake_args: str = ""
@@ -75,6 +79,7 @@ class PlatformConfig:
     """One entry in macos.json's or windows.json's 'configs' array."""
 
     build_type: list[str]
+    minimal: bool
     build_only: bool = False  # if true, skip tests (e.g. macos/Windows Debug)
     extra_cmake_args: str = ""
 
@@ -151,16 +156,19 @@ _ARCHS: dict[str, Architecture] = {
 }
 
 
-def expand_linux_matrix(linux: LinuxFile) -> list[MatrixEntry]:
+def expand_linux_matrix(linux: LinuxFile, minimal: bool) -> list[MatrixEntry]:
     """Expand a LinuxFile into a flat list of matrix entries.
 
     Each config entry is expanded over the cross-product of its
-    compiler, build_type, sanitizers, and architecture lists.
+    compiler, build_type, sanitizers, and architecture lists. When 'minimal' is
+    true, only configs flagged as minimal are included.
     """
     entries: list[MatrixEntry] = []
 
     for distro, configs in linux.configs.items():
         for cfg in configs:
+            if minimal and not cfg.minimal:
+                continue
             # An empty sanitizers list means "one entry with no sanitizer".
             effective_sanitizers = cfg.sanitizers or [""]
             effective_archs = {arch: _ARCHS[arch] for arch in cfg.arch}
@@ -218,13 +226,18 @@ def expand_linux_packaging(linux: LinuxFile) -> list[PackagingEntry]:
     return entries
 
 
-def expand_platform_matrix(pf: PlatformFile) -> list[MatrixEntry]:
-    """Expand a PlatformFile (macOS or Windows) into matrix entries."""
+def expand_platform_matrix(pf: PlatformFile, minimal: bool) -> list[MatrixEntry]:
+    """Expand a PlatformFile (macOS or Windows) into matrix entries.
+
+    When 'minimal' is true, only configs flagged as minimal are included.
+    """
     platform_name, arch = pf.platform.split("/")
     is_windows = platform_name == "windows"
 
     entries: list[MatrixEntry] = []
     for cfg in pf.configs:
+        if minimal and not cfg.minimal:
+            continue
         for build_type in cfg.build_type:
             entries.append(
                 MatrixEntry(
@@ -262,6 +275,14 @@ if __name__ == "__main__":
         help="Emit the Linux packaging matrix instead of the build/test matrix.",
         action="store_true",
     )
+    parser.add_argument(
+        "-m",
+        "--minimal",
+        help="Emit only the minimal matrix (the configs flagged 'minimal'), "
+        "used for pull requests by default. If omitted, the full matrix is "
+        "emitted.",
+        action="store_true",
+    )
     args = parser.parse_args()
 
     matrix: list[MatrixEntry] | list[PackagingEntry] = []
@@ -270,12 +291,16 @@ if __name__ == "__main__":
         matrix = expand_linux_packaging(LinuxFile.load(THIS_DIR / "linux.json"))
     else:
         if args.config in ("linux", None):
-            matrix += expand_linux_matrix(LinuxFile.load(THIS_DIR / "linux.json"))
+            matrix += expand_linux_matrix(
+                LinuxFile.load(THIS_DIR / "linux.json"), args.minimal
+            )
         if args.config in ("macos", None):
-            matrix += expand_platform_matrix(PlatformFile.load(THIS_DIR / "macos.json"))
+            matrix += expand_platform_matrix(
+                PlatformFile.load(THIS_DIR / "macos.json"), args.minimal
+            )
         if args.config in ("windows", None):
             matrix += expand_platform_matrix(
-                PlatformFile.load(THIS_DIR / "windows.json")
+                PlatformFile.load(THIS_DIR / "windows.json"), args.minimal
             )
 
     print(f"matrix={json.dumps({'include': [dataclasses.asdict(e) for e in matrix]})}")

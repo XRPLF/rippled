@@ -1179,9 +1179,8 @@ parsePorts(Config const& config, std::ostream& log)
     }
     else
     {
-        auto const count = std::count_if(result.cbegin(), result.cend(), [](Port const& p) {
-            return p.protocol.contains("peer");
-        });
+        auto const count = std::ranges::count_if(
+            result, [](Port const& p) { return p.protocol.contains("peer"); });
 
         if (count > 1)
         {
