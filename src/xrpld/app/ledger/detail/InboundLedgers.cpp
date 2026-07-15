@@ -71,7 +71,9 @@ public:
     {
     }
 
-    /** @callgraph */
+    /**
+     * @callgraph
+     */
     std::shared_ptr<Ledger const>
     acquire(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
     {
@@ -200,7 +202,8 @@ public:
     // means "We got some data from an inbound ledger"
 
     // VFALCO TODO Remove the dependency on the Peer object.
-    /** We received a TMLedgerData from a peer.
+    /**
+     * We received a TMLedgerData from a peer.
      */
     bool
     gotLedgerData(
@@ -254,12 +257,13 @@ public:
         return recentFailures_.find(h) != recentFailures_.end();
     }
 
-    /** We got some data for a ledger we are no longer acquiring Since we paid
-        the price to receive it, we might as well stash it in case we need it.
-
-        Nodes are received in wire format and must be stashed/hashed in prefix
-        format
-    */
+    /**
+     * We got some data for a ledger we are no longer acquiring Since we paid
+     * the price to receive it, we might as well stash it in case we need it.
+     *
+     * Nodes are received in wire format and must be stashed/hashed in prefix
+     * format
+     */
     void
     gotStaleData(std::shared_ptr<protocol::TMLedgerData> packetPtr) override
     {

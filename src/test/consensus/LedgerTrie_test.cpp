@@ -519,17 +519,18 @@ class LedgerTrie_test : public beast::unit_test::Suite
 
         // Changing largestSeq perspective changes preferred branch
         {
-            /** Build the tree below with initial tip support annotated
-                   A
-                  / \
-               B(1)  C(1)
-              /  |   |
-             H   D   F(1)
-                 |
-                 E(2)
-                 |
-                 G
-            */
+            /**
+             * Build the tree below with initial tip support annotated
+             *       A
+             *      / \
+             *   B(1)  C(1)
+             *  /  |   |
+             * H   D   F(1)
+             *     |
+             *     E(2)
+             *     |
+             *     G
+             */
             LedgerTrie<Ledger> t;
             LedgerHistoryHelper h;
             t.insert(h["ab"]);
@@ -548,17 +549,18 @@ class LedgerTrie_test : public beast::unit_test::Suite
             BEAST_EXPECT(t.getPreferred(Seq{4})->id == h["a"].id());
             // NOLINTEND(bugprone-unchecked-optional-access)
 
-            /** One of E advancing to G doesn't change anything
-                   A
-                  / \
-               B(1)  C(1)
-              /  |   |
-             H   D   F(1)
-                 |
-                 E(1)
-                 |
-                 G(1)
-            */
+            /**
+             * One of E advancing to G doesn't change anything
+             *       A
+             *      / \
+             *   B(1)  C(1)
+             *  /  |   |
+             * H   D   F(1)
+             *     |
+             *     E(1)
+             *     |
+             *     G(1)
+             */
             t.remove(h["abde"]);
             t.insert(h["abdeg"]);
 
@@ -570,17 +572,18 @@ class LedgerTrie_test : public beast::unit_test::Suite
             BEAST_EXPECT(t.getPreferred(Seq{5})->id == h["a"].id());
             // NOLINTEND(bugprone-unchecked-optional-access)
 
-            /** C advancing to H does advance the seq 3 preferred ledger
-                   A
-                  / \
-               B(1)  C
-              /  |   |
-             H(1)D   F(1)
-                 |
-                 E(1)
-                 |
-                 G(1)
-            */
+            /**
+             * C advancing to H does advance the seq 3 preferred ledger
+             *       A
+             *      / \
+             *   B(1)  C
+             *  /  |   |
+             * H(1)D   F(1)
+             *     |
+             *     E(1)
+             *     |
+             *     G(1)
+             */
             t.remove(h["ac"]);
             t.insert(h["abh"]);
 
@@ -592,17 +595,18 @@ class LedgerTrie_test : public beast::unit_test::Suite
             BEAST_EXPECT(t.getPreferred(Seq{5})->id == h["a"].id());
             // NOLINTEND(bugprone-unchecked-optional-access)
 
-            /** F advancing to E also moves the preferred ledger forward
-                   A
-                  / \
-               B(1)  C
-              /  |   |
-             H(1)D   F
-                 |
-                 E(2)
-                 |
-                 G(1)
-            */
+            /**
+             * F advancing to E also moves the preferred ledger forward
+             *       A
+             *      / \
+             *   B(1)  C
+             *  /  |   |
+             * H(1)D   F
+             *     |
+             *     E(2)
+             *     |
+             *     G(1)
+             */
             t.remove(h["acf"]);
             t.insert(h["abde"]);
 
