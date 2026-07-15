@@ -823,7 +823,7 @@ isBatchRawTransactionOkay(STTx const& tx, std::string& reason)
     if (tx.isFieldPresent(sfBatchSigners) &&
         tx.getFieldArray(sfBatchSigners).size() > kMaxBatchSigners)
     {
-        reason = "Batch Signers array exceeds max entries.";
+        reason = "BatchSigners array exceeds max entries.";
         return false;
     }
 
