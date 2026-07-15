@@ -22,6 +22,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <libxrpl/tx/PreflightHelpers.h>
+
 #include <cstdint>
 #include <optional>
 
@@ -42,15 +44,15 @@ PaymentChannelClaim::getFlagsMask(PreflightContext const&)
 NotTEC
 PaymentChannelClaim::preflight(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx[sfChannel] == beast::kZero)
+    if (ctx.rules.enabled(fixCleanup3_2_0) && isZeroId(ctx.tx[sfChannel]))
         return temMALFORMED;
 
     auto const bal = ctx.tx[~sfBalance];
-    if (bal && (!isXRP(*bal) || *bal <= beast::kZero))
+    if (bal && !checkPositiveXRPAmount(*bal))
         return temBAD_AMOUNT;
 
     auto const amt = ctx.tx[~sfAmount];
-    if (amt && (!isXRP(*amt) || *amt <= beast::kZero))
+    if (amt && !checkPositiveXRPAmount(*amt))
         return temBAD_AMOUNT;
 
     if (bal && amt && *bal > *amt)

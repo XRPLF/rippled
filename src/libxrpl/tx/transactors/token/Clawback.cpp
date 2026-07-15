@@ -22,6 +22,8 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <libxrpl/tx/PreflightHelpers.h>
+
 #include <algorithm>
 #include <variant>
 
@@ -44,7 +46,7 @@ preflightHelper<Issue>(PreflightContext const& ctx)
     // The issuer field is used for the token holder instead
     AccountID const& holder = clawAmount.getIssuer();
 
-    if (issuer == holder || isXRP(clawAmount) || clawAmount <= beast::kZero)
+    if (issuer == holder || isXRP(clawAmount) || !checkPositiveAmount(clawAmount))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -67,7 +69,7 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     if (ctx.tx[sfAccount] == *mptHolder)
         return temMALFORMED;
 
-    if (clawAmount.mpt() > MPTAmount{kMaxMpTokenAmount} || clawAmount <= beast::kZero)
+    if (clawAmount.mpt() > MPTAmount{kMaxMpTokenAmount} || !checkPositiveAmount(clawAmount))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;

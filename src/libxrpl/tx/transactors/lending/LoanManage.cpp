@@ -24,6 +24,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <libxrpl/tx/PreflightHelpers.h>
+
 #include <algorithm>
 #include <cstdint>
 namespace xrpl {
@@ -43,7 +45,7 @@ LoanManage::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 LoanManage::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanID] == beast::kZero)
+    if (isZeroId(ctx.tx[sfLoanID]))
         return temINVALID;
 
     // Flags are mutually exclusive

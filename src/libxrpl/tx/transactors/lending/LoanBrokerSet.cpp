@@ -20,6 +20,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <libxrpl/tx/PreflightHelpers.h>
+
 #include <memory>
 #include <vector>
 
@@ -57,13 +59,13 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
             tx.isFieldPresent(sfCoverRateLiquidation))
             return temINVALID;
 
-        if (tx[sfLoanBrokerID] == beast::kZero)
+        if (isZeroId(tx[sfLoanBrokerID]))
             return temINVALID;
     }
 
     if (auto const vaultID = tx.at(~sfVaultID))
     {
-        if (*vaultID == beast::kZero)
+        if (isZeroId(*vaultID))
             return temINVALID;
     }
 

@@ -22,6 +22,8 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <libxrpl/tx/PreflightHelpers.h>
+
 #include <memory>
 
 namespace xrpl {
@@ -57,7 +59,7 @@ PaymentChannelCreate::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 PaymentChannelCreate::preflight(PreflightContext const& ctx)
 {
-    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZero))
+    if (!checkPositiveXRPAmount(ctx.tx[sfAmount]))
         return temBAD_AMOUNT;
 
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])

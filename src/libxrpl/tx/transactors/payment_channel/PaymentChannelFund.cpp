@@ -20,6 +20,8 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <libxrpl/tx/PreflightHelpers.h>
+
 namespace xrpl {
 
 TxConsequences
@@ -31,10 +33,10 @@ PaymentChannelFund::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 PaymentChannelFund::preflight(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx[sfChannel] == beast::kZero)
+    if (ctx.rules.enabled(fixCleanup3_2_0) && isZeroId(ctx.tx[sfChannel]))
         return temMALFORMED;
 
-    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZero))
+    if (!checkPositiveXRPAmount(ctx.tx[sfAmount]))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;

@@ -12,13 +12,15 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <libxrpl/tx/PreflightHelpers.h>
+
 namespace xrpl {
 
 NotTEC
 PermissionedDomainDelete::preflight(PreflightContext const& ctx)
 {
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
-    if (domain == beast::kZero)
+    if (isZeroId(domain))
         return temMALFORMED;
 
     return tesSUCCESS;

@@ -19,12 +19,14 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <libxrpl/tx/PreflightHelpers.h>
+
 namespace xrpl {
 
 NotTEC
 VaultDelete::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::kZero)
+    if (isZeroId(ctx.tx[sfVaultID]))
     {
         JLOG(ctx.j.debug()) << "VaultDelete: zero/empty vault ID.";
         return temMALFORMED;

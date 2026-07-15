@@ -21,6 +21,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <libxrpl/tx/PreflightHelpers.h>
+
 #include <cstdint>
 #include <expected>
 #include <memory>
@@ -87,7 +89,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (*domain == beast::kZero)
+        if (isZeroId(*domain))
             return temMALFORMED;
 
         // Domain present implies that MPTokenIssuance is not public

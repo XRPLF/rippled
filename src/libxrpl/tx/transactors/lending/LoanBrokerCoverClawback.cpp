@@ -27,6 +27,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <libxrpl/tx/PreflightHelpers.h>
+
 #include <expected>
 #include <optional>
 #include <variant>
@@ -48,7 +50,7 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
     if (!brokerID && !amount)
         return temINVALID;
 
-    if (brokerID && *brokerID == beast::kZero)
+    if (brokerID && isZeroId(*brokerID))
         return temINVALID;
 
     if (amount)
