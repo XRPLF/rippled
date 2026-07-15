@@ -60,29 +60,6 @@ processors:
         action: hash
       - key: pathfind_dest_account
         action: hash
-  # Build grouped legend labels from the tier / perf-iac resource attributes so
-  # dashboards reference one pre-built label per group. resource_to_telemetry_
-  # conversion (below) promotes these resource attributes to Prometheus labels.
-  # The BRACKETS and comma separators are baked into the label VALUE here (e.g.
-  # "[node, mainnet]") rather than added in the dashboard Display name. This is
-  # deliberate: a Display name template like "... [${__field.labels.iac_group}]"
-  # would render an empty "[]" when the label is absent, and Grafana's
-  # renameByRegex transform runs on the pre-interpolation template so it cannot
-  # strip that "[]". Baking the brackets into the value means an absent group is
-  # simply an absent label -> the Display name renders nothing for it.
-  #   - iac_group: "[branch, role, work-item]", built only when all three are
-  #     present (perf runs). Left UNSET otherwise.
-  #   - resource_group: "[node]" or "[node, network]" when a network is present.
-  # Guards check != nil and != "" because OTTL Concat renders "<nil>" for an
-  # absent attribute, and the perf-iac collector stamps these with an empty-string
-  # default outside a comparison run.
-  transform/legendgroups:
-    metric_statements:
-      - context: resource
-        statements:
-          - set(attributes["iac_group"], Concat(["[", Concat([attributes["xrpl.branch"], attributes["xrpl.node.role"], attributes["xrpl.work.item"]], ", "), "]"], "")) where attributes["xrpl.branch"] != nil and attributes["xrpl.branch"] != "" and attributes["xrpl.node.role"] != nil and attributes["xrpl.node.role"] != "" and attributes["xrpl.work.item"] != nil and attributes["xrpl.work.item"] != ""
-          - set(attributes["resource_group"], Concat(["[", attributes["service.instance.id"], "]"], "")) where attributes["service.instance.id"] != nil and attributes["service.instance.id"] != ""
-          - set(attributes["resource_group"], Concat(["[", attributes["service.instance.id"], ", ", attributes["xrpl.network.type"], "]"], "")) where attributes["service.instance.id"] != nil and attributes["service.instance.id"] != "" and attributes["xrpl.network.type"] != nil and attributes["xrpl.network.type"] != ""
 
 connectors:
   spanmetrics:
@@ -152,5 +129,5 @@ service:
       exporters: [debug, otlp/tempo, spanmetrics]
     metrics:
       receivers: [otlp, spanmetrics]
-      processors: [resource/tier, resource/stripsdk, transform/legendgroups]
+      processors: [resource/tier, resource/stripsdk]
       exporters: [prometheus]
