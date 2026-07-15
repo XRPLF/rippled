@@ -21,10 +21,9 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
-#include <memory>
-
 #include <array>
 #include <cstdint>
+#include <memory>
 
 namespace xrpl::test {
 
