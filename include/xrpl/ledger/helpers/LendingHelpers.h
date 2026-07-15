@@ -266,7 +266,7 @@ constructLoanState(
 // Constructs a valid LoanState object from a Loan object, which always has
 // rounded values
 LoanState
-constructRoundedLoanState(SLE::const_ref loan);
+constructLoanState(SLE::const_ref loan);
 
 Number
 computeManagementFee(
