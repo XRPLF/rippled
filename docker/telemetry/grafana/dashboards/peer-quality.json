@@ -36,7 +36,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Latency (ms)",
@@ -98,7 +98,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "short",
           "thresholds": {
             "steps": [
@@ -148,7 +148,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "percent",
           "min": 0,
           "max": 100,
@@ -200,7 +200,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "none",
           "mappings": [
             {
@@ -266,7 +266,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "short",
           "custom": {
             "axisLabel": "Disconnects",
@@ -320,7 +320,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} ${__field.labels.resource_group} ${__field.labels.iac_group}",
+          "displayName": "${__field.labels.series} ${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}",
           "unit": "short",
           "thresholds": {
             "steps": [
