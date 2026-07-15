@@ -389,7 +389,7 @@ ValidatorSite::parseJsonResponse(
     json::Value const body = [&res, siteIdx, this]() {
         json::Reader r;
         json::Value body;
-        if (!r.parse(res.data(), body))
+        if (!r.parse(res, body))
         {
             JLOG(j_.warn()) << "Unable to parse JSON response from  "
                             << sites_[siteIdx].activeResource->uri;

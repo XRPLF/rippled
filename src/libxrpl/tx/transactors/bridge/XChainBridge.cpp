@@ -238,35 +238,35 @@ claimHelper(
 }
 
 /**
- Handle a new attestation event.
-
- Attempt to add the given attestation and reconcile with the current
- signer's list. Attestations that are not part of the current signer's
- list will be removed.
-
- @param claimAtt New attestation to add. It will be added if it is not
- already part of the collection, or attests to a larger value.
-
- @param quorum Min weight required for a quorum
-
- @param signersList Map from signer's account id (derived from public keys)
- to the weight of that key.
-
- @return optional reward accounts. If after handling the new attestation
- there is a quorum for the amount specified on the new attestation, then
- return the reward accounts for that amount, otherwise return a nullopt.
- Note that if the signer's list changes and there have been `commit`
- transactions of different amounts then there may be a different subset that
- has reached quorum. However, to "trigger" that subset would require adding
- (or re-adding) an attestation that supports that subset.
-
- The reason for using a nullopt instead of an empty vector when a quorum is
- not reached is to allow for an interface where a quorum is reached but no
- rewards are distributed.
-
- @note This function is not called `add` because it does more than just
-       add the new attestation (in fact, it may not add the attestation at
-       all). Instead, it handles the event of a new attestation.
+ * Handle a new attestation event.
+ *
+ * Attempt to add the given attestation and reconcile with the current
+ * signer's list. Attestations that are not part of the current signer's
+ * list will be removed.
+ *
+ * @param claimAtt New attestation to add. It will be added if it is not
+ * already part of the collection, or attests to a larger value.
+ *
+ * @param quorum Min weight required for a quorum
+ *
+ * @param signersList Map from signer's account id (derived from public keys)
+ * to the weight of that key.
+ *
+ * @return optional reward accounts. If after handling the new attestation
+ * there is a quorum for the amount specified on the new attestation, then
+ * return the reward accounts for that amount, otherwise return a nullopt.
+ * Note that if the signer's list changes and there have been `commit`
+ * transactions of different amounts then there may be a different subset that
+ * has reached quorum. However, to "trigger" that subset would require adding
+ * (or re-adding) an attestation that supports that subset.
+ *
+ * The reason for using a nullopt instead of an empty vector when a quorum is
+ * not reached is to allow for an interface where a quorum is reached but no
+ * rewards are distributed.
+ *
+ * @note This function is not called `add` because it does more than just
+ *       add the new attestation (in fact, it may not add the attestation at
+ *       all). Instead, it handles the event of a new attestation.
  */
 struct OnNewAttestationResult
 {
@@ -364,26 +364,27 @@ struct TransferHelperSubmittingAccountInfo
     STAmount postFeeBalance;
 };
 
-/** Transfer funds from the src account to the dst account
-
-    @param psb The payment sandbox.
-    @param src The source of funds.
-    @param dst The destination for funds.
-    @param dstTag Integer destination tag. Used to check if funds should be
-           transferred to an account with a `RequireDstTag` flag set.
-    @param claimOwner Owner of the claim ledger object.
-    @param amt Amount to transfer from the src account to the dst account.
-    @param canCreate Flag to determine if accounts may be created using this
-           transfer.
-    @param depositAuthPolicy Flag to determine if dst can bypass deposit auth if
-           it is also the claim owner.
-    @param submittingAccountInfo If the transaction is allowed to dip into the
-           reserve to pay fees, then this optional will be seated ("commit"
-           transactions support this, other transactions should not).
-    @param j Log
-
-    @return tesSUCCESS if payment succeeds, otherwise the error code for the
-            failure reason.
+/**
+ * Transfer funds from the src account to the dst account
+ *
+ * @param psb The payment sandbox.
+ * @param src The source of funds.
+ * @param dst The destination for funds.
+ * @param dstTag Integer destination tag. Used to check if funds should be
+ *        transferred to an account with a `RequireDstTag` flag set.
+ * @param claimOwner Owner of the claim ledger object.
+ * @param amt Amount to transfer from the src account to the dst account.
+ * @param canCreate Flag to determine if accounts may be created using this
+ *        transfer.
+ * @param depositAuthPolicy Flag to determine if dst can bypass deposit auth if
+ *        it is also the claim owner.
+ * @param submittingAccountInfo If the transaction is allowed to dip into the
+ *        reserve to pay fees, then this optional will be seated ("commit"
+ *        transactions support this, other transactions should not).
+ * @param j Log
+ *
+ * @return tesSUCCESS if payment succeeds, otherwise the error code for the
+ *         failure reason.
  */
 
 TER
@@ -435,8 +436,7 @@ transferHelper(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         {
-            auto const ownerCount = sleSrc->getFieldU32(sfOwnerCount);
-            auto const reserve = psb.fees().accountReserve(ownerCount);
+            auto const reserve = accountReserve(psb, sleSrc, j);
 
             auto const availableBalance = [&]() -> STAmount {
                 STAmount curBal = (*sleSrc)[sfBalance];
@@ -505,21 +505,28 @@ transferHelper(
     return tecXCHAIN_PAYMENT_FAILED;
 }
 
-/**  Action to take when the transfer from the door account to the dst fails
-
-     @note This is useful to prevent a failed "create account" transaction from
-           blocking subsequent "create account" transactions.
-*/
+/**
+ * Action to take when the transfer from the door account to the dst fails
+ *
+ * @note This is useful to prevent a failed "create account" transaction from
+ *       blocking subsequent "create account" transactions.
+ */
 enum class OnTransferFail {
-    /** Remove the claim even if the transfer fails */
+    /**
+     * Remove the claim even if the transfer fails
+     */
     RemoveClaim,
-    /**  Keep the claim if the transfer fails */
+    /**
+     * Keep the claim if the transfer fails
+     */
     KeepClaim
 };
 
 struct FinalizeClaimHelperResult
 {
-    /// TER for transfering the payment funds
+    /**
+     * TER for transfering the payment funds
+     */
     std::optional<TER> mainFundsTer;
     // TER for transfering the reward funds
     std::optional<TER> rewardTer;
@@ -563,33 +570,34 @@ struct FinalizeClaimHelperResult
     }
 };
 
-/** Transfer funds from the door account to the dst and distribute rewards
-
-    @param psb The payment sandbox.
-    @param bridgeSpc Bridge
-    @param dst The destination for funds.
-    @param dstTag Integer destination tag. Used to check if funds should be
-           transferred to an account with a `RequireDstTag` flag set.
-    @param claimOwner Owner of the claim ledger object.
-    @param sendingAmount Amount that was committed on the source chain.
-    @param rewardPoolSrc Source of the funds for the reward pool (claim owner).
-    @param rewardPool Amount to split among the rewardAccounts.
-    @param rewardAccounts Account to receive the reward pool.
-    @param srcChain Chain where the commit event occurred.
-    @param sleClaimID sle for the claim id (may be NULL or XChainClaimID or
-           XChainCreateAccountClaimID). Don't read fields that aren't in common
-           with those two types and always check for NULL. Remove on success (if
-           not null). Remove on fail if the onTransferFail flag is removeClaim.
-    @param onTransferFail Flag to determine if the claim is removed on transfer
-           failure. This is used for create account transactions where claims
-           are removed so they don't block future txns.
-    @param j Log
-
-    @return FinalizeClaimHelperResult. See the comments in this struct for what
-            the fields mean. The individual ters need to be returned instead of
-            an overall ter because the caller needs this information if the
-            attestation list changed or not.
-*/
+/**
+ * Transfer funds from the door account to the dst and distribute rewards
+ *
+ * @param psb The payment sandbox.
+ * @param bridgeSpc Bridge
+ * @param dst The destination for funds.
+ * @param dstTag Integer destination tag. Used to check if funds should be
+ *        transferred to an account with a `RequireDstTag` flag set.
+ * @param claimOwner Owner of the claim ledger object.
+ * @param sendingAmount Amount that was committed on the source chain.
+ * @param rewardPoolSrc Source of the funds for the reward pool (claim owner).
+ * @param rewardPool Amount to split among the rewardAccounts.
+ * @param rewardAccounts Account to receive the reward pool.
+ * @param srcChain Chain where the commit event occurred.
+ * @param sleClaimID sle for the claim id (may be NULL or XChainClaimID or
+ *        XChainCreateAccountClaimID). Don't read fields that aren't in common
+ *        with those two types and always check for NULL. Remove on success (if
+ *        not null). Remove on fail if the onTransferFail flag is removeClaim.
+ * @param onTransferFail Flag to determine if the claim is removed on transfer
+ *        failure. This is used for create account transactions where claims
+ *        are removed so they don't block future txns.
+ * @param j Log
+ *
+ * @return FinalizeClaimHelperResult. See the comments in this struct for what
+ *         the fields mean. The individual ters need to be returned instead of
+ *         an overall ter because the caller needs this information if the
+ *         attestation list changed or not.
+ */
 
 FinalizeClaimHelperResult
 finalizeClaimHelper(
@@ -726,24 +734,24 @@ finalizeClaimHelper(
             }
 
             // Remove the claim id from the ledger
+            decreaseOwnerCountForObject(outerSb, sleOwner, sleClaimID, 1, j);
             outerSb.erase(sleClaimID);
-
-            adjustOwnerCount(outerSb, sleOwner, -1, j);
         }
     }
 
     return result;
 }
 
-/** Get signers list corresponding to the account that owns the bridge
-
-    @param view View to read the signer's list from.
-    @param sleBridge Sle of the bridge.
-    @param j Log
-
-    @return map of the signer's list (AccountIDs and weights), the quorum, and
-            error code
-*/
+/**
+ * Get signers list corresponding to the account that owns the bridge
+ *
+ * @param view View to read the signer's list from.
+ * @param sleBridge Sle of the bridge.
+ * @param j Log
+ *
+ * @return map of the signer's list (AccountIDs and weights), the quorum, and
+ *         error code
+ */
 std::tuple<std::unordered_map<AccountID, std::uint32_t>, std::uint32_t, TER>
 getSignersListAndQuorum(ReadView const& view, SLE const& sleBridge, beast::Journal j)
 {
@@ -1028,7 +1036,7 @@ applyCreateAccountAttestations(
 
             // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
-            auto const reserve = psb.fees().accountReserve((*sleDoor)[sfOwnerCount] + 1);
+            auto const reserve = accountReserve(psb, sleDoor, j, {.ownerCountDelta = 1});
 
             if (balance < reserve)
                 return std::unexpected(tecINSUFFICIENT_RESERVE);
@@ -1137,7 +1145,7 @@ applyCreateAccountAttestations(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // Reserve was already checked
-        adjustOwnerCount(psb, sleDoor, 1, j);
+        increaseOwnerCount(psb, sleDoor, {}, 1, j);
         psb.insert(createdSleClaimID);
         psb.update(sleDoor);
     }
@@ -1157,7 +1165,11 @@ toClaim(STTx const& tx)
 
     try
     {
-        STObject o{tx};
+        // Copy just the field bag out of the transaction (explicitly, via the
+        // STObject base) so it can be reinterpreted as a cross-chain attestation
+        // below, with sfAccount replaced by sfOtherChainSource. STTx-specific
+        // state (txType_, tid_) is intentionally not needed here.
+        STObject o{static_cast<STObject const&>(tx)};
         o.setAccountID(sfAccount, o[sfOtherChainSource]);
         return TAttestation(o);
     }
@@ -1435,7 +1447,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve = ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
+        auto const reserve = accountReserve(ctx.view, sleAcc, ctx.j, {.ownerCountDelta = 1});
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -1480,7 +1492,7 @@ XChainCreateBridge::doApply()
         (*sleBridge)[sfOwnerNode] = *page;
     }
 
-    adjustOwnerCount(ctx_.view(), sleAcct, 1, ctx_.journal);
+    increaseOwnerCount(ctx_.view(), sleAcct, {}, 1, ctx_.journal);
 
     ctx_.view().insert(sleBridge);
     ctx_.view().update(sleAcct);
@@ -1983,8 +1995,7 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve = ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
-
+        auto const reserve = accountReserve(ctx.view, sleAcc, ctx.j, {.ownerCountDelta = 1});
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
@@ -2042,7 +2053,7 @@ XChainCreateClaimID::doApply()
         (*sleClaimID)[sfOwnerNode] = *page;
     }
 
-    adjustOwnerCount(ctx_.view(), sleAcct, 1, ctx_.journal);
+    increaseOwnerCount(ctx_.view(), sleAcct, {}, 1, ctx_.journal);
 
     ctx_.view().insert(sleClaimID);
     ctx_.view().update(sleBridge);

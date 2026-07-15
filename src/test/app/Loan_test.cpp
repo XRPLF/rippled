@@ -18,6 +18,7 @@
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
@@ -36,6 +37,7 @@
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -322,7 +324,8 @@ protected:
         TenthBips32 const interestRate{};
     };
 
-    /** Helper class to compare the expected state of a loan and loan broker
+    /**
+     * Helper class to compare the expected state of a loan and loan broker
      * against the data in the ledger.
      */
     struct VerifyLoanStatus
@@ -342,7 +345,8 @@ protected:
         {
         }
 
-        /** Checks the expected broker state against the ledger
+        /**
+         * Checks the expected broker state against the ledger
          */
         void
         checkBroker(
@@ -413,7 +417,9 @@ protected:
             }
         }
 
-        /** Checks both the loan and broker expect states against the ledger */
+        /**
+         * Checks both the loan and broker expect states against the ledger
+         */
         void
         operator()(
             std::uint32_t previousPaymentDate,
@@ -473,7 +479,9 @@ protected:
             }
         }
 
-        /** Checks both the loan and broker expect states against the ledger */
+        /**
+         * Checks both the loan and broker expect states against the ledger
+         */
         void
         operator()(LoanState const& state) const
         {
@@ -539,7 +547,9 @@ protected:
         return {asset, keylet, vaultKeylet, params};
     }
 
-    /// Get the state without checking anything
+    /**
+     * Get the state without checking anything
+     */
     LoanState
     getCurrentState(jtx::Env const& env, BrokerInfo const& broker, Keylet const& loanKeylet)
     {
@@ -567,8 +577,10 @@ protected:
         return LoanState{};
     }
 
-    /// Get the state and check the values against the parameters used in
-    /// `lifecycle`
+    /**
+     * Get the state and check the values against the parameters used in
+     * `lifecycle`
+     */
     LoanState
     getCurrentState(
         jtx::Env const& env,
@@ -671,11 +683,11 @@ protected:
             case AssetType::MPT: {
                 // Enough to cover initial fees
                 if (!env.le(keylet::account(issuer)))
-                    env.fund(env.current()->fees().accountReserve(10) * 10, issuer);
+                    env.fund(env.current()->fees().accountReserve(10, 1) * 10, issuer);
                 if (!env.le(keylet::account(lender)))
-                    env.fund(env.current()->fees().accountReserve(10) * 10, noripple(lender));
+                    env.fund(env.current()->fees().accountReserve(10, 1) * 10, noripple(lender));
                 if (!env.le(keylet::account(borrower)))
-                    env.fund(env.current()->fees().accountReserve(10) * 10, noripple(borrower));
+                    env.fund(env.current()->fees().accountReserve(10, 1) * 10, noripple(borrower));
 
                 MPTTester mptt{env, issuer, kMptInitNoFund};
                 mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
@@ -760,11 +772,11 @@ protected:
         using namespace jtx;
 
         // Enough to cover initial fees
-        env.fund(env.current()->fees().accountReserve(10) * 10, issuer);
+        env.fund(env.current()->fees().accountReserve(10, 1) * 10, issuer);
         if (lender != issuer)
-            env.fund(env.current()->fees().accountReserve(10) * 10, noripple(lender));
+            env.fund(env.current()->fees().accountReserve(10, 1) * 10, noripple(lender));
         if (borrower != issuer && borrower != lender)
-            env.fund(env.current()->fees().accountReserve(10) * 10, noripple(borrower));
+            env.fund(env.current()->fees().accountReserve(10, 1) * 10, noripple(borrower));
 
         describeLoan(env, brokerParams, loanParams, assetType, issuer, lender, borrower);
 
@@ -841,11 +853,10 @@ protected:
         // Add extra for transaction fees and reserves, if appropriate, or a
         // tiny amount for the extra paid in each transaction
         auto const totalNeeded = state.totalValue + (serviceFee * state.paymentRemaining) +
-            (broker.asset.native()
-                 ? Number(
-                       baseFee * state.paymentRemaining +
-                       env.current()->fees().accountReserve(env.ownerCount(borrower)))
-                 : broker.asset(15).number());
+            (broker.asset.native() ? Number(
+                                         baseFee * state.paymentRemaining +
+                                         accountReserve(*env.current(), borrower.id(), env.journal))
+                                   : broker.asset(15).number());
 
         auto const shortage = totalNeeded - borrowerBalance.number();
 
@@ -1241,7 +1252,8 @@ protected:
             PaymentParameters{.showStepBalances = true});
     }
 
-    /** Runs through the complete lifecycle of a loan
+    /**
+     * Runs through the complete lifecycle of a loan
      *
      * 1. Create a loan.
      * 2. Test a bunch of transaction failure conditions.
@@ -1559,7 +1571,8 @@ protected:
         return "Unknown";
     }
 
-    /** Wrapper to run a series of lifecycle tests for a given asset and loan
+    /**
+     * Wrapper to run a series of lifecycle tests for a given asset and loan
      * amount
      *
      * Will be used in the future to vary the loan parameters. For now, it is
@@ -3071,7 +3084,7 @@ protected:
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
-                env.current()->fees().accountReserve(0).drops() / kDropsPerXrp.drops(),
+                env.current()->fees().accountReserve(0, 1).drops() / kDropsPerXrp.drops(),
                 env.current()->fees().increment.drops() / kDropsPerXrp.drops()};
         }();
 
@@ -4419,11 +4432,12 @@ protected:
         Account const lender{"lender"};
         Account const issuer{"issuer"};
         Account const borrower{"borrower"};
+        Account const sponsor{"sponsor"};
         auto const iou = issuer["IOU"];
 
         auto testWrapper = [&](auto&& test) {
             Env env(*this);
-            env.fund(XRP(1'000), lender, issuer, borrower);
+            env.fund(XRP(1'000), lender, issuer, borrower, sponsor);
             env(trust(lender, iou(10'000'000)));
             env(pay(issuer, lender, iou(5'000'000)));
             BrokerInfo const brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
@@ -4438,6 +4452,15 @@ protected:
                         BrokerInfo const& brokerInfo,
                         jtx::Fee const& loanSetFee,
                         Number const& debtMaximumRequest) {
+            for (auto const sponsorFlags : {spfSponsorReserve, spfSponsorReserve | spfSponsorFee})
+            {
+                env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
+                    sponsor::As(sponsor, sponsorFlags),
+                    Sig(sfCounterpartySignature, lender),
+                    loanSetFee,
+                    Ter(temINVALID_FLAG));
+            }
+
             // first temBAD_SIGNER: TODO
             // invalid grace period
             {
@@ -4528,8 +4551,8 @@ protected:
                         BrokerInfo const& brokerInfo,
                         jtx::Fee const& loanSetFee,
                         Number const& debtMaximumRequest) {
-            auto const amt = env.balance(borrower) -
-                env.current()->fees().accountReserve(env.ownerCount(borrower));
+            auto const amt =
+                env.balance(borrower) - accountReserve(*env.current(), borrower.id(), env.journal);
             env(pay(borrower, issuer, amt));
 
             // tecINSUFFICIENT_RESERVE
@@ -8651,7 +8674,7 @@ protected:
         Account const borrower("borrower");
 
         // Determine all the random parameters at once
-        AssetType const assetType = static_cast<AssetType>(assetDist_(engine_));
+        auto const assetType = static_cast<AssetType>(assetDist_(engine_));
         auto const principalRequest = principalDist_(engine_);
         TenthBips16 const managementFeeRate{managementFeeRateDist_(engine_)};
         auto const serviceFee = serviceFeeDist_(engine_);

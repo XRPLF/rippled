@@ -8,13 +8,14 @@
 #include <boost/intrusive/list.hpp>
 
 #include <condition_variable>
-#include <functional>
 #include <memory>
 #include <mutex>
 
 namespace xrpl::PeerFinder {
 
-/** Tests remote listening sockets to make sure they are connectable. */
+/**
+ * Tests remote listening sockets to make sure they are connectable.
+ */
 template <class Protocol = boost::asio::ip::tcp>
 class Checker
 {
@@ -71,31 +72,36 @@ private:
 public:
     explicit Checker(boost::asio::io_context& ioContext);
 
-    /** Destroy the service.
-        Any pending I/O operations will be canceled. This call blocks until
-        all pending operations complete (either with success or with
-        operation_aborted) and the associated thread and io_context have
-        no more work remaining.
-    */
+    /**
+     * Destroy the service.
+     * Any pending I/O operations will be canceled. This call blocks until
+     * all pending operations complete (either with success or with
+     * operation_aborted) and the associated thread and io_context have
+     * no more work remaining.
+     */
     ~Checker();
 
-    /** Stop the service.
-        Pending I/O operations will be canceled.
-        This issues cancel orders for all pending I/O operations and then
-        returns immediately. Handlers will receive operation_aborted errors,
-        or if they were already queued they will complete normally.
-    */
+    /**
+     * Stop the service.
+     * Pending I/O operations will be canceled.
+     * This issues cancel orders for all pending I/O operations and then
+     * returns immediately. Handlers will receive operation_aborted errors,
+     * or if they were already queued they will complete normally.
+     */
     void
     stop();
 
-    /** Block until all pending I/O completes. */
+    /**
+     * Block until all pending I/O completes.
+     */
     void
     wait();
 
-    /** Performs an async connection test on the specified endpoint.
-        The port must be non-zero. Note that the execution guarantees
-        offered by asio handlers are NOT enforced.
-    */
+    /**
+     * Performs an async connection test on the specified endpoint.
+     * The port must be non-zero. Note that the execution guarantees
+     * offered by asio handlers are NOT enforced.
+     */
     template <class Handler>
     void
     asyncConnect(beast::IP::Endpoint const& endpoint, Handler&& handler);
@@ -183,7 +189,7 @@ Checker<Protocol>::asyncConnect(beast::IP::Endpoint const& endpoint, Handler&& h
     }
     op->socket.async_connect(
         beast::IPAddressConversion::toAsioEndpoint(endpoint),
-        std::bind(&BasicAsyncOp::operator(), op, std::placeholders::_1));
+        [op](error_code const& ec) { (*op)(ec); });
 }
 
 template <class Protocol>

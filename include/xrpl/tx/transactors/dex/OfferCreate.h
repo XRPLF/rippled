@@ -28,13 +28,17 @@ namespace xrpl {
 class PaymentSandbox;
 class Sandbox;
 
-/** Transactor specialized for creating offers in the ledger. */
+/**
+ * Transactor specialized for creating offers in the ledger.
+ */
 class OfferCreate : public Transactor
 {
 public:
     static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
 
-    /** Construct a Transactor subclass that creates an offer in the ledger. */
+    /**
+     * Construct a Transactor subclass that creates an offer in the ledger.
+     */
     explicit OfferCreate(ApplyContext& ctx) : Transactor(ctx)
     {
     }
@@ -48,15 +52,21 @@ public:
     static std::uint32_t
     getFlagsMask(PreflightContext const& ctx);
 
-    /** Enforce constraints beyond those of the Transactor base class. */
+    /**
+     * Enforce constraints beyond those of the Transactor base class.
+     */
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    /** Enforce constraints beyond those of the Transactor base class. */
+    /**
+     * Enforce constraints beyond those of the Transactor base class.
+     */
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Precondition: fee collection is likely.  Attempt to create the offer. */
+    /**
+     * Precondition: fee collection is likely.  Attempt to create the offer.
+     */
     TER
     doApply() override;
 

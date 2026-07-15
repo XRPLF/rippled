@@ -57,7 +57,10 @@ inline TaggedCache<
         beast::insight::Collector::ptr const& collector)
     : journal_(journal)
     , clock_(clock)
-    , stats_(name, std::bind(&TaggedCache::collectMetrics, this), collector)
+    , stats_(
+          name,
+          [this] { collectMetrics(); },
+          collector)
     , name_(name)
     , targetSize_(size)
     , targetAge_(expiration)
@@ -500,7 +503,8 @@ template <
 template <class ReturnType>
 inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    insert(key_type const& key, T const& value) -> std::enable_if_t<!IsKeyCache, ReturnType>
+    insert(key_type const& key, T const& value) -> ReturnType
+    requires(!IsKeyCache)
 {
     static_assert(
         std::is_same_v<std::shared_ptr<T>, SharedPointerType> ||
@@ -530,7 +534,8 @@ template <
 template <class ReturnType>
 inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    insert(key_type const& key) -> std::enable_if_t<IsKeyCache, ReturnType>
+    insert(key_type const& key) -> ReturnType
+    requires IsKeyCache
 {
     std::scoped_lock const lock(mutex_);
     clock_type::time_point const now(clock_.now());

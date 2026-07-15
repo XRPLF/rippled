@@ -334,7 +334,7 @@ public:
     template <int N>
     explicit SerialIter(std::uint8_t const (&data)[N]) : SerialIter(&data[0], N)
     {
-        static_assert(N > 0, "");
+        static_assert(N > 0);
     }
 
     [[nodiscard]] bool

@@ -64,7 +64,9 @@ class SHAMap;
 class PeerImp : public Peer, public std::enable_shared_from_this<PeerImp>, public OverlayImpl::Child
 {
 public:
-    /** Whether the peer's view of the ledger converges or diverges from ours */
+    /**
+     * Whether the peer's view of the ledger converges or diverges from ours
+     */
     enum class Tracking { Diverged, Unknown, Converged };
 
 private:
@@ -249,7 +251,9 @@ public:
     PeerImp&
     operator=(PeerImp const&) = delete;
 
-    /** Create an active incoming peer from an established ssl connection. */
+    /**
+     * Create an active incoming peer from an established ssl connection.
+     */
     PeerImp(
         Application& app,
         id_t id,
@@ -261,7 +265,9 @@ public:
         std::unique_ptr<stream_type>&& streamPtr,
         OverlayImpl& overlay);
 
-    /** Create outgoing, handshaked peer. */
+    /**
+     * Create outgoing, handshaked peer.
+     */
     // VFALCO legacyPublicKey should be implied by the Slot
     template <class Buffers>
     PeerImp(
@@ -305,29 +311,34 @@ public:
     void
     send(std::shared_ptr<Message> const& m) override;
 
-    /** Send aggregated transactions' hashes */
+    /**
+     * Send aggregated transactions' hashes
+     */
     void
     sendTxQueue() override;
 
-    /** Add transaction's hash to the transactions' hashes queue
-       @param hash transaction's hash
+    /**
+     * Add transaction's hash to the transactions' hashes queue
+     * @param hash transaction's hash
      */
     void
     addTxQueue(uint256 const& hash) override;
 
-    /** Remove transaction's hash from the transactions' hashes queue
-       @param hash transaction's hash
+    /**
+     * Remove transaction's hash from the transactions' hashes queue
+     * @param hash transaction's hash
      */
     void
     removeTxQueue(uint256 const& hash) override;
 
-    /** Send a set of PeerFinder endpoints as a protocol message. */
-    template <
-        class FwdIt,
-        class = std::enable_if_t<
-            std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>>>
+    /**
+     * Send a set of PeerFinder endpoints as a protocol message.
+     */
+    template <class FwdIt>
     void
-    sendEndpoints(FwdIt first, FwdIt last);
+    sendEndpoints(FwdIt first, FwdIt last)
+        requires(
+            std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>);
 
     beast::IP::Endpoint
     getRemoteAddress() const override
@@ -348,16 +359,19 @@ public:
         return id_;
     }
 
-    /** Returns `true` if this connection will publicly share its IP address. */
+    /**
+     * Returns `true` if this connection will publicly share its IP address.
+     */
     bool
     crawl() const;
 
     bool
     cluster() const override;
 
-    /** Check if the peer is tracking
-        @param validationSeq The ledger sequence of a recently-validated ledger
-    */
+    /**
+     * Check if the peer is tracking
+     * @param validationSeq The ledger sequence of a recently-validated ledger
+     */
     void
     checkTracking(std::uint32_t validationSeq);
 
@@ -370,7 +384,9 @@ public:
         return publicKey_;
     }
 
-    /** Return the version of xrpld that the peer is running, if reported. */
+    /**
+     * Return the version of xrpld that the peer is running, if reported.
+     */
     std::string
     getVersion() const;
 
@@ -505,17 +521,18 @@ private:
     void
     onWriteMessage(error_code ec, std::size_t bytesTransferred);
 
-    /** Called from onMessage(TMTransaction(s)).
-       @param m Transaction protocol message
-       @param eraseTxQueue is true when called from onMessage(TMTransaction)
-       and is false when called from onMessage(TMTransactions). If true then
-       the transaction hash is erased from txQueue_. Don't need to erase from
-       the queue when called from onMessage(TMTransactions) because this
-       message is a response to the missing transactions request and the queue
-       would not have any of these transactions.
-       @param batch is false when called from onMessage(TMTransaction)
-       and is true when called from onMessage(TMTransactions). If true, then the
-       transaction is part of a batch, and should not be charged an extra fee.
+    /**
+     * Called from onMessage(TMTransaction(s)).
+     * @param m Transaction protocol message
+     * @param eraseTxQueue is true when called from onMessage(TMTransaction)
+     * and is false when called from onMessage(TMTransactions). If true then
+     * the transaction hash is erased from txQueue_. Don't need to erase from
+     * the queue when called from onMessage(TMTransactions) because this
+     * message is a response to the missing transactions request and the queue
+     * would not have any of these transactions.
+     * @param batch is false when called from onMessage(TMTransaction)
+     * and is true when called from onMessage(TMTransactions). If true, then the
+     * transaction is part of a batch, and should not be charged an extra fee.
      */
     void
     handleTransaction(
@@ -523,10 +540,11 @@ private:
         bool eraseTxQueue,
         bool batch);
 
-    /** Handle protocol message with hashes of transactions that have not
-       been relayed by an upstream node down to its peers - request
-       transactions, which have not been relayed to this peer.
-       @param m protocol message with transactions' hashes
+    /**
+     * Handle protocol message with hashes of transactions that have not
+     * been relayed by an upstream node down to its peers - request
+     * transactions, which have not been relayed to this peer.
+     * @param m protocol message with transactions' hashes
      */
     void
     handleHaveTransactions(std::shared_ptr<protocol::TMHaveTransactions> const& m);
@@ -624,9 +642,10 @@ private:
         std::uint32_t version,
         std::vector<ValidatorBlobInfo> const& blobs);
 
-    /** Process peer's request to send missing transactions. The request is
-        sent in response to TMHaveTransactions.
-        @param packet protocol message containing missing transactions' hashes.
+    /**
+     * Process peer's request to send missing transactions. The request is
+     * sent in response to TMHaveTransactions.
+     * @param packet protocol message containing missing transactions' hashes.
      */
     void
     doTransactions(std::shared_ptr<protocol::TMGetObjectByHash> const& packet);
@@ -670,52 +689,55 @@ protected:
     // Production callers reach these members only via
     // `onMessage(TMGetObjectByHash)` → JobQueue → `processGetObjectByHash`.
 
-    /** Process a generic-query TMGetObjectByHash message.
-
-        Dispatched from `onMessage(TMGetObjectByHash)` to the JobQueue
-        (`JtLedgerReq`) so synchronous NodeStore lookups do not block the
-        peer's I/O strand. Caps iteration at `Tuning::kHardMaxReplyNodes`
-        regardless of hit/miss outcome and applies differential pricing
-        via `computeGetObjectByHashFee()` after the fetch loop completes.
-
-        @param m The protocol message containing requested object hashes.
+    /**
+     * Process a generic-query TMGetObjectByHash message.
+     *
+     * Dispatched from `onMessage(TMGetObjectByHash)` to the JobQueue
+     * (`JtLedgerReq`) so synchronous NodeStore lookups do not block the
+     * peer's I/O strand. Caps iteration at `Tuning::kHardMaxReplyNodes`
+     * regardless of hit/miss outcome and applies differential pricing
+     * via `computeGetObjectByHashFee()` after the fetch loop completes.
+     *
+     * @param m The protocol message containing requested object hashes.
      */
     void
     processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> const& m);
 
-    /** Compute the per-message resource charge for a TMGetObjectByHash
-        request based on how much work was actually performed.
-
-        The charge has three components on top of the base
-        `Resource::kFeeModerateBurdenPeer`:
-          - per-hit lookup cost (cheap; usually served from cache)
-          - per-miss lookup cost (expensive node store seeks)
-          - request-size band surcharge (escalates abusive batch sizes)
-
-        The first `Tuning::kFreeObjectsPerRequest` objects are free so
-        that legitimate `InboundLedger::getNeededHashes()` traffic
-        (at most 8 objects) is unaffected.
-
-        @param requested Number of objects requested by the message. This
-                          value is used for request-size pricing and may
-                          exceed `Tuning::kHardMaxReplyNodes` when this
-                          helper is called directly, even though processing
-                          caps the iterations to `Tuning::kHardMaxReplyNodes`.
-        @param found     Number of objects successfully returned in the
-                         reply.
-        @return A `Resource::Charge` whose cost reflects the work performed.
+    /**
+     * Compute the per-message resource charge for a TMGetObjectByHash
+     * request based on how much work was actually performed.
+     *
+     * The charge has three components on top of the base
+     * `Resource::kFeeModerateBurdenPeer`:
+     *   - per-hit lookup cost (cheap; usually served from cache)
+     *   - per-miss lookup cost (expensive node store seeks)
+     *   - request-size band surcharge (escalates abusive batch sizes)
+     *
+     * The first `Tuning::kFreeObjectsPerRequest` objects are free so
+     * that legitimate `InboundLedger::getNeededHashes()` traffic
+     * (at most 8 objects) is unaffected.
+     *
+     * @param requested Number of objects requested by the message. This
+     *                  value is used for request-size pricing and may
+     *                  exceed `Tuning::kHardMaxReplyNodes` when this
+     *                  helper is called directly, even though processing
+     *                  caps the iterations to `Tuning::kHardMaxReplyNodes`.
+     * @param found     Number of objects successfully returned in the
+     *                  reply.
+     * @return A `Resource::Charge` whose cost reflects the work performed.
      */
     static Resource::Charge
     computeGetObjectByHashFee(int const requested, int const found);
 
-    /** Read-only accessor for the accumulated peer-message charge.
-
-        Exposed at `protected` scope so test subclasses can verify the
-        oversized-request rejection path (Layer 1) without invoking the
-        full JobQueue handler. Production callers should never read this back —
-        the value is consumed by `charge()`/`disconnect()` internally.
-
-        @return The current `Resource::Charge` accumulated on `fee_`.
+    /**
+     * Read-only accessor for the accumulated peer-message charge.
+     *
+     * Exposed at `protected` scope so test subclasses can verify the
+     * oversized-request rejection path (Layer 1) without invoking the
+     * full JobQueue handler. Production callers should never read this back —
+     * the value is consumed by `charge()`/`disconnect()` internally.
+     *
+     * @return The current `Resource::Charge` accumulated on `fee_`.
      */
     Resource::Charge
     currentFeeCharge() const
@@ -787,9 +809,10 @@ PeerImp::PeerImp(
         << id_;
 }
 
-template <class FwdIt, class>
+template <class FwdIt>
 void
 PeerImp::sendEndpoints(FwdIt first, FwdIt last)
+    requires(std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>)
 {
     protocol::TMEndpoints tm;
 

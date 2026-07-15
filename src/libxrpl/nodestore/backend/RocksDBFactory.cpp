@@ -80,7 +80,7 @@ public:
     void
     StartThread(void (*f)(void*), void* a) override
     {
-        ThreadParams* const p(new ThreadParams(f, a));
+        auto* const p = new ThreadParams(f, a);
         EnvWrapper::StartThread(&RocksDBEnv::threadEntry, p);
     }
 };
@@ -419,7 +419,9 @@ public:
         storeBatch(batch);
     }
 
-    /** Returns the number of file descriptors the backend expects to need */
+    /**
+     * Returns the number of file descriptors the backend expects to need
+     */
     [[nodiscard]] int
     fdRequired() const override
     {

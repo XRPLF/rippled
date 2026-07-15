@@ -15,8 +15,8 @@
 namespace xrpl::detail {
 
 /**
-    Create a directory and remove it when it's done
-*/
+ * Create a directory and remove it when it's done
+ */
 class DirGuard
 {
 protected:
@@ -93,8 +93,8 @@ public:
 };
 
 /**
-    Write a file in a directory and remove when done
-*/
+ * Write a file in a directory and remove when done
+ */
 class FileDirGuard : public DirGuard
 {
 protected:

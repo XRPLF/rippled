@@ -17,7 +17,9 @@
 
 namespace xrpl::test::csf {
 
-//! A single transaction
+/**
+ * A single transaction
+ */
 class Tx
 {
 public:
@@ -27,8 +29,10 @@ public:
     {
     }
 
-    template <typename T, typename = std::enable_if_t<std::is_same_v<T, Tx>>>
-    Tx(T const* t) : id_{t->id_}
+    template <typename T>
+    Tx(T const* t)
+        requires(std::is_same_v<T, Tx>)
+        : id_{t->id_}
     {
     }
 
@@ -54,11 +58,15 @@ private:
     ID id_;
 };
 
-//!-------------------------------------------------------------------------
-//! All sets of Tx are represented as a flat_set for performance.
+/**
+ * -------------------------------------------------------------------------
+ * All sets of Tx are represented as a flat_set for performance.
+ */
 using TxSetType = boost::container::flat_set<Tx>;
 
-//! TxSet is a set of transactions to consider including in the ledger
+/**
+ * TxSet is a set of transactions to consider including in the ledger
+ */
 class TxSet
 {
 public:
@@ -133,10 +141,11 @@ public:
         return id_;
     }
 
-    /** @return Map of Tx::ID that are missing. True means
-                    it was in this set and not other. False means
-                    it was in the other set and not this
-    */
+    /**
+     * @return Map of Tx::ID that are missing. True means
+     * it was in this set and not other. False means
+     * it was in the other set and not this
+     */
     [[nodiscard]] std::map<Tx::ID, bool>
     compare(TxSet const& other) const
     {
@@ -158,10 +167,14 @@ public:
     }
 
 private:
-    //! The set contains the actual transactions
+    /**
+     * The set contains the actual transactions
+     */
     TxSetType txs_;
 
-    //! The unique ID of this tx set
+    /**
+     * The unique ID of this tx set
+     */
     ID id_{};
 };
 
