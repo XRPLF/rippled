@@ -6,7 +6,9 @@
 
 namespace xrpl {
 
-/** A NodeStore::Scheduler which uses the JobQueue. */
+/**
+ * A NodeStore::Scheduler which uses the JobQueue.
+ */
 class NodeStoreScheduler : public NodeStore::Scheduler
 {
 public:

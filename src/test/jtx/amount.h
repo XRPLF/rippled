@@ -69,10 +69,11 @@ struct None
 // could change that value (however unlikely).
 constexpr XRPAmount kJtxDropsPerXrp{1'000'000};
 
-/** Represents an XRP, IOU, or MPT quantity
-    This customizes the string conversion and supports
-    XRP conversions from integer and floating point.
-*/
+/**
+ * Represents an XRP, IOU, or MPT quantity
+ * This customizes the string conversion and supports
+ * XRP conversions from integer and floating point.
+ */
 struct PrettyAmount
 {
 private:
@@ -91,7 +92,9 @@ public:
     {
     }
 
-    /** drops */
+    /**
+     * drops
+     */
     template <class T>
     PrettyAmount(T v)
         requires(sizeof(T) >= sizeof(int) && std::is_integral_v<T> && std::is_signed_v<T>)
@@ -99,7 +102,9 @@ public:
     {
     }
 
-    /** drops */
+    /**
+     * drops
+     */
     template <class T>
     PrettyAmount(T v)
         requires(sizeof(T) >= sizeof(int) && std::is_unsigned_v<T>)
@@ -107,7 +112,9 @@ public:
     {
     }
 
-    /** drops */
+    /**
+     * drops
+     */
     PrettyAmount(XRPAmount v) : amount_(v)
     {
     }
@@ -253,11 +260,12 @@ struct BookSpec
 
 struct XrpT
 {
-    /** Implicit conversion to Issue.
-
-        This allows passing XRP where
-        an Issue is expected.
-    */
+    /**
+     * Implicit conversion to Issue.
+     *
+     * This allows passing XRP where
+     * an Issue is expected.
+     */
     operator Issue() const
     {
         return xrpIssue();
@@ -273,11 +281,12 @@ struct XrpT
         return true;
     }
 
-    /** Returns an amount of XRP as PrettyAmount,
-        which is trivially convertible to STAmount
-
-        @param v The number of XRP (not drops)
-    */
+    /**
+     * Returns an amount of XRP as PrettyAmount,
+     * which is trivially convertible to STAmount
+     *
+     * @param v The number of XRP (not drops)
+     */
     /** @{ */
     template <class T>
     PrettyAmount
@@ -288,11 +297,12 @@ struct XrpT
         return {TOut{v} * kJtxDropsPerXrp};
     }
 
-    /** Returns an amount of XRP as PrettyAmount,
-        which is trivially convertible to STAmount
-
-        @param v The Number of XRP (not drops). May be fractional.
-    */
+    /**
+     * Returns an amount of XRP as PrettyAmount,
+     * which is trivially convertible to STAmount
+     *
+     * @param v The Number of XRP (not drops). May be fractional.
+     */
     PrettyAmount
     operator()(Number v) const
     {
@@ -321,7 +331,9 @@ struct XrpT
     }
     /** @} */
 
-    /** Returns None-of-XRP */
+    /**
+     * Returns None-of-XRP
+     */
     None
     operator()(NoneT) const
     {
@@ -335,19 +347,21 @@ struct XrpT
     }
 };
 
-/** Converts to XRP Issue or STAmount.
-
-    Examples:
-        XRP         Converts to the XRP Issue
-        XRP(10)     Returns STAmount of 10 XRP
-*/
+/**
+ * Converts to XRP Issue or STAmount.
+ *
+ * Examples:
+ *     XRP         Converts to the XRP Issue
+ *     XRP(10)     Returns STAmount of 10 XRP
+ */
 extern XrpT const XRP;  // NOLINT(readability-identifier-naming)
 
-/** Returns an XRP PrettyAmount, which is trivially convertible to STAmount.
-
-    Example:
-        drops(10)   Returns PrettyAmount of 10 drops
-*/
+/**
+ * Returns an XRP PrettyAmount, which is trivially convertible to STAmount.
+ *
+ * Example:
+ *     drops(10)   Returns PrettyAmount of 10 drops
+ */
 template <class Integer>
 PrettyAmount
 drops(Integer i)
@@ -356,11 +370,12 @@ drops(Integer i)
     return {i};
 }
 
-/** Returns an XRP PrettyAmount, which is trivially convertible to STAmount.
-
-Example:
-drops(view->fee().basefee)   Returns PrettyAmount of 10 drops
-*/
+/**
+ * Returns an XRP PrettyAmount, which is trivially convertible to STAmount.
+ *
+ * Example:
+ * drops(view->fee().basefee)   Returns PrettyAmount of 10 drops
+ */
 inline PrettyAmount
 drops(XRPAmount i)
 {
@@ -383,13 +398,14 @@ struct EpsilonT
 
 static EpsilonT const kEpsilon;
 
-/** Converts to IOU Issue or STAmount.
-
-    Examples:
-        IOU         Converts to the underlying Issue
-        IOU(10)     Returns STAmount of 10 of
-                        the underlying Issue.
-*/
+/**
+ * Converts to IOU Issue or STAmount.
+ *
+ * Examples:
+ *     IOU         Converts to the underlying Issue
+ *     IOU(10)     Returns STAmount of 10 of
+ *                     the underlying Issue.
+ */
 class IOU
 {
 public:
@@ -417,11 +433,12 @@ public:
         return issue().integral();
     }
 
-    /** Implicit conversion to Issue or Asset.
-
-        This allows passing an IOU
-        value where an Issue or Asset is expected.
-    */
+    /**
+     * Implicit conversion to Issue or Asset.
+     *
+     * This allows passing an IOU
+     * value where an Issue or Asset is expected.
+     */
     operator Issue() const
     {
         return issue();
@@ -453,7 +470,9 @@ public:
     // VFALCO TODO
     // STAmount operator()(char const* s) const;
 
-    /** Returns None-of-Issue */
+    /**
+     * Returns None-of-Issue
+     */
     None
     operator()(NoneT) const
     {
@@ -472,13 +491,14 @@ operator<<(std::ostream& os, IOU const& iou);
 
 //------------------------------------------------------------------------------
 
-/** Converts to MPT Issue or STAmount.
-
-    Examples:
-        MPT         Converts to the underlying Issue
-        MPT(10)     Returns STAmount of 10 of
-                        the underlying MPT
-*/
+/**
+ * Converts to MPT Issue or STAmount.
+ *
+ * Examples:
+ *     MPT         Converts to the underlying Issue
+ *     MPT(10)     Returns STAmount of 10 of
+ *                     the underlying MPT
+ */
 class MPT
 {
 public:
@@ -504,7 +524,8 @@ public:
         return issuanceID;
     }
 
-    /** Explicit conversion to MPTIssue or asset.
+    /**
+     * Explicit conversion to MPTIssue or asset.
      */
     [[nodiscard]] xrpl::MPTIssue
     mptIssue() const
@@ -522,11 +543,12 @@ public:
         return true;
     }
 
-    /** Implicit conversion to MPTIssue or asset.
-
-        This allows passing an MPT
-        value where an MPTIssue is expected.
-    */
+    /**
+     * Implicit conversion to MPTIssue or asset.
+     *
+     * This allows passing an MPT
+     * value where an MPTIssue is expected.
+     */
     operator xrpl::MPTIssue() const
     {
         return mptIssue();
@@ -558,7 +580,9 @@ public:
     PrettyAmount
     operator()(detail::EpsilonMultiple) const;
 
-    /** Returns None-of-Issue */
+    /**
+     * Returns None-of-Issue
+     */
     None
     operator()(NoneT) const
     {
@@ -583,7 +607,9 @@ struct AnyT
     operator()(STAmount const& sta) const;
 };
 
-/** Amount specifier with an option for any issuer. */
+/**
+ * Amount specifier with an option for any issuer.
+ */
 struct AnyAmount
 {
     bool isAny;
@@ -618,9 +644,10 @@ AnyT::operator()(STAmount const& sta) const
     return AnyAmount(sta, this);
 }
 
-/** Returns an amount representing "any issuer"
-    @note With respect to what the recipient will accept
-*/
+/**
+ * Returns an amount representing "any issuer"
+ * @note With respect to what the recipient will accept
+ */
 extern AnyT const kAny;
 
 }  // namespace test::jtx
