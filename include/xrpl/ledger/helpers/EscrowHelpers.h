@@ -23,7 +23,50 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <expected>
+
 namespace xrpl {
+
+// Deduct the transfer fee (if any) from an escrowed amount, returning the net
+// amount delivered to the receiver. The transfer fee applies only when neither
+// the sender nor the receiver is the issuer and the locked rate differs from
+// parity.
+//
+// NOTE: Transfer fee in escrow works a bit differently from a normal payment.
+// In escrow, the fee is deducted from the locked/sending amount, whereas in a
+// normal payment, the transfer fee is taken on top of the sending amount.
+//
+// The net delivered amount is rounded down (fee rounded up in the issuer's
+// favor). Rounding the net up (the legacy behavior) rounds the fee down, which
+// for integral assets (e.g. MPT) collapses the fee to zero for small amounts
+// and bypasses the transfer fee. Note that the legacy divideRound rounds to
+// nearest, so the strict variant is used to floor the net. If the net rounds
+// to zero the entire amount would be consumed by the fee, so tecPRECISION_LOSS
+// is returned rather than silently delivering nothing to the receiver.
+[[nodiscard]] inline std::expected<STAmount, TER>
+escrowDeductTransferFee(
+    ReadView const& view,
+    Rate const& lockedRate,
+    STAmount const& amount,
+    bool senderIssuer,
+    bool receiverIssuer)
+{
+    if ((senderIssuer || receiverIssuer) || lockedRate == kParityRate)
+        return amount;
+
+    bool const v2 = view.rules().enabled(fixCleanup3_4_0);
+    auto const netAmt = v2 ? divideRoundStrict(amount, lockedRate, amount.asset(), false)
+                           : divideRound(amount, lockedRate, amount.asset(), true);
+    // compute transfer fee, if any
+    auto const xferFee = amount.value() - netAmt;
+    // compute balance to transfer
+    STAmount finalAmt = amount.value() - xferFee;
+
+    if (v2 && finalAmt <= beast::kZero)
+        return std::unexpected(tecPRECISION_LOSS);
+
+    return finalAmt;
+}
 
 template <ValidIssueType T>
 TER
@@ -124,36 +167,12 @@ escrowUnlockApplyHelper<Issue>(
     if (xferRate < lockedRate)
         lockedRate = xferRate;
 
-    // Transfer Rate only applies when:
-    // 1. Issuer is not involved in the transfer (senderIssuer or
-    // receiverIssuer)
-    // 2. The locked rate is different from the parity rate
-
-    // NOTE: Transfer fee in escrow works a bit differently from a normal
-    // payment. In escrow, the fee is deducted from the locked/sending amount,
-    // whereas in a normal payment, the transfer fee is taken on top of the
-    // sending amount.
-    auto finalAmt = amount;
-    if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
-    {
-        // Round the net delivered amount down (fee rounded up in the issuer's
-        // favor). Rounding the net up (the legacy behavior) rounds the fee
-        // down, which collapses to zero for small amounts. Note that the
-        // legacy divideRound rounds to nearest, so the strict variant is used
-        // to floor the net.
-        bool const v2 = ctx.view.rules().enabled(fixCleanup3_4_0);
-        auto const netAmt = v2 ? divideRoundStrict(amount, lockedRate, amount.get<Issue>(), false)
-                               : divideRound(amount, lockedRate, amount.get<Issue>(), true);
-        // compute transfer fee, if any
-        auto const xferFee = amount.value() - netAmt;
-        // compute balance to transfer
-        finalAmt = amount.value() - xferFee;
-
-        // If the fee would consume the entire amount, the net delivered rounds
-        // to zero. Fail rather than silently delivering nothing to the receiver.
-        if (v2 && finalAmt <= beast::kZero)
-            return tecPRECISION_LOSS;
-    }
+    // Deduct the transfer fee (if any) from the escrowed amount.
+    auto const netResult =
+        escrowDeductTransferFee(ctx.view, lockedRate, amount, senderIssuer, receiverIssuer);
+    if (!netResult)
+        return netResult.error();
+    auto const finalAmt = *netResult;
 
     // validate the line limit if the account submitting txn is not the receiver
     // of the funds
@@ -241,37 +260,13 @@ escrowUnlockApplyHelper<MPTIssue>(
     if (xferRate < lockedRate)
         lockedRate = xferRate;
 
-    // Transfer Rate only applies when:
-    // 1. Issuer is not involved in the transfer (senderIssuer or
-    // receiverIssuer)
-    // 2. The locked rate is different from the parity rate
+    // Deduct the transfer fee (if any) from the escrowed amount.
+    auto const netResult =
+        escrowDeductTransferFee(ctx.view, lockedRate, amount, senderIssuer, receiverIssuer);
+    if (!netResult)
+        return netResult.error();
+    auto const finalAmt = *netResult;
 
-    // NOTE: Transfer fee in escrow works a bit differently from a normal
-    // payment. In escrow, the fee is deducted from the locked/sending amount,
-    // whereas in a normal payment, the transfer fee is taken on top of the
-    // sending amount.
-    auto finalAmt = amount;
-    if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
-    {
-        // Round the net delivered amount down (fee rounded up in the issuer's
-        // favor). Rounding the net up (the legacy behavior) rounds the fee
-        // down, which for integral MPT amounts collapses the fee to zero for
-        // small amounts and bypasses the transfer fee. Note that the legacy
-        // divideRound rounds to nearest, so the strict variant is used to
-        // floor the net.
-        bool const v2 = ctx.view.rules().enabled(fixCleanup3_4_0);
-        auto const netAmt = v2 ? divideRoundStrict(amount, lockedRate, amount.asset(), false)
-                               : divideRound(amount, lockedRate, amount.asset(), true);
-        // compute transfer fee, if any
-        auto const xferFee = amount.value() - netAmt;
-        // compute balance to transfer
-        finalAmt = amount.value() - xferFee;
-
-        // If the fee would consume the entire amount, the net delivered rounds
-        // to zero. Fail rather than silently delivering nothing to the receiver.
-        if (v2 && finalAmt <= beast::kZero)
-            return tecPRECISION_LOSS;
-    }
     return unlockEscrowMPT(
         ctx.view,
         sender,

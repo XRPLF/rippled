@@ -11,6 +11,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/Serializer.h>
@@ -1253,6 +1254,68 @@ public:
     //--------------------------------------------------------------------------
 
     void
+    testDivideRoundStrict()
+    {
+        testcase("divideRoundStrict");
+
+        // Transfer-fee rates: 1.25 == 25% fee, 1.01 == 1% fee.
+        Rate const rate25{1'250'000'000};
+        Rate const rate1{1'010'000'000};
+
+        MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
+
+        // Parity rate is a no-op for both variants.
+        {
+            STAmount const amt{mpt, 8};
+            BEAST_EXPECT(divideRound(amt, kParityRate, amt.asset(), true) == amt);
+            BEAST_EXPECT(divideRoundStrict(amt, kParityRate, amt.asset(), false) == amt);
+        }
+
+        // For integral (MPT) amounts, the non-strict divideRound rounds the
+        // quotient to nearest, while divideRoundStrict floors it (toward zero)
+        // when roundUp is false. The escrow transfer-fee fix relies on this so
+        // the fee cannot collapse to zero for small amounts.
+        auto mptRound = [&](std::uint64_t v, Rate const& r, bool roundUp) {
+            STAmount const a{mpt, v};
+            return divideRound(a, r, a.asset(), roundUp).mpt().value();
+        };
+        auto mptStrict = [&](std::uint64_t v, Rate const& r, bool roundUp) {
+            STAmount const a{mpt, v};
+            return divideRoundStrict(a, r, a.asset(), roundUp).mpt().value();
+        };
+
+        // 25% fee (rate 1.25):
+        //   1 / 1.25 = 0.8 -> nearest 1, floor 0
+        //   2 / 1.25 = 1.6 -> nearest 2, floor 1
+        //   4 / 1.25 = 3.2 -> nearest 3, floor 3
+        //   6 / 1.25 = 4.8 -> nearest 5, floor 4
+        BEAST_EXPECT(mptRound(1, rate25, false) == 1);
+        BEAST_EXPECT(mptStrict(1, rate25, false) == 0);
+        BEAST_EXPECT(mptRound(2, rate25, false) == 2);
+        BEAST_EXPECT(mptStrict(2, rate25, false) == 1);
+        BEAST_EXPECT(mptRound(4, rate25, false) == 3);
+        BEAST_EXPECT(mptStrict(4, rate25, false) == 3);
+        BEAST_EXPECT(mptRound(6, rate25, false) == 5);
+        BEAST_EXPECT(mptStrict(6, rate25, false) == 4);
+
+        // roundUp=true rounds the quotient up: 3.2 -> 4.
+        BEAST_EXPECT(mptStrict(4, rate25, true) == 4);
+
+        // 1% fee (rate 1.01): floor of a value just above an integer.
+        //   90 / 1.01 = 89.10 -> floor 89
+        //   91 / 1.01 = 90.09 -> floor 90
+        BEAST_EXPECT(mptStrict(90, rate1, false) == 89);
+        BEAST_EXPECT(mptStrict(91, rate1, false) == 90);
+
+        // IOU amounts: an exact division is unaffected by the rounding mode.
+        {
+            STAmount const iou{noIssue(), 4};
+            STAmount const expected{noIssue(), 32, -1};  // 3.2
+            BEAST_EXPECT(divideRoundStrict(iou, rate25, iou.asset(), false) == expected);
+        }
+    }
+
+    void
     run() override
     {
         testSetValue();
@@ -1261,6 +1324,7 @@ public:
         testArithmetic();
         testUnderflow();
         testRounding();
+        testDivideRoundStrict();
         testParseJson();
         testConvertXRP();
         testConvertIOU();
