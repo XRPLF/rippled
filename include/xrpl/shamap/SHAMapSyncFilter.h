@@ -7,7 +7,9 @@
 #include <cstdint>
 #include <optional>
 
-/** Callback for filtering SHAMap during sync. */
+/**
+ * Callback for filtering SHAMap during sync.
+ */
 namespace xrpl {
 
 class SHAMapSyncFilter
