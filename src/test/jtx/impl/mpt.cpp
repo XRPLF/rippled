@@ -195,7 +195,7 @@ makeMPTCreate(MPTInitDef const& arg)
             .transferFee = arg.transferFee,
             .pay = {{arg.holders, *arg.pay}},
             .flags = arg.flags,
-            .mutableFlags = arg.mutableFlags,
+            .immutableFlags = arg.immutableFlags,
             .authHolder = arg.authHolder};
     }
     return {
@@ -203,7 +203,7 @@ makeMPTCreate(MPTInitDef const& arg)
         .transferFee = arg.transferFee,
         .authorize = arg.holders,
         .flags = arg.flags,
-        .mutableFlags = arg.mutableFlags,
+        .immutableFlags = arg.immutableFlags,
         .authHolder = arg.authHolder};
 }
 
@@ -245,8 +245,8 @@ MPTTester::createJV(MPTCreate const& arg)
         jv[sfMaximumAmount] = std::to_string(*arg.maxAmt);
     if (arg.domainID)
         jv[sfDomainID] = to_string(*arg.domainID);
-    if (arg.mutableFlags)
-        jv[sfMutableFlags] = *arg.mutableFlags;
+    if (arg.immutableFlags)
+        jv[sfImmutableFlags] = *arg.immutableFlags;
     jv[sfTransactionType] = jss::MPTokenIssuanceCreate;
 
     return jv;
@@ -264,7 +264,7 @@ MPTTester::create(MPTCreate const& arg)
          .assetScale = arg.assetScale,
          .transferFee = arg.transferFee,
          .metadata = arg.metadata,
-         .mutableFlags = arg.mutableFlags,
+         .immutableFlags = arg.immutableFlags,
          .domainID = arg.domainID});
     if (!isTesSuccess(submit(arg, jv)))
     {

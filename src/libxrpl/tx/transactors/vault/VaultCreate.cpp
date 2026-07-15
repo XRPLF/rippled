@@ -209,7 +209,7 @@ VaultCreate::doApply()
             .transferFee = std::nullopt,
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
-            .mutableFlags = std::nullopt,
+            .immutableFlags = std::nullopt,
             .referenceHolding = referenceHolding,
         });
     if (!maybeShare)

@@ -358,21 +358,21 @@ inline constexpr FlagValue tfTrustSetPermissionMask =
 
 // MPTokenIssuanceCreate MutableFlags:
 // Indicating specific fields or flags may be changed after issuance.
-inline constexpr FlagValue tmfMPTCanEnableCanLock = lsmfMPTCanEnableCanLock;
-inline constexpr FlagValue tmfMPTCanEnableRequireAuth = lsmfMPTCanEnableRequireAuth;
-inline constexpr FlagValue tmfMPTCanEnableCanEscrow = lsmfMPTCanEnableCanEscrow;
-inline constexpr FlagValue tmfMPTCanEnableCanTrade = lsmfMPTCanEnableCanTrade;
-inline constexpr FlagValue tmfMPTCanEnableCanTransfer = lsmfMPTCanEnableCanTransfer;
-inline constexpr FlagValue tmfMPTCanEnableCanClawback = lsmfMPTCanEnableCanClawback;
-inline constexpr FlagValue tmfMPTCanMutateMetadata = lsmfMPTCanMutateMetadata;
-inline constexpr FlagValue tmfMPTCanMutateTransferFee = lsmfMPTCanMutateTransferFee;
-inline constexpr FlagValue tmfMPTCannotEnableCanHoldConfidentialBalance =
-    lsmfMPTCannotEnableCanHoldConfidentialBalance;
-inline constexpr FlagValue tmfMPTokenIssuanceCreateMutableMask =
-    ~(tmfMPTCanEnableCanLock | tmfMPTCanEnableRequireAuth | tmfMPTCanEnableCanEscrow |
-      tmfMPTCanEnableCanTrade | tmfMPTCanEnableCanTransfer | tmfMPTCanEnableCanClawback |
-      tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee |
-      tmfMPTCannotEnableCanHoldConfidentialBalance);
+inline constexpr FlagValue tifMPTCannotEnableCanLock = lsifMPTCannotEnableCanLock;
+inline constexpr FlagValue tifMPTCannotEnableRequireAuth = lsifMPTCannotEnableRequireAuth;
+inline constexpr FlagValue tifMPTCannotEnableCanEscrow = lsifMPTCannotEnableCanEscrow;
+inline constexpr FlagValue tifMPTCannotEnableCanTrade = lsifMPTCannotEnableCanTrade;
+inline constexpr FlagValue tifMPTCannotEnableCanTransfer = lsifMPTCannotEnableCanTransfer;
+inline constexpr FlagValue tifMPTCannotEnableCanClawback = lsifMPTCannotEnableCanClawback;
+inline constexpr FlagValue tifMPTCannotMutateMetadata = lsifMPTCannotMutateMetadata;
+inline constexpr FlagValue tifMPTCannotMutateTransferFee = lsifMPTCannotMutateTransferFee;
+inline constexpr FlagValue tifMPTCannotEnableCanHoldConfidentialBalance =
+    lsifMPTCannotEnableCanHoldConfidentialBalance;
+inline constexpr FlagValue tmfMPTokenIssuanceCreateImmutableMask =
+    ~(tifMPTCannotEnableCanLock | tifMPTCannotEnableRequireAuth | tifMPTCannotEnableCanEscrow |
+      tifMPTCannotEnableCanTrade | tifMPTCannotEnableCanTransfer | tifMPTCannotEnableCanClawback |
+      tifMPTCannotMutateMetadata | tifMPTCannotMutateTransferFee |
+      tifMPTCannotEnableCanHoldConfidentialBalance);
 
 // MPTokenIssuanceSet MutableFlags:
 // Enable mutable capability flags. These flags are one-way: once enabled,
