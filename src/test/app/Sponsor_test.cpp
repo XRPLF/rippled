@@ -5987,40 +5987,59 @@ public:
         BEAST_EXPECT(
             env.le(keylet::sponsorship(sponsor, alice))->getFieldU32(sfRemainingOwnerCount) == 1);
 
-        // Exhaust the budget (a zero update makes the field absent).
-        env(sponsor::set_reserve(sponsor, 0, 0), sponsor::SponseeAcc(alice));
-        env.close();
-        BEAST_EXPECT(
-            !env.le(keylet::sponsorship(sponsor, alice))->isFieldPresent(sfRemainingOwnerCount));
-
         // A second unsponsored check.
         auto const seq2 = env.seq(alice);
         env(check::create(alice, bob, XRP(1)));
         env.close();
         auto const checkId2 = keylet::check(alice, seq2).key;
 
+        // A second co-signed transfer exhausts the budget 1 -> 0 (a
+        // SponsorshipSet update to an all-zero-budget object is itself
+        // rejected by SponsorshipSet::preclaim's hasSponsorshipBudget check,
+        // so the only way to reach a zero RemainingOwnerCount here is by
+        // spending it down via SponsorshipTransfer).
+        env(sponsor::transfer(alice, tfSponsorshipCreate, checkId2),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor));
+        env.close();
+
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
+        BEAST_EXPECT(
+            env.le(keylet::sponsorship(sponsor, alice))->getFieldU32(sfRemainingOwnerCount) == 0);
+
+        // A third unsponsored check.
+        auto const seq3 = env.seq(alice);
+        env(check::create(alice, bob, XRP(1)));
+        env.close();
+        auto const checkId3 = keylet::check(alice, seq3).key;
+
         // With the budget exhausted, the same co-signed transfer fails in
         // checkReserve (RemainingOwnerCount 0 < ownerCountDelta 1) with
         // tecINSUFFICIENT_RESERVE, even though the sponsor's own balance is
         // ample: an existing Sponsorship object's budget always bounds
         // reserve sponsorship for that sponsor/sponsee pair.
-        env(sponsor::transfer(alice, tfSponsorshipCreate, checkId2),
+        env(sponsor::transfer(alice, tfSponsorshipCreate, checkId3),
             sponsor::As(sponsor, spfSponsorReserve),
             Sig(sfSponsorSignature, sponsor),
             Ter(tecINSUFFICIENT_RESERVE));
         env.close();
 
-        BEAST_EXPECT(!env.le(keylet::check(alice, seq2))->isFieldPresent(sfSponsor));
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        BEAST_EXPECT(!env.le(keylet::check(alice, seq3))->isFieldPresent(sfSponsor));
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
     }
 
     void
     testZeroValueUpdateOnAbsentFields()
     {
-        // Updating a Sponsorship with all-zero values when the optional fields
-        // are already absent must succeed: STObject::makeFieldAbsent
-        // early-returns on fields that are already not present.
+        // Updating a Sponsorship with all-zero FeeAmount/MaxFee when those
+        // optional fields are already absent must succeed: STObject::
+        // makeFieldAbsent early-returns on fields that are already not
+        // present. A positive RemainingOwnerCount keeps the object clear of
+        // SponsorshipSet::preclaim's hasSponsorshipBudget invariant, which
+        // rejects any create/update leaving both FeeAmount and
+        // RemainingOwnerCount non-positive.
         testcase("Zero-value SponsorshipSet update on absent fields");
         using namespace test::jtx;
 
@@ -6032,22 +6051,24 @@ public:
 
         auto const baseFee = env.current()->fees().base;
 
-        // Create a minimal sponsorship: all-zero values leave FeeAmount,
-        // MaxFee, and RemainingOwnerCount absent.
-        env(sponsor::set(sponsor, 0, 0, XRP(0), XRP(0)), sponsor::SponseeAcc(alice));
+        // Create a minimal sponsorship: a positive reserve budget, with
+        // all-zero FeeAmount/MaxFee left absent.
+        env(sponsor::set(sponsor, 0, 5, XRP(0), XRP(0)), sponsor::SponseeAcc(alice));
         env.close();
 
         auto sle = env.le(keylet::sponsorship(sponsor, alice));
         BEAST_EXPECT(sle);
+        if (!sle)
+            return;
         BEAST_EXPECT(!sle->isFieldPresent(sfFeeAmount));
         BEAST_EXPECT(!sle->isFieldPresent(sfMaxFee));
-        BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
+        BEAST_EXPECT(sle->getFieldU32(sfRemainingOwnerCount) == 5);
 
-        // Submit the identical all-zero update again: fields are already
-        // absent, so each makeFieldAbsent call is a no-op and the update
-        // succeeds.
+        // Submit the identical all-zero FeeAmount/MaxFee update again (with
+        // the same reserve budget): those fields are already absent, so each
+        // makeFieldAbsent call is a no-op and the update succeeds.
         auto const sponsorBalance = env.balance(sponsor);
-        env(sponsor::set(sponsor, 0, 0, XRP(0), XRP(0)),
+        env(sponsor::set(sponsor, 0, 5, XRP(0), XRP(0)),
             sponsor::SponseeAcc(alice),
             Fee(baseFee),
             Ter(tesSUCCESS));
@@ -6055,9 +6076,11 @@ public:
 
         sle = env.le(keylet::sponsorship(sponsor, alice));
         BEAST_EXPECT(sle);
+        if (!sle)
+            return;
         BEAST_EXPECT(!sle->isFieldPresent(sfFeeAmount));
         BEAST_EXPECT(!sle->isFieldPresent(sfMaxFee));
-        BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
+        BEAST_EXPECT(sle->getFieldU32(sfRemainingOwnerCount) == 5);
         // Only the fee was charged.
         BEAST_EXPECT(env.balance(sponsor) == sponsorBalance - drops(baseFee));
     }
