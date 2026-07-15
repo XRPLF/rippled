@@ -6538,7 +6538,7 @@ public:
         env(pay(gw, alice, usd(500)));
         env.close();
 
-        AMM amm(env, alice, XRP(100), usd(100));
+        AMM const amm(env, alice, XRP(100), usd(100));
 
         // rogue is never funded; it only supplies a real signing keypair.
         Account const rogue("rogue");
