@@ -594,6 +594,10 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
 void
 STTx::buildBatchTxns()
 {
+    // Precondition: the template must have been applied first, so the fields
+    // (including sfRawTransactions) are canonical before the inner txns are
+    // hashed. The constructors call this immediately after applying the
+    // template; isFree() being false confirms a template is set.
     XRPL_ASSERT(!isFree(), "STTx::buildBatchTxns : template applied");
     if (getTxnType() != ttBATCH)
         return;

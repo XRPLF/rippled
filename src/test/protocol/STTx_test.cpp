@@ -1512,9 +1512,9 @@ public:
             }
             catch (std::exception const& err)
             {
-                got = err.what();
+                errorMsg = err.what();
             }
-            BEAST_EXPECT(got.empty());
+            BEAST_EXPECT(errorMsg.empty());
         }
         {
             // A batch whose inner carries an unregistered transaction type is
@@ -1527,9 +1527,9 @@ public:
             }
             catch (std::exception const& err)
             {
-                got = err.what();
+                errorMsg = err.what();
             }
-            BEAST_EXPECT(matches(got.c_str(), "Invalid transaction type 60000"));
+            BEAST_EXPECT(matches(errorMsg.c_str(), "Invalid transaction type 60000"));
         }
     }
 };
