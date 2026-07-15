@@ -965,11 +965,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Account const alice("alice");
             MPTTester mptAlice(env, alice, {.holders = {}});
 
-            mptAlice.create({
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock,
-                .immutableFlags = tifMPTCannotMutateTransferFee,
-            });
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock});
 
             mptAlice.set({
                 .account = alice,
@@ -986,12 +982,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Account const alice("alice");
             MPTTester mptAlice(env, alice, {.holders = {}});
 
-            mptAlice.create({
-                .transferFee = 100,
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock,
-                .immutableFlags = tifMPTCannotMutateTransferFee,
-            });
+            mptAlice.create(
+                {.transferFee = 100, .ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanLock});
 
             mptAlice.set({
                 .account = alice,
@@ -1007,11 +999,9 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Account const alice("alice");
             MPTTester mptAlice(env, alice, {.holders = {}});
 
-            mptAlice.create({
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
-                .immutableFlags = tifMPTCannotMutateTransferFee,
-            });
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance});
 
             mptAlice.set({
                 .account = alice,

@@ -68,7 +68,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     // specified.
     if (auto const immutableFlags = ctx.tx[~sfImmutableFlags]; immutableFlags &&
         ((*immutableFlags == 0u) ||
-         ((*immutableFlags & tmfMPTokenIssuanceCreateImmutableMask) != 0u)))
+         ((*immutableFlags & tifMPTokenIssuanceCreateImmutableMask) != 0u)))
         return temINVALID_FLAG;
 
     if (auto const fee = ctx.tx[~sfTransferFee])

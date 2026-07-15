@@ -356,7 +356,7 @@ inline constexpr FlagValue tfMPTPaymentMask = ~(tfUniversal | tfPartialPayment);
 inline constexpr FlagValue tfTrustSetPermissionMask =
     ~(tfUniversal | tfSetfAuth | tfSetFreeze | tfClearFreeze);
 
-// MPTokenIssuanceCreate MutableFlags:
+// MPTokenIssuanceCreate ImmutableFlags:
 // Indicating specific fields or flags may be changed after issuance.
 inline constexpr FlagValue tifMPTCannotEnableCanLock = lsifMPTCannotEnableCanLock;
 inline constexpr FlagValue tifMPTCannotEnableRequireAuth = lsifMPTCannotEnableRequireAuth;
@@ -368,7 +368,7 @@ inline constexpr FlagValue tifMPTCannotMutateMetadata = lsifMPTCannotMutateMetad
 inline constexpr FlagValue tifMPTCannotMutateTransferFee = lsifMPTCannotMutateTransferFee;
 inline constexpr FlagValue tifMPTCannotEnableCanHoldConfidentialBalance =
     lsifMPTCannotEnableCanHoldConfidentialBalance;
-inline constexpr FlagValue tmfMPTokenIssuanceCreateImmutableMask =
+inline constexpr FlagValue tifMPTokenIssuanceCreateImmutableMask =
     ~(tifMPTCannotEnableCanLock | tifMPTCannotEnableRequireAuth | tifMPTCannotEnableCanEscrow |
       tifMPTCannotEnableCanTrade | tifMPTCannotEnableCanTransfer | tifMPTCannotEnableCanClawback |
       tifMPTCannotMutateMetadata | tifMPTCannotMutateTransferFee |

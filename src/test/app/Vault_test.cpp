@@ -2205,8 +2205,7 @@ class Vault_test : public beast::unit_test::Suite
             Vault const vault{env};
 
             MPTTester mptt{env, issuer, kMptInitNoFund};
-            mptt.create(
-                {.flags = tfMPTCanTransfer | tfMPTCanLock});
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = alice});

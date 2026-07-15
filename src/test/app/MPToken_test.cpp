@@ -3482,10 +3482,7 @@ class MPToken_test : public beast::unit_test::Suite
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice, {.holders = {bob}});
-            mptAlice.create(
-                {.ownerCount = 1,
-                 .immutableFlags = tifMPTCannotMutateMetadata | tifMPTCannotEnableCanLock |
-                     tifMPTCannotMutateTransferFee});
+            mptAlice.create({.ownerCount = 1});
 
             // Setting flags is not allowed when MutableFlags is present
             mptAlice.set(
@@ -7673,7 +7670,7 @@ public:
         // Test offer crossing
         testOfferCrossing(all);
 
-        // // Test cross asset payment
+        // Test cross asset payment
         testCrossAssetPayment(all);
 
         // Test path finding
