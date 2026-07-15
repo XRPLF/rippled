@@ -17,9 +17,11 @@
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/server/State.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
@@ -264,8 +266,24 @@ bool
 SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
-    dbRotating_->fetchNodeObject(
+    auto obj = dbRotating_->fetchNodeObject(
         node.getHash().asUInt256(), 0, NodeStore::FetchType::Synchronous, true);
+    if (!obj)
+    {
+        XRPL_ASSERT(node.cowid() == 0, "SHAMapStoreImp::copyNode : rescued node must be clean");
+        // Reachable from the validated state map in memory, but present in
+        // neither backend: its only on-disk copy lived in a backend removed by
+        // an earlier rotation, and it was never rewritten because it is clean
+        // (cowid == 0, so flushDirty skips it). Persist the in-memory body
+        // directly into the writable backend so it survives this rotation
+        // instead of later surfacing as an unresolvable SHAMapMissingNode.
+        auto const hash = node.getHash().asUInt256();
+        Serializer s;
+        node.serializeWithPrefix(s);
+        dbRotating_->store(NodeObjectType::AccountNode, std::move(s.modData()), hash, 0);
+        JLOG(journal_.warn()) << "copyNode: re-stored node missing from both backends, hash="
+                              << hash << " type=" << static_cast<int>(node.getType());
+    }
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {
         if (healthWait() == HealthResult::Stopping)
@@ -368,6 +386,23 @@ SHAMapStoreImp::run()
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug())
                 << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
+
+            // Close the getKeys()->swap exposure window: from here until
+            // rotate() completes, an ordinary read served by the archive is
+            // copied forward into the writable backend, so a node fetched
+            // from the doomed archive cannot be left RAM-only when the
+            // archive is deleted. RAII so the early returns below (and any
+            // exception) also clear the flag.
+            struct RotationExposureGuard
+            {
+                NodeStore::DatabaseRotating& db;
+                ~RotationExposureGuard()
+                {
+                    db.setRotationInFlight(false);
+                }
+            };
+            RotationExposureGuard const rotationExposureGuard{*dbRotating_};
+            dbRotating_->setRotationInFlight(true);
 
             JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();
