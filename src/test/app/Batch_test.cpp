@@ -5572,8 +5572,9 @@ class Batch_test : public beast::unit_test::Suite
                 batch::Inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::Inner(pay(alice, bob, XRP(5)), seq + 2),
                 batch::Sig(std::vector<Reg>(kMaxBatchSigners + 1, bob)));
+            // Failure paths fall back to the ledger base fee.
             XRPAmount const txBaseFee = getBaseFee(jtx);
-            BEAST_EXPECT(txBaseFee == XRPAmount(kInitialXrp));
+            BEAST_EXPECT(txBaseFee == env.current()->fees().base);
         }
 
         // good:

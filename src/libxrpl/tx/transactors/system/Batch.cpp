@@ -47,13 +47,8 @@ namespace xrpl {
  * @param view The ledger view providing fee and state information.
  * @param tx The batch transaction to calculate the fee for.
  * @return XRPAmount The total base fee required for the batch transaction.
- *
- * @throws std::overflow_error If any fee calculation would overflow the
- * XRPAmount type.
- * @throws std::length_error If the number of inner transactions or signers
- * exceeds the allowed maximum.
- * @throws std::invalid_argument If an inner transaction is itself a batch
- * transaction.
+ * On any failure (overflow, oversized arrays) the ledger base fee is
+ * returned instead.
  */
 XRPAmount
 Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
@@ -67,7 +62,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (baseFee > maxAmount - view.fees().base)
     {
         JLOG(debugLog().error()) << "BatchTrace: Base fee overflow detected.";
-        return XRPAmount{kInitialXrp};
+        return view.fees().base;
     }
     // LCOV_EXCL_STOP
 
@@ -83,7 +78,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         if (txnFees > maxAmount - fee)
         {
             JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in txnFees calculation.";
-            return XRPAmount{kInitialXrp};
+            return view.fees().base;
         }
         // LCOV_EXCL_STOP
         txnFees += fee;
@@ -99,7 +94,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         if (signers.size() > kMaxBatchSigners)
         {
             JLOG(debugLog().error()) << "BatchTrace: Batch Signers array exceeds max entries.";
-            return XRPAmount{kInitialXrp};
+            return view.fees().base;
         }
         // LCOV_EXCL_STOP
 
@@ -117,7 +112,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
                 {
                     JLOG(debugLog().error())
                         << "BatchTrace: Nested Signers array exceeds max entries.";
-                    return XRPAmount{kInitialXrp};
+                    return view.fees().base;
                 }
                 // LCOV_EXCL_STOP
                 signerCount += nestedSigners.size();
@@ -129,7 +124,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (signerCount > 0 && view.fees().base > maxAmount / signerCount)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in signerCount calculation.";
-        return XRPAmount{kInitialXrp};
+        return view.fees().base;
     }
     // LCOV_EXCL_STOP
 
@@ -139,13 +134,13 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (signerFees > maxAmount - txnFees)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in signerFees calculation.";
-        return XRPAmount{kInitialXrp};
+        return view.fees().base;
     }
     XRPAmount const innerFees = txnFees + signerFees;
     if (innerFees > maxAmount - batchBase)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in total fee calculation.";
-        return XRPAmount{kInitialXrp};
+        return view.fees().base;
     }
     // LCOV_EXCL_STOP
 

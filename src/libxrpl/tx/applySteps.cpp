@@ -427,10 +427,8 @@ calculateBaseFee(ReadView const& view, STTx const& tx)
     catch (std::exception const& e)
     {
         // LCOV_EXCL_START
-        // A fee calc should not throw; return a fee too large to pay so
-        // the transaction fails the fee check.
         JLOG(debugLog().error()) << "apply (calculateBaseFee): " << e.what();
-        return XRPAmount{kInitialXrp};
+        return view.fees().base;
         // LCOV_EXCL_STOP
     }
 }

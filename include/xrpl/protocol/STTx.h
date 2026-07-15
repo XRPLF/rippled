@@ -142,7 +142,10 @@ public:
         TxnSql status,
         std::string const& escapedMetaData) const;
 
-    [[nodiscard]] std::vector<uint256> const&
+    /**
+     * The IDs of the inner transactions of a Batch.
+     */
+    [[nodiscard]] std::vector<uint256>
     getBatchTransactionIDs() const;
 
     /**
@@ -173,10 +176,13 @@ private:
     checkMultiSign(Rules const& rules, STObject const& sigObject) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkBatchSingleSign(STObject const& batchSigner) const;
+    checkBatchSingleSign(STObject const& batchSigner, std::vector<uint256> const& txIds) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const;
+    checkBatchMultiSign(
+        STObject const& batchSigner,
+        Rules const& rules,
+        std::vector<uint256> const& txIds) const;
 
     void
     buildBatchTxns();
@@ -187,12 +193,11 @@ private:
     move(std::size_t n, void* buf) override;
 
     friend class detail::STVar;
-    std::optional<std::vector<uint256>> batchTxnIds_;
     std::optional<std::vector<std::shared_ptr<STTx const>>> batchTxns_;
 };
 
 bool
-passesLocalChecks(STObject const& st, std::string&);
+passesLocalChecks(STTx const& tx, std::string&);
 
 /**
  * Sterilize a transaction.

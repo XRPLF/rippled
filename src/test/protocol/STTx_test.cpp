@@ -51,17 +51,9 @@ public:
     run() override
     {
         testMalformedSerializedForm();
-
-        testcase("secp256k1 signatures");
         testSTTx(KeyType::Secp256k1);
-
-        testcase("ed25519 signatures");
         testSTTx(KeyType::Ed25519);
-
-        testcase("STObject constructor errors");
         testObjectCtorErrors();
-
-        testcase("Batch inner transaction validation");
         testBatchInnerCtorErrors();
     }
 
@@ -1332,6 +1324,8 @@ public:
     void
     testSTTx(KeyType keyType)
     {
+        testcase(std::string(to_string(keyType)) + " signatures");
+
         auto const keypair = randomKeyPair(keyType);
 
         STTx j(ttACCOUNT_SET, [&keypair](auto& obj) {
@@ -1386,6 +1380,8 @@ public:
     void
     testObjectCtorErrors()
     {
+        testcase("STObject constructor errors");
+
         auto const kp1 = randomKeyPair(KeyType::Secp256k1);
         auto const id1 = calcAccountID(kp1.first);
 
@@ -1471,6 +1467,8 @@ public:
     void
     testBatchInnerCtorErrors()
     {
+        testcase("Batch inner transaction validation");
+
         auto const kp1 = randomKeyPair(KeyType::Secp256k1);
         auto const id1 = calcAccountID(kp1.first);
 
