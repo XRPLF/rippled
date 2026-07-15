@@ -1505,7 +1505,7 @@ public:
 
         {
             // A batch whose inner is a well-formed transaction constructs.
-            std::string got;
+            std::string errorMsg;
             try
             {
                 STTx{makeBatch(makeInner(ttPAYMENT))};
