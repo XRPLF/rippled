@@ -63,7 +63,9 @@ static constexpr std::uint32_t kSecondsInYear = 365 * 24 * 60 * 60;
 Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
 
-/// Ensure the periodic payment is always rounded consistently
+/**
+ * Ensure the periodic payment is always rounded consistently
+ */
 inline Number
 roundPeriodicPayment(Asset const& asset, Number const& periodicPayment, std::int32_t scale)
 {
@@ -127,7 +129,8 @@ struct LoanPaymentParts
     operator==(LoanPaymentParts const& other) const;
 };
 
-/** This structure captures the parts of a loan state.
+/**
+ * This structure captures the parts of a loan state.
  *
  *  Whether the values are theoretical (unrounded) or rounded will depend on how
  * it was computed.
@@ -324,12 +327,14 @@ struct PaymentComponents
     // - extra: An additional payment beyond the regular schedule (overpayment)
     PaymentSpecialCase specialCase = PaymentSpecialCase::None;
 
-    // Calculates the tracked interest portion of this payment.
-    // This is derived from the other components as:
-    // trackedValueDelta - trackedPrincipalDelta - trackedManagementFeeDelta
-    //
-    // @return The amount of tracked interest included in this payment that
-    //         will be paid to the vault.
+    /**
+     * Calculates the tracked interest portion of this payment.
+     * This is derived from the other components as:
+     * trackedValueDelta - trackedPrincipalDelta - trackedManagementFeeDelta
+     *
+     * @return The amount of tracked interest included in this payment that
+     *         will be paid to the vault.
+     */
     [[nodiscard]] Number
     trackedInterestPart() const;
 };
@@ -401,7 +406,8 @@ struct LoanStateDeltas
     // The difference in management fee outstanding between two loan states.
     Number managementFee;
 
-    /* Calculates the total change across all components.
+    /**
+     * Calculates the total change across all components.
      * @return The sum of principal, interest, and management fee deltas.
      */
     [[nodiscard]] Number

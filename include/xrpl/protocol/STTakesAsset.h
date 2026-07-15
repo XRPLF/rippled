@@ -7,7 +7,8 @@
 
 namespace xrpl {
 
-/** Intermediate class for any STBase-derived class to store an Asset.
+/**
+ * Intermediate class for any STBase-derived class to store an Asset.
  *
  * In the class definition, this class should be specified as a base class
  * _instead_ of STBase.
@@ -41,7 +42,8 @@ STTakesAsset::associateAsset(Asset const& a)
 
 class STLedgerEntry;
 
-/** Associate an Asset with all sMD_NeedsAsset fields in a ledger entry.
+/**
+ * Associate an Asset with all sMD_NeedsAsset fields in a ledger entry.
  *
  * This function iterates over all fields in the given ledger entry. For each
  * field that is set and has the SField::sMD_NeedsAsset metadata flag, it calls
@@ -54,7 +56,6 @@ class STLedgerEntry;
  *
  * @param sle The ledger entry whose fields will be updated.
  * @param asset The Asset to associate with the relevant fields.
- *
  */
 void
 associateAsset(STLedgerEntry& sle, Asset const& asset);
