@@ -155,6 +155,13 @@ public:
     [[nodiscard]] std::vector<std::shared_ptr<STTx const>> const&
     getBatchTransactions() const;
 
+    /**
+     * The account responsible for the authorization: the delegate when
+     * sfDelegate is present, otherwise the account.
+     */
+    [[nodiscard]] AccountID
+    getInitiator() const;
+
     [[nodiscard]] AccountID
     getFeePayerID() const;
 

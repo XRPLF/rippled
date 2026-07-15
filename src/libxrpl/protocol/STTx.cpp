@@ -650,6 +650,20 @@ STTx::getBatchTransactions() const
 }
 
 AccountID
+STTx::getInitiator() const
+{
+    // If sfDelegate is present, the delegate account is the initiator
+    // note: if a delegate is specified, its authorization to act on behalf of the account is
+    // enforced in `Transactor::invokeCheckPermission`
+    // cryptographic signature validity is checked separately (e.g., in `Transactor::checkSign`)
+    if (isFieldPresent(sfDelegate))
+        return getAccountID(sfDelegate);
+
+    // Default initiator
+    return getAccountID(sfAccount);
+}
+
+AccountID
 STTx::getFeePayerID() const
 {
     if (isFieldPresent(sfSponsor) && ((getFieldU32(sfSponsorFlags) & spfSponsorFee) != 0u))
