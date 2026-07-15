@@ -11,11 +11,12 @@
 
 namespace xrpl {
 
-/** Implements ZeroCopyInputStream around a buffer sequence.
-    @tparam Buffers A type meeting the requirements of ConstBufferSequence.
-    @see
-   https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.io.zero_copy_stream
-*/
+/**
+ * Implements ZeroCopyInputStream around a buffer sequence.
+ * @tparam Buffers A type meeting the requirements of ConstBufferSequence.
+ * @see
+ * https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.io.zero_copy_stream
+ */
 template <class Buffers>
 class ZeroCopyInputStream : public ::google::protobuf::io::ZeroCopyInputStream
 {
@@ -105,10 +106,11 @@ ZeroCopyInputStream<Buffers>::Skip(int count)
 
 //------------------------------------------------------------------------------
 
-/** Implements ZeroCopyOutputStream around a Streambuf.
-    Streambuf matches the public interface defined by boost::asio::streambuf.
-    @tparam Streambuf A type meeting the requirements of Streambuf.
-*/
+/**
+ * Implements ZeroCopyOutputStream around a Streambuf.
+ * Streambuf matches the public interface defined by boost::asio::streambuf.
+ * @tparam Streambuf A type meeting the requirements of Streambuf.
+ */
 template <class Streambuf>
 class ZeroCopyOutputStream : public ::google::protobuf::io::ZeroCopyOutputStream
 {

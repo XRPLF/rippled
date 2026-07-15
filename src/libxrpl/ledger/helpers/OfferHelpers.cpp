@@ -55,7 +55,7 @@ offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j)
         }
     }
 
-    adjustOwnerCount(view, view.peek(keylet::account(owner)), -1, j);
+    decreaseOwnerCountForObject(view, owner, sle, 1, j);
 
     view.erase(sle);
 
