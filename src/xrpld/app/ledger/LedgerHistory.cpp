@@ -453,7 +453,6 @@ LedgerHistory::builtLedger(
     consensusValidated_.fetchAndModify(index, [&](CvEntry& entry) {
         if (entry.validated && !entry.built)
         {
-            SOMETIMES(true, "xrpl::LedgerHistory::builtLedger : validated arrived first");
             SOMETIMES(
                 entry.validated.value() != hash,
                 "xrpl::LedgerHistory::builtLedger : validated-first mismatch");
@@ -503,7 +502,6 @@ LedgerHistory::validatedLedger(
     consensusValidated_.fetchAndModify(index, [&](CvEntry& entry) {
         if (entry.built && !entry.validated)
         {
-            SOMETIMES(true, "xrpl::LedgerHistory::validatedLedger : built arrived first");
             XRPL_ASSERT(
                 entry.consensus.has_value(),
                 "xrpl::LedgerHistory::validatedLedger : consensus set when built set");
