@@ -152,6 +152,7 @@ test.peerfinder > xrpl.protocol
 test.protocol > test.jtx
 test.protocol > test.unit_test
 test.protocol > xrpl.basics
+test.protocol > xrpld.core
 test.protocol > xrpl.json
 test.protocol > xrpl.protocol
 test.rpc > test.jtx

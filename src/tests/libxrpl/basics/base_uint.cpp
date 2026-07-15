@@ -123,6 +123,73 @@ struct BaseUintTest : public ::testing::Test
     }
 };
 
+using BaseUintDeathTest = BaseUintTest;
+
+TEST_F(BaseUintDeathTest, fromRaw_size_mismatch)
+{
+    // ENABLE_VOIDSTAR is a debug build, but does not crash on failed asserts. Rather than twist
+    // these tests into knots to make them work, just skip them.
+#ifdef ENABLE_VOIDSTAR
+    GTEST_SKIP() << "ENABLE_VOIDSTAR is a debug build, but does not crash on failed asserts.";
+#else
+    auto smallConstruct = [] {
+        // Container smaller than the base_uint (8 bytes vs 12 bytes for
+        // test96). Only the first 8 bytes are copied; the remaining 4 bytes
+        // stay zero.
+        Blob const tooSmall{1, 2, 3, 4, 5, 6, 7, 8};
+        BaseUInt96 const result = BaseUInt96::fromRaw(tooSmall);
+        auto const resultText = to_string(result);
+        EXPECT_EQ(resultText, "010203040506070800000000") << resultText;
+    };
+    EXPECT_DEBUG_DEATH(smallConstruct(), "input size match");
+
+    auto largeConstruct = [] {
+        // Container larger than the base_uint (16 bytes vs 12 bytes for
+        // test96). Only the first 12 bytes are copied; the extra bytes are
+        // ignored.
+        Blob const tooBig{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+        BaseUInt96 const result = BaseUInt96::fromRaw(tooBig);
+        auto const resultText = to_string(result);
+        EXPECT_EQ(resultText, "0102030405060708090A0B0C") << resultText;
+    };
+    EXPECT_DEBUG_DEATH(largeConstruct(), "input size match");
+
+    auto smallCopy = [] {
+        // Container smaller than the base_uint (8 bytes vs 12 bytes for
+        // test96). Only the first 8 bytes are copied; the remaining 4 bytes
+        // stay zero.
+        Blob const tooSmall{1, 2, 3, 4, 5, 6, 7, 8};
+        BaseUInt96 result{};
+        --result;
+        {
+            auto const originalText = to_string(result);
+            EXPECT_EQ(originalText, "FFFFFFFFFFFFFFFFFFFFFFFF") << originalText;
+        }
+        result = tooSmall;
+        auto const resultText = to_string(result);
+        EXPECT_EQ(resultText, "010203040506070800000000") << resultText;
+    };
+    EXPECT_DEBUG_DEATH(smallCopy(), "input size match");
+
+    auto const largeCopy = [] {
+        // Container larger than the base_uint (16 bytes vs 12 bytes for
+        // test96). Only the first 12 bytes are copied; the extra bytes are
+        // ignored.
+        Blob const tooBig{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+        BaseUInt96 result{};
+        --result;
+        {
+            auto const originalText = to_string(result);
+            EXPECT_EQ(originalText, "FFFFFFFFFFFFFFFFFFFFFFFF") << originalText;
+        }
+        result = tooBig;
+        auto const resultText = to_string(result);
+        EXPECT_EQ(resultText, "0102030405060708090A0B0C") << resultText;
+    };
+    EXPECT_DEBUG_DEATH(largeCopy(), "input size match");
+#endif
+}
+
 TEST_F(BaseUintTest, base_uint)
 {
     static_assert(!std::is_constructible_v<BaseUInt96, std::complex<double>>);
@@ -197,6 +264,19 @@ TEST_F(BaseUintTest, base_uint)
     for (auto& d : z)
     {
         EXPECT_EQ(d, 0);
+    }
+
+    {
+        // There are several ways to create a zero. beast::kZero is tested above. Test some
+        // others.
+        BaseUInt96 const z1;
+        EXPECT_EQ(z1, z) << to_string(z1);
+
+        BaseUInt96 const z2{};
+        EXPECT_EQ(z2, z) << to_string(z2);
+
+        BaseUInt96 const z3{0u};
+        EXPECT_EQ(z3, z) << to_string(z3);
     }
 
     BaseUInt96 n{z};
