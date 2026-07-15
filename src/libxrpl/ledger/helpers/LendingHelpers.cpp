@@ -1408,6 +1408,20 @@ computeOverpaymentComponents(
     return result;
 }
 
+/* Derives the two rate values every make*Payment() helper needs: the
+ * broker's management fee rate, and the loan's periodic (per-payment-period)
+ * interest rate.
+ */
+std::pair<TenthBips16, Number>
+loanRatesFor(SLE::const_ref loan, SLE::const_ref brokerSle)
+{
+    TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
+    TenthBips32 const interestRate{loan->at(sfInterestRate)};
+    Number const periodicRate = loanPeriodicRate(interestRate, loan->at(sfPaymentInterval));
+    XRPL_ASSERT(interestRate == 0 || periodicRate > 0, "xrpl::detail::loanRatesFor : valid rate");
+    return {managementFeeRate, periodicRate};
+}
+
 /* Handles a full (early payoff) payment. Implements the "full payment"
  * branch of the make_payment function from the XLS-66 spec, Section
  * 3.2.4.4.
@@ -1421,11 +1435,7 @@ makeFullPayment(
     STAmount const& amount,
     beast::Journal j)
 {
-    TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
-    TenthBips32 const interestRate{loan->at(sfInterestRate)};
-    Number const periodicRate = loanPeriodicRate(interestRate, loan->at(sfPaymentInterval));
-    XRPL_ASSERT(
-        interestRate == 0 || periodicRate > 0, "xrpl::detail::makeFullPayment : valid rate");
+    auto const [managementFeeRate, periodicRate] = loanRatesFor(loan, brokerSle);
 
     auto const fullPaymentComponents =
         computeFullPayment(asset, view, loan, periodicRate, amount, managementFeeRate, j);
@@ -1450,11 +1460,7 @@ makeLatePayment(
     STAmount const& amount,
     beast::Journal j)
 {
-    TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
-    TenthBips32 const interestRate{loan->at(sfInterestRate)};
-    Number const periodicRate = loanPeriodicRate(interestRate, loan->at(sfPaymentInterval));
-    XRPL_ASSERT(
-        interestRate == 0 || periodicRate > 0, "xrpl::detail::makeLatePayment : valid rate");
+    auto const [managementFeeRate, periodicRate] = loanRatesFor(loan, brokerSle);
 
     Number const serviceFee = loan->at(sfLoanServiceFee);
     ExtendedPaymentComponents const periodic{
@@ -1496,11 +1502,7 @@ makeRegularPayment(
         "xrpl::detail::makeRegularPayment",
         "regular payment type");
 
-    TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
-    TenthBips32 const interestRate{loan->at(sfInterestRate)};
-    Number const periodicRate = loanPeriodicRate(interestRate, loan->at(sfPaymentInterval));
-    XRPL_ASSERT(
-        interestRate == 0 || periodicRate > 0, "xrpl::detail::makeRegularPayment : valid rate");
+    auto const [managementFeeRate, periodicRate] = loanRatesFor(loan, brokerSle);
 
     std::int32_t const loanScale = loan->at(sfLoanScale);
     Number const serviceFee = loan->at(sfLoanServiceFee);
