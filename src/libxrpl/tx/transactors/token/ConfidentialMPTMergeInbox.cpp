@@ -24,9 +24,6 @@ namespace xrpl {
 NotTEC
 ConfidentialMPTMergeInbox::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureConfidentialTransfer))
-        return temDISABLED;
-
     // issuer cannot merge
     if (MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer() == ctx.tx[sfAccount])
         return temMALFORMED;

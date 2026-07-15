@@ -26,9 +26,6 @@ namespace xrpl {
 NotTEC
 ConfidentialMPTConvert::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureConfidentialTransfer))
-        return temDISABLED;
-
     // issuer cannot convert
     if (MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer() == ctx.tx[sfAccount])
         return temMALFORMED;
