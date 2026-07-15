@@ -18,7 +18,8 @@
 
 namespace xrpl::test {
 
-/** Count offer
+/**
+ * Count offer
  */
 inline std::size_t
 countOffers(
@@ -52,7 +53,8 @@ countOffers(
     return count;
 }
 
-/** An offer exists
+/**
+ * An offer exists
  */
 inline bool
 isOffer(
@@ -64,7 +66,8 @@ isOffer(
     return countOffers(env, account, takerPays, takerGets) > 0;
 }
 
-/** An offer exists
+/**
+ * An offer exists
  */
 inline bool
 isOffer(jtx::Env& env, jtx::Account const& account, Asset const& takerPays, Asset const& takerGets)

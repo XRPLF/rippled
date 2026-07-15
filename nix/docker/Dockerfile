@@ -75,9 +75,13 @@ COPY bin/check-tools.sh /tmp/check-tools.sh
 RUN /tmp/check-tools.sh
 
 # Sanity-check that the g++/clang++ are able to build binaries, including sanitizer-instrumented ones.
-COPY nix/docker/test_files/cpp_sources/ /tmp/cpp_sources/
-COPY nix/docker/test_files/compile-cpp-sources.sh /tmp/compile-cpp-sources.sh
-RUN /tmp/compile-cpp-sources.sh /tmp/cpp_sources /tmp/bins
+COPY nix/docker/test_files/cpp/ /tmp/test_files/cpp/
+RUN /tmp/test_files/cpp/compile-sources.sh /tmp/test_files/cpp/sources /tmp/cpp-bins
+
+# Sanity-check that rustc is able to build binaries, including ones that rely on
+# the runtime overflow check.
+COPY nix/docker/test_files/rust/ /tmp/test_files/rust/
+RUN /tmp/test_files/rust/compile-sources.sh /tmp/test_files/rust/sources /tmp/rust-bins
 
 # Tester: start from a clean BASE_IMAGE, install sanitizer runtime libraries,
 # and run the compiled test binaries to verify they execute correctly.
@@ -94,15 +98,18 @@ SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
 # Sanity-check that the built binaries run correctly in the vanilla base image, with the necessary sanitizer runtime libraries installed.
 COPY bin/install-sanitizer-libs.sh /tmp/install-sanitizer-libs.sh
-COPY nix/docker/test_files/run-test-binaries.sh /tmp/run-test-binaries.sh
-COPY --from=final /tmp/bins /tmp/bins
+COPY nix/docker/test_files/cpp/run-binaries.sh /tmp/test_files/cpp/run-binaries.sh
+COPY nix/docker/test_files/rust/run-binaries.sh /tmp/test_files/rust/run-binaries.sh
+COPY --from=final /tmp/cpp-bins /tmp/cpp-bins
+COPY --from=final /tmp/rust-bins /tmp/rust-bins
 
 RUN <<EOF
 if echo "${BASE_IMAGE}" | grep -qiE 'nixos'; then
     echo "Skipping runnning binaries on NixOS."
 else
     /tmp/install-sanitizer-libs.sh
-    /tmp/run-test-binaries.sh /tmp/bins
+    /tmp/test_files/cpp/run-binaries.sh /tmp/cpp-bins
+    /tmp/test_files/rust/run-binaries.sh /tmp/rust-bins
 fi
 touch /tmp/tests-passed
 EOF

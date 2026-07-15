@@ -62,7 +62,8 @@ private:
 public:
     Asset() = default;
 
-    /** Conversions to Asset are implicit and conversions to specific issue
+    /**
+     * Conversions to Asset are implicit and conversions to specific issue
      *  type are explicit. This design facilitates the use of Asset.
      */
     Asset(Issue const& issue) : issue_(issue)
@@ -149,7 +150,8 @@ public:
     friend constexpr bool
     operator==(BadAsset const& lhs, Asset const& rhs);
 
-    /** Return true if both assets refer to the same currency (regardless of
+    /**
+     * Return true if both assets refer to the same currency (regardless of
      * issuer) or MPT issuance. Otherwise return false.
      */
     friend constexpr bool

@@ -28,6 +28,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
@@ -269,6 +270,13 @@ STTx::checkSign(Rules const& rules) const
         auto const counterSig = getFieldObject(sfCounterpartySignature);
         if (auto const ret = checkSign(rules, counterSig); !ret)
             return std::unexpected("Counterparty: " + ret.error());
+    }
+
+    if (isFieldPresent(sfSponsorSignature))
+    {
+        auto const sponsorSignatureObj = getFieldObject(sfSponsorSignature);
+        if (auto const ret = checkSign(rules, sponsorSignatureObj); !ret)
+            return std::unexpected("Sponsor: " + ret.error());
     }
 
     // Verify the batch signer signatures here too, so they are cached with the
@@ -551,7 +559,7 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
     // For delegated transactions sfDelegate is the account whose signer list is checked,
     // the delegate account itself can not be among the signers.
     auto const txnAccountID =
-        &sigObject != this ? std::nullopt : std::optional<AccountID>(getFeePayer());
+        &sigObject != this ? std::nullopt : std::optional<AccountID>(getInitiator());
 
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
@@ -601,6 +609,15 @@ STTx::getBatchTransactionIDs() const
         "STTx::getBatchTransactionIDs : batch transaction IDs size mismatch");
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access): guarded by assert above
     return *batchTxnIds_;
+}
+
+AccountID
+STTx::getFeePayerID() const
+{
+    if (isFieldPresent(sfSponsor) && ((getFieldU32(sfSponsorFlags) & spfSponsorFee) != 0u))
+        return at(sfSponsor);
+
+    return getInitiator();
 }
 
 //------------------------------------------------------------------------------
