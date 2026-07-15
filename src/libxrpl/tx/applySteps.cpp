@@ -419,17 +419,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
 XRPAmount
 calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    try
-    {
-        return invokeCalculateBaseFee(view, tx);
-    }
-    catch (std::exception const& e)
-    {
-        // LCOV_EXCL_START
-        JLOG(debugLog().error()) << "apply (calculateBaseFee): " << e.what();
-        return view.fees().base;
-        // LCOV_EXCL_STOP
-    }
+    return invokeCalculateBaseFee(view, tx);
 }
 
 XRPAmount

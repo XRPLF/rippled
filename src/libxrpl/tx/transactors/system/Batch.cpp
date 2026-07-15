@@ -27,6 +27,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -45,12 +46,11 @@ namespace xrpl {
  *
  * @param view The ledger view providing fee and state information.
  * @param tx The batch transaction to calculate the fee for.
- * @return XRPAmount The total base fee required for the batch transaction.
- * On any failure (overflow, oversized arrays) the ledger base fee is
- * returned instead.
+ * @return XRPAmount The total base fee required for the batch transaction,
+ * or std::nullopt on failure (overflow, oversized arrays).
  */
-XRPAmount
-Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
+std::optional<XRPAmount>
+Batch::calculateBaseFeeImpl(ReadView const& view, STTx const& tx)
 {
     XRPAmount const maxAmount{std::numeric_limits<XRPAmount::value_type>::max()};
 
@@ -61,7 +61,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (baseFee > maxAmount - view.fees().base)
     {
         JLOG(debugLog().error()) << "BatchTrace: Base fee overflow detected.";
-        return view.fees().base;
+        return std::nullopt;
     }
     // LCOV_EXCL_STOP
 
@@ -77,7 +77,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         if (txnFees > maxAmount - fee)
         {
             JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in txnFees calculation.";
-            return view.fees().base;
+            return std::nullopt;
         }
         // LCOV_EXCL_STOP
         txnFees += fee;
@@ -93,7 +93,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         if (signers.size() > kMaxBatchSigners)
         {
             JLOG(debugLog().error()) << "BatchTrace: Batch Signers array exceeds max entries.";
-            return view.fees().base;
+            return std::nullopt;
         }
         // LCOV_EXCL_STOP
 
@@ -111,7 +111,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
                 {
                     JLOG(debugLog().error())
                         << "BatchTrace: Nested Signers array exceeds max entries.";
-                    return view.fees().base;
+                    return std::nullopt;
                 }
                 // LCOV_EXCL_STOP
                 signerCount += nestedSigners.size();
@@ -123,7 +123,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (signerCount > 0 && view.fees().base > maxAmount / signerCount)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in signerCount calculation.";
-        return view.fees().base;
+        return std::nullopt;
     }
     // LCOV_EXCL_STOP
 
@@ -133,18 +133,36 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (signerFees > maxAmount - txnFees)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in signerFees calculation.";
-        return view.fees().base;
+        return std::nullopt;
     }
     XRPAmount const innerFees = txnFees + signerFees;
     if (innerFees > maxAmount - batchBase)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in total fee calculation.";
-        return view.fees().base;
+        return std::nullopt;
     }
     // LCOV_EXCL_STOP
 
     // 10 drops per batch signature + sum of inner tx fees + batchBase
     return innerFees + batchBase;
+}
+
+XRPAmount
+Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    if (auto const fee = calculateBaseFeeImpl(view, tx))
+        return *fee;
+    // The fee could not be computed, so return a placeholder the account can
+    // pay; preclaim rejects the transaction with tecINSUFF_FEE.
+    return view.fees().base;  // LCOV_EXCL_LINE
+}
+
+TER
+Batch::preclaim(PreclaimContext const& ctx)
+{
+    if (!calculateBaseFeeImpl(ctx.view, ctx.tx))
+        return tecINSUFF_FEE;  // LCOV_EXCL_LINE
+    return tesSUCCESS;
 }
 
 std::uint32_t
