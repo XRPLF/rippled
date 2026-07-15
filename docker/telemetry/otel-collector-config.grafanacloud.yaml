@@ -123,34 +123,6 @@ processors:
           - set(attributes["service_instance_id"], resource.attributes["service.instance.id"])
           - set(attributes["deployment_environment"], resource.attributes["deployment.environment"])
           - set(attributes["xrpl_network_type"], resource.attributes["xrpl.network.type"])
-          # Copy the grouped legend labels built by transform/legendgroups onto
-          # datapoint attributes too (same reason as the tier attrs above: Cloud
-          # OTLP ingest does not promote resource attributes to labels). Guarded
-          # so a group absent on the resource is not created as an empty label.
-          - set(attributes["resource_group"], resource.attributes["resource_group"]) where resource.attributes["resource_group"] != nil
-          - set(attributes["iac_group"], resource.attributes["iac_group"]) where resource.attributes["iac_group"] != nil
-  # Build grouped legend labels from the tier / perf-iac resource attributes so
-  # dashboards reference one pre-built label per group. On the local scrape these
-  # are promoted to labels by resource_to_telemetry_conversion; on the Cloud path
-  # transform/cloudlabels (above) copies them onto datapoint attributes.
-  # The BRACKETS and comma separators are baked into the label VALUE here (e.g.
-  # "[node, mainnet]") rather than added in the dashboard Display name: a template
-  # like "... [${__field.labels.iac_group}]" renders an empty "[]" when the label
-  # is absent, and Grafana's renameByRegex runs pre-interpolation so it cannot
-  # strip it. Baking brackets into the value means an absent group is just an
-  # absent label -> the Display name renders nothing for it.
-  #   - iac_group: "[branch, role, work-item]", built only on perf runs.
-  #   - resource_group: "[node]" or "[node, network]".
-  # Guards check != nil and != "" because OTTL Concat renders "<nil>" for an
-  # absent attribute and the perf-iac collector stamps these with an empty-string
-  # default outside a comparison run.
-  transform/legendgroups:
-    metric_statements:
-      - context: resource
-        statements:
-          - set(attributes["iac_group"], Concat(["[", Concat([attributes["xrpl.branch"], attributes["xrpl.node.role"], attributes["xrpl.work.item"]], ", "), "]"], "")) where attributes["xrpl.branch"] != nil and attributes["xrpl.branch"] != "" and attributes["xrpl.node.role"] != nil and attributes["xrpl.node.role"] != "" and attributes["xrpl.work.item"] != nil and attributes["xrpl.work.item"] != ""
-          - set(attributes["resource_group"], Concat(["[", attributes["service.instance.id"], "]"], "")) where attributes["service.instance.id"] != nil and attributes["service.instance.id"] != ""
-          - set(attributes["resource_group"], Concat(["[", attributes["service.instance.id"], ", ", attributes["xrpl.network.type"], "]"], "")) where attributes["service.instance.id"] != nil and attributes["service.instance.id"] != "" and attributes["xrpl.network.type"] != nil and attributes["xrpl.network.type"] != ""
 
 connectors:
   spanmetrics:
@@ -252,19 +224,12 @@ service:
     # the transform both writing a service_instance_id label on the same series.
     metrics/local:
       receivers: [otlp, spanmetrics]
-      processors:
-        [resource/tier, resource/stripsdk, transform/legendgroups, batch]
+      processors: [resource/tier, resource/stripsdk, batch]
       exporters: [prometheus]
     metrics/cloud:
       receivers: [otlp, spanmetrics]
       processors:
-        [
-          resource/tier,
-          resource/stripsdk,
-          transform/legendgroups,
-          transform/cloudlabels,
-          batch,
-        ]
+        [resource/tier, resource/stripsdk, transform/cloudlabels, batch]
       exporters: [otlphttp/grafanacloud]
     logs:
       receivers: [filelog]
