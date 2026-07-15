@@ -549,7 +549,6 @@ LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
     {
         if (it->second != ledgerHash)
         {
-            SOMETIMES(true, "xrpl::LedgerHistory::fixIndex : hash repaired");
             it->second = ledgerHash;
             return false;
         }
