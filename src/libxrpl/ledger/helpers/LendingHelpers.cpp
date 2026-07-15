@@ -312,6 +312,25 @@ computeInterestAndFeeParts(
     return std::make_pair(interest - fee, fee);
 }
 
+/* Rounds a raw (unrounded) interest amount to the loan's scale, then splits
+ * the rounded amount into net interest (to the vault) and management fee (to
+ * the broker).
+ *
+ * This is the common "round then split" step shared by late payment, full
+ * payment, and overpayment interest calculations.
+ */
+std::pair<Number, Number>
+roundAndSplitInterest(
+    Asset const& asset,
+    Number const& rawInterest,
+    TenthBips16 managementFeeRate,
+    std::int32_t loanScale,
+    Number::RoundingMode mode = Number::getround())
+{
+    auto const interest = roundToAsset(asset, rawInterest, loanScale, mode);
+    return computeInterestAndFeeParts(asset, interest, managementFeeRate, loanScale);
+}
+
 /* Calculates penalty interest accrued on overdue payments.
  * Returns 0 if payment is not late.
  *
@@ -879,12 +898,9 @@ computeLatePayment(
         nextDueDate);
 
     // Round the late interest and split it between the vault (net interest)
-    // and the broker (management fee portion). This lambda ensures we
-    // round before splitting to maintain precision.
-    auto const [roundedLateInterest, roundedLateManagementFee] = [&]() {
-        auto const interest = roundToAsset(asset, latePaymentInterest, loanScale);
-        return computeInterestAndFeeParts(asset, interest, managementFeeRate, loanScale);
-    }();
+    // and the broker (management fee portion).
+    auto const [roundedLateInterest, roundedLateManagementFee] =
+        roundAndSplitInterest(asset, latePaymentInterest, managementFeeRate, loanScale);
 
     XRPL_ASSERT(roundedLateInterest >= 0, "xrpl::detail::computeLatePayment : valid late interest");
     XRPL_ASSERT_PARTS(
@@ -987,13 +1003,10 @@ computeFullPayment(
         loan->at(sfStartDate),
         TenthBips32{loan->at(sfCloseInterestRate)});
 
-    // Split the full payment interest into net interest (to vault) and
-    // management fee (to broker), applying proper rounding.
-    auto const [roundedFullInterest, roundedFullManagementFee] = [&]() {
-        auto const interest =
-            roundToAsset(asset, fullPaymentInterest, loanScale, Number::RoundingMode::Downward);
-        return computeInterestAndFeeParts(asset, interest, managementFeeRate, loanScale);
-    }();
+    // Split the full payment interest into net interest (to vault) and management fee (to broker),
+    // applying proper rounding.
+    auto const [roundedFullInterest, roundedFullManagementFee] = roundAndSplitInterest(
+        asset, fullPaymentInterest, managementFeeRate, loanScale, Number::RoundingMode::Downward);
 
     LoanState const loanState = constructLoanState(loan);
     Number const principalOutstanding = loanState.principalOutstanding;
@@ -1363,11 +1376,12 @@ computeOverpaymentComponents(
     // This interest doesn't follow the normal amortization schedule - it's
     // a one-time charge for paying early.
     // Equation (20) and (21) from XLS-66 spec, Section A-2 Equation Glossary
-    auto const [roundedOverpaymentInterest, roundedOverpaymentManagementFee] = [&]() {
-        auto const interest =
-            roundToAsset(asset, tenthBipsOfValue(overpayment, overpaymentInterestRate), loanScale);
-        return detail::computeInterestAndFeeParts(asset, interest, managementFeeRate, loanScale);
-    }();
+    auto const [roundedOverpaymentInterest, roundedOverpaymentManagementFee] =
+        roundAndSplitInterest(
+            asset,
+            tenthBipsOfValue(overpayment, overpaymentInterestRate),
+            managementFeeRate,
+            loanScale);
 
     auto const result = detail::ExtendedPaymentComponents{
         // Build the payment components, after fees and penalty
@@ -1870,24 +1884,11 @@ loanMakePayment(
         auto const fullPaymentComponents = detail::computeFullPayment(
             asset, view, loan, periodicRate, amount, managementFeeRate, j);
 
+        // computeFullPayment only ever fails with a genuine error TER (never
+        // tesSUCCESS), so there is no separate "no-op" outcome to handle here.
         if (fullPaymentComponents.has_value())
-        {
             return doPayment(*fullPaymentComponents, loan);
-        }
-
-        if (fullPaymentComponents.error())
-        {
-            // error() will be the TER returned if a payment is not made. It
-            // will only evaluate to true if it's unsuccessful. Otherwise,
-            // tesSUCCESS means nothing was done, so continue.
-            return std::unexpected(fullPaymentComponents.error());
-        }
-
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::loanMakePayment : invalid full payment result");
-        JLOG(j.error()) << "Full payment computation failed unexpectedly.";
-        return std::unexpected(tecINTERNAL);
-        // LCOV_EXCL_STOP
+        return std::unexpected(fullPaymentComponents.error());
     }
 
     // -------------------------------------------------------------
@@ -1909,23 +1910,11 @@ loanMakePayment(
         auto const latePaymentComponents =
             detail::computeLatePayment(asset, view, loan, periodic, amount, managementFeeRate, j);
 
+        // computeLatePayment only ever fails with a genuine error TER (never
+        // tesSUCCESS), so there is no separate "no-op" outcome to handle here.
         if (latePaymentComponents.has_value())
-        {
             return doPayment(*latePaymentComponents, loan);
-        }
-
-        if (latePaymentComponents.error())
-        {
-            // error() will be the TER returned if a payment is not made. It
-            // will only evaluate to true if it's unsuccessful.
-            return std::unexpected(latePaymentComponents.error());
-        }
-
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::loanMakePayment : invalid late payment result");
-        JLOG(j.error()) << "Late payment computation failed unexpectedly.";
-        return std::unexpected(tecINTERNAL);
-        // LCOV_EXCL_STOP
+        return std::unexpected(latePaymentComponents.error());
     }
 
     // -------------------------------------------------------------
