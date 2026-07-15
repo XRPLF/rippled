@@ -1,7 +1,6 @@
 #include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
 
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>

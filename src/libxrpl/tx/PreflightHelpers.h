@@ -1,12 +1,10 @@
 #pragma once
 
 #include <xrpl/beast/utility/Zero.h>
-#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
-#include <optional>
+#include <cstddef>
 
 template <class T>
 inline bool
