@@ -3423,6 +3423,7 @@ class MPToken_test : public beast::unit_test::Suite
 
         using namespace test::jtx;
         Account const alice("alice");
+        Account const bob("bob");
 
         // Can not provide mutate related flags, MPTokenMetadata or TransferFee when
         // DynamicMPT amendment is not enabled
@@ -3535,7 +3536,7 @@ class MPToken_test : public beast::unit_test::Suite
                      tifMPTCanClawback | tifMPTCanEscrow | tifMPTRequireAuth |
                      tifMPTCanHoldConfidentialBalance});
 
-            auto const set_address = {
+            auto const setFlags = {
                 tfMPTSetCanLock,
                 tfMPTSetRequireAuth,
                 tfMPTSetCanEscrow,
