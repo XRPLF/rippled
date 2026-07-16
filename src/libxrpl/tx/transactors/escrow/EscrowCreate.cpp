@@ -102,7 +102,7 @@ NotTEC
 escrowCreatePreflightHelper<Issue>(PreflightContext const& ctx)
 {
     STAmount const amount = ctx.tx[sfAmount];
-    if (amount.native() || !checkPositiveAmount(amount))
+    if (amount.native() || !isPositiveAmount(amount))
         return temBAD_AMOUNT;
 
     if (isBadCurrency(amount.get<Issue>().currency))
@@ -119,8 +119,7 @@ escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
         return temDISABLED;
 
     auto const amount = ctx.tx[sfAmount];
-    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} ||
-        !checkPositiveAmount(amount))
+    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} || !isPositiveAmount(amount))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -143,7 +142,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     }
     else
     {
-        if (!checkPositiveXRPAmount(amount))
+        if (!isPositiveXRPAmount(amount))
             return temBAD_AMOUNT;
     }
 

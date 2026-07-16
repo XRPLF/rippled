@@ -53,7 +53,7 @@ LoanPay::preflight(PreflightContext const& ctx)
     if (isZeroId(ctx.tx[sfLoanID]))
         return temINVALID;
 
-    if (!checkPositiveAmount(ctx.tx[sfAmount]))
+    if (!isPositiveAmount(ctx.tx[sfAmount]))
         return temBAD_AMOUNT;
 
     // The loan payment flags are all mutually exclusive. If more than one is

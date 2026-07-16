@@ -33,7 +33,7 @@ LoanBrokerCoverDeposit::preflight(PreflightContext const& ctx)
         return temINVALID;
 
     auto const dstAmount = ctx.tx[sfAmount];
-    if (!checkPositiveAmount(dstAmount))
+    if (!isPositiveAmount(dstAmount))
         return temBAD_AMOUNT;
 
     if (!isLegalNet(dstAmount))

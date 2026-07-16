@@ -45,14 +45,14 @@ isZeroId(T const& id)
 
 // Checks whether an amount is a strictly positive XRP amount.
 inline bool
-checkPositiveXRPAmount(xrpl::STAmount const& amount)
+isPositiveXRPAmount(xrpl::STAmount const& amount)
 {
     return xrpl::isXRP(amount) && amount > beast::kZero;
 }
 
 // Checks whether an amount (of any asset type) is strictly positive.
 inline bool
-checkPositiveAmount(xrpl::STAmount const& amount)
+isPositiveAmount(xrpl::STAmount const& amount)
 {
     return amount > beast::kZero;
 }

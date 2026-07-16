@@ -46,7 +46,7 @@ preflightHelper<Issue>(PreflightContext const& ctx)
     // The issuer field is used for the token holder instead
     AccountID const& holder = clawAmount.getIssuer();
 
-    if (issuer == holder || isXRP(clawAmount) || !checkPositiveAmount(clawAmount))
+    if (issuer == holder || isXRP(clawAmount) || !isPositiveAmount(clawAmount))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -69,7 +69,7 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     if (ctx.tx[sfAccount] == *mptHolder)
         return temMALFORMED;
 
-    if (clawAmount.mpt() > MPTAmount{kMaxMpTokenAmount} || !checkPositiveAmount(clawAmount))
+    if (clawAmount.mpt() > MPTAmount{kMaxMpTokenAmount} || !isPositiveAmount(clawAmount))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;

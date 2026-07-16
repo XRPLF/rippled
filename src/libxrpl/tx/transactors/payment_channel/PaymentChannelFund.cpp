@@ -35,7 +35,7 @@ PaymentChannelFund::preflight(PreflightContext const& ctx)
     if (ctx.rules.enabled(fixCleanup3_2_0) && isZeroId(ctx.tx[sfChannel]))
         return temMALFORMED;
 
-    if (!checkPositiveXRPAmount(ctx.tx[sfAmount]))
+    if (!isPositiveXRPAmount(ctx.tx[sfAmount]))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
