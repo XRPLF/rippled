@@ -1517,10 +1517,15 @@ makeRegularPayment(
 
     // Keep a running total of the actual parts paid
     LoanPaymentParts totalParts;
-    Number totalPaid;
+    Number totalPaid = kNumZero;
     std::size_t numPayments = 0;
 
-    while ((amount >= (totalPaid + periodic.totalDue)) && loan->at(sfPaymentRemaining) > 0 &&
+    // Cached here (rather than re-looking up loan->at(sfPaymentRemaining) at each use) since it's
+    // read multiple times below. It's a write-through proxy, so it still reflects doPayment's
+    // mutations each iteration.
+    auto paymentRemainingProxy = loan->at(sfPaymentRemaining);
+
+    while ((amount >= (totalPaid + periodic.totalDue)) && paymentRemainingProxy > 0 &&
            numPayments < kLoanMaximumPaymentsPerTransaction)
     {
         // Try to make more payments
@@ -1534,8 +1539,7 @@ makeRegularPayment(
         ++numPayments;
 
         XRPL_ASSERT_PARTS(
-            (periodic.specialCase == PaymentSpecialCase::Final) ==
-                (loan->at(sfPaymentRemaining) == 0),
+            (periodic.specialCase == PaymentSpecialCase::Final) == (paymentRemainingProxy == 0),
             "xrpl::detail::makeRegularPayment",
             "final payment is the final payment");
 
@@ -1578,9 +1582,9 @@ makeRegularPayment(
     bool const overpaymentSupported =
         paymentType == LoanPaymentType::Overpayment && loan->isFlag(lsfLoanOverpayment);
 
-    bool const overpaymentAllowed =          //
-        loan->at(sfPaymentRemaining) > 0 &&  //
-        totalPaid < roundedAmount &&         //
+    bool const overpaymentAllowed =   //
+        paymentRemainingProxy > 0 &&  //
+        totalPaid < roundedAmount &&  //
         numPayments < kLoanMaximumPaymentsPerTransaction;
 
     if (overpaymentSupported && overpaymentAllowed)
