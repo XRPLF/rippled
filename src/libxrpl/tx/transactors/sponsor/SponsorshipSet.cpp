@@ -146,7 +146,7 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
 
     // Pseudo-accounts cannot participate in sponsorship.
     if (isPseudoAccount(sponsorAccSle) || isPseudoAccount(sponseeSle))
-        return tecNO_PERMISSION;
+        return tecPSEUDO_ACCOUNT;
 
     auto const sponsorshipSle = ctx.view.read(keylet::sponsorship(sponsorID, sponseeID));
 

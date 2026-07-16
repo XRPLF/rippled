@@ -101,7 +101,7 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(fixCleanup3_3_0) && isPseudoAccount(subjectSle))
     {
         JLOG(ctx.j.trace()) << "Subject is a pseudo-account.";
-        return tecNO_PERMISSION;
+        return tecPSEUDO_ACCOUNT;
     }
 
     return tesSUCCESS;

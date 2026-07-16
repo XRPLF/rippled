@@ -236,7 +236,7 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(gw, Account("unknown"), {"Payment"}), Ter(tecNO_TARGET));
         }
 
-        // Delegating to a pseudo-account is not allowed, should return tecNO_PERMISSION
+        // Delegating to a pseudo-account is not allowed, should return tecPSEUDO_ACCOUNT
         {
             Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = gw, .asset = xrpIssue()});
@@ -246,7 +246,7 @@ class Delegate_test : public beast::unit_test::Suite
             auto const sleVault = env.le(keylet);
             BEAST_EXPECT(sleVault);
             Account const vaultPseudo{"vault", sleVault->at(sfAccount)};
-            env(delegate::set(gw, vaultPseudo, {"Payment"}), Ter(tecNO_PERMISSION));
+            env(delegate::set(gw, vaultPseudo, {"Payment"}), Ter(tecPSEUDO_ACCOUNT));
         }
 
         // non-delegable transaction
