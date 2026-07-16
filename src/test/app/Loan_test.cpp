@@ -5483,7 +5483,7 @@ protected:
         env.close();
 
         // Enable CanTrade and verify the DEX path is restored.
-        mpt.set({.mutableFlags = tmfMPTSetCanTrade});
+        mpt.set({.flags = tfMPTSetCanTrade});
         env.close();
 
         env(offer(lender, XRP(1), asset(10)));

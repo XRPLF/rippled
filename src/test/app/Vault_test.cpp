@@ -2249,7 +2249,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             // Enable CanTrade on the underlying.
-            mptt.set({.mutableFlags = tmfMPTSetCanTrade});
+            mptt.set({.flags = tfMPTSetCanTrade});
             env.close();
 
             env(offer(alice, XRP(1), asset(10)));

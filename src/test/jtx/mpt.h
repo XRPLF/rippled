@@ -229,7 +229,7 @@ struct MPTSet
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
-    std::optional<std::uint32_t> mutableFlags = std::nullopt;
+    std::optional<std::uint32_t> immutableFlags = std::nullopt;
     std::optional<std::uint16_t> transferFee = std::nullopt;
     std::optional<std::string> metadata = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
@@ -608,6 +608,9 @@ public:
 
     [[nodiscard]] bool
     isTransferFeePresent() const;
+
+    [[nodiscard]] bool
+    checkImmutableFlags(std::uint32_t expectedFlags) const;
 
     [[nodiscard]] Account const&
     issuer() const

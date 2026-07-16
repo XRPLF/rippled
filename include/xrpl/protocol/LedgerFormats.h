@@ -190,17 +190,6 @@ enum LedgerEntryType : std::uint16_t {
         LSF_FLAG(lsfMPTCanClawback, 0x00000040)                                                                                    \
         LSF_FLAG(lsfMPTCanHoldConfidentialBalance, 0x00000080))                                                                         \
                                                                                                                                    \
-    LEDGER_OBJECT(MPTokenIssuanceMutable,                                                                                          \
-        LSF_FLAG(lsifMPTCannotEnableCanLock, 0x00000002)                                                                              \
-        LSF_FLAG(lsifMPTCannotEnableRequireAuth, 0x00000004)                                                                          \
-        LSF_FLAG(lsifMPTCannotEnableCanEscrow, 0x00000008)                                                                            \
-        LSF_FLAG(lsifMPTCannotEnableCanTrade, 0x00000010)                                                                             \
-        LSF_FLAG(lsifMPTCannotEnableCanTransfer, 0x00000020)                                                                          \
-        LSF_FLAG(lsifMPTCannotEnableCanClawback, 0x00000040)                                                                          \
-        LSF_FLAG(lsifMPTCannotEnableCanHoldConfidentialBalance, 0x00000080)                                                                          \
-        LSF_FLAG(lsifMPTCannotMutateMetadata, 0x00010000)                                                                             \
-        LSF_FLAG(lsifMPTCannotMutateTransferFee, 0x00020000))                                                            \
-                                                                                                                                   \
     LEDGER_OBJECT(MPToken,                                                                                                         \
         LSF_FLAG2(lsfMPTLocked, 0x00000001)                                                                                        \
         LSF_FLAG(lsfMPTAuthorized, 0x00000002)                                                                                     \
@@ -293,6 +282,17 @@ getAllLedgerFlags()
 #pragma pop_macro("NULL_NAME")
 #pragma pop_macro("TO_MAP")
 #pragma pop_macro("ALL_LEDGER_FLAGS")
+
+// MPTokenIssuance ImmutableFlags (sfImmutableFlags)
+inline constexpr std::uint32_t lsifMPTCanLock = 0x00000002;
+inline constexpr std::uint32_t lsifMPTRequireAuth = 0x00000004;
+inline constexpr std::uint32_t lsifMPTCanEscrow = 0x00000008;
+inline constexpr std::uint32_t lsifMPTCanTrade = 0x00000010;
+inline constexpr std::uint32_t lsifMPTCanTransfer = 0x00000020;
+inline constexpr std::uint32_t lsifMPTCanClawback = 0x00000040;
+inline constexpr std::uint32_t lsifMPTCanHoldConfidentialBalance = 0x00000080;
+inline constexpr std::uint32_t lsifMPTMetadata = 0x00010000;
+inline constexpr std::uint32_t lsifMPTTransferFee = 0x00020000;
 
 //------------------------------------------------------------------------------
 

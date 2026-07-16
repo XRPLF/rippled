@@ -734,7 +734,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet,
     {sfDomainID, SoeOptional},
     {sfMPTokenMetadata, SoeOptional},
     {sfTransferFee, SoeOptional},
-    {sfMutableFlags, SoeOptional},
+    {sfImmutableFlags, SoeOptional},
     {sfIssuerEncryptionKey, SoeOptional},
     {sfAuditorEncryptionKey, SoeOptional},
 }))

@@ -42,10 +42,9 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
         !ctx.rules.enabled(featureConfidentialTransfer))
         return false;
 
-    // can not set tifMPTCannotEnableCanHoldConfidentialBalance without featureConfidentialTransfer
+    // can not set tifMPTCanHoldConfidentialBalance without featureConfidentialTransfer
     auto const immutableFlags = ctx.tx[~sfImmutableFlags];
-    return !immutableFlags ||
-        ((*immutableFlags & tifMPTCannotEnableCanHoldConfidentialBalance) == 0u) ||
+    return !immutableFlags || ((*immutableFlags & tifMPTCanHoldConfidentialBalance) == 0u) ||
         ctx.rules.enabled(featureConfidentialTransfer);
 }
 

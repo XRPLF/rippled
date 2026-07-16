@@ -163,32 +163,6 @@ public:
     }
 
     /**
-     * @brief Get sfMutableFlags (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getMutableFlags() const
-    {
-        if (hasMutableFlags())
-        {
-            return this->tx_->at(sfMutableFlags);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfMutableFlags is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasMutableFlags() const
-    {
-        return this->tx_->isFieldPresent(sfMutableFlags);
-    }
-
-    /**
      * @brief Get sfIssuerEncryptionKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -337,17 +311,6 @@ public:
     setTransferFee(std::decay_t<typename SF_UINT16::type::value_type> const& value)
     {
         object_[sfTransferFee] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfMutableFlags (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    MPTokenIssuanceSetBuilder&
-    setMutableFlags(std::decay_t<typename SF_UINT32::type::value_type> const& value)
-    {
-        object_[sfMutableFlags] = value;
         return *this;
     }
 

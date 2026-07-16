@@ -152,7 +152,14 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
                                                                                                                                                                \
     TRANSACTION(MPTokenIssuanceSet,                                                                                                                            \
         TF_FLAG(tfMPTLock, 0x00000001)                                                                                                                         \
-        TF_FLAG(tfMPTUnlock, 0x00000002),                                                                                                                      \
+        TF_FLAG(tfMPTUnlock, 0x00000002)                                                                                                                       \
+        TF_FLAG(tfMPTSetCanLock, 0x00000004)                                                                                                                   \
+        TF_FLAG(tfMPTSetRequireAuth, 0x00000008)                                                                                                               \
+        TF_FLAG(tfMPTSetCanEscrow, 0x00000010)                                                                                                                 \
+        TF_FLAG(tfMPTSetCanTrade, 0x00000020)                                                                                                                  \
+        TF_FLAG(tfMPTSetCanTransfer, 0x00000040)                                                                                                               \
+        TF_FLAG(tfMPTSetCanClawback, 0x00000080)                                                                                                               \
+        TF_FLAG(tfMPTSetCanHoldConfidentialBalance, 0x00000100),                                                                                               \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(NFTokenCreateOffer,                                                                                                                            \
@@ -358,36 +365,23 @@ inline constexpr FlagValue tfTrustSetPermissionMask =
 
 // MPTokenIssuanceCreate ImmutableFlags:
 // Indicating specific fields or flags may be changed after issuance.
-inline constexpr FlagValue tifMPTCannotEnableCanLock = lsifMPTCannotEnableCanLock;
-inline constexpr FlagValue tifMPTCannotEnableRequireAuth = lsifMPTCannotEnableRequireAuth;
-inline constexpr FlagValue tifMPTCannotEnableCanEscrow = lsifMPTCannotEnableCanEscrow;
-inline constexpr FlagValue tifMPTCannotEnableCanTrade = lsifMPTCannotEnableCanTrade;
-inline constexpr FlagValue tifMPTCannotEnableCanTransfer = lsifMPTCannotEnableCanTransfer;
-inline constexpr FlagValue tifMPTCannotEnableCanClawback = lsifMPTCannotEnableCanClawback;
-inline constexpr FlagValue tifMPTCannotMutateMetadata = lsifMPTCannotMutateMetadata;
-inline constexpr FlagValue tifMPTCannotMutateTransferFee = lsifMPTCannotMutateTransferFee;
-inline constexpr FlagValue tifMPTCannotEnableCanHoldConfidentialBalance =
-    lsifMPTCannotEnableCanHoldConfidentialBalance;
+inline constexpr FlagValue tifMPTCanLock = lsifMPTCanLock;
+inline constexpr FlagValue tifMPTRequireAuth = lsifMPTRequireAuth;
+inline constexpr FlagValue tifMPTCanEscrow = lsifMPTCanEscrow;
+inline constexpr FlagValue tifMPTCanTrade = lsifMPTCanTrade;
+inline constexpr FlagValue tifMPTCanTransfer = lsifMPTCanTransfer;
+inline constexpr FlagValue tifMPTCanClawback = lsifMPTCanClawback;
+inline constexpr FlagValue tifMPTMetadata = lsifMPTMetadata;
+inline constexpr FlagValue tifMPTTransferFee = lsifMPTTransferFee;
+inline constexpr FlagValue tifMPTCanHoldConfidentialBalance = lsifMPTCanHoldConfidentialBalance;
 inline constexpr FlagValue tifMPTokenIssuanceCreateImmutableMask =
-    ~(tifMPTCannotEnableCanLock | tifMPTCannotEnableRequireAuth | tifMPTCannotEnableCanEscrow |
-      tifMPTCannotEnableCanTrade | tifMPTCannotEnableCanTransfer | tifMPTCannotEnableCanClawback |
-      tifMPTCannotMutateMetadata | tifMPTCannotMutateTransferFee |
-      tifMPTCannotEnableCanHoldConfidentialBalance);
+    ~(tifMPTCanLock | tifMPTRequireAuth | tifMPTCanEscrow | tifMPTCanTrade | tifMPTCanTransfer |
+      tifMPTCanClawback | tifMPTMetadata | tifMPTTransferFee | tifMPTCanHoldConfidentialBalance);
 
-// MPTokenIssuanceSet MutableFlags:
-// Enable mutable capability flags. These flags are one-way: once enabled,
-// the corresponding capability cannot be disabled by MPTokenIssuanceSet.
-
-inline constexpr FlagValue tmfMPTSetCanLock = 0x00000001;
-inline constexpr FlagValue tmfMPTSetRequireAuth = 0x00000002;
-inline constexpr FlagValue tmfMPTSetCanEscrow = 0x00000004;
-inline constexpr FlagValue tmfMPTSetCanTrade = 0x00000008;
-inline constexpr FlagValue tmfMPTSetCanTransfer = 0x00000010;
-inline constexpr FlagValue tmfMPTSetCanClawback = 0x00000020;
-inline constexpr FlagValue tmfMPTSetCanHoldConfidentialBalance = 0x00000040;
-inline constexpr FlagValue tmfMPTokenIssuanceSetMutableMask =
-    ~(tmfMPTSetCanLock | tmfMPTSetRequireAuth | tmfMPTSetCanEscrow | tmfMPTSetCanTrade |
-      tmfMPTSetCanTransfer | tmfMPTSetCanClawback | tmfMPTSetCanHoldConfidentialBalance);
+// MPTokenIssuanceSet set of flags that is used to enable capabilities on an MPTokenIssuance.
+inline constexpr FlagValue tfMPTokenIssuanceSetMutateFlagMask = tfMPTSetCanLock |
+    tfMPTSetRequireAuth | tfMPTSetCanEscrow | tfMPTSetCanTrade | tfMPTSetCanTransfer |
+    tfMPTSetCanClawback | tfMPTSetCanHoldConfidentialBalance;
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between accounts allowed a
 // TrustLine to be added to the issuer of that token without explicit permission from that issuer.
