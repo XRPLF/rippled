@@ -324,6 +324,23 @@ jobs:
 
           LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee unittest.log
 
+      # Smoke-run every benchmark module with a single repetition to confirm the
+      # benchmarks still build and execute. This is a correctness check, not a
+      # performance measurement, so it is skipped for instrumented builds
+      # (sanitizers/coverage/voidstar), where it would be slow and meaningless,
+      # and on Windows, where the `install` target does not build them.
+      - name: Run the benchmarks
+        if: ${{ !inputs.build_only && runner.os != 'Windows' && env.SANITIZERS_ENABLED == 'false' && env.COVERAGE_ENABLED != 'true' && env.VOIDSTAR_ENABLED != 'true' }}
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          rc=0
+          while IFS= read -r bench; do
+              echo "::group::${bench}"
+              "./${bench}" --benchmark_repetitions=1 || rc=1
+              echo "::endgroup::"
+          done < <(find src/benchmarks -type f -perm -u+x -name 'xrpl.bench.*')
+          exit "${rc}"
+
       - name: Show test failure summary
         if: ${{ failure() && !inputs.build_only }}
         env:
