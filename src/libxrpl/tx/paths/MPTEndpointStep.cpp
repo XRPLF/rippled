@@ -420,8 +420,12 @@ MPTEndpointOfferCrossingStep::checkCreateMPT(ApplyView& view)
         if (auto const err = xrpl::checkCreateMPT(view, mptIssue_, dst_, {}, j_);
             !isTesSuccess(err))
         {
+            // Unreachable: offer-crossing checks reject an offer whose owner
+            // could fail to create the MPToken.
+            // LCOV_EXCL_START
             JLOG(j_.trace()) << "MPTEndpointStep::checkCreateMPT: failed create MPT";
             return err;
+            // LCOV_EXCL_STOP
         }
     }
     return tesSUCCESS;
@@ -437,8 +441,10 @@ MPTEndpointStep<TDerived>::sendWithMPTCreate(
     AccountID const& dst,
     MPTAmount const& amount)
 {
+    // Only offer crossing can fail here (payment checkCreateMPT is a no-op),
+    // via the unreachable path excluded in checkCreateMPT() above.
     if (auto const err = static_cast<TDerived*>(this)->checkCreateMPT(view); !isTesSuccess(err))
-        return err;
+        return err;  // LCOV_EXCL_LINE
 
     return directSendNoFee(
         view,
@@ -538,9 +544,13 @@ MPTEndpointStep<TDerived>::revImp(
         auto const ter = sendWithMPTCreate(sb, src_, dst_, srcToDst);
         if (!isTesSuccess(ter))
         {
+            // Unreachable: send fails only on funds/auth/overflow, precluded by
+            // maxPaymentFlow, check() requireAuth, and 2*kMaxMpTokenAmount < 2^64.
+            // LCOV_EXCL_START
             JLOG(j_.trace()) << "MPTEndpointStep::rev: error " << ter;
             resetCache(srcDebtDir);
             return {beast::kZero, beast::kZero};
+            // LCOV_EXCL_STOP
         }
         JLOG(j_.trace()) << "MPTEndpointStep::rev: Non-limiting"
                          << " srcRedeems: " << redeems(srcDebtDir) << " in: " << to_string(in)
@@ -552,9 +562,13 @@ MPTEndpointStep<TDerived>::revImp(
     auto const maybeIn = tryMulRatio(maxSrcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
     if (!maybeIn)
     {
+        // Unreachable: the limiting branch always runs with srcQOut ==
+        // QUALITY_ONE, so this identity can't overflow (see qualitiesSrcIssues).
+        // LCOV_EXCL_START
         JLOG(j_.trace()) << "MPTEndpointStep::rev: overflow";
         resetCache(srcDebtDir);
         return {beast::kZero, beast::kZero};
+        // LCOV_EXCL_STOP
     }
 
     MPTAmount const in = *maybeIn;
@@ -566,9 +580,13 @@ MPTEndpointStep<TDerived>::revImp(
     auto const ter = sendWithMPTCreate(sb, src_, dst_, maxSrcToDst);
     if (!isTesSuccess(ter))
     {
+        // Unreachable: send fails only on funds/auth/overflow, precluded by
+        // maxPaymentFlow, check() requireAuth, and 2*kMaxMpTokenAmount < 2^64.
+        // LCOV_EXCL_START
         JLOG(j_.trace()) << "MPTEndpointStep::rev: error " << ter;
         resetCache(srcDebtDir);
         return {beast::kZero, beast::kZero};
+        // LCOV_EXCL_STOP
     }
     JLOG(j_.trace()) << "MPTEndpointStep::rev: Limiting"
                      << " srcRedeems: " << redeems(srcDebtDir) << " in: " << to_string(in)
@@ -645,17 +663,25 @@ MPTEndpointStep<TDerived>::fwdImp(
 
     if (maxSrcToDst.signum() <= 0)
     {
+        // Unreachable: the reverse pass owns dry detection; every path that
+        // reaches fwdImp (see StrandFlow::flow) has a funded source.
+        // LCOV_EXCL_START
         JLOG(j_.trace()) << "MPTEndpointStep::fwd: dry";
         resetCache(srcDebtDir);
         return {beast::kZero, beast::kZero};
+        // LCOV_EXCL_STOP
     }
 
     auto const maybeSrcToDst = tryMulRatio(in, QUALITY_ONE, srcQOut, /*roundUp*/ false);
     if (!maybeSrcToDst)
     {
+        // Unreachable: divides by srcQOut >= QUALITY_ONE, so result <= in <=
+        // maxMPTAmount and can never overflow int64.
+        // LCOV_EXCL_START
         JLOG(j_.trace()) << "MPTEndpointStep::fwd: overflow";
         resetCache(srcDebtDir);
         return {beast::kZero, beast::kZero};
+        // LCOV_EXCL_STOP
     }
 
     MPTAmount const srcToDst = *maybeSrcToDst;
@@ -668,9 +694,13 @@ MPTEndpointStep<TDerived>::fwdImp(
         auto const ter = sendWithMPTCreate(sb, src_, dst_, cache_->srcToDst);
         if (!isTesSuccess(ter))
         {
+            // Unreachable: send fails only on funds/auth/overflow, precluded by
+            // maxPaymentFlow, check() requireAuth, and 2*kMaxMpTokenAmount < 2^64.
+            // LCOV_EXCL_START
             JLOG(j_.trace()) << "MPTEndpointStep::fwd: error " << ter;
             resetCache(srcDebtDir);
             return {beast::kZero, beast::kZero};
+            // LCOV_EXCL_STOP
         }
         JLOG(j_.trace()) << "MPTEndpointStep::fwd: Non-limiting"
                          << " srcRedeems: " << redeems(srcDebtDir) << " in: " << to_string(in)
@@ -678,6 +708,9 @@ MPTEndpointStep<TDerived>::fwdImp(
     }
     else
     {
+        // Unreachable: the reverse pass owns all limiting; the forward driver
+        // (StrandFlow::flow) never re-finds a limit, so srcToDst <= maxSrcToDst.
+        // LCOV_EXCL_START
         // limiting node
         auto const maybeActualIn = tryMulRatio(maxSrcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
         if (!maybeActualIn)
@@ -702,6 +735,7 @@ MPTEndpointStep<TDerived>::fwdImp(
         JLOG(j_.trace()) << "MPTEndpointStep::fwd: Limiting"
                          << " srcRedeems: " << redeems(srcDebtDir) << " in: " << to_string(actualIn)
                          << " srcToDst: " << to_string(srcToDst) << " out: " << to_string(out);
+        // LCOV_EXCL_STOP
     }
     return {cache_->in, cache_->out};
     // NOLINTEND(bugprone-unchecked-optional-access)
