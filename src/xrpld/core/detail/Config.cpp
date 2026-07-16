@@ -677,6 +677,9 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, Sections::kNetworkQuorum, strTemp, j_))
         networkQuorum = beast::lexicalCastThrow<std::size_t>(strTemp);
 
+    if (getSingleSection(secConfig, Sections::kMaxSubscriptionsPerConnection, strTemp, j_))
+        maxSubscriptionsPerConnection = beast::lexicalCastThrow<std::size_t>(strTemp);
+
     fees = setupFeeVote(section(Sections::kVoting));
     /* [fee_default] is documented in the example config files as useful for
      * things like offline transaction signing. Until that's completely
