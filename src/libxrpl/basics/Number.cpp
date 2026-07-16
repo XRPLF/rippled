@@ -429,10 +429,10 @@ Number::Guard::doDropDigitWithTarget(T& mantissa, int& exponent, int const targe
 {
     XRPL_ASSERT(
         targetExponent > exponent, "Number::Guard::doDropDigitWithTarget : something to do");
-    if (mantissa == 0 && unrecoverable() && targetExponent >= exponent)
+    if (mantissa == 0 && unrecoverable() && targetExponent > exponent)
     {
         // No number of dropped digits is going to change any of the operative parameters at this
-        // point
+        // point.
         exponent = targetExponent;
         return;
     }

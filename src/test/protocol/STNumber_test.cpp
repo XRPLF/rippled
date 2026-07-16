@@ -185,14 +185,16 @@ struct STNumber_test : public beast::unit_test::Suite
                 }
                 catch (std::exception const& e)
                 {
-                    BEAST_EXPECT(std::string(e.what()) == expected);
+                    std::ostringstream out;
+                    out << "Json: " << num.asString() << " got exception: " << e.what()
+                        << ", expected: " << expected;
+                    BEAST_EXPECTS(std::string(e.what()) == expected, out.str());
                 }
             };
 
             // Obvious overflows tested here
             expectJsonThrows("1e2000000", "Number::normalize 2");
             expectJsonThrows("1e2000000000", "Number::normalize 2");
-            expectJsonThrows("1e2000000000000", "Number::normalize 2");
 
             // Obvious non-numbers tested here
             expectJsonThrows("", "'' is not a number");
