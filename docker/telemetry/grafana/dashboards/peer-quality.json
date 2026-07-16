@@ -21,7 +21,7 @@
         "enable": true,
         "hide": false,
         "iconColor": "rgb(70, 70, 70)",
-        "name": "Perf runs (perf-iac)",
+        "name": "Annotate perf-iac runs",
         "target": {
           "limit": 100,
           "matchAny": false,
@@ -32,7 +32,7 @@
       }
     ]
   },
-  "description": "What this shows: Peer connection quality: latency, divergence, version distribution and upgrade guidance, resource disconnects, and inbound/outbound balance.\nUse it to: Assess how good this node's peer set is and whether connectivity or an upgrade needs attention.",
+  "description": "What this shows: Peer connection quality: latency, divergence, version distribution and upgrade guidance, resource disconnects, and inbound/outbound balance.  \u2014  Use it to: Assess how good this node's peer set is and whether connectivity or an upgrade needs attention.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -62,7 +62,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(peer_quality{metric=\"peer_latency_p90_ms\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"P90 Latency\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
+          "expr": "label_replace(label_join(label_replace(peer_quality{metric=\"peer_latency_p90_ms\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"P90 Latency\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
@@ -125,7 +125,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(peer_quality{metric=\"peers_insane_count\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Insane Peers\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
+          "expr": "label_replace(label_join(label_replace(peer_quality{metric=\"peers_insane_count\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Insane Peers\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
@@ -176,7 +176,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(peer_quality{metric=\"peers_higher_version_pct\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Higher Version %\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
+          "expr": "label_replace(label_join(label_replace(peer_quality{metric=\"peers_higher_version_pct\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Higher Version %\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
@@ -229,7 +229,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(peer_quality{metric=\"upgrade_recommended\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Upgrade\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
+          "expr": "label_replace(label_join(label_replace(peer_quality{metric=\"upgrade_recommended\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Upgrade\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
@@ -296,7 +296,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(server_info{metric=\"peer_disconnects_resources\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Disconnects\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
+          "expr": "label_replace(label_join(label_replace(server_info{metric=\"peer_disconnects_resources\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Disconnects\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
@@ -345,14 +345,14 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(peer_finder_active_inbound_peers{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Inbound\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
+          "expr": "label_replace(label_join(label_replace(peer_finder_active_inbound_peers{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Inbound\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_replace(label_replace(label_replace(label_join(label_replace(peer_finder_active_outbound_peers{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Outbound\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"$1$2\", \"xrpl_ident\", \"(.*?, )(?:, )+(.*)\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(.*?)(?:, )+\"), \"xrpl_ident\", \"$1\", \"xrpl_ident\", \"(?:, )+(.*)\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(.+)\")"
+          "expr": "label_replace(label_join(label_replace(peer_finder_active_outbound_peers{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Outbound\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
