@@ -134,7 +134,7 @@ runEscrowWasm(
 
     hfs.executionTimeEvent("runEscrowWasm")
         .notify(
-            std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::steady_clock::now() - start));
 
     if (!ret)
@@ -169,7 +169,7 @@ preflightEscrowWasm(
 
     hfs.executionTimeEvent("preflightEscrowWasm")
         .notify(
-            std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::steady_clock::now() - start));
 
     return ret;

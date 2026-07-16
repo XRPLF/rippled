@@ -38,7 +38,10 @@ struct RecordingEventImpl : public beast::insight::EventImpl
 
     ~RecordingEventImpl() override
     {
-        std::cout << "Mean (ns): " << meanNs() << "\n";
+        if (count > 0)
+        {
+            std::cout << "Mean (ms): " << meanMs() << "\n";
+        }
     }
 
     void
@@ -53,7 +56,7 @@ struct RecordingEventImpl : public beast::insight::EventImpl
     }
 
     [[nodiscard]] double
-    meanNs() const
+    meanMs() const
     {
         return count != 0 ? static_cast<double>(total.count()) / static_cast<double>(count) : 0.0;
     }
