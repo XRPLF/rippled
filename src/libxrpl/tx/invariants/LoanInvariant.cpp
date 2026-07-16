@@ -158,8 +158,8 @@ ValidLoan::finalize(
                 bool const hasCounterpartySig = tx.isFieldPresent(sfCounterpartySignature);
                 bool const hasStartDate = tx.isFieldPresent(sfStartDate);
                 bool const hasCounterparty = tx.isFieldPresent(sfCounterparty);
-                bool isTwoStepFlow = hasBorrower && hasStartDate;
-                bool isOneStepFlow = hasCounterpartySig;
+                bool const isTwoStepFlow = hasBorrower && hasStartDate;
+                bool const isOneStepFlow = hasCounterpartySig;
 
                 if (!isTwoStepFlow && !isOneStepFlow)
                 {
