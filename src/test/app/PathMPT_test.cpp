@@ -37,6 +37,7 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <optional>
