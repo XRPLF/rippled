@@ -1470,6 +1470,215 @@ class LendingHelpers_test : public beast::unit_test::Suite
              Number{-18304, -5}));
     }
 
+    void
+    testAccrualLoanOriginationDeltas()
+    {
+        using namespace xrpl::Accrual;
+
+        struct TestCase
+        {
+            std::string name;
+            Number principalRequested;
+            Number interestDue;
+        };
+
+        auto const testCases = std::vector<TestCase>{
+            {.name = "Zero interest",
+             .principalRequested = Number{1'000},
+             .interestDue = Number{0}},
+            {.name = "Nonzero interest",
+             .principalRequested = Number{1'000},
+             .interestDue = Number{75}},
+        };
+
+        for (auto const& tc : testCases)
+        {
+            testcase("Accrual::loanOriginationDeltas: " + tc.name);
+
+            auto const deltas = loanOriginationDeltas(tc.principalRequested, tc.interestDue);
+            BEAST_EXPECTS(
+                deltas.assetsTotalDelta == tc.interestDue,
+                "assetsTotalDelta mismatch: expected " + to_string(tc.interestDue) + ", got " +
+                    to_string(deltas.assetsTotalDelta));
+            BEAST_EXPECTS(
+                deltas.debtTotalDelta == tc.principalRequested + tc.interestDue,
+                "debtTotalDelta mismatch: expected " +
+                    to_string(tc.principalRequested + tc.interestDue) + ", got " +
+                    to_string(deltas.debtTotalDelta));
+        }
+    }
+
+    void
+    testCashBasisLoanOriginationDeltas()
+    {
+        using namespace xrpl::CashBasis;
+
+        testcase("CashBasis::loanOriginationDeltas: interestDue is ignored");
+
+        Number const principalRequested{1'000};
+        Number const interestDue{75};
+
+        auto const deltas = loanOriginationDeltas(principalRequested, interestDue);
+        BEAST_EXPECTS(
+            deltas.assetsTotalDelta == 0,
+            "assetsTotalDelta mismatch: expected 0, got " + to_string(deltas.assetsTotalDelta));
+        BEAST_EXPECTS(
+            deltas.debtTotalDelta == principalRequested,
+            "debtTotalDelta mismatch: expected " + to_string(principalRequested) + ", got " +
+                to_string(deltas.debtTotalDelta));
+    }
+
+    // Constructs a minimal ltLOAN SLE with just the fields needed by
+    // loanVaultExposure. Mirrors the bare-SLE pattern used by
+    // testCanApplyToBrokerCover for ltLOAN_BROKER.
+    static std::shared_ptr<SLE>
+    makeLoanSle(
+        Number const& totalValueOutstanding,
+        Number const& principalOutstanding,
+        Number const& managementFeeOutstanding)
+    {
+        auto sle = std::make_shared<SLE>(ltLOAN, uint256{1u});
+        sle->at(sfTotalValueOutstanding) = totalValueOutstanding;
+        sle->at(sfPrincipalOutstanding) = principalOutstanding;
+        sle->at(sfManagementFeeOutstanding) = managementFeeOutstanding;
+        return sle;
+    }
+
+    void
+    testAccrualLoanVaultExposure()
+    {
+        testcase("Accrual::loanVaultExposure");
+
+        auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
+        BEAST_EXPECT(xrpl::Accrual::loanVaultExposure(sle) == Number{950});
+    }
+
+    void
+    testCashBasisLoanVaultExposure()
+    {
+        testcase("CashBasis::loanVaultExposure");
+
+        auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
+        BEAST_EXPECT(xrpl::CashBasis::loanVaultExposure(sle) == Number{800});
+    }
+
+    void
+    testLoanPaymentDeltas()
+    {
+        // principalPaid, interestPaid, feePaid, valueChange are all distinct
+        // and nonzero, with a nonzero valueChange simulating a late-payment
+        // penalty, so Accrual's formula is meaningfully exercised.
+        LoanPaymentParts const parts{
+            .principalPaid = Number{100},
+            .interestPaid = Number{20},
+            .valueChange = Number{5},
+            .feePaid = Number{3}};
+
+        {
+            testcase("Accrual::loanPaymentDeltas: nonzero valueChange");
+            auto const deltas = xrpl::Accrual::loanPaymentDeltas(parts);
+            BEAST_EXPECT(deltas.assetsTotalDelta == parts.valueChange);
+            BEAST_EXPECT(
+                deltas.debtTotalDelta ==
+                (parts.principalPaid + parts.interestPaid) - parts.valueChange);
+        }
+
+        {
+            testcase("CashBasis::loanPaymentDeltas: nonzero valueChange ignored");
+            auto const deltas = xrpl::CashBasis::loanPaymentDeltas(parts);
+            BEAST_EXPECT(deltas.assetsTotalDelta == parts.interestPaid);
+            BEAST_EXPECT(deltas.debtTotalDelta == parts.principalPaid);
+        }
+    }
+
+    void
+    testLoanOriginationDeltasDispatcher()
+    {
+        using namespace jtx;
+
+        Number const principalRequested{1'000};
+        Number const interestDue{75};
+
+        {
+            testcase("loanOriginationDeltas dispatcher: amendment disabled picks Accrual");
+            Env env{*this};
+            env.disableFeature(featureLendingProtocolV1_1);
+            auto const deltas =
+                loanOriginationDeltas(env.current()->rules(), principalRequested, interestDue);
+            auto const expected =
+                xrpl::Accrual::loanOriginationDeltas(principalRequested, interestDue);
+            BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
+            BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
+        }
+
+        {
+            testcase("loanOriginationDeltas dispatcher: amendment enabled picks CashBasis");
+            Env const env{*this};
+            auto const deltas =
+                loanOriginationDeltas(env.current()->rules(), principalRequested, interestDue);
+            auto const expected =
+                xrpl::CashBasis::loanOriginationDeltas(principalRequested, interestDue);
+            BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
+            BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
+        }
+    }
+
+    void
+    testLoanVaultExposureDispatcher()
+    {
+        using namespace jtx;
+
+        {
+            testcase("loanVaultExposure dispatcher: amendment disabled picks Accrual");
+            Env env{*this};
+            env.disableFeature(featureLendingProtocolV1_1);
+            auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
+            BEAST_EXPECT(
+                loanVaultExposure(env.current()->rules(), sle) ==
+                xrpl::Accrual::loanVaultExposure(sle));
+        }
+
+        {
+            testcase("loanVaultExposure dispatcher: amendment enabled picks CashBasis");
+            Env const env{*this};
+            auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
+            BEAST_EXPECT(
+                loanVaultExposure(env.current()->rules(), sle) ==
+                xrpl::CashBasis::loanVaultExposure(sle));
+        }
+    }
+
+    void
+    testLoanPaymentDeltasDispatcher()
+    {
+        using namespace jtx;
+
+        LoanPaymentParts const parts{
+            .principalPaid = Number{100},
+            .interestPaid = Number{20},
+            .valueChange = Number{5},
+            .feePaid = Number{3}};
+
+        {
+            testcase("loanPaymentDeltas dispatcher: amendment disabled picks Accrual");
+            Env env{*this};
+            env.disableFeature(featureLendingProtocolV1_1);
+            auto const deltas = loanPaymentDeltas(env.current()->rules(), parts);
+            auto const expected = xrpl::Accrual::loanPaymentDeltas(parts);
+            BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
+            BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
+        }
+
+        {
+            testcase("loanPaymentDeltas dispatcher: amendment enabled picks CashBasis");
+            Env const env{*this};
+            auto const deltas = loanPaymentDeltas(env.current()->rules(), parts);
+            auto const expected = xrpl::CashBasis::loanPaymentDeltas(parts);
+            BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
+            BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
+        }
+    }
+
 public:
     void
     testCanApplyToBrokerCover()
@@ -1573,6 +1782,15 @@ public:
         testComputeOverpaymentComponents();
         testComputeInterestAndFeeParts();
         testCanApplyToBrokerCover();
+
+        testAccrualLoanOriginationDeltas();
+        testCashBasisLoanOriginationDeltas();
+        testAccrualLoanVaultExposure();
+        testCashBasisLoanVaultExposure();
+        testLoanPaymentDeltas();
+        testLoanOriginationDeltasDispatcher();
+        testLoanVaultExposureDispatcher();
+        testLoanPaymentDeltasDispatcher();
     }
 };
 

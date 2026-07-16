@@ -285,6 +285,61 @@ computeFullPaymentInterest(
     std::uint32_t startDate,
     TenthBips32 closeInterestRate);
 
+// Deltas applied to Vault.AssetsTotal and LoanBroker.DebtTotal at a single
+// accounting touch point (origination, payment, impair/unimpair/default).
+struct AccountingDeltas
+{
+    Number assetsTotalDelta;
+    Number debtTotalDelta;
+};
+
+// Whole-life (pre-LendingProtocolV1_1) recognition model: interest is
+// recognized into AssetsTotal/DebtTotal up front, at origination.
+namespace Accrual {
+
+// LoanSet origination: what's added to Vault.AssetsTotal and LoanBroker.DebtTotal
+AccountingDeltas
+loanOriginationDeltas(Number const& principalRequested, Number const& interestDue);
+
+// LoanManage impair/unimpair/default: the vault's exposure to this loan
+Number
+loanVaultExposure(SLE::ref loanSle);
+
+// LoanPay: what's added to Vault.AssetsTotal and subtracted from LoanBroker.DebtTotal for a payment
+AccountingDeltas
+loanPaymentDeltas(LoanPaymentParts const& parts);
+
+}  // namespace Accrual
+
+// Cash-basis (LendingProtocolV1_1) recognition model: AssetsTotal/DebtTotal
+// are principal-only, interest is recognized only as it's actually paid.
+namespace CashBasis {
+
+AccountingDeltas
+loanOriginationDeltas(Number const& principalRequested, Number const& interestDue);
+
+Number
+loanVaultExposure(SLE::ref loanSle);
+
+AccountingDeltas
+loanPaymentDeltas(LoanPaymentParts const& parts);
+
+}  // namespace CashBasis
+
+// Public dispatchers: pick CashBasis:: if featureLendingProtocolV1_1 is
+// enabled, else Accrual::. These are the only entry points transactors call.
+AccountingDeltas
+loanOriginationDeltas(
+    Rules const& rules,
+    Number const& principalRequested,
+    Number const& interestDue);
+
+Number
+loanVaultExposure(Rules const& rules, SLE::ref loanSle);
+
+AccountingDeltas
+loanPaymentDeltas(Rules const& rules, LoanPaymentParts const& parts);
+
 namespace detail {
 // These classes and functions should only be accessed by LendingHelper
 // functions and unit tests

@@ -633,8 +633,10 @@ LoanSet::doApply()
     view.insert(loan);
 
     // Update the balances in the vault
+    auto const [assetsTotalDelta, debtTotalDelta] =
+        loanOriginationDeltas(ctx_.view().rules(), principalRequested, state.interestDue);
     vaultAvailableProxy -= principalRequested;
-    vaultTotalProxy += state.interestDue;
+    vaultTotalProxy += assetsTotalDelta;
     XRPL_ASSERT_PARTS(
         *vaultAvailableProxy <= *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
@@ -642,7 +644,7 @@ LoanSet::doApply()
     view.update(vaultSle);
 
     // Update the balances in the loan broker
-    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), newDebtDelta, vaultAsset, vaultScale);
+    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), debtTotalDelta, vaultAsset, vaultScale);
     adjustLoanBrokerOwnerCount(view, brokerSle, 1, j_);
     loanSequenceProxy += 1;
     // The sequence should be extremely unlikely to roll over, but fail if it

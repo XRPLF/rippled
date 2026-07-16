@@ -130,6 +130,77 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale)
         roundToAsset(asset, value, scale, Number::RoundingMode::Upward);
 }
 
+namespace Accrual {
+
+AccountingDeltas
+loanOriginationDeltas(Number const& principalRequested, Number const& interestDue)
+{
+    return {.assetsTotalDelta = interestDue, .debtTotalDelta = principalRequested + interestDue};
+}
+
+Number
+loanVaultExposure(SLE::ref loanSle)
+{
+    return loanSle->at(sfTotalValueOutstanding) - loanSle->at(sfManagementFeeOutstanding);
+}
+
+AccountingDeltas
+loanPaymentDeltas(LoanPaymentParts const& parts)
+{
+    return {
+        .assetsTotalDelta = parts.valueChange,
+        .debtTotalDelta = (parts.principalPaid + parts.interestPaid) - parts.valueChange};
+}
+
+}  // namespace Accrual
+
+namespace CashBasis {
+
+AccountingDeltas
+loanOriginationDeltas(Number const& principalRequested, Number const&)
+{
+    return {.assetsTotalDelta = kNumZero, .debtTotalDelta = principalRequested};
+}
+
+Number
+loanVaultExposure(SLE::ref loanSle)
+{
+    return loanSle->at(sfPrincipalOutstanding);
+}
+
+AccountingDeltas
+loanPaymentDeltas(LoanPaymentParts const& parts)
+{
+    return {.assetsTotalDelta = parts.interestPaid, .debtTotalDelta = parts.principalPaid};
+}
+
+}  // namespace CashBasis
+
+AccountingDeltas
+loanOriginationDeltas(
+    Rules const& rules,
+    Number const& principalRequested,
+    Number const& interestDue)
+{
+    return rules.enabled(featureLendingProtocolV1_1)
+        ? CashBasis::loanOriginationDeltas(principalRequested, interestDue)
+        : Accrual::loanOriginationDeltas(principalRequested, interestDue);
+}
+
+Number
+loanVaultExposure(Rules const& rules, SLE::ref loanSle)
+{
+    return rules.enabled(featureLendingProtocolV1_1) ? CashBasis::loanVaultExposure(loanSle)
+                                                     : Accrual::loanVaultExposure(loanSle);
+}
+
+AccountingDeltas
+loanPaymentDeltas(Rules const& rules, LoanPaymentParts const& parts)
+{
+    return rules.enabled(featureLendingProtocolV1_1) ? CashBasis::loanPaymentDeltas(parts)
+                                                     : Accrual::loanPaymentDeltas(parts);
+}
+
 namespace detail {
 
 void
