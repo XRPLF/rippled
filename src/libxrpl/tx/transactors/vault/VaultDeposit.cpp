@@ -231,6 +231,7 @@ VaultDeposit::doApply()
 {
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
     bool const fix340Enabled = view().rules().enabled(fixCleanup3_4_0);
+    bool const fix350Enabled = view().rules().enabled(fixCleanup3_5_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
@@ -325,7 +326,18 @@ VaultDeposit::doApply()
         // Convert shares back to assets so the depositor is debited for the amount actually minted.
         // The truncated share count is worth <= amount; without this the difference would be
         // credited to the vault for free.
-        auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
+        //
+        // Post-fixCleanup3_5_0: round the charge Upward so the depositor pays at least the fair
+        // value of the freshly minted shares. Round-to-nearest could round the charge below that
+        // value, handing the depositor shares worth more than they paid and diluting the existing
+        // shareholders. For an IOU the fixCleanup3_4_0 clamp below re-floors this to the
+        // sfAssetsTotal grid; the Upward mode is load-bearing for integral (XRP/MPT) assets, which
+        // clampToAssetsTotalScale returns unchanged.
+        auto const maybeAssets = sharesToAssetsDeposit(
+            vault,
+            sleIssuance,
+            sharesCreated,
+            fix350Enabled ? Number::RoundingMode::Upward : Number::RoundingMode::ToNearest);
         if (!maybeAssets)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
