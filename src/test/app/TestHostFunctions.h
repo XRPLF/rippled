@@ -13,27 +13,66 @@
 
 #include <boost/algorithm/hex.hpp>
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace xrpl::test {
 
 /**
- * Lets a test assert that the WASM execution-timing path fired (and inspect
- * the recorded duration) without needing a StatsD sink or a full Collector.
+ * Lets a test assert that the WASM execution-timing path fired and inspect the
+ * recorded durations, without needing a StatsD sink or a full Collector.
  */
 struct RecordingEventImpl : public beast::insight::EventImpl
 {
     std::size_t count = 0;
     value_type last{};
+    value_type total{};
+    value_type min{value_type::max()};
+    value_type max{value_type::min()};
+    std::vector<value_type> samples;
+
+    ~RecordingEventImpl() override
+    {
+        std::cout << "Mean (ns): " << meanNs() << "\n";
+    }
 
     void
     notify(value_type const& value) override
     {
         ++count;
         last = value;
+        total += value;
+        min = std::min(min, value);
+        max = std::max(max, value);
+        samples.push_back(value);
+    }
+
+    [[nodiscard]] double
+    meanNs() const
+    {
+        return count != 0 ? static_cast<double>(total.count()) / static_cast<double>(count) : 0.0;
+    }
+
+    [[nodiscard]] value_type
+    percentile(double p) const
+    {
+        if (samples.empty())
+        {
+            return value_type{};
+        }
+        auto sorted = samples;
+        std::ranges::sort(sorted);
+        auto rank = static_cast<std::size_t>((p / 100.0) * static_cast<double>(sorted.size()));
+        if (rank >= sorted.size())
+        {
+            rank = sorted.size() - 1;
+        }
+        return sorted[rank];
     }
 };
 
