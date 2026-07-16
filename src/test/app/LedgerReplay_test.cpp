@@ -333,7 +333,7 @@ public:
     setPublisherListSequence(PublicKey const&, std::size_t const) override
     {
     }
-    [[nodiscard]] uint256 const&
+    [[nodiscard]] uint256
     getClosedLedgerHash() const override
     {
         static uint256 const kHash{};
