@@ -243,7 +243,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto finalAmt = amount;
     if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
     {
-        if (view.rules().enabled(featureMPTokensV2))
+        if (ctx.view.rules().enabled(featureMPTokensV2))
         {
             XRPL_ASSERT(
                 lockedRate >= kParityRate,

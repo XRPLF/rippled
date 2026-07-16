@@ -835,7 +835,6 @@ class CheckMPT_test : public beast::unit_test::Suite
         BEAST_EXPECT(checksOnAccount(env, alice).empty());
         BEAST_EXPECT(checksOnAccount(env, bob).empty());
 
-
         // With the maximum transfer fee, this is the largest output whose
         // fee-adjusted debit is still within SendMax.
         std::uint64_t constexpr maxDeliver = (kMaxMpTokenAmount / 3) * 2;
