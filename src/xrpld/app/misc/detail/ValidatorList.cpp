@@ -1127,6 +1127,15 @@ ValidatorList::applyList(
 
     json::Value list;
     auto const& manifest = localManifest ? *localManifest : globalManifest;
+    // Reject an oversized manifest before decoding it, so we do not allocate
+    // memory for an input that cannot be a valid manifest. deserializeManifest
+    // also enforces the decoded-byte limit, but checking here avoids the
+    // base64 decode entirely.
+    if (manifest.size() > kMaxManifestBase64)
+    {
+        JLOG(j_.warn()) << "UNL manifest exceeds maximum size";
+        return PublisherListStats{ListDisposition::Invalid};
+    }
     auto m = deserializeManifest(base64Decode(manifest));
     if (!m)
     {
