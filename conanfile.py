@@ -1,3 +1,4 @@
+import os
 import re
 
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
@@ -17,6 +18,7 @@ class Xrpl(ConanFile):
         "assertions": [True, False],
         "coverage": [True, False],
         "fPIC": [True, False],
+        "formal_verification": [True, False],
         "jemalloc": [True, False],
         "rocksdb": [True, False],
         "shared": [True, False],
@@ -48,6 +50,7 @@ class Xrpl(ConanFile):
         "assertions": False,
         "coverage": False,
         "fPIC": True,
+        "formal_verification": False,
         "jemalloc": False,
         "rocksdb": True,
         "shared": False,
@@ -128,9 +131,18 @@ class Xrpl(ConanFile):
         if self.settings.compiler in ["clang", "gcc"]:
             self.options["boost"].without_cobalt = True
 
+    def _lean_version(self):
+        # formal_verification/lean-toolchain pins "leanprover/lean4:vX.Y.Z".
+        path = os.path.join(self.recipe_folder, "formal_verification", "lean-toolchain")
+        with open(path, encoding="utf-8") as f:
+            return f.read().strip().split(":v")[1]
+
     def requirements(self):
         self.requires("boost/1.91.0", force=True, transitive_headers=True)
         self.requires("date/3.0.4", transitive_headers=True)
+        if self.options.formal_verification:
+            self.requires(f"lean4/{self._lean_version()}", transitive_headers=True)
+            self.requires(f"lean4-deps/{self._lean_version()}")
         if self.options.jemalloc:
             self.requires("jemalloc/5.3.1")
         self.requires("lz4/1.10.0", force=True)
@@ -164,6 +176,13 @@ class Xrpl(ConanFile):
         tc.variables["tests"] = self.options.tests
         tc.variables["assert"] = self.options.assertions
         tc.variables["coverage"] = self.options.coverage
+        tc.variables["formal_verification"] = self.options.formal_verification
+        if self.options.formal_verification:
+            lean4 = self.dependencies["lean4"].cpp_info
+            lean4_deps = self.dependencies["lean4-deps"].cpp_info
+            tc.variables["LEAN4_BINDIR"] = lean4.bindirs[0]
+            tc.variables["LEAN4_DEPS_PACKAGES"] = lean4_deps.get_property("packages")
+            tc.variables["LEAN4_DEPS_ARCHIVE"] = lean4_deps.get_property("archive")
         tc.variables["jemalloc"] = self.options.jemalloc
         tc.variables["rocksdb"] = self.options.rocksdb
         tc.variables["BUILD_SHARED_LIBS"] = self.options.shared

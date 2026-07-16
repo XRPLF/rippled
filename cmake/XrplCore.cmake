@@ -273,10 +273,18 @@ if(xrpld)
             CONFIGURE_DEPENDS
             "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
         )
+        # The Lean cross-validation tests need the Lean FFI symbols, which
+        # are only linked when formal_verification is enabled.
+        if(NOT formal_verification)
+            list(FILTER sources EXCLUDE REGEX "/src/test/formal_verification/")
+        endif()
         target_sources(xrpld PRIVATE ${sources})
     endif()
 
     target_link_libraries(xrpld Xrpl::boost Xrpl::opts Xrpl::libs xrpl.libxrpl)
+
+    include(XrplLean4)
+
     exclude_if_included(xrpld)
     # define a macro for tests that might need to
     # be excluded or run differently in CI environment

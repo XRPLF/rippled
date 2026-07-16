@@ -4,6 +4,7 @@ ignorePaths:
   - CMakeUserPresets.json
   - Doxyfile
   - docs/**/*.puml
+  - formal_verification/**/*.lean
   - cmake/**
   - LICENSE.md
   - .clang-tidy
@@ -131,6 +132,7 @@ words:
   - gpgcheck
   - gpgkey
   - hotwallet
+  - hrange
   - hwaddress
   - hwrap
   - ifndef
@@ -214,6 +216,7 @@ words:
   - nullptr
   - nunl
   - Nyffenegger
+  - olean
   - onlatest
   - ostr
   - pargs
@@ -304,6 +307,7 @@ words:
   - takergets
   - takerpays
   - ters
+  - Thrane
   - TMEndpointv2
   - tparam
   - trixie
