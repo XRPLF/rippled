@@ -602,9 +602,9 @@ class MPToken_test : public beast::unit_test::Suite
 
             mptAlice.authorize({.account = bob, .holderCount = 1});
 
-            // test invalid flag - only valid flags are tfMPTLock (1) and Unlock
-            // (2)
-            mptAlice.set({.account = alice, .flags = 0x00000008, .err = temINVALID_FLAG});
+            // test invalid flag - an unrecognized flag bit is always
+            // rejected, regardless of which amendments are enabled
+            mptAlice.set({.account = alice, .flags = 0x00001000, .err = temINVALID_FLAG});
 
             if (!features[featureSingleAssetVault] && !features[featureDynamicMPT] &&
                 !features[featureConfidentialTransfer])
