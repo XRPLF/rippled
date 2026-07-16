@@ -1,10 +1,16 @@
 #pragma once
 
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base64.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 
+#include <atomic>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <optional>
 #include <shared_mutex>
 #include <string>
@@ -135,15 +141,47 @@ struct Manifest
 std::string
 to_string(Manifest const& m);
 
-/** Constructs Manifest from serialized string
+/**
+ *Largest a valid manifest can be, in decoded bytes.
+ *
+ *   A manifest has a fixed set of fields. Each is serialized as a field header
+ *   (1-2 bytes), an optional length prefix (1 byte for these sizes), and the
+ *   field body. Taking every field at its largest gives the maximum below, so
+ *   anything larger cannot be a valid manifest.
+ *
+ *       Field               header + length + body = bytes
+ *       sfVersion   (U16)        2          0     2     4
+ *       sfSequence  (U32)        1          0     4     5
+ *       sfPublicKey (33)         1          1    33    35
+ *       sfSigningPubKey (33)     1          1    33    35
+ *       sfSignature (72)         1          1    72    74
+ *       sfMasterSignature (72)   2          1    72    75
+ *       sfDomain    (128)        1          1   128   130
+ *                                                    -----
+ *                                                      358
+ */
+constexpr std::size_t kMaxManifestBytes = 358;
 
-    @param s Serialized manifest string
+/**
+ * Largest a valid manifest can be, in base64 characters.
+ *
+ *   base64 encodes 3 bytes as 4 characters, so this is the encoded form of
+ *   @ref kMaxManifestBytes. Callers that receive a base64 manifest should
+ *   reject anything longer than this before decoding, to avoid allocating
+ *   memory for an oversized input.
+ */
+constexpr std::size_t kMaxManifestBase64 = base64::encodedSize(kMaxManifestBytes);
 
-    @return `std::nullopt` if string is invalid
-
-    @note This does not verify manifest signatures.
-          `Manifest::verify` should be called after constructing manifest.
-*/
+/**
+ * Constructs Manifest from serialized string
+ *
+ * @param s Serialized manifest string
+ *
+ * @return `std::nullopt` if string is invalid
+ *
+ * @note This does not verify manifest signatures.
+ *       `Manifest::verify` should be called after constructing manifest.
+ */
 /** @{ */
 std::optional<Manifest>
 deserializeManifest(Slice s, beast::Journal journal);
