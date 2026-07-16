@@ -34,6 +34,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
     auto const domainIDValue = canonical_UINT256();
     auto const mPTokenMetadataValue = canonical_VL();
     auto const transferFeeValue = canonical_UINT16();
+    auto const immutableFlagsValue = canonical_UINT32();
     auto const issuerEncryptionKeyValue = canonical_VL();
     auto const auditorEncryptionKeyValue = canonical_VL();
 
@@ -49,6 +50,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
     builder.setDomainID(domainIDValue);
     builder.setMPTokenMetadata(mPTokenMetadataValue);
     builder.setTransferFee(transferFeeValue);
+    builder.setImmutableFlags(immutableFlagsValue);
     builder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
     builder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
 
@@ -107,6 +109,14 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = immutableFlagsValue;
+        auto const actualOpt = tx.getImmutableFlags();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfImmutableFlags should be present";
+        expectEqualField(expected, *actualOpt, "sfImmutableFlags");
+        EXPECT_TRUE(tx.hasImmutableFlags());
+    }
+
+    {
         auto const& expected = issuerEncryptionKeyValue;
         auto const actualOpt = tx.getIssuerEncryptionKey();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfIssuerEncryptionKey should be present";
@@ -143,6 +153,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
     auto const domainIDValue = canonical_UINT256();
     auto const mPTokenMetadataValue = canonical_VL();
     auto const transferFeeValue = canonical_UINT16();
+    auto const immutableFlagsValue = canonical_UINT32();
     auto const issuerEncryptionKeyValue = canonical_VL();
     auto const auditorEncryptionKeyValue = canonical_VL();
 
@@ -158,6 +169,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
     initialBuilder.setDomainID(domainIDValue);
     initialBuilder.setMPTokenMetadata(mPTokenMetadataValue);
     initialBuilder.setTransferFee(transferFeeValue);
+    initialBuilder.setImmutableFlags(immutableFlagsValue);
     initialBuilder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
     initialBuilder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
 
@@ -210,6 +222,13 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getTransferFee();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTransferFee should be present";
         expectEqualField(expected, *actualOpt, "sfTransferFee");
+    }
+
+    {
+        auto const& expected = immutableFlagsValue;
+        auto const actualOpt = rebuiltTx.getImmutableFlags();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfImmutableFlags should be present";
+        expectEqualField(expected, *actualOpt, "sfImmutableFlags");
     }
 
     {
@@ -291,6 +310,8 @@ TEST(TransactionsMPTokenIssuanceSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getMPTokenMetadata().has_value());
     EXPECT_FALSE(tx.hasTransferFee());
     EXPECT_FALSE(tx.getTransferFee().has_value());
+    EXPECT_FALSE(tx.hasImmutableFlags());
+    EXPECT_FALSE(tx.getImmutableFlags().has_value());
     EXPECT_FALSE(tx.hasIssuerEncryptionKey());
     EXPECT_FALSE(tx.getIssuerEncryptionKey().has_value());
     EXPECT_FALSE(tx.hasAuditorEncryptionKey());
