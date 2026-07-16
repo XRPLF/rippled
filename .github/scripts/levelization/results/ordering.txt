@@ -294,6 +294,7 @@ xrpld.rpc > xrpl.server
 xrpld.rpc > xrpl.shamap
 xrpld.rpc > xrpl.tx
 xrpld.shamap > xrpl.basics
+xrpld.shamap > xrpl.core
 xrpld.shamap > xrpld.core
 xrpld.shamap > xrpl.protocol
 xrpld.shamap > xrpl.shamap
