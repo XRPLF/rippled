@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/beast/insight/Event.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -119,6 +120,12 @@ struct HostFunctions
     getJournal() const
     {
         return j;
+    }
+
+    [[nodiscard]] virtual beast::insight::Event
+    executionTimeEvent(std::string_view name) const
+    {
+        return {};
     }
 
     [[nodiscard]] virtual bool

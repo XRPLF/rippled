@@ -8,6 +8,7 @@
 #include <xrpl/beast/insight/StatsDCollector.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/CollectorManager.h>
 
 #include <memory>
 #include <string>

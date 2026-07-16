@@ -6,6 +6,7 @@
 #include <xrpl/tx/wasm/HostFuncWrapper.h>  // IWYU pragma: keep
 #include <xrpl/tx/wasm/ParamsHelper.h>
 
+#include <chrono>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -126,8 +127,15 @@ runEscrowWasm(
     auto& vm = WasmEngine::instance();
     // vm.initMaxPages(MAX_PAGES);
 
+    auto const start = std::chrono::steady_clock::now();
+
     auto const ret =
         vm.run(wasmCode, hfs, gasLimit, funcName, params, createWasmImport(hfs), hfs.getJournal());
+
+    hfs.executionTimeEvent("runEscrowWasm")
+        .notify(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - start));
 
     if (!ret)
     {
@@ -140,7 +148,7 @@ runEscrowWasm(
 #ifdef DEBUG_OUTPUT
     std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost << std::endl;
 #endif
-    return EscrowResult{ret->result, ret->cost};
+    return EscrowResult{.result = ret->result, .cost = ret->cost};
 }
 
 NotTEC
@@ -154,8 +162,15 @@ preflightEscrowWasm(
     auto& vm = WasmEngine::instance();
     // vm.initMaxPages(MAX_PAGES);
 
+    auto const start = std::chrono::steady_clock::now();
+
     auto const ret =
         vm.check(wasmCode, hfs, funcName, params, createWasmImport(hfs), hfs.getJournal());
+
+    hfs.executionTimeEvent("preflightEscrowWasm")
+        .notify(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - start));
 
     return ret;
 }

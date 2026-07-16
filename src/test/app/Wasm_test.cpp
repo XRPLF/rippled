@@ -16,7 +16,6 @@
 
 #include <algorithm>
 #include <array>
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -1547,27 +1546,14 @@ struct Wasm_test : public beast::unit_test::Suite
 
     template <typename Functor>
     void
-    perf(size_t runs, Functor&& f)
+    perf(TestHostFunctions& hfs, size_t runs, Functor&& f)
     {
-        using std::chrono::duration_cast;
-        using std::chrono::steady_clock;
-
-        // Warm up first.
-        for (auto i = size_t{}; i < 10; ++i)
-        {
-            BEAST_EXPECT(f());
-        }
-
-        auto totalTime = uint64_t{};
         for (auto i = size_t{}; i < runs; ++i)
         {
-            auto const start = steady_clock::now();
             auto result = f();
-            auto const end = steady_clock::now();
-            totalTime += duration_cast<std::chrono::nanoseconds>(end - start).count();
             BEAST_EXPECT(result);
         }
-        log << "Average time for " << runs << " runs: " << (totalTime / runs) << " ns\n";
+        BEAST_EXPECT(hfs.execTimeEvent->count == runs);
     }
 
     void
@@ -1583,7 +1569,7 @@ struct Wasm_test : public beast::unit_test::Suite
         Env env{*this};
         auto hfns = TestHostFunctions{env, 0};
 
-        perf(kRuns, [&] {
+        perf(hfns, kRuns, [&] {
             return runEscrowWasm(wasm, hfns, 1'000'000, escrowFunctionName, {}).has_value();
         });
     }
@@ -1598,10 +1584,11 @@ struct Wasm_test : public beast::unit_test::Suite
 
         auto const wasm = hexToBytes(kAllHostFunctionsWasmHex);
 
-        Env const env{*this};
+        Env env{*this};
         auto mock = HostFunctions{env.journal};
+        auto hfns = TestHostFunctions{env, 0};
 
-        perf(kRuns, [&] { return !preflightEscrowWasm(wasm, mock, escrowFunctionName); });
+        perf(hfns, kRuns, [&] { return !preflightEscrowWasm(wasm, mock, escrowFunctionName); });
     }
 
     void

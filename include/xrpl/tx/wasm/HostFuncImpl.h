@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/core/CollectorManager.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 
@@ -75,6 +76,15 @@ public:
     getRT() const override
     {
         return rt_;
+    }
+
+    beast::insight::Event
+    executionTimeEvent(std::string_view name) const override
+    {
+        return ctx_.registry.get()
+            .getCollectorManager()
+            .group(std::string{name.data(), name.size()})
+            ->makeEvent("finish_time");
     }
 
     bool

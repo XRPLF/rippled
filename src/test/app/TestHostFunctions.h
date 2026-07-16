@@ -2,6 +2,8 @@
 #include <test/jtx/Env.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpl/beast/insight/Event.h>
+#include <xrpl/beast/insight/EventImpl.h>
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
@@ -17,6 +19,23 @@
 #include <string_view>
 
 namespace xrpl::test {
+
+/**
+ * Lets a test assert that the WASM execution-timing path fired (and inspect
+ * the recorded duration) without needing a StatsD sink or a full Collector.
+ */
+struct RecordingEventImpl : public beast::insight::EventImpl
+{
+    std::size_t count = 0;
+    value_type last{};
+
+    void
+    notify(value_type const& value) override
+    {
+        ++count;
+        last = value;
+    }
+};
 
 struct TestLedgerDataProvider : public HostFunctions
 {
@@ -54,6 +73,7 @@ struct TestHostFunctions : public HostFunctions
     Bytes data;
     int clock_drift = 0;
     void* rt = nullptr;
+    std::shared_ptr<RecordingEventImpl> execTimeEvent = std::make_shared<RecordingEventImpl>();
 
 public:
     TestHostFunctions(test::jtx::Env& env, int cd = 0)
@@ -74,6 +94,15 @@ public:
     getRT() const override
     {
         return rt;
+    }
+
+    // Return an Event backed by our recording impl so a test can assert that
+    // the WASM execution was timed. The name is ignored -- every call records
+    // into the same impl.
+    [[nodiscard]] beast::insight::Event
+    executionTimeEvent(std::string_view name) const override
+    {
+        return beast::insight::Event(execTimeEvent);
     }
 
     Expected<std::uint32_t, HostFunctionError>
