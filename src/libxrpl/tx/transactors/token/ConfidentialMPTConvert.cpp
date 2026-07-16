@@ -7,7 +7,6 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -26,9 +25,6 @@ namespace xrpl {
 NotTEC
 ConfidentialMPTConvert::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureConfidentialTransfer))
-        return temDISABLED;
-
     // issuer cannot convert
     if (MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer() == ctx.tx[sfAccount])
         return temMALFORMED;
