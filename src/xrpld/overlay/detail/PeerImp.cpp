@@ -1113,10 +1113,13 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMPing> const& m)
 {
     if (m->type() == protocol::TMPing::ptPING)
     {
-        // We have received a ping request, reply with a pong
+        // We have received a ping request, reply with a pong.
         fee_.update(Resource::kFeeModerateBurdenPeer, "ping request");
-        m->set_type(protocol::TMPing::ptPONG);
-        send(std::make_shared<Message>(*m, protocol::mtPING));
+        protocol::TMPing pong;
+        pong.set_type(protocol::TMPing::ptPONG);
+        if (m->has_seq())
+            pong.set_seq(m->seq());
+        send(std::make_shared<Message>(pong, protocol::mtPING));
         return;
     }
 
