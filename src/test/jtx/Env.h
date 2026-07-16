@@ -485,30 +485,31 @@ public:
         return result && drainServerIo(timeout);
     }
 
-    /** Disconnect the Env's built-in client and wait for the server to
-        register the dropped connection.
-
-        Env holds one persistent client connection to the server's RPC port for
-        its whole lifetime (see client()), and that connection counts against
-        the port's connection limit. Tests that need a known starting occupancy
-        can call this to deterministically release that slot instead of waiting
-        out the server's localhost idle timeout.
-
-        The server decrements its per-port connection count in the peer's
-        destructor, which runs when the io_context processes the end-of-stream
-        on the closed socket. After closing the client this drains the server's
-        io_context twice: the first barrier guarantees the reactor has reaped
-        the closed socket and queued the peer's teardown, and the second
-        guarantees that teardown (and therefore the count decrement) has run.
-
-        This is only sound when the server uses a single io_context thread, so
-        that draining establishes ordering against the teardown - configure the
-        Env with singleThreadIo() (as syncClose() also requires). Like
-        syncClose(), it relies on loopback teardown latency being negligible.
-
-        @param timeout Maximum time to wait for each barrier task to execute
-        @return true if both barriers executed within timeout, false otherwise
-    */
+    /**
+     * Disconnect the Env's built-in client and wait for the server to
+     * register the dropped connection.
+     *
+     * Env holds one persistent client connection to the server's RPC port for
+     * its whole lifetime (see client()), and that connection counts against
+     * the port's connection limit. Tests that need a known starting occupancy
+     * can call this to deterministically release that slot instead of waiting
+     * out the server's localhost idle timeout.
+     *
+     * The server decrements its per-port connection count in the peer's
+     * destructor, which runs when the io_context processes the end-of-stream
+     * on the closed socket. After closing the client this drains the server's
+     * io_context twice: the first barrier guarantees the reactor has reaped
+     * the closed socket and queued the peer's teardown, and the second
+     * guarantees that teardown (and therefore the count decrement) has run.
+     *
+     * This is only sound when the server uses a single io_context thread, so
+     * that draining establishes ordering against the teardown - configure the
+     * Env with singleThreadIo() (as syncClose() also requires). Like
+     * syncClose(), it relies on loopback teardown latency being negligible.
+     *
+     * @param timeout Maximum time to wait for each barrier task to execute
+     * @return true if both barriers executed within timeout, false otherwise
+     */
     [[nodiscard]] bool
     disconnectClient(std::chrono::steady_clock::duration timeout = std::chrono::seconds{1})
     {
@@ -843,14 +844,16 @@ public:
     }
 
 private:
-    /** Drain the (single) server io_context thread once.
-
-        Posts a barrier task to the server's io_context and blocks until it
-        runs, so every task queued before it has been processed. Only meaningful
-        with a single io thread (see syncClose()/disconnectClient()).
-
-        @return true if the barrier ran within timeout, false otherwise
-    */
+    /**
+     * Drain the (single) server io_context thread once.
+     *
+     * Posts a barrier task to the server's io_context and blocks until it
+     * runs, so every task queued before it has been processed. Only meaningful
+     * with a single io thread (see syncClose()/disconnectClient()).
+     *
+     * @param timeout Maximum time to wait for the barrier task to execute
+     * @return true if the barrier ran within timeout, false otherwise
+     */
     [[nodiscard]] bool
     drainServerIo(std::chrono::steady_clock::duration timeout)
     {
