@@ -61,6 +61,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <exception>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -5246,10 +5247,14 @@ class Vault_test : public beast::unit_test::Suite
         auto const maxInt64 = std::to_string(std::numeric_limits<std::int64_t>::max());
         BEAST_EXPECT(maxInt64 == "9223372036854775807");
 
-        // Naming things is hard
         auto const maxInt64Plus1 = std::to_string(
             static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) + 1);
         BEAST_EXPECT(maxInt64Plus1 == "9223372036854775808");
+
+        // Naming things is hard
+        auto const maxInt64Plus2 = std::to_string(
+            static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) + 2);
+        BEAST_EXPECT(maxInt64Plus2 == "9223372036854775809");
 
         auto const initialXRP = to_string(kInitialXrp);
         BEAST_EXPECT(initialXRP == "100000000000000000");
@@ -5277,25 +5282,58 @@ class Vault_test : public beast::unit_test::Suite
             env(tx);
             env.close();
 
-            tx[sfAssetsMaximum] = maxInt64Plus1;
-            env(tx, Ter(tefEXCEPTION));
-            env.close();
+            // There are several parse failures expected in this function, so just disable it once.
+            env.setParseFailureExpected(true);
+            try
+            {
+                tx[sfAssetsMaximum] = maxInt64Plus1;
+                env(tx, Ter(tefEXCEPTION));
+                env.close();
+                // should throw in parser
+                fail();
+            }
+            catch (std::exception const& e)
+            {
+                BEAST_EXPECT(
+                    std::string(e.what()) ==
+                    "invalidParamsField 'tx_json.AssetsMaximum' has invalid data.");
+            }
 
-            // This value will be rounded
-            auto const insertAt = maxInt64Plus1.size() - 3;
-            auto const decimalTest = maxInt64Plus1.substr(0, insertAt) + "." +
-                maxInt64Plus1.substr(insertAt);  // (max int64+1) / 1000
-            BEAST_EXPECT(decimalTest == "9223372036854775.808");
-            tx[sfAssetsMaximum] = decimalTest;
+            try
+            {
+                tx[sfAssetsMaximum] = maxInt64Plus2;
+                env(tx, Ter(tefEXCEPTION));
+                // should throw in parser
+                fail();
+            }
+            catch (std::exception const& e)
+            {
+                BEAST_EXPECT(
+                    std::string(e.what()) ==
+                    "invalidParamsField 'tx_json.AssetsMaximum' has invalid data.");
+            }
+
             auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
-            env(tx);
-            env.close();
+            try
+            {
+                auto const insertAt = maxInt64Plus2.size() - 3;
+                auto const decimalTest = maxInt64Plus2.substr(0, insertAt) + "." +
+                    maxInt64Plus2.substr(insertAt);  // (max int64+2) / 1000
+                BEAST_EXPECT(decimalTest == "9223372036854775.809");
+                tx[sfAssetsMaximum] = decimalTest;
+                env(tx);
+                // should throw in parser
+                fail();
+            }
+            catch (std::exception const& e)
+            {
+                BEAST_EXPECT(
+                    std::string(e.what()) ==
+                    "invalidParamsField 'tx_json.AssetsMaximum' has invalid data.");
+            }
 
             auto const vaultSle = env.le(newKeylet);
-            if (!BEAST_EXPECT(vaultSle))
-                return;
-
-            BEAST_EXPECT(vaultSle->at(sfAssetsMaximum) == 9223372036854776);
+            BEAST_EXPECT(!vaultSle);
         }
 
         {
@@ -5329,25 +5367,41 @@ class Vault_test : public beast::unit_test::Suite
             env(tx);
             env.close();
 
-            tx[sfAssetsMaximum] = maxInt64Plus1;
-            env(tx, Ter(tefEXCEPTION));
-            env.close();
+            try
+            {
+                tx[sfAssetsMaximum] = maxInt64Plus2;
+                env(tx, Ter(tefEXCEPTION));
+                // should throw in parser
+                fail();
+            }
+            catch (std::exception const& e)
+            {
+                BEAST_EXPECT(
+                    std::string(e.what()) ==
+                    "invalidParamsField 'tx_json.AssetsMaximum' has invalid data.");
+            }
 
-            // This value will be rounded
-            auto const insertAt = maxInt64Plus1.size() - 1;
-            auto const decimalTest = maxInt64Plus1.substr(0, insertAt) + "." +
-                maxInt64Plus1.substr(insertAt);  // (max int64+1) / 10
-            BEAST_EXPECT(decimalTest == "922337203685477580.8");
-            tx[sfAssetsMaximum] = decimalTest;
             auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
-            env(tx);
-            env.close();
+            try
+            {
+                auto const insertAt = maxInt64Plus2.size() - 1;
+                auto const decimalTest = maxInt64Plus2.substr(0, insertAt) + "." +
+                    maxInt64Plus2.substr(insertAt);  // (max int64+2) / 10
+                BEAST_EXPECT(decimalTest == "922337203685477580.9");
+                tx[sfAssetsMaximum] = decimalTest;
+                env(tx);
+                // should throw in parser
+                fail();
+            }
+            catch (std::exception const& e)
+            {
+                BEAST_EXPECT(
+                    std::string(e.what()) ==
+                    "invalidParamsField 'tx_json.AssetsMaximum' has invalid data.");
+            }
 
             auto const vaultSle = env.le(newKeylet);
-            if (!BEAST_EXPECT(vaultSle))
-                return;
-
-            BEAST_EXPECT(vaultSle->at(sfAssetsMaximum) == 922337203685477581);
+            BEAST_EXPECT(!vaultSle);
         }
 
         {
@@ -5374,9 +5428,22 @@ class Vault_test : public beast::unit_test::Suite
             env(tx);
             env.close();
 
-            tx[sfAssetsMaximum] = maxInt64Plus1;
-            env(tx);
-            env.close();
+            // Since several tests are expected to have parser failures, leave this flag set for the
+            // remainder of this function.
+            env.setParseFailureExpected(true);
+            try
+            {
+                tx[sfAssetsMaximum] = maxInt64Plus2;
+                env(tx);
+                // should throw in parser
+                fail();
+            }
+            catch (std::exception const& e)
+            {
+                BEAST_EXPECT(
+                    std::string(e.what()) ==
+                    "invalidParamsField 'tx_json.AssetsMaximum' has invalid data.");
+            }
 
             tx[sfAssetsMaximum] = "1000000000000000e80";
             env.close();
@@ -5386,22 +5453,27 @@ class Vault_test : public beast::unit_test::Suite
 
             // These values will be rounded to 15 significant digits
             {
-                auto const insertAt = maxInt64Plus1.size() - 1;
-                auto const decimalTest = maxInt64Plus1.substr(0, insertAt) + "." +
-                    maxInt64Plus1.substr(insertAt);  // (max int64+1) / 10
-                BEAST_EXPECT(decimalTest == "922337203685477580.8");
-                tx[sfAssetsMaximum] = decimalTest;
                 auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
-                env(tx);
-                env.close();
+                try
+                {
+                    auto const insertAt = maxInt64Plus2.size() - 1;
+                    auto const decimalTest = maxInt64Plus2.substr(0, insertAt) + "." +
+                        maxInt64Plus2.substr(insertAt);  // (max int64+2) / 10
+                    BEAST_EXPECT(decimalTest == "922337203685477580.9");
+                    tx[sfAssetsMaximum] = decimalTest;
+                    env(tx);
+                    // should throw in parser
+                    fail();
+                }
+                catch (std::exception const& e)
+                {
+                    BEAST_EXPECT(
+                        std::string(e.what()) ==
+                        "invalidParamsField 'tx_json.AssetsMaximum' has invalid data.");
+                }
 
                 auto const vaultSle = env.le(newKeylet);
-                if (!BEAST_EXPECT(vaultSle))
-                    return;
-
-                BEAST_EXPECT(
-                    (vaultSle->at(sfAssetsMaximum) ==
-                     Number{9223372036854776, 2, Number::Normalized{}}));
+                BEAST_EXPECT(!vaultSle);
             }
             {
                 tx[sfAssetsMaximum] = "9223372036854775807e40";  // max int64 * 10^40
