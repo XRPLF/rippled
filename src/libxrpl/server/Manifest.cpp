@@ -62,6 +62,11 @@ deserializeManifest(Slice s, beast::Journal journal)
     if (s.empty())
         return std::nullopt;
 
+    // A valid manifest has a fixed maximum size, so reject anything larger
+    // before parsing it.
+    if (s.size() > kMaxManifestBytes)
+        return std::nullopt;
+
     static SOTemplate const kManifestFormat{
         // A manifest must include:
         // - the master public key
