@@ -7,6 +7,7 @@
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
+#include <test/jtx/sig.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
@@ -2767,6 +2768,16 @@ class Invariants_test : public beast::unit_test::Suite
             AccountID account;
             int amount;
         };
+        // Parameters for a synthetic loan object created alongside a vault
+        // adjustment. The interest due booked to the vault is
+        // totalValueOutstanding - principalOutstanding - managementFeeOutstanding.
+        struct LoanParams
+        {
+            int principalOutstanding = 0;
+            int totalValueOutstanding = 0;
+            int managementFeeOutstanding = 0;
+            AccountID borrower = beast::kZero;
+        };
         struct Adjustments
         {
             // NOLINTBEGIN(readability-redundant-member-init)
@@ -2778,6 +2789,10 @@ class Invariants_test : public beast::unit_test::Suite
             std::optional<int> vaultAssets = std::nullopt;
             std::optional<AccountAmount> accountAssets = std::nullopt;
             std::optional<AccountAmount> accountShares = std::nullopt;
+            std::optional<LoanParams> createLoan = std::nullopt;
+            // Number of loan objects to create (only used when createLoan is
+            // set); a valid loan set creates exactly one.
+            int loanCount = 1;
             // NOLINTEND(readability-redundant-member-init)
         };
         constexpr auto kAdjust = [&](ApplyView& ac, xrpl::Keylet keylet, Adjustments args) {
@@ -2875,6 +2890,28 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
                 (*sleMPToken)[sfMPTAmount] = *(*sleMPToken)[sfMPTAmount] + pair.amount;
                 ac.update(sleMPToken);
+            }
+
+            if (args.createLoan)
+            {
+                auto const& lp = *args.createLoan;
+                bool const anyOutstanding = lp.principalOutstanding != 0 ||
+                    lp.totalValueOutstanding != 0 || lp.managementFeeOutstanding != 0;
+                for (std::uint32_t seq = 1; seq <= static_cast<std::uint32_t>(args.loanCount);
+                     ++seq)
+                {
+                    auto sleLoan = std::make_shared<SLE>(keylet::loan(keylet.key, seq));
+                    sleLoan->at(sfPrincipalOutstanding) = Number(lp.principalOutstanding);
+                    sleLoan->at(sfTotalValueOutstanding) = Number(lp.totalValueOutstanding);
+                    sleLoan->at(sfManagementFeeOutstanding) = Number(lp.managementFeeOutstanding);
+                    // ValidLoan requires a positive periodic payment, and that a
+                    // loan with payments remaining is not fully paid off.
+                    sleLoan->at(sfPeriodicPayment) = Number(1);
+                    sleLoan->setFieldU32(sfPaymentRemaining, anyOutstanding ? 1 : 0);
+                    sleLoan->setAccountID(sfBorrower, lp.borrower);
+                    sleLoan->makeFieldPresent(sfOwnerNode);
+                    ac.insert(sleLoan);
+                }
             }
             return true;
         };
@@ -3460,6 +3497,709 @@ class Invariants_test : public beast::unit_test::Suite
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
+
+        testcase << "Vault loan operations";
+
+        // ttLOAN_MANAGE (impair): assets outstanding must not change. Only
+        // assets outstanding is bumped, so the common checks (vault balance,
+        // assets available, shares) all pass and only the impair/unimpair
+        // sub-check fires.
+        doInvariantCheck(
+            {"loan impair/unimpair must not change assets outstanding"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, Adjustments{.assetsTotal = 100});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject& tx) { tx.setFieldU32(sfFlags, tfLoanImpair); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_MANAGE with none of the sub-operation flags (impair,
+        // unimpair, default) is a no-op and must not modify the vault.
+        doInvariantCheck(
+            {"loan manage without a sub-operation must not modify the vault"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, Adjustments{.assetsTotal = 100});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_SET: exactly one loan is created, but the vault
+        // (pseudo-account) balance does not change, so only the balance check
+        // trips. A loan must be created so the "exactly one loan" check passes
+        // first and the balance check is actually reached.
+        doInvariantCheck(
+            {"loan set must change vault balance"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .createLoan = LoanParams{
+                            .principalOutstanding = 200,
+                            .totalValueOutstanding = 200,
+                            .borrower = a1.id(),
+                        }});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_SET: the balance decreases, but not by the principal requested
+        doInvariantCheck(
+            {"loan set must decrease vault balance by the principal requested",
+             "loan set must decrease assets available by the principal requested"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsAvailable = -100,
+                        .vaultAssets = -100,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = 100},
+                        .createLoan = LoanParams{
+                            .principalOutstanding = 200,
+                            .totalValueOutstanding = 200,
+                            .borrower = a1.id(),
+                        }});
+            },
+            XRPAmount{},
+            STTx{
+                ttLOAN_SET,
+                [](STObject& tx) {
+                    tx.at(sfPrincipalRequested) = Number(200);
+                    tx.makeFieldPresent(sfCounterpartySignature);
+                }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_SET: principal matches, but no loan object is created
+        doInvariantCheck(
+            {"loan set must create exactly one loan"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsAvailable = -200,
+                        .vaultAssets = -200,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = 200}});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_SET: principal matches, but more than one loan is created
+        doInvariantCheck(
+            {"loan set must create exactly one loan"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsAvailable = -200,
+                        .vaultAssets = -200,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
+                        .createLoan =
+                            LoanParams{
+                                .principalOutstanding = 100,
+                                .totalValueOutstanding = 100,
+                                .borrower = a1.id(),
+                            },
+                        .loanCount = 2});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_SET: principal matches, but assets outstanding change does not
+        // equal the interest due booked on the created loan (0 here)
+        doInvariantCheck(
+            {"loan set must increase assets outstanding by the interest due"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsTotal = -50,
+                        .assetsAvailable = -200,
+                        .vaultAssets = -200,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
+                        .createLoan = LoanParams{
+                            .principalOutstanding = 200,
+                            .totalValueOutstanding = 200,
+                            .borrower = a1.id(),
+                        }});
+            },
+            XRPAmount{},
+            STTx{
+                ttLOAN_SET,
+                [](STObject& tx) {
+                    tx.at(sfPrincipalRequested) = Number(200);
+                    tx.makeFieldPresent(sfCounterpartySignature);
+                }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_SET: principal matches, but shares outstanding changes
+        doInvariantCheck(
+            {"loan set must not change shares outstanding"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsAvailable = -200,
+                        .sharesTotal = 10,
+                        .vaultAssets = -200,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
+                        .accountShares = AccountAmount{.account = a2.id(), .amount = 10},
+                        .createLoan = LoanParams{
+                            .principalOutstanding = 200,
+                            .totalValueOutstanding = 200,
+                            .borrower = a1.id(),
+                        }});
+            },
+            XRPAmount{},
+            STTx{
+                ttLOAN_SET,
+                [](STObject& tx) {
+                    tx.at(sfPrincipalRequested) = Number(200);
+                    tx.makeFieldPresent(sfCounterpartySignature);
+                }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_SET: everything balances (principal released, exactly one loan
+        // created booking zero interest so assets outstanding is unchanged, and
+        // shares are untouched), but the vault has a positive assets maximum
+        // below its assets outstanding, so only the maximum check trips.
+        doInvariantCheck(
+            {"loan set assets outstanding must not exceed assets maximum"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsAvailable = -200,
+                        .assetsMaximum = 1,
+                        .vaultAssets = -200,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
+                        .createLoan = LoanParams{
+                            .principalOutstanding = 200,
+                            .totalValueOutstanding = 200,
+                            .borrower = a1.id(),
+                        }});
+            },
+            XRPAmount{},
+            STTx{
+                ttLOAN_SET,
+                [](STObject& tx) {
+                    tx.at(sfPrincipalRequested) = Number(200);
+                    tx.makeFieldPresent(sfCounterpartySignature);
+                }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_SET: everything balances (principal released, exactly one loan
+        // created booking zero interest, shares untouched, assets outstanding
+        // unchanged), but the created loan records a principal outstanding that
+        // differs from the principal requested. The vault only released 200 to
+        // the borrower, yet the loan claims 300 principal, decoupling the
+        // borrower's debt from the assets actually lent and enabling share-price
+        // manipulation on repayment.
+        doInvariantCheck(
+            {"loan set principal outstanding must equal principal requested"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsAvailable = -200,
+                        .vaultAssets = -200,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
+                        .createLoan = LoanParams{
+                            .principalOutstanding = 300,
+                            .totalValueOutstanding = 300,
+                            .borrower = a1.id(),
+                        }});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_MANAGE: vault balance and assets available do not add up
+        doInvariantCheck(
+            {"loan manage vault balance and assets available must add up"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, Adjustments{.assetsAvailable = -100});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_MANAGE: loss unrealized driven negative
+        doInvariantCheck(
+            {"loan manage must not make loss unrealized negative"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, Adjustments{.lossUnrealized = -1});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_MANAGE: shares outstanding changes
+        doInvariantCheck(
+            {"loan manage must not change shares outstanding"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .sharesTotal = 10,
+                        .accountShares = AccountAmount{.account = a2.id(), .amount = 10}});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_MANAGE (impair): assets available must not change
+        doInvariantCheck(
+            {"loan impair/unimpair must not change assets available"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsAvailable = -100,
+                        .vaultAssets = -100,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = 100}});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject& tx) { tx.setFieldU32(sfFlags, tfLoanImpair); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_MANAGE (default): assets available must not decrease
+        doInvariantCheck(
+            {"loan default must not decrease assets available"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsTotal = -100,
+                        .assetsAvailable = -100,
+                        .vaultAssets = -100,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = 100}});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject& tx) { tx.setFieldU32(sfFlags, tfLoanDefault); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_MANAGE (default): assets outstanding must not increase
+        doInvariantCheck(
+            {"loan default must not increase assets outstanding"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsTotal = 100,
+                        .assetsAvailable = 100,
+                        .vaultAssets = 100,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -100}});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_MANAGE, [](STObject& tx) { tx.setFieldU32(sfFlags, tfLoanDefault); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_PAY: the vault (pseudo-account) balance must change
+        doInvariantCheck(
+            {"loan pay must change vault balance"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, Adjustments{});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(200)); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_PAY: assets available must track the real vault balance. The
+        // vault balance (pseudo-account) grows by 50 but assets available is
+        // bumped by 60, so the two no longer add up.
+        doInvariantCheck(
+            {"loan pay vault balance and assets available must add up"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsAvailable = 60,
+                        .vaultAssets = 50,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -50}});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(100)); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_PAY: assets available must increase
+        doInvariantCheck(
+            {"loan pay must increase assets available"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsAvailable = -100,
+                        .vaultAssets = -100,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = 100}});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(200)); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_PAY: assets available increases by more than the amount paid
+        doInvariantCheck(
+            {"loan pay must not increase assets available by more than the amount paid"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsTotal = 300,
+                        .assetsAvailable = 300,
+                        .vaultAssets = 300,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -300}});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(100)); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_PAY: shares outstanding changes
+        doInvariantCheck(
+            {"loan pay must not change shares outstanding"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsTotal = 100,
+                        .assetsAvailable = 100,
+                        .sharesTotal = 10,
+                        .vaultAssets = 100,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -100},
+                        .accountShares = AccountAmount{.account = a2.id(), .amount = 10}});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(200)); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_PAY: loss unrealized driven negative. The cash inflow is
+        // valid, but loss unrealized is set below zero.
+        doInvariantCheck(
+            {"loan pay must not make loss unrealized negative"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(
+                    ac.view(),
+                    keylet,
+                    Adjustments{
+                        .assetsTotal = 100,
+                        .assetsAvailable = 100,
+                        .lossUnrealized = -1,
+                        .vaultAssets = 100,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -100}});
+            },
+            XRPAmount{},
+            STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(200)); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttLOAN_PAY: assets outstanding must match the cash received and the
+        // change in the paid loan's claim on the vault. A payment only moves
+        // value between the vault's available cash and its claim on the loan,
+        // so bumping assets outstanding by more than that must be caught. This
+        // needs a loan that already exists in the base ledger (so modifying it
+        // is seen as a before/after change), which the shared harness cannot
+        // set up, hence the bespoke view construction below.
+        {
+            Env env{*this, defaultAmendments()};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            BEAST_EXPECT(precloseXrp(a1, a2, env));
+            env.close();
+
+            OpenView ov{*env.current()};
+
+            auto const vaultKeylet = keylet::vault(a1.id(), ov.seq());
+            // Insert a pre-existing loan into the base view; modifying it in the
+            // apply view is then seen as a loan modification (before/after).
+            auto const loanKeylet = keylet::loan(vaultKeylet.key, 1);
+            {
+                auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                sleLoan->at(sfTotalValueOutstanding) = Number(150);
+                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                sleLoan->at(sfPeriodicPayment) = Number(1);
+                sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                ov.rawInsert(sleLoan);
+            }
+
+            STTx const tx{
+                ttLOAN_PAY, [](STObject& t) { t.setFieldAmount(sfAmount, XRPAmount(100)); }};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            // Cash received: assets available and the vault balance both grow by
+            // 60, paid by a2. The paid loan's claim drops by 60 (total value
+            // 150 -> 90). Conservation requires assets outstanding to be
+            // unchanged, but we bump it by 10 to violate the identity.
+            if (!BEAST_EXPECT(kAdjust(
+                    ac.view(),
+                    vaultKeylet,
+                    Adjustments{
+                        .assetsTotal = 10,
+                        .assetsAvailable = 60,
+                        .vaultAssets = 60,
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -60}})))
+                return;
+
+            auto sleLoan = ac.view().peek(loanKeylet);
+            if (!BEAST_EXPECT(sleLoan))
+                return;
+            sleLoan->at(sfPrincipalOutstanding) = Number(40);
+            sleLoan->at(sfTotalValueOutstanding) = Number(90);
+            ac.view().update(sleLoan);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                return;
+            TER const result = transactor->checkInvariants(tesSUCCESS, XRPAmount{});
+            BEAST_EXPECT(result == tecINVARIANT_FAILED);
+            BEAST_EXPECT(sink.messages().str().contains(
+                "loan pay assets outstanding must match the cash received and "
+                "the change in the loan claim"));
+        }
+
+        // A loan may only be deleted by a LoanDelete transaction, and only once
+        // it is fully paid off. Both branches are exercised by creating a real
+        // loan in the Preclose (so it exists in the base ledger with outstanding
+        // principal) and then erasing it in the Precheck.
+        {
+            Keylet loanKeylet = keylet::amendments();
+            auto const precloseLoan = [&loanKeylet, this](
+                                          Account const& a1, Account const& a2, Env& env) -> bool {
+                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+
+                Vault const vault{env};
+                auto [tx, vaultKeylet] = vault.create({.owner = a1, .asset = xrpAsset});
+                env(tx);
+                env.close();
+                if (!BEAST_EXPECT(env.le(vaultKeylet)))
+                    return false;
+
+                env(vault.deposit(
+                    {.depositor = a1, .id = vaultKeylet.key, .amount = xrpAsset(100)}));
+                env.close();
+
+                auto const brokerKeylet = keylet::loanBroker(a1.id(), env.seq(a1));
+                env(loanBroker::set(a1, vaultKeylet.key), Fee(kIncrement));
+                env.close();
+                auto const brokerSle = env.le(brokerKeylet);
+                if (!BEAST_EXPECT(brokerSle))
+                    return false;
+
+                loanKeylet = keylet::loan(brokerKeylet.key, brokerSle->at(sfLoanSequence));
+                env(loan::set(a2, brokerKeylet.key, xrpAsset(50).value()),
+                    Sig(sfCounterpartySignature, a1),
+                    Fee(env.current()->fees().base * 2));
+                env.close();
+                return BEAST_EXPECT(env.le(loanKeylet));
+            };
+
+            auto const eraseLoan = [&loanKeylet](Account const&, Account const&, ApplyContext& ac) {
+                auto sle = ac.view().peek(loanKeylet);
+                if (!sle)
+                    return false;
+                ac.view().erase(sle);
+                return true;
+            };
+
+            // Deleting the loan under any transaction type other than LoanDelete
+            // (here the neutral ttACCOUNT_SET) is a violation, even while the
+            // loan still has outstanding obligations: the transaction-type check
+            // fires before the not-fully-paid-off check.
+            doInvariantCheck(
+                {"Loan deleted by a transaction other than LoanDelete"},
+                eraseLoan,
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseLoan);
+
+            // Deleting the loan via LoanDelete while it still has outstanding
+            // obligations is a violation: the transaction-type check passes and
+            // the not-fully-paid-off check fires.
+            doInvariantCheck(
+                {"Loan deleted while not fully paid off"},
+                eraseLoan,
+                XRPAmount{},
+                STTx{ttLOAN_DELETE, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseLoan);
+        }
+
+        // Loan interest due (total value less principal and management fee)
+        // must never be negative. A neutral transaction type is used so the
+        // vault invariants short-circuit and only the loan check fires. The
+        // loan object is created directly with principal 100, total value 90
+        // and management fee 0, so interest due = 90 - 100 - 0 = -10 (< 0)
+        // while every individual field stays non-negative.
+        doInvariantCheck(
+            {"Loan interest due is negative"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const vaultKeylet = keylet::vault(a1.id(), ac.view().seq());
+                auto const loanKeylet = keylet::loan(vaultKeylet.key, 1);
+                auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                sleLoan->at(sfTotalValueOutstanding) = Number(90);
+                sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                sleLoan->at(sfPeriodicPayment) = Number(1);
+                sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                ac.view().insert(sleLoan);
+                return true;
+            });
+
+        // Each of these loan STNumber fields must never be negative. A neutral
+        // transaction type is used so the vault invariants short-circuit and
+        // only the loan check fires. The loan is created directly with a single
+        // field set negative while the paid-off bookkeeping is kept consistent
+        // so that only the "<field> is negative" check trips.
+        for (auto const field : {
+                 &sfLoanServiceFee,
+                 &sfLatePaymentFee,
+                 &sfClosePaymentFee,
+                 &sfPrincipalOutstanding,
+                 &sfTotalValueOutstanding,
+                 &sfManagementFeeOutstanding,
+             })
+        {
+            // The outstanding-balance fields also feed the paid-off checks, so
+            // a loan carrying one must still have payments remaining; a loan
+            // with only a negative fee stays fully paid off (zero remaining).
+            bool const isOutstanding = *field == sfPrincipalOutstanding ||
+                *field == sfTotalValueOutstanding || *field == sfManagementFeeOutstanding;
+            doInvariantCheck(
+                {field->getName() + " is negative"},
+                [&, field](Account const& a1, Account const&, ApplyContext& ac) {
+                    auto const vaultKeylet = keylet::vault(a1.id(), ac.view().seq());
+                    auto const loanKeylet = keylet::loan(vaultKeylet.key, 1);
+                    auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                    sleLoan->at(sfPrincipalOutstanding) = Number(0);
+                    sleLoan->at(sfTotalValueOutstanding) = Number(0);
+                    sleLoan->at(sfManagementFeeOutstanding) = Number(0);
+                    sleLoan->at(sfPeriodicPayment) = Number(1);
+                    sleLoan->at(*field) = Number(-10);
+                    sleLoan->setFieldU32(sfPaymentRemaining, isOutstanding ? 1 : 0);
+                    ac.view().insert(sleLoan);
+                    return true;
+                });
+        }
+
+        // ttVAULT_SET: owner is immutable
+        doInvariantCheck(
+            {"violation of vault immutable data"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                sleVault->setAccountID(sfOwner, a2.id());
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttVAULT_SET: withdrawal policy is immutable
+        doInvariantCheck(
+            {"violation of vault immutable data"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                sleVault->setFieldU8(
+                    sfWithdrawalPolicy,
+                    static_cast<std::uint8_t>(sleVault->getFieldU8(sfWithdrawalPolicy) + 1));
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        // ttVAULT_SET: scale is immutable
+        doInvariantCheck(
+            {"violation of vault immutable data"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                sleVault->setFieldU8(
+                    sfScale, static_cast<std::uint8_t>(sleVault->getFieldU8(sfScale) + 1));
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
 
         testcase << "Vault create";
         doInvariantCheck(

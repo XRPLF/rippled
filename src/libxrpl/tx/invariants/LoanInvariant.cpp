@@ -10,6 +10,7 @@
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 namespace xrpl {
@@ -17,7 +18,13 @@ namespace xrpl {
 void
 ValidLoan::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    if (after && after->getType() == ltLOAN)
+    if (isDelete)
+    {
+        // On deletion `after` holds the loan's final state.
+        if (after && after->getType() == ltLOAN)
+            deletedLoans_.emplace_back(after);
+    }
+    else if (after && after->getType() == ltLOAN)
     {
         loans_.emplace_back(before, after);
     }
@@ -33,6 +40,8 @@ ValidLoan::finalize(
 {
     // Loans will not exist on ledger if the Lending Protocol amendment
     // is not enabled, so there's no need to check it.
+
+    auto const txType = tx.getTxnType();
 
     for (auto const& [before, after] : loans_)
     {
@@ -77,6 +86,15 @@ ValidLoan::finalize(
                 return false;
             }
         }
+        // Interest due (the total value owed less principal and management fee)
+        // must never be negative.
+        if (after->at(sfTotalValueOutstanding) - after->at(sfPrincipalOutstanding) -
+                after->at(sfManagementFeeOutstanding) <
+            beast::kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan interest due is negative";
+            return false;
+        }
         // Must be positive - STNumber
         for (auto const field : {
                  &sfPeriodicPayment,
@@ -90,6 +108,30 @@ ValidLoan::finalize(
             }
         }
     }
+
+    // A loan may only be deleted by a LoanDelete transaction, and only once it
+    // is fully paid off (no payments remaining). Deleting a loan with
+    // outstanding obligations is a violation.
+    for (auto const& loan : deletedLoans_)
+    {
+        if (txType != ttLOAN_DELETE)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan deleted by a transaction "
+                               "other than LoanDelete";
+            return false;
+        }
+
+        if (loan->at(sfPaymentRemaining) != 0 ||
+            loan->at(sfTotalValueOutstanding) != beast::kZero ||
+            loan->at(sfPrincipalOutstanding) != beast::kZero ||
+            loan->at(sfManagementFeeOutstanding) != beast::kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan deleted while not fully "
+                               "paid off";
+            return false;
+        }
+    }
+
     return true;
 }
 
