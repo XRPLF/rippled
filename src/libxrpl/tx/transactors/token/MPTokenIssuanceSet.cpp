@@ -86,7 +86,10 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (isMutate && !ctx.rules.enabled(featureDynamicMPT))
         return temDISABLED;
 
-    if ((hasIssuerElGamalKey || hasAuditorElGamalKey || enablePrivacy) &&
+    bool const setConfidentialBalanceImmutable =
+        immutableFlags && (*immutableFlags & tifMPTCanHoldConfidentialBalance) != 0u;
+    if ((hasIssuerElGamalKey || hasAuditorElGamalKey || enablePrivacy ||
+         setConfidentialBalanceImmutable) &&
         !ctx.rules.enabled(featureConfidentialTransfer))
         return temDISABLED;
 
@@ -134,6 +137,8 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         if (metadata && metadata->length() > kMaxMpTokenMetadataLength)
             return temMALFORMED;
 
+        // If the immutable flags field is included, at least one flag must be
+        // specified, and undefined flags must not be specified.
         if (immutableFlags &&
             ((*immutableFlags == 0u) ||
              ((*immutableFlags & tifMPTokenIssuanceCreateImmutableMask) != 0u)))

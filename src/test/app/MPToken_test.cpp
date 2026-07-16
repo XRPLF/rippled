@@ -3963,6 +3963,19 @@ class MPToken_test : public beast::unit_test::Suite
                 {.account = alice, .immutableFlags = tifMPTCanClawback, .err = temDISABLED});
         }
 
+        // ImmutableFlags containing tifMPTCanHoldConfidentialBalance requires
+        // featureConfidentialTransfer.
+        {
+            Env env(*this, features - featureConfidentialTransfer);
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({.ownerCount = 1});
+
+            mptAlice.set(
+                {.account = alice,
+                 .immutableFlags = tifMPTCanHoldConfidentialBalance,
+                 .err = temDISABLED});
+        }
+
         // ImmutableFlags of 0, or containing unknown bits, is rejected.
         {
             Env env(*this, features);
