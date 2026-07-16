@@ -13,6 +13,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/resource/Fees.h>
 
 #include <cstdint>
 #include <optional>
@@ -35,6 +36,8 @@ doChannelVerify(RPC::JsonContext& context)
         if (!params.isMember(p))
             return RPC::missingFieldError(p);
     }
+
+    context.loadType = Resource::kFeeHeavyBurdenRpc;
 
     std::optional<PublicKey> pk;
     {
