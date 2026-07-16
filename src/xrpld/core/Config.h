@@ -229,6 +229,12 @@ public:
     static constexpr int kMaxJobQueueTx = 1000;
     static constexpr int kMinJobQueueTx = 100;
 
+    // Optional override for the per-connection subscription cap. Unset means
+    // use the built-in default (kMaxSubscriptionsPerConnection in InfoSub.h).
+    // Kept as an override here, rather than the default itself, so the core
+    // module need not depend on the server module that owns the constant.
+    std::optional<std::size_t> maxSubscriptionsPerConnection;
+
     // Amendment majority time
     std::chrono::seconds amendmentMajorityTime = kDefaultAmendmentMajorityTime;
 

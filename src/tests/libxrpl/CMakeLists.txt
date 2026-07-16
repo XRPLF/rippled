@@ -33,6 +33,7 @@ set(test_modules
     shamap
     tx
     protocol_autogen
+    server
 )
 if(NOT WIN32)
     list(APPEND test_modules net)

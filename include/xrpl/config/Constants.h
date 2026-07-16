@@ -25,6 +25,7 @@ struct Sections
     static constexpr auto kLedgerHistory = "ledger_history";
     static constexpr auto kLedgerReplay = "ledger_replay";
     static constexpr auto kLedgerTxTables = "ledger_tx_tables";
+    static constexpr auto kMaxSubscriptionsPerConnection = "max_subscriptions_per_connection";
     static constexpr auto kMaxTransactions = "max_transactions";
     static constexpr auto kNetworkId = "network_id";
     static constexpr auto kNetworkQuorum = "network_quorum";
