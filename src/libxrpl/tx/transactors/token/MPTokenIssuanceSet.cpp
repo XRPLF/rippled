@@ -71,7 +71,7 @@ NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 {
     auto const txFlags = ctx.tx.getFlags();
-    auto const enableFlags = txFlags & tfMPTokenIssuanceSetMutateFlagMask;
+    auto const enableFlags = txFlags & tfMPTokenIssuanceSetEnableFlagMask;
     auto const metadata = ctx.tx[~sfMPTokenMetadata];
     auto const transferFee = ctx.tx[~sfTransferFee];
     auto const immutableFlags = ctx.tx[~sfImmutableFlags];
@@ -216,13 +216,13 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     auto isImmutable = [&](std::uint32_t flag) -> bool { return currentImmutableFlags & flag; };
 
-    auto const enableFlags = ctx.tx.getFlags() & tfMPTokenIssuanceSetMutateFlagMask;
+    auto const enableFlags = ctx.tx.getFlags() & tfMPTokenIssuanceSetEnableFlagMask;
     // Whether the transaction is enabling confidential amounts.
     if (enableFlags)
     {
         // If any of the flags to be set is immutable at issuance, return tecNO_PERMISSION.
         if (std::ranges::any_of(flagMapping, [&](auto const& f) {
-                return isImmutable(f.immutableFlag) && ((enableFlags & f.setFlag) != 0u);
+                return isImmutable(f.immutableFlag) && ctx.tx.isFlag(f.setFlag);
             }))
             return tecNO_PERMISSION;
     }
@@ -325,11 +325,11 @@ MPTokenIssuanceSet::doApply()
         flagsOut &= ~lsfMPTLocked;
     }
 
-    if (auto const enableFlags = ctx_.tx.getFlags() & tfMPTokenIssuanceSetMutateFlagMask)
+    if (auto const enableFlags = (ctx_.tx.getFlags() & tfMPTokenIssuanceSetEnableFlagMask))
     {
         for (auto const& f : flagMapping)
         {
-            if ((enableFlags & f.setFlag) != 0u)
+            if (ctx_.tx.isFlag(f.setFlag))
             {
                 flagsOut |= f.ledgerFlag;
             }
@@ -358,10 +358,7 @@ MPTokenIssuanceSet::doApply()
         if (sle->getType() != ltMPTOKEN_ISSUANCE)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        std::uint32_t const currentImmutableFlags = sle->getFieldU32(sfImmutableFlags);
-        std::uint32_t const newImmutableFlags = currentImmutableFlags | *immutableFlags;
-        if (newImmutableFlags != currentImmutableFlags)
-            sle->setFieldU32(sfImmutableFlags, newImmutableFlags);
+        (*sle)[sfImmutableFlags] = (*sle)[sfImmutableFlags] | *immutableFlags;
     }
 
     if (auto const transferFee = ctx_.tx[~sfTransferFee])

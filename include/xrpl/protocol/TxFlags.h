@@ -379,7 +379,7 @@ inline constexpr FlagValue tifMPTokenIssuanceCreateImmutableMask =
       tifMPTCanClawback | tifMPTMetadata | tifMPTTransferFee | tifMPTCanHoldConfidentialBalance);
 
 // MPTokenIssuanceSet set of flags that is used to enable capabilities on an MPTokenIssuance.
-inline constexpr FlagValue tfMPTokenIssuanceSetMutateFlagMask = tfMPTSetCanLock |
+inline constexpr FlagValue tfMPTokenIssuanceSetEnableFlagMask = tfMPTSetCanLock |
     tfMPTSetRequireAuth | tfMPTSetCanEscrow | tfMPTSetCanTrade | tfMPTSetCanTransfer |
     tfMPTSetCanClawback | tfMPTSetCanHoldConfidentialBalance;
 

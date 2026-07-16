@@ -64,7 +64,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         return temMALFORMED;
 
     // If the immutable flags field is included, at least one flag must be
-    // specified.
+    // specified, and undefined flags must not be specified.
     if (auto const immutableFlags = ctx.tx[~sfImmutableFlags]; immutableFlags &&
         ((*immutableFlags == 0u) ||
          ((*immutableFlags & tifMPTokenIssuanceCreateImmutableMask) != 0u)))
