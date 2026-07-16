@@ -520,7 +520,11 @@ assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount cons
 }
 
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& shares)
+sharesToAssetsDeposit(
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
+    STAmount const& shares,
+    Number::RoundingMode rounding)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
     XRPL_ASSERT(
@@ -538,6 +542,10 @@ sharesToAssetsDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount cons
     }
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
+    // Quantizing to the asset's precision honors the thread-local rounding mode
+    // for both integral (XRP/MPT) and IOU assets. Charging a depositor must
+    // round Upward so they pay at least the fair value of the minted shares.
+    NumberRoundModeGuard const rg(rounding);
     assets = (assetTotal * shares) / shareTotal;
     return assets;
 }
@@ -691,7 +699,8 @@ sharesToAssetsWithdraw(
     SLE::ConstRef vault,
     SLE::ConstRef issuance,
     STAmount const& shares,
-    WaiveUnrealizedLoss waive)
+    WaiveUnrealizedLoss waive,
+    Number::RoundingMode rounding)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsWithdraw : non-negative shares");
     XRPL_ASSERT(
@@ -705,6 +714,12 @@ sharesToAssetsWithdraw(
     if (assetTotal == 0)
         return assets;
     Number const shareTotal = issuance->at(sfOutstandingAmount);
+    // Paying a withdrawing shareholder must round Downward so they receive at
+    // most the fair value of the shares they burn; otherwise the assets-per-
+    // share price would drop and dilute the remaining shareholders. Quantizing
+    // to the asset's precision honors the thread-local rounding mode for both
+    // integral (XRP/MPT) and IOU assets.
+    NumberRoundModeGuard const rg(rounding);
     assets = (assetTotal * shares) / shareTotal;
     return assets;
 }
