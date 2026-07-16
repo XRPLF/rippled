@@ -4,9 +4,10 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -148,18 +149,12 @@ VaultCreate::doApply()
     auto const& tx = ctx_.tx;
     auto applyViewContext = ctx_.getApplyViewContext();
     auto const sequence = tx.getSeqValue();
-    auto const owner = view().peek(keylet::account(accountID_));
-    if (owner == nullptr)
+    AccountRootEntry<ApplyView> const owner{keylet::account(accountID_), view()};
+    if (!owner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
-
-    if (auto ter = dirLink(view(), accountID_, vault))
-        return ter;
-    // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    increaseOwnerCount(view(), owner, {}, 2, j_);
-    if (preFeeBalance_ < accountReserve(view(), owner, j_))
-        return tecINSUFFICIENT_RESERVE;
+    VaultEntry<ApplyView> vault{keylet::vault(accountID_, sequence), view(), j_};
+    vault.newSLE();
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
     if (!maybePseudo)
@@ -241,7 +236,12 @@ VaultCreate::doApply()
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
-    view().insert(vault);
+
+    // Reserve check (owner's pre-fee balance, charging two slots for the vault
+    // and its pseudo-account) + link into the owner's directory + bump the
+    // owner's OwnerCount by 2 + insert. See VaultEntry.
+    if (auto const ter = vault.create(preFeeBalance_); !isTesSuccess(ter))
+        return ter;
 
     // Explicitly create MPToken for the vault owner
     if (auto const err = authorizeMPToken(

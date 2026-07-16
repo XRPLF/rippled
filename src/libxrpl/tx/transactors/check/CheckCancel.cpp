@@ -3,8 +3,9 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -15,7 +16,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <cstdint>
 namespace xrpl {
 
 NotTEC
@@ -30,7 +30,7 @@ CheckCancel::preflight(PreflightContext const& ctx)
 TER
 CheckCancel::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
+    CheckEntry<ReadView> const sleCheck{keylet::check(ctx.tx[sfCheckID]), ctx.view};
     if (!sleCheck)
     {
         JLOG(ctx.j.warn()) << "Check does not exist.";
@@ -59,7 +59,7 @@ CheckCancel::preclaim(PreclaimContext const& ctx)
 TER
 CheckCancel::doApply()
 {
-    auto const sleCheck = view().peek(keylet::check(ctx_.tx[sfCheckID]));
+    CheckEntry<ApplyView> sleCheck{keylet::check(ctx_.tx[sfCheckID]), view()};
     if (!sleCheck)
     {
         // Error should have been caught in preclaim.
@@ -67,40 +67,10 @@ CheckCancel::doApply()
         return tecNO_ENTRY;
     }
 
-    AccountID const srcId{sleCheck->getAccountID(sfAccount)};
-    AccountID const dstId{sleCheck->getAccountID(sfDestination)};
-    auto viewJ = ctx_.registry.get().getJournal("View");
-
-    // If the check is not written to self (and it shouldn't be), remove the
-    // check from the destination account root.
-    if (srcId != dstId)
-    {
-        std::uint64_t const page{(*sleCheck)[sfDestinationNode]};
-        if (!view().dirRemove(keylet::ownerDir(dstId), page, sleCheck->key(), true))
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.fatal()) << "Unable to delete check from destination.";
-            return tefBAD_LEDGER;
-            // LCOV_EXCL_STOP
-        }
-    }
-    {
-        std::uint64_t const page{(*sleCheck)[sfOwnerNode]};
-        if (!view().dirRemove(keylet::ownerDir(srcId), page, sleCheck->key(), true))
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.fatal()) << "Unable to delete check from owner.";
-            return tefBAD_LEDGER;
-            // LCOV_EXCL_STOP
-        }
-    }
-
-    // If we succeeded, update the check owner's reserve.
-    decreaseOwnerCountForObject(view(), srcId, sleCheck, 1, viewJ);
-
-    // Remove check from ledger.
-    view().erase(sleCheck);
-    return tesSUCCESS;
+    // Unlink the check from the source (and destination) directories, decrement
+    // the source's OwnerCount (refunding any reserve sponsor), and erase it. See
+    // CheckEntry::ownerDirs().
+    return sleCheck.destroy();
 }
 
 void

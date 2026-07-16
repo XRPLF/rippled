@@ -2,7 +2,9 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -25,7 +27,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         if (calcAccountID(PublicKey(makeSlice(spk))) == id)
         {
-            auto const sle = view.read(keylet::account(id));
+            AccountRootEntry<ReadView> const sle{keylet::account(id), view};
 
             if (sle && !sle->isFlag(lsfPasswordSpent))
             {
@@ -53,7 +55,7 @@ SetRegularKey::preflight(PreflightContext const& ctx)
 TER
 SetRegularKey::doApply()
 {
-    auto const sle = view().peek(keylet::account(accountID_));
+    AccountRootEntry<ApplyView> sle{keylet::account(accountID_), view()};
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -67,13 +69,14 @@ SetRegularKey::doApply()
     else
     {
         // Account has disabled master key and no multi-signer signer list.
-        if (sle->isFlag(lsfDisableMaster) && !view().peek(keylet::signerList(accountID_)))
+        if (sle->isFlag(lsfDisableMaster) &&
+            !SignerListEntry<ApplyView>{keylet::signerList(accountID_), view()})
             return tecNO_ALTERNATIVE_KEY;
 
         sle->makeFieldAbsent(sfRegularKey);
     }
 
-    ctx_.view().update(sle);
+    sle.update();
 
     return tesSUCCESS;
 }

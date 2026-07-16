@@ -13,6 +13,8 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/SLEBase.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -224,7 +226,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dst{ctx.tx[sfDestination]};
 
-    auto sleDst = ctx.view.read(keylet::account(dst));
+    AccountRootEntry<ReadView> const sleDst{keylet::account(dst), ctx.view};
 
     if (!sleDst)
         return tecNO_DST;
@@ -248,7 +250,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto sleAccount = ctx.view.read(keylet::account(account));
+    AccountRootEntry<ReadView> const sleAccount{keylet::account(account), ctx.view};
     XRPL_ASSERT(sleAccount, "xrpl::AccountDelete::preclaim : non-null account");
     if (!sleAccount)
         return terNO_ACCOUNT;
@@ -262,8 +264,9 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     Keylet const first = keylet::nftokenPageMin(account);
     Keylet const last = keylet::nftokenPageMax(account);
 
-    auto const cp = ctx.view.read(
-        Keylet(ltNFTOKEN_PAGE, ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
+    NFTokenPageEntry<ReadView> const cp{
+        Keylet(ltNFTOKEN_PAGE, ctx.view.succ(first.key, last.key.next()).value_or(last.key)),
+        ctx.view};
     if (cp)
         return tecHAS_OBLIGATIONS;
 
@@ -322,7 +325,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     {
         // Make sure any directory node types that we find are the kind
         // we can delete.
-        auto sleItem = ctx.view.read(keylet::child(dirEntry));
+        ReadOnlySLE const sleItem{keylet::child(dirEntry), ctx.view};
         if (!sleItem)
         {
             // Directory node has an invalid index.  Bail out.
@@ -351,11 +354,11 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 TER
 AccountDelete::doApply()
 {
-    auto src = view().peek(keylet::account(accountID_));
+    AccountRootEntry<ApplyView> src{keylet::account(accountID_), view()};
     XRPL_ASSERT(src, "xrpl::AccountDelete::doApply : non-null source account");
 
     auto const dstID = ctx_.tx[sfDestination];
-    auto dst = view().peek(keylet::account(dstID));
+    AccountRootEntry<ApplyView> dst{keylet::account(dstID), view()};
     XRPL_ASSERT(dst, "xrpl::AccountDelete::doApply : non-null destination account");
 
     if (!src || !dst)
@@ -363,8 +366,8 @@ AccountDelete::doApply()
 
     if (ctx_.tx.isFieldPresent(sfCredentialIDs))
     {
-        if (auto err =
-                verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, dstID, dst, ctx_.journal);
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), accountID_, dstID, dst.sle(), ctx_.journal);
             !isTesSuccess(err))
             return err;
     }
@@ -446,8 +449,8 @@ AccountDelete::doApply()
     if (remainingBalance > XRPAmount(0) && dst->isFlag(lsfPasswordSpent))
         dst->clearFlag(lsfPasswordSpent);
 
-    view().update(dst);
-    view().erase(src);
+    dst.update();
+    src.erase();
 
     return tesSUCCESS;
 }

@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -32,13 +33,14 @@ namespace xrpl {
 
 [[nodiscard]] TER
 canApplyToBrokerCover(
-    ReadView const& view,
-    SLE::const_ref sleBroker,
+    LoanBrokerEntry<ReadView> const& sleBroker,
     Asset const& vaultAsset,
     STAmount const& amount,
-    beast::Journal j,
     std::string_view logPrefix)
 {
+    ReadView const& view = sleBroker.readView();
+    beast::Journal const j = sleBroker.journal();
+
     XRPL_ASSERT(
         sleBroker && sleBroker->getType() == ltLOAN_BROKER,
         "xrpl::canApplyToBrokerCover : valid LoanBroker sle");
@@ -1632,7 +1634,7 @@ constructLoanState(
 }
 
 LoanState
-constructRoundedLoanState(SLE::const_ref loan)
+constructRoundedLoanState(LoanEntry<ReadView> const& loan)
 {
     return constructLoanState(
         loan->at(sfTotalValueOutstanding),
@@ -1783,14 +1785,15 @@ computeLoanProperties(
 std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
-    ApplyView& view,
-    SLE::ref loan,
-    SLE::const_ref brokerSle,
+    LoanEntry<ApplyView>& loan,
+    LoanBrokerEntry<ReadView> const& brokerSle,
     STAmount const& amount,
-    LoanPaymentType const paymentType,
-    beast::Journal j)
+    LoanPaymentType const paymentType)
 {
     using namespace Lending;
+
+    ApplyView& view = loan.applyView();
+    beast::Journal const j = loan.journal();
 
     auto principalOutstandingProxy = loan->at(sfPrincipalOutstanding);
     auto paymentRemainingProxy = loan->at(sfPaymentRemaining);
@@ -1836,7 +1839,7 @@ loanMakePayment(
 
     XRPL_ASSERT(*totalValueOutstandingProxy > 0, "xrpl::loanMakePayment : valid total value");
 
-    view.update(loan);
+    loan.update();
 
     // -------------------------------------------------------------
     // A late payment not flagged as late overrides all other options.

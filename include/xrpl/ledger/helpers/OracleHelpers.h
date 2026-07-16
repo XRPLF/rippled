@@ -1,5 +1,9 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/helpers/SLEBase.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -27,5 +31,36 @@ calculateOracleReserve(SLE::const_ref oracleSle)
 {
     return calculateOracleReserve(oracleSle->getFieldArray(sfPriceDataSeries));
 }
+
+template <typename ViewT>
+class OracleEntry : public SLEBase<ViewT>
+{
+public:
+    // Inherit base constructors: adopt an existing SLE, or resolve one from a
+    // Keylet against the view.
+    using SLEBase<ViewT>::SLEBase;
+
+    explicit OracleEntry(
+        AccountID const& account,
+        std::uint32_t documentID,
+        SLEBase<ViewT>::view_ref_type view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : SLEBase<ViewT>(keylet::oracle(account, documentID), view, j)
+    {
+    }
+
+    [[nodiscard]] SField const&
+    ownerField() const override
+    {
+        return sfOwner;
+    }
+
+    // An Oracle with more than five price-data pairs occupies two reserve slots.
+    [[nodiscard]] std::uint32_t
+    reserveCount() const override
+    {
+        return calculateOracleReserve(this->sle()->getFieldArray(sfPriceDataSeries));
+    }
+};
 
 }  // namespace xrpl

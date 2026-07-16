@@ -5,9 +5,11 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -287,19 +289,19 @@ LoanPay::doApply()
     auto const amount = tx[sfAmount];
 
     auto const loanID = tx[sfLoanID];
-    auto const loanSle = view.peek(keylet::loan(loanID));
+    LoanEntry<ApplyView> loanSle{keylet::loan(loanID), view, j_};
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
 
     auto const brokerID = loanSle->at(sfLoanBrokerID);
-    auto const brokerSle = view.peek(keylet::loanBroker(brokerID));
+    LoanBrokerEntry<ApplyView> brokerSle{keylet::loanBroker(brokerID), view};
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const brokerOwner = brokerSle->at(sfOwner);
     auto const brokerPseudoAccount = brokerSle->at(sfAccount);
     auto const vaultID = brokerSle->at(sfVaultID);
-    auto const vaultSle = view.peek(keylet::vault(vaultID));
+    VaultEntry<ApplyView> vaultSle{keylet::vault(vaultID), view, j_};
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultPseudoAccount = vaultSle->at(sfAccount);
@@ -362,7 +364,7 @@ LoanPay::doApply()
     // change will be discarded.
     if (loanSle->isFlag(lsfLoanImpaired))
     {
-        if (auto const ret = LoanManage::unimpairLoan(view, loanSle, vaultSle, asset, j_))
+        if (auto const ret = LoanManage::unimpairLoan(loanSle, vaultSle, asset))
         {
             JLOG(j_.fatal()) << "Failed to unimpair loan before payment.";
             return ret;  // LCOV_EXCL_LINE
@@ -381,7 +383,7 @@ LoanPay::doApply()
     }();
 
     std::expected<LoanPaymentParts, TER> const paymentParts =
-        loanMakePayment(asset, view, loanSle, brokerSle, amount, paymentType, j_);
+        loanMakePayment(asset, loanSle, brokerSle, amount, paymentType);
 
     if (!paymentParts)
     {
@@ -392,7 +394,7 @@ LoanPay::doApply()
 
     // If the payment computation completed without error, the loanSle object
     // has been modified.
-    view.update(loanSle);
+    loanSle.update();
 
     XRPL_ASSERT_PARTS(
         // It is possible to pay 0 principal
@@ -427,7 +429,7 @@ LoanPay::doApply()
 
     //------------------------------------------------------
     // LoanBroker object state changes
-    view.update(brokerSle);
+    brokerSle.update();
 
     auto assetsAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto assetsTotalProxy = vaultSle->at(sfAssetsTotal);
@@ -468,7 +470,7 @@ LoanPay::doApply()
 
     //------------------------------------------------------
     // Vault object state changes
-    view.update(vaultSle);
+    vaultSle.update();
 
     Number const assetsAvailableBefore = *assetsAvailableProxy;
     Number const assetsTotalBefore = *assetsTotalProxy;

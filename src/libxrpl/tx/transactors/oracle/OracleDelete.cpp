@@ -3,18 +3,15 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-
-#include <cstdint>
 
 namespace xrpl {
 
@@ -27,12 +24,10 @@ OracleDelete::preflight(PreflightContext const& ctx)
 TER
 OracleDelete::preclaim(PreclaimContext const& ctx)
 {
-    if (!ctx.view.exists(keylet::account(ctx.tx.getAccountID(sfAccount))))
-        return terNO_ACCOUNT;  // LCOV_EXCL_LINE
+    auto const sle = OracleEntry<ReadView>{
+        ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID], ctx.view, ctx.j};
 
-    auto const sle =
-        ctx.view.read(keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
-    if (!sle)
+    if (!sle.exists())
     {
         JLOG(ctx.j.debug()) << "Oracle Delete: Oracle does not exist.";
         return tecNO_ENTRY;
@@ -59,32 +54,21 @@ OracleDelete::deleteOracle(
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view.dirRemove(keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), true))
-    {
-        // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete Oracle from owner.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    auto const sleOwner = view.peek(keylet::account(account));
-    if (!sleOwner)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    std::uint32_t const count = calculateOracleReserve(sle);
-    decreaseOwnerCountForObject(view, sleOwner, sle, count, j);
-    view.erase(sle);
-
-    return tesSUCCESS;
+    // Unlink the Oracle from its owner's directory, decrement the owner's
+    // OwnerCount by reserveCount() (1, or 2 for a large price-data series,
+    // refunding any reserve sponsor), and erase it. See OracleEntry.
+    OracleEntry<ApplyView> oracle{sle, view, j};
+    return oracle.destroy();
 }
 
 TER
 OracleDelete::doApply()
 {
-    if (auto sle = ctx_.view().peek(keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID])))
-        return deleteOracle(ctx_.view(), sle, accountID_, j_);
+    auto const sle = OracleEntry<ApplyView>{accountID_, ctx_.tx[sfOracleDocumentID], ctx_.view()};
+    if (!sle.exists())
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    return tecINTERNAL;  // LCOV_EXCL_LINE
+    return deleteOracle(ctx_.view(), sle.mutableSle(), accountID_, j_);
 }
 
 void

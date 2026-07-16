@@ -3,8 +3,9 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -78,7 +79,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     {
         // Any remaining debt should have been wiped out by the last Loan
         // Delete. This check is purely defensive.
-        auto const scale = getAssetsTotalScale(vault);
+        auto const scale = getAssetsTotalScale(VaultEntry<ReadView>{vault, ctx.view});
 
         auto const rounded =
             roundToAsset(asset, debtTotal, scale, Number::RoundingMode::TowardsZero);
@@ -129,28 +130,16 @@ LoanBrokerDelete::doApply()
     auto const brokerID = tx[sfLoanBrokerID];
 
     // Delete the loan broker
-    auto broker = view().peek(keylet::loanBroker(brokerID));
+    LoanBrokerEntry<ApplyView> broker{keylet::loanBroker(brokerID), view(), j_};
     if (!broker)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultID = broker->at(sfVaultID);
     auto const sleVault = view().read(keylet::vault(vaultID));
     if (!sleVault)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    auto const vaultPseudoID = sleVault->at(sfAccount);
     auto const vaultAsset = sleVault->at(sfAsset);
 
     auto const brokerPseudoID = broker->at(sfAccount);
-
-    if (!view().dirRemove(
-            keylet::ownerDir(accountID_), broker->at(sfOwnerNode), broker->key(), false))
-    {
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    }
-    if (!view().dirRemove(
-            keylet::ownerDir(vaultPseudoID), broker->at(sfVaultNode), broker->key(), false))
-    {
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    }
 
     {
         auto const coverAvailable = STAmount{vaultAsset, broker->at(sfCoverAvailable)};
@@ -186,17 +175,11 @@ LoanBrokerDelete::doApply()
 
     view().erase(brokerPseudoSLE);
 
-    {
-        auto owner = view().peek(keylet::account(accountID_));
-        if (!owner)
-            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-
-        // Decreases the owner count by two: one for the LoanBroker object, and
-        // one for the pseudo-account.
-        decreaseOwnerCountForObject(view(), owner, broker, 2, j_);
-    }
-
-    view().erase(broker);
+    // Unlink the broker from its owner's directory and the vault pseudo-account's
+    // directory, decrement the owner's OwnerCount by 2 (broker + pseudo-account,
+    // refunding any reserve sponsor), and erase it. See LoanBrokerEntry.
+    if (auto const ter = broker.destroy(); !isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
 
     associateAsset(*broker, vaultAsset);
 

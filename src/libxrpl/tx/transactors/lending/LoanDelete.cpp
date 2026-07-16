@@ -4,8 +4,10 @@
 #include <xrpl/basics/Number.h>  // IWYU pragma: keep
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>  // IWYU pragma: keep
@@ -76,7 +78,7 @@ LoanDelete::doApply()
     auto& view = ctx_.view();
 
     auto const loanID = tx[sfLoanID];
-    auto const loanSle = view.peek(keylet::loan(loanID));
+    LoanEntry<ApplyView> loanSle{keylet::loan(loanID), view, j_};
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const borrower = loanSle->at(sfBorrower);
@@ -88,23 +90,16 @@ LoanDelete::doApply()
     auto const brokerSle = view.peek(keylet::loanBroker(brokerID));
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    auto const brokerPseudoAccount = brokerSle->at(sfAccount);
 
     auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);
 
-    // Remove LoanID from Directory of the LoanBroker pseudo-account.
-    if (!view.dirRemove(
-            keylet::ownerDir(brokerPseudoAccount), loanSle->at(sfLoanBrokerNode), loanID, false))
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    // Remove LoanID from Directory of the Borrower.
-    if (!view.dirRemove(keylet::ownerDir(borrower), loanSle->at(sfOwnerNode), loanID, false))
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-
-    // Delete the Loan object
-    view.erase(loanSle);
+    // Unlink the loan from the LoanBroker pseudo-account's directory and the
+    // borrower's directory, and erase it. See LoanEntry::destroy().
+    if (auto const ter = loanSle.destroy(); !isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
 
     // Decrement the LoanBroker's owner count.
     adjustLoanBrokerOwnerCount(view, brokerSle, -1, j_);
@@ -120,7 +115,7 @@ LoanDelete::doApply()
                 roundToAsset(
                     vaultSle->at(sfAsset),
                     debtTotalProxy,
-                    getAssetsTotalScale(vaultSle),
+                    getAssetsTotalScale(VaultEntry<ReadView>{vaultSle, view}),
                     Number::RoundingMode::TowardsZero) == beast::kZero,
                 "xrpl::LoanDelete::doApply",
                 "last loan, remaining debt rounds to zero");
@@ -128,7 +123,7 @@ LoanDelete::doApply()
         }
     }
     // Decrement the borrower's owner count
-    decreaseOwnerCountForObject(view, borrowerSle, loanSle, 1, j_);
+    decreaseOwnerCountForObject(view, borrowerSle, loanSle.mutableSle(), 1, j_);
 
     // These associations shouldn't do anything, but do them just to be safe
     associateAsset(*loanSle, vaultAsset);

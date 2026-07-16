@@ -1,8 +1,10 @@
 #include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -46,8 +48,8 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     //       `holderID` is NOT used
     if (!holderID)
     {
-        SLE::const_pointer const sleMpt =
-            ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], accountID));
+        MPTokenEntry<ReadView> const sleMpt{
+            keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], accountID), ctx.view};
 
         // There is an edge case where all holders have zero balance, issuance
         // is legally destroyed, then outstanding MPT(s) are deleted afterwards.

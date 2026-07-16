@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -170,7 +171,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
 
-    auto const sle = ctx.view.read(keylet::account(id));
+    AccountRootEntry<ReadView> const sle{keylet::account(id), ctx.view};
     if (!sle)
         return terNO_ACCOUNT;
 
@@ -224,7 +225,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
 TER
 AccountSet::doApply()
 {
-    auto const sle = view().peek(keylet::account(accountID_));
+    AccountRootEntry<ApplyView> sle{keylet::account(accountID_), view()};
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -312,7 +313,8 @@ AccountSet::doApply()
             return tecNEED_MASTER_KEY;
         }
 
-        if ((!sle->isFieldPresent(sfRegularKey)) && (!view().peek(keylet::signerList(accountID_))))
+        if ((!sle->isFieldPresent(sfRegularKey)) &&
+            (!SignerListEntry<ApplyView>{keylet::signerList(accountID_), view()}))
         {
             // Account has no regular key or multi-signer signer list.
             return tecNO_ALTERNATIVE_KEY;
@@ -582,7 +584,7 @@ AccountSet::doApply()
     if (uFlagsIn != uFlagsOut)
         sle->setFieldU32(sfFlags, uFlagsOut);
 
-    ctx_.view().update(sle);
+    sle.update();
 
     return tesSUCCESS;
 }

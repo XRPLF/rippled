@@ -6,11 +6,12 @@
 #include <xrpl/conditions/Condition.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -33,7 +34,6 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
-#include <memory>
 #include <system_error>
 #include <variant>
 
@@ -202,14 +202,15 @@ escrowCreatePreclaimHelper<Issue>(
         return tecNO_PERMISSION;
 
     // If the lsfAllowTrustLineLocking is not enabled, return tecNO_PERMISSION
-    auto const sleIssuer = ctx.view.read(keylet::account(issuer));
+    AccountRootEntry<ReadView> const sleIssuer{keylet::account(issuer), ctx.view};
     if (!sleIssuer)
         return tecNO_ISSUER;
     if (!sleIssuer->isFlag(lsfAllowTrustLineLocking))
         return tecNO_PERMISSION;
 
     // If the account does not have a trustline to the issuer, return tecNO_LINE
-    auto const sleRippleState = ctx.view.read(keylet::trustLine(account, issuer, issue.currency));
+    RippleStateEntry<ReadView> const sleRippleState{
+        keylet::trustLine(account, issuer, issue.currency), ctx.view};
     if (!sleRippleState)
         return tecNO_LINE;
 
@@ -273,7 +274,7 @@ escrowCreatePreclaimHelper<MPTIssue>(
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
     auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
-    auto const sleIssuance = ctx.view.read(issuanceKey);
+    MPTokenIssuanceEntry<ReadView> const sleIssuance{issuanceKey, ctx.view};
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -342,7 +343,7 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
     AccountID const account{ctx.tx[sfAccount]};
     AccountID const dest{ctx.tx[sfDestination]};
 
-    auto const sled = ctx.view.read(keylet::account(dest));
+    AccountRootEntry<ReadView> const sled{keylet::account(dest), ctx.view};
     if (!sled)
         return tecNO_DST;
 
@@ -350,7 +351,7 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
     // because all writes to pseudo-account discriminator fields **are**
     // amendment gated, hence the behaviour of this check will always match the
     // currently active amendments.
-    if (isPseudoAccount(sled))
+    if (isPseudoAccount(sled.sle()))
         return tecNO_PERMISSION;
 
     if (!isXRP(amount))
@@ -428,7 +429,7 @@ EscrowCreate::doApply()
     if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
         return tecNO_PERMISSION;
 
-    auto const sle = ctx_.view().peek(keylet::account(accountID_));
+    AccountRootEntry<ApplyView> sle{keylet::account(accountID_), ctx_.view()};
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -441,8 +442,8 @@ EscrowCreate::doApply()
     // validates the sponsor's reserve + remaining credit. When
     // unsponsored this hits the source branch and validates the
     // source's pre-lock balance against base + (currentOC+1)*increment.
-    if (auto const ret =
-            checkReserve(ctx_.getApplyViewContext(), sle, balance, {.ownerCountDelta = 1}, j_);
+    if (auto const ret = checkReserve(
+            ctx_.getApplyViewContext(), sle.sle(), balance, {.ownerCountDelta = 1}, j_);
         !isTesSuccess(ret))
         return ret;
 
@@ -460,14 +461,17 @@ EscrowCreate::doApply()
         //                source only owes reserve for its current owners.
         // - unsponsored: 1  — source owes reserve including the new increment.
         auto const sourceReserve = accountReserve(
-            ctx_.view(), sle, j_, {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : 1});
+            ctx_.view(),
+            sle.sle(),
+            j_,
+            {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : 1});
         if (balance - STAmount(amount).xrp() < sourceReserve)
             return tecUNFUNDED;
     }
 
     // Check destination account
     {
-        auto const sled = ctx_.view().read(keylet::account(ctx_.tx[sfDestination]));
+        AccountRootEntry<ReadView> const sled{keylet::account(ctx_.tx[sfDestination]), ctx_.view()};
         if (!sled)
             return tecNO_DST;  // LCOV_EXCL_LINE
         if (sled->isFlag(lsfRequireDestTag) && !ctx_.tx[~sfDestinationTag])
@@ -477,7 +481,9 @@ EscrowCreate::doApply()
     // Create escrow in ledger.  Note that we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
     Keylet const escrowKeylet = keylet::escrow(accountID_, ctx_.tx.getSeqValue());
-    auto const slep = std::make_shared<SLE>(escrowKeylet);
+    // Build with the ApplyViewContext so create() honors reserve sponsorship.
+    EscrowEntry<ApplyView> slep{escrowKeylet, ctx_.getApplyViewContext()};
+    slep.newSLE();
     (*slep)[sfAmount] = amount;
     (*slep)[sfAccount] = accountID_;
     (*slep)[~sfCondition] = ctx_.tx[~sfCondition];
@@ -499,45 +505,12 @@ EscrowCreate::doApply()
             (*slep)[sfTransferRate] = xferRate.value;
     }
 
-    ctx_.view().insert(slep);
-
-    // Add escrow to sender's owner directory
-    {
-        auto page = ctx_.view().dirInsert(
-            keylet::ownerDir(accountID_), escrowKeylet, describeOwnerDir(accountID_));
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (*slep)[sfOwnerNode] = *page;
-    }
-
-    // If it's not a self-send, add escrow to recipient's owner directory.
-    AccountID const dest = ctx_.tx[sfDestination];
-    if (dest != accountID_)
-    {
-        auto page =
-            ctx_.view().dirInsert(keylet::ownerDir(dest), escrowKeylet, describeOwnerDir(dest));
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (*slep)[sfDestinationNode] = *page;
-    }
-
-    // IOU escrow objects are added to the issuer's owner directory to help
-    // track the total locked balance. For MPT, this isn't necessary because the
-    // locked balance is already stored directly in the MPTokenIssuance object.
+    // Deduct/lock the escrowed amount from the sender.
     AccountID const issuer = amount.getIssuer();
-    if (!isXRP(amount) && issuer != accountID_ && issuer != dest && !amount.holds<MPTIssue>())
-    {
-        auto page =
-            ctx_.view().dirInsert(keylet::ownerDir(issuer), escrowKeylet, describeOwnerDir(issuer));
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (*slep)[sfIssuerNode] = *page;
-    }
-
-    // Deduct owner's balance
     if (isXRP(amount))
     {
         (*sle)[sfBalance] = (*sle)[sfBalance] - amount;
+        sle.update();
     }
     else
     {
@@ -552,11 +525,11 @@ EscrowCreate::doApply()
         }
     }
 
-    // increment owner count
-    increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, ctx_.journal);
-    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), slep);
-    ctx_.view().update(sle);
-    return tesSUCCESS;
+    // Link the escrow into the sender's owner directory (counts toward reserve),
+    // plus the destination and (for IOU) issuer tracking directories where
+    // applicable, bump the sender's OwnerCount, stamp any reserve sponsor, and
+    // insert. See EscrowEntry::ownerDirs() and SLEBase::create().
+    return slep.create(preFeeBalance_);
 }
 
 void

@@ -3,9 +3,10 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
@@ -64,7 +65,8 @@ OracleSet::preflight(PreflightContext const& ctx)
 TER
 OracleSet::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleSetter = ctx.view.read(keylet::account(ctx.tx.getAccountID(sfAccount)));
+    AccountRootEntry<ReadView> const sleSetter{
+        keylet::account(ctx.tx.getAccountID(sfAccount)), ctx.view};
     if (!sleSetter)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
@@ -83,8 +85,8 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         lastUpdateTimeEpoch > (closeTime + kMaxLastUpdateTimeDelta))
         return tecINVALID_UPDATE_TIME;
 
-    auto const sle =
-        ctx.view.read(keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
+    OracleEntry<ReadView> sle{
+        ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID], ctx.view, ctx.j};
 
     // token pairs to add/update
     std::set<std::pair<Currency, Currency>> pairs;
@@ -153,7 +155,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         if (!pairsDel.empty())
             return tecTOKEN_PAIR_NOT_FOUND;
 
-        auto const oldCount = calculateOracleReserve(sle);
+        auto const oldCount = sle.reserveCount();
         auto const newCount = calculateOracleReserve(pairs);
 
         adjustReserve = newCount - oldCount;
@@ -173,7 +175,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         return tecARRAY_TOO_LARGE;
 
     auto const reserve =
-        accountReserve(ctx.view, sleSetter, ctx.j, {.ownerCountDelta = adjustReserve});
+        accountReserve(ctx.view, sleSetter.sle(), ctx.j, {.ownerCountDelta = adjustReserve});
     auto const& balance = sleSetter->getFieldAmount(sfBalance);
 
     if (balance < reserve)
@@ -216,8 +218,6 @@ setPriceDataInnerObjTemplate(STObject& obj)
 TER
 OracleSet::doApply()
 {
-    auto const oracleID = keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID]);
-
     auto populatePriceData = [](STObject& priceData, STObject const& entry) {
         setPriceDataInnerObjTemplate(priceData);
         priceData.setFieldCurrency(sfBaseAsset, entry.getFieldCurrency(sfBaseAsset));
@@ -227,7 +227,8 @@ OracleSet::doApply()
             priceData.setFieldU8(sfScale, entry.getFieldU8(sfScale));
     };
 
-    if (auto sle = ctx_.view().peek(oracleID))
+    OracleEntry<ApplyView> sle{accountID_, ctx_.tx[sfOracleDocumentID], ctx_.view()};
+    if (sle)
     {
         // update
         // the token pair that doesn't have their price updated will not
@@ -287,13 +288,13 @@ OracleSet::doApply()
         if (adjust != 0 && !adjustOracleOwnerCount(ctx_, adjust))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        ctx_.view().update(sle);
+        sle.update();
     }
     else
     {
         // create
 
-        sle = std::make_shared<SLE>(oracleID);
+        sle.newSLE();
         sle->setAccountID(sfOwner, ctx_.tx.getAccountID(sfAccount));
         if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
         {
@@ -326,18 +327,10 @@ OracleSet::doApply()
         sle->setFieldVL(sfAssetClass, ctx_.tx[sfAssetClass]);
         sle->setFieldU32(sfLastUpdateTime, ctx_.tx[sfLastUpdateTime]);
 
-        auto page = ctx_.view().dirInsert(
-            keylet::ownerDir(accountID_), sle->key(), describeOwnerDir(accountID_));
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-
-        (*sle)[sfOwnerNode] = *page;
-
-        auto const count = calculateOracleReserve(series);
-        if (!adjustOracleOwnerCount(ctx_, count))
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-
-        ctx_.view().insert(sle);
+        // Reserve check (owner's pre-fee balance) + link into the owner
+        // directory + bump the owner's OwnerCount by reserveCount() (1, or 2
+        // for a large price-data series) + insert. See OracleEntry.
+        return sle.create(preFeeBalance_);
     }
 
     return tesSUCCESS;

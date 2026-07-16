@@ -29,7 +29,9 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -141,9 +143,9 @@ class LoanBroker_test : public beast::unit_test::Suite
         VaultInfo const& vault,
         VaultInfo const& badVault,
         std::function<jtx::JTx(jtx::JTx const&)> modifyJTx,
-        std::function<void(SLE::const_ref)> checkBroker,
-        std::function<void(SLE::const_ref)> changeBroker,
-        std::function<void(SLE::const_ref)> checkChangedBroker)
+        std::function<void(LoanBrokerEntry<ReadView> const&)> checkBroker,
+        std::function<void(LoanBrokerEntry<ReadView> const&)> changeBroker,
+        std::function<void(LoanBrokerEntry<ReadView> const&)> checkChangedBroker)
     {
         {
             auto const& asset = vault.asset.raw();
@@ -221,7 +223,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             BEAST_EXPECT(broker->at(sfDebtTotal) == 0);
             BEAST_EXPECT(broker->at(sfCoverAvailable) == 0);
             if (checkBroker)
-                checkBroker(broker);
+                checkBroker(LoanBrokerEntry<ReadView>{broker, *env.current()});
 
             // if (auto const vaultSLE = env.le(keylet::vault(vault.vaultID)))
             //{
@@ -471,14 +473,14 @@ class LoanBroker_test : public beast::unit_test::Suite
 
             // Make modifications to the broker
             if (changeBroker)
-                changeBroker(broker);
+                changeBroker(LoanBrokerEntry<ReadView>{broker, *env.current()});
 
             env.close();
 
             // Check the results of modifications
             broker = env.le(keylet);
             if (BEAST_EXPECT(broker) && checkChangedBroker)
-                checkChangedBroker(broker);
+                checkChangedBroker(LoanBrokerEntry<ReadView>{broker, *env.current()});
 
             // Verify that fields get removed when set to default values
             // Debt maximum: explicit 0
@@ -724,7 +726,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 badVault,
                 // No modifications
                 {},
-                [&](SLE::const_ref broker) {
+                [&](LoanBrokerEntry<ReadView> const& broker) {
                     // Extra checks
                     BEAST_EXPECT(!broker->isFieldPresent(sfManagementFeeRate));
                     BEAST_EXPECT(!broker->isFieldPresent(sfCoverRateMinimum));
@@ -737,7 +739,7 @@ class LoanBroker_test : public beast::unit_test::Suite
 
                     BEAST_EXPECT(env.ownerCount(alice) == aliceOriginalCount + 4);
                 },
-                [&](SLE::const_ref broker) {
+                [&](LoanBrokerEntry<ReadView> const& broker) {
                     // Modifications
 
                     // Update the fields
@@ -797,7 +799,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                         kData(testData),
                         kDebtMaximum(debtMax));
                 },
-                [&](SLE::const_ref broker) {
+                [&](LoanBrokerEntry<ReadView> const& broker) {
                     // Check the updated fields
                     BEAST_EXPECT(checkVL(broker->at(sfData), testData));
                     Number const expected = STAmount{vault.asset, Number(175, -1)};
@@ -828,7 +830,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                         kCoverRateMinimum(TenthBips32(100)),
                         kCoverRateLiquidation(TenthBips32(200)));
                 },
-                [&](SLE::const_ref broker) {
+                [&](LoanBrokerEntry<ReadView> const& broker) {
                     // Extra checks
                     BEAST_EXPECT(broker->at(sfManagementFeeRate) == 123);
                     BEAST_EXPECT(broker->at(sfCoverRateMinimum) == 100);
@@ -836,14 +838,14 @@ class LoanBroker_test : public beast::unit_test::Suite
                     BEAST_EXPECT(broker->at(sfDebtMaximum) == Number(9));
                     BEAST_EXPECT(checkVL(broker->at(sfData), testData));
                 },
-                [&](SLE::const_ref broker) {
+                [&](LoanBrokerEntry<ReadView> const& broker) {
                     // Reset Data & Debt maximum to default values
                     env(set(alice, vault.vaultID),
                         kLoanBrokerId(broker->key()),
                         kData(""),
                         kDebtMaximum(Number(0)));
                 },
-                [&](SLE::const_ref broker) {
+                [&](LoanBrokerEntry<ReadView> const& broker) {
                     // Check the updated fields
                     BEAST_EXPECT(!broker->isFieldPresent(sfData));
                     BEAST_EXPECT(!broker->isFieldPresent(sfDebtMaximum));

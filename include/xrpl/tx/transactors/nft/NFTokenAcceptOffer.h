@@ -3,7 +3,9 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STTx.h>
@@ -21,10 +23,10 @@ private:
     pay(AccountID const& from, AccountID const& to, STAmount const& amount);
 
     TER
-    acceptOffer(SLE::ref offer);
+    acceptOffer(NFTokenOfferEntry<ApplyView> const& offer);
 
     TER
-    bridgeOffers(SLE::ref buy, SLE::ref sell);
+    bridgeOffers(NFTokenOfferEntry<ApplyView> const& buy, NFTokenOfferEntry<ApplyView> const& sell);
 
     TER
     transferNFToken(AccountID const& buyer, AccountID const& seller, uint256 const& nfTokenID);

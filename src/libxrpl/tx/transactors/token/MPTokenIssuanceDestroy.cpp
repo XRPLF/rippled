@@ -1,6 +1,8 @@
 #include <xrpl/tx/transactors/token/MPTokenIssuanceDestroy.h>
 
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -42,17 +44,12 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 TER
 MPTokenIssuanceDestroy::doApply()
 {
-    auto const mpt = view().peek(keylet::mptokenIssuance(ctx_.tx[sfMPTokenIssuanceID]));
+    MPTokenIssuanceEntry<ApplyView> mpt{
+        keylet::mptokenIssuance(ctx_.tx[sfMPTokenIssuanceID]), view()};
     if (accountID_ != mpt->getAccountID(sfIssuer))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view().dirRemove(keylet::ownerDir(accountID_), (*mpt)[sfOwnerNode], mpt->key(), false))
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-
-    decreaseOwnerCountForObject(view(), accountID_, mpt, 1, j_);
-    view().erase(mpt);
-
-    return tesSUCCESS;
+    return mpt.destroy();
 }
 
 void

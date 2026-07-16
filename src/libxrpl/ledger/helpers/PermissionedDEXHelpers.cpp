@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -31,7 +32,7 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
         // LCOV_EXCL_STOP
     }
 
-    auto const sleDomain = view.read(keylet::permissionedDomain(domainID));
+    PermissionedDomainEntry<ReadView> const sleDomain{keylet::permissionedDomain(domainID), view};
     if (!sleDomain)
         return false;
 
@@ -42,8 +43,8 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
     auto const& credentials = sleDomain->getFieldArray(sfAcceptedCredentials);
 
     bool const inDomain = std::ranges::any_of(credentials, [&](auto const& credential) {
-        auto const sleCred = view.read(
-            keylet::credential(account, credential[sfIssuer], credential[sfCredentialType]));
+        CredentialEntry<ReadView> const sleCred{
+            keylet::credential(account, credential[sfIssuer], credential[sfCredentialType]), view};
         if (!sleCred || !sleCred->isFlag(lsfAccepted))
             return false;
 
@@ -60,7 +61,7 @@ offerInDomain(
     Domain const& domainID,
     beast::Journal j)
 {
-    auto const sleOffer = view.read(keylet::offer(offerID));
+    OfferEntry<ReadView> const sleOffer{keylet::offer(offerID), view};
 
     // The following are defensive checks that should never happen, since this
     // function is used to check against the order book offers, which should not

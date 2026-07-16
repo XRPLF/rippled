@@ -3,6 +3,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
@@ -23,7 +24,11 @@ namespace xrpl {
  *              fails; tefINTERNAL if the source account SLE cannot be found.
  */
 TER
-closeChannel(SLE::ref slep, ApplyView& view, uint256 const& key, beast::Journal j);
+closeChannel(
+    PayChannelEntry<ApplyView>& slep,
+    ApplyView& view,
+    uint256 const& key,
+    beast::Journal j);
 
 /**
  * Add two uint32_t values with saturation at UINT32_MAX.

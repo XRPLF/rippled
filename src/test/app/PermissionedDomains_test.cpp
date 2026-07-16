@@ -509,9 +509,11 @@ class PermissionedDomains_test : public beast::unit_test::Suite
 
         auto const baseFee = env.current()->fees().base.drops();
 
-        // Pay alice almost enough to make the reserve.
-        env(pay(env.master, alice, incReserve + drops(2 * baseFee) - drops(1)));
-        BEAST_EXPECT(env.balance(alice) == acctReserve + incReserve + drops(baseFee) - drops(1));
+        // Pay alice almost enough to make the reserve. The reserve is checked
+        // against the pre-fee balance, so leave her one drop short of the object
+        // reserve at the point the PermissionedDomainSet is evaluated.
+        env(pay(env.master, alice, incReserve + drops(baseFee) - drops(1)));
+        BEAST_EXPECT(env.balance(alice) == acctReserve + incReserve - drops(1));
         env.close();
 
         // alice still does not have enough XRP for the reserve.

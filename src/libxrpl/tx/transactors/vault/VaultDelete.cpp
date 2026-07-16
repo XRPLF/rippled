@@ -3,8 +3,11 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -42,7 +45,7 @@ VaultDelete::preflight(PreflightContext const& ctx)
 TER
 VaultDelete::preclaim(PreclaimContext const& ctx)
 {
-    auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
+    VaultEntry<ReadView> const vault{keylet::vault(ctx.tx[sfVaultID]), ctx.view};
     if (!vault)
         return tecNO_ENTRY;
 
@@ -65,7 +68,8 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     }
 
     // Verify we can destroy MPTokenIssuance
-    auto const sleMPT = ctx.view.read(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
+    MPTokenIssuanceEntry<ReadView> const sleMPT{
+        keylet::mptokenIssuance(vault->at(sfShareMPTID)), ctx.view};
 
     if (!sleMPT)
     {
@@ -95,7 +99,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
 TER
 VaultDelete::doApply()
 {
-    auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    VaultEntry<ApplyView> vault{keylet::vault(ctx_.tx[sfVaultID]), view()};
     auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -108,7 +112,7 @@ VaultDelete::doApply()
         return ter;
 
     auto const& pseudoID = vault->at(sfAccount);
-    auto const pseudoAcct = view().peek(keylet::account(pseudoID));
+    AccountRootEntry<ApplyView> const pseudoAcct{keylet::account(pseudoID), view()};
     if (!pseudoAcct)
     {
         // LCOV_EXCL_START
@@ -120,7 +124,7 @@ VaultDelete::doApply()
     // Destroy the share issuance. Do not use MPTokenIssuanceDestroy for this,
     // no special logic needed. First run few checks, duplicated from preclaim.
     auto const shareMPTID = *vault->at(sfShareMPTID);
-    auto const mpt = view().peek(keylet::mptokenIssuance(shareMPTID));
+    MPTokenIssuanceEntry<ApplyView> mpt{keylet::mptokenIssuance(shareMPTID), view()};
     if (!mpt)
     {
         // LCOV_EXCL_START
@@ -130,7 +134,7 @@ VaultDelete::doApply()
     }
 
     // Try to remove MPToken for vault shares for the vault owner if it exists.
-    if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, accountID_)))
+    if (MPTokenEntry<ApplyView> const mptoken{keylet::mptoken(shareMPTID, accountID_), view()})
     {
         if (auto const ter =
                 removeEmptyHolding(applyViewContext, accountID_, MPTIssue(shareMPTID), j_);
@@ -154,16 +158,16 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    decreaseOwnerCountForObject(view(), pseudoAcct, mpt, 1, j_);
+    decreaseOwnerCountForObject(view(), pseudoAcct.mutableSle(), mpt.mutableSle(), 1, j_);
 
-    view().erase(mpt);
+    mpt.erase();
 
     // The pseudo-account's directory should have been deleted already.
-    if (view().peek(keylet::ownerDir(pseudoID)))
+    if (DirectoryNodeEntry<ApplyView>{keylet::ownerDir(pseudoID), view()})
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
 
     // Destroy the pseudo-account.
-    auto vaultPseudoSLE = view().peek(keylet::account(pseudoID));
+    AccountRootEntry<ApplyView> vaultPseudoSLE{keylet::account(pseudoID), view()};
     if (!vaultPseudoSLE || vaultPseudoSLE->at(~sfVaultID) != vault->key())
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
@@ -191,34 +195,12 @@ VaultDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    view().erase(vaultPseudoSLE);
+    vaultPseudoSLE.erase();
 
-    // Remove the vault from its owner's directory.
-    auto const ownerID = vault->at(sfOwner);
-    if (!view().dirRemove(keylet::ownerDir(ownerID), vault->at(sfOwnerNode), vault->key(), false))
-    {
-        // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultDelete: failed to delete vault object.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    auto const owner = view().peek(keylet::account(ownerID));
-    if (!owner)
-    {
-        // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultDelete: missing vault owner account.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    // We are destroying Vault and PseudoAccount, hence decrease by 2
-    decreaseOwnerCountForObject(view(), owner, vault, 2, j_);
-
-    // Destroy the vault.
-    view().erase(vault);
-
-    return tesSUCCESS;
+    // Unlink the vault from its owner's directory, decrement the owner's
+    // OwnerCount by 2 (the vault and its now-destroyed pseudo-account, refunding
+    // any reserve sponsor), and erase it. See VaultEntry.
+    return vault.destroy();
 }
 
 void

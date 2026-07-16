@@ -8,8 +8,9 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
@@ -25,7 +26,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
-#include <memory>
 
 namespace xrpl {
 
@@ -162,14 +162,12 @@ Change::applyAmendment()
 {
     uint256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
 
-    auto const k = keylet::amendments();
-
-    SLE::pointer amendmentObject = view().peek(k);
+    AmendmentsEntry<ApplyView> amendmentObject{view()};
 
     if (!amendmentObject)
     {
-        amendmentObject = std::make_shared<SLE>(k);
-        view().insert(amendmentObject);
+        amendmentObject.newSLE();
+        amendmentObject.insert();
     }
 
     STVector256 amendments = amendmentObject->getFieldV256(sfAmendments);
@@ -246,7 +244,7 @@ Change::applyAmendment()
         amendmentObject->setFieldArray(sfMajorities, newMajorities);
     }
 
-    view().update(amendmentObject);
+    amendmentObject.update();
 
     return tesSUCCESS;
 }
@@ -254,16 +252,14 @@ Change::applyAmendment()
 TER
 Change::applyFee()
 {
-    auto const k = keylet::feeSettings();
-
-    SLE::pointer feeObject = view().peek(k);
+    FeeSettingsEntry<ApplyView> feeObject{view()};
 
     if (!feeObject)
     {
-        feeObject = std::make_shared<SLE>(k);
-        view().insert(feeObject);
+        feeObject.newSLE();
+        feeObject.insert();
     }
-    auto set = [](SLE::pointer& feeObject, STTx const& tx, auto const& field) {
+    auto set = [](auto& feeObject, STTx const& tx, auto const& field) {
         feeObject->at(field) = tx[field];
     };
     if (view().rules().enabled(featureXRPFees))
@@ -285,7 +281,7 @@ Change::applyFee()
         set(feeObject, ctx_.tx, sfReserveIncrement);
     }
 
-    view().update(feeObject);
+    feeObject.update();
 
     JLOG(j_.warn()) << "Fees have been changed";
     return tesSUCCESS;
@@ -326,12 +322,11 @@ Change::applyUNLModify()
     JLOG(j_.info()) << "N-UNL: applyUNLModify, " << (disabling ? "ToDisable" : "ToReEnable")
                     << " seq=" << seq << " validator data:" << strHex(validator);
 
-    auto const k = keylet::negativeUNL();
-    SLE::pointer negUnlObject = view().peek(k);
+    NegativeUNLEntry<ApplyView> negUnlObject{view()};
     if (!negUnlObject)
     {
-        negUnlObject = std::make_shared<SLE>(k);
-        view().insert(negUnlObject);
+        negUnlObject.newSLE();
+        negUnlObject.insert();
     }
 
     bool const found = [&] {
@@ -404,7 +399,7 @@ Change::applyUNLModify()
         negUnlObject->setFieldVL(sfValidatorToReEnable, validator);
     }
 
-    view().update(negUnlObject);
+    negUnlObject.update();
     return tesSUCCESS;
 }
 

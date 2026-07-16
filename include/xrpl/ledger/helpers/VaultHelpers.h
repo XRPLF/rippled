@@ -1,9 +1,9 @@
 #pragma once
 
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 
 #include <optional>
 
@@ -21,7 +21,10 @@ namespace xrpl {
  * @return The number of shares, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets);
+assetsToSharesDeposit(
+    VaultEntry<ReadView> const& vault,
+    MPTokenIssuanceEntry<ReadView> const& issuance,
+    STAmount const& assets);
 
 /**
  * From the perspective of a vault, return the number of assets to take from
@@ -35,7 +38,10 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
  * @return The number of assets, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
+sharesToAssetsDeposit(
+    VaultEntry<ReadView> const& vault,
+    MPTokenIssuanceEntry<ReadView> const& issuance,
+    STAmount const& shares);
 
 /**
  * Controls whether to truncate shares instead of rounding.
@@ -68,8 +74,8 @@ enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
  */
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
-    SLE::const_ref vault,
-    SLE::const_ref issuance,
+    VaultEntry<ReadView> const& vault,
+    MPTokenIssuanceEntry<ReadView> const& issuance,
     STAmount const& assets,
     TruncateShares truncate = TruncateShares::No,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
@@ -89,8 +95,8 @@ assetsToSharesWithdraw(
  */
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
-    SLE::const_ref vault,
-    SLE::const_ref issuance,
+    VaultEntry<ReadView> const& vault,
+    MPTokenIssuanceEntry<ReadView> const& issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
 
@@ -105,6 +111,9 @@ sharesToAssetsWithdraw(
  *                 both the share MPTID and the outstanding-amount total.
  */
 [[nodiscard]] bool
-isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref issuance);
+isSoleShareholder(
+    ReadView const& view,
+    AccountID const& account,
+    MPTokenIssuanceEntry<ReadView> const& issuance);
 
 }  // namespace xrpl

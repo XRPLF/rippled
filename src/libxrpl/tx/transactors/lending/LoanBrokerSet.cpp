@@ -4,9 +4,9 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
@@ -216,7 +216,6 @@ LoanBrokerSet::doApply()
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
-        auto const vaultPseudoID = sleVault->at(sfAccount);
         auto const vaultAsset = sleVault->at(sfAsset);
         auto const sequence = tx.getSeqValue();
 
@@ -229,18 +228,13 @@ LoanBrokerSet::doApply()
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
-        auto broker = std::make_shared<SLE>(keylet::loanBroker(accountID_, sequence));
+        LoanBrokerEntry<ApplyView> broker{keylet::loanBroker(accountID_, sequence), view, j_};
+        broker.newSLE();
 
-        if (auto const ter = dirLink(view, accountID_, broker))
-            return ter;  // LCOV_EXCL_LINE
-        if (auto const ter = dirLink(view, vaultPseudoID, broker, sfVaultNode))
-            return ter;  // LCOV_EXCL_LINE
-
-        // Increases the owner count by two: one for the LoanBroker object, and
-        // one for the pseudo-account.
-        increaseOwnerCount(view, owner, {}, 2, j_);
-        if (preFeeBalance_ < accountReserve(view, owner, j_))
-            return tecINSUFFICIENT_RESERVE;
+        // sfVaultID and sfOwner must be set before create(), which reads them
+        // (and looks up the vault's pseudo-account) to link the directories.
+        broker->at(sfVaultID) = vaultID;
+        broker->at(sfOwner) = accountID_;
 
         auto maybePseudo = createPseudoAccount(view, broker->key(), sfLoanBrokerID);
         if (!maybePseudo)
@@ -254,8 +248,6 @@ LoanBrokerSet::doApply()
 
         // Initialize data fields:
         broker->at(sfSequence) = sequence;
-        broker->at(sfVaultID) = vaultID;
-        broker->at(sfOwner) = accountID_;
         broker->at(sfAccount) = pseudoId;
         // The LoanSequence indexes loans created by this broker, starting at 1
         broker->at(sfLoanSequence) = 1;
@@ -270,7 +262,12 @@ LoanBrokerSet::doApply()
         if (auto const coverLiq = tx[~sfCoverRateLiquidation])
             broker->at(sfCoverRateLiquidation) = *coverLiq;
 
-        view.insert(broker);
+        // Reserve check (owner's pre-fee balance, charging two slots for the
+        // broker and its pseudo-account) + link into the owner's directory
+        // (counted) and the vault pseudo-account's directory (tracking) + bump
+        // the owner's OwnerCount by 2 + insert. See LoanBrokerEntry.
+        if (auto const ter = broker.create(preFeeBalance_); !isTesSuccess(ter))
+            return ter;
 
         associateAsset(*broker, vaultAsset);
     }

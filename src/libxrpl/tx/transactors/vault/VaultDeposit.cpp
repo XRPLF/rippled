@@ -4,8 +4,10 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -30,7 +32,7 @@ namespace xrpl {
 
 [[nodiscard]]
 static STAmount
-roundToVaultScale(STAmount const& amount, SLE::const_ref vault)
+roundToVaultScale(STAmount const& amount, VaultEntry<ReadView> const& vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::roundToVaultScale : valid vault sle");
     XRPL_ASSERT(
@@ -67,7 +69,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
 
-    auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
+    VaultEntry<ReadView> const vault{keylet::vault(ctx.tx[sfVaultID]), ctx.view};
     if (!vault)
         return tecNO_ENTRY;
 
@@ -94,7 +96,8 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntry<ReadView> const sleIssuance{
+        keylet::mptokenIssuance(mptIssuanceID), ctx.view};
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -196,7 +199,7 @@ TER
 VaultDeposit::doApply()
 {
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
-    auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    VaultEntry<ApplyView> vault{keylet::vault(ctx_.tx[sfVaultID]), view()};
     auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -218,7 +221,8 @@ VaultDeposit::doApply()
 
     // Make sure the depositor can hold shares.
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
+    MPTokenIssuanceEntry<ReadView> const sleIssuance{
+        keylet::mptokenIssuance(mptIssuanceID), view()};
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -316,7 +320,7 @@ VaultDeposit::doApply()
 
     vault->at(sfAssetsTotal) += assetsDeposited;
     vault->at(sfAssetsAvailable) += assetsDeposited;
-    view().update(vault);
+    vault.update();
 
     // A deposit must not push the vault over its limit.
     auto const maximum = *vault->at(sfAssetsMaximum);

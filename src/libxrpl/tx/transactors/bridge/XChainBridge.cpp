@@ -11,7 +11,7 @@
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -719,23 +719,15 @@ finalizeClaimHelper(
         }
     }
 
-    if (auto const sleClaimID = outerSb.peek(claimIDKeylet))
+    if (XChainOwnedClaimIDEntry<ApplyView> sleClaimID{claimIDKeylet, outerSb, j})
     {
-        auto const cidOwner = (*sleClaimID)[sfAccount];
+        // Unlink the claim id from its owner's directory, decrement the owner's
+        // OwnerCount, and erase it. See XChainOwnedClaimIDEntry.
+        if (auto const ter = sleClaimID.destroy(); !isTesSuccess(ter))
         {
-            // Remove the claim id
-            auto const sleOwner = outerSb.peek(keylet::account(cidOwner));
-            auto const page = (*sleClaimID)[sfOwnerNode];
-            if (!outerSb.dirRemove(keylet::ownerDir(cidOwner), page, sleClaimID->key(), true))
-            {
-                JLOG(j.fatal()) << "Unable to delete xchain seq number from owner.";
-                result.rmSleTer = tefBAD_LEDGER;
-                return result;
-            }
-
-            // Remove the claim id from the ledger
-            decreaseOwnerCountForObject(outerSb, sleOwner, sleClaimID, 1, j);
-            outerSb.erase(sleClaimID);
+            JLOG(j.fatal()) << "Unable to delete xchain seq number from owner.";
+            result.rmSleTer = ter;
+            return result;
         }
     }
 
@@ -805,24 +797,27 @@ readOrpeekBridge(F&& getter, STXChainBridge const& bridgeSpec)
     return tryGet(STXChainBridge::ChainType::Issuing);
 }
 
-SLE::pointer
+BridgeEntry<ApplyView>
 peekBridge(ApplyView& v, STXChainBridge const& bridgeSpec)
 {
-    return readOrpeekBridge<SLE>(
-        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> SLE::pointer {
-            return v.peek(keylet::bridge(b, ct));
-        },
-        bridgeSpec);
+    return BridgeEntry<ApplyView>{
+        readOrpeekBridge<SLE>(
+            [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> std::shared_ptr<SLE> {
+                return v.peek(keylet::bridge(b, ct));
+            },
+            bridgeSpec),
+        v};
 }
 
-SLE::const_pointer
+BridgeEntry<ReadView>
 readBridge(ReadView const& v, STXChainBridge const& bridgeSpec)
 {
-    return readOrpeekBridge<SLE const>(
-        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> SLE::const_pointer {
-            return v.read(keylet::bridge(b, ct));
-        },
-        bridgeSpec);
+    return BridgeEntry<ReadView>{
+        readOrpeekBridge<SLE const>(
+            [&v](STXChainBridge const& b, STXChainBridge::ChainType ct)
+                -> std::shared_ptr<SLE const> { return v.read(keylet::bridge(b, ct)); },
+            bridgeSpec),
+        v};
 }
 
 // Precondition: all the claims in the range are consistent. They must sign for
@@ -1127,27 +1122,18 @@ applyCreateAccountAttestations(
     }
     else if (createCID)
     {
-        auto const createdSleClaimID = std::make_shared<SLE>(claimIDKeylet);
+        XChainOwnedCreateAccountClaimIDEntry<ApplyView> createdSleClaimID{claimIDKeylet, psb, j};
+        createdSleClaimID.newSLE();
         (*createdSleClaimID)[sfAccount] = doorAccount;
         (*createdSleClaimID)[sfXChainBridge] = bridgeSpec;
         (*createdSleClaimID)[sfXChainAccountCreateCount] = attBegin->createCount;
         createdSleClaimID->setFieldArray(sfXChainCreateAccountAttestations, curAtts.toSTArray());
 
-        // Add to owner directory of the door account
-        auto const page = psb.dirInsert(
-            keylet::ownerDir(doorAccount), claimIDKeylet, describeOwnerDir(doorAccount));
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (*createdSleClaimID)[sfOwnerNode] = *page;
-
-        auto const sleDoor = psb.peek(doorK);
-        if (!sleDoor)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-
-        // Reserve was already checked
-        increaseOwnerCount(psb, sleDoor, {}, 1, j);
-        psb.insert(createdSleClaimID);
-        psb.update(sleDoor);
+        // Link into the door account's owner directory, bump its OwnerCount, and
+        // insert. The reserve was already checked against the door account
+        // above, so skip create()'s check. See XChainOwnedCreateAccountClaimIDEntry.
+        if (auto const ter = createdSleClaimID.create(std::nullopt); !isTesSuccess(ter))
+            return ter;
     }
 
     psb.apply(rawView);
@@ -1472,7 +1458,8 @@ XChainCreateBridge::doApply()
         STXChainBridge::srcChain(account == bridgeSpec.lockingChainDoor());
 
     Keylet const bridgeKeylet = keylet::bridge(bridgeSpec, chainType);
-    auto const sleBridge = std::make_shared<SLE>(bridgeKeylet);
+    BridgeEntry<ApplyView> sleBridge{bridgeKeylet, ctx_.view(), ctx_.journal};
+    sleBridge.newSLE();
 
     (*sleBridge)[sfAccount] = account;
     (*sleBridge)[sfSignatureReward] = reward;
@@ -1483,21 +1470,9 @@ XChainCreateBridge::doApply()
     (*sleBridge)[sfXChainAccountCreateCount] = 0;
     (*sleBridge)[sfXChainAccountClaimCount] = 0;
 
-    // Add to owner directory
-    {
-        auto const page = ctx_.view().dirInsert(
-            keylet::ownerDir(account), bridgeKeylet, describeOwnerDir(account));
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (*sleBridge)[sfOwnerNode] = *page;
-    }
-
-    increaseOwnerCount(ctx_.view(), sleAcct, {}, 1, ctx_.journal);
-
-    ctx_.view().insert(sleBridge);
-    ctx_.view().update(sleAcct);
-
-    return tesSUCCESS;
+    // Reserve check (submitter's pre-fee balance) + link into the owner
+    // directory + bump the owner's OwnerCount + insert. See BridgeEntry.
+    return sleBridge.create(preFeeBalance_);
 }
 
 //------------------------------------------------------------------------------
@@ -2015,7 +1990,7 @@ XChainCreateClaimID::doApply()
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sleBridge = peekBridge(ctx_.view(), bridgeSpec);
+    auto sleBridge = peekBridge(ctx_.view(), bridgeSpec);
     if (!sleBridge)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -2029,14 +2004,14 @@ XChainCreateClaimID::doApply()
     (*sleBridge)[sfXChainClaimID] = claimID;
 
     Keylet const claimIDKeylet = keylet::xChainClaimID(bridgeSpec, claimID);
-    if (ctx_.view().exists(claimIDKeylet))
+    XChainOwnedClaimIDEntry<ApplyView> sleClaimID{claimIDKeylet, ctx_.view(), ctx_.journal};
+    if (sleClaimID)
     {
         // already checked out!?!
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
-    auto const sleClaimID = std::make_shared<SLE>(claimIDKeylet);
-
+    sleClaimID.newSLE();
     (*sleClaimID)[sfAccount] = account;
     (*sleClaimID)[sfXChainBridge] = bridgeSpec;
     (*sleClaimID)[sfXChainClaimID] = claimID;
@@ -2044,21 +2019,13 @@ XChainCreateClaimID::doApply()
     (*sleClaimID)[sfSignatureReward] = reward;
     sleClaimID->setFieldArray(sfXChainClaimAttestations, STArray{sfXChainClaimAttestations});
 
-    // Add to owner directory
-    {
-        auto const page = ctx_.view().dirInsert(
-            keylet::ownerDir(account), claimIDKeylet, describeOwnerDir(account));
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (*sleClaimID)[sfOwnerNode] = *page;
-    }
+    // Reserve check (submitter's pre-fee balance) + link into the owner
+    // directory + bump the owner's OwnerCount + insert. See
+    // XChainOwnedClaimIDEntry.
+    if (auto const ter = sleClaimID.create(preFeeBalance_); !isTesSuccess(ter))
+        return ter;
 
-    increaseOwnerCount(ctx_.view(), sleAcct, {}, 1, ctx_.journal);
-
-    ctx_.view().insert(sleClaimID);
-    ctx_.view().update(sleBridge);
-    ctx_.view().update(sleAcct);
-
+    sleBridge.update();
     return tesSUCCESS;
 }
 
@@ -2199,7 +2166,7 @@ XChainCreateAccountCommit::doApply()
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sleBridge = peekBridge(psb, bridge);
+    auto sleBridge = peekBridge(psb, bridge);
     if (!sleBridge)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -2227,7 +2194,7 @@ XChainCreateAccountCommit::doApply()
         return thTer;
 
     (*sleBridge)[sfXChainAccountCreateCount] = (*sleBridge)[sfXChainAccountCreateCount] + 1;
-    psb.update(sleBridge);
+    sleBridge.update();
 
     psb.apply(ctx_.rawView());
 

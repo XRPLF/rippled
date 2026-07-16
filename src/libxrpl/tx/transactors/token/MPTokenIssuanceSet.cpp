@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SLEBase.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -301,16 +302,10 @@ MPTokenIssuanceSet::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const holderID = ctx_.tx[~sfHolder];
     auto const domainID = ctx_.tx[~sfDomainID];
-    SLE::pointer sle;
-
-    if (holderID)
-    {
-        sle = view().peek(keylet::mptoken(mptIssuanceID, *holderID));
-    }
-    else
-    {
-        sle = view().peek(keylet::mptokenIssuance(mptIssuanceID));
-    }
+    WritableSLE sle{
+        holderID ? keylet::mptoken(mptIssuanceID, *holderID)
+                 : keylet::mptokenIssuance(mptIssuanceID),
+        view()};
 
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -410,7 +405,7 @@ MPTokenIssuanceSet::doApply()
         sle->setFieldVL(sfAuditorEncryptionKey, *pubKey);
     }
 
-    view().update(sle);
+    sle.update();
 
     return tesSUCCESS;
 }

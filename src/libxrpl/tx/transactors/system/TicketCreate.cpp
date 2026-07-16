@@ -1,11 +1,9 @@
 #include <xrpl/tx/transactors/system/TicketCreate.h>
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
@@ -67,22 +65,11 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
 TER
 TicketCreate::doApply()
 {
-    SLE::pointer const sleAccountRoot = view().peek(keylet::account(accountID_));
+    AccountRootEntry<ApplyView> sleAccountRoot{keylet::account(accountID_), view()};
     if (!sleAccountRoot)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    // Each ticket counts against the reserve of the issuing account, but we
-    // check the starting balance because we want to allow dipping into the
-    // reserve to pay fees.
     std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
-    if (preFeeBalance_ < accountReserve(
-                             view(),
-                             sleAccountRoot,
-                             j_,
-                             {.ownerCountDelta = static_cast<std::int32_t>(ticketCount)}))
-        return tecINSUFFICIENT_RESERVE;
-
-    beast::Journal const viewJ{ctx_.registry.get().getJournal("View")};
 
     // The starting ticket sequence is the same as the current account
     // root sequence.  Before we got here to doApply(), the transaction
@@ -100,32 +87,26 @@ TicketCreate::doApply()
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
         Keylet const ticketKeylet = keylet::ticket(accountID_, curTicketSeq);
-        SLE::pointer const sleTicket = std::make_shared<SLE>(ticketKeylet);
+        TicketEntry<ApplyView> sleTicket{ticketKeylet, view()};
+        sleTicket.newSLE();
 
         sleTicket->setAccountID(sfAccount, accountID_);
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);
 
-        view().insert(sleTicket);
-
-        auto const page = view().dirInsert(
-            keylet::ownerDir(accountID_), ticketKeylet, describeOwnerDir(accountID_));
-
-        JLOG(j_.trace()) << "Creating ticket " << to_string(ticketKeylet.key) << ": "
-                         << (page ? "success" : "failure");
-
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-
-        sleTicket->setFieldU64(sfOwnerNode, *page);
+        // Each ticket counts against the reserve of the issuing account, but
+        // the reserve is checked against the starting balance (preFeeBalance_)
+        // because we want to allow dipping into the reserve to pay fees. This
+        // reserve check + owner directory link + OwnerCount bump is handled by
+        // create(). The final ticket's create() enforces the reserve for the
+        // full ticketCount, since OwnerCount grows with each iteration.
+        if (auto const ter = sleTicket.create(preFeeBalance_); !isTesSuccess(ter))
+            return ter;
     }
 
     // Update the record of the number of Tickets this account owns.
     std::uint32_t const oldTicketCount = (*sleAccountRoot)[~sfTicketCount].valueOr(0u);
 
     sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
-
-    // Every added Ticket counts against the creator's reserve.
-    increaseOwnerCount(view(), sleAccountRoot, {}, ticketCount, viewJ);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.

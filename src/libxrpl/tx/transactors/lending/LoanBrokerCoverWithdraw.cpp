@@ -6,6 +6,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -96,7 +97,10 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 
     // Helper handles both IOU and MPT correctly without explicit branching.
     if (auto const ret = canApplyToBrokerCover(
-            ctx.view, sleBroker, vaultAsset, amount, ctx.j, "LoanBrokerCoverWithdraw"))
+            LoanBrokerEntry<ReadView>{sleBroker, ctx.view, ctx.j},
+            vaultAsset,
+            amount,
+            "LoanBrokerCoverWithdraw"))
         return ret;
 
     // The broker's pseudo-account is the source of funds.
@@ -152,7 +156,9 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         if (fix320Enabled)
         {
             return minimumBrokerCover(
-                currentDebtTotal, TenthBips32{sleBroker->at(sfCoverRateMinimum)}, vault);
+                currentDebtTotal,
+                TenthBips32{sleBroker->at(sfCoverRateMinimum)},
+                VaultEntry<ReadView>{vault, ctx.view});
         }
 
         // Always round the minimum required up.

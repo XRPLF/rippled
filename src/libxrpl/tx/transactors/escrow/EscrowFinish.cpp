@@ -14,6 +14,7 @@
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
@@ -173,7 +174,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
     auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
-    auto const sleIssuance = ctx.view.read(issuanceKey);
+    MPTokenIssuanceEntry<ReadView> const sleIssuance{issuanceKey, ctx.view};
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -204,7 +205,7 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(featureTokenEscrow))
     {
         auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
-        auto const slep = ctx.view.read(k);
+        EscrowEntry<ReadView> const slep{k, ctx.view};
         if (!slep)
             return tecNO_TARGET;
 
@@ -229,7 +230,7 @@ TER
 EscrowFinish::doApply()
 {
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
-    auto const slep = ctx_.view().peek(k);
+    EscrowEntry<ApplyView> slep{k, ctx_.view()};
     if (!slep)
     {
         if (ctx_.view().rules().enabled(featureTokenEscrow))
@@ -305,17 +306,21 @@ EscrowFinish::doApply()
 
     // NOTE: Escrow payments cannot be used to fund accounts.
     AccountID const destID = (*slep)[sfDestination];
-    auto const sled = ctx_.view().peek(keylet::account(destID));
+    AccountRootEntry<ApplyView> sled{keylet::account(destID), ctx_.view()};
     if (!sled)
         return tecNO_DST;
 
-    if (auto err =
-            verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, destID, sled, ctx_.journal);
+    if (auto err = verifyDepositPreauth(
+            ctx_.tx, ctx_.view(), accountID_, destID, sled.sle(), ctx_.journal);
         !isTesSuccess(err))
         return err;
 
     AccountID const account = (*slep)[sfAccount];
 
+    // Escrow deletion is not expressed via EscrowEntry::destroy() here because
+    // the reserve release is consensus-ordered relative to token delivery (see
+    // below), which the wrapper cannot express.
+    //
     // Remove escrow from owner directory
     {
         auto const page = (*slep)[sfOwnerNode];
@@ -348,7 +353,7 @@ EscrowFinish::doApply()
     // arithmetic for self-escrows and would break consensus if not gated.
     bool const sponsorEnabled = ctx_.view().rules().enabled(featureSponsor);
     if (sponsorEnabled)
-        decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);
+        decreaseOwnerCountForObject(ctx_.view(), account, slep.mutableSle(), 1, ctx_.journal);
 
     STAmount const amount = slep->getFieldAmount(sfAmount);
     // Transfer amount to destination
@@ -371,7 +376,7 @@ EscrowFinish::doApply()
                     return escrowUnlockApplyHelper<T>(
                         ctx_.getApplyViewContext(),
                         lockedRate,
-                        sled,
+                        sled.mutableSle(),
                         preFeeBalance_,
                         amount,
                         issuer,
@@ -384,27 +389,27 @@ EscrowFinish::doApply()
             !isTesSuccess(ret))
             return ret;
 
-        // Remove escrow from issuers owner directory, if present.
+        // Remove escrow from issuer's owner directory, if present.
         if (auto const optPage = (*slep)[~sfIssuerNode]; optPage)
         {
             if (!ctx_.view().dirRemove(keylet::ownerDir(issuer), *optPage, k.key, true))
             {
                 // LCOV_EXCL_START
-                JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
+                JLOG(j_.fatal()) << "Unable to delete Escrow from issuer.";
                 return tefBAD_LEDGER;
                 // LCOV_EXCL_STOP
             }
         }
     }
 
-    ctx_.view().update(sled);
+    sled.update();
 
-    // Adjust source owner count (legacy position, pre-Sponsor)
+    // Adjust source owner count (legacy position, pre-Sponsor).
     if (!sponsorEnabled)
-        decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);
+        decreaseOwnerCountForObject(ctx_.view(), account, slep.mutableSle(), 1, ctx_.journal);
 
     // Remove escrow from ledger
-    ctx_.view().erase(slep);
+    slep.erase();
     return tesSUCCESS;
 }
 

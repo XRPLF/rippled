@@ -4,9 +4,11 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -55,16 +57,16 @@ TER
 NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 {
     auto const checkOffer =
-        [&ctx](std::optional<uint256> id) -> std::pair<SLE::const_pointer, TER> {
+        [&ctx](std::optional<uint256> id) -> std::pair<NFTokenOfferEntry<ReadView>, TER> {
         if (id)
         {
             if (id->isZero())
-                return {nullptr, tecOBJECT_NOT_FOUND};
+                return {NFTokenOfferEntry<ReadView>{nullptr, ctx.view}, tecOBJECT_NOT_FOUND};
 
-            auto offerSLE = ctx.view.read(keylet::nftokenOffer(*id));
+            NFTokenOfferEntry<ReadView> offerSLE{keylet::nftokenOffer(*id), ctx.view};
 
             if (!offerSLE)
-                return {nullptr, tecOBJECT_NOT_FOUND};
+                return {NFTokenOfferEntry<ReadView>{nullptr, ctx.view}, tecOBJECT_NOT_FOUND};
 
             if (hasExpired(ctx.view, (*offerSLE)[~sfExpiration]))
             {
@@ -72,16 +74,16 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                 // leaving them on ledger forever. After the amendment, we allow expired offers to
                 // reach doApply() where they get deleted and tecEXPIRED is returned.
                 if (!ctx.view.rules().enabled(fixCleanup3_1_3))
-                    return {nullptr, tecEXPIRED};
+                    return {NFTokenOfferEntry<ReadView>{nullptr, ctx.view}, tecEXPIRED};
                 // Amendment enabled: return the expired offer to be handled in doApply.
             }
 
             if ((*offerSLE)[sfAmount].negative())
-                return {nullptr, temBAD_OFFER};
+                return {NFTokenOfferEntry<ReadView>{nullptr, ctx.view}, temBAD_OFFER};
 
             return {std::move(offerSLE), tesSUCCESS};
         }
-        return {nullptr, tesSUCCESS};
+        return {NFTokenOfferEntry<ReadView>{nullptr, ctx.view}, tesSUCCESS};
     };
 
     auto const [bo, err1] = checkOffer(ctx.tx[~sfNFTokenBuyOffer]);
@@ -396,7 +398,7 @@ NFTokenAcceptOffer::transferNFToken(
 }
 
 TER
-NFTokenAcceptOffer::acceptOffer(SLE::ref offer)
+NFTokenAcceptOffer::acceptOffer(NFTokenOfferEntry<ApplyView> const& offer)
 {
     bool const isSell = offer->isFlag(lsfSellNFToken);
     AccountID const owner = (*offer)[sfOwner];
@@ -434,10 +436,9 @@ TER
 NFTokenAcceptOffer::doApply()
 {
     auto const loadToken = [this](std::optional<uint256> const& id) {
-        SLE::pointer sle;
         if (id)
-            sle = view().peek(keylet::nftokenOffer(*id));
-        return sle;
+            return NFTokenOfferEntry<ApplyView>{keylet::nftokenOffer(*id), view()};
+        return NFTokenOfferEntry<ApplyView>{SLE::pointer{}, view()};
     };
 
     auto bo = loadToken(ctx_.tx[~sfNFTokenBuyOffer]);
@@ -449,11 +450,12 @@ NFTokenAcceptOffer::doApply()
     {
         bool foundExpired = false;
 
-        auto const deleteOfferIfExpired = [this, &foundExpired](SLE::ref offer) -> TER {
+        auto const deleteOfferIfExpired =
+            [this, &foundExpired](NFTokenOfferEntry<ApplyView>& offer) -> TER {
             if (offer && hasExpired(view(), (*offer)[~sfExpiration]))
             {
                 JLOG(j_.trace()) << "Offer is expired, deleting: " << offer->key();
-                if (!nft::deleteTokenOffer(view(), offer))
+                if (!nft::deleteTokenOffer(view(), offer.mutableSle()))
                 {
                     // LCOV_EXCL_START
                     JLOG(j_.fatal())
@@ -476,7 +478,7 @@ NFTokenAcceptOffer::doApply()
             return tecEXPIRED;
     }
 
-    if (bo && !nft::deleteTokenOffer(view(), bo))
+    if (bo && !nft::deleteTokenOffer(view(), bo.mutableSle()))
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete buy offer '" << to_string(bo->key()) << "': ignoring";
@@ -484,7 +486,7 @@ NFTokenAcceptOffer::doApply()
         // LCOV_EXCL_STOP
     }
 
-    if (so && !nft::deleteTokenOffer(view(), so))
+    if (so && !nft::deleteTokenOffer(view(), so.mutableSle()))
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete sell offer '" << to_string(so->key())

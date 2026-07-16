@@ -4,10 +4,8 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>  // IWYU pragma: keep
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
@@ -23,7 +21,6 @@
 
 #include <chrono>
 #include <cstdint>
-#include <memory>
 
 namespace xrpl {
 
@@ -106,7 +103,9 @@ CredentialCreate::doApply()
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const credentialKey = keylet::credential(subject, accountID_, credType);
 
-    auto const sleCred = std::make_shared<SLE>(credentialKey);
+    // Build with the ApplyViewContext so create() honors reserve sponsorship.
+    CredentialEntry<ApplyView> sleCred{credentialKey, ctx_.getApplyViewContext()};
+    sleCred.newSLE();
     if (!sleCred)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -126,15 +125,6 @@ CredentialCreate::doApply()
         sleCred->setFieldU32(sfExpiration, *optExp);
     }
 
-    auto const sleIssuer = view().peek(keylet::account(accountID_));
-    if (!sleIssuer)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
-
-    if (auto const ret = checkReserve(
-            ctx_.getApplyViewContext(), sleIssuer, preFeeBalance_, {.ownerCountDelta = 1}, j_);
-        !isTesSuccess(ret))
-        return ret;
-
     sleCred->setAccountID(sfSubject, subject);
     sleCred->setAccountID(sfIssuer, accountID_);
     sleCred->setFieldVL(sfCredentialType, credType);
@@ -142,39 +132,15 @@ CredentialCreate::doApply()
     if (ctx_.tx.isFieldPresent(sfURI))
         sleCred->setFieldVL(sfURI, ctx_.tx.getFieldVL(sfURI));
 
-    {
-        auto const page = view().dirInsert(
-            keylet::ownerDir(accountID_), credentialKey, describeOwnerDir(accountID_));
-        JLOG(j_.trace()) << "Adding Credential to owner directory " << to_string(credentialKey.key)
-                         << ": " << (page ? "success" : "failure");
-        if (!page)
-            return tecDIR_FULL;
-        sleCred->setFieldU64(sfIssuerNode, *page);
-
-        increaseOwnerCount(ctx_.getApplyViewContext(), sleIssuer, 1, j_);
-        addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred);
-    }
-
+    // A self-issued credential is accepted immediately.
     if (subject == accountID_)
-    {
         sleCred->setFieldU32(sfFlags, lsfAccepted);
-    }
-    else
-    {
-        // Added to both dirs, owned only by issuer. CredentialAccept will transfer ownership to
-        // subject. CredentialDelete will remove from both dirs and decrement 1 ownerCount.
-        auto const page =
-            view().dirInsert(keylet::ownerDir(subject), credentialKey, describeOwnerDir(subject));
-        JLOG(j_.trace()) << "Adding Credential to subject directory "
-                         << to_string(credentialKey.key) << ": " << (page ? "success" : "failure");
-        if (!page)
-            return tecDIR_FULL;
-        sleCred->setFieldU64(sfSubjectNode, *page);
-    }
 
-    view().insert(sleCred);
-
-    return tesSUCCESS;
+    // Reserve check (issuer's pre-fee balance) + link into the issuer's owner
+    // directory (counted) and, for a third-party subject, the subject's tracking
+    // directory + bump the issuer's OwnerCount + insert. Ownership transfers to
+    // the subject on CredentialAccept. See CredentialEntry::ownerDirs().
+    return sleCred.create(preFeeBalance_);
 }
 
 void

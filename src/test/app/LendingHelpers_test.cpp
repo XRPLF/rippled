@@ -6,7 +6,9 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -1525,27 +1527,21 @@ public:
         for (auto const& tc : testCases)
         {
             testcase("canApplyToBrokerCover: " + tc.name);
-            auto sle = std::make_shared<SLE>(ltLOAN_BROKER, uint256{1u});
-            sle->at(sfCoverAvailable) = tc.coverAvailable;
-            BEAST_EXPECT(
-                canApplyToBrokerCover(*env.current(), sle, iou, tc.amount, env.journal, "test") ==
-                tc.expected);
+            auto broker = std::make_shared<SLE>(Keylet{ltLOAN_BROKER, uint256{1u}});
+            broker->at(sfCoverAvailable) = tc.coverAvailable;
+            LoanBrokerEntry<ReadView> const sle{broker, *env.current(), env.journal};
+            BEAST_EXPECT(canApplyToBrokerCover(sle, iou, tc.amount, "test") == tc.expected);
         }
 
         // Amendment off → guard is bypassed regardless of amount.
         {
             testcase("canApplyToBrokerCover: amendment disabled");
             Env const envOff{*this, testableAmendments() - fixCleanup3_2_0};
-            auto sle = std::make_shared<SLE>(ltLOAN_BROKER, uint256{1u});
-            sle->at(sfCoverAvailable) = Number{10};
+            auto broker = std::make_shared<SLE>(Keylet{ltLOAN_BROKER, uint256{1u}});
+            broker->at(sfCoverAvailable) = Number{10};
+            LoanBrokerEntry<ReadView> const sle{broker, *envOff.current(), envOff.journal};
             BEAST_EXPECT(
-                canApplyToBrokerCover(
-                    *envOff.current(),
-                    sle,
-                    iou,
-                    STAmount{iou, Number{0}},
-                    envOff.journal,
-                    "test") == tesSUCCESS);
+                canApplyToBrokerCover(sle, iou, STAmount{iou, Number{0}}, "test") == tesSUCCESS);
         }
     }
 

@@ -4,8 +4,10 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
@@ -268,8 +270,9 @@ AMMClawback::applyGuts(Sandbox& sb)
         }
     }
 
+    AMMEntry<ApplyView> ammEntry{ammSle, sb};
     auto const res =
-        AMMWithdraw::deleteAMMAccountIfEmpty(sb, ammSle, newLPTokenBalance, asset, asset2, j_);
+        AMMWithdraw::deleteAMMAccountIfEmpty(sb, ammEntry, newLPTokenBalance, asset, asset2, j_);
     if (!res.second)
         return res.first;  // LCOV_EXCL_LINE
 

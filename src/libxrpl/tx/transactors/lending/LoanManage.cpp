@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -128,7 +129,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
 }
 
 static Number
-owedToVault(SLE::ref loanSle)
+owedToVault(LoanEntry<ApplyView> const& loanSle)
 {
     // Spec section 3.2.3.2, defines the default amount as
     //
@@ -146,13 +147,14 @@ owedToVault(SLE::ref loanSle)
 
 TER
 LoanManage::defaultLoan(
-    ApplyView& view,
-    SLE::ref loanSle,
-    SLE::ref brokerSle,
-    SLE::ref vaultSle,
-    Asset const& vaultAsset,
-    beast::Journal j)
+    LoanEntry<ApplyView>& loanSle,
+    LoanBrokerEntry<ApplyView>& brokerSle,
+    VaultEntry<ApplyView>& vaultSle,
+    Asset const& vaultAsset)
 {
+    ApplyView& view = loanSle.applyView();
+    beast::Journal const j = loanSle.journal();
+
     // Calculate the amount of the Default that First-Loss Capital covers:
 
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
@@ -251,7 +253,7 @@ LoanManage::defaultLoan(
             adjustImpreciseNumber(
                 vaultLossUnrealizedProxy, -totalDefaultAmount, vaultAsset, vaultScale);
         }
-        view.update(vaultSle);
+        vaultSle.update();
     }
 
     // Update the LoanBroker object:
@@ -269,7 +271,7 @@ LoanManage::defaultLoan(
             // LCOV_EXCL_STOP
         }
         coverAvailableProxy -= defaultCovered;
-        view.update(brokerSle);
+        brokerSle.update();
     }
 
     // Update the Loan object:
@@ -282,7 +284,7 @@ LoanManage::defaultLoan(
     // Zero out the next due date. Since it's default, it'll be removed from
     // the object.
     loanSle->at(sfNextPaymentDueDate) = 0;
-    view.update(loanSle);
+    loanSle.update();
 
     // Return funds from the LoanBroker pseudo-account to the
     // Vault pseudo-account:
@@ -298,12 +300,13 @@ LoanManage::defaultLoan(
 
 TER
 LoanManage::impairLoan(
-    ApplyView& view,
-    SLE::ref loanSle,
-    SLE::ref vaultSle,
-    Asset const& vaultAsset,
-    beast::Journal j)
+    LoanEntry<ApplyView>& loanSle,
+    VaultEntry<ApplyView>& vaultSle,
+    Asset const& vaultAsset)
 {
+    ApplyView const& view = loanSle.applyView();
+    beast::Journal const j = loanSle.journal();
+
     Number const lossUnrealized = owedToVault(loanSle);
 
     // The vault may be at a different scale than the loan. Reduce rounding
@@ -322,7 +325,7 @@ LoanManage::impairLoan(
                           "corrupt the vault.";
         return tecLIMIT_EXCEEDED;
     }
-    view.update(vaultSle);
+    vaultSle.update();
 
     // Update the Loan object
     loanSle->setFlag(lsfLoanImpaired);
@@ -333,19 +336,20 @@ LoanManage::impairLoan(
         // move the next payment due date to now
         loanNextDueProxy = view.parentCloseTime().time_since_epoch().count();
     }
-    view.update(loanSle);
+    loanSle.update();
 
     return tesSUCCESS;
 }
 
 [[nodiscard]] TER
 LoanManage::unimpairLoan(
-    ApplyView& view,
-    SLE::ref loanSle,
-    SLE::ref vaultSle,
-    Asset const& vaultAsset,
-    beast::Journal j)
+    LoanEntry<ApplyView>& loanSle,
+    VaultEntry<ApplyView>& vaultSle,
+    Asset const& vaultAsset)
 {
+    ApplyView const& view = loanSle.applyView();
+    beast::Journal const j = loanSle.journal();
+
     // The vault may be at a different scale than the loan. Reduce rounding
     // errors during the accounting by rounding some of the values to that
     // scale.
@@ -364,7 +368,7 @@ LoanManage::unimpairLoan(
     // Reverse the "paper loss"
     adjustImpreciseNumber(vaultLossUnrealizedProxy, -lossReversed, vaultAsset, vaultScale);
 
-    view.update(vaultSle);
+    vaultSle.update();
 
     // Update the Loan object
     loanSle->clearFlag(lsfLoanImpaired);
@@ -382,7 +386,7 @@ LoanManage::unimpairLoan(
         loanSle->at(sfNextPaymentDueDate) =
             view.parentCloseTime().time_since_epoch().count() + paymentInterval;
     }
-    view.update(loanSle);
+    loanSle.update();
 
     return tesSUCCESS;
 }
@@ -394,16 +398,16 @@ LoanManage::doApply()
     auto& view = ctx_.view();
 
     auto const loanID = tx[sfLoanID];
-    auto const loanSle = view.peek(keylet::loan(loanID));
+    LoanEntry<ApplyView> loanSle{keylet::loan(loanID), view, j_};
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     auto const brokerID = loanSle->at(sfLoanBrokerID);
-    auto const brokerSle = view.peek(keylet::loanBroker(brokerID));
+    LoanBrokerEntry<ApplyView> brokerSle{keylet::loanBroker(brokerID), view, j_};
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
+    VaultEntry<ApplyView> vaultSle{keylet::vault(brokerSle->at(sfVaultID)), view, j_};
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);
@@ -412,11 +416,11 @@ LoanManage::doApply()
         // Valid flag combinations are checked in preflight. No flags is valid -
         // just a noop.
         if (tx.isFlag(tfLoanDefault))
-            return defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
+            return defaultLoan(loanSle, brokerSle, vaultSle, vaultAsset);
         if (tx.isFlag(tfLoanImpair))
-            return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+            return impairLoan(loanSle, vaultSle, vaultAsset);
         if (tx.isFlag(tfLoanUnimpair))
-            return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+            return unimpairLoan(loanSle, vaultSle, vaultAsset);
         // NoOp, as described above.
         return tesSUCCESS;
     }();

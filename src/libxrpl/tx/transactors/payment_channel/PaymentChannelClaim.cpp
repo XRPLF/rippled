@@ -5,9 +5,9 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PayChan.h>
@@ -110,7 +110,7 @@ TER
 PaymentChannelClaim::doApply()
 {
     Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
-    auto const slep = ctx_.view().peek(k);
+    PayChannelEntry<ApplyView> slep{k, ctx_.view()};
     if (!slep)
         return tecNO_TARGET;
 
@@ -159,12 +159,12 @@ PaymentChannelClaim::doApply()
             return tecUNFUNDED_PAYMENT;
         }
 
-        auto const sled = ctx_.view().peek(keylet::account(dst));
+        AccountRootEntry<ApplyView> sled{dst, ctx_.view()};
         if (!sled)
             return tecNO_DST;
 
-        if (auto err =
-                verifyDepositPreauth(ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), txAccount, dst, sled.sle(), ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -173,8 +173,8 @@ PaymentChannelClaim::doApply()
         XRPL_ASSERT(
             reqDelta >= beast::kZero, "xrpl::PaymentChannelClaim::doApply : minimum balance delta");
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
-        ctx_.view().update(sled);
-        ctx_.view().update(slep);
+        sled.update();
+        slep.update();
     }
 
     if (ctx_.tx.isFlag(tfRenew))
@@ -182,7 +182,7 @@ PaymentChannelClaim::doApply()
         if (src != txAccount)
             return tecNO_PERMISSION;
         (*slep)[~sfExpiration] = std::nullopt;
-        ctx_.view().update(slep);
+        slep.update();
     }
 
     if (ctx_.tx.isFlag(tfClose))
@@ -199,7 +199,7 @@ PaymentChannelClaim::doApply()
         if (!curExpiration || *curExpiration > settleExpiration)
         {
             (*slep)[~sfExpiration] = settleExpiration;
-            ctx_.view().update(slep);
+            slep.update();
         }
     }
 

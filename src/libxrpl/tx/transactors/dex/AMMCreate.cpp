@@ -3,13 +3,14 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
@@ -293,22 +294,24 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     auto const lpTokens = ammLPTokens(amount, amount2, lptIss);
 
     // Create ltAMM
-    auto ammSle = std::make_shared<SLE>(ammKeylet);
+    AMMEntry<ApplyView> ammSle{ammKeylet, sb};
+    ammSle.newSLE();
     ammSle->setAccountID(sfAccount, accountId);
     ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
     auto const& [asset1, asset2] = std::minmax(amount.asset(), amount2.asset());
     ammSle->setFieldIssue(sfAsset, STIssue{sfAsset, asset1});
     ammSle->setFieldIssue(sfAsset2, STIssue{sfAsset2, asset2});
     // AMM creator gets the auction slot and the voting slot.
-    initializeFeeAuctionVote(ctx.view(), ammSle, account, lptIss, ctx.tx[sfTradingFee]);
+    SLE::pointer ammSlePtr = ammSle.mutableSle();
+    initializeFeeAuctionVote(ctx.view(), ammSlePtr, account, lptIss, ctx.tx[sfTradingFee]);
 
-    // Add owner directory to link the root account and AMM object.
-    if (auto ter = dirLink(sb, accountId, ammSle); ter)
+    // Link the AMM into its pseudo-account's directory and insert it (no reserve
+    // or OwnerCount for a pseudo-account). See AMMEntry.
+    if (auto const ter = ammSle.create(std::nullopt); !isTesSuccess(ter))
     {
         JLOG(j.debug()) << "AMM Instance: failed to insert owner dir";
         return {ter, false};
     }
-    sb.insert(ammSle);
 
     // Send LPT to LP.
     auto res = accountSend(sb, accountId, account, lpTokens, ctx.journal);
@@ -360,8 +363,8 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                 // Set AMM flag on AMM trustline
                 if (!isXRP(amount))
                 {
-                    SLE::pointer const sleRippleState =
-                        sb.peek(keylet::trustLine(accountId, issue));
+                    RippleStateEntry<ApplyView> sleRippleState{
+                        keylet::trustLine(accountId, issue), sb};
                     if (!sleRippleState)
                     {
                         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -369,7 +372,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
 
                     auto const flags = sleRippleState->getFlags();
                     sleRippleState->setFieldU32(sfFlags, flags | lsfAMMNode);
-                    sb.update(sleRippleState);
+                    sleRippleState.update();
                 }
                 return tesSUCCESS;
             });

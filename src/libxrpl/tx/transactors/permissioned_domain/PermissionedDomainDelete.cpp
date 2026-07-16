@@ -1,9 +1,11 @@
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainDelete.h>
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -28,7 +30,7 @@ TER
 PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 {
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
-    auto const sleDomain = ctx.view.read(keylet::permissionedDomain(domain));
+    PermissionedDomainEntry<ReadView> const sleDomain{keylet::permissionedDomain(domain), ctx.view};
 
     if (!sleDomain)
         return tecNO_ENTRY;
@@ -52,25 +54,10 @@ PermissionedDomainDelete::doApply()
         ctx_.tx.isFieldPresent(sfDomainID),
         "xrpl::PermissionedDomainDelete::doApply : required field present");
 
-    auto const slePd = view().peek(keylet::permissionedDomain(ctx_.tx.at(sfDomainID)));
-    auto const page = (*slePd)[sfOwnerNode];
+    PermissionedDomainEntry<ApplyView> slePd{
+        keylet::permissionedDomain(ctx_.tx.at(sfDomainID)), view()};
 
-    if (!view().dirRemove(keylet::ownerDir(accountID_), page, slePd->key(), true))
-    {
-        // LCOV_EXCL_START
-        JLOG(j_.fatal()) << "Unable to delete permissioned domain directory entry.";
-        return tefBAD_LEDGER;
-        // LCOV_EXCL_STOP
-    }
-
-    auto const ownerSle = view().peek(keylet::account(accountID_));
-    XRPL_ASSERT(
-        ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0,
-        "xrpl::PermissionedDomainDelete::doApply : nonzero owner count");
-    decreaseOwnerCountForObject(view(), ownerSle, slePd, 1, ctx_.journal);
-    view().erase(slePd);
-
-    return tesSUCCESS;
+    return slePd.destroy();
 }
 
 void

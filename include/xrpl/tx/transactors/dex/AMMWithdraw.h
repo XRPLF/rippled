@@ -2,7 +2,9 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -169,7 +171,7 @@ public:
     static std::pair<TER, bool>
     deleteAMMAccountIfEmpty(
         Sandbox& sb,
-        SLE::pointer const ammSle,
+        AMMEntry<ApplyView>& ammSle,
         STAmount const& lpTokenBalance,
         Asset const& asset1,
         Asset const& asset2,

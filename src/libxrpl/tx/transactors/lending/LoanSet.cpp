@@ -5,9 +5,9 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -388,7 +388,7 @@ LoanSet::doApply()
     if (!brokerOwnerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    auto const vaultSle = view.peek(keylet ::vault(brokerSle->at(sfVaultID)));
+    VaultEntry<ApplyView> vaultSle{keylet::vault(brokerSle->at(sfVaultID)), view};
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultPseudo = vaultSle->at(sfAccount);
@@ -593,7 +593,8 @@ LoanSet::doApply()
     auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
 
     // Create the loan
-    auto loan = std::make_shared<SLE>(keylet::loan(brokerID, *loanSequenceProxy));
+    LoanEntry<ApplyView> loan{keylet::loan(brokerID, *loanSequenceProxy), view, j_};
+    loan.newSLE();
 
     // Prevent copy/paste errors
     auto setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
@@ -630,7 +631,6 @@ LoanSet::doApply()
     loan->at(sfPreviousPaymentDueDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
-    view.insert(loan);
 
     // Update the balances in the vault
     vaultAvailableProxy -= principalRequested;
@@ -639,7 +639,7 @@ LoanSet::doApply()
         *vaultAvailableProxy <= *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
         "assets available must not be greater than assets outstanding");
-    view.update(vaultSle);
+    vaultSle.update();
 
     // Update the balances in the loan broker
     adjustImpreciseNumber(brokerSle->at(sfDebtTotal), newDebtDelta, vaultAsset, vaultScale);
@@ -651,11 +651,11 @@ LoanSet::doApply()
         return tecMAX_SEQUENCE_REACHED;
     view.update(brokerSle);
 
-    // Put the loan into the pseudo-account's directory
-    if (auto const ter = dirLink(view, brokerPseudo, loan, sfLoanBrokerNode))
-        return ter;
-    // Borrower is the owner of the loan
-    if (auto const ter = dirLink(view, borrower, loan, sfOwnerNode))
+    // Insert the loan and link it into the broker pseudo-account's directory
+    // (sfLoanBrokerNode) and the borrower's directory (sfOwnerNode). The
+    // OwnerCount bumps (borrower account, LoanBroker object) were applied above.
+    // See LoanEntry::create().
+    if (auto const ter = loan.create(); !isTesSuccess(ter))
         return ter;
 
     associateAsset(*vaultSle, vaultAsset);

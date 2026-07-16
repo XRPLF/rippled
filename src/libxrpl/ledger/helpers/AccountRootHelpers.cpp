@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -39,7 +40,7 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer)
 {
     if (isXRP(issuer))
         return false;
-    if (auto const sle = view.read(keylet::account(issuer)))
+    if (AccountRootEntry<ReadView> const sle{keylet::account(issuer), view})
         return sle->isFlag(lsfGlobalFreeze);
     return false;
 }
@@ -269,17 +270,17 @@ ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj)
 XRPAmount
 xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j)
 {
-    auto const sle = view.read(keylet::account(id));
-    if (sle == nullptr)
+    AccountRootEntry<ReadView> const sle{keylet::account(id), view};
+    if (!sle)
         return beast::kZero;
 
     // Return balance minus reserve
     std::uint32_t const currentOwnerCount =
-        confineOwnerCount(view.ownerCountHook(id, OwnerCounts(sle)).count(), ownerCountAdj);
-    std::uint32_t const currentAccountCount = accountCountImpl(sle, 0, j);
+        confineOwnerCount(view.ownerCountHook(id, OwnerCounts(sle.sle())).count(), ownerCountAdj);
+    std::uint32_t const currentAccountCount = accountCountImpl(sle.sle(), 0, j);
 
     // Pseudo-accounts have no reserve requirement
-    auto const reserve = isPseudoAccount(sle)
+    auto const reserve = isPseudoAccount(sle.sle())
         ? XRPAmount{0}
         : view.fees().accountReserve(currentOwnerCount, currentAccountCount);
 
@@ -301,7 +302,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 Rate
 transferRate(ReadView const& view, AccountID const& issuer)
 {
-    auto const sle = view.read(keylet::account(issuer));
+    AccountRootEntry<ReadView> const sle{keylet::account(issuer), view};
 
     if (sle && sle->isFieldPresent(sfTransferRate))
         return Rate{sle->getFieldU32(sfTransferRate)};

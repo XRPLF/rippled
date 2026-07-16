@@ -37,8 +37,10 @@
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -213,7 +215,7 @@ protected:
             using namespace jtx;
 
             auto const vaultSle = env.le(keylet::vault(vaultID));
-            return getAssetsTotalScale(vaultSle);
+            return getAssetsTotalScale(VaultEntry<ReadView>{vaultSle, *env.current()});
         }
     };
 
@@ -446,7 +448,8 @@ protected:
                 env.test.BEAST_EXPECT(loan->at(sfPeriodicPayment) == periodicPayment);
                 env.test.BEAST_EXPECT(loan->at(sfFlags) == flags);
 
-                auto const ls = constructRoundedLoanState(loan);
+                auto const ls =
+                    constructRoundedLoanState(LoanEntry<ReadView>{loan, *env.current()});
 
                 auto const interestRate = TenthBips32{loan->at(sfInterestRate)};
                 auto const paymentInterval = loan->at(sfPaymentInterval);
@@ -1119,7 +1122,8 @@ protected:
                     // No reason for this not to exist
                     return;
                 }
-                auto const current = constructRoundedLoanState(loanSle);
+                auto const current =
+                    constructRoundedLoanState(LoanEntry<ReadView>{loanSle, *env.current()});
                 auto const errors = nextTrueState - current;
                 log << currencyLabel << " Loan balances: "
                     << "\n\tAmount taken: " << paymentComponents.trackedValueDelta
@@ -6056,7 +6060,8 @@ protected:
             auto const loanSle = env.le(loanKeylet);
             if (!BEAST_EXPECT(loanSle))
                 return;
-            auto const state = constructRoundedLoanState(loanSle);
+            auto const state =
+                constructRoundedLoanState(LoanEntry<ReadView>{loanSle, *env.current()});
 
             log << "Loan state:" << std::endl;
             log << "  ValueOutstanding: " << state.valueOutstanding << std::endl;
@@ -8280,7 +8285,8 @@ protected:
                     return std::nullopt;
                 if (!BEAST_EXPECT(tinyLoanSle->at(sfLoanScale) == -12) ||
                     !BEAST_EXPECT(bigLoanSle->at(sfLoanScale) == -11) ||
-                    !BEAST_EXPECT(getAssetsTotalScale(vaultSle) == -11))
+                    !BEAST_EXPECT(
+                        getAssetsTotalScale(VaultEntry<ReadView>{vaultSle, *env.current()}) == -11))
                     return std::nullopt;
 
                 // Use issuer clawback to reduce cover to the minimum the
@@ -8407,7 +8413,8 @@ protected:
 
                 auto const coverAvail = brokerSle->at(sfCoverAvailable);
                 auto const debtTotal = brokerSle->at(sfDebtTotal);
-                auto const vaultScale = getAssetsTotalScale(vaultSle);
+                auto const vaultScale =
+                    getAssetsTotalScale(VaultEntry<ReadView>{vaultSle, *env.current()});
                 auto const debtScale = scale(debtTotal, asset);
 
                 // Sanity: debt scale differs from vault scale for this setup.
@@ -8421,7 +8428,9 @@ protected:
                         debtScale);
                 }();
                 auto const newMin = minimumBrokerCover(
-                    debtTotal, TenthBips32{c.brokerParams.coverRateMin}, vaultSle);
+                    debtTotal,
+                    TenthBips32{c.brokerParams.coverRateMin},
+                    VaultEntry<ReadView>{vaultSle, *env.current()});
 
                 // The new (vaultScale) minimum must be strictly larger than
                 // the old (debtScale) minimum — that is the gap the amendment
@@ -8505,7 +8514,8 @@ protected:
                 auto const vaultSle = env.le(keylet::vault(c.broker.vaultID));
                 if (!BEAST_EXPECT(vaultSle))
                     return;
-                auto const vaultScale = getAssetsTotalScale(vaultSle);
+                auto const vaultScale =
+                    getAssetsTotalScale(VaultEntry<ReadView>{vaultSle, *env.current()});
                 BEAST_EXPECT(vaultScale == -11);
 
                 // Now try to create a tiny additional loan.  Principal is

@@ -3,11 +3,12 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -26,7 +27,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -80,7 +80,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
 {
     AccountID const dstId{ctx.tx[sfDestination]};
     AccountID const srcId{ctx.tx[sfAccount]};
-    auto const sleDst = ctx.view.read(keylet::account(dstId));
+    AccountRootEntry<ReadView> const sleDst{keylet::account(dstId), ctx.view};
     if (!sleDst)
     {
         JLOG(ctx.j.warn()) << "Destination account does not exist.";
@@ -95,7 +95,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
     // because all writes to pseudo-account discriminator fields **are**
     // amendment gated, hence the behaviour of this check will always match the
     // currently active amendments.
-    if (isPseudoAccount(sleDst))
+    if (isPseudoAccount(sleDst.sle()))
         return tecNO_PERMISSION;
 
     if (sleDst->isFlag(lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
@@ -127,8 +127,8 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                     if (issuerId != srcId)
                     {
                         // Check if the issuer froze the line
-                        auto const sleTrust =
-                            ctx.view.read(keylet::trustLine(srcId, issuerId, issue.currency));
+                        RippleStateEntry<ReadView> const sleTrust{
+                            keylet::trustLine(srcId, issuerId, issue.currency), ctx.view};
                         if (sleTrust &&
                             sleTrust->isFlag((issuerId > srcId) ? lsfHighFreeze : lsfLowFreeze))
                         {
@@ -139,8 +139,8 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                     if (issuerId != dstId)
                     {
                         // Check if dst froze the line.
-                        auto const sleTrust =
-                            ctx.view.read(keylet::trustLine(issuerId, dstId, issue.currency));
+                        RippleStateEntry<ReadView> const sleTrust{
+                            keylet::trustLine(issuerId, dstId, issue.currency), ctx.view};
                         if (sleTrust &&
                             sleTrust->isFlag((dstId > issuerId) ? lsfHighFreeze : lsfLowFreeze))
                         {
@@ -188,22 +188,17 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
 TER
 CheckCreate::doApply()
 {
-    auto const sle = view().peek(keylet::account(accountID_));
+    AccountRootEntry<ApplyView> const sle{keylet::account(accountID_), view()};
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    // A check counts against the reserve of the issuing account, but we
-    // check the starting balance because we want to allow dipping into the
-    // reserve to pay fees.
-    if (auto const ret = checkReserve(
-            ctx_.getApplyViewContext(), sle, preFeeBalance_, {.ownerCountDelta = 1}, ctx_.journal);
-        !isTesSuccess(ret))
-        return ret;
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
     std::uint32_t const seq = ctx_.tx.getSeqValue();
     Keylet const checkKeylet = keylet::check(accountID_, seq);
-    auto sleCheck = std::make_shared<SLE>(checkKeylet);
+    // Build with the ApplyViewContext so create() honors reserve sponsorship.
+    CheckEntry<ApplyView> sleCheck{checkKeylet, ctx_.getApplyViewContext()};
+    sleCheck.newSLE();
 
     sleCheck->setAccountID(sfAccount, accountID_);
     AccountID const dstAccountId = ctx_.tx[sfDestination];
@@ -219,42 +214,11 @@ CheckCreate::doApply()
     if (auto const expiry = ctx_.tx[~sfExpiration])
         sleCheck->setFieldU32(sfExpiration, *expiry);
 
-    view().insert(sleCheck);
-
-    auto viewJ = ctx_.registry.get().getJournal("View");
-    // If it's not a self-send (and it shouldn't be), add Check to the
-    // destination's owner directory.
-    if (dstAccountId != accountID_)
-    {
-        auto const page = view().dirInsert(
-            keylet::ownerDir(dstAccountId), checkKeylet, describeOwnerDir(dstAccountId));
-
-        JLOG(j_.trace()) << "Adding Check to destination directory " << to_string(checkKeylet.key)
-                         << ": " << (page ? "success" : "failure");
-
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-
-        sleCheck->setFieldU64(sfDestinationNode, *page);
-    }
-
-    {
-        auto const page = view().dirInsert(
-            keylet::ownerDir(accountID_), checkKeylet, describeOwnerDir(accountID_));
-
-        JLOG(j_.trace()) << "Adding Check to owner directory " << to_string(checkKeylet.key) << ": "
-                         << (page ? "success" : "failure");
-
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-
-        sleCheck->setFieldU64(sfOwnerNode, *page);
-    }
-    // If we succeeded, the new entry counts against the creator's reserve.
-
-    increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, viewJ);
-    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCheck);
-    return tesSUCCESS;
+    // Reserve check (source's pre-fee balance, honoring any reserve sponsor) +
+    // link into the source owner directory and the destination tracking
+    // directory + bump the source's OwnerCount + stamp the reserve sponsor +
+    // insert. See CheckEntry::ownerDirs() and SLEBase::create().
+    return sleCheck.create(preFeeBalance_);
 }
 
 void

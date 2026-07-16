@@ -6,7 +6,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -170,7 +170,9 @@ PaymentChannelCreate::doApply()
     // Note that we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
     Keylet const payChanKeylet = keylet::payChannel(account, dst, ctx_.tx.getSeqValue());
-    auto const slep = std::make_shared<SLE>(payChanKeylet);
+    // Build with the ApplyViewContext so create() honors reserve sponsorship.
+    PayChannelEntry<ApplyView> slep{payChanKeylet, ctx_.getApplyViewContext()};
+    slep.newSLE();
 
     // Funds held in this channel
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
@@ -188,33 +190,14 @@ PaymentChannelCreate::doApply()
         (*slep)[sfSequence] = ctx_.tx.getSeqValue();
     }
 
-    ctx_.view().insert(slep);
-
-    // Add PayChan to owner directory
-    {
-        auto const page = ctx_.view().dirInsert(
-            keylet::ownerDir(account), payChanKeylet, describeOwnerDir(account));
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (*slep)[sfOwnerNode] = *page;
-    }
-
-    // Add PayChan to the recipient's owner directory
-    {
-        auto const page =
-            ctx_.view().dirInsert(keylet::ownerDir(dst), payChanKeylet, describeOwnerDir(dst));
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (*slep)[sfDestinationNode] = *page;
-    }
-
-    // Deduct owner's balance, increment owner count
+    // Deduct the channel amount from the owner's balance.
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, ctx_.journal);
-    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), slep);
     ctx_.view().update(sle);
 
-    return tesSUCCESS;
+    // Reserve check + link into the owner and destination directories + bump
+    // the owner's OwnerCount + stamp any reserve sponsor + insert. See
+    // PayChannelEntry::ownerDirs() and SLEBase::create().
+    return slep.create(preFeeBalance_);
 }
 
 void

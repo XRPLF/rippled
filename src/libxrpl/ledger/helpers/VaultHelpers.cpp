@@ -3,6 +3,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
@@ -17,7 +18,10 @@
 namespace xrpl {
 
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets)
+assetsToSharesDeposit(
+    VaultEntry<ReadView> const& vault,
+    MPTokenIssuanceEntry<ReadView> const& issuance,
+    STAmount const& assets)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
@@ -41,7 +45,10 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
 }
 
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares)
+sharesToAssetsDeposit(
+    VaultEntry<ReadView> const& vault,
+    MPTokenIssuanceEntry<ReadView> const& issuance,
+    STAmount const& shares)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
     XRPL_ASSERT(
@@ -65,8 +72,8 @@ sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
 
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
-    SLE::const_ref vault,
-    SLE::const_ref issuance,
+    VaultEntry<ReadView> const& vault,
+    MPTokenIssuanceEntry<ReadView> const& issuance,
     STAmount const& assets,
     TruncateShares truncate,
     WaiveUnrealizedLoss waive)
@@ -94,8 +101,8 @@ assetsToSharesWithdraw(
 
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
-    SLE::const_ref vault,
-    SLE::const_ref issuance,
+    VaultEntry<ReadView> const& vault,
+    MPTokenIssuanceEntry<ReadView> const& issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive)
 {
@@ -118,7 +125,10 @@ sharesToAssetsWithdraw(
 }
 
 [[nodiscard]] bool
-isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
+isSoleShareholder(
+    ReadView const& view,
+    AccountID const& account,
+    MPTokenIssuanceEntry<ReadView> const& issuance)
 {
     XRPL_ASSERT(
         issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
@@ -130,7 +140,7 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
 
     auto const shareMPTID =
         makeMptID(issuance->getFieldU32(sfSequence), issuance->getAccountID(sfIssuer));
-    auto const sleToken = view.read(keylet::mptoken(shareMPTID, account));
+    MPTokenEntry<ReadView> const sleToken{keylet::mptoken(shareMPTID, account), view};
     if (!sleToken)
         return false;  // LCOV_EXCL_LINE
 

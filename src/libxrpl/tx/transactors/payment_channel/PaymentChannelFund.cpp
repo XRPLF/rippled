@@ -6,6 +6,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
+#include <xrpl/ledger/helpers/SLEWrappers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -44,7 +45,7 @@ TER
 PaymentChannelFund::doApply()
 {
     Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
-    auto const slep = ctx_.view().peek(k);
+    PayChannelEntry<ApplyView> slep{k, ctx_.view()};
     if (!slep)
         return tecNO_ENTRY;
 
@@ -79,17 +80,18 @@ PaymentChannelFund::doApply()
                                                                 : TER{temBAD_EXPIRATION};
         }
         (*slep)[~sfExpiration] = *newExpiration;
-        ctx_.view().update(slep);
+        slep.update();
     }
 
-    auto const sle = ctx_.view().peek(keylet::account(txAccount));
+    AccountRootEntry<ApplyView> sle{txAccount, ctx_.view()};
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     {
         // Check reserve and funds availability
         STAmount const balance = (*sle)[sfBalance];
-        if (auto const ret = checkReserve(ctx_.getApplyViewContext(), sle, balance.xrp(), {}, j_);
+        if (auto const ret =
+                checkReserve(ctx_.getApplyViewContext(), sle.sle(), balance.xrp(), {}, j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -99,7 +101,7 @@ PaymentChannelFund::doApply()
         // when a sponsor is present and would ignore the source's post-lock
         // balance entirely. Funding an existing channel adds no owned object,
         // so there is no owner-count delta.
-        if (balance < accountReserve(ctx_.view(), sle, j_) + ctx_.tx[sfAmount])
+        if (balance < accountReserve(ctx_.view(), sle.sle(), j_) + ctx_.tx[sfAmount])
             return tecUNFUNDED;
     }
 
@@ -110,10 +112,10 @@ PaymentChannelFund::doApply()
     }
 
     (*slep)[sfAmount] = (*slep)[sfAmount] + ctx_.tx[sfAmount];
-    ctx_.view().update(slep);
+    slep.update();
 
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    ctx_.view().update(sle);
+    sle.update();
 
     return tesSUCCESS;
 }
