@@ -287,9 +287,9 @@ public:
 
         // 0x01020304 pins canonical MPTID bytes 01 02 03 04 and
         // preserved STIssue wire bytes 04 03 02 01 on BE and LE.
-        std::array<std::uint32_t, 3> const vectors = {0x00000001, 0x01020304, 0xa1b2c3d4};
+        auto const sequences = std::to_array<std::uint32_t>({0x00000001, 0x01020304, 0xa1b2c3d4});
 
-        for (auto const vector : vectors)
+        for (auto const vector : sequences)
         {
             MPTID const mptID = makeMptID(vector, alice);
             MPTIssue const issue{mptID};
