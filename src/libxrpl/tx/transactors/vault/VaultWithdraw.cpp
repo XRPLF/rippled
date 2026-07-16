@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/vault/VaultWithdraw.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -124,8 +125,14 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(ctx.view, account, sleIssuance);
         try
         {
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, amount, waiveUnrealizedLoss);
+            // Match the Downward payout rounding used in doApply so the limit
+            // check estimates the same asset amount the withdrawal will pay.
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault,
+                sleIssuance,
+                amount,
+                waiveUnrealizedLoss,
+                fix330Enabled ? Number::RoundingMode::Downward : Number::RoundingMode::ToNearest);
             if (!maybeAssets)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -193,6 +200,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 TER
 VaultWithdraw::doApply()
 {
+    bool const fix330Enabled = view().rules().enabled(fixCleanup3_3_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
@@ -224,6 +232,13 @@ VaultWithdraw::doApply()
     // We waive the unrealized-loss subtraction in this case to avoid user withdrawing all of their
     // shares but keeping future value in the vault.
     auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(view(), accountID_, sleIssuance);
+
+    // Post-fixCleanup3_3_0: round the assets paid to the withdrawing shareholder
+    // Downward, so they receive at most the fair value of the shares they burn.
+    // Round-to-nearest could overpay, dropping the assets-per-share price and
+    // diluting the remaining shareholders.
+    auto const withdrawRounding =
+        fix330Enabled ? Number::RoundingMode::Downward : Number::RoundingMode::ToNearest;
     try
     {
         if (amount.asset() == vaultAsset)
@@ -239,8 +254,8 @@ VaultWithdraw::doApply()
 
             if (sharesRedeemed == beast::kZero)
                 return tecPRECISION_LOSS;
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss, withdrawRounding);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
@@ -249,8 +264,8 @@ VaultWithdraw::doApply()
         {
             // Fixed shares, variable assets.
             sharesRedeemed = amount;
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss, withdrawRounding);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
@@ -277,9 +292,8 @@ VaultWithdraw::doApply()
     // (checkWithdrawFreeze), so IgnoreFreeze avoids a redundant check that
     // would incorrectly return zero for vault pseudo-accounts whose shares
     // are frozen via a transitively frozen underlying asset.
-    auto const freezeHandling = view().rules().enabled(fixCleanup3_3_0)
-        ? FreezeHandling::IgnoreFreeze
-        : FreezeHandling::ZeroIfFrozen;
+    auto const freezeHandling =
+        fix330Enabled ? FreezeHandling::IgnoreFreeze : FreezeHandling::ZeroIfFrozen;
     if (accountHolds(view(), accountID_, share, freezeHandling, AuthHandling::IgnoreAuth, j_) <
         sharesRedeemed)
     {

@@ -196,6 +196,7 @@ TER
 VaultDeposit::doApply()
 {
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
+    bool const fix330Enabled = view().rules().enabled(fixCleanup3_3_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
@@ -284,7 +285,15 @@ VaultDeposit::doApply()
         if (sharesCreated == beast::kZero)
             return tecPRECISION_LOSS;
 
-        auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
+        // Post-fixCleanup3_3_0: round the charged assets Upward so the depositor
+        // pays at least the fair value of the freshly minted shares. Round-to-
+        // nearest could undercharge, overvaluing the new shares and diluting
+        // existing shareholders.
+        auto const maybeAssets = sharesToAssetsDeposit(
+            vault,
+            sleIssuance,
+            sharesCreated,
+            fix330Enabled ? Number::RoundingMode::Upward : Number::RoundingMode::ToNearest);
         if (!maybeAssets)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE

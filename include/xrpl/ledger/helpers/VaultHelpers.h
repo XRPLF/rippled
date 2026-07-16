@@ -28,14 +28,25 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
  * depositor when they receive a fixed amount of shares. Note, since shares are
  * MPT, they are always an integral number.
  *
+ * The result is quantized to the vault asset's precision using @p rounding.
+ * Callers charging a depositor for freshly minted shares must round Upward, so
+ * the depositor pays at least the fair value of those shares and existing
+ * shareholders cannot be diluted. The ToNearest default preserves the
+ * pre-amendment behavior.
+ *
  * @param vault The vault SLE.
  * @param issuance The MPTokenIssuance SLE for the vault's shares.
  * @param shares The amount of shares to convert.
+ * @param rounding How to round the resulting assets to the asset's precision.
  *
  * @return The number of assets, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
+sharesToAssetsDeposit(
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& shares,
+    Number::RoundingMode rounding = Number::RoundingMode::ToNearest);
 
 /**
  * Controls whether to truncate shares instead of rounding.
@@ -79,11 +90,18 @@ assetsToSharesWithdraw(
  * depositor when they redeem a fixed amount of shares. Note, since shares are
  * MPT, they are always an integral number.
  *
+ * The result is quantized to the vault asset's precision using @p rounding.
+ * Callers paying a withdrawing shareholder must round Downward, so the
+ * shareholder receives at most the fair value of the shares they burn and the
+ * remaining shareholders cannot be diluted. The ToNearest default preserves the
+ * pre-amendment behavior.
+ *
  * @param vault The vault SLE.
  * @param issuance The MPTokenIssuance SLE for the vault's shares.
  * @param shares The amount of shares to convert.
  * @param waive Whether to waive (i.e. not subtract) the vault's unrealized
  *              loss when computing the exchange rate.
+ * @param rounding How to round the resulting assets to the asset's precision.
  *
  * @return The number of assets, or nullopt on error.
  */
@@ -92,7 +110,8 @@ sharesToAssetsWithdraw(
     SLE::const_ref vault,
     SLE::const_ref issuance,
     STAmount const& shares,
-    WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
+    WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No,
+    Number::RoundingMode rounding = Number::RoundingMode::ToNearest);
 
 /**
  * Returns true iff `account` holds all of the vault's outstanding shares —
