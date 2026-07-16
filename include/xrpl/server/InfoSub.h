@@ -1,12 +1,21 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/Manifest.h>
+
+#include <atomic>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <string>
 
 namespace xrpl {
 
@@ -26,20 +35,21 @@ public:
     doStatus(json::Value const&) = 0;
 };
 
-/** Manages a client's subscription to data feeds.
+/**
+ * Manages a client's subscription to data feeds.
  *
- *  An InfoSub holds a non-owning reference to its `Source` (typically the
- *  process-wide `NetworkOPsImp`). The destructor reaches back into the
- *  `Source` to remove this subscriber from every server-side subscription
- *  map.
+ * An InfoSub holds a non-owning reference to its `Source` (typically the
+ * process-wide `NetworkOPsImp`). The destructor reaches back into the
+ * `Source` to remove this subscriber from every server-side subscription
+ * map.
  *
- *  @note Lifetime contract: every `InfoSub` instance MUST be destroyed
- *        before the backing `Source`. NetworkOPsImp shutdown drops all
- *        subscriber strong refs before its own teardown to satisfy this.
- *  @note Thread-safety: per-instance state is guarded by `lock_`. The
- *        destructor reads tracking sets without taking `lock_` because
- *        the strong-pointer ref-count is zero at destruction time, so
- *        no other thread can be calling the public mutators.
+ * @note Lifetime contract: every `InfoSub` instance MUST be destroyed
+ *       before the backing `Source`. NetworkOPsImp shutdown drops all
+ *       subscriber strong refs before its own teardown to satisfy this.
+ * @note Thread-safety: per-instance state is guarded by `lock_`. The
+ *       destructor reads tracking sets without taking `lock_` because
+ *       the strong-pointer ref-count is zero at destruction time, so
+ *       no other thread can be calling the public mutators.
  */
 class InfoSub : public CountedObject<InfoSub>
 {
@@ -55,7 +65,8 @@ public:
     using Consumer = Resource::Consumer;
 
 public:
-    /** Abstracts the source of subscription data.
+    /**
+     * Abstracts the source of subscription data.
      */
     class Source
     {
@@ -208,7 +219,8 @@ public:
         virtual bool
         tryRemoveRpcSub(std::string const& strUrl) = 0;
 
-        /** Journal used by InfoSub for diagnostics that occur after the
+        /**
+         * Journal used by InfoSub for diagnostics that occur after the
          *  owning subsystem (e.g. application-level Logs) is the only
          *  surviving sink — primarily destructor-time cleanup failures.
          */
@@ -240,27 +252,29 @@ public:
     void
     deleteSubAccountInfo(AccountID const& account, bool rt);
 
-    /** Record that this subscriber is following @p book.
+    /**
+     * Record that this subscriber is following @p book.
      *
-     *  Called by NetworkOPsImp::subBook so that ~InfoSub() can issue a
-     *  matching unsubBook for every book this subscriber is tracking,
-     *  keeping per-subscriber state symmetric with the server-side map.
+     * Called by NetworkOPsImp::subBook so that ~InfoSub() can issue a
+     * matching unsubBook for every book this subscriber is tracking,
+     * keeping per-subscriber state symmetric with the server-side map.
      *
-     *  @param book The order book this subscriber has just subscribed to.
-     *  @note Idempotent: re-inserting an already-tracked book is a no-op.
-     *  @note Thread-safe: takes InfoSub::lock_.
+     * @param book The order book this subscriber has just subscribed to.
+     * @note Idempotent: re-inserting an already-tracked book is a no-op.
+     * @note Thread-safe: takes InfoSub::lock_.
      */
     void
     insertBookSubscription(Book const& book);
 
-    /** Stop tracking @p book for this subscriber.
+    /**
+     * Stop tracking @p book for this subscriber.
      *
-     *  Called by the unsubscribe RPC handler so that the book is not
-     *  re-unsubscribed by ~InfoSub(). Pairs with insertBookSubscription.
+     * Called by the unsubscribe RPC handler so that the book is not
+     * re-unsubscribed by ~InfoSub(). Pairs with insertBookSubscription.
      *
-     *  @param book The order book to forget.
-     *  @note No-op if @p book was not previously inserted.
-     *  @note Thread-safe: takes InfoSub::lock_.
+     * @param book The order book to forget.
+     * @note No-op if @p book was not previously inserted.
+     * @note Thread-safe: takes InfoSub::lock_.
      */
     void
     deleteBookSubscription(Book const& book);

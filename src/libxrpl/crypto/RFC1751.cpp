@@ -379,14 +379,15 @@ RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
     return 1;
 }
 
-/** Convert words separated by spaces into a 128 bit key in big-endian format.
-
-    @return
-         1 if succeeded
-         0 if word not in dictionary
-        -1 if badly formed string
-        -2 if words are okay but parity is wrong.
-*/
+/**
+ * Convert words separated by spaces into a 128 bit key in big-endian format.
+ *
+ * @return
+ *      1 if succeeded
+ *      0 if word not in dictionary
+ *     -1 if badly formed string
+ *     -2 if words are okay but parity is wrong.
+ */
 int
 RFC1751::getKeyFromEnglish(std::string& strKey, std::string const& strHuman)
 {
@@ -415,7 +416,8 @@ RFC1751::getKeyFromEnglish(std::string& strKey, std::string const& strHuman)
     return rc;
 }
 
-/** Convert to human from a 128 bit key in big-endian format
+/**
+ * Convert to human from a 128 bit key in big-endian format
  */
 void
 RFC1751::getEnglishFromKey(std::string& strHuman, std::string const& strKey)
@@ -434,7 +436,7 @@ RFC1751::getWordFromBlob(void const* blob, size_t bytes)
     // This is a simple implementation of the Jenkins one-at-a-time hash
     // algorithm:
     // http://en.wikipedia.org/wiki/Jenkins_hash_function#one-at-a-time
-    unsigned char const* data = static_cast<unsigned char const*>(blob);
+    auto const* data = static_cast<unsigned char const*>(blob);
     std::uint32_t hash = 0;
 
     for (size_t i = 0; i < bytes; ++i)

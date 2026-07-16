@@ -82,7 +82,7 @@ parseIndex(json::Value const& params, json::StaticString const fieldName, unsign
         if (index == jss::amendments.cStr())
             return keylet::amendments().key;
         if (index == jss::fee.cStr())
-            return keylet::fees().key;
+            return keylet::feeSettings().key;
         if (index == jss::nunl)
             return keylet::negativeUNL().key;
         if (index == jss::hashes)
@@ -432,7 +432,7 @@ parseEscrow(
     return keylet::escrow(*id, *seq).key;
 }
 
-auto const parseFeeSettings = fixed(keylet::fees());
+auto const parseFeeSettings = fixed(keylet::feeSettings());
 
 static std::expected<uint256, json::Value>
 parseFixed(
@@ -491,7 +491,7 @@ parseLoanBroker(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::loanbroker(*id, *seq).key;
+    return keylet::loanBroker(*id, *seq).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -553,7 +553,7 @@ parseMPTokenIssuance(
             "malformedMPTokenIssuance", fieldName, "Hash192");
     }
 
-    return keylet::mptIssuance(*mptIssuanceID).key;
+    return keylet::mptokenIssuance(*mptIssuanceID).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -705,7 +705,7 @@ parseRippleState(
             "malformedCurrency", jss::currency, "Currency");
     }
 
-    return keylet::line(*id1, *id2, uCurrency).key;
+    return keylet::trustLine(*id1, *id2, uCurrency).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -715,6 +715,28 @@ parseSignerList(
     [[maybe_unused]] unsigned const apiVersion)
 {
     return parseObjectID(params, fieldName, "hex string");
+}
+
+static std::expected<uint256, json::Value>
+parseSponsorship(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    if (!params.isObject())
+        return parseObjectID(params, fieldName);
+
+    auto const sponsorID =
+        LedgerEntryHelpers::requiredAccountID(params, jss::sponsor, "malformedSponsor");
+    if (!sponsorID)
+        return std::unexpected(sponsorID.error());
+
+    auto const sponseeID =
+        LedgerEntryHelpers::requiredAccountID(params, jss::sponsee, "malformedSponsee");
+    if (!sponseeID)
+        return std::unexpected(sponseeID.error());
+
+    return keylet::sponsorship(*sponsorID, *sponseeID).key;
 }
 
 static std::expected<uint256, json::Value>

@@ -108,7 +108,7 @@ ServerDefinitions::translate(std::string const& inp)
         if (token.size() > 1)
         {
             boost::algorithm::to_lower(token);
-            token.data()[0] -= ('a' - 'A');
+            token[0] -= ('a' - 'A');
             out += token;
         }
         else

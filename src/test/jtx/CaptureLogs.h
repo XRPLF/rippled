@@ -1,6 +1,12 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+
+#include <memory>
+#include <mutex>
+#include <sstream>
+#include <string>
 
 namespace xrpl::test {
 

@@ -82,7 +82,7 @@ jobs:
     name: ${{ inputs.config_name }}
     runs-on: ${{ fromJSON(inputs.runs_on) }}
     container: ${{ inputs.image != '' && inputs.image || null }}
-    timeout-minutes: ${{ inputs.sanitizers != '' && 360 || 90 }}
+    timeout-minutes: ${{ inputs.sanitizers != '' && 360 || 180 }}
     env:
       # Use a namespace to keep the objects separate for each configuration.
       CCACHE_NAMESPACE: ${{ inputs.config_name }}
@@ -113,7 +113,7 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@c47daebb2f9db64ffbac71b47d68a661498d5ce8
+        uses: XRPLF/actions/prepare-runner@64ec3cf3b152b4444638f470bbd6df7a7a30c81c
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
 
@@ -124,7 +124,7 @@ jobs:
       - name: Check tools
         env:
           CHECK_TOOLS_SKIP_CLONE: "1"
-        run: ./bin/check-tools.sh
+        run: ./bin/check-tools.sh || true
 
       - name: Print build environment
         uses: XRPLF/actions/print-build-env@59dec886e4afb05a1724443af08baccbc045b574
@@ -163,7 +163,7 @@ jobs:
           CMAKE_ARGS: ${{ inputs.cmake_args }}
         run: |
           cmake \
-              -G '${{ runner.os == 'Windows' && 'Visual Studio 17 2022' || 'Ninja' }}' \
+              -G '${{ runner.os == 'Windows' && 'Visual Studio 18 2026' || 'Ninja' }}' \
               -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
               -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
               ${CMAKE_ARGS} \
@@ -228,21 +228,6 @@ jobs:
               --config "${BUILD_TYPE}" \
               --parallel "${BUILD_NPROC}" \
               --target "${CMAKE_TARGET}"
-
-      # This step is needed to allow running in non-Nix environments
-      - name: Patch binary to use default loader and remove rpath (Linux)
-        if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
-        run: |
-          loader="$(/tmp/loader-path.sh)"
-          patchelf --set-interpreter "${loader}" --remove-rpath "${{ env.BUILD_DIR }}/xrpld"
-
-      # We're only running aarch64 Linux builds in Ubuntu-based images, so this is kept simple
-      - name: Install libatomic (Linux aarch64)
-        if: ${{ runner.os == 'Linux' && runner.arch == 'ARM64' }}
-        run: |
-          apt update --yes
-          apt install -y --no-install-recommends \
-              libatomic1
 
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}

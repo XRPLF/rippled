@@ -7,13 +7,27 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/container/aged_map.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/utility/maybe_const.h>
 
 #include <boost/intrusive/list.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
 #include <algorithm>
+#include <array>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <memory>
+#include <sstream>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl::PeerFinder {
 
@@ -41,10 +55,11 @@ protected:
         boost::intrusive::make_list<Element, boost::intrusive::constant_time_size<false>>::type;
 
 public:
-    /** A list of Endpoint at the same hops
-        This is a lightweight wrapper around a reference to the underlying
-        container.
-    */
+    /**
+     * A list of Endpoint at the same hops
+     * This is a lightweight wrapper around a reference to the underlying
+     * container.
+     */
     template <bool IsConst>
     class Hop
     {
@@ -65,12 +80,12 @@ public:
         };
 
     public:
-        using iterator = boost::transform_iterator<Transform, typename list_type::const_iterator>;
+        using iterator = boost::transform_iterator<Transform, list_type::const_iterator>;
 
         using const_iterator = iterator;
 
         using reverse_iterator =
-            boost::transform_iterator<Transform, typename list_type::const_reverse_iterator>;
+            boost::transform_iterator<Transform, list_type::const_reverse_iterator>;
 
         using const_reverse_iterator = reverse_iterator;
 
@@ -132,7 +147,7 @@ public:
         }
 
     private:
-        explicit Hop(typename beast::MaybeConst<IsConst, list_type>::type& list) : list_(list)
+        explicit Hop(beast::MaybeConst<IsConst, list_type>::type& list) : list_(list)
         {
         }
 
@@ -145,7 +160,7 @@ protected:
     // Work-around to call Hop's private constructor from Livecache
     template <bool IsConst>
     static Hop<IsConst>
-    makeHop(typename beast::MaybeConst<IsConst, list_type>::type& list)
+    makeHop(beast::MaybeConst<IsConst, list_type>::type& list)
     {
         return Hop<IsConst>(list);
     }
@@ -155,18 +170,19 @@ protected:
 
 //------------------------------------------------------------------------------
 
-/** The Livecache holds the short-lived relayed Endpoint messages.
-
-    Since peers only advertise themselves when they have open slots,
-    we want these messages to expire rather quickly after the peer becomes
-    full.
-
-    Addresses added to the cache are not connection-tested to see if
-    they are connectable (with one small exception regarding neighbors).
-    Therefore, these addresses are not suitable for persisting across
-    launches or for bootstrapping, because they do not have verifiable
-    and locally observed uptime and connectability information.
-*/
+/**
+ * The Livecache holds the short-lived relayed Endpoint messages.
+ *
+ * Since peers only advertise themselves when they have open slots,
+ * we want these messages to expire rather quickly after the peer becomes
+ * full.
+ *
+ * Addresses added to the cache are not connection-tested to see if
+ * they are connectable (with one small exception regarding neighbors).
+ * Therefore, these addresses are not suitable for persisting across
+ * launches or for bootstrapping, because they do not have verifiable
+ * and locally observed uptime and connectability information.
+ */
 template <class Allocator = std::allocator<char>>
 class Livecache : protected detail::LivecacheBase
 {
@@ -184,7 +200,9 @@ private:
 public:
     using allocator_type = Allocator;
 
-    /** Create the cache. */
+    /**
+     * Create the cache.
+     */
     Livecache(clock_type& clock, beast::Journal journal, Allocator alloc = Allocator());
 
     //
@@ -208,30 +226,29 @@ public:
         template <bool IsConst>
         struct Transform
         {
-            using first_argument = typename lists_type::value_type;
+            using first_argument = lists_type::value_type;
             using result_type = Hop<IsConst>;
 
             explicit Transform() = default;
 
             Hop<IsConst>
-            operator()(typename beast::MaybeConst<IsConst, typename lists_type::value_type>::type&
-                           list) const
+            operator()(beast::MaybeConst<IsConst, lists_type::value_type>::type& list) const
             {
                 return makeHop<IsConst>(list);
             }
         };
 
     public:
-        using iterator = boost::transform_iterator<Transform<false>, typename lists_type::iterator>;
+        using iterator = boost::transform_iterator<Transform<false>, lists_type::iterator>;
 
         using const_iterator =
-            boost::transform_iterator<Transform<true>, typename lists_type::const_iterator>;
+            boost::transform_iterator<Transform<true>, lists_type::const_iterator>;
 
         using reverse_iterator =
-            boost::transform_iterator<Transform<false>, typename lists_type::reverse_iterator>;
+            boost::transform_iterator<Transform<false>, lists_type::reverse_iterator>;
 
         using const_reverse_iterator =
-            boost::transform_iterator<Transform<true>, typename lists_type::const_reverse_iterator>;
+            boost::transform_iterator<Transform<true>, lists_type::const_reverse_iterator>;
 
         iterator
         begin()
@@ -305,7 +322,9 @@ public:
             return const_reverse_iterator(lists_.crend(), Transform<true>());
         }
 
-        /** Shuffle each hop list. */
+        /**
+         * Shuffle each hop list.
+         */
         void
         shuffle();
 
@@ -330,29 +349,39 @@ public:
         Histogram hist_{};
     } hops;
 
-    /** Returns `true` if the cache is empty. */
+    /**
+     * Returns `true` if the cache is empty.
+     */
     [[nodiscard]] bool
     empty() const
     {
         return cache_.empty();
     }
 
-    /** Returns the number of entries in the cache. */
-    typename cache_type::size_type
+    /**
+     * Returns the number of entries in the cache.
+     */
+    cache_type::size_type
     size() const
     {
         return cache_.size();
     }
 
-    /** Erase entries whose time has expired. */
+    /**
+     * Erase entries whose time has expired.
+     */
     void
     expire();
 
-    /** Creates or updates an existing Element based on a new message. */
+    /**
+     * Creates or updates an existing Element based on a new message.
+     */
     void
     insert(Endpoint const& ep);
 
-    /** Output statistics. */
+    /**
+     * Output statistics.
+     */
     void
     onWrite(beast::PropertyStream::Map& map);
 };

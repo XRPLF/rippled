@@ -10,6 +10,7 @@
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/basics/partitioned_unordered_map.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -18,8 +19,17 @@
 
 #include <algorithm>
 #include <array>
+#include <compare>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <expected>
+#include <iterator>
+#include <optional>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
 #include <type_traits>
 
 namespace xrpl {
@@ -53,18 +63,19 @@ struct AlwaysFalseT : std::bool_constant<false>
 
 }  // namespace detail
 
-/** Integers of any length that is a multiple of 32-bits
-
-    @note This class stores its values internally in big-endian
-          form and that internal representation is part of the
-          binary protocol of the XRP Ledger and cannot be changed
-          arbitrarily without causing breakage.
-
-          @tparam Bits The number of bits this integer should have; must
-                       be at least 64 and a multiple of 32.
-          @tparam Tag An arbitrary type that functions as a tag and allows
-                      the instantiation of "distinct" types that the same
-                      number of bits.
+/**
+ * Integers of any length that is a multiple of 32-bits
+ *
+ * @note This class stores its values internally in big-endian
+ *       form and that internal representation is part of the
+ *       binary protocol of the XRP Ledger and cannot be changed
+ *       arbitrarily without causing breakage.
+ *
+ * @tparam Bits The number of bits this integer should have; must
+ *              be at least 64 and a multiple of 32.
+ * @tparam Tag An arbitrary type that functions as a tag and allows
+ *             the instantiation of "distinct" types that the same
+ *             number of bits.
  */
 template <std::size_t Bits, class Tag = void>
 class BaseUInt
@@ -87,7 +98,7 @@ public:
     //
 
     static constexpr std::size_t kBytes = Bits / 8;
-    static_assert(sizeof(data_) == kBytes, "");
+    static_assert(sizeof(data_) == kBytes);
 
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
@@ -144,21 +155,23 @@ public:
         return data() + kBytes;
     }
 
-    /** Value hashing function.
-        The seed prevents crafted inputs from causing degenerate parent
-       containers.
-    */
+    /**
+     * Value hashing function.
+     *  The seed prevents crafted inputs from causing degenerate parent
+     * containers.
+     */
     using hasher = HardenedHash<>;
 
     //--------------------------------------------------------------------------
 
 private:
-    /** Construct from a raw pointer.
-        The buffer pointed to by `data` must be at least Bits/8 bytes.
-
-        @note the structure is used to disambiguate this from the std::uint64_t
-              constructor: something like base_uint(0) is ambiguous.
-    */
+    /**
+     * Construct from a raw pointer.
+     * The buffer pointed to by `data` must be at least Bits/8 bytes.
+     *
+     * @note the structure is used to disambiguate this from the std::uint64_t
+     *       constructor: something like base_uint(0) is ambiguous.
+     */
     // NIKB TODO Remove the need for this constructor.
     struct VoidHelper
     {
@@ -270,12 +283,11 @@ public:
     {
     }
 
-    template <
-        class Container,
-        class = std::enable_if_t<
-            detail::IsContiguousContainer<Container>::value &&
-            std::is_trivially_copyable_v<typename Container::value_type>>>
+    template <class Container>
     explicit BaseUInt(Container const& c)
+        requires(
+            detail::IsContiguousContainer<Container>::value &&
+            std::is_trivially_copyable_v<typename Container::value_type>)
     {
         // Use AlwaysFalseT so the static_assert condition is dependent
         // and only triggers when this constructor template is instantiated.
@@ -285,33 +297,38 @@ public:
             "Use base_uint::fromRaw instead.");
     }
 
-    template <
-        class Container,
-        class = std::enable_if_t<
-            detail::IsContiguousContainer<Container>::value &&
-            std::is_trivially_copyable_v<typename Container::value_type>>>
+    template <class Container>
     static BaseUInt
     fromRaw(Container const& c)
+        requires(
+            detail::IsContiguousContainer<Container>::value &&
+            std::is_trivially_copyable_v<typename Container::value_type>)
     {
         BaseUInt result;
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
             "xrpl::BaseUInt::fromRaw(Container auto) : input size match");
-        std::memcpy(result.data_.data(), c.data(), size());
+        std::size_t const canCopy =
+            std::min(size(), c.size() * sizeof(typename Container::value_type));
+        std::memcpy(result.data_.data(), c.data(), canCopy);
         return result;
     }
 
     template <class Container>
-    std::enable_if_t<
-        detail::IsContiguousContainer<Container>::value &&
-            std::is_trivially_copyable_v<typename Container::value_type>,
-        BaseUInt&>
+    BaseUInt&
     operator=(Container const& c)
+        requires(
+            detail::IsContiguousContainer<Container>::value &&
+            std::is_trivially_copyable_v<typename Container::value_type>)
     {
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
             "xrpl::BaseUInt::operator=(Container auto) : input size match");
-        std::memcpy(data_.data(), c.data(), size());
+        std::size_t const canCopy =
+            std::min(size(), c.size() * sizeof(typename Container::value_type));
+        if (canCopy < size())
+            *this = beast::kZero;
+        std::memcpy(data_.data(), c.data(), canCopy);
         return *this;
     }
 
@@ -495,13 +512,14 @@ public:
         h(a.data_.data(), sizeof(a.data_));
     }
 
-    /** Parse a hex string into a base_uint
-
-        The input must be precisely `2 * bytes` hexadecimal characters
-        long, with one exception: the value '0'.
-
-        @param sv A null-terminated string of hexadecimal characters
-        @return true if the input was parsed properly; false otherwise.
+    /**
+     * Parse a hex string into a base_uint
+     *
+     * The input must be precisely `2 * bytes` hexadecimal characters
+     * long, with one exception: the value '0'.
+     *
+     * @param sv A null-terminated string of hexadecimal characters
+     * @return true if the input was parsed properly; false otherwise.
      */
     [[nodiscard]] constexpr bool
     parseHex(std::string_view sv)
@@ -587,7 +605,7 @@ template <std::size_t Bits, typename Tag>
 [[nodiscard]] constexpr bool
 operator==(BaseUInt<Bits, Tag> const& lhs, BaseUInt<Bits, Tag> const& rhs)
 {
-    return (lhs <=> rhs) == 0;
+    return (lhs <=> rhs) == 0;  // NOLINT(modernize-use-nullptr)
 }
 
 //------------------------------------------------------------------------------

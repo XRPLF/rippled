@@ -57,7 +57,7 @@ template <class Generator>
 static void
 rngcpy(void* buffer, std::size_t bytes, Generator& g)
 {
-    using result_type = typename Generator::result_type;
+    using result_type = Generator::result_type;
     while (bytes >= sizeof(result_type))
     {
         auto const v = g();
@@ -564,10 +564,10 @@ public:
                     char p[2];
                     p[0] = rand_(gen_) < 50 ? 0 : 1;
                     p[1] = 1 - p[0];
-                    for (int q = 0; q < 2; ++q)
+                    for (char const op : p)
                     {
                         // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
-                        switch (p[q])
+                        switch (op)
                         {
                             case 0: {
                                 // fetch recent
@@ -692,9 +692,6 @@ public:
 #if XRPL_ROCKSDB_AVAILABLE
             ";type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"
             "file_size_mb=8,file_size_mult=2"
-#endif
-#if 0
-            ";type=memory|path=NodeStore"
 #endif
             ;
 

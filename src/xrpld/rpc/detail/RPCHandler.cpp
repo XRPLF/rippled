@@ -1,5 +1,6 @@
 #include <xrpld/rpc/RPCHandler.h>
 
+#include <xrpld/app/ledger/LedgerMaster.h>  // IWYU pragma: keep
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/Context.h>
@@ -28,83 +29,82 @@ namespace xrpl::RPC {
 namespace {
 
 /**
-   This code is called from both the HTTP RPC handler and Websockets.
-
-   The form of the Json returned is somewhat different between the two services.
-
-   HTML:
-     Success:
-        {
-           "result" : {
-              "ledger" : {
-                 "accepted" : false,
-                 "transaction_hash" : "..."
-              },
-              "ledger_index" : 10300865,
-              "validated" : false,
-              "status" : "success"  # Status is inside the result.
-           }
-        }
-
-     Failure:
-        {
-           "result" : {
-              // api_version == 1
-              "error" : "noNetwork",
-              "error_code" : 17,
-              "error_message" : "Not synced to the network.",
-
-              // api_version == 2
-              "error" : "notSynced",
-              "error_code" : 18,
-              "error_message" : "Not synced to the network.",
-
-              "request" : {
-                 "command" : "ledger",
-                 "ledger_index" : 10300865
-              },
-              "status" : "error"
-           }
-        }
-
-   Websocket:
-     Success:
-        {
-           "result" : {
-              "ledger" : {
-                 "accepted" : false,
-                 "transaction_hash" : "..."
-              },
-              "ledger_index" : 10300865,
-              "validated" : false
-           }
-           "type": "response",
-           "status": "success",   # Status is OUTside the result!
-           "id": "client's ID",   # Optional
-           "warning": 3.14        # Optional
-        }
-
-     Failure:
-        {
-          // api_version == 1
-          "error" : "noNetwork",
-          "error_code" : 17,
-          "error_message" : "Not synced to the network.",
-
-          // api_version == 2
-          "error" : "notSynced",
-          "error_code" : 18,
-          "error_message" : "Not synced to the network.",
-
-          "request" : {
-             "command" : "ledger",
-             "ledger_index" : 10300865
-          },
-          "type": "response",
-          "status" : "error",
-          "id": "client's ID"   # Optional
-        }
-
+ * This code is called from both the HTTP RPC handler and Websockets.
+ *
+ * The form of the Json returned is somewhat different between the two services.
+ *
+ * HTML:
+ *   Success:
+ *      {
+ *         "result" : {
+ *            "ledger" : {
+ *               "accepted" : false,
+ *               "transaction_hash" : "..."
+ *            },
+ *            "ledger_index" : 10300865,
+ *            "validated" : false,
+ *            "status" : "success"  # Status is inside the result.
+ *         }
+ *      }
+ *
+ *   Failure:
+ *      {
+ *         "result" : {
+ *            // api_version == 1
+ *            "error" : "noNetwork",
+ *            "error_code" : 17,
+ *            "error_message" : "Not synced to the network.",
+ *
+ *            // api_version == 2
+ *            "error" : "notSynced",
+ *            "error_code" : 18,
+ *            "error_message" : "Not synced to the network.",
+ *
+ *            "request" : {
+ *               "command" : "ledger",
+ *               "ledger_index" : 10300865
+ *            },
+ *            "status" : "error"
+ *         }
+ *      }
+ *
+ * Websocket:
+ *   Success:
+ *      {
+ *         "result" : {
+ *            "ledger" : {
+ *               "accepted" : false,
+ *               "transaction_hash" : "..."
+ *            },
+ *            "ledger_index" : 10300865,
+ *            "validated" : false
+ *         }
+ *         "type": "response",
+ *         "status": "success",   # Status is OUTside the result!
+ *         "id": "client's ID",   # Optional
+ *         "warning": 3.14        # Optional
+ *      }
+ *
+ *   Failure:
+ *      {
+ *        // api_version == 1
+ *        "error" : "noNetwork",
+ *        "error_code" : 17,
+ *        "error_message" : "Not synced to the network.",
+ *
+ *        // api_version == 2
+ *        "error" : "notSynced",
+ *        "error_code" : 18,
+ *        "error_message" : "Not synced to the network.",
+ *
+ *        "request" : {
+ *           "command" : "ledger",
+ *           "ledger_index" : 10300865
+ *        },
+ *        "type": "response",
+ *        "status" : "error",
+ *        "id": "client's ID"   # Optional
+ *      }
  */
 
 ErrorCodeI
