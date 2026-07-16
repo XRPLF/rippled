@@ -353,17 +353,17 @@ public:
         Account const pseudoAcc("vault", vaultSle->getAccountID(sfAccount));
         env.memoize(pseudoAcc);
 
-        // Sponsee is a pseudo account -> tecNO_PERMISSION
+        // Sponsee is a pseudo account -> tecPSEUDO_ACCOUNT
         env(sponsor::set(sp, 0, 100, XRP(100)),
             sponsor::SponseeAcc(pseudoAcc),
-            Ter(tecNO_PERMISSION));
+            Ter(tecPSEUDO_ACCOUNT));
         env.close();
 
-        // Sponsor is a pseudo account -> tecNO_PERMISSION
+        // Sponsor is a pseudo account -> tecPSEUDO_ACCOUNT
         // (submitted by bob with counterpartySponsor pointing to pseudo account)
         env(sponsor::set(bob, tfDeleteObject),
             sponsor::CounterpartySponsor(pseudoAcc),
-            Ter(tecNO_PERMISSION));
+            Ter(tecPSEUDO_ACCOUNT));
         env.close();
     }
 

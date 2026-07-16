@@ -110,7 +110,7 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
         if (ctx.view.rules().enabled(fixCleanup3_3_0) && isPseudoAccount(sleAuth))
         {
             JLOG(ctx.j.debug()) << "Authorized account is a pseudo-account.";
-            return tecNO_PERMISSION;
+            return tecPSEUDO_ACCOUNT;
         }
 
         // Verify that the Preauth entry they asked to add is not already

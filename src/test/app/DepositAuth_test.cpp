@@ -575,7 +575,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             Account const vaultPseudo{"vault", sleVault->at(sfAccount)};
 
             auto const expectedResult =
-                features[fixCleanup3_3_0] ? Ter(tecNO_PERMISSION) : Ter(tesSUCCESS);
+                features[fixCleanup3_3_0] ? Ter(tecPSEUDO_ACCOUNT) : Ter(tesSUCCESS);
             env(deposit::auth(alice, vaultPseudo), expectedResult);
             env.close();
             env.require(Owners(alice, features[fixCleanup3_3_0] ? 0 : 1));
