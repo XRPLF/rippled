@@ -36,6 +36,22 @@ namespace xrpl {
  * - vault withdrawal and clawback reduce assets and share issuance, and
  *   subtracts from: total assets, assets available, shares outstanding
  * - vault set must not alter the vault assets or shares balance
+ * - loan set moves the requested principal out of the vault: it must create
+ *   exactly one loan, decreases assets available (and the vault balance) by the
+ *   principal, grows assets outstanding by exactly the interest due booked on
+ *   the created loan, and does not change shares
+ * - loan manage never removes assets from the vault: assets available may only
+ *   grow (and the vault balance grows with it, by the returned first-loss
+ *   capital on a default), assets outstanding may only shrink (realized loss),
+ *   loss unrealized stays non-negative, and shares do not change; a loan
+ *   manage with none of the sub-operation flags (impair, unimpair, default)
+ *   is a no-op and must not modify the vault
+ * - loan pay adds the paid principal and interest to the vault: assets
+ *   available (and the vault balance) increase by the same amount, which is at
+ *   most the amount paid, loss unrealized stays non-negative, and shares do not
+ *   change; and assets outstanding move in lock-step: their change equals the
+ *   cash received plus the change in the paid loan's claim on the vault, which
+ *   verifies the payment was split correctly between principal and interest
  * - no vault transaction can change loss unrealized (it's updated by loan
  *   transactions)
  *
@@ -55,6 +71,8 @@ class ValidVault
         Number assetsAvailable = 0;
         Number assetsMaximum = 0;
         Number lossUnrealized = 0;
+        std::uint8_t withdrawalPolicy = 0;
+        std::uint8_t scale = 0;
 
         Vault static make(SLE const&);
     };
@@ -66,6 +84,26 @@ class ValidVault
         std::uint64_t sharesMaximum = 0;
 
         Shares static make(SLE const&);
+    };
+
+    struct Loan final
+    {
+        uint256 key = beast::kZero;
+        Number principalOutstanding = 0;
+        Number totalValueOutstanding = 0;
+        Number managementFeeOutstanding = 0;
+
+        // Interest booked to the vault at loan creation: the portion of the
+        // total value owed that is neither principal nor broker management fee.
+        [[nodiscard]] Number
+        interestDue() const;
+
+        // The vault's claim on the loan: the total value owed less the broker's
+        // management fee (which belongs to the broker, not the vault).
+        [[nodiscard]] Number
+        claim() const;
+
+        Loan static make(SLE const&);
     };
 
 public:
@@ -82,8 +120,10 @@ public:
 private:
     std::vector<Vault> afterVault_;
     std::vector<Shares> afterMPTs_;
+    std::vector<Loan> afterLoan_;
     std::vector<Vault> beforeVault_;
     std::vector<Shares> beforeMPTs_;
+    std::vector<Loan> beforeLoan_;
     std::unordered_map<uint256, DeltaInfo> deltas_;
 
     /**
