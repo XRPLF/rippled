@@ -838,6 +838,7 @@ SHAMap::getHash() const
     auto hash = root_->getHash();
     if (hash.isZero())
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
         const_cast<SHAMap&>(*this).unshare();
         hash = root_->getHash();
     }
@@ -918,17 +919,18 @@ SHAMap::fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter const* filter)
     return false;
 }
 
-/** Replace a node with a shareable node.
-
-    This code handles two cases:
-
-    1) An unshared, unshareable node needs to be made shareable
-       so immutable SHAMap's can have references to it.
-    2) An unshareable node is shared. This happens when you make
-       a mutable snapshot of a mutable SHAMap.
-
-    @note The node must have already been unshared by having the caller
-          first call SHAMapTreeNode::unshare().
+/**
+ * Replace a node with a shareable node.
+ *
+ * This code handles two cases:
+ *
+ * 1) An unshared, unshareable node needs to be made shareable
+ *    so immutable SHAMap's can have references to it.
+ * 2) An unshareable node is shared. This happens when you make
+ *    a mutable snapshot of a mutable SHAMap.
+ *
+ * @note The node must have already been unshared by having the caller
+ *       first call SHAMapTreeNode::unshare().
  */
 SHAMapTreeNodePtr
 SHAMap::writeNode(NodeObjectType t, SHAMapTreeNodePtr node) const

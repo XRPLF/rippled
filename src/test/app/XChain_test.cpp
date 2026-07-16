@@ -141,7 +141,7 @@ struct SEnv
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return env.current()->fees().accountReserve(count);
+        return env.current()->fees().accountReserve(count, 1);
     }
 
     XRPAmount
@@ -245,9 +245,9 @@ struct Balance
     T& env;
     STAmount startAmount;
 
-    Balance(T& env, jtx::Account const& account) : account(account), env(env)
+    Balance(T& env, jtx::Account const& account)
+        : account(account), env(env), startAmount(env.balance(account))
     {
-        startAmount = env.balance(account);
     }
 
     [[nodiscard]] STAmount
@@ -370,7 +370,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return XEnv(*this).env.current()->fees().accountReserve(count);
+        return XEnv(*this).env.current()->fees().accountReserve(count, 1);
     }
 
     XRPAmount
@@ -3923,12 +3923,10 @@ private:
         [[nodiscard]] bool
         verify() const
         {
-            for (auto const& [acct, state] : accounts)
-            {
-                if (!state.verify(env, acct))
-                    return false;
-            }
-            return true;
+            return std::ranges::all_of(accounts, [&](auto const& entry) {
+                auto const& [acct, state] = entry;
+                return state.verify(env, acct);
+            });
         }
 
         struct BridgeCounters

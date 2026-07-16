@@ -192,7 +192,9 @@ public:
         return getJson(kWarningThreshold);
     }
 
-    /** Returns a json::ValueType::Object. */
+    /**
+     * Returns a json::ValueType::Object.
+     */
     json::Value
     getJson(int threshold)
     {
