@@ -103,8 +103,15 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
     {
         // Verify that the Authorize account is present in the ledger.
         AccountID const auth{ctx.tx[sfAuthorize]};
-        if (!ctx.view.exists(keylet::account(auth)))
+        auto const sleAuth = ctx.view.read(keylet::account(auth));
+        if (!sleAuth)
             return tecNO_TARGET;
+
+        if (ctx.view.rules().enabled(fixCleanup3_3_0) && isPseudoAccount(sleAuth))
+        {
+            JLOG(ctx.j.debug()) << "Authorized account is a pseudo-account.";
+            return tecNO_PERMISSION;
+        }
 
         // Verify that the Preauth entry they asked to add is not already
         // in the ledger.
