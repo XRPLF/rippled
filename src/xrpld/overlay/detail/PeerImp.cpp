@@ -1565,9 +1565,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathResponse> const& m)
         return;
     }
 
-    if (!ledgerReplayMsgHandler_.processProofPathResponse(m))
+    switch (ledgerReplayMsgHandler_.processProofPathResponse(m))
     {
-        fee_.update(Resource::kFeeInvalidData, "proof_path_response");
+        case ReplayMsgStatus::Ok:
+            break;
+        case ReplayMsgStatus::BadData:
+            fee_.update(Resource::kFeeInvalidData, "proof_path_response");
+            break;
+        case ReplayMsgStatus::Malformed:
+            fee_.update(Resource::kFeeMalformedData, "proof_path_response malformed");
+            break;
     }
 }
 
@@ -1615,9 +1622,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaResponse> const& m)
         return;
     }
 
-    if (!ledgerReplayMsgHandler_.processReplayDeltaResponse(m))
+    switch (ledgerReplayMsgHandler_.processReplayDeltaResponse(m))
     {
-        fee_.update(Resource::kFeeInvalidData, "replay_delta_response");
+        case ReplayMsgStatus::Ok:
+            break;
+        case ReplayMsgStatus::BadData:
+            fee_.update(Resource::kFeeInvalidData, "replay_delta_response");
+            break;
+        case ReplayMsgStatus::Malformed:
+            fee_.update(Resource::kFeeMalformedData, "replay_delta_response malformed");
+            break;
     }
 }
 
