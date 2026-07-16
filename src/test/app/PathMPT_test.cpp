@@ -280,12 +280,9 @@ public:
         using namespace jtx;
 
         auto hasMPT = [](auto const& assets, MPT const& mpt) {
-            for (auto const& asset : assets)
-            {
-                if (asset.template holds<MPTID>() && asset.template get<MPTID>() == mpt.mpt())
-                    return true;
-            }
-            return false;
+            return std::ranges::any_of(assets, [&](auto const& asset) {
+                return asset.template holds<MPTID>() && asset.template get<MPTID>() == mpt.mpt();
+            });
         };
 
         Env env = pathTestEnv();
