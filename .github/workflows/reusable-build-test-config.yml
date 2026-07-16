@@ -113,7 +113,7 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@64ec3cf3b152b4444638f470bbd6df7a7a30c81c
+        uses: XRPLF/actions/prepare-runner@ad188deb3dae79dc39816e16ddfdad1e06c6fab2
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
 
@@ -323,6 +323,23 @@ jobs:
           fi
 
           LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee unittest.log
+
+      # Smoke-run every benchmark module with a single repetition to confirm the
+      # benchmarks still build and execute. This is a correctness check, not a
+      # performance measurement, so it is skipped for instrumented builds
+      # (sanitizers/coverage/voidstar), where it would be slow and meaningless,
+      # and on Windows, where the `install` target does not build them.
+      - name: Run the benchmarks
+        if: ${{ !inputs.build_only && runner.os != 'Windows' && env.SANITIZERS_ENABLED == 'false' && env.COVERAGE_ENABLED != 'true' && env.VOIDSTAR_ENABLED != 'true' }}
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          rc=0
+          while IFS= read -r bench; do
+              echo "::group::${bench}"
+              "./${bench}" --benchmark_repetitions=1 || rc=1
+              echo "::endgroup::"
+          done < <(find src/benchmarks -type f -perm -u+x -name 'xrpl.bench.*')
+          exit "${rc}"
 
       - name: Show test failure summary
         if: ${{ failure() && !inputs.build_only }}
