@@ -21,6 +21,7 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -277,7 +278,7 @@ InstanceWrapper::setGas(std::int64_t gas) const
 ModulePtr
 ModuleWrapper::init(StorePtr& s, Bytes const& wasmBin, beast::Journal j)
 {
-    wasm_byte_vec_t const code{wasmBin.size(), (char*)(wasmBin.data())};
+    wasm_byte_vec_t const code{.size = wasmBin.size(), .data = (char*)(wasmBin.data())};
     ModulePtr m = ModulePtr(wasm_module_new(s.get(), &code), &wasm_module_delete);
     if (!m)
         throw std::runtime_error("can't create module");
@@ -711,8 +712,8 @@ WasmiResult
 WasmiEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in)
 {
     WasmiResult ret(NR);
-    wasm_val_vec_t const inv =
-        in.empty() ? wasm_val_vec_t WASM_EMPTY_VEC : wasm_val_vec_t{in.size(), in.data()};
+    wasm_val_vec_t const inv = in.empty() ? wasm_val_vec_t WASM_EMPTY_VEC
+                                          : wasm_val_vec_t{.size = in.size(), .data = in.data()};
 
 #ifdef SHOW_CALL_TIME
     auto const start = usecs();
@@ -878,9 +879,7 @@ extractVersionInfo(Bytes const& wasmCode)
             versions.emplace_back(
                 Version{
                     .name = section.name,
-                    .version = std::string_view{
-                        section.payload.data(),
-                        section.payload.size()}});
+                    .version = std::string_view{section.payload.data(), section.payload.size()}});
         }
 
         // Just read until we have found all the information we are looking for.
@@ -910,11 +909,9 @@ WasmiEngine::runHlp(
     if (!hfs.checkSelf())
         throw std::runtime_error("hfs isn't clean");
 
-    auto versionInfo = extractVersionInfo(wasmCode);
-
-    for (auto const& version : versionInfo)
+    for (auto const& version : extractVersionInfo(wasmCode))
     {
-        std::cout << version.name << " " << version.version << "\n";
+        j_.debug() << "Module version: " << version.name << " " << version.version << "\n";
     }
 
     // Create and instantiate the module.
@@ -1059,7 +1056,7 @@ wasm_trap_t*
 WasmiEngine::newTrap(std::string const& txt)
 {
     static char empty[1] = {0};
-    wasm_message_t msg = {1, empty};
+    wasm_message_t msg = {.size = 1, .data = empty};
 
     if (!txt.empty())
         wasm_name_new(&msg, txt.size() + 1, txt.c_str());  // include 0
