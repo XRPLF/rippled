@@ -54,6 +54,9 @@ namespace xrpl {
  *   verifies the payment was split correctly between principal and interest
  * - no vault transaction can change loss unrealized (it's updated by loan
  *   transactions)
+ * - AssetsReserved (principal held back for pending loans) may only be changed
+ *   by LoanDelete, LoanAccept, or a LoanSet that creates a pending loan
+ *   (Borrower present, CounterpartySignature absent)
  *
  */
 class ValidVault
@@ -71,6 +74,7 @@ class ValidVault
         Number assetsAvailable = 0;
         Number assetsMaximum = 0;
         Number lossUnrealized = 0;
+        Number assetsReserved = 0;
         std::uint8_t withdrawalPolicy = 0;
         std::uint8_t scale = 0;
 
@@ -92,6 +96,7 @@ class ValidVault
         Number principalOutstanding = 0;
         Number totalValueOutstanding = 0;
         Number managementFeeOutstanding = 0;
+        uint32_t flags = 0;
 
         // Interest booked to the vault at loan creation: the portion of the
         // total value owed that is neither principal nor broker management fee.

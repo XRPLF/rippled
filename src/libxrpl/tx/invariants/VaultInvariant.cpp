@@ -45,6 +45,7 @@ ValidVault::Vault::make(SLE const& from)
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
     self.lossUnrealized = from.at(sfLossUnrealized);
+    self.assetsReserved = from.at(sfAssetsReserved);
     self.withdrawalPolicy = from.at(sfWithdrawalPolicy);
     self.scale = from.at(sfScale);
     return self;
@@ -86,6 +87,7 @@ ValidVault::Loan::make(SLE const& from)
     self.principalOutstanding = from.at(sfPrincipalOutstanding);
     self.totalValueOutstanding = from.at(sfTotalValueOutstanding);
     self.managementFeeOutstanding = from.at(sfManagementFeeOutstanding);
+    self.flags = from.getFlags();
     return self;
 }
 
@@ -474,6 +476,22 @@ ValidVault::finalize(
         {
             JLOG(j.fatal()) << "Invariant failed: violation of vault immutable data";
             result = false;
+        }
+
+        // AssetsReserved (principal held back for pending loans) may only be
+        // changed by LoanDelete, LoanAccept, or a LoanSet that creates a
+        // pending loan (Borrower present, CounterpartySignature absent).
+        if (afterVault.assetsReserved != beforeVault.assetsReserved)
+        {
+            bool const pendingLoanSet = txnType == ttLOAN_SET && tx.isFieldPresent(sfBorrower) &&
+                tx.isFieldPresent(sfStartDate) && !tx.isFieldPresent(sfCounterpartySignature) &&
+                !tx.isFieldPresent(sfCounterparty);
+            if (txnType != ttLOAN_DELETE && txnType != ttLOAN_ACCEPT && !pendingLoanSet)
+            {
+                JLOG(j.fatal()) << "Invariant failed: vault AssetsReserved changed "
+                                   "by an unauthorized transaction";
+                result = false;
+            }
         }
     }
 
@@ -1105,12 +1123,13 @@ ValidVault::finalize(
                     return false;  // That's all we can do
                 }
                 auto const& loan = afterLoan_[0];
+                auto const isPendingLoan = (loan.flags & lsfLoanPending) != 0;
 
                 // Funding a loan moves the requested principal out of the vault
                 // pseudo-account to the borrower (and, if any, the origination
                 // fee to the broker owner).
                 auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
-                if (!maybeVaultDeltaAssets)
+                if (!maybeVaultDeltaAssets && !isPendingLoan)
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: loan set must change vault balance";
@@ -1128,7 +1147,7 @@ ValidVault::finalize(
 
                 auto const vaultDeltaAssets =
                     roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
-                if (vaultDeltaAssets != principalDelta)
+                if (vaultDeltaAssets != principalDelta && !isPendingLoan)
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: loan set must decrease vault balance "
@@ -1421,8 +1440,204 @@ ValidVault::finalize(
                 return result;
             }
 
+            case ttLOAN_ACCEPT: {
+                bool result = true;
+
+                XRPL_ASSERT(
+                    !beforeVault_.empty(),
+                    "xrpl::ValidVault::finalize : loan accept updated a vault");
+                auto const& beforeVault = beforeVault_[0];
+
+                // Accepting a pending loan disburses the reserved principal
+                // from the vault pseudo-account to the borrower (and the
+                // origination fee, if any, to the broker owner) and releases it
+                // from the reserved bucket. The assets available and assets
+                // outstanding were already settled when the pending loan was
+                // created, so they must not move now.
+                auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
+                if (!maybeVaultDeltaAssets)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan accept must change vault balance";
+                    return false;  // That's all we can do
+                }
+
+                // A loan accept modifies exactly the loan being accepted; its
+                // principal outstanding is the amount disbursed and released.
+                if (afterLoan_.size() != 1 || beforeLoan_.size() != 1 ||
+                    afterLoan_[0].key != beforeLoan_[0].key)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan accept must modify exactly one "
+                        "loan";
+                    return false;  // That's all we can do
+                }
+                auto const& loan = beforeLoan_[0];
+
+                // Get the posterior scale to round calculations to
+                auto const minScale = computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
+
+                auto const principalDelta =
+                    roundToAsset(vaultAsset, -loan.principalOutstanding, minScale);
+
+                // The vault (pseudo-account) balance must fall by exactly the
+                // disbursed principal.
+                auto const vaultDeltaAssets =
+                    roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
+                if (vaultDeltaAssets != principalDelta)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan accept must decrease vault "
+                        "balance by the principal outstanding";
+                    result = false;
+                }
+
+                // The reserved principal (held back when the pending loan was
+                // created) must be released by exactly the disbursed principal.
+                auto const assetsReservedDelta = roundToAsset(
+                    vaultAsset, afterVault.assetsReserved - beforeVault.assetsReserved, minScale);
+                if (assetsReservedDelta != principalDelta)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan accept must decrease assets "
+                        "reserved by the principal outstanding";
+                    result = false;
+                }
+
+                // Accepting a loan neither adds to nor removes from the pool
+                // tracked by assets available.
+                auto const assetAvailableDelta = roundToAsset(
+                    vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
+                if (assetAvailableDelta != kZero)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan accept must not change assets "
+                        "available";
+                    result = false;
+                }
+
+                // Likewise the interest booked at loan creation stands: assets
+                // outstanding must not move on accept.
+                auto const assetsTotalDelta = roundToAsset(
+                    vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
+                if (assetsTotalDelta != kZero)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan accept must not change assets "
+                        "outstanding";
+                    result = false;
+                }
+
+                // A loan accept neither mints nor burns vault shares.
+                if (beforeShares && updatedShares &&
+                    beforeShares->sharesTotal != updatedShares->sharesTotal)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan accept must not change shares "
+                        "outstanding";
+                    result = false;
+                }
+
+                return result;
+            }
+
+            case ttLOAN_DELETE: {
+                bool result = true;
+
+                XRPL_ASSERT(
+                    !beforeVault_.empty(),
+                    "xrpl::ValidVault::finalize : loan delete updated a vault");
+                auto const& beforeVault = beforeVault_[0];
+
+                // Only the deletion of a pending loan touches the vault: it
+                // reverses the bookkeeping LoanSet performed at proposal time.
+                // The reserved principal returns to the available pool and the
+                // booked interest is removed from assets outstanding. No funds
+                // move, so the vault (pseudo-account) balance must not change.
+                // (Deleting an active loan never modifies the vault, so it does
+                // not reach this switch.)
+                auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
+                auto const vaultDelta = maybeVaultDeltaAssets.value_or(
+                    DeltaInfo{.delta = kZero, .scale = scale(afterVault.assetsTotal, vaultAsset)});
+
+                // Get the posterior scale to round calculations to
+                auto const minScale = computeVaultMinScale(vaultDelta, view.rules());
+
+                auto const vaultDeltaAssets = roundToAsset(vaultAsset, vaultDelta.delta, minScale);
+                if (vaultDeltaAssets != kZero)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan delete must not change vault "
+                        "balance";
+                    result = false;
+                }
+
+                // A pending loan delete removes exactly the loan being deleted;
+                // its principal outstanding is returned to the available pool.
+                if (beforeLoan_.size() != 1 || !afterLoan_.empty())
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan delete must delete exactly one "
+                        "loan";
+                    return false;  // That's all we can do
+                }
+                auto const& loan = beforeLoan_[0];
+
+                auto const principalDelta =
+                    roundToAsset(vaultAsset, loan.principalOutstanding, minScale);
+
+                // The reserved principal (held back when the pending loan was
+                // created) must be released by exactly the loan's principal.
+                auto const assetsReservedDelta = roundToAsset(
+                    vaultAsset, afterVault.assetsReserved - beforeVault.assetsReserved, minScale);
+                if (assetsReservedDelta != -principalDelta)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan delete must decrease assets "
+                        "reserved by the principal outstanding";
+                    result = false;
+                }
+
+                // That same principal returns to the available pool.
+                auto const assetAvailableDelta = roundToAsset(
+                    vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
+                if (assetAvailableDelta != principalDelta)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan delete must increase assets "
+                        "available by the principal outstanding";
+                    result = false;
+                }
+
+                // The interest booked at loan creation is reversed: assets
+                // outstanding fall by exactly the interest due removed with the
+                // loan.
+                auto const assetsTotalDelta = roundToAsset(
+                    vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
+                auto const interestDue = roundToAsset(vaultAsset, loan.interestDue(), minScale);
+                if (assetsTotalDelta != -interestDue)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan delete must decrease assets "
+                        "outstanding by the interest due";
+                    result = false;
+                }
+
+                // A loan delete neither mints nor burns vault shares.
+                if (beforeShares && updatedShares &&
+                    beforeShares->sharesTotal != updatedShares->sharesTotal)
+                {
+                    JLOG(j.fatal()) <<  //
+                        "Invariant failed: loan delete must not change shares "
+                        "outstanding";
+                    result = false;
+                }
+
+                return result;
+            }
+
+            // LCOV_EXCL_START
             default:
-                // LCOV_EXCL_START
                 UNREACHABLE("xrpl::ValidVault::finalize : unknown transaction type");
                 return false;
                 // LCOV_EXCL_STOP
