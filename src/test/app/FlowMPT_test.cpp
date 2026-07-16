@@ -2186,6 +2186,103 @@ struct FlowMPT_test : public beast::unit_test::Suite
     }
 
     void
+    testLockedMidPathHolder(FeatureBitset features)
+    {
+        // Regression: a cross-currency strand whose second book step
+        // consumes the offer of a holder that is locked on the step's
+        // in-asset (an MPT). The strand is XRP -> [book1: XRP/USD] ->
+        // USD -> [book2: USD/EUR] -> EUR, so book2 has book_.in == USD
+        // (an MPT) and its previous step is another BookStep. That is
+        // exactly the checkMPTDEX() branch that trusts the preceding
+        // BookStep and no longer re-checks isFrozen(owner, book_.in).
+        //
+        // The bypass the branch might appear to open does not exist:
+        // for MPT, isDeepFrozen() == isFrozen() (frozen MPTs can neither
+        // send nor receive), and OfferStream gates every offer through
+        // isDeepFrozen(owner, assetIn) before it can reach checkMPTDEX().
+        // So a locked mid-path holder's offer is removed by the liquidity
+        // source and the strand simply finds no liquidity at book2.
+        testcase("Locked mid-path holder behind a BookStep");
+
+        using namespace jtx;
+
+        Account const gw("gw");
+        Account const alice("alice");  // book1 (XRP/USD) offer owner
+        Account const mid("mid");      // book2 (USD/EUR) offer owner
+        Account const sam("sam");      // source
+        Account const bill("bill");    // destination
+
+        auto const test = [&](bool lock) {
+            Env env(*this, features);
+            env.fund(XRP(1'000), gw, alice, mid, sam, bill);
+            env.close();
+
+            auto usd = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, mid},
+                 .flags = kMptDexFlags | tfMPTCanLock,
+                 .maxAmt = 1'000});
+            auto const eur = gw["EUR"];
+
+            // alice funds book1 (sells USD for XRP); mid funds book2
+            // (sells EUR for USD, i.e. receives the mid-path USD).
+            env(pay(gw, alice, usd(100)));
+            env(trust(mid, eur(100)));
+            env(pay(gw, mid, eur(100)));
+            env(trust(bill, eur(100)));
+            env.close();
+
+            env(offer(alice, XRP(100), usd(100)));  // XRP/USD, sells USD
+            env.close();
+            env(offer(mid, usd(100), eur(100)));  // USD/EUR, sells EUR
+            env.close();
+            BEAST_EXPECT(expectOffers(env, alice, 1));
+            BEAST_EXPECT(expectOffers(env, mid, 1));
+
+            // Lock mid on USD *after* its offer is already on the book:
+            // the reviewer's "frozen holder's offer sits behind a
+            // BookStep" scenario.
+            if (lock)
+            {
+                usd.set({.holder = mid, .flags = tfMPTLock});
+                env.close();
+            }
+
+            env(pay(sam, bill, eur(100)),
+                Sendmax(XRP(100)),
+                Path(~usd, ~eur),
+                Txflags(tfNoRippleDirect),
+                // book1 (XRP/USD) still has liquidity, so the strand is
+                // not fully dry; it just cannot cross book2 once mid's
+                // offer is removed, hence PARTIAL rather than DRY.
+                Ter(lock ? TER(tecPATH_PARTIAL) : TER(tesSUCCESS)));
+            env.close();
+
+            if (lock)
+            {
+                // No liquidity reached book2: mid neither received USD
+                // nor delivered EUR, so bill received nothing.
+                BEAST_EXPECT(env.balance(bill, eur) == eur(0));
+                BEAST_EXPECT(env.balance(mid, usd) == usd(0));
+            }
+            else
+            {
+                // The strand crosses both books: mid receives the
+                // mid-path USD and bill receives EUR.
+                BEAST_EXPECT(env.balance(bill, eur) == eur(100));
+                BEAST_EXPECT(env.balance(mid, usd) == usd(100));
+                BEAST_EXPECT(env.balance(alice, usd) == usd(0));
+                BEAST_EXPECT(expectOffers(env, alice, 0));
+                BEAST_EXPECT(expectOffers(env, mid, 0));
+            }
+        };
+
+        test(false);  // baseline: unlocked strand succeeds
+        test(true);   // locked mid-path holder: strand finds no liquidity
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         using namespace jtx;
@@ -2203,6 +2300,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
         testUnfundedOffer(features);
         testReExecuteDirectStep(features);
         testSelfPayLowQualityOffer(features);
+        testLockedMidPathHolder(features);
     }
 
     void
