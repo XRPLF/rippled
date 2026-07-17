@@ -1,22 +1,25 @@
-/** Pimpl implementation for SpanGuard and SpanContext.
-
-    All OpenTelemetry SDK types are confined to this translation unit.
-    The public SpanGuard.h header contains only standard-library types
-    and forward-declares the Impl struct.
-
-    Static factory methods access the global Telemetry instance via
-    Telemetry::getInstance(), check whether the requested TraceCategory
-    is enabled, and return either an active guard with a real Span+Scope
-    or a null guard whose methods are all no-ops.
-
-    The Impl struct holds the OTel Span (shared_ptr) and Scope.
-    Scope is non-movable, but since Impl lives behind a unique_ptr,
-    SpanGuard's move constructor simply transfers the pointer — no
-    double-Scope issues.
-
-    @see SpanGuard (SpanGuard.h), Telemetry (Telemetry.h),
-         FilteringSpanProcessor (Telemetry.cpp)
-*/
+/**
+ * Pimpl implementation for SpanGuard and SpanContext.
+ *
+ * All OpenTelemetry SDK types are confined to this translation unit.
+ * The public SpanGuard.h header contains only standard-library types
+ * and forward-declares the Impl struct.
+ *
+ * Static factory methods access the global Telemetry instance via
+ * Telemetry::getInstance(), check whether the requested TraceCategory
+ * is enabled, and return either an active guard with a real Span+Scope
+ * or a null guard whose methods are all no-ops.
+ *
+ * The Impl struct holds the OTel Span (shared_ptr) and an optional
+ * Scope. Scope is non-movable, but since Impl lives behind a
+ * unique_ptr, SpanGuard's move constructor simply transfers the
+ * pointer — no double-Scope issues. A scoped guard holds the Scope;
+ * detached() produces an Impl with no Scope (nullopt) so the guard
+ * carries no thread-local binding and is safe to move across threads.
+ *
+ * @see SpanGuard (SpanGuard.h), Telemetry (Telemetry.h),
+ * FilteringSpanProcessor (Telemetry.cpp)
+ */
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
@@ -38,6 +41,7 @@
 #include <cstdint>
 #include <exception>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <typeinfo>
@@ -72,14 +76,43 @@ SpanContext::isValid() const
 
 struct SpanGuard::Impl
 {
-    /** The OTel span being guarded. Set to nullptr after discard(). */
+    /**
+     * The OTel span being guarded. Set to nullptr after discard() or
+     * once detached() moves it into a new guard, so ~Impl skips End().
+     */
     opentelemetry::nostd::shared_ptr<otel_trace::Span> span;
 
-    /** Scope that activates span on the current thread's context stack. */
-    otel_trace::Scope scope;
+    /**
+     * Scope that activates span on the current thread's context stack.
+     * nullopt for a detached guard, which holds the span with no
+     * thread-local binding and is therefore safe to move across threads.
+     */
+    std::optional<otel_trace::Scope> scope;
 
-    explicit Impl(opentelemetry::nostd::shared_ptr<otel_trace::Span> s)
-        : span(std::move(s)), scope(span)
+    /**
+     * Construct a scoped guard: the span is pushed onto this thread's
+     * active-context stack for the lifetime of the guard.
+     * @param s The span to guard.
+     */
+    explicit Impl(opentelemetry::nostd::shared_ptr<otel_trace::Span> s) : span(std::move(s))
+    {
+        scope.emplace(span);
+    }
+
+    /**
+     * Tag type selecting the scope-less (detached) constructor.
+     */
+    struct Detached
+    {
+    };
+
+    /**
+     * Construct a detached guard: the span is held with NO thread-local
+     * Scope, so the guard carries no context-stack binding and is safe
+     * to move to and destroy on another thread.
+     * @param s The span to guard.
+     */
+    Impl(opentelemetry::nostd::shared_ptr<otel_trace::Span> s, Detached) : span(std::move(s))
     {
     }
 
@@ -115,9 +148,10 @@ operator bool() const
 
 // ===== Static factory methods ==============================================
 
-/** Check whether the given TraceCategory is enabled on the Telemetry instance.
-    @return true if the category's shouldTrace*() flag is on.
-*/
+/**
+ * Check whether the given TraceCategory is enabled on the Telemetry instance.
+ * @return true if the category's shouldTrace*() flag is on.
+ */
 static bool
 isCategoryEnabled(Telemetry const& tel, TraceCategory cat)
 {
@@ -180,6 +214,21 @@ SpanGuard::span(TraceCategory cat, std::string_view prefix, std::string_view nam
     fullName.reserve(prefix.size() + 1 + name.size());
     fullName.append(prefix).append(1, '.').append(name);
     return SpanGuard(std::make_unique<Impl>(tel->startSpan(fullName, categoryToSpanKind(cat))));
+}
+
+SpanGuard
+SpanGuard::rootSpan(TraceCategory cat, std::string_view prefix, std::string_view name)
+{
+    auto* tel = Telemetry::getInstance();
+    if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
+        return {};
+    std::string fullName;
+    fullName.reserve(prefix.size() + 1 + name.size());
+    fullName.append(prefix).append(1, '.').append(name);
+    // Force a fresh trace root: do NOT inherit this thread's active span.
+    auto rootCtx = opentelemetry::context::Context{otel_trace::kIsRootSpanKey, true};
+    return SpanGuard(
+        std::make_unique<Impl>(tel->startSpan(fullName, rootCtx, categoryToSpanKind(cat))));
 }
 
 // ===== Child / linked span creation ========================================
@@ -256,6 +305,20 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
             {},
             {{linkSpan->GetContext(), {{kLinkTypeKey, kLinkTypeFollowsFrom}}}},
             opts)));
+}
+
+SpanGuard
+SpanGuard::detached() &&
+{
+    if (!impl_)
+        return {};
+    // Take the span out; the old Impl.span is now null so ~Impl won't End().
+    auto s = std::move(impl_->span);
+    // Resetting the old Impl destroys its Scope HERE, on the origin thread,
+    // popping this thread's context stack correctly. The returned guard holds
+    // the span with no Scope, so it is safe to move to another thread.
+    impl_.reset();
+    return SpanGuard(std::make_unique<Impl>(std::move(s), Impl::Detached{}));
 }
 
 // ===== Context capture =====================================================
