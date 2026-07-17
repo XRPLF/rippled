@@ -830,6 +830,11 @@ readLEB128(Bytes const& wasmCode, size_t& offset)
         shift += 7;
         if (shift >= 32)
         {
+            // Drain the rest of the bytes for this leb.
+            while (offset < wasmCode.size() && (wasmCode[offset] & 0x80) != 0)
+            {
+                ++offset;
+            }
             break;
         }
     }

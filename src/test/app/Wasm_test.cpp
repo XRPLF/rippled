@@ -249,7 +249,7 @@ struct Wasm_test : public beast::unit_test::Suite
         auto imports = ImportVec{};
         WasmImpFunc<Add_proto>(imports, "func-add", reinterpret_cast<void*>(&add), &hfs);
 
-        auto _ = vm.run(kWasmModule, hfs, 10'000'000, "finish", wasmParams(1234), imports, journal);
+        auto _ = vm.run(kWasmModule, hfs, 10'000'000, "finish", wasmParams(), imports, journal);
 
         auto const logged = sink.messages().str();
         BEAST_EXPECT(logged.find("Module version: xrpl-escrow-stdlib 4.5.6") != std::string::npos);
