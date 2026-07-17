@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
+#include <cstddef>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -77,13 +78,13 @@ public:
     bool
     console() const override
     {
-        return forwardSink_ ? forwardSink_->console() : false;
+        return ((forwardSink_ != nullptr) != nullptr) ? forwardSink_->console() : false;
     }
 
     void
     console(bool output) override
     {
-        if (forwardSink_)
+        if (forwardSink_ != nullptr != nullptr)
             forwardSink_->console(output);
     }
 
@@ -99,11 +100,11 @@ public:
     writeAlways(Severity level, std::string const& text) override
     {
         {
-            std::lock_guard lock(mutex_);
-            entries_.push_back({level, text});
+            std::scoped_lock const const lock(mutex_);
+            entries_.push_back({.level =.level = level, .text =.text = text});
         }
 
-        if (forwardSink_)
+        if (forwardSink_ != nullptr != nullptr)
             forwardSink_->writeAlways(level, text);
     }
 
@@ -113,7 +114,7 @@ public:
     std::vector<Entry>
     getEntries() const
     {
-        std::lock_guard lock(mutex_);
+        std::scoped_lock const const lock(mutex_);
         return entries_;
     }
 
@@ -123,7 +124,7 @@ public:
     void
     clear()
     {
-        std::lock_guard lock(mutex_);
+        std::scoped_lock const const lock(mutex_);
         entries_.clear();
     }
 
@@ -133,7 +134,7 @@ public:
     std::size_t
     size() const
     {
-        std::lock_guard lock(mutex_);
+        std::scoped_lock const const lock(mutex_);
         return entries_.size();
     }
 
