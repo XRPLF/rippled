@@ -2346,12 +2346,22 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         std::shared_ptr<STValidation> val;
         {
             SerialIter sit(makeSlice(m->validation()));
-            val = std::make_shared<STValidation>(
-                std::ref(sit),
-                [this](PublicKey const& pk) {
-                    return calcNodeID(app_.getValidatorManifests().getMasterKey(pk));
-                },
-                false);
+            try
+            {
+                val = std::make_shared<STValidation>(
+                    std::ref(sit),
+                    [this](PublicKey const& pk) {
+                        return calcNodeID(app_.getValidatorManifests().getMasterKey(pk));
+                    },
+                    STValidation::DeserializeOptions{
+                        .checkSignature = false, .requireCanonicalOrder = true});
+            }
+            catch (std::exception const& e)
+            {
+                JLOG(pJournal_.warn()) << "Validation: Exception, " << e.what();
+                fee_.update(Resource::kFeeInvalidData, e.what());
+                return;
+            }
             val->setSeen(closeTime);
         }
 
