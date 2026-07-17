@@ -435,7 +435,13 @@ public:
     {
         testcase("debug logging");
         using namespace jtx;
-        Env env(*this);
+
+        // Enable the [rpc_debug_log] config option so the server honors
+        // "debug": true requests.
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->rpcDebugLog = true;
+            return cfg;
+        }));
         env.fund(XRP(10000), "alice", "bob");
         env.close();
 
@@ -520,6 +526,30 @@ public:
 
             BEAST_EXPECT(jvResult[jss::engine_result] == "tesSUCCESS");
             // debug_log should NOT be present
+            BEAST_EXPECT(!jvResult.isMember(jss::debug_log));
+        }
+
+        // Test 4: With [rpc_debug_log] disabled, debug=true must be ignored
+        // and no logs should be captured.
+        {
+            Env envNoDebug(*this);
+            envNoDebug.fund(XRP(10000), "alice", "bob");
+            envNoDebug.close();
+
+            auto jt = envNoDebug.jt(pay("alice", "bob", XRP(1)));
+            Serializer s;
+            jt.stx->add(s);
+            auto const txBlob = strHex(s.slice());
+
+            json::Value params;
+            params[jss::tx_blob] = txBlob;
+            params[jss::debug] = true;
+
+            auto const result = envNoDebug.rpc("json", "submit", to_string(params));
+            auto const& jvResult = result[jss::result];
+
+            BEAST_EXPECT(jvResult[jss::engine_result] == "tesSUCCESS");
+            // debug_log should NOT be present because the config disables it
             BEAST_EXPECT(!jvResult.isMember(jss::debug_log));
         }
     }

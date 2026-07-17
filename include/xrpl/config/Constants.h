@@ -51,6 +51,7 @@ struct Sections
     static constexpr auto kRelationalDb = "relational_db";
     static constexpr auto kRelayProposals = "relay_proposals";
     static constexpr auto kRelayValidations = "relay_validations";
+    static constexpr auto kRpcDebugLog = "rpc_debug_log";
     static constexpr auto kRpcStartup = "rpc_startup";
     static constexpr auto kServer = "server";
     static constexpr auto kServerDomain = "server_domain";

@@ -965,6 +965,9 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, Sections::kBetaRpcApi, strTemp, j_))
         betaRpcApi = beast::lexicalCastThrow<bool>(strTemp);
 
+    if (getSingleSection(secConfig, Sections::kRpcDebugLog, strTemp, j_))
+        rpcDebugLog = beast::lexicalCastThrow<bool>(strTemp);
+
     // Do not load trusted validator configuration for standalone mode
     if (!runStandalone_)
     {

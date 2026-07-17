@@ -447,25 +447,47 @@ public:
     }
 
     /**
-     * @brief getDebugSink Get the capturing sink for debug logging
-     * @return Pointer to the capturing sink, or nullptr if not enabled
+     * @brief getDebugJournal Journal to use when processing this transaction.
+     *
+     * When debug logging is enabled, returns a journal backed by the
+     * capturing sink that also forwards to @p base, so processing logs
+     * (preflight, preclaim, and apply) are captured. When debug logging is
+     * disabled, returns @p base unchanged so no capture overhead is incurred.
+     *
+     * @param base The journal that would normally be used for processing.
+     * @return The journal to use for processing this transaction.
      */
-    beast::CapturingSink*
-    getDebugSink()
+    beast::Journal
+    getDebugJournal(beast::Journal const& base)
     {
-        return debugSink_.get();
+        if (!debugSink_)
+            return base;
+
+        // Forward captured messages to the normal journal too.
+        debugSink_->setForwardSink(&base.sink());
+        return beast::Journal(*debugSink_);
     }
 
     /**
-     * @brief getDebugLog Get captured debug log entries
-     * @return Vector of captured log entries
+     * @brief getDebugLogJson Captured debug log entries as a JSON array.
+     * @return A JSON array of {level, message} objects. Empty if debug
+     *         logging was never enabled.
      */
-    std::vector<beast::CapturingSink::Entry>
-    getDebugLog() const
+    json::Value
+    getDebugLogJson() const
     {
+        json::Value debugLog{json::ValueType::Array};
         if (debugSink_)
-            return debugSink_->getEntries();
-        return {};
+        {
+            for (auto const& entry : debugSink_->getEntries())
+            {
+                json::Value logEntry{json::ValueType::Object};
+                logEntry["level"] = beast::CapturingSink::severityToString(entry.level);
+                logEntry["message"] = entry.text;
+                debugLog.append(logEntry);
+            }
+        }
+        return debugLog;
     }
 };
 

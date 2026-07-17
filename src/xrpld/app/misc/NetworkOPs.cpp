@@ -50,7 +50,6 @@
 #include <xrpl/beast/insight/Gauge.h>
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/net/IPEndpoint.h>
-#include <xrpl/beast/utility/CapturingSink.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/utility/rngfill.h>
@@ -1561,17 +1560,18 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     if (e.failType == FailHard::Yes)
                         flags |= TapFailHard;
 
-                    // Use capturing journal if debug mode is enabled
-                    beast::Journal txJournal = j;
-                    if (auto* sink = e.transaction->getDebugSink())
-                    {
-                        // Set forward sink to also log to normal journal
-                        sink->setForwardSink(&j.sink());
-                        txJournal = beast::Journal(*sink);
-                    }
+                    // When debug logging is enabled for this transaction, use
+                    // a journal that captures preflight, preclaim, and apply
+                    // logs (while still forwarding to the normal journal).
+                    // Otherwise this is just `j` with no added overhead.
+                    beast::Journal const txJournal = e.transaction->getDebugJournal(j);
 
                     auto const result = registry_.get().getTxQ().apply(
-                        registry_.get().getApp(), view, e.transaction->getSTransaction(), flags, j);
+                        registry_.get().getApp(),
+                        view,
+                        e.transaction->getSTransaction(),
+                        flags,
+                        txJournal);
                     e.result = result.ter;
                     e.applied = result.applied;
                     changed = changed || result.applied;

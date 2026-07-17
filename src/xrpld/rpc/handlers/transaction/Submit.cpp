@@ -123,8 +123,11 @@ doSubmit(RPC::JsonContext& context)
         return jvResult;
     }
 
-    // Enable debug logging if requested
-    bool const debug = context.params.isMember(jss::debug) && context.params[jss::debug].asBool();
+    // Enable debug logging if requested by the client and allowed by the
+    // server's configuration. When [rpc_debug_log] is not enabled, no capture
+    // happens at all, regardless of the request.
+    bool const debug = context.app.config().rpcDebugLog && context.params.isMember(jss::debug) &&
+        context.params[jss::debug].asBool();
     if (debug)
         transaction->enableDebugLog();
 
@@ -182,17 +185,7 @@ doSubmit(RPC::JsonContext& context)
 
         // Add debug log if enabled
         if (debug)
-        {
-            json::Value debugLog = json::ValueType::Array;
-            for (auto const& entry : transaction->getDebugLog())
-            {
-                json::Value logEntry = json::ValueType::Object;
-                logEntry["level"] = beast::CapturingSink::severityToString(entry.level);
-                logEntry["message"] = entry.text;
-                debugLog.append(logEntry);
-            }
-            jvResult[jss::debug_log] = debugLog;
-        }
+            jvResult[jss::debug_log] = transaction->getDebugLogJson();
 
         return jvResult;
     }
