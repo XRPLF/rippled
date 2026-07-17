@@ -2167,11 +2167,12 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(alice, bob, {"MPTokenIssuanceLock"}));
             env.close();
 
-            // Field is not permitted, permitted fields for delegation is defined in
-            // permissions.macro.
+            // tfMPTSetCanLock is a valid MPTokenIssuanceSet flag but is not
+            // covered by the MPTokenIssuanceLock granular permission, so a
+            // delegate holding only that permission cannot set it.
             mpt.set(
                 {.account = alice,
-                 .mutableFlags = 2,
+                 .flags = tfMPTSetCanLock,
                  .delegate = bob,
                  .err = terNO_DELEGATE_PERMISSION});
 
