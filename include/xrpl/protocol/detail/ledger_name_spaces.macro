@@ -1,0 +1,59 @@
+#if !defined(LEDGER_NAME_SPACE)
+#error "undefined macro: LEDGER_NAME_SPACE"
+#endif
+#if !defined(LEDGER_NAME_SPACE_DEPRECATED)
+#error "undefined macro: LEDGER_NAME_SPACE_DEPRECATED"
+#endif
+
+// Active ledger name spaces.
+//
+// @note These values are part of the protocol and *CANNOT* be arbitrarily
+//       changed. If they were, on-ledger objects may no longer be able to
+//       be located or addressed.
+//
+//       Additions to this list are OK, but changing existing entries to
+//       assign them a different values should never be needed.
+//
+//       Entries that are removed should be moved to the deprecated list
+//       below to prevent accidental reuse.
+LEDGER_NAME_SPACE(Account, 'a')
+LEDGER_NAME_SPACE(DirNode, 'd')
+LEDGER_NAME_SPACE(TrustLine, 'r')
+LEDGER_NAME_SPACE(Offer, 'o')
+LEDGER_NAME_SPACE(OwnerDir, 'O')
+LEDGER_NAME_SPACE(BookDir, 'B')
+LEDGER_NAME_SPACE(SkipList, 's')
+LEDGER_NAME_SPACE(Escrow, 'u')
+LEDGER_NAME_SPACE(Amendments, 'f')
+LEDGER_NAME_SPACE(FeeSettings, 'e')
+LEDGER_NAME_SPACE(Ticket, 'T')
+LEDGER_NAME_SPACE(SignerList, 'S')
+LEDGER_NAME_SPACE(XRPPaymentChannel, 'x')
+LEDGER_NAME_SPACE(Check, 'C')
+LEDGER_NAME_SPACE(DepositPreauth, 'p')
+LEDGER_NAME_SPACE(DepositPreauthCredentials, 'P')
+LEDGER_NAME_SPACE(NegativeUnl, 'N')
+LEDGER_NAME_SPACE(NftokenOffer, 'q')
+LEDGER_NAME_SPACE(NftokenBuyOffers, 'h')
+LEDGER_NAME_SPACE(NftokenSellOffers, 'i')
+LEDGER_NAME_SPACE(Amm, 'A')
+LEDGER_NAME_SPACE(Bridge, 'H')
+LEDGER_NAME_SPACE(XchainClaimId, 'Q')
+LEDGER_NAME_SPACE(XchainCreateAccountClaimId, 'K')
+LEDGER_NAME_SPACE(Did, 'I')
+LEDGER_NAME_SPACE(Oracle, 'R')
+LEDGER_NAME_SPACE(MPTokenIssuance, '~')
+LEDGER_NAME_SPACE(MPToken, 't')
+LEDGER_NAME_SPACE(Credential, 'D')
+LEDGER_NAME_SPACE(PermissionedDomain, 'm')
+LEDGER_NAME_SPACE(Delegate, 'E')
+LEDGER_NAME_SPACE(Vault, 'V')
+LEDGER_NAME_SPACE(LoanBroker, 'l')  // lower-case L
+LEDGER_NAME_SPACE(Loan, 'L')
+LEDGER_NAME_SPACE(Sponsorship, '>')
+
+// No longer used or supported. Left here to reserve the space to avoid
+// accidental reuse, and intentionally not exported to clients.
+LEDGER_NAME_SPACE_DEPRECATED(Contract, 'c')
+LEDGER_NAME_SPACE_DEPRECATED(Generator, 'g')
+LEDGER_NAME_SPACE_DEPRECATED(Nickname, 'n')

@@ -31,6 +31,7 @@ public:
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
             BEAST_EXPECT(result[jss::result].isMember(jss::FIELDS));
             BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));
+            BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_NAME_SPACES));
             BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_RESULTS));
             BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_TYPES));
             BEAST_EXPECT(result[jss::result].isMember(jss::TYPES));
@@ -106,6 +107,18 @@ public:
                 result[jss::result][jss::TRANSACTION_RESULTS]["tecDIR_FULL"].asUInt() == 121);
             BEAST_EXPECT(result[jss::result][jss::TRANSACTION_TYPES]["Payment"].asUInt() == 0);
             BEAST_EXPECT(result[jss::result][jss::TYPES]["AccountID"].asUInt() == 8);
+
+            // test the properties of the LEDGER_NAME_SPACES section
+            {
+                json::Value const& nameSpaces = result[jss::result][jss::LEDGER_NAME_SPACES];
+                BEAST_EXPECT(nameSpaces["Account"].asUInt() == 97);  // 'a'
+                BEAST_EXPECT(nameSpaces["Vault"].asUInt() == 86);    // 'V'
+
+                // deprecated name spaces are not exported
+                BEAST_EXPECT(!nameSpaces.isMember("Contract"));
+                BEAST_EXPECT(!nameSpaces.isMember("Generator"));
+                BEAST_EXPECT(!nameSpaces.isMember("Nickname"));
+            }
 
             // test the properties of the LEDGER_ENTRY_FLAGS section
             {
@@ -441,6 +454,7 @@ public:
                 BEAST_EXPECT(!result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));
                 BEAST_EXPECT(!result[jss::result].isMember(jss::LEDGER_ENTRY_FLAGS));
                 BEAST_EXPECT(!result[jss::result].isMember(jss::LEDGER_ENTRY_FORMATS));
+                BEAST_EXPECT(!result[jss::result].isMember(jss::LEDGER_NAME_SPACES));
                 BEAST_EXPECT(!result[jss::result].isMember(jss::TRANSACTION_RESULTS));
                 BEAST_EXPECT(!result[jss::result].isMember(jss::TRANSACTION_TYPES));
                 BEAST_EXPECT(!result[jss::result].isMember(jss::TRANSACTION_FLAGS));
@@ -464,6 +478,7 @@ public:
                 BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));
                 BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_FLAGS));
                 BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_FORMATS));
+                BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_NAME_SPACES));
                 BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_RESULTS));
                 BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_TYPES));
                 BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_FLAGS));
@@ -486,6 +501,7 @@ public:
               jss::LEDGER_ENTRY_FLAGS,
               jss::LEDGER_ENTRY_FORMATS,
               jss::LEDGER_ENTRY_TYPES,
+              jss::LEDGER_NAME_SPACES,
               jss::TRANSACTION_FLAGS,
               jss::TRANSACTION_FORMATS,
               jss::TRANSACTION_RESULTS,

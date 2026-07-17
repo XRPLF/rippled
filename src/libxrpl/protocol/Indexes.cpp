@@ -26,7 +26,9 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <map>
 #include <set>
+#include <string>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -50,66 +52,28 @@ std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets{
       .includeInTests = true},
      {.function = &keylet::did, .expectedLEName = jss::DID, .includeInTests = true}}};
 
-/**
- * Type-specific prefix for calculating ledger indices.
- *
- * The identifier for a given object within the ledger is calculated based
- * on some object-specific parameters. To ensure that different types of
- * objects have different indices, even if they happen to use the same set
- * of parameters, we use "tagged hashing" by adding a type-specific prefix.
- *
- * @note These values are part of the protocol and *CANNOT* be arbitrarily
- *       changed. If they were, on-ledger objects may no longer be able to
- *       be located or addressed.
- *
- *       Additions to this list are OK, but changing existing entries to
- *       assign them a different values should never be needed.
- *
- *       Entries that are removed should be moved to the bottom of the enum
- *       and marked as [[deprecated]] to prevent accidental reuse.
- */
-enum class LedgerNameSpace : std::uint16_t {
-    Account = 'a',
-    DirNode = 'd',
-    TrustLine = 'r',
-    Offer = 'o',
-    OwnerDir = 'O',
-    BookDir = 'B',
-    SkipList = 's',
-    Escrow = 'u',
-    Amendments = 'f',
-    FeeSettings = 'e',
-    Ticket = 'T',
-    SignerList = 'S',
-    XRPPaymentChannel = 'x',
-    Check = 'C',
-    DepositPreauth = 'p',
-    DepositPreauthCredentials = 'P',
-    NegativeUnl = 'N',
-    NftokenOffer = 'q',
-    NftokenBuyOffers = 'h',
-    NftokenSellOffers = 'i',
-    Amm = 'A',
-    Bridge = 'H',
-    XchainClaimId = 'Q',
-    XchainCreateAccountClaimId = 'K',
-    Did = 'I',
-    Oracle = 'R',
-    MPTokenIssuance = '~',
-    MPToken = 't',
-    Credential = 'D',
-    PermissionedDomain = 'm',
-    Delegate = 'E',
-    Vault = 'V',
-    LoanBroker = 'l',  // lower-case L
-    Loan = 'L',
-    Sponsorship = '>',
+std::map<std::string, std::uint16_t> const&
+ledgerNameSpaceMap()
+{
+#pragma push_macro("LEDGER_NAME_SPACE")
+#undef LEDGER_NAME_SPACE
+#pragma push_macro("LEDGER_NAME_SPACE_DEPRECATED")
+#undef LEDGER_NAME_SPACE_DEPRECATED
 
-    // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
-    Contract [[deprecated]] = 'c',
-    Generator [[deprecated]] = 'g',
-    Nickname [[deprecated]] = 'n',
-};
+#define LEDGER_NAME_SPACE(name, value) {#name, static_cast<std::uint16_t>(LedgerNameSpace::name)},
+#define LEDGER_NAME_SPACE_DEPRECATED(name, value)
+
+    static std::map<std::string, std::uint16_t> const kMap{
+#include <xrpl/protocol/detail/ledger_name_spaces.macro>
+    };
+
+#undef LEDGER_NAME_SPACE_DEPRECATED
+#pragma pop_macro("LEDGER_NAME_SPACE_DEPRECATED")
+#undef LEDGER_NAME_SPACE
+#pragma pop_macro("LEDGER_NAME_SPACE")
+
+    return kMap;
+}
 
 template <class... Args>
 static uint256

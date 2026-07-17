@@ -350,6 +350,7 @@ JSS(LEDGER_ENTRY_TYPES);             // out: RPC server_definitions
                                      // matches definitions.json format
 JSS(LEDGER_ENTRY_FLAGS);             // out: RPC server_definitions
 JSS(LEDGER_ENTRY_FORMATS);           // out: RPC server_definitions
+JSS(LEDGER_NAME_SPACES);             // out: RPC server_definitions
 JSS(levels);                         // LogLevels
 JSS(limit);                       // in/out: AccountTx*, AccountOffers, AccountLines, AccountObjects
                                   // in: LedgerData, BookOffers

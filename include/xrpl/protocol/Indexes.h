@@ -17,10 +17,45 @@
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <set>
+#include <string>
 #include <utility>
 
 namespace xrpl {
+
+/**
+ * Type-specific prefix for calculating ledger indices.
+ *
+ * The identifier for a given object within the ledger is calculated based
+ * on some object-specific parameters. To ensure that different types of
+ * objects have different indices, even if they happen to use the same set
+ * of parameters, we use "tagged hashing" by adding a type-specific prefix.
+ *
+ * The name spaces are listed in detail/ledger_name_spaces.macro.
+ */
+#pragma push_macro("LEDGER_NAME_SPACE")
+#undef LEDGER_NAME_SPACE
+#pragma push_macro("LEDGER_NAME_SPACE_DEPRECATED")
+#undef LEDGER_NAME_SPACE_DEPRECATED
+
+#define LEDGER_NAME_SPACE(name, value) name = (value),
+#define LEDGER_NAME_SPACE_DEPRECATED(name, value) name [[deprecated]] = (value),
+
+enum class LedgerNameSpace : std::uint16_t {
+#include <xrpl/protocol/detail/ledger_name_spaces.macro>
+};
+
+#undef LEDGER_NAME_SPACE_DEPRECATED
+#pragma pop_macro("LEDGER_NAME_SPACE_DEPRECATED")
+#undef LEDGER_NAME_SPACE
+#pragma pop_macro("LEDGER_NAME_SPACE")
+
+/**
+ * The name->value map of active (non-deprecated) ledger name spaces.
+ */
+std::map<std::string, std::uint16_t> const&
+ledgerNameSpaceMap();
 
 class SeqProxy;
 /**

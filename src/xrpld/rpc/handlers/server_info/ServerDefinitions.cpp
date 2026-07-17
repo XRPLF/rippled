@@ -6,6 +6,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
@@ -356,6 +357,12 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
     for (auto const& [name, value] : getAsfFlagMap())
     {
         defs_[jss::ACCOUNT_SET_FLAGS][name] = value;
+    }
+
+    defs_[jss::LEDGER_NAME_SPACES] = json::ValueType::Object;
+    for (auto const& [name, value] : ledgerNameSpaceMap())
+    {
+        defs_[jss::LEDGER_NAME_SPACES][name] = value;
     }
 
     // generate hash
