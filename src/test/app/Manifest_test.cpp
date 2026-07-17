@@ -399,7 +399,8 @@ public:
         BEAST_EXPECT(
             ManifestDisposition::Accepted ==
             cache.applyManifest(
-                makeManifest(sk, KeyType::Ed25519, kp0.second, KeyType::Secp256k1, 0)));
+                makeManifest(sk, KeyType::Ed25519, kp0.second, KeyType::Secp256k1, 0),
+                ManifestRateLimitCap::Capped));
         BEAST_EXPECT(cache.getSigningKey(pk) == kp0.first);
         BEAST_EXPECT(cache.getMasterKey(kp0.first) == pk);
 
@@ -411,7 +412,8 @@ public:
         BEAST_EXPECT(
             ManifestDisposition::Accepted ==
             cache.applyManifest(
-                makeManifest(sk, KeyType::Ed25519, kp1.second, KeyType::Secp256k1, 1)));
+                makeManifest(sk, KeyType::Ed25519, kp1.second, KeyType::Secp256k1, 1),
+                ManifestRateLimitCap::Capped));
         BEAST_EXPECT(cache.getSigningKey(pk) == kp1.first);
         BEAST_EXPECT(cache.getMasterKey(kp1.first) == pk);
         BEAST_EXPECT(cache.getMasterKey(kp0.first) == kp0.first);
@@ -421,7 +423,8 @@ public:
         BEAST_EXPECT(
             ManifestDisposition::BadEphemeralKey ==
             cache.applyManifest(
-                makeManifest(sk, KeyType::Ed25519, kp1.second, KeyType::Secp256k1, 2)));
+                makeManifest(sk, KeyType::Ed25519, kp1.second, KeyType::Secp256k1, 2),
+                ManifestRateLimitCap::Capped));
         BEAST_EXPECT(cache.getSigningKey(pk) == kp1.first);
         BEAST_EXPECT(cache.getMasterKey(kp1.first) == pk);
         BEAST_EXPECT(cache.getMasterKey(kp0.first) == kp0.first);
@@ -431,7 +434,8 @@ public:
         // key from a revoked master public key
         BEAST_EXPECT(
             ManifestDisposition::Accepted ==
-            cache.applyManifest(makeRevocation(sk, KeyType::Ed25519)));
+            cache.applyManifest(
+                makeRevocation(sk, KeyType::Ed25519), ManifestRateLimitCap::Capped));
         BEAST_EXPECT(cache.revoked(pk));
         BEAST_EXPECT(cache.getSigningKey(pk) == pk);
         BEAST_EXPECT(cache.getMasterKey(kp0.first) == kp0.first);
@@ -902,39 +906,69 @@ public:
             // applyManifest should accept new manifests with
             // higher sequence numbers
             auto const seq0 = cache.sequence();
-            BEAST_EXPECT(cache.applyManifest(clone(sA0)) == ManifestDisposition::Accepted);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(sA0), ManifestRateLimitCap::Capped) ==
+                ManifestDisposition::Accepted);
             BEAST_EXPECT(cache.sequence() > seq0);
 
             auto const seq1 = cache.sequence();
-            BEAST_EXPECT(cache.applyManifest(clone(sA0)) == ManifestDisposition::Stale);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(sA0), ManifestRateLimitCap::Capped) ==
+                ManifestDisposition::Stale);
             BEAST_EXPECT(cache.sequence() == seq1);
 
-            BEAST_EXPECT(cache.applyManifest(clone(sA1)) == ManifestDisposition::Accepted);
-            BEAST_EXPECT(cache.applyManifest(clone(sA1)) == ManifestDisposition::Stale);
-            BEAST_EXPECT(cache.applyManifest(clone(sA0)) == ManifestDisposition::Stale);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(sA1), ManifestRateLimitCap::Capped) ==
+                ManifestDisposition::Accepted);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(sA1), ManifestRateLimitCap::Capped) ==
+                ManifestDisposition::Stale);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(sA0), ManifestRateLimitCap::Capped) ==
+                ManifestDisposition::Stale);
 
-            BEAST_EXPECT(cache.applyManifest(clone(sA2)) == ManifestDisposition::BadEphemeralKey);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(sA2), ManifestRateLimitCap::Capped) ==
+                ManifestDisposition::BadEphemeralKey);
 
             // applyManifest should accept manifests with max sequence numbers
             // that revoke the master public key
             BEAST_EXPECT(!cache.revoked(pkA));
             BEAST_EXPECT(sAMax.revoked());
-            BEAST_EXPECT(cache.applyManifest(clone(sAMax)) == ManifestDisposition::Accepted);
-            BEAST_EXPECT(cache.applyManifest(clone(sAMax)) == ManifestDisposition::Stale);
-            BEAST_EXPECT(cache.applyManifest(clone(sA1)) == ManifestDisposition::Stale);
-            BEAST_EXPECT(cache.applyManifest(clone(sA0)) == ManifestDisposition::Stale);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(sAMax), ManifestRateLimitCap::Capped) ==
+                ManifestDisposition::Accepted);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(sAMax), ManifestRateLimitCap::Capped) ==
+                ManifestDisposition::Stale);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(sA1), ManifestRateLimitCap::Capped) ==
+                ManifestDisposition::Stale);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(sA0), ManifestRateLimitCap::Capped) ==
+                ManifestDisposition::Stale);
             BEAST_EXPECT(cache.revoked(pkA));
 
             // applyManifest should reject manifests with invalid signatures
-            BEAST_EXPECT(cache.applyManifest(clone(sB0)) == ManifestDisposition::Accepted);
-            BEAST_EXPECT(cache.applyManifest(clone(sB0)) == ManifestDisposition::Stale);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(sB0), ManifestRateLimitCap::Capped) ==
+                ManifestDisposition::Accepted);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(sB0), ManifestRateLimitCap::Capped) ==
+                ManifestDisposition::Stale);
             BEAST_EXPECT(!deserializeManifest(fake));
-            BEAST_EXPECT(cache.applyManifest(clone(sB1)) == ManifestDisposition::Invalid);
-            BEAST_EXPECT(cache.applyManifest(clone(sB2)) == ManifestDisposition::Accepted);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(sB1), ManifestRateLimitCap::Capped) ==
+                ManifestDisposition::Invalid);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(sB2), ManifestRateLimitCap::Capped) ==
+                ManifestDisposition::Accepted);
 
             auto const sC0 = makeManifest(
                 kpB2.second, KeyType::Ed25519, randomSecretKey(), KeyType::Ed25519, 47);
-            BEAST_EXPECT(cache.applyManifest(clone(sC0)) == ManifestDisposition::BadMasterKey);
+            BEAST_EXPECT(
+                cache.applyManifest(clone(sC0), ManifestRateLimitCap::Capped) ==
+                ManifestDisposition::BadMasterKey);
         }
 
         testLoadStore(cache);

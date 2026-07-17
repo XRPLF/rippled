@@ -35,12 +35,15 @@ namespace xrpl {
     dynamically generates the signatureless form when it needs to verify
     the signature.
 
-    An instance of ManifestCache stores, for each trusted validator, (a) its
+    An instance of ManifestCache stores, for each known validator, (a) its
     master public key, and (b) the most senior of all valid manifests it has
     seen for that validator, if any.  On startup, the [validator_token] config
     entry (which contains the manifest for this validator) is decoded and
     added to the manifest cache.  Other manifests are added as "gossip"
-    received from xrpld peers.
+    received from xrpld peers, including ones for validators this node does not
+    list. Manifests for unlisted validators are capped (kMaxUntrustedCount)
+    so peer gossip cannot grow the cache without bound; listed validators are
+    not capped. Entries are never evicted, so a stored revocation is permanent.
 
     When an ephemeral key is compromised, a new signing key pair is created,
     along with a new manifest vouching for it (with a higher sequence number),
@@ -206,7 +209,10 @@ enum class ManifestDisposition {
     BadEphemeralKey,
 
     /// Timely, but invalid signature
-    Invalid
+    Invalid,
+
+    /// Unlisted and limit reached
+    UntrustedCapacity
 };
 
 inline std::string
@@ -224,10 +230,24 @@ to_string(ManifestDisposition m)
             return "badEphemeralKey";
         case ManifestDisposition::Invalid:
             return "invalid";
+        case ManifestDisposition::UntrustedCapacity:
+            return "untrustedCapacity";
         default:
             return "unknown";
     }
 }
+
+/**
+ * Whether a manifest counts against the 'untrusted' cache cap.
+ *
+ * Passed to `ManifestCache::applyManifest` with no default, so every caller
+ * must choose. `Capped` is the safe, flood-resistant value; only listed or
+ * configured keys should use `Uncapped`.
+ */
+enum class ManifestRateLimitCap : std::uint8_t {
+    Capped,   ///< Subject to the untrusted cap (unlisted peer gossip)
+    Uncapped  ///< Bypasses the cap (listed/trusted or config manifests)
+};
 
 class DatabaseCon;
 
@@ -245,6 +265,38 @@ private:
     hash_map<PublicKey, PublicKey> signingToMasterKeys_;
 
     std::atomic<std::uint32_t> seq_{0};
+
+    /**
+     * Master keys of cached manifests for validators this node does not list.
+     *
+     * One entry per capped key in `map_`; its size enforces the cap below.
+     * A key is added when first cached under `Capped` and removed when it
+     * becomes listed (see `promoteToTrusted`) or an `Uncapped` update arrives,
+     * never re-added on de-listing. Uncapped keys are not tracked here.
+     */
+    hash_set<PublicKey> untrustedKeys_;
+
+    /**
+     * Maximum number of untrusted master keys kept in the cache.
+     *
+     * Once reached, a manifest for a brand-new unlisted key is rejected.
+     */
+    static constexpr std::size_t kMaxUntrustedCount = 50000;
+
+    /**
+     * Running count of manifests rejected because the untrusted cap was full.
+     *
+     * Drives throttled logging (see `kUntrustedRejectCount`). Atomic because
+     * `applyManifest` may run concurrently.
+     */
+    std::atomic<std::uint64_t> untrustedRejectCount_{0};
+
+    /**
+     * Number of cap rejections between summary warnings.
+     *
+     * @see untrustedRejectCount_
+     */
+    static constexpr std::uint64_t kUntrustedRejectCount = 10000;
 
 public:
     explicit ManifestCache(beast::Journal j = beast::Journal(beast::Journal::getNullSink())) : j_(j)
@@ -321,17 +373,44 @@ public:
 
     /** Add manifest to cache.
 
+        A brand-new unlisted key is rejected once the untrusted cap is full;
+        updates to a cached key and `Uncapped` manifests bypass the cap. The
+        caller decides `cap` before calling so the cache lock is not held while
+        consulting the validator list, which would risk a lock-ordering deadlock.
+
         @param m Manifest to add
 
-        @return `ManifestDisposition::accepted` if successful, or
-                `stale` or `invalid` otherwise
+        @param cap `Uncapped` skips the untrusted cap; use it for keys that are
+               listed, configured, or loaded from the DB. Note `Uncapped` does
+               not assert the key is currently trusted (a DB entry may predate a
+               de-listing). Callers must state this explicitly so a manifest is
+               never left uncapped by omission.
+
+        @return `Accepted` if stored, `Stale` if superseded, `Invalid`/
+                `BadEphemeralKey` if malformed, or `UntrustedCapacity` if the
+                untrusted cap is full.
 
         @par Thread Safety
 
         May be called concurrently
     */
     ManifestDisposition
-    applyManifest(Manifest m);
+    applyManifest(Manifest m, ManifestRateLimitCap cap);
+
+    /**
+     * Stop counting a master key against the untrusted cap.
+     *
+     * Called when a cached untrusted key becomes listed, freeing its slot.
+     * Idempotent and a no-op for keys that were never counted.
+     *
+     * @param pk Master public key that is now listed/trusted
+     *
+     * @par Thread Safety
+     *
+     * May be called concurrently
+     */
+    void
+    promoteToTrusted(PublicKey const& pk);
 
     /** Populate manifest cache with manifests in database and config.
 

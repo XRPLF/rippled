@@ -673,13 +673,22 @@ OverlayImpl::onManifests(
         if (auto mo = deserializeManifest(s))
         {
             auto const serialized = mo->serialized;
+            // Resolve trust before applyManifest takes the manifest-cache
+            // lock: listed() takes the validator-list lock, so ordering it
+            // first avoids holding the two locks in opposite orders.
+            bool const isTrusted = app_.getValidators().listed(mo->masterKey);
+            // Updates to a known key are relayed even when untrusted. Use
+            // getSequence, not getManifest, to avoid copying the cached payload
+            // on this hot path.
+            bool const isKnown =
+                app_.getValidatorManifests().getSequence(mo->masterKey).has_value();
 
-            auto const result = app_.getValidatorManifests().applyManifest(std::move(*mo));
+            auto const result = app_.getValidatorManifests().applyManifest(
+                std::move(*mo),
+                isTrusted ? ManifestRateLimitCap::Uncapped : ManifestRateLimitCap::Capped);
 
             if (result == ManifestDisposition::Accepted)
             {
-                relay.add_list()->set_stobject(s);
-
                 // N.B.: this is important; the applyManifest call above moves
                 //       the loaded Manifest out of the optional so we need to
                 //       reload it here.
@@ -691,10 +700,19 @@ OverlayImpl::onManifests(
                 // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
                 app_.getOPs().pubManifest(*mo);
 
-                if (app_.getValidators().listed(mo->masterKey))
+                // Relay only trusted manifests or updates to known keys, so
+                // untrusted gossip for a brand-new key cannot be amplified.
+                // Persist to the wallet DB only for trusted keys, so untrusted
+                // gossip never survives a restart.
+                if (isTrusted || isKnown)
                 {
-                    auto db = app_.getWalletDB().checkoutDb();
-                    addValidatorManifest(*db, serialized);
+                    relay.add_list()->set_stobject(s);
+
+                    if (isTrusted)
+                    {
+                        auto db = app_.getWalletDB().checkoutDb();
+                        addValidatorManifest(*db, serialized);
+                    }
                 }
                 // NOLINTEND(bugprone-unchecked-optional-access)
             }
