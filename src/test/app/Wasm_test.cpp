@@ -230,7 +230,7 @@ struct Wasm_test : public beast::unit_test::Suite
     void
     testVersion()
     {
-        testcase("wasm lib test");
+        testcase("wasm module test");
         // wat2wasm --enable-annotations mymodule.wat -o mymodule.wasm
         // xxd -p mymodule.wasm | tr -d '\n'
         static auto const kWasmModule = hexToBytes(
@@ -240,8 +240,8 @@ struct Wasm_test : public beast::unit_test::Suite
 
         auto& vm = WasmEngine::instance();
 
-        HostFunctions hfs;
-        ImportVec imports;
+        auto hfs = HostFunctions{};
+        auto imports = ImportVec{};
         WasmImpFunc<Add_proto>(imports, "func-add", reinterpret_cast<void*>(&add), &hfs);
 
         auto _ = vm.run(kWasmModule, hfs, 10'000'000, "finish", wasmParams(1234), imports);
