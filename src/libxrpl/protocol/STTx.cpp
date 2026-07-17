@@ -812,16 +812,19 @@ invalidMPTAmountInTx(STObject const& tx)
 static bool
 isBatchRawTransactionOkay(STTx const& tx, std::string& reason)
 {
-    if (!tx.isFieldPresent(sfRawTransactions))
+    XRPL_ASSERT(
+        tx.getTxnType() == ttBATCH || !tx.isFieldPresent(sfRawTransactions),
+        "xrpl::isBatchRawTransactionOkay : raw transactions only on batch");
+
+    if (tx.getTxnType() != ttBATCH)
         return true;
 
-    // sfRawTransactions only appears on a Batch. passesLocalChecks runs on
-    // unverified user and peer input, so reject (rather than assert) a non-batch
-    // transaction that carries it.
-    if (tx.getTxnType() != ttBATCH)
+    if (!tx.isFieldPresent(sfRawTransactions))
     {
-        reason = "Only Batch transactions may contain raw transactions.";
+        // LCOV_EXCL_START
+        reason = "Batch transactions must contain raw transactions.";
         return false;
+        // LCOV_EXCL_STOP
     }
 
     if (tx.isFieldPresent(sfBatchSigners) &&
