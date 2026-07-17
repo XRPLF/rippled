@@ -259,6 +259,9 @@ public:
                 if (!node.has_nodeid() || !node.has_nodedata())
                     return;
 
+                if (node.nodedata().size() > kMaxFetchPackNodeBytes)
+                    return;
+
                 auto newNode = SHAMapTreeNode::makeFromWire(makeSlice(node.nodedata()));
 
                 if (!newNode)
