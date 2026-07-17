@@ -433,7 +433,7 @@ public:
     void
     enableDebugLog()
     {
-        debugSink_ = std::make_unique<beast::CapturingSink>(nullptr, beast::severities::kTrace);
+        debugSink_ = std::make_unique<beast::CapturingSink>(nullptr, beast::Severity::Trace);
     }
 
     /**

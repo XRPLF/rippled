@@ -8,7 +8,8 @@
 
 namespace beast {
 
-/** A Journal::Sink that captures log messages to a buffer.
+/**
+ * A Journal::Sink that captures log messages to a buffer.
  *
  * This sink stores all log messages written to it and optionally
  * forwards them to another sink. Useful for capturing transaction
@@ -19,7 +20,7 @@ class CapturingSink : public beast::Journal::Sink
 public:
     struct Entry
     {
-        severities::Severity level;
+        Severity level;
         std::string text;
     };
 
@@ -29,7 +30,8 @@ private:
     mutable std::mutex mutex_;
 
 public:
-    /** Construct a CapturingSink.
+    /**
+     * Construct a CapturingSink.
      *
      * @param forwardSink Optional sink to forward messages to. Pass nullptr
      *        to only capture without forwarding.
@@ -37,24 +39,24 @@ public:
      */
     explicit CapturingSink(
         beast::Journal::Sink* forwardSink = nullptr,
-        severities::Severity thresh = severities::kTrace)
+        Severity thresh = Severity::Trace)
         : Sink(thresh, false), forwardSink_(forwardSink)
     {
     }
 
-    /** Construct a CapturingSink that forwards to a Journal's sink.
+    /**
+     * Construct a CapturingSink that forwards to a Journal's sink.
      *
      * @param journal Journal whose sink will receive forwarded messages.
      * @param thresh The minimum severity level to capture.
      */
-    explicit CapturingSink(
-        beast::Journal const& journal,
-        severities::Severity thresh = severities::kTrace)
+    explicit CapturingSink(beast::Journal const& journal, Severity thresh = Severity::Trace)
         : CapturingSink(&journal.sink(), thresh)
     {
     }
 
-    /** Set or change the forward sink.
+    /**
+     * Set or change the forward sink.
      *
      * @param sink The sink to forward messages to, or nullptr to disable.
      */
@@ -65,7 +67,7 @@ public:
     }
 
     bool
-    active(severities::Severity level) const override
+    active(Severity level) const override
     {
         // Always capture messages at or above our threshold,
         // regardless of forward sink status
@@ -86,7 +88,7 @@ public:
     }
 
     void
-    write(severities::Severity level, std::string const& text) override
+    write(Severity level, std::string const& text) override
     {
         if (level < threshold())
             return;
@@ -94,7 +96,7 @@ public:
     }
 
     void
-    writeAlways(severities::Severity level, std::string const& text) override
+    writeAlways(Severity level, std::string const& text) override
     {
         {
             std::lock_guard lock(mutex_);
@@ -105,7 +107,9 @@ public:
             forwardSink_->writeAlways(level, text);
     }
 
-    /** Get all captured log entries. */
+    /**
+     * Get all captured log entries.
+     */
     std::vector<Entry>
     getEntries() const
     {
@@ -113,7 +117,9 @@ public:
         return entries_;
     }
 
-    /** Clear all captured entries. */
+    /**
+     * Clear all captured entries.
+     */
     void
     clear()
     {
@@ -121,7 +127,9 @@ public:
         entries_.clear();
     }
 
-    /** Get the number of captured entries. */
+    /**
+     * Get the number of captured entries.
+     */
     std::size_t
     size() const
     {
@@ -129,23 +137,25 @@ public:
         return entries_.size();
     }
 
-    /** Convert severity level to string for JSON output. */
+    /**
+     * Convert severity level to string for JSON output.
+     */
     static std::string
-    severityToString(severities::Severity level)
+    severityToString(Severity level)
     {
         switch (level)
         {
-            case severities::kTrace:
+            case Severity::Trace:
                 return "trace";
-            case severities::kDebug:
+            case Severity::Debug:
                 return "debug";
-            case severities::kInfo:
+            case Severity::Info:
                 return "info";
-            case severities::kWarning:
+            case Severity::Warning:
                 return "warning";
-            case severities::kError:
+            case Severity::Error:
                 return "error";
-            case severities::kFatal:
+            case Severity::Fatal:
                 return "fatal";
             default:
                 return "unknown";

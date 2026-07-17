@@ -8,6 +8,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
@@ -447,7 +448,7 @@ public:
             auto const txBlob = strHex(s.slice());
 
             // Submit with debug=true using JSON RPC
-            Json::Value params;
+            json::Value params;
             params[jss::tx_blob] = txBlob;
             params[jss::debug] = true;
 
@@ -470,7 +471,7 @@ public:
             BEAST_EXPECT(debugLog.size() > 0);
 
             // Each entry should have "level" and "message" fields
-            for (Json::UInt i = 0; i < debugLog.size(); ++i)
+            for (json::UInt i = 0; i < debugLog.size(); ++i)
             {
                 auto const& entry = debugLog[i];
                 BEAST_EXPECT(entry.isMember("level"));
@@ -489,7 +490,7 @@ public:
             jt.stx->add(s);
             auto const txBlob = strHex(s.slice());
 
-            Json::Value params;
+            json::Value params;
             params[jss::tx_blob] = txBlob;
             // No debug flag
 
@@ -510,7 +511,7 @@ public:
             jt.stx->add(s);
             auto const txBlob = strHex(s.slice());
 
-            Json::Value params;
+            json::Value params;
             params[jss::tx_blob] = txBlob;
             params[jss::debug] = false;
 

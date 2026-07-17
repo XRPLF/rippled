@@ -183,10 +183,10 @@ doSubmit(RPC::JsonContext& context)
         // Add debug log if enabled
         if (debug)
         {
-            Json::Value debugLog(Json::arrayValue);
+            json::Value debugLog = json::ValueType::Array;
             for (auto const& entry : transaction->getDebugLog())
             {
-                Json::Value logEntry(Json::objectValue);
+                json::Value logEntry = json::ValueType::Object;
                 logEntry["level"] = beast::CapturingSink::severityToString(entry.level);
                 logEntry["message"] = entry.text;
                 debugLog.append(logEntry);
