@@ -2,16 +2,24 @@
 
 namespace xrpl::Resource {
 
-/** The disposition of a consumer after applying a load charge. */
+/**
+ * The disposition of a consumer after applying a load charge.
+ */
 enum class Disposition {
-    /** No action required. */
+    /**
+     * No action required.
+     */
     Ok
 
-    /** Consumer should be warned that consumption is high. */
+    /**
+     * Consumer should be warned that consumption is high.
+     */
     ,
     Warn
 
-    /** Consumer should be disconnected for excess consumption. */
+    /**
+     * Consumer should be disconnected for excess consumption.
+     */
     ,
     Drop
 };
