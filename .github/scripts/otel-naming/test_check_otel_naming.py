@@ -559,6 +559,29 @@ class RuleFAndH(unittest.TestCase):
         v, _ = self._run("src/Foo.cpp", 'SpanGuard::span(cat, "rpc", "command");\n')
         self.assertEqual(v, ['span arg1 "rpc"', 'span arg2 "command"'])
 
+    def test_rootspan_literal_flagged_by_rule_f(self):
+        # rootSpan(cat, prefix, name) shares span()'s signature, so a string
+        # literal in the prefix/name position must FAIL rule F exactly as it
+        # does for span() — otherwise a call switched to rootSpan silently
+        # escapes span-name validation.
+        v, _ = self._run(
+            "src/Foo.cpp",
+            'SpanGuard::rootSpan(cat, "peer", "validation.receive");\n',
+        )
+        self.assertEqual(
+            v, ['rootSpan arg1 "peer"', 'rootSpan arg2 "validation.receive"']
+        )
+
+    def test_rootspan_constant_args_accepted(self):
+        # Constant references in the prefix/name position are accepted (no
+        # rule F), mirroring span()'s constant-arg handling.
+        v, _ = self._run(
+            "src/Foo.cpp",
+            "SpanGuard::rootSpan(TraceCategory::Peer, seg::peer, "
+            "peer_span::op::validationReceive);\n",
+        )
+        self.assertEqual(v, [])
+
     def test_test_path_exempt(self):
         v, _ = self._run("src/test/Foo.cpp", 'g.setAttribute("lit_key", v);\n')
         self.assertEqual(v, [])
