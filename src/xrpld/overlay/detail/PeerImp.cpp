@@ -1307,7 +1307,10 @@ PeerImp::handleTransaction(
         uint256 const txID = stx->getTransactionID();
 
         using namespace telemetry;
-        auto span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
+        // Detached: this span is handed to a job-queue worker and must not
+        // leave its Scope bound to this peer thread's context stack (that
+        // leak would adopt later peer messages into this transaction's trace).
+        auto span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m).detached());
         span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
         span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
         if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
