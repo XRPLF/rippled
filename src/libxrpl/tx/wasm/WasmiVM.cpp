@@ -831,9 +831,12 @@ readLEB128(Bytes const& wasmCode, size_t& offset)
         if (shift >= 32)
         {
             // Drain the rest of the bytes for this leb.
-            while (offset < wasmCode.size() && (wasmCode[offset] & 0x80) != 0)
+            while (offset < wasmCode.size())
             {
-                ++offset;
+                if ((wasmCode[offset++] & 0x80) == 0)
+                {
+                    break;
+                }
             }
             break;
         }
@@ -881,7 +884,8 @@ filterCustomSections(Bytes const& wasmCode, Filter&& filter)
 
             if (offset >= nextSection)
             {
-                break;
+                offset = nextSection;
+                continue;
             }
 
             size = nextSection - offset;
