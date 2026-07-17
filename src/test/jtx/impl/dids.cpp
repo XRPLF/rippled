@@ -7,7 +7,9 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-/** DID operations. */
+/**
+ * DID operations.
+ */
 namespace xrpl::test::jtx::did {
 
 json::Value

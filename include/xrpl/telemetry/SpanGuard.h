@@ -1,126 +1,158 @@
 #pragma once
 
-/** RAII guard for OpenTelemetry trace spans.
-
-    Wraps an OTel Span and Scope behind the pimpl idiom so that no
-    opentelemetry headers are exposed in this public header. When
-    XRPL_ENABLE_TELEMETRY is not defined, SpanGuard is an empty class
-    with all-inline no-op methods — zero overhead, zero dependencies.
-
-    Dependency diagram:
-
-        +-------------------------------------------+
-        |              SpanGuard                     |
-        +-------------------------------------------+
-        | - impl_ : unique_ptr<Impl>  (pimpl)       |
-        +-------------------------------------------+
-        | + span(cat, prefix, name)         [static] |
-        | + childSpan(name) : SpanGuard              |
-        | + linkedSpan(name) : SpanGuard             |
-        | + captureContext() : SpanContext            |
-        | + setAttribute(key, value)                 |
-        | + setOk() / setError(desc)                 |
-        | + addEvent(name)                           |
-        | + recordException(e)                       |
-        | + discard()                                |
-        | + operator bool()                          |
-        +-------------------------------------------+
-                        |  hides (pimpl)
-                +-------+-------+
-                |               |
-           +--------+   +-------------+
-           |  Span  |   |    Scope    |
-           | (OTel) |   | (OTel, non- |
-           |        |   |  movable)   |
-           +--------+   +-------------+
-
-    Static factory methods access the global Telemetry instance
-    internally (via Telemetry::getInstance()), check whether tracing
-    is enabled for the requested subsystem, and return either an
-    active guard or a null (no-op) guard. Callers never need a
-    Telemetry reference.
-
-    Usage examples:
-
-    Span names and attribute keys come from per-module `*SpanNames.h`
-    headers (e.g. RpcSpanNames.h, TxSpanNames.h) as typed compile-time
-    constants — never raw string literals — so the naming spec is
-    enforced at the call site and dashboards stay in sync.
-
-    1. Basic RPC tracing (factory method with category):
-    @code
-        #include <xrpld/rpc/detail/RpcSpanNames.h>
-        using namespace xrpl::telemetry;
-
-        auto span = SpanGuard::span(
-            TraceCategory::Rpc, rpc_span::prefix::command, commandName);
-        span.setAttribute(rpc_span::attr::command, commandName);
-        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::success);
-        // span ended automatically on scope exit
-    @endcode
-
-    2. Error recording:
-    @code
-        auto span = SpanGuard::span(
-            TraceCategory::Rpc, rpc_span::prefix::command, commandName);
-        try {
-            doWork();
-            span.setOk();
-        } catch (std::exception const& e) {
-            span.recordException(e);
-        }
-    @endcode
-
-    3. Cross-thread context propagation:
-    @code
-        #include <xrpld/rpc/detail/RpcSpanNames.h>
-        using namespace xrpl::telemetry;
-
-        // Thread A: create span and capture context
-        auto span = SpanGuard::span(
-            TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
-        auto ctx = span.captureContext();
-
-        // Thread B: create child with captured context
-        auto child = SpanGuard::childSpan(rpc_span::op::process, ctx);
-    @endcode
-
-    4. Conditional check (rarely needed — methods are no-ops on null):
-    @code
-        auto span = SpanGuard::span(
-            TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::httpRequest);
-        if (span) {
-            // expensive attribute computation only when active
-            span.setAttribute(rpc_span::attr::requestPayloadSize, computeSize());
-        }
-    @endcode
-
-    5. Tail-based filtering via discard():
-    @code
-        auto span = SpanGuard::span(
-            TraceCategory::Transactions, tx_span::prefix::tx, tx_span::op::process);
-        auto result = preflight(tx);
-        if (result != tesSUCCESS) {
-            span.discard();  // drop span, never exported
-            return result;
-        }
-    @endcode
-
-    @note Thread safety: A SpanGuard must only be used on the thread
-    where it was constructed (the internal Scope binds to the
-    thread-local context stack). Use captureContext() to propagate
-    the trace to other threads.
-
-    @note Move semantics: Move construction transfers ownership of
-    the pimpl pointer — no double-Scope issues. Move assignment is
-    deleted to prevent re-scoping mid-flight.
-
-    @note Known limitations:
-    - Attributes cannot be removed per the OTel spec; use
-      setAttribute with an empty value as a convention.
-    - SpanGuard::span() (raw Span access) is intentionally not
-      exposed — all interaction goes through the public methods.
-*/
+/**
+ * RAII guard for OpenTelemetry trace spans.
+ *
+ * Wraps an OTel Span and Scope behind the pimpl idiom so that no
+ * opentelemetry headers are exposed in this public header. When
+ * XRPL_ENABLE_TELEMETRY is not defined, SpanGuard is an empty class
+ * with all-inline no-op methods — zero overhead, zero dependencies.
+ *
+ * Dependency diagram:
+ *
+ *     +--------------------------------------------+
+ *     |                 SpanGuard                  |
+ *     +--------------------------------------------+
+ *     | - impl_ : unique_ptr<Impl>  (pimpl)        |
+ *     +--------------------------------------------+
+ *     | + span(cat, prefix, name)         [static] |
+ *     | + rootSpan(cat, prefix, name)     [static] |
+ *     | + childSpan(name) : SpanGuard              |
+ *     | + linkedSpan(name) : SpanGuard             |
+ *     | + detached() : SpanGuard                   |
+ *     | + captureContext() : SpanContext           |
+ *     | + setAttribute(key, value)                 |
+ *     | + setOk() / setError(desc)                 |
+ *     | + addEvent(name)                           |
+ *     | + recordException(e)                       |
+ *     | + discard()                                |
+ *     | + operator bool()                          |
+ *     +--------------------------------------------+
+ *                     |  hides (pimpl)
+ *             +-------+-------------+
+ *             |                     |
+ *        +--------+   +---------------------------+
+ *        |  Span  |   |     optional<Scope>       |
+ *        | (OTel) |   | (OTel, non-movable)       |
+ *        |        |   | present : scoped guard    |
+ *        |        |   | nullopt : detached guard  |
+ *        +--------+   +---------------------------+
+ *
+ * Static factory methods access the global Telemetry instance
+ * internally (via Telemetry::getInstance()), check whether tracing
+ * is enabled for the requested subsystem, and return either an
+ * active guard or a null (no-op) guard. Callers never need a
+ * Telemetry reference.
+ *
+ * Usage examples:
+ *
+ * Span names and attribute keys come from per-module `*SpanNames.h`
+ * headers (e.g. RpcSpanNames.h, TxSpanNames.h) as typed compile-time
+ * constants — never raw string literals — so the naming spec is
+ * enforced at the call site and dashboards stay in sync.
+ *
+ * 1. Basic RPC tracing (factory method with category):
+ * @code
+ *     #include <xrpld/rpc/detail/RpcSpanNames.h>
+ *     using namespace xrpl::telemetry;
+ *
+ *     auto span = SpanGuard::span(
+ *         TraceCategory::Rpc, rpc_span::prefix::command, commandName);
+ *     span.setAttribute(rpc_span::attr::command, commandName);
+ *     span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::success);
+ *     // span ended automatically on scope exit
+ * @endcode
+ *
+ * 2. Error recording:
+ * @code
+ *     auto span = SpanGuard::span(
+ *         TraceCategory::Rpc, rpc_span::prefix::command, commandName);
+ *     try {
+ *         doWork();
+ *         span.setOk();
+ *     } catch (std::exception const& e) {
+ *         span.recordException(e);
+ *     }
+ * @endcode
+ *
+ * 3. Cross-thread context propagation:
+ * @code
+ *     #include <xrpld/rpc/detail/RpcSpanNames.h>
+ *     using namespace xrpl::telemetry;
+ *
+ *     // Thread A: create span and capture context
+ *     auto span = SpanGuard::span(
+ *         TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
+ *     auto ctx = span.captureContext();
+ *
+ *     // Thread B: create child with captured context
+ *     auto child = SpanGuard::childSpan(rpc_span::op::process, ctx);
+ * @endcode
+ *
+ * 4. Conditional check (rarely needed — methods are no-ops on null):
+ * @code
+ *     auto span = SpanGuard::span(
+ *         TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::httpRequest);
+ *     if (span) {
+ *         // expensive attribute computation only when active
+ *         span.setAttribute(rpc_span::attr::requestPayloadSize, computeSize());
+ *     }
+ * @endcode
+ *
+ * 5. Tail-based filtering via discard():
+ * @code
+ *     auto span = SpanGuard::span(
+ *         TraceCategory::Transactions, tx_span::prefix::tx, tx_span::op::process);
+ *     auto result = preflight(tx);
+ *     if (result != tesSUCCESS) {
+ *         span.discard();  // drop span, never exported
+ *         return result;
+ *     }
+ * @endcode
+ *
+ * 6. Fresh trace root at an inbound entry point (primary rootSpan use):
+ * @code
+ *     // A peer message handled on a shared worker thread that may
+ *     // already have unrelated spans active — start a clean root so
+ *     // those do not become parents of this trace.
+ *     auto span = SpanGuard::rootSpan(
+ *         TraceCategory::Peer, "peer", "validation.receive");
+ *     span.setAttribute("ledger_hash", hashStr);
+ * @endcode
+ *
+ * 7. Hand a span to a job on another thread (edge case, detached):
+ * @code
+ *     // Build the guard on THIS thread, then strip its thread-local
+ *     // Scope so it can be safely moved into a job and ended there.
+ *     auto span = SpanGuard::span(
+ *         TraceCategory::Ledger, "ledger", "build");
+ *     jobQueue.addJob(
+ *         [g = std::move(span).detached()]() mutable {
+ *             doWork();
+ *             // g's span ends when the job's lambda is destroyed,
+ *             // on the worker thread — no origin-stack corruption.
+ *         });
+ * @endcode
+ *
+ * @note Thread safety: A SCOPED guard (from span(), rootSpan(),
+ * childSpan(), linkedSpan()) must only be used on the thread where it
+ * was constructed — its internal Scope binds to that thread's
+ * thread-local context stack, and destroying it elsewhere would pop
+ * the wrong stack. A guard returned by detached() holds no Scope, so
+ * it may be moved to and destroyed on another thread; detached()
+ * itself must be called on the origin (constructing) thread. Use
+ * captureContext() to propagate the trace context to other threads.
+ *
+ * @note Move semantics: Move construction transfers ownership of
+ * the pimpl pointer — no double-Scope issues. Move assignment is
+ * deleted to prevent re-scoping mid-flight.
+ *
+ * @note Known limitations:
+ * - Attributes cannot be removed per the OTel spec; use
+ *   setAttribute with an empty value as a convention.
+ * - SpanGuard::span() (raw Span access) is intentionally not
+ *   exposed — all interaction goes through the public methods.
+ */
 
 #include <cstdint>
 #include <exception>
@@ -129,20 +161,22 @@
 
 namespace xrpl::telemetry {
 
-/** Trace subsystem categories for conditional span creation.
-
-    Each value maps to a runtime config flag (e.g. `trace_rpc=1`).
-    Used by SpanGuard::span(TraceCategory, prefix, name) to decide
-    whether to create a real span or return a null guard.
-*/
+/**
+ * Trace subsystem categories for conditional span creation.
+ *
+ * Each value maps to a runtime config flag (e.g. `trace_rpc=1`).
+ * Used by SpanGuard::span(TraceCategory, prefix, name) to decide
+ * whether to create a real span or return a null guard.
+ */
 enum class TraceCategory { Rpc, Transactions, Consensus, Peer, Ledger };
 
-/** Opaque wrapper for an OTel context snapshot.
-
-    Used to propagate trace context across threads. Created by
-    SpanGuard::captureContext(), consumed by SpanGuard::childSpan()
-    or SpanGuard::linkedSpan() with an explicit parent/link context.
-*/
+/**
+ * Opaque wrapper for an OTel context snapshot.
+ *
+ * Used to propagate trace context across threads. Created by
+ * SpanGuard::captureContext(), consumed by SpanGuard::childSpan()
+ * or SpanGuard::linkedSpan() with an explicit parent/link context.
+ */
 class SpanContext
 {
     friend class SpanGuard;
@@ -156,7 +190,9 @@ class SpanContext
 public:
     SpanContext() = default;
 
-    /** @return true if this context holds a valid trace context. */
+    /**
+     * @return true if this context holds a valid trace context.
+     */
 #ifdef XRPL_ENABLE_TELEMETRY
     [[nodiscard]] bool
     isValid() const;
@@ -176,10 +212,11 @@ public:
 // ---------------------------------------------------------------------------
 #ifdef XRPL_ENABLE_TELEMETRY
 
-/** RAII wrapper that activates a span on construction and ends it on
-    destruction. All OTel types are hidden behind the Impl pointer.
-    Non-copyable, move-constructible.
-*/
+/**
+ * RAII wrapper that activates a span on construction and ends it on
+ * destruction. All OTel types are hidden behind the Impl pointer.
+ * Non-copyable, move-constructible.
+ */
 class SpanGuard
 {
     struct Impl;
@@ -188,7 +225,9 @@ class SpanGuard
     explicit SpanGuard(std::unique_ptr<Impl> impl);
 
 public:
-    /** Construct a null (no-op) guard. All methods are safe to call. */
+    /**
+     * Construct a null (no-op) guard. All methods are safe to call.
+     */
     SpanGuard();
     ~SpanGuard();
 
@@ -201,114 +240,181 @@ public:
 
     // --- Static factory methods ----------------------------------------
 
-    /** Create a span guarded by a TraceCategory flag.
-        The span name is built as "prefix.name". Returns a null guard
-        if the category is disabled in config.
-        @param cat     Trace subsystem category.
-        @param prefix  Span name prefix (e.g. "rpc.command").
-        @param name    Span name suffix (e.g. "submit").
-    */
+    /**
+     * Create a span guarded by a TraceCategory flag.
+     * The span name is built as "prefix.name". Returns a null guard
+     * if the category is disabled in config.
+     * @param cat     Trace subsystem category.
+     * @param prefix  Span name prefix (e.g. "rpc.command").
+     * @param name    Span name suffix (e.g. "submit").
+     */
     [[nodiscard]] static SpanGuard
     span(TraceCategory cat, std::string_view prefix, std::string_view name);
 
+    /**
+     * Create a span that always starts a fresh trace root.
+     *
+     * Like span(), but ignores this thread's active span so the new
+     * span never inherits an ambient parent. Use at an inbound entry
+     * point (e.g. a peer message received on a shared worker thread)
+     * so unrelated work already on the stack does not pollute the
+     * trace. The span name is built as "prefix.name". Returns a null
+     * guard if the category is disabled in config.
+     *
+     * @param cat     Trace subsystem category.
+     * @param prefix  Span name prefix (e.g. "peer").
+     * @param name    Span name suffix (e.g. "validation.receive").
+     * @return An active root-span guard, or a null guard if disabled.
+     * @note Must be called on the thread that will own the span, like
+     * span(); the returned guard is scoped to that thread.
+     */
+    [[nodiscard]] static SpanGuard
+    rootSpan(TraceCategory cat, std::string_view prefix, std::string_view name);
+
     // --- Child / linked span creation ----------------------------------
 
-    /** Create a child span parented to this guard's active context.
-        @param name  Span name for the child.
-        @return A new guard, or null if this guard is inactive.
-    */
+    /**
+     * Create a child span parented to this guard's active context.
+     * @param name  Span name for the child.
+     * @return A new guard, or null if this guard is inactive.
+     */
     [[nodiscard]] SpanGuard
     childSpan(std::string_view name) const;
 
-    /** Create a child span parented to an explicit captured context.
-        @param name       Span name for the child.
-        @param parentCtx  Context captured via captureContext().
-        @return A new guard, or null if parentCtx is invalid.
-    */
+    /**
+     * Create a child span parented to an explicit captured context.
+     * @param name       Span name for the child.
+     * @param parentCtx  Context captured via captureContext().
+     * @return A new guard, or null if parentCtx is invalid.
+     */
     [[nodiscard]] static SpanGuard
     childSpan(std::string_view name, SpanContext const& parentCtx);
 
-    /** Create a span linked (follows-from) to this guard's span.
-        The new span is NOT a child — it starts a new sub-tree but
-        carries a causal link to this span.
-        @param name  Span name for the linked span.
-        @return A new guard, or null if this guard is inactive.
-    */
+    /**
+     * Create a span linked (follows-from) to this guard's span.
+     * The new span is NOT a child — it starts a new sub-tree but
+     * carries a causal link to this span.
+     * @param name  Span name for the linked span.
+     * @return A new guard, or null if this guard is inactive.
+     */
     [[nodiscard]] SpanGuard
     linkedSpan(std::string_view name) const;
 
-    /** Create a span linked to an explicit captured context.
-        @param name     Span name for the linked span.
-        @param linkCtx  Context to link from.
-        @return A new guard, or null if linkCtx is invalid.
-    */
+    /**
+     * Create a span linked to an explicit captured context.
+     * @param name     Span name for the linked span.
+     * @param linkCtx  Context to link from.
+     * @return A new guard, or null if linkCtx is invalid.
+     */
     [[nodiscard]] static SpanGuard
     linkedSpan(std::string_view name, SpanContext const& linkCtx);
 
+    /**
+     * Detach this guard's span from the current thread's context stack.
+     *
+     * A scoped guard holds an OTel Scope bound to the constructing
+     * thread's context stack. Moving such a guard to another thread
+     * (e.g. into a job queue) and destroying it there would pop the
+     * wrong stack, leaving the origin thread's stack corrupted so
+     * later spans inherit a stale parent. detached() pops the Scope
+     * now, on the origin thread, and returns a new guard that holds
+     * the same span with no thread-local binding.
+     *
+     * Consumes this guard (rvalue-qualified): after the call this
+     * guard is null and the returned guard owns the span.
+     *
+     * @return A scope-less guard safe to move to and destroy on
+     * another thread, or a null guard if this guard was null.
+     * @note Must be called on the origin (constructing) thread. The
+     * returned guard may be freely moved across threads; only
+     * its final destruction ends the span.
+     */
+    [[nodiscard]] SpanGuard
+    detached() &&;
+
     // --- Context capture -----------------------------------------------
 
-    /** Snapshot the current thread's OTel context for cross-thread use.
-        @return An opaque SpanContext, or an invalid one if null guard.
-    */
+    /**
+     * Snapshot the current thread's OTel context for cross-thread use.
+     * @return An opaque SpanContext, or an invalid one if null guard.
+     */
     [[nodiscard]] SpanContext
     captureContext() const;
 
     // --- Attribute setters (explicit overloads, no OTel types) ---------
 
-    /** Set a string attribute. No-op on a null guard. */
+    /**
+     * Set a string attribute. No-op on a null guard.
+     */
     void
     setAttribute(std::string_view key, std::string_view value);
 
-    /** Set a string attribute (C-string overload). No-op on a null guard. */
+    /**
+     * Set a string attribute (C-string overload). No-op on a null guard.
+     */
     void
     setAttribute(std::string_view key, char const* value);
 
-    /** Set an integer attribute. No-op on a null guard. */
+    /**
+     * Set an integer attribute. No-op on a null guard.
+     */
     void
     setAttribute(std::string_view key, std::int64_t value);
 
-    /** Set a floating-point attribute. No-op on a null guard. */
+    /**
+     * Set a floating-point attribute. No-op on a null guard.
+     */
     void
     setAttribute(std::string_view key, double value);
 
-    /** Set a boolean attribute. No-op on a null guard. */
+    /**
+     * Set a boolean attribute. No-op on a null guard.
+     */
     void
     setAttribute(std::string_view key, bool value);
 
     // --- Status / events -----------------------------------------------
 
-    /** Mark the span status as OK. No-op on a null guard. */
+    /**
+     * Mark the span status as OK. No-op on a null guard.
+     */
     void
     setOk();
 
-    /** Mark the span status as error. No-op on a null guard.
-        @param description  Optional human-readable error description.
-    */
+    /**
+     * Mark the span status as error. No-op on a null guard.
+     * @param description  Optional human-readable error description.
+     */
     void
     setError(std::string_view description = "");
 
-    /** Add a named event to the span's timeline. No-op on a null guard.
-        @param name  Event name.
-    */
+    /**
+     * Add a named event to the span's timeline. No-op on a null guard.
+     * @param name  Event name.
+     */
     void
     addEvent(std::string_view name);
 
-    /** Record an exception as a span event following OTel semantic
-        conventions, and mark the span status as error.
-        No-op on a null guard.
-        @param e  The exception to record.
-    */
+    /**
+     * Record an exception as a span event following OTel semantic
+     * conventions, and mark the span status as error.
+     * No-op on a null guard.
+     * @param e  The exception to record.
+     */
     void
     recordException(std::exception const& e);
 
-    /** Mark this span for discard and end it immediately.
-        The FilteringSpanProcessor drops the span before it enters the
-        batch export queue. After discard(), the guard is inert.
-    */
+    /**
+     * Mark this span for discard and end it immediately.
+     * The FilteringSpanProcessor drops the span before it enters the
+     * batch export queue. After discard(), the guard is inert.
+     */
     void
     discard();
 
-    /** @return true if this guard holds an active span. */
+    /**
+     * @return true if this guard holds an active span.
+     */
     explicit
     operator bool() const;
 };
@@ -336,6 +442,12 @@ public:
         return {};
     }
 
+    [[nodiscard]] static SpanGuard
+    rootSpan(TraceCategory, std::string_view, std::string_view)
+    {
+        return {};
+    }
+
     // NOLINTBEGIN(readability-convert-member-functions-to-static)
     [[nodiscard]] SpanGuard
     childSpan(std::string_view) const
@@ -354,6 +466,12 @@ public:
     }
     [[nodiscard]] static SpanGuard
     linkedSpan(std::string_view, SpanContext const&)
+    {
+        return {};
+    }
+
+    [[nodiscard]] SpanGuard
+    detached() &&
     {
         return {};
     }
