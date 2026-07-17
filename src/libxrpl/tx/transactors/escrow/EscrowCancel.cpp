@@ -181,7 +181,7 @@ EscrowCancel::doApply()
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
-                        ctx_.view(),
+                        ctx_.getApplyViewContext(),
                         kParityRate,
                         ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle : slep,
                         preFeeBalance_,
@@ -209,8 +209,7 @@ EscrowCancel::doApply()
         }
     }
 
-    adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
-    ctx_.view().update(sle);
+    decreaseOwnerCountForObject(ctx_.view(), sle, slep, 1, ctx_.journal);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);

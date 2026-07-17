@@ -157,10 +157,10 @@ allFeatures();
  */
 struct TxResult
 {
-    TER ter;                        /**< The transaction engine result code. */
-    bool applied;                   /**< Whether the transaction was applied to the ledger. */
-    std::optional<TxMeta> metadata; /**< Transaction metadata, if available. */
-    std::shared_ptr<STTx const> tx; /**< Pointer to the submitted transaction. */
+    TER ter;                         ///< The transaction engine result code.
+    bool applied;                    ///< Whether the transaction was applied to the ledger.
+    std::optional<TxMeta> metadata;  ///< Transaction metadata, if available.
+    std::shared_ptr<STTx const> tx;  ///< Pointer to the submitted transaction.
 };
 
 /**
@@ -360,10 +360,14 @@ private:
     std::shared_ptr<Ledger const> closedLedger_;
     std::shared_ptr<OpenView> openLedger_;
 
-    /** Transactions submitted to the open ledger, for canonical reordering on close. */
+    /**
+     * Transactions submitted to the open ledger, for canonical reordering on close.
+     */
     std::vector<std::shared_ptr<STTx const>> pendingTxs_;
 
-    /** Current time (can be advanced arbitrarily for testing). */
+    /**
+     * Current time (can be advanced arbitrarily for testing).
+     */
     NetClock::time_point now_;
 };
 
