@@ -819,7 +819,7 @@ readLEB128(Bytes const& wasmCode, size_t& offset)
 {
     auto result = uint32_t{};
     auto shift = uint32_t{};
-    while (true)
+    while (offset < wasmCode.size())
     {
         auto byte = wasmCode[offset++];
         result |= (byte & 0x7F) << shift;
@@ -828,6 +828,10 @@ readLEB128(Bytes const& wasmCode, size_t& offset)
             break;
         }
         shift += 7;
+        if (shift >= 32)
+        {
+            break;
+        }
     }
     return result;
 }
@@ -838,20 +842,42 @@ filterCustomSections(Bytes const& wasmCode, Filter&& filter)
 {
     auto offset = size_t{8};  // Skip Magic number and Version
 
+    if (wasmCode.size() <= offset)
+    {
+        // There is nothing to parse.
+        return;
+    }
+
     while (offset < wasmCode.size())
     {
         auto sectionId = wasmCode[offset++];
         auto sectionSize = readLEB128(wasmCode, offset);
         auto nextSection = offset + sectionSize;
 
+        if (nextSection >= wasmCode.size())
+        {
+            break;
+        }
+
         if (sectionId == 0)
         {
+            // Wasm custom section marker.
             auto customSection = CustomSection{};
-
             auto size = readLEB128(wasmCode, offset);
+
+            if (offset + size > wasmCode.size() || offset + size > nextSection)
+            {
+                return;
+            }
+
             customSection.name =
                 std::string_view{reinterpret_cast<char const*>(wasmCode.data()) + offset, size};
             offset += size;
+
+            if (offset >= nextSection)
+            {
+                break;
+            }
 
             size = nextSection - offset;
             customSection.payload = std::span<char const>{
