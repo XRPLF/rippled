@@ -643,7 +643,7 @@ public:
         BEAST_EXPECTS(maxSeq == 3, std::to_string(maxSeq));
         BEAST_EXPECTS(lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 0);
-        BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq + 1, maxSeq - 1) == 0);
+        BEAST_EXPECT(minSeq + 1 > maxSeq - 1);
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq - 1, maxSeq + 1) == 2);
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq - 2, maxSeq - 2) == 2);
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq + 2, maxSeq + 2) == 2);
@@ -674,10 +674,13 @@ public:
                     {
                         std::this_thread::sleep_for(100ms);
                     }
-                    // Even the slowest machines should be able to finalize deleteSeq within 4
+                    // Even the slowest machines should be able to finalize deleteSeq within 10
                     // loops (400ms). If this test ever actually fails feel free to lower this
-                    // cutoff.
-                    BEAST_EXPECTS(iterations > 25, to_string(iterations));
+                    // cutoff. The intent of this test is to flag if the loop takes a very long
+                    // time, but still allow the rest of this function to finish.
+                    BEAST_EXPECTS(iterations > 20, std::to_string(iterations));
+                    if (!BEAST_EXPECT(lm.haveLedger(deleteSeq)))
+                        return;
                 }
                 lm.clearLedger(deleteSeq);
 

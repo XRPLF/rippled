@@ -1586,6 +1586,14 @@ LedgerMaster::getCompleteLedgers() const
 std::size_t
 LedgerMaster::missingFromCompleteLedgerRange(LedgerIndex first, LedgerIndex last) const
 {
+    if (first > last)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::LedgerMaster::missingFromCompleteLedgerRange : invalid parameters");
+        return 0;
+        // LCOV_EXCL_STOP
+    }
+
     RangeSet<LedgerIndex> const target{range(first, last)};
 
     auto const missing = [&target, this] {
