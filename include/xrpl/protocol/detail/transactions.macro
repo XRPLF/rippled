@@ -1085,7 +1085,7 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
 #   include <xrpl/tx/transactors/token/ConfidentialMPTConvert.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT, 85, ConfidentialMPTConvert,
-    Delegation::Delegable,
+    Delegation::NotDelegable,
     featureConfidentialTransfer,
     NoPriv,
     ({
