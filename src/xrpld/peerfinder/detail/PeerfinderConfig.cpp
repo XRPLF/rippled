@@ -1,36 +1,25 @@
+#include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
+#include <xrpl/beast/utility/PropertyStream.h>
+
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
-Config::Config()
-    : maxPeers(Tuning::defaultMaxPeers)
-    , outPeers(calcOutPeers())
-    , inPeers(0)
-    , wantIncoming(true)
-    , autoConnect(true)
-    , listeningPort(0)
-    , ipLimit(0)
+Config::Config() : outPeers(calcOutPeers())
+
 {
-}
-
-bool
-operator==(Config const& lhs, Config const& rhs)
-{
-    return lhs.autoConnect == rhs.autoConnect && lhs.peerPrivate == rhs.peerPrivate &&
-        lhs.wantIncoming == rhs.wantIncoming && lhs.inPeers == rhs.inPeers &&
-        lhs.maxPeers == rhs.maxPeers && lhs.outPeers == rhs.outPeers &&
-        lhs.features == lhs.features && lhs.ipLimit == rhs.ipLimit &&
-        lhs.listeningPort == rhs.listeningPort;
 }
 
 std::size_t
 Config::calcOutPeers() const
 {
-    return std::max((maxPeers * Tuning::outPercent + 50) / 100, std::size_t(Tuning::minOutCount));
+    return std::max(
+        ((maxPeers * Tuning::kOutPercent) + 50) / 100, std::size_t(Tuning::kMinOutCount));
 }
 
 void
@@ -43,8 +32,8 @@ Config::applyTuning()
         // IP addresses.
         ipLimit = 2;
 
-        if (inPeers > Tuning::defaultMaxPeers)
-            ipLimit += std::min(5, static_cast<int>(inPeers / Tuning::defaultMaxPeers));
+        if (inPeers > Tuning::kDefaultMaxPeers)
+            ipLimit += std::min(5, static_cast<int>(inPeers / Tuning::kDefaultMaxPeers));
     }
 
     // We don't allow a single IP to consume all incoming slots,
@@ -62,6 +51,7 @@ Config::onWrite(beast::PropertyStream::Map& map) const
     map["port"] = listeningPort;
     map["features"] = features;
     map["ip_limit"] = ipLimit;
+    map["verify_endpoints"] = verifyEndpoints;
 }
 
 Config
@@ -69,21 +59,22 @@ Config::makeConfig(
     xrpl::Config const& cfg,
     std::uint16_t port,
     bool validationPublicKey,
-    int ipLimit)
+    int ipLimit,
+    bool verifyEndpoints)
 {
     PeerFinder::Config config;
 
-    config.peerPrivate = cfg.PEER_PRIVATE;
+    config.peerPrivate = cfg.peerPrivate;
 
     // Servers with peer privacy don't want to allow incoming connections
     config.wantIncoming = (!config.peerPrivate) && (port != 0);
 
-    if (!cfg.PEERS_OUT_MAX && !cfg.PEERS_IN_MAX)
+    if ((cfg.peersOutMax == 0u) && (cfg.peersInMax == 0u))
     {
-        if (cfg.PEERS_MAX != 0)
-            config.maxPeers = cfg.PEERS_MAX;
+        if (cfg.peersMax != 0)
+            config.maxPeers = cfg.peersMax;
 
-        config.maxPeers = std::max<std::size_t>(config.maxPeers, Tuning::minOutCount);
+        config.maxPeers = std::max<std::size_t>(config.maxPeers, Tuning::kMinOutCount);
         config.outPeers = config.calcOutPeers();
 
         // Calculate the number of outbound peers we want. If we dont want
@@ -104,8 +95,8 @@ Config::makeConfig(
     }
     else
     {
-        config.outPeers = cfg.PEERS_OUT_MAX;
-        config.inPeers = cfg.PEERS_IN_MAX;
+        config.outPeers = cfg.peersOutMax;
+        config.inPeers = cfg.peersInMax;
         config.maxPeers = 0;
     }
 
@@ -118,10 +109,11 @@ Config::makeConfig(
 
     // if it's a private peer or we are running as standalone
     // automatic connections would defeat the purpose.
-    config.autoConnect = !cfg.standalone() && !cfg.PEER_PRIVATE;
+    config.autoConnect = !cfg.standalone() && !cfg.peerPrivate;
     config.listeningPort = port;
     config.features = "";
     config.ipLimit = ipLimit;
+    config.verifyEndpoints = verifyEndpoints;
 
     // Enforce business rules
     config.applyTuning();
@@ -129,5 +121,4 @@ Config::makeConfig(
     return config;
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

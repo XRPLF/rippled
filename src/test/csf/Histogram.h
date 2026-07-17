@@ -1,77 +1,86 @@
 #pragma once
 
-#include <algorithm>
 #include <cassert>
-#include <chrono>
 #include <cmath>
+#include <cstddef>
+#include <functional>
 #include <map>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
-/** Basic histogram.
-
-    Histogram for a type `T` that satisfies
-      - Default construction: T{}
-      - Comparison : T a, b;  bool res = a < b
-      - Addition: T a, b; T c = a + b;
-      - Multiplication : T a, std::size_t b; T c = a * b;
-      - Division: T a; std::size_t b;  T c = a/b;
-
-
-*/
+/**
+ * Basic histogram.
+ *
+ * Histogram for a type `T` that satisfies
+ *   - Default construction: T{}
+ *   - Comparison : T a, b;  bool res = a < b
+ *   - Addition: T a, b; T c = a + b;
+ *   - Multiplication : T a, std::size_t b; T c = a * b;
+ *   - Division: T a; std::size_t b;  T c = a/b;
+ */
 template <class T, class Compare = std::less<T>>
 class Histogram
 {
     // TODO: Consider logarithmic bins around expected median if this becomes
     // unscalable
     std::map<T, std::size_t, Compare> counts_;
-    std::size_t samples = 0;
+    std::size_t samples_ = 0;
 
 public:
-    /** Insert an sample */
+    /**
+     * Insert an sample
+     */
     void
     insert(T const& s)
     {
         ++counts_[s];
-        ++samples;
+        ++samples_;
     }
 
-    /** The number of samples */
-    std::size_t
+    /**
+     * The number of samples
+     */
+    [[nodiscard]] std::size_t
     size() const
     {
-        return samples;
+        return samples_;
     }
 
-    /** The number of distinct samples (bins) */
-    std::size_t
+    /**
+     * The number of distinct samples (bins)
+     */
+    [[nodiscard]] std::size_t
     numBins() const
     {
         return counts_.size();
     }
 
-    /** Minimum observed value */
-    T
+    /**
+     * Minimum observed value
+     */
+    [[nodiscard]] T
     minValue() const
     {
         return counts_.empty() ? T{} : counts_.begin()->first;
     }
 
-    /** Maximum observed value */
-    T
+    /**
+     * Maximum observed value
+     */
+    [[nodiscard]] T
     maxValue() const
     {
         return counts_.empty() ? T{} : counts_.rbegin()->first;
     }
 
-    /** Histogram average */
-    T
+    /**
+     * Histogram average
+     */
+    [[nodiscard]] T
     avg() const
     {
         T tmp{};
-        if (samples == 0)
+        if (samples_ == 0)
             return tmp;
         // Since counts are sorted, shouldn't need to worry much about numerical
         // error
@@ -79,20 +88,21 @@ public:
         {
             tmp += bin * count;
         }
-        return tmp / samples;
+        return tmp / samples_;
     }
 
-    /** Calculate the given percentile of the distribution.
-
-        @param p Percentile between 0 and 1, e.g. 0.50 is 50-th percentile
-                 If the percentile falls between two bins, uses the nearest bin.
-        @return The given percentile of the distribution
-    */
-    T
+    /**
+     * Calculate the given percentile of the distribution.
+     *
+     * @param p Percentile between 0 and 1, e.g. 0.50 is 50-th percentile
+     *          If the percentile falls between two bins, uses the nearest bin.
+     * @return The given percentile of the distribution
+     */
+    [[nodiscard]] T
     percentile(float p) const
     {
         assert(p >= 0 && p <= 1);
-        std::size_t pos = std::round(p * samples);
+        std::size_t const pos = std::round(p * samples_);
 
         if (counts_.empty())
             return T{};
@@ -108,6 +118,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

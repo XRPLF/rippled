@@ -3,7 +3,7 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Store.h>
 
-#include <xrpl/basics/comparators.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 
@@ -12,63 +12,61 @@
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
-namespace xrpl {
-namespace PeerFinder {
+#include <functional>
 
-/** Stores IP addresses useful for gaining initial connections.
+namespace xrpl::PeerFinder {
 
-    This is one of the caches that is consulted when additional outgoing
-    connections are needed. Along with the address, each entry has this
-    additional metadata:
-
-    Valence
-        A signed integer which represents the number of successful
-        consecutive connection attempts when positive, and the number of
-        failed consecutive connection attempts when negative.
-
-    When choosing addresses from the boot cache for the purpose of
-    establishing outgoing connections, addresses are ranked in decreasing
-    order of high uptime, with valence as the tie breaker.
-*/
+/**
+ * Stores IP addresses useful for gaining initial connections.
+ *
+ * This is one of the caches that is consulted when additional outgoing
+ * connections are needed. Along with the address, each entry has this
+ * additional metadata:
+ *
+ * Valence
+ *     A signed integer which represents the number of successful
+ *     consecutive connection attempts when positive, and the number of
+ *     failed consecutive connection attempts when negative.
+ *
+ * When choosing addresses from the boot cache for the purpose of
+ * establishing outgoing connections, addresses are ranked in decreasing
+ * order of high uptime, with valence as the tie breaker.
+ */
 class Bootcache
 {
 private:
     class Entry
     {
     public:
-        Entry(int valence) : m_valence(valence)
+        Entry(int valence) : valence_(valence)
         {
         }
 
         int&
         valence()
         {
-            return m_valence;
+            return valence_;
         }
 
-        int
+        [[nodiscard]] int
         valence() const
         {
-            return m_valence;
+            return valence_;
         }
 
         friend bool
         operator<(Entry const& lhs, Entry const& rhs)
         {
-            if (lhs.valence() > rhs.valence())
-                return true;
-            return false;
+            return lhs.valence() > rhs.valence();
         }
 
     private:
-        int m_valence;
+        int valence_;
     };
 
-    using left_t = boost::bimaps::unordered_set_of<
-        beast::IP::Endpoint,
-        boost::hash<beast::IP::Endpoint>,
-        xrpl::equal_to<beast::IP::Endpoint>>;
-    using right_t = boost::bimaps::multiset_of<Entry, xrpl::less<Entry>>;
+    using left_t = boost::bimaps::
+        unordered_set_of<beast::IP::Endpoint, boost::hash<beast::IP::Endpoint>, std::equal_to<>>;
+    using right_t = boost::bimaps::multiset_of<Entry, std::less<>>;
     using map_type = boost::bimap<left_t, right_t>;
     using value_type = map_type::value_type;
 
@@ -87,20 +85,20 @@ private:
     };
 
 private:
-    map_type m_map;
+    map_type map_;
 
-    Store& m_store;
-    clock_type& m_clock;
-    beast::Journal m_journal;
+    Store& store_;
+    clock_type& clock_;
+    beast::Journal journal_;
 
     // Time after which we can update the database again
-    clock_type::time_point m_whenUpdate;
+    clock_type::time_point whenUpdate_;
 
     // Set to true when a database update is needed
-    bool m_needsUpdate;
+    bool needsUpdate_{false};
 
 public:
-    static constexpr int staticValence = 32;
+    static constexpr int kStaticValence = 32;
 
     using iterator = boost::transform_iterator<Transform, map_type::right_map::const_iterator>;
 
@@ -110,53 +108,73 @@ public:
 
     ~Bootcache();
 
-    /** Returns `true` if the cache is empty. */
-    bool
+    /**
+     * Returns `true` if the cache is empty.
+     */
+    [[nodiscard]] bool
     empty() const;
 
-    /** Returns the number of entries in the cache. */
-    map_type::size_type
+    /**
+     * Returns the number of entries in the cache.
+     */
+    [[nodiscard]] map_type::size_type
     size() const;
 
-    /** IP::Endpoint iterators that traverse in decreasing valence. */
+    /**
+     * IP::Endpoint iterators that traverse in decreasing valence.
+     */
     /** @{ */
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const;
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const;
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const;
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const;
     void
     clear();
     /** @} */
 
-    /** Load the persisted data from the Store into the container. */
+    /**
+     * Load the persisted data from the Store into the container.
+     */
     void
     load();
 
-    /** Add a newly-learned address to the cache. */
+    /**
+     * Add a newly-learned address to the cache.
+     */
     bool
     insert(beast::IP::Endpoint const& endpoint);
 
-    /** Add a staticallyconfigured address to the cache. */
+    /**
+     * Add a staticallyconfigured address to the cache.
+     */
     bool
     insertStatic(beast::IP::Endpoint const& endpoint);
 
-    /** Called when an outbound connection handshake completes. */
+    /**
+     * Called when an outbound connection handshake completes.
+     */
     void
-    on_success(beast::IP::Endpoint const& endpoint);
+    onSuccess(beast::IP::Endpoint const& endpoint);
 
-    /** Called when an outbound connection attempt fails to handshake. */
+    /**
+     * Called when an outbound connection attempt fails to handshake.
+     */
     void
-    on_failure(beast::IP::Endpoint const& endpoint);
+    onFailure(beast::IP::Endpoint const& endpoint);
 
-    /** Stores the cache in the persistent database on a timer. */
+    /**
+     * Stores the cache in the persistent database on a timer.
+     */
     void
     periodicActivity();
 
-    /** Write the cache state to the property stream. */
+    /**
+     * Write the cache state to the property stream.
+     */
     void
     onWrite(beast::PropertyStream::Map& map);
 
@@ -171,5 +189,4 @@ private:
     flagForUpdate();
 };
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

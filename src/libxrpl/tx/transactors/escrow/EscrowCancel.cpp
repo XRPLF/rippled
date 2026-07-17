@@ -1,11 +1,29 @@
+#include <xrpl/tx/transactors/escrow/EscrowCancel.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/EscrowHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/tx/transactors/escrow/EscrowCancel.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 
-#include <libxrpl/tx/transactors/escrow/EscrowHelpers.h>
+#include <variant>
 
 namespace xrpl {
 
@@ -29,13 +47,13 @@ escrowCancelPreclaimHelper<Issue>(
     AccountID const& account,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const& issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecINTERNAL
     if (issuer == account)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the account is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), account); !isTesSuccess(ter))
+    if (auto const ter = requireAuth(ctx.view, amount.get<Issue>(), account); !isTesSuccess(ter))
         return ter;
 
     return tesSUCCESS;
@@ -48,13 +66,13 @@ escrowCancelPreclaimHelper<MPTIssue>(
     AccountID const& account,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecINTERNAL
     if (issuer == account)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
+    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -159,13 +177,13 @@ EscrowCancel::doApply()
             return temDISABLED;  // LCOV_EXCL_LINE
 
         auto const issuer = amount.getIssuer();
-        bool const createAsset = account == account_;
+        bool const createAsset = account == accountID_;
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
-                        ctx_.view(),
-                        parityRate,
-                        slep,
+                        ctx_.getApplyViewContext(),
+                        kParityRate,
+                        ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle : slep,
                         preFeeBalance_,
                         amount,
                         issuer,
@@ -191,8 +209,7 @@ EscrowCancel::doApply()
         }
     }
 
-    adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
-    ctx_.view().update(sle);
+    decreaseOwnerCountForObject(ctx_.view(), sle, slep, 1, ctx_.journal);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);
@@ -200,4 +217,21 @@ EscrowCancel::doApply()
     return tesSUCCESS;
 }
 
+void
+EscrowCancel::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+EscrowCancel::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
 }  // namespace xrpl

@@ -1,23 +1,22 @@
 #include <xrpld/app/misc/DeliverMax.h>
 
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 void
-insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion)
+insertDeliverMax(json::Value& txJson, TxType txnType, unsigned int apiVersion)
 {
-    if (tx_json.isMember(jss::Amount))
+    if (txJson.isMember(jss::Amount))
     {
         if (txnType == ttPAYMENT)
         {
-            tx_json[jss::DeliverMax] = tx_json[jss::Amount];
+            txJson[jss::DeliverMax] = txJson[jss::Amount];
             if (apiVersion > 1)
-                tx_json.removeMember(jss::Amount);
+                txJson.removeMember(jss::Amount);
         }
     }
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

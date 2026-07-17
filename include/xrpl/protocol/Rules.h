@@ -4,16 +4,38 @@
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/protocol/STVector256.h>
 
+#include <memory>
+#include <optional>
 #include <unordered_set>
+#include <utility>
 
 namespace xrpl {
 
+/**
+ * Check whether a feature is enabled in the current ledger rules
+ *
+ * @param feature The feature to be tested.
+ * @param resultIfNoRules What to return if called from outside a Transactor context.
+ */
+bool
+isFeatureEnabled(uint256 const& feature, bool resultIfNoRules);
+
+/**
+ * Check whether a feature is enabled in the current ledger rules
+ *
+ * @param feature The feature to be tested.
+ *
+ * Returns false if no global Rules object is available. i.e. Outside of
+ * a Transactor context
+ */
 bool
 isFeatureEnabled(uint256 const& feature);
 
 class DigestAwareReadView;
 
-/** Rules controlling protocol behavior. */
+/**
+ * Rules controlling protocol behavior.
+ */
 class Rules
 {
 private:
@@ -36,12 +58,13 @@ public:
 
     Rules() = delete;
 
-    /** Construct an empty rule set.
-
-        These are the rules reflected by
-        the genesis ledger.
-    */
-    explicit Rules(std::unordered_set<uint256, beast::uhash<>> const& presets);
+    /**
+     * Construct an empty rule set.
+     *
+     * These are the rules reflected by
+     * the genesis ledger.
+     */
+    explicit Rules(std::unordered_set<uint256, beast::Uhash<>> const& presets);
 
 private:
     // Allow a friend function to construct Rules.
@@ -51,25 +74,28 @@ private:
     friend Rules
     makeRulesGivenLedger(
         DigestAwareReadView const& ledger,
-        std::unordered_set<uint256, beast::uhash<>> const& presets);
+        std::unordered_set<uint256, beast::Uhash<>> const& presets);
 
     Rules(
-        std::unordered_set<uint256, beast::uhash<>> const& presets,
+        std::unordered_set<uint256, beast::Uhash<>> const& presets,
         std::optional<uint256> const& digest,
         STVector256 const& amendments);
 
-    std::unordered_set<uint256, beast::uhash<>> const&
+    [[nodiscard]] std::unordered_set<uint256, beast::Uhash<>> const&
     presets() const;
 
 public:
-    /** Returns `true` if a feature is enabled. */
-    bool
+    /**
+     * Returns `true` if a feature is enabled.
+     */
+    [[nodiscard]] bool
     enabled(uint256 const& feature) const;
 
-    /** Returns `true` if two rule sets are identical.
-
-        @note This is for diagnostics.
-    */
+    /**
+     * Returns `true` if two rule sets are identical.
+     *
+     * @note This is for diagnostics.
+     */
     bool
     operator==(Rules const&) const;
 
@@ -83,7 +109,8 @@ getCurrentTransactionRules();
 void
 setCurrentTransactionRules(std::optional<Rules> r);
 
-/** RAII class to set and restore the current transaction rules
+/**
+ * RAII class to set and restore the current transaction rules
  */
 class CurrentTransactionRulesGuard
 {
@@ -106,5 +133,16 @@ public:
 private:
     std::optional<Rules> saved_;
 };
+
+class NumberMantissaScaleGuard;
+
+bool
+useRulesGuards(Rules const& rules);
+
+void
+createGuards(
+    Rules const& rules,
+    std::optional<CurrentTransactionRulesGuard>& rulesGuard,
+    std::optional<NumberMantissaScaleGuard>& mantissaScaleGuard);
 
 }  // namespace xrpl

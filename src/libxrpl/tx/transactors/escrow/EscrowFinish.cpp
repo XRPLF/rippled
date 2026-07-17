@@ -1,26 +1,45 @@
+#include <xrpl/tx/transactors/escrow/EscrowFinish.h>
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/conditions/Condition.h>
 #include <xrpl/conditions/Fulfillment.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/EscrowHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/transactors/escrow/EscrowFinish.h>
+#include <xrpl/tx/Transactor.h>
 
-#include <libxrpl/tx/transactors/escrow/EscrowHelpers.h>
+#include <system_error>
+#include <variant>
 
 namespace xrpl {
 
 // During an EscrowFinish, the transaction must specify both
 // a condition and a fulfillment. We track whether that
 // fulfillment matches and validates the condition.
-constexpr HashRouterFlags SF_CF_INVALID = HashRouterFlags::PRIVATE5;
-constexpr HashRouterFlags SF_CF_VALID = HashRouterFlags::PRIVATE6;
+constexpr HashRouterFlags kSfCfInvalid = HashRouterFlags::PRIVATE5;
+constexpr HashRouterFlags kSfCfValid = HashRouterFlags::PRIVATE6;
 
 //------------------------------------------------------------------------------
 
@@ -70,7 +89,7 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
 
     if (cb && fb)
     {
-        auto& router = ctx.registry.getHashRouter();
+        auto& router = ctx.registry.get().getHashRouter();
 
         auto const id = ctx.tx.getTransactionID();
         auto const flags = router.getFlags(id);
@@ -78,15 +97,15 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
         // If we haven't checked the condition, check it
         // now. Whether it passes or not isn't important
         // in preflight.
-        if (!any(flags & (SF_CF_INVALID | SF_CF_VALID)))
+        if (!any(flags & (kSfCfInvalid | kSfCfValid)))
         {
             if (checkCondition(*fb, *cb))
             {
-                router.setFlags(id, SF_CF_VALID);
+                router.setFlags(id, kSfCfValid);
             }
             else
             {
-                router.setFlags(id, SF_CF_INVALID);
+                router.setFlags(id, kSfCfInvalid);
             }
         }
     }
@@ -124,17 +143,17 @@ escrowFinishPreclaimHelper<Issue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const& issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tesSUCCESS
     if (issuer == dest)
         return tesSUCCESS;
 
     // If the issuer has requireAuth set, check if the destination is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), dest); !isTesSuccess(ter))
+    if (auto const ter = requireAuth(ctx.view, amount.get<Issue>(), dest); !isTesSuccess(ter))
         return ter;
 
     // If the issuer has deep frozen the destination, return tecFROZEN
-    if (isDeepFrozen(ctx.view, dest, amount.getCurrency(), amount.getIssuer()))
+    if (isDeepFrozen(ctx.view, dest, amount.get<Issue>().currency, amount.getIssuer()))
         return tecFROZEN;
 
     return tesSUCCESS;
@@ -147,13 +166,13 @@ escrowFinishPreclaimHelper<MPTIssue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const& issuer = amount.getIssuer();
     // If the issuer is the same as the dest, return tesSUCCESS
     if (issuer == dest)
         return tesSUCCESS;
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
+    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -234,14 +253,14 @@ EscrowFinish::doApply()
     // Check cryptocondition fulfillment
     {
         auto const id = ctx_.tx.getTransactionID();
-        auto flags = ctx_.registry.getHashRouter().getFlags(id);
+        auto flags = ctx_.registry.get().getHashRouter().getFlags(id);
 
         auto const cb = ctx_.tx[~sfCondition];
 
         // It's unlikely that the results of the check will
         // expire from the hash router, but if it happens,
         // simply re-run the check.
-        if (cb && !any(flags & (SF_CF_INVALID | SF_CF_VALID)))
+        if (cb && !any(flags & (kSfCfInvalid | kSfCfValid)))
         {
             // LCOV_EXCL_START
             auto const fb = ctx_.tx[~sfFulfillment];
@@ -251,20 +270,20 @@ EscrowFinish::doApply()
 
             if (checkCondition(*fb, *cb))
             {
-                flags = SF_CF_VALID;
+                flags = kSfCfValid;
             }
             else
             {
-                flags = SF_CF_INVALID;
+                flags = kSfCfInvalid;
             }
 
-            ctx_.registry.getHashRouter().setFlags(id, flags);
+            ctx_.registry.get().getHashRouter().setFlags(id, flags);
             // LCOV_EXCL_STOP
         }
 
         // If the check failed, then simply return an error
         // and don't look at anything else.
-        if (any(flags & SF_CF_INVALID))
+        if (any(flags & kSfCfInvalid))
             return tecCRYPTOCONDITION_ERROR;
 
         // Check against condition in the ledger entry:
@@ -290,7 +309,8 @@ EscrowFinish::doApply()
     if (!sled)
         return tecNO_DST;
 
-    if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
+    if (auto err =
+            verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, destID, sled, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
@@ -320,6 +340,16 @@ EscrowFinish::doApply()
         }
     }
 
+    // With the Sponsor amendment, release the escrow reserve before delivery.
+    // Token delivery can auto-create a destination holding, and the same
+    // sponsor (or the same account, for a self-escrow) may cover both the
+    // escrow being removed and the holding being created. Without the
+    // amendment, keep the legacy order: releasing early changes the reserve
+    // arithmetic for self-escrows and would break consensus if not gated.
+    bool const sponsorEnabled = ctx_.view().rules().enabled(featureSponsor);
+    if (sponsorEnabled)
+        decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);
+
     STAmount const amount = slep->getFieldAmount(sfAmount);
     // Transfer amount to destination
     if (isXRP(amount))
@@ -333,13 +363,13 @@ EscrowFinish::doApply()
 
         Rate lockedRate = slep->isFieldPresent(sfTransferRate)
             ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
-            : parityRate;
+            : kParityRate;
         auto const issuer = amount.getIssuer();
-        bool const createAsset = destID == account_;
+        bool const createAsset = destID == accountID_;
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
-                        ctx_.view(),
+                        ctx_.getApplyViewContext(),
                         lockedRate,
                         sled,
                         preFeeBalance_,
@@ -369,14 +399,30 @@ EscrowFinish::doApply()
 
     ctx_.view().update(sled);
 
-    // Adjust source owner count
-    auto const sle = ctx_.view().peek(keylet::account(account));
-    adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
-    ctx_.view().update(sle);
+    // Adjust source owner count (legacy position, pre-Sponsor)
+    if (!sponsorEnabled)
+        decreaseOwnerCountForObject(ctx_.view(), account, slep, 1, ctx_.journal);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);
     return tesSUCCESS;
 }
 
+void
+EscrowFinish::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+EscrowFinish::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
 }  // namespace xrpl

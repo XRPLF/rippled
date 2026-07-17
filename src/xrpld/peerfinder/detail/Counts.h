@@ -4,191 +4,218 @@
 #include <xrpld/peerfinder/Slot.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
-#include <xrpl/basics/random.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
-namespace xrpl {
-namespace PeerFinder {
+#include <cstddef>
+#include <sstream>
+#include <string>
 
-/** Manages the count of available connections for the various slots. */
+namespace xrpl::PeerFinder {
+
+/**
+ * Direction of a slot count adjustment.
+ */
+enum class CountAdjustment : int { Decrement = -1, Increment = 1 };
+
+/**
+ * Manages the count of available connections for the various slots.
+ */
 class Counts
 {
 public:
-    Counts()
-        : m_attempts(0)
-        , m_active(0)
-        , m_in_max(0)
-        , m_in_active(0)
-        , m_out_max(0)
-        , m_out_active(0)
-        , m_fixed(0)
-        , m_fixed_active(0)
-        , m_reserved(0)
-
-        , m_acceptCount(0)
-        , m_closingCount(0)
-    {
-    }
-
-    //--------------------------------------------------------------------------
-
-    /** Adds the slot state and properties to the slot counts. */
+    /**
+     * Adds the slot state and properties to the slot counts.
+     */
     void
     add(Slot const& s)
     {
-        adjust(s, 1);
+        adjust(s, CountAdjustment::Increment);
     }
 
-    /** Removes the slot state and properties from the slot counts. */
+    /**
+     * Removes the slot state and properties from the slot counts.
+     */
     void
     remove(Slot const& s)
     {
-        adjust(s, -1);
+        adjust(s, CountAdjustment::Decrement);
     }
 
-    /** Returns `true` if the slot can become active. */
-    bool
-    can_activate(Slot const& s) const
+    /**
+     * Returns `true` if the slot can become active.
+     */
+    [[nodiscard]] bool
+    canActivate(Slot const& s) const
     {
         // Must be handshaked and in the right state
         XRPL_ASSERT(
-            s.state() == Slot::connected || s.state() == Slot::accept,
+            s.state() == Slot::State::Connected || s.state() == Slot::State::Accept,
             "xrpl::PeerFinder::Counts::can_activate : valid input state");
 
         if (s.fixed() || s.reserved())
             return true;
 
         if (s.inbound())
-            return m_in_active < m_in_max;
+            return inActive_ < inMax_;
 
-        return m_out_active < m_out_max;
+        return outActive_ < outMax_;
     }
 
-    /** Returns the number of attempts needed to bring us to the max. */
-    std::size_t
-    attempts_needed() const
+    /**
+     * Returns the number of attempts needed to bring us to the max.
+     */
+    [[nodiscard]] std::size_t
+    attemptsNeeded() const
     {
-        if (m_attempts >= Tuning::maxConnectAttempts)
+        if (attempts_ >= Tuning::kMaxConnectAttempts)
             return 0;
-        return Tuning::maxConnectAttempts - m_attempts;
+        return Tuning::kMaxConnectAttempts - attempts_;
     }
 
-    /** Returns the number of outbound connection attempts. */
-    std::size_t
+    /**
+     * Returns the number of outbound connection attempts.
+     */
+    [[nodiscard]] std::size_t
     attempts() const
     {
-        return m_attempts;
+        return attempts_;
     }
 
-    /** Returns the total number of outbound slots. */
-    int
-    out_max() const
+    /**
+     * Returns the total number of outbound slots.
+     */
+    [[nodiscard]] int
+    outMax() const
     {
-        return m_out_max;
+        return outMax_;
     }
 
-    /** Returns the number of outbound peers assigned an open slot.
-        Fixed peers do not count towards outbound slots used.
-    */
-    int
-    out_active() const
+    /**
+     * Returns the number of outbound peers assigned an open slot.
+     * Fixed peers do not count towards outbound slots used.
+     */
+    [[nodiscard]] int
+    outActive() const
     {
-        return m_out_active;
+        return outActive_;
     }
 
-    /** Returns the number of fixed connections. */
-    std::size_t
+    /**
+     * Returns the number of fixed connections.
+     */
+    [[nodiscard]] std::size_t
     fixed() const
     {
-        return m_fixed;
+        return fixed_;
     }
 
-    /** Returns the number of active fixed connections. */
-    std::size_t
-    fixed_active() const
+    /**
+     * Returns the number of active fixed connections.
+     */
+    [[nodiscard]] std::size_t
+    fixedActive() const
     {
-        return m_fixed_active;
+        return fixedActive_;
     }
 
     //--------------------------------------------------------------------------
 
-    /** Called when the config is set or changed. */
+    /**
+     * Called when the config is set or changed.
+     */
     void
     onConfig(Config const& config)
     {
-        m_out_max = config.outPeers;
+        outMax_ = config.outPeers;
         if (config.wantIncoming)
-            m_in_max = config.inPeers;
+            inMax_ = config.inPeers;
     }
 
-    /** Returns the number of accepted connections that haven't handshaked. */
-    int
+    /**
+     * Returns the number of accepted connections that haven't handshaked.
+     */
+    [[nodiscard]] int
     acceptCount() const
     {
-        return m_acceptCount;
+        return acceptCount_;
     }
 
-    /** Returns the number of connection attempts currently active. */
-    int
+    /**
+     * Returns the number of connection attempts currently active.
+     */
+    [[nodiscard]] int
     connectCount() const
     {
-        return m_attempts;
+        return attempts_;
     }
 
-    /** Returns the number of connections that are gracefully closing. */
-    int
+    /**
+     * Returns the number of connections that are gracefully closing.
+     */
+    [[nodiscard]] int
     closingCount() const
     {
-        return m_closingCount;
+        return closingCount_;
     }
 
-    /** Returns the total number of inbound slots. */
-    int
-    in_max() const
+    /**
+     * Returns the total number of inbound slots.
+     */
+    [[nodiscard]] int
+    inMax() const
     {
-        return m_in_max;
+        return inMax_;
     }
 
-    /** Returns the number of inbound peers assigned an open slot. */
-    int
+    /**
+     * Returns the number of inbound peers assigned an open slot.
+     */
+    [[nodiscard]] int
     inboundActive() const
     {
-        return m_in_active;
+        return inActive_;
     }
 
-    /** Returns the total number of active peers excluding fixed peers. */
-    int
+    /**
+     * Returns the total number of active peers excluding fixed peers.
+     */
+    [[nodiscard]] int
     totalActive() const
     {
-        return m_in_active + m_out_active;
+        return inActive_ + outActive_;
     }
 
-    /** Returns the number of unused inbound slots.
-        Fixed peers do not deduct from inbound slots or count towards totals.
-    */
-    int
+    /**
+     * Returns the number of unused inbound slots.
+     * Fixed peers do not deduct from inbound slots or count towards totals.
+     */
+    [[nodiscard]] int
     inboundSlotsFree() const
     {
-        if (m_in_active < m_in_max)
-            return m_in_max - m_in_active;
+        if (inActive_ < inMax_)
+            return inMax_ - inActive_;
         return 0;
     }
 
-    /** Returns the number of unused outbound slots.
-        Fixed peers do not deduct from outbound slots or count towards totals.
-    */
-    int
+    /**
+     * Returns the number of unused outbound slots.
+     * Fixed peers do not deduct from outbound slots or count towards totals.
+     */
+    [[nodiscard]] int
     outboundSlotsFree() const
     {
-        if (m_out_active < m_out_max)
-            return m_out_max - m_out_active;
+        if (outActive_ < outMax_)
+            return outMax_ - outActive_;
         return 0;
     }
 
     //--------------------------------------------------------------------------
 
-    /** Returns true if the slot logic considers us "connected" to the network.
+    /**
+     * Returns true if the slot logic considers us "connected" to the network.
      */
-    bool
+    [[nodiscard]] bool
     isConnectedToNetwork() const
     {
         // We will consider ourselves connected if we have reached
@@ -197,79 +224,110 @@ public:
         //
         // Fixed peers do not count towards the active outgoing total.
 
-        if (m_out_max > 0)
-            return false;
-
-        return true;
+        return outMax_ <= 0;
     }
 
-    /** Output statistics. */
+    /**
+     * Output statistics.
+     */
     void
-    onWrite(beast::PropertyStream::Map& map)
+    onWrite(beast::PropertyStream::Map& map) const
     {
         map["accept"] = acceptCount();
         map["connect"] = connectCount();
         map["close"] = closingCount();
-        map["in"] << m_in_active << "/" << m_in_max;
-        map["out"] << m_out_active << "/" << m_out_max;
-        map["fixed"] = m_fixed_active;
-        map["reserved"] = m_reserved;
-        map["total"] = m_active;
+        map["in"] << inActive_ << "/" << inMax_;
+        map["out"] << outActive_ << "/" << outMax_;
+        map["fixed"] = fixedActive_;
+        map["reserved"] = reserved_;
+        map["total"] = active_;
     }
 
-    /** Records the state for diagnostics. */
-    std::string
-    state_string() const
+    /**
+     * Records the state for diagnostics.
+     */
+    [[nodiscard]] std::string
+    stateString() const
     {
         std::stringstream ss;
-        ss << m_out_active << "/" << m_out_max << " out, " << m_in_active << "/" << m_in_max
-           << " in, " << connectCount() << " connecting, " << closingCount() << " closing";
+        ss << outActive_ << "/" << outMax_ << " out, " << inActive_ << "/" << inMax_ << " in, "
+           << connectCount() << " connecting, " << closingCount() << " closing";
         return ss.str();
     }
 
     //--------------------------------------------------------------------------
 private:
-    // Adjusts counts based on the specified slot, in the direction indicated.
-    void
-    adjust(Slot const& s, int const n)
+    /**
+     * Increments or decrements a counter based on the adjustment direction.
+     */
+    template <typename T>
+    static void
+    adjustCounter(T& counter, CountAdjustment dir)
     {
+        switch (dir)
+        {
+            case CountAdjustment::Increment:
+                ++counter;
+                break;
+            case CountAdjustment::Decrement:
+                --counter;
+                break;
+        }
+    }
+
+    // Adjusts counts based on the specified slot, in the direction indicated.
+    //
+    // IMPORTANT: All std::size_t counters MUST be adjusted via adjustCounter()
+    // and NEVER via `+= n` where n = static_cast<int>(dir).  When dir is
+    // Decrement, n == -1; adding -1 to a std::size_t implicitly converts -1 to
+    // SIZE_MAX, which UBSan flags as unsigned-integer-overflow and masks real
+    // underflow bugs (decrementing a counter already at zero).  Plain int
+    // counters (acceptCount_, attempts_, closingCount_) are safe with += n.
+    void
+    adjust(Slot const& s, CountAdjustment const dir)
+    {
+        int const n = static_cast<int>(dir);
         if (s.fixed())
-            m_fixed += n;
+            adjustCounter(fixed_, dir);
 
         if (s.reserved())
-            m_reserved += n;
+            adjustCounter(reserved_, dir);
 
         switch (s.state())
         {
-            case Slot::accept:
+            case Slot::State::Accept:
                 XRPL_ASSERT(s.inbound(), "xrpl::PeerFinder::Counts::adjust : input is inbound");
-                m_acceptCount += n;
+                acceptCount_ += n;
                 break;
 
-            case Slot::connect:
-            case Slot::connected:
+            case Slot::State::Connect:
+            case Slot::State::Connected:
                 XRPL_ASSERT(
                     !s.inbound(),
                     "xrpl::PeerFinder::Counts::adjust : input is not "
                     "inbound");
-                m_attempts += n;
+                attempts_ += n;
                 break;
 
-            case Slot::active:
+            case Slot::State::Active:
                 if (s.fixed())
-                    m_fixed_active += n;
+                    adjustCounter(fixedActive_, dir);
                 if (!s.fixed() && !s.reserved())
                 {
                     if (s.inbound())
-                        m_in_active += n;
+                    {
+                        adjustCounter(inActive_, dir);
+                    }
                     else
-                        m_out_active += n;
+                    {
+                        adjustCounter(outActive_, dir);
+                    }
                 }
-                m_active += n;
+                adjustCounter(active_, dir);
                 break;
 
-            case Slot::closing:
-                m_closingCount += n;
+            case Slot::State::Closing:
+                closingCount_ += n;
                 break;
 
             // LCOV_EXCL_START
@@ -281,40 +339,57 @@ private:
     }
 
 private:
-    /** Outbound connection attempts. */
-    int m_attempts;
+    /**
+     * Outbound connection attempts.
+     */
+    int attempts_{0};
 
-    /** Active connections, including fixed and reserved. */
-    std::size_t m_active;
+    /**
+     * Active connections, including fixed and reserved.
+     */
+    std::size_t active_{0};
 
-    /** Total number of inbound slots. */
-    std::size_t m_in_max;
+    /**
+     * Total number of inbound slots.
+     */
+    std::size_t inMax_{0};
 
-    /** Number of inbound slots assigned to active peers. */
-    std::size_t m_in_active;
+    /**
+     * Number of inbound slots assigned to active peers.
+     */
+    std::size_t inActive_{0};
 
-    /** Maximum desired outbound slots. */
-    std::size_t m_out_max;
+    /**
+     * Maximum desired outbound slots.
+     */
+    std::size_t outMax_{0};
 
-    /** Active outbound slots. */
-    std::size_t m_out_active;
+    /**
+     * Active outbound slots.
+     */
+    std::size_t outActive_{0};
 
-    /** Fixed connections. */
-    std::size_t m_fixed;
+    /**
+     * Fixed connections.
+     */
+    std::size_t fixed_{0};
 
-    /** Active fixed connections. */
-    std::size_t m_fixed_active;
+    /**
+     * Active fixed connections.
+     */
+    std::size_t fixedActive_{0};
 
-    /** Reserved connections. */
-    std::size_t m_reserved;
+    /**
+     * Reserved connections.
+     */
+    std::size_t reserved_{0};
 
     // Number of inbound connections that are
     // not active or gracefully closing.
-    int m_acceptCount;
+    int acceptCount_{0};
 
     // Number of connections that are gracefully closing.
-    int m_closingCount;
+    int closingCount_{0};
 };
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

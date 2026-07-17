@@ -1,5 +1,21 @@
 #include <xrpl/server/State.h>
 
+#include <xrpl/basics/contract.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/rdb/SociDB.h>
+
+#include <boost/optional/optional.hpp>  // IWYU pragma: keep
+
+#include <soci/boost-optional.h>  // IWYU pragma: keep
+#include <soci/into.h>
+#include <soci/session.h>
+#include <soci/use.h>
+
+#include <cstdint>
+#include <stdexcept>
+#include <string>
+
 namespace xrpl {
 
 void
@@ -31,7 +47,7 @@ initStateDB(soci::session& session, BasicConfig const& config, std::string const
         count = *countO;
     }
 
-    if (!count)
+    if (count == 0)
     {
         session << "INSERT INTO DbState VALUES (1, '', '', 0);";
     }
@@ -45,7 +61,7 @@ initStateDB(soci::session& session, BasicConfig const& config, std::string const
         count = *countO;
     }
 
-    if (!count)
+    if (count == 0)
     {
         session << "INSERT INTO CanDelete VALUES (1, 0);";
     }

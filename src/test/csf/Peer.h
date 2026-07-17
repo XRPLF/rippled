@@ -1,7 +1,10 @@
 #pragma once
 
+#include <test/csf/BasicNetwork.h>
 #include <test/csf/CollectorRef.h>
+#include <test/csf/Proposal.h>
 #include <test/csf/Scheduler.h>
+#include <test/csf/SimTime.h>
 #include <test/csf/TrustGraph.h>
 #include <test/csf/Tx.h>
 #include <test/csf/Validation.h>
@@ -9,40 +12,56 @@
 #include <test/csf/ledgers.h>
 
 #include <xrpld/consensus/Consensus.h>
+#include <xrpld/consensus/ConsensusParms.h>
+#include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/consensus/Validations.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/tagged_integer.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
-#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
 
 #include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <limits>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 namespace bc = boost::container;
 
-/** A single peer in the simulation.
-
-    This is the main work-horse of the consensus simulation framework and is
-    where many other components are integrated. The peer
-
-     - Implements the Callbacks required by Consensus
-     - Manages trust & network connections with other peers
-     - Issues events back to the simulation based on its actions for analysis
-       by Collectors
-     - Exposes most internal state for forcibly simulating arbitrary scenarios
-*/
+/**
+ * A single peer in the simulation.
+ *
+ * This is the main work-horse of the consensus simulation framework and is
+ * where many other components are integrated. The peer
+ *
+ *  - Implements the Callbacks required by Consensus
+ *  - Manages trust & network connections with other peers
+ *  - Issues events back to the simulation based on its actions for analysis
+ *    by Collectors
+ *  - Exposes most internal state for forcibly simulating arbitrary scenarios
+ */
 struct Peer
 {
-    /** Basic wrapper of a proposed position taken by a peer.
-
-        For real consensus, this would add additional data for serialization
-        and signing. For simulation, nothing extra is needed.
-    */
+    /**
+     * Basic wrapper of a proposed position taken by a peer.
+     *
+     * For real consensus, this would add additional data for serialization
+     * and signing. For simulation, nothing extra is needed.
+     */
     class Position
     {
     public:
@@ -56,14 +75,14 @@ struct Peer
             return proposal_;
         }
 
-        Json::Value
+        json::Value
         getJson() const
         {
             return proposal_.getJson();
         }
 
-        std::string
-        render() const
+        static std::string
+        render()
         {
             return "";
         }
@@ -72,29 +91,34 @@ struct Peer
         Proposal proposal_;
     };
 
-    /** Simulated delays in internal peer processing.
+    /**
+     * Simulated delays in internal peer processing.
      */
     struct ProcessingDelays
     {
-        //! Delay in consensus calling doAccept to accepting and issuing
-        //! validation
-        //! TODO: This should be a function of the number of transactions
+        /**
+         * Delay in consensus calling doAccept to accepting and issuing
+         * validation
+         * TODO: This should be a function of the number of transactions
+         */
         std::chrono::milliseconds ledgerAccept{0};
 
-        //! Delay in processing validations from remote peers
+        /**
+         * Delay in processing validations from remote peers
+         */
         std::chrono::milliseconds recvValidation{0};
 
         // Return the receive delay for message type M, default is no delay
         // Received delay is the time from receiving the message to actually
         // handling it.
         template <class M>
-        SimDuration
+        [[nodiscard]] SimDuration
         onReceive(M const&) const
         {
             return SimDuration{};
         }
 
-        SimDuration
+        [[nodiscard]] SimDuration
         onReceive(Validation const&) const
         {
             return recvValidation;
@@ -105,7 +129,8 @@ struct Peer
     {
     };
 
-    /** Generic Validations adaptor that simply ignores recently stale
+    /**
+     * Generic Validations adaptor that simply ignores recently stale
      * validations
      */
     class ValAdaptor
@@ -133,7 +158,7 @@ struct Peer
         {
         }
 
-        NetClock::time_point
+        [[nodiscard]] NetClock::time_point
         now() const
         {
             return p_.now();
@@ -148,7 +173,9 @@ struct Peer
         }
     };
 
-    //! Type definitions for generic consensus
+    /**
+     * Type definitions for generic consensus
+     */
     using Ledger_t = Ledger;
     using NodeID_t = PeerID;
     using NodeKey_t = PeerKey;
@@ -157,81 +184,121 @@ struct Peer
     using Result = ConsensusResult<Peer>;
     using NodeKey = Validation::NodeKey;
 
-    //! Logging support that prefixes messages with the peer ID
+    /**
+     * Logging support that prefixes messages with the peer ID
+     */
     beast::WrappedSink sink;
     beast::Journal j;
 
-    //! Generic consensus
+    /**
+     * Generic consensus
+     */
     Consensus<Peer> consensus;
 
-    //! Our unique ID
+    /**
+     * Our unique ID
+     */
     PeerID id;
 
-    //! Current signing key
+    /**
+     * Current signing key
+     */
     PeerKey key;
 
-    //! The oracle that manages unique ledgers
+    /**
+     * The oracle that manages unique ledgers
+     */
     LedgerOracle& oracle;
 
-    //! Scheduler of events
+    /**
+     * Scheduler of events
+     */
     Scheduler& scheduler;
 
-    //! Handle to network for sending messages
+    /**
+     * Handle to network for sending messages
+     */
     BasicNetwork<Peer*>& net;
 
-    //! Handle to Trust graph of network
+    /**
+     * Handle to Trust graph of network
+     */
     TrustGraph<Peer*>& trustGraph;
 
-    //! openTxs that haven't been closed in a ledger yet
+    /**
+     * openTxs that haven't been closed in a ledger yet
+     */
     TxSetType openTxs;
 
-    //! The last ledger closed by this node
+    /**
+     * The last ledger closed by this node
+     */
     Ledger lastClosedLedger;
 
-    //! Ledgers this node has closed or loaded from the network
+    /**
+     * Ledgers this node has closed or loaded from the network
+     */
     hash_map<Ledger::ID, Ledger> ledgers;
 
-    //! Validations from trusted nodes
+    /**
+     * Validations from trusted nodes
+     */
     Validations<ValAdaptor> validations;
 
-    //! The most recent ledger that has been fully validated by the network from
-    //! the perspective of this Peer
+    /**
+     * The most recent ledger that has been fully validated by the network from
+     * the perspective of this Peer
+     */
     Ledger fullyValidatedLedger;
 
     //-------------------------------------------------------------------------
     // Store most network messages; these could be purged if memory use ever
     // becomes problematic
 
-    //! Map from Ledger::ID to vector of Positions with that ledger
-    //! as the prior ledger
+    /**
+     * Map from Ledger::ID to vector of Positions with that ledger
+     * as the prior ledger
+     */
     bc::flat_map<Ledger::ID, std::vector<Proposal>> peerPositions;
-    //! TxSet associated with a TxSet::ID
+    /**
+     * TxSet associated with a TxSet::ID
+     */
     bc::flat_map<TxSet::ID, TxSet> txSets;
 
     // Ledgers/TxSets we are acquiring and when that request times out
     bc::flat_map<Ledger::ID, SimTime> acquiringLedgers;
     bc::flat_map<TxSet::ID, SimTime> acquiringTxSets;
 
-    //! The number of ledgers this peer has completed
+    /**
+     * The number of ledgers this peer has completed
+     */
     int completedLedgers = 0;
 
-    //! The number of ledgers this peer should complete before stopping to run
+    /**
+     * The number of ledgers this peer should complete before stopping to run
+     */
     int targetLedgers = std::numeric_limits<int>::max();
 
-    //! Skew of time relative to the common scheduler clock
+    /**
+     * Skew of time relative to the common scheduler clock
+     */
     std::chrono::seconds clockSkew{0};
 
-    //! Simulated delays to use for internal processing
+    /**
+     * Simulated delays to use for internal processing
+     */
     ProcessingDelays delays;
 
-    //! Whether to simulate running as validator or a tracking node
+    /**
+     * Whether to simulate running as validator or a tracking node
+     */
     bool runAsValidator = true;
 
     // TODO: Consider removing these two, they are only a convenience for tests
     // Number of proposers in the prior round
     std::size_t prevProposers = 0;
     // Duration of prior round
-    std::chrono::milliseconds prevRoundTime;
+    std::chrono::milliseconds prevRoundTime{};
 
     // Quorum of validations needed for a ledger to be fully validated
     // TODO: Use the logic in ValidatorList to set this dynamically
@@ -242,20 +309,22 @@ struct Peer
     // Simulation parameters
     ConsensusParms consensusParms;
 
-    //! The collectors to report events to
+    /**
+     * The collectors to report events to
+     */
     CollectorRefs& collectors;
 
-    /** Constructor
-
-        @param i Unique PeerID
-        @param s Simulation Scheduler
-        @param o Simulation Oracle
-        @param n Simulation network
-        @param tg Simulation trust graph
-        @param c Simulation collectors
-        @param jIn Simulation journal
-
-    */
+    /**
+     * Constructor
+     *
+     * @param i Unique PeerID
+     * @param s Simulation Scheduler
+     * @param o Simulation Oracle
+     * @param n Simulation network
+     * @param tg Simulation trust graph
+     * @param c Simulation collectors
+     * @param jIn Simulation journal
+     */
     Peer(
         PeerID i,
         Scheduler& s,
@@ -285,9 +354,10 @@ struct Peer
         trustGraph.trust(this, this);
     }
 
-    /**  Schedule the provided callback in `when` duration, but if
-        `when` is 0, call immediately
-    */
+    /**
+     * Schedule the provided callback in `when` duration, but if
+     * `when` is 0, call immediately
+     */
     template <class T>
     void
     schedule(std::chrono::nanoseconds when, T&& what)
@@ -295,9 +365,13 @@ struct Peer
         using namespace std::chrono_literals;
 
         if (when == 0ns)
+        {
             what();
+        }
         else
+        {
             scheduler.in(when, std::forward<T>(what));
+        }
     }
 
     // Issue a new event to the collectors
@@ -339,20 +413,19 @@ struct Peer
     bool
     trusts(PeerID const& oId)
     {
-        for (auto const p : trustGraph.trustedPeers(this))
-            if (p->id == oId)
-                return true;
-        return false;
+        return std::ranges::any_of(
+            trustGraph.trustedPeers(this), [&oId](auto const p) { return p->id == oId; });
     }
 
-    /** Create network connection
-
-        Creates a new outbound connection to another Peer if none exists
-
-        @param o The peer with the inbound connection
-        @param dur The fixed delay for messages between the two Peers
-        @return Whether the connection was created.
-    */
+    /**
+     * Create network connection
+     *
+     * Creates a new outbound connection to another Peer if none exists
+     *
+     * @param o The peer with the inbound connection
+     * @param dur The fixed delay for messages between the two Peers
+     * @return Whether the connection was created.
+     */
 
     bool
     connect(Peer& o, SimDuration dur)
@@ -360,13 +433,14 @@ struct Peer
         return net.connect(this, &o, dur);
     }
 
-    /** Remove a network connection
-
-        Removes a connection between peers if one exists
-
-        @param o The peer we disconnect from
-        @return Whether the connection was removed
-    */
+    /**
+     * Remove a network connection
+     *
+     * Removes a connection between peers if one exists
+     *
+     * @param o The peer we disconnect from
+     * @return Whether the connection was removed
+     */
     bool
     disconnect(Peer& o)
     {
@@ -486,12 +560,12 @@ struct Peer
     Result
     onClose(Ledger const& prevLedger, NetClock::time_point closeTime, ConsensusMode mode)
     {
-        issue(CloseLedger{prevLedger, openTxs});
+        issue(CloseLedger{.prevLedger = prevLedger, .txs = openTxs});
 
         return Result(
             TxSet{openTxs},
             Proposal(
-                prevLedger.id(), Proposal::seqJoin, TxSet::calcID(openTxs), closeTime, now(), id));
+                prevLedger.id(), Proposal::kSeqJoin, TxSet::calcID(openTxs), closeTime, now(), id));
     }
 
     void
@@ -501,16 +575,10 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value&& consensusJson)
+        json::Value const& consensusJson)
     {
         onAccept(
-            result,
-            prevLedger,
-            closeResolution,
-            rawCloseTimes,
-            mode,
-            std::move(consensusJson),
-            validating());
+            result, prevLedger, closeResolution, rawCloseTimes, mode, consensusJson, validating());
     }
 
     void
@@ -520,11 +588,11 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value&& consensusJson,
+        json::Value const& consensusJson,
         bool const validating)
     {
-        schedule(delays.ledgerAccept, [=, this]() {
-            bool const proposing = mode == ConsensusMode::proposing;
+        schedule(delays.ledgerAccept, [mode, result, prevLedger, closeResolution, this]() {
+            bool const proposing = mode == ConsensusMode::Proposing;
             bool const consensusFail = result.state == ConsensusState::MovedOn;
 
             TxSet const acceptedTxs = injectTxs(prevLedger, result.txns);
@@ -532,15 +600,14 @@ struct Peer
                 prevLedger, acceptedTxs.txs(), closeResolution, result.position.closeTime());
             ledgers[newLedger.id()] = newLedger;
 
-            issue(AcceptLedger{newLedger, lastClosedLedger});
+            issue(AcceptLedger{.ledger = newLedger, .prior = lastClosedLedger});
             prevProposers = result.proposers;
             prevRoundTime = result.roundTime.read();
             lastClosedLedger = newLedger;
 
-            auto const it = std::remove_if(openTxs.begin(), openTxs.end(), [&](Tx const& tx) {
-                return acceptedTxs.exists(tx.id());
-            });
-            openTxs.erase(it, openTxs.end());
+            auto const removed = std::ranges::remove_if(
+                openTxs, [&](Tx const& tx) { return acceptedTxs.exists(tx.id()); });
+            openTxs.erase(removed.begin(), removed.end());
 
             // Only send validation if the new ledger is compatible with our
             // fully validated ledger
@@ -550,9 +617,9 @@ struct Peer
             if (runAsValidator && isCompatible && !consensusFail &&
                 validations.canValidateSeq(newLedger.seq()))
             {
-                bool isFull = proposing;
+                bool const isFull = proposing;
 
-                Validation v{newLedger.id(), newLedger.seq(), now(), now(), key, id, isFull};
+                Validation const v{newLedger.id(), newLedger.seq(), now(), now(), key, id, isFull};
                 // share the new validation; it is trusted by the receiver
                 share(v);
                 // we trust ourselves
@@ -593,8 +660,8 @@ struct Peer
 
         if (netLgr != ledgerID)
         {
-            JLOG(j.trace()) << Json::Compact(validations.getJsonTrie());
-            issue(WrongPrevLedger{ledgerID, netLgr});
+            JLOG(j.trace()) << json::Compact(validations.getJsonTrie());
+            issue(WrongPrevLedger{.wrong = ledgerID, .right = netLgr});
         }
 
         return netLgr;
@@ -637,7 +704,9 @@ struct Peer
     //--------------------------------------------------------------------------
     // Validation members
 
-    /** Add a trusted validation and return true if it is worth forwarding */
+    /**
+     * Add a trusted validation and return true if it is worth forwarding
+     */
     bool
     addTrustedValidation(Validation v)
     {
@@ -645,7 +714,7 @@ struct Peer
         v.setSeen(now());
         ValStatus const res = validations.add(v.nodeID(), v);
 
-        if (res == ValStatus::stale)
+        if (res == ValStatus::Stale)
             return false;
 
         // Acquire will try to get from network if not already local
@@ -654,7 +723,9 @@ struct Peer
         return true;
     }
 
-    /** Check if a new ledger can be deemed fully validated */
+    /**
+     * Check if a new ledger can be deemed fully validated
+     */
     void
     checkFullyValidated(Ledger const& ledger)
     {
@@ -667,7 +738,7 @@ struct Peer
         quorum = static_cast<std::size_t>(std::ceil(numTrustedPeers * 0.8));
         if (count >= quorum && ledger.isAncestor(fullyValidatedLedger))
         {
-            issue(FullyValidateLedger{ledger, fullyValidatedLedger});
+            issue(FullyValidateLedger{.ledger = ledger, .prior = fullyValidatedLedger});
             fullyValidatedLedger = ledger;
         }
     }
@@ -756,7 +827,7 @@ struct Peer
         // TODO: This always suppresses relay of peer positions already seen
         // Should it allow forwarding if for a recent ledger ?
         auto& dest = peerPositions[p.prevLedger()];
-        if (std::find(dest.begin(), dest.end(), p) != dest.end())
+        if (std::ranges::find(dest, p) != dest.end())
             return false;
 
         dest.push_back(p);
@@ -780,7 +851,7 @@ struct Peer
     {
         // Ignore and suppress relay of transactions already in last ledger
         TxSetType const& lastClosedTxs = lastClosedLedger.txs();
-        if (lastClosedTxs.find(tx) != lastClosedTxs.end())
+        if (lastClosedTxs.contains(tx))
             return false;
 
         // only relay if it was new to our open ledger
@@ -836,8 +907,8 @@ struct Peer
     {
     }
 
-    bool
-    validating() const
+    static bool
+    validating()
     {
         // does not matter
         return false;
@@ -856,7 +927,9 @@ struct Peer
     //--------------------------------------------------------------------------
     // Simulation "driver" members
 
-    //! Heartbeat timer call
+    /**
+     * Heartbeat timer call
+     */
     void
     timerEntry()
     {
@@ -877,10 +950,10 @@ struct Peer
         if (bestLCL == Ledger::ID{0})
             bestLCL = lastClosedLedger.id();
 
-        issue(StartRound{bestLCL, lastClosedLedger});
+        issue(StartRound{.bestLedger = bestLCL, .prevLedger = lastClosedLedger});
 
         // Not yet modeling dynamic UNL.
-        hash_set<PeerID> nowUntrusted;
+        hash_set<PeerID> const nowUntrusted;
         consensus.startRound(now(), bestLCL, lastClosedLedger, nowUntrusted, runAsValidator, {});
     }
 
@@ -923,16 +996,17 @@ struct Peer
     // TODO: Make this more robust
     hash_map<Ledger::Seq, Tx> txInjections;
 
-    /** Inject non-consensus Tx
-
-        Injects a transactionsinto the ledger following prevLedger's sequence
-        number.
-
-        @param prevLedger The ledger we are building the new ledger on top of
-        @param src The Consensus TxSet
-        @return Consensus TxSet with inject transactions added if prevLedger.seq
-                matches a previously registered Tx.
-    */
+    /**
+     * Inject non-consensus Tx
+     *
+     * Injects a transactionsinto the ledger following prevLedger's sequence
+     * number.
+     *
+     * @param prevLedger The ledger we are building the new ledger on top of
+     * @param src The Consensus TxSet
+     * @return Consensus TxSet with inject transactions added if prevLedger.seq
+     *         matches a previously registered Tx.
+     */
     TxSet
     injectTxs(Ledger prevLedger, TxSet const& src)
     {
@@ -947,6 +1021,4 @@ struct Peer
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

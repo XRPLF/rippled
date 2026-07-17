@@ -1,51 +1,56 @@
 #pragma once
 
+#include <test/csf/Proposal.h>
 #include <test/csf/SimTime.h>
+#include <test/csf/Tx.h>
+#include <test/csf/Validation.h>
 #include <test/csf/events.h>
+#include <test/csf/ledgers.h>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+#include <memory>
+#include <vector>
 
-/** Holds a type-erased reference to an arbitrary collector.
+namespace xrpl::test::csf {
 
-    A collector is any class that implements
-
-        on(NodeID, SimTime, Event)
-
-    for all events emitted by a Peer.
-
-    This class is used to type-erase the actual collector used by each peer in
-    the simulation. The idea is to compose complicated and typed collectors
-   using the helpers in collectors.h, then only type erase at the higher-most
-   level when adding to the simulation.
-
-    The example code below demonstrates the reason for storing the collector
-    as a reference.  The collector's lifetime will generally be longer than
-    the simulation; perhaps several simulations are run for a single collector
-    instance.  The collector potentially stores lots of data as well, so the
-    simulation needs to point to the single instance, rather than requiring
-    collectors to manage copying that data efficiently in their design.
-
-    @code
-        // Initialize a specific collector that might write to a file.
-        SomeFancyCollector collector{"out.file"};
-
-        // Setup your simulation
-        Sim sim(trustgraph, topology, collector);
-
-        // Run the simulation
-        sim.run(100);
-
-        // do any reported related to the collector
-        collector.report();
-
-    @endcode
-
-    @note If a new event type is added, it needs to be added to the interfaces
-    below.
-
-*/
+/**
+ * Holds a type-erased reference to an arbitrary collector.
+ *
+ * A collector is any class that implements
+ *
+ *     on(NodeID, SimTime, Event)
+ *
+ * for all events emitted by a Peer.
+ *
+ * This class is used to type-erase the actual collector used by each peer in
+ * the simulation. The idea is to compose complicated and typed collectors
+ * using the helpers in collectors.h, then only type erase at the higher-most
+ * level when adding to the simulation.
+ *
+ * The example code below demonstrates the reason for storing the collector
+ * as a reference.  The collector's lifetime will generally be longer than
+ * the simulation; perhaps several simulations are run for a single collector
+ * instance.  The collector potentially stores lots of data as well, so the
+ * simulation needs to point to the single instance, rather than requiring
+ * collectors to manage copying that data efficiently in their design.
+ *
+ * @code
+ *     // Initialize a specific collector that might write to a file.
+ *     SomeFancyCollector collector{"out.file"};
+ *
+ *     // Setup your simulation
+ *     Sim sim(trustgraph, topology, collector);
+ *
+ *     // Run the simulation
+ *     sim.run(100);
+ *
+ *     // do any reported related to the collector
+ *     collector.report();
+ *
+ * @endcode
+ *
+ * @note If a new event type is added, it needs to be added to the interfaces
+ * below.
+ */
 class CollectorRef
 {
     using tp = SimTime;
@@ -139,31 +144,31 @@ class CollectorRef
         Any&
         operator=(Any&&) = default;
 
-        virtual void
+        void
         on(PeerID node, tp when, Share<Tx> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Share<TxSet> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Share<Validation> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Share<Ledger> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Share<Proposal> const& e) override
         {
             t_.on(node, when, e);
@@ -175,25 +180,25 @@ class CollectorRef
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Receive<TxSet> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Receive<Validation> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Receive<Ledger> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Receive<Proposal> const& e) override
         {
             t_.on(node, when, e);
@@ -205,61 +210,61 @@ class CollectorRef
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Relay<TxSet> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Relay<Validation> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Relay<Ledger> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Relay<Proposal> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, SubmitTx const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, StartRound const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, CloseLedger const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, AcceptLedger const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, WrongPrevLedger const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, FullyValidateLedger const& e) override
         {
             t_.on(node, when, e);
@@ -291,16 +296,17 @@ public:
     }
 };
 
-/** A container of CollectorRefs
-
-    A set of CollectorRef instances that process the same events. An event is
-    processed by collectors in the order the collectors were added.
-
-    This class type-erases the collector instances. By contract, the
-    Collectors/collectors class/helper in collectors.h are not type erased and
-    offer an opportunity for type transformations and combinations with
-    improved compiler optimizations.
-*/
+/**
+ * A container of CollectorRefs
+ *
+ * A set of CollectorRef instances that process the same events. An event is
+ * processed by collectors in the order the collectors were added.
+ *
+ * This class type-erases the collector instances. By contract, the
+ * Collectors/collectors class/helper in collectors.h are not type erased and
+ * offer an opportunity for type transformations and combinations with
+ * improved compiler optimizations.
+ */
 class CollectorRefs
 {
     std::vector<CollectorRef> collectors_;
@@ -324,6 +330,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

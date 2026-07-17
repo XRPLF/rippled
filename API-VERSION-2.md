@@ -1,6 +1,6 @@
 # API Version 2
 
-API version 2 is available in `rippled` version 2.0.0 and later. To use this API, clients specify `"api_version" : 2` in each request.
+API version 2 is available in `xrpld` version 2.0.0 and later. To use this API, clients specify `"api_version" : 2` in each request.
 
 For info about how [API versioning](https://xrpl.org/request-formatting.html#api-versioning) works, including examples, please view the [XLS-22d spec](https://github.com/XRPLF/XRPL-Standards/discussions/54). For details about the implementation of API versioning, view the [implementation PR](https://github.com/XRPLF/rippled/pull/3155). API versioning ensures existing integrations and users continue to receive existing behavior, while those that request a higher API version will experience new behavior.
 

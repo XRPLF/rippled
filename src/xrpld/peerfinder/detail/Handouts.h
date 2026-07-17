@@ -1,34 +1,41 @@
 #pragma once
 
+#include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/SlotImp.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
 #include <xrpl/beast/container/aged_set.h>
+#include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
-namespace xrpl {
-namespace PeerFinder {
+#include <algorithm>
+#include <cstddef>
+#include <utility>
+#include <vector>
+
+namespace xrpl::PeerFinder {
 
 namespace detail {
 
-/** Try to insert one object in the target.
-    When an item is handed out it is moved to the end of the container.
-    @return The number of objects inserted
-*/
+/**
+ * Try to insert one object in the target.
+ * When an item is handed out it is moved to the end of the container.
+ * @return The number of objects inserted
+ */
 // VFALCO TODO specialization that handles std::list for SequenceContainer
 //             using splice for optimization over erase/push_back
 //
 template <class Target, class HopContainer>
 std::size_t
-handout_one(Target& t, HopContainer& h)
+handoutOne(Target& t, HopContainer& h)
 {
-    XRPL_ASSERT(!t.full(), "xrpl::PeerFinder::detail::handout_one : target is not full");
+    XRPL_ASSERT(!t.full(), "xrpl::PeerFinder::detail::handoutOne : target is not full");
     for (auto it = h.begin(); it != h.end(); ++it)
     {
         auto const& e = *it;
-        if (t.try_insert(e))
+        if (t.tryInsert(e))
         {
-            h.move_back(it);
+            h.moveBack(it);
             return 1;
         }
     }
@@ -37,31 +44,32 @@ handout_one(Target& t, HopContainer& h)
 
 }  // namespace detail
 
-/** Distributes objects to targets according to business rules.
-    A best effort is made to evenly distribute items in the sequence
-    container list into the target sequence list.
-*/
+/**
+ * Distributes objects to targets according to business rules.
+ * A best effort is made to evenly distribute items in the sequence
+ * container list into the target sequence list.
+ */
 template <class TargetFwdIter, class SeqFwdIter>
 void
-handout(TargetFwdIter first, TargetFwdIter last, SeqFwdIter seq_first, SeqFwdIter seq_last)
+handout(TargetFwdIter first, TargetFwdIter last, SeqFwdIter seqFirst, SeqFwdIter seqLast)
 {
     for (;;)
     {
         std::size_t n(0);
-        for (auto si = seq_first; si != seq_last; ++si)
+        for (auto si = seqFirst; si != seqLast; ++si)
         {
             auto c = *si;
-            bool all_full(true);
+            bool allFull(true);
             for (auto ti = first; ti != last; ++ti)
             {
                 auto& t = *ti;
                 if (!t.full())
                 {
-                    n += detail::handout_one(t, c);
-                    all_full = false;
+                    n += detail::handoutOne(t, c);
+                    allFull = false;
                 }
             }
-            if (all_full)
+            if (allFull)
                 return;
         }
         if (!n)
@@ -71,26 +79,27 @@ handout(TargetFwdIter first, TargetFwdIter last, SeqFwdIter seq_first, SeqFwdIte
 
 //------------------------------------------------------------------------------
 
-/** Receives handouts for redirecting a connection.
-    An incoming connection request is redirected when we are full on slots.
-*/
+/**
+ * Receives handouts for redirecting a connection.
+ * An incoming connection request is redirected when we are full on slots.
+ */
 class RedirectHandouts
 {
 public:
     template <class = void>
-    explicit RedirectHandouts(SlotImp::ptr const& slot);
+    explicit RedirectHandouts(SlotImp::ptr slot);
 
     template <class = void>
     bool
-    try_insert(Endpoint const& ep);
+    tryInsert(Endpoint const& ep);
 
-    bool
+    [[nodiscard]] bool
     full() const
     {
-        return list_.size() >= Tuning::redirectEndpointCount;
+        return list_.size() >= Tuning::kRedirectEndpointCount;
     }
 
-    SlotImp::ptr const&
+    [[nodiscard]] SlotImp::ptr const&
     slot() const
     {
         return slot_;
@@ -102,7 +111,7 @@ public:
         return list_;
     }
 
-    std::vector<Endpoint> const&
+    [[nodiscard]] std::vector<Endpoint> const&
     list() const
     {
         return list_;
@@ -114,14 +123,14 @@ private:
 };
 
 template <class>
-RedirectHandouts::RedirectHandouts(SlotImp::ptr const& slot) : slot_(slot)
+RedirectHandouts::RedirectHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
 {
-    list_.reserve(Tuning::redirectEndpointCount);
+    list_.reserve(Tuning::kRedirectEndpointCount);
 }
 
 template <class>
 bool
-RedirectHandouts::try_insert(Endpoint const& ep)
+RedirectHandouts::tryInsert(Endpoint const& ep)
 {
     if (full())
         return false;
@@ -130,7 +139,7 @@ RedirectHandouts::try_insert(Endpoint const& ep)
     //             addresses in a peer HTTP handshake instead of
     //             the tmENDPOINTS message.
     //
-    if (ep.hops > Tuning::maxHops)
+    if (ep.hops > Tuning::kMaxHops)
         return false;
 
     // Don't send them our address
@@ -138,11 +147,11 @@ RedirectHandouts::try_insert(Endpoint const& ep)
         return false;
 
     // Don't send them their own address
-    if (slot_->remote_endpoint().address() == ep.address.address())
+    if (slot_->remoteEndpoint().address() == ep.address.address())
         return false;
 
     // Make sure the address isn't already in our list
-    if (std::any_of(list_.begin(), list_.end(), [&ep](Endpoint const& other) {
+    if (std::ranges::any_of(list_, [&ep](Endpoint const& other) {
             // Ignore port for security reasons
             return other.address.address() == ep.address.address();
         }))
@@ -157,21 +166,23 @@ RedirectHandouts::try_insert(Endpoint const& ep)
 
 //------------------------------------------------------------------------------
 
-/** Receives endpoints for a slot during periodic handouts. */
+/**
+ * Receives endpoints for a slot during periodic handouts.
+ */
 class SlotHandouts
 {
 public:
     template <class = void>
-    explicit SlotHandouts(SlotImp::ptr const& slot);
+    explicit SlotHandouts(SlotImp::ptr slot);
 
     template <class = void>
     bool
-    try_insert(Endpoint const& ep);
+    tryInsert(Endpoint const& ep);
 
-    bool
+    [[nodiscard]] bool
     full() const
     {
-        return list_.size() >= Tuning::numberOfEndpoints;
+        return list_.size() >= Tuning::kNumberOfEndpoints;
     }
 
     void
@@ -180,13 +191,13 @@ public:
         list_.push_back(ep);
     }
 
-    SlotImp::ptr const&
+    [[nodiscard]] SlotImp::ptr const&
     slot() const
     {
         return slot_;
     }
 
-    std::vector<Endpoint> const&
+    [[nodiscard]] std::vector<Endpoint> const&
     list() const
     {
         return list_;
@@ -198,30 +209,30 @@ private:
 };
 
 template <class>
-SlotHandouts::SlotHandouts(SlotImp::ptr const& slot) : slot_(slot)
+SlotHandouts::SlotHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
 {
-    list_.reserve(Tuning::numberOfEndpoints);
+    list_.reserve(Tuning::kNumberOfEndpoints);
 }
 
 template <class>
 bool
-SlotHandouts::try_insert(Endpoint const& ep)
+SlotHandouts::tryInsert(Endpoint const& ep)
 {
     if (full())
         return false;
 
-    if (ep.hops > Tuning::maxHops)
+    if (ep.hops > Tuning::kMaxHops)
         return false;
 
     if (slot_->recent.filter(ep.address, ep.hops))
         return false;
 
     // Don't send them their own address
-    if (slot_->remote_endpoint().address() == ep.address.address())
+    if (slot_->remoteEndpoint().address() == ep.address.address())
         return false;
 
     // Make sure the address isn't already in our list
-    if (std::any_of(list_.begin(), list_.end(), [&ep](Endpoint const& other) {
+    if (std::ranges::any_of(list_, [&ep](Endpoint const& other) {
             // Ignore port for security reasons
             return other.address.address() == ep.address.address();
         }))
@@ -241,7 +252,9 @@ SlotHandouts::try_insert(Endpoint const& ep)
 
 //------------------------------------------------------------------------------
 
-/** Receives handouts for making automatic connections. */
+/**
+ * Receives handouts for making automatic connections.
+ */
 class ConnectHandouts
 {
 public:
@@ -252,9 +265,9 @@ public:
     using list_type = std::vector<beast::IP::Endpoint>;
 
 private:
-    std::size_t m_needed;
-    Squelches& m_squelches;
-    list_type m_list;
+    std::size_t needed_;
+    Squelches& squelches_;
+    list_type list_;
 
 public:
     template <class = void>
@@ -262,55 +275,55 @@ public:
 
     template <class = void>
     bool
-    try_insert(beast::IP::Endpoint const& endpoint);
+    tryInsert(beast::IP::Endpoint const& endpoint);
 
-    bool
+    [[nodiscard]] bool
     empty() const
     {
-        return m_list.empty();
+        return list_.empty();
     }
 
-    bool
+    [[nodiscard]] bool
     full() const
     {
-        return m_list.size() >= m_needed;
+        return list_.size() >= needed_;
     }
 
     bool
-    try_insert(Endpoint const& endpoint)
+    tryInsert(Endpoint const& endpoint)
     {
-        return try_insert(endpoint.address);
+        return tryInsert(endpoint.address);
     }
 
     list_type&
     list()
     {
-        return m_list;
+        return list_;
     }
 
-    list_type const&
+    [[nodiscard]] list_type const&
     list() const
     {
-        return m_list;
+        return list_;
     }
 };
 
 template <class>
 ConnectHandouts::ConnectHandouts(std::size_t needed, Squelches& squelches)
-    : m_needed(needed), m_squelches(squelches)
+    : needed_(needed), squelches_(squelches)
 {
-    m_list.reserve(needed);
+    list_.reserve(needed);
 }
 
 template <class>
 bool
-ConnectHandouts::try_insert(beast::IP::Endpoint const& endpoint)
+ConnectHandouts::tryInsert(beast::IP::Endpoint const& endpoint)
 {
     if (full())
         return false;
 
     // Make sure the address isn't already in our list
-    if (std::any_of(m_list.begin(), m_list.end(), [&endpoint](beast::IP::Endpoint const& other) {
+    if (std::ranges::any_of(list_, [&endpoint](beast::IP::Endpoint const& other) {
             // Ignore port for security reasons
             return other.address() == endpoint.address();
         }))
@@ -320,14 +333,13 @@ ConnectHandouts::try_insert(beast::IP::Endpoint const& endpoint)
 
     // Add to squelch list so we don't try it too often.
     // If its already there, then make try_insert fail.
-    auto const result(m_squelches.insert(endpoint.address()));
+    auto const result(squelches_.insert(endpoint.address()));
     if (!result.second)
         return false;
 
-    m_list.push_back(endpoint);
+    list_.push_back(endpoint);
 
     return true;
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

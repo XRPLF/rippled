@@ -1,5 +1,6 @@
 #pragma once
 
+#include <test/jtx/JTx.h>
 #include <test/jtx/requires.h>
 
 #include <functional>
@@ -11,45 +12,47 @@ namespace detail {
 
 template <class Cond, class... Args>
 inline void
-require_args(test::jtx::requires_t& vec, Cond const& cond, Args const&... args)
+requireArgs(test::jtx::requires_t& vec, Cond const& cond, Args const&... args)
 {
     vec.push_back(cond);
     if constexpr (sizeof...(args) > 0)
-        require_args(vec, args...);
+        requireArgs(vec, args...);
 }
 
 }  // namespace detail
 
-namespace test {
-namespace jtx {
+namespace test::jtx {
 
-/** Compose many condition functors into one */
+/**
+ * Compose many condition functors into one
+ */
 template <class... Args>
 require_t
 required(Args const&... args)
 {
     requires_t vec;
-    detail::require_args(vec, args...);
+    detail::requireArgs(vec, args...);
     return [vec](Env& env) {
         for (auto const& f : vec)
             f(env);
     };
 }
 
-/** Check a set of conditions.
-
-    The conditions are checked after a JTx is
-    applied, and only if the resulting TER
-    matches the expected TER.
-*/
-class require
+/**
+ * Check a set of conditions.
+ *
+ * The conditions are checked after a JTx is
+ * applied, and only if the resulting TER
+ * matches the expected TER.
+ */
+class Require
 {
 private:
     require_t cond_;
 
 public:
     template <class... Args>
-    require(Args const&... args) : cond_(required(args...))
+    Require(Args const&... args) : cond_(required(args...))
     {
     }
 
@@ -60,6 +63,6 @@ public:
     }
 };
 
-}  // namespace jtx
-}  // namespace test
+}  // namespace test::jtx
+
 }  // namespace xrpl

@@ -1,11 +1,18 @@
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/LoadManager.h>
 
+#include <xrpld/app/main/Application.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <chrono>
+#include <exception>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -35,7 +42,7 @@ LoadManager::~LoadManager()
 void
 LoadManager::activateStallDetector()
 {
-    std::lock_guard sl(mutex_);
+    std::scoped_lock const sl(mutex_);
     armed_ = true;
     lastHeartbeat_ = std::chrono::steady_clock::now();
 }
@@ -44,7 +51,7 @@ void
 LoadManager::heartbeat()
 {
     auto const heartbeat = std::chrono::steady_clock::now();
-    std::lock_guard sl(mutex_);
+    std::scoped_lock const sl(mutex_);
     lastHeartbeat_ = heartbeat;
 }
 
@@ -63,7 +70,7 @@ void
 LoadManager::stop()
 {
     {
-        std::lock_guard lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         stop_ = true;
         // There is at most one thread waiting on this condition.
         cv_.notify_all();
@@ -104,16 +111,16 @@ LoadManager::run()
         using namespace std::chrono;
         auto const timeSpentStalled = duration_cast<seconds>(steady_clock::now() - lastHeartbeat);
 
-        constexpr auto reportingIntervalSeconds = 10s;
-        constexpr auto stallFatalLogMessageTimeLimit = 90s;
-        constexpr auto stallLogicErrorTimeLimit = 600s;
+        static constexpr auto kReportingIntervalSeconds = 10s;
+        static constexpr auto kStallFatalLogMessageTimeLimit = 90s;
+        static constexpr auto kStallLogicErrorTimeLimit = 600s;
 
-        if (armed && (timeSpentStalled >= reportingIntervalSeconds))
+        if (armed && (timeSpentStalled >= kReportingIntervalSeconds))
         {
             // Report the stalled condition every reportingIntervalSeconds
-            if ((timeSpentStalled % reportingIntervalSeconds) == 0s)
+            if ((timeSpentStalled % kReportingIntervalSeconds) == 0s)
             {
-                if (timeSpentStalled < stallFatalLogMessageTimeLimit)
+                if (timeSpentStalled < kStallFatalLogMessageTimeLimit)
                 {
                     JLOG(journal_.warn())
                         << "Server stalled for " << timeSpentStalled.count() << " seconds.";
@@ -134,12 +141,12 @@ LoadManager::run()
             // If we go over the stallLogicErrorTimeLimit spent stalled, it
             // means that the stall resolution code has failed, which qualifies
             // as a LogicError
-            if (timeSpentStalled >= stallLogicErrorTimeLimit)
+            if (timeSpentStalled >= kStallLogicErrorTimeLimit)
             {
                 JLOG(journal_.fatal()) << "LogicError: Fatal server stall detected. Stalled time: "
                                        << timeSpentStalled.count() << "s";
                 JLOG(journal_.fatal()) << "JobQueue: " << app_.getJobQueue().getJson(0);
-                LogicError("Fatal server stall detected");
+                logicError("Fatal server stall detected");
             }
         }
     }
@@ -167,7 +174,7 @@ LoadManager::run()
 //------------------------------------------------------------------------------
 
 std::unique_ptr<LoadManager>
-make_LoadManager(Application& app, beast::Journal journal)
+makeLoadManager(Application& app, beast::Journal journal)
 {
     return std::unique_ptr<LoadManager>{new LoadManager{app, journal}};
 }

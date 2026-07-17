@@ -1,28 +1,29 @@
 #include <test/jtx/sig.h>
+
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/utility.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
-sig::operator()(Env&, JTx& jt) const
+Sig::operator()(Env&, JTx& jt) const
 {
     if (!manual_)
         return;
-    if (!subField_)
-        jt.fill_sig = false;
+    if (subField_ == nullptr)
+        jt.fillSig = false;
     if (account_)
     {
         // VFALCO Inefficient pre-C++14
         auto const account = *account_;
         auto callback = [subField = subField_, account](Env&, JTx& jtx) {
-            // Where to put the signature. Supports sfCounterPartySignature.
+            // Where to put the signature. Supports sfCounterPartySignature and sfSponsorSignature.
             auto& sigObject = subField ? jtx[*subField] : jtx.jv;
 
             jtx::sign(jtx.jv, account, sigObject);
         };
-        if (!subField_)
+        if (subField_ == nullptr)
         {
             jt.mainSigners.emplace_back(callback);
         }
@@ -33,6 +34,4 @@ sig::operator()(Env&, JTx& jt) const
     }
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

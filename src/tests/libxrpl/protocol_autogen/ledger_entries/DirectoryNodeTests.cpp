@@ -23,8 +23,10 @@ TEST(DirectoryNodeTests, BuilderSettersRoundTrip)
     auto const ownerValue = canonical_ACCOUNT();
     auto const takerPaysCurrencyValue = canonical_UINT160();
     auto const takerPaysIssuerValue = canonical_UINT160();
+    auto const takerPaysMPTValue = canonical_UINT192();
     auto const takerGetsCurrencyValue = canonical_UINT160();
     auto const takerGetsIssuerValue = canonical_UINT160();
+    auto const takerGetsMPTValue = canonical_UINT192();
     auto const exchangeRateValue = canonical_UINT64();
     auto const indexesValue = canonical_VECTOR256();
     auto const rootIndexValue = canonical_UINT256();
@@ -43,8 +45,10 @@ TEST(DirectoryNodeTests, BuilderSettersRoundTrip)
     builder.setOwner(ownerValue);
     builder.setTakerPaysCurrency(takerPaysCurrencyValue);
     builder.setTakerPaysIssuer(takerPaysIssuerValue);
+    builder.setTakerPaysMPT(takerPaysMPTValue);
     builder.setTakerGetsCurrency(takerGetsCurrencyValue);
     builder.setTakerGetsIssuer(takerGetsIssuerValue);
+    builder.setTakerGetsMPT(takerGetsMPTValue);
     builder.setExchangeRate(exchangeRateValue);
     builder.setIndexNext(indexNextValue);
     builder.setIndexPrevious(indexPreviousValue);
@@ -99,6 +103,14 @@ TEST(DirectoryNodeTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = takerPaysMPTValue;
+        auto const actualOpt = entry.getTakerPaysMPT();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfTakerPaysMPT");
+        EXPECT_TRUE(entry.hasTakerPaysMPT());
+    }
+
+    {
         auto const& expected = takerGetsCurrencyValue;
         auto const actualOpt = entry.getTakerGetsCurrency();
         ASSERT_TRUE(actualOpt.has_value());
@@ -112,6 +124,14 @@ TEST(DirectoryNodeTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfTakerGetsIssuer");
         EXPECT_TRUE(entry.hasTakerGetsIssuer());
+    }
+
+    {
+        auto const& expected = takerGetsMPTValue;
+        auto const actualOpt = entry.getTakerGetsMPT();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfTakerGetsMPT");
+        EXPECT_TRUE(entry.hasTakerGetsMPT());
     }
 
     {
@@ -186,8 +206,10 @@ TEST(DirectoryNodeTests, BuilderFromSleRoundTrip)
     auto const ownerValue = canonical_ACCOUNT();
     auto const takerPaysCurrencyValue = canonical_UINT160();
     auto const takerPaysIssuerValue = canonical_UINT160();
+    auto const takerPaysMPTValue = canonical_UINT192();
     auto const takerGetsCurrencyValue = canonical_UINT160();
     auto const takerGetsIssuerValue = canonical_UINT160();
+    auto const takerGetsMPTValue = canonical_UINT192();
     auto const exchangeRateValue = canonical_UINT64();
     auto const indexesValue = canonical_VECTOR256();
     auto const rootIndexValue = canonical_UINT256();
@@ -203,8 +225,10 @@ TEST(DirectoryNodeTests, BuilderFromSleRoundTrip)
     sle->at(sfOwner) = ownerValue;
     sle->at(sfTakerPaysCurrency) = takerPaysCurrencyValue;
     sle->at(sfTakerPaysIssuer) = takerPaysIssuerValue;
+    sle->at(sfTakerPaysMPT) = takerPaysMPTValue;
     sle->at(sfTakerGetsCurrency) = takerGetsCurrencyValue;
     sle->at(sfTakerGetsIssuer) = takerGetsIssuerValue;
+    sle->at(sfTakerGetsMPT) = takerGetsMPTValue;
     sle->at(sfExchangeRate) = exchangeRateValue;
     sle->at(sfIndexes) = indexesValue;
     sle->at(sfRootIndex) = rootIndexValue;
@@ -284,6 +308,19 @@ TEST(DirectoryNodeTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = takerPaysMPTValue;
+
+        auto const fromSleOpt = entryFromSle.getTakerPaysMPT();
+        auto const fromBuilderOpt = entryFromBuilder.getTakerPaysMPT();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfTakerPaysMPT");
+        expectEqualField(expected, *fromBuilderOpt, "sfTakerPaysMPT");
+    }
+
+    {
         auto const& expected = takerGetsCurrencyValue;
 
         auto const fromSleOpt = entryFromSle.getTakerGetsCurrency();
@@ -307,6 +344,19 @@ TEST(DirectoryNodeTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfTakerGetsIssuer");
         expectEqualField(expected, *fromBuilderOpt, "sfTakerGetsIssuer");
+    }
+
+    {
+        auto const& expected = takerGetsMPTValue;
+
+        auto const fromSleOpt = entryFromSle.getTakerGetsMPT();
+        auto const fromBuilderOpt = entryFromBuilder.getTakerGetsMPT();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfTakerGetsMPT");
+        expectEqualField(expected, *fromBuilderOpt, "sfTakerGetsMPT");
     }
 
     {
@@ -462,10 +512,14 @@ TEST(DirectoryNodeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getTakerPaysCurrency().has_value());
     EXPECT_FALSE(entry.hasTakerPaysIssuer());
     EXPECT_FALSE(entry.getTakerPaysIssuer().has_value());
+    EXPECT_FALSE(entry.hasTakerPaysMPT());
+    EXPECT_FALSE(entry.getTakerPaysMPT().has_value());
     EXPECT_FALSE(entry.hasTakerGetsCurrency());
     EXPECT_FALSE(entry.getTakerGetsCurrency().has_value());
     EXPECT_FALSE(entry.hasTakerGetsIssuer());
     EXPECT_FALSE(entry.getTakerGetsIssuer().has_value());
+    EXPECT_FALSE(entry.hasTakerGetsMPT());
+    EXPECT_FALSE(entry.getTakerGetsMPT().has_value());
     EXPECT_FALSE(entry.hasExchangeRate());
     EXPECT_FALSE(entry.getExchangeRate().has_value());
     EXPECT_FALSE(entry.hasIndexNext());

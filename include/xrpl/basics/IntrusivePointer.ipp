@@ -43,14 +43,16 @@ SharedIntrusive<T>::SharedIntrusive(SharedIntrusive<TT> const& rhs)
 }
 
 template <class T>
-SharedIntrusive<T>::SharedIntrusive(SharedIntrusive&& rhs) : ptr_{rhs.unsafeExchange(nullptr)}
+SharedIntrusive<T>::SharedIntrusive(SharedIntrusive&& rhs)
+    : ptr_{std::move(rhs).unsafeExchange(nullptr)}
 {
 }
 
 template <class T>
 template <class TT>
     requires std::convertible_to<TT*, T*>
-SharedIntrusive<T>::SharedIntrusive(SharedIntrusive<TT>&& rhs) : ptr_{rhs.unsafeExchange(nullptr)}
+SharedIntrusive<T>::SharedIntrusive(SharedIntrusive<TT>&& rhs)
+    : ptr_{std::move(rhs).unsafeExchange(nullptr)}
 {
 }
 template <class T>
@@ -68,9 +70,7 @@ SharedIntrusive<T>::operator=(SharedIntrusive const& rhs)
 
 template <class T>
 template <class TT>
-// clang-format off
-requires std::convertible_to<TT*, T*>
-// clang-format on
+    requires std::convertible_to<TT*, T*>
 SharedIntrusive<T>&
 SharedIntrusive<T>::operator=(SharedIntrusive<TT> const& rhs)
 {
@@ -95,21 +95,19 @@ SharedIntrusive<T>::operator=(SharedIntrusive&& rhs)
     if (this == &rhs)
         return *this;
 
-    unsafeReleaseAndStore(rhs.unsafeExchange(nullptr));
+    unsafeReleaseAndStore(std::move(rhs).unsafeExchange(nullptr));
     return *this;
 }
 
 template <class T>
 template <class TT>
-// clang-format off
-requires std::convertible_to<TT*, T*>
-// clang-format on
+    requires std::convertible_to<TT*, T*>
 SharedIntrusive<T>&
 SharedIntrusive<T>::operator=(SharedIntrusive<TT>&& rhs)
 {
     static_assert(!std::is_same_v<T, TT>, "This overload should not be instantiated for T == TT");
 
-    unsafeReleaseAndStore(rhs.unsafeExchange(nullptr));
+    unsafeReleaseAndStore(std::move(rhs).unsafeExchange(nullptr));
     return *this;
 }
 
@@ -161,7 +159,7 @@ SharedIntrusive<T>::SharedIntrusive(StaticCastTagSharedIntrusive, SharedIntrusiv
 template <class T>
 template <class TT>
 SharedIntrusive<T>::SharedIntrusive(StaticCastTagSharedIntrusive, SharedIntrusive<TT>&& rhs)
-    : ptr_{static_cast<T*>(rhs.unsafeExchange(nullptr))}
+    : ptr_{static_cast<T*>(std::move(rhs).unsafeExchange(nullptr))}
 {
 }
 
@@ -188,8 +186,10 @@ SharedIntrusive<T>::SharedIntrusive(DynamicCastTagSharedIntrusive, SharedIntrusi
     {
         ptr_ = dynamic_cast<T*>(toSet);
         if (!ptr_)
+        {
             // need to set the pointer back or will leak
-            rhs.unsafeExchange(toSet);
+            std::move(rhs).unsafeExchange(toSet);
+        }
     }
 }
 
@@ -230,10 +230,10 @@ SharedIntrusive<T>::get() const
 
 template <class T>
 std::size_t
-SharedIntrusive<T>::use_count() const
+SharedIntrusive<T>::useCount() const
 {
     if (auto p = unsafeGetRawPtr())
-        return p->use_count();
+        return p->useCount();
     return 0;
 }
 
@@ -270,12 +270,12 @@ SharedIntrusive<T>::unsafeReleaseAndStore(T* next)
     auto action = prev->releaseStrongRef();
     switch (action)
     {
-        case noop:
+        case NoOp:
             break;
-        case destroy:
+        case Destroy:
             delete prev;
             break;
-        case partialDestroy:
+        case PartialDestroy:
             prev->partialDestructor();
             partialDestructorFinished(&prev);
             // prev is null and may no longer be used
@@ -307,9 +307,7 @@ WeakIntrusive<T>::WeakIntrusive(SharedIntrusive<T> const& rhs) : ptr_{rhs.unsafe
 
 template <class T>
 template <class TT>
-// clang-format off
-requires std::convertible_to<TT*, T*>
-// clang-format on
+    requires std::convertible_to<TT*, T*>
 WeakIntrusive<T>&
 WeakIntrusive<T>::operator=(SharedIntrusive<TT> const& rhs)
 {
@@ -351,7 +349,7 @@ template <class T>
 bool
 WeakIntrusive<T>::expired() const
 {
-    return (!ptr_ || ptr_->expired());
+    return ((ptr_ == nullptr) || ptr_->expired());
 }
 
 template <class T>
@@ -366,16 +364,16 @@ template <class T>
 void
 WeakIntrusive<T>::unsafeReleaseNoStore()
 {
-    if (!ptr_)
+    if (ptr_ == nullptr)
         return;
 
     using enum ReleaseWeakRefAction;
     auto action = ptr_->releaseWeakRef();
     switch (action)
     {
-        case noop:
+        case NoOp:
             break;
-        case destroy:
+        case Destroy:
             delete ptr_;
             break;
     }
@@ -391,9 +389,13 @@ SharedWeakUnion<T>::SharedWeakUnion(SharedWeakUnion const& rhs) : tp_{rhs.tp_}
         return;
 
     if (rhs.isStrong())
+    {
         p->addStrongRef();
+    }
     else
+    {
         p->addWeakRef();
+    }
 }
 
 template <class T>
@@ -404,7 +406,7 @@ SharedWeakUnion<T>::SharedWeakUnion(SharedIntrusive<TT> const& rhs)
     auto p = rhs.unsafeGetRawPtr();
     if (p)
         p->addStrongRef();
-    unsafeSetRawPtr(p, RefStrength::strong);
+    unsafeSetRawPtr(p, RefStrength::Strong);
 }
 
 template <class T>
@@ -420,8 +422,8 @@ SharedWeakUnion<T>::SharedWeakUnion(SharedIntrusive<TT>&& rhs)
 {
     auto p = rhs.unsafeGetRawPtr();
     if (p)
-        unsafeSetRawPtr(p, RefStrength::strong);
-    rhs.unsafeSetRawPtr(nullptr);
+        unsafeSetRawPtr(p, RefStrength::Strong);
+    std::move(rhs).unsafeSetRawPtr(nullptr);
 }
 
 template <class T>
@@ -437,12 +439,12 @@ SharedWeakUnion<T>::operator=(SharedWeakUnion const& rhs)
         if (rhs.isStrong())
         {
             p->addStrongRef();
-            unsafeSetRawPtr(p, RefStrength::strong);
+            unsafeSetRawPtr(p, RefStrength::Strong);
         }
         else
         {
             p->addWeakRef();
-            unsafeSetRawPtr(p, RefStrength::weak);
+            unsafeSetRawPtr(p, RefStrength::Weak);
         }
     }
     else
@@ -454,9 +456,7 @@ SharedWeakUnion<T>::operator=(SharedWeakUnion const& rhs)
 
 template <class T>
 template <class TT>
-// clang-format off
-requires std::convertible_to<TT*, T*>
-// clang-format on
+    requires std::convertible_to<TT*, T*>
 SharedWeakUnion<T>&
 SharedWeakUnion<T>::operator=(SharedIntrusive<TT> const& rhs)
 {
@@ -464,21 +464,19 @@ SharedWeakUnion<T>::operator=(SharedIntrusive<TT> const& rhs)
     auto p = rhs.unsafeGetRawPtr();
     if (p)
         p->addStrongRef();
-    unsafeSetRawPtr(p, RefStrength::strong);
+    unsafeSetRawPtr(p, RefStrength::Strong);
     return *this;
 }
 
 template <class T>
 template <class TT>
-// clang-format off
-requires std::convertible_to<TT*, T*>
-// clang-format on
+    requires std::convertible_to<TT*, T*>
 SharedWeakUnion<T>&
 SharedWeakUnion<T>::operator=(SharedIntrusive<TT>&& rhs)
 {
     unsafeReleaseNoStore();
-    unsafeSetRawPtr(rhs.unsafeGetRawPtr(), RefStrength::strong);
-    rhs.unsafeSetRawPtr(nullptr);
+    unsafeSetRawPtr(rhs.unsafeGetRawPtr(), RefStrength::Strong);
+    std::move(rhs).unsafeSetRawPtr(nullptr);
     return *this;
 }
 
@@ -527,10 +525,10 @@ SharedWeakUnion<T>::get() const
 
 template <class T>
 std::size_t
-SharedWeakUnion<T>::use_count() const
+SharedWeakUnion<T>::useCount() const
 {
     if (auto p = get())
-        return p->use_count();
+        return p->useCount();
     return 0;
 }
 
@@ -569,14 +567,14 @@ template <class T>
 bool
 SharedWeakUnion<T>::isStrong() const
 {
-    return !(tp_ & tagMask);
+    return (tp_ & kTagMask) == 0u;
 }
 
 template <class T>
 bool
 SharedWeakUnion<T>::isWeak() const
 {
-    return tp_ & tagMask;
+    return (tp_ & kTagMask) != 0u;
 }
 
 template <class T>
@@ -591,10 +589,10 @@ SharedWeakUnion<T>::convertToStrong()
     {
         [[maybe_unused]] auto action = p->releaseWeakRef();
         XRPL_ASSERT(
-            (action == ReleaseWeakRefAction::noop),
+            (action == ReleaseWeakRefAction::NoOp),
             "xrpl::SharedWeakUnion::convertToStrong : "
             "action is noop");
-        unsafeSetRawPtr(p, RefStrength::strong);
+        unsafeSetRawPtr(p, RefStrength::Strong);
         return true;
     }
     return false;
@@ -615,9 +613,9 @@ SharedWeakUnion<T>::convertToWeak()
     auto action = p->addWeakReleaseStrongRef();
     switch (action)
     {
-        case noop:
+        case NoOp:
             break;
-        case destroy:
+        case Destroy:
             // We just added a weak ref. How could we destroy?
             // LCOV_EXCL_START
             UNREACHABLE(
@@ -627,7 +625,7 @@ SharedWeakUnion<T>::convertToWeak()
             unsafeSetRawPtr(nullptr);
             return true;  // Should never happen
             // LCOV_EXCL_STOP
-        case partialDestroy:
+        case PartialDestroy:
             // This is a weird case. We just converted the last strong
             // pointer to a weak pointer.
             p->partialDestructor();
@@ -635,7 +633,7 @@ SharedWeakUnion<T>::convertToWeak()
             // p is null and may no longer be used
             break;
     }
-    unsafeSetRawPtr(p, RefStrength::weak);
+    unsafeSetRawPtr(p, RefStrength::Weak);
     return true;
 }
 
@@ -643,7 +641,10 @@ template <class T>
 T*
 SharedWeakUnion<T>::unsafeGetRawPtr() const
 {
-    return reinterpret_cast<T*>(tp_ & ptrMask);
+    // tp_ packs a raw pointer together with a strength bit; recovering the
+    // pointer inherently requires an integer-to-pointer cast.
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
+    return reinterpret_cast<T*>(tp_ & kPtrMask);
 }
 
 template <class T>
@@ -651,8 +652,8 @@ void
 SharedWeakUnion<T>::unsafeSetRawPtr(T* p, RefStrength rs)
 {
     tp_ = reinterpret_cast<std::uintptr_t>(p);
-    if (tp_ && rs == RefStrength::weak)
-        tp_ |= tagMask;
+    if (tp_ && rs == RefStrength::Weak)
+        tp_ |= kTagMask;
 }
 
 template <class T>
@@ -676,12 +677,12 @@ SharedWeakUnion<T>::unsafeReleaseNoStore()
         auto strongAction = p->releaseStrongRef();
         switch (strongAction)
         {
-            case noop:
+            case NoOp:
                 break;
-            case destroy:
+            case Destroy:
                 delete p;
                 break;
-            case partialDestroy:
+            case PartialDestroy:
                 p->partialDestructor();
                 partialDestructorFinished(&p);
                 // p is null and may no longer be used
@@ -694,9 +695,9 @@ SharedWeakUnion<T>::unsafeReleaseNoStore()
         auto weakAction = p->releaseWeakRef();
         switch (weakAction)
         {
-            case noop:
+            case NoOp:
                 break;
-            case destroy:
+            case Destroy:
                 delete p;
                 break;
         }

@@ -1,12 +1,20 @@
 #include <xrpld/rpc/Status.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace RPC {
+#include <algorithm>
+#include <cstddef>
+#include <exception>
+#include <string>
 
-class codeString_test : public beast::unit_test::suite
+namespace xrpl::RPC {
+
+class codeString_test : public beast::unit_test::Suite
 {
 private:
     template <typename Type>
@@ -17,7 +25,7 @@ private:
     }
 
     void
-    test_OK()
+    testOk()
     {
         testcase("OK");
         {
@@ -26,7 +34,7 @@ private:
         }
 
         {
-            auto s = codeString(Status::OK);
+            auto s = codeString(Status::kOK);
             expect(s.empty(), "String for OK status");
         }
 
@@ -41,13 +49,13 @@ private:
         }
 
         {
-            auto s = codeString(rpcSUCCESS);
+            auto s = codeString(RpcSuccess);
             expect(s.empty(), "String for rpcSUCCESS");
         }
     }
 
     void
-    test_error()
+    testError()
     {
         testcase("error");
         {
@@ -61,7 +69,7 @@ private:
         }
 
         {
-            auto s = codeString(rpcBAD_SYNTAX);
+            auto s = codeString(RpcBadSyntax);
             expect(s == "badSyntax: Syntax error.", s);
         }
     }
@@ -70,17 +78,17 @@ public:
     void
     run() override
     {
-        test_OK();
-        test_error();
+        testOk();
+        testError();
     }
 };
 
 BEAST_DEFINE_TESTSUITE(codeString, rpc, RPC);
 
-class fillJson_test : public beast::unit_test::suite
+class fillJson_test : public beast::unit_test::Suite
 {
 private:
-    Json::Value value_;
+    json::Value value_;
 
     template <typename Type>
     void
@@ -91,7 +99,7 @@ private:
     }
 
     void
-    test_OK()
+    testOk()
     {
         testcase("OK");
         fillJson(Status());
@@ -100,13 +108,13 @@ private:
         fillJson(0);
         expect(!value_, "Value for 0 status");
 
-        fillJson(Status::OK);
+        fillJson(Status::kOK);
         expect(!value_, "Value for OK status");
 
         fillJson(tesSUCCESS);
         expect(!value_, "Value for tesSUCCESS");
 
-        fillJson(rpcSUCCESS);
+        fillJson(RpcSuccess);
         expect(!value_, "Value for rpcSUCCESS");
     }
 
@@ -136,7 +144,8 @@ private:
         expect(m == message, m + " != " + message);
 
         auto d = error[jss::data];
-        size_t s1 = d.size(), s2 = messages.size();
+        size_t const s1 = d.size();
+        size_t const s2 = messages.size();
         expect(
             s1 == s2,
             prefix + "Data sizes differ " + std::to_string(s1) + " != " + std::to_string(s2));
@@ -148,14 +157,14 @@ private:
     }
 
     void
-    test_error()
+    testError()
     {
         testcase("error");
         expectFill("temBAD_AMOUNT", temBAD_AMOUNT, {}, "temBAD_AMOUNT: Malformed: Bad amount.");
 
         expectFill(
-            "rpcBAD_SYNTAX",
-            rpcBAD_SYNTAX,
+            "RpcBadSyntax",
+            RpcBadSyntax,
             {"An error.", "Another error."},
             "badSyntax: Syntax error.");
 
@@ -163,7 +172,7 @@ private:
     }
 
     void
-    test_throw()
+    testThrow()
     {
         testcase("throw");
         try
@@ -187,13 +196,12 @@ public:
     void
     run() override
     {
-        test_OK();
-        test_error();
-        test_throw();
+        testOk();
+        testError();
+        testThrow();
     }
 };
 
 BEAST_DEFINE_TESTSUITE(fillJson, rpc, RPC);
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

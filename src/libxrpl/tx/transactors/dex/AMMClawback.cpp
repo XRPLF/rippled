@@ -1,14 +1,33 @@
-#include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/st.h>
 #include <xrpl/tx/transactors/dex/AMMClawback.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/dex/AMMWithdraw.h>
 
+#include <cstdint>
+#include <optional>
 #include <tuple>
 
 namespace xrpl {
@@ -17,6 +36,19 @@ std::uint32_t
 AMMClawback::getFlagsMask(PreflightContext const& ctx)
 {
     return tfAMMClawbackMask;
+}
+
+bool
+AMMClawback::checkExtraFeatures(xrpl::PreflightContext const& ctx)
+{
+    if (!ctx.rules.enabled(featureAMMClawback))
+        return false;
+
+    std::optional<STAmount> const clawAmount = ctx.tx[~sfAmount];
+
+    return ctx.rules.enabled(featureMPTokensV2) ||
+        (!(clawAmount && clawAmount->holds<MPTIssue>()) && !ctx.tx[sfAsset].holds<MPTIssue>() &&
+         !ctx.tx[sfAsset2].holds<MPTIssue>());
 }
 
 NotTEC
@@ -32,36 +64,34 @@ AMMClawback::preflight(PreflightContext const& ctx)
     }
 
     std::optional<STAmount> const clawAmount = ctx.tx[~sfAmount];
-    auto const asset = ctx.tx[sfAsset].get<Issue>();
-    auto const asset2 = ctx.tx[sfAsset2].get<Issue>();
+    auto const asset = ctx.tx[sfAsset];
+    auto const asset2 = ctx.tx[sfAsset2];
 
     if (isXRP(asset))
         return temMALFORMED;
 
-    auto const flags = ctx.tx.getFlags();
-
-    if (flags & tfClawTwoAssets && asset.account != asset2.account)
+    if (ctx.tx.isFlag(tfClawTwoAssets) && asset.getIssuer() != asset2.getIssuer())
     {
         JLOG(ctx.j.trace()) << "AMMClawback: tfClawTwoAssets can only be enabled when two "
                                "assets in the AMM pool are both issued by the issuer";
         return temINVALID_FLAG;
     }
 
-    if (asset.account != issuer)
+    if (asset.getIssuer() != issuer)
     {
         JLOG(ctx.j.trace()) << "AMMClawback: Asset's account does not "
                                "match Account field.";
         return temMALFORMED;
     }
 
-    if (clawAmount && clawAmount->get<Issue>() != asset)
+    if (clawAmount && clawAmount->asset() != asset)
     {
-        JLOG(ctx.j.trace()) << "AMMClawback: Amount's issuer/currency subfield "
+        JLOG(ctx.j.trace()) << "AMMClawback: Amount's asset subfield "
                                "does not match Asset field";
         return temBAD_AMOUNT;
     }
 
-    if (clawAmount && *clawAmount <= beast::zero)
+    if (clawAmount && *clawAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -70,8 +100,8 @@ AMMClawback::preflight(PreflightContext const& ctx)
 TER
 AMMClawback::preclaim(PreclaimContext const& ctx)
 {
-    auto const asset = ctx.tx[sfAsset].get<Issue>();
-    auto const asset2 = ctx.tx[sfAsset2].get<Issue>();
+    auto const asset = ctx.tx[sfAsset];
+    auto const asset2 = ctx.tx[sfAsset2];
     auto const sleIssuer = ctx.view.read(keylet::account(ctx.tx[sfAccount]));
     if (!sleIssuer)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
@@ -86,11 +116,37 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
         return terNO_AMM;
     }
 
-    std::uint32_t const issuerFlagsIn = sleIssuer->getFieldU32(sfFlags);
+    if (!ctx.view.rules().enabled(featureMPTokensV2))
+    {
+        // If AllowTrustLineClawback is not set or NoFreeze is set, return no
+        // permission
+        if (!sleIssuer->isFlag(lsfAllowTrustLineClawback) || sleIssuer->isFlag(lsfNoFreeze))
+        {
+            return tecNO_PERMISSION;
+        }
+    }
 
-    // If AllowTrustLineClawback is not set or NoFreeze is set, return no
-    // permission
-    if (!(issuerFlagsIn & lsfAllowTrustLineClawback) || (issuerFlagsIn & lsfNoFreeze))
+    auto const checkClawAsset = [&](Asset const asset) -> bool {
+        return asset.visit(
+            [&](Issue const& issue) {
+                if (issue.native())
+                    return false;  // LCOV_EXCL_LINE
+
+                return sleIssuer->isFlag(lsfAllowTrustLineClawback) &&
+                    !sleIssuer->isFlag(lsfNoFreeze);
+            },
+            [&](MPTIssue const& issue) {
+                auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(issue.getMptID()));
+
+                return sleIssuance && sleIssuance->isFlag(lsfMPTCanClawback) &&
+                    sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount];
+            });
+    };
+
+    if (!checkClawAsset(asset))
+        return tecNO_PERMISSION;
+
+    if (ctx.tx.isFlag(tfClawTwoAssets) && !checkClawAsset(asset2))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -114,8 +170,8 @@ AMMClawback::applyGuts(Sandbox& sb)
     std::optional<STAmount> const clawAmount = ctx_.tx[~sfAmount];
     AccountID const issuer = ctx_.tx[sfAccount];
     AccountID const holder = ctx_.tx[sfHolder];
-    Issue const asset = ctx_.tx[sfAsset].get<Issue>();
-    Issue const asset2 = ctx_.tx[sfAsset2].get<Issue>();
+    Asset const asset = ctx_.tx[sfAsset];
+    Asset const asset2 = ctx_.tx[sfAsset2];
 
     auto ammSle = sb.peek(keylet::amm(asset, asset2));
     if (!ammSle)
@@ -130,15 +186,22 @@ AMMClawback::applyGuts(Sandbox& sb)
     {
         // retrieve LP token balance inside the amendment gate to avoid inconsistent error behavior
         auto const lpTokenBalance = ammLPHolds(sb, *ammSle, holder, j_);
-        if (lpTokenBalance == beast::zero)
+        if (lpTokenBalance == beast::kZero)
             return tecAMM_BALANCE;
 
         if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokenBalance, ammSle, holder);
             !res)
             return res.error();  // LCOV_EXCL_LINE
     }
-    auto const expected =
-        ammHolds(sb, *ammSle, asset, asset2, FreezeHandling::fhIGNORE_FREEZE, ctx_.journal);
+
+    auto const expected = ammHolds(
+        sb,
+        *ammSle,
+        asset,
+        asset2,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        ctx_.journal);
 
     if (!expected)
         return expected.error();  // LCOV_EXCL_LINE
@@ -152,7 +215,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     // calling a second time on purpose since `verifyAndAdjustLPTokenBalance` rounds and may adjust
     // the balance
     auto const holdLPtokens = ammLPHolds(sb, *ammSle, holder, j_);
-    if (holdLPtokens == beast::zero)
+    if (holdLPtokens == beast::kZero)
         return tecAMM_BALANCE;
 
     if (!clawAmount)
@@ -171,7 +234,8 @@ AMMClawback::applyGuts(Sandbox& sb)
                 holdLPtokens,
                 holdLPtokens,
                 0,
-                FreezeHandling::fhIGNORE_FREEZE,
+                FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
                 WithdrawAll::Yes,
                 preFeeBalance_,
                 ctx_.journal);
@@ -194,6 +258,16 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (!isTesSuccess(result))
         return result;  // LCOV_EXCL_LINE
 
+    if (sb.rules().enabled(fixCleanup3_3_0) && sb.rules().enabled(fixAMMv1_3))
+    {
+        if (auto const ter =
+                checkAMMPrecisionLoss(sb, ammAccount, asset, asset2, newLPTokenBalance, j_);
+            !isTesSuccess(ter))
+        {
+            return ter;
+        }
+    }
+
     auto const res =
         AMMWithdraw::deleteAMMAccountIfEmpty(sb, ammSle, newLPTokenBalance, asset, asset2, j_);
     if (!res.second)
@@ -203,7 +277,12 @@ AMMClawback::applyGuts(Sandbox& sb)
                                << to_string(newLPTokenBalance.iou())
                                << " old balance: " << to_string(lptAMMBalance.iou());
 
-    auto const ter = rippleCredit(sb, holder, issuer, amountWithdraw, true, j_);
+    auto sendAmount = [&](STAmount const& saAmount) -> TER {
+        bool const checkIssuer = saAmount.holds<Issue>();
+        return directSendNoFee(sb, holder, issuer, saAmount, checkIssuer, j_);
+    };
+
+    auto const ter = sendAmount(amountWithdraw);
     if (!isTesSuccess(ter))
         return ter;  // LCOV_EXCL_LINE
 
@@ -214,9 +293,8 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (!amount2Withdraw)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const flags = ctx_.tx.getFlags();
-    if (flags & tfClawTwoAssets)
-        return rippleCredit(sb, holder, issuer, *amount2Withdraw, true, j_);
+    if (ctx_.tx.isFlag(tfClawTwoAssets))
+        return sendAmount(*amount2Withdraw);
 
     return tesSUCCESS;
 }
@@ -236,8 +314,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     auto frac = Number{amount} / amountBalance;
     auto amount2Withdraw = amount2Balance * frac;
 
-    auto const lpTokensWithdraw = toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
-
+    auto const lpTokensWithdraw = toSTAmount(lptAMMBalance.asset(), lptAMMBalance * frac);
     if (lpTokensWithdraw > holdLPtokens)
     {
         // if lptoken balance less than what the issuer intended to clawback,
@@ -254,7 +331,8 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             holdLPtokens,
             holdLPtokens,
             0,
-            FreezeHandling::fhIGNORE_FREEZE,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             WithdrawAll::Yes,
             preFeeBalance_,
             ctx_.journal);
@@ -266,7 +344,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         auto tokensAdj = getRoundedLPTokens(rules, lptAMMBalance, frac, IsDeposit::No);
 
         // LCOV_EXCL_START
-        if (tokensAdj == beast::zero)
+        if (tokensAdj == beast::kZero)
             return {tecAMM_INVALID_TOKENS, STAmount{}, STAmount{}, std::nullopt};
         // LCOV_EXCL_STOP
 
@@ -286,7 +364,8 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             lptAMMBalance,
             tokensAdj,
             0,
-            FreezeHandling::fhIGNORE_FREEZE,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
             WithdrawAll::No,
             preFeeBalance_,
             ctx_.journal);
@@ -301,14 +380,28 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         holder,
         amountBalance,
         amount,
-        toSTAmount(amount2Balance.issue(), amount2Withdraw),
+        toSTAmount(amount2Balance.asset(), amount2Withdraw),
         lptAMMBalance,
-        toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac),
+        toSTAmount(lptAMMBalance.asset(), lptAMMBalance * frac),
         0,
-        FreezeHandling::fhIGNORE_FREEZE,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         WithdrawAll::No,
         preFeeBalance_,
         ctx_.journal);
+}
+
+void
+AMMClawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+AMMClawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

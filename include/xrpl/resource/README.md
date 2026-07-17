@@ -17,7 +17,7 @@ performed, or simply disconnecting the endpoint.
 
 Currently, consumption endpoints include websocket connections used to
 service clients, and peer connections used to create the peer to peer
-overlay network implementing the Ripple protocol.
+overlay network implementing the XRPL protocol.
 
 The current "balance" of a Consumer represents resource consumption
 debt or credit. Debt is accrued when bad loads are imposed. Credit is
@@ -72,6 +72,6 @@ drop connections to those IP addresses that occur commonly in the gossip.
 
 ## Access
 
-In rippled, the Application holds a unique instance of Resource::Manager,
+In xrpld, the Application holds a unique instance of Resource::Manager,
 which may be retrieved by calling the method
 `Application::getResourceManager()`.

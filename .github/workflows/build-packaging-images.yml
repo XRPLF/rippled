@@ -1,0 +1,46 @@
+name: Build packaging Docker images
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - ".github/workflows/build-packaging-images.yml"
+      - "package/Dockerfile"
+      - "package/install-packaging-tools.sh"
+  pull_request:
+    paths:
+      - ".github/workflows/build-packaging-images.yml"
+      - "package/Dockerfile"
+      - "package/install-packaging-tools.sh"
+  workflow_dispatch:
+
+concurrency:
+  # Read `on-trigger.yml` for the rationale behind this concurrency group name.
+  group: ${{ github.workflow }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.sha || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-merge:
+    name: Build and push packaging-${{ matrix.distro.name }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        distro:
+          - name: debian
+            base_image: debian:bookworm
+          - name: rhel
+            base_image: registry.access.redhat.com/ubi9/ubi:latest
+    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@ee03d31bcc4501d7599dc1b1ecd7a34af582ad1c
+    with:
+      image_name: xrpld/packaging-${{ matrix.distro.name }}
+      dockerfile: package/Dockerfile
+      base_image: ${{ matrix.distro.base_image }}
+      push: ${{ github.event_name == 'push' }}

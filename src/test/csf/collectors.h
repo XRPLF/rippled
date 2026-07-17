@@ -2,18 +2,26 @@
 
 #include <test/csf/Histogram.h>
 #include <test/csf/SimTime.h>
+#include <test/csf/Tx.h>
+#include <test/csf/Validation.h>
 #include <test/csf/events.h>
 
 #include <xrpl/basics/UnorderedContainers.h>
 
+#include <algorithm>
+#include <cassert>
 #include <chrono>
+#include <cstddef>
+#include <iomanip>
+#include <ios>
+#include <map>
 #include <optional>
 #include <ostream>
 #include <tuple>
+#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 //  A collector is any class that implements
 //
@@ -24,17 +32,18 @@ namespace csf {
 //  This file contains helper functions for composing different collectors
 //  and also defines several standard collectors available for simulations.
 
-/** Group of collectors.
-
-    Presents a group of collectors as a single collector which process an event
-    by calling each collector sequentially. This is analogous to CollectorRefs
-    in CollectorRef.h, but does *not* erase the type information of the combined
-    collectors.
+/**
+ * Group of collectors.
+ *
+ * Presents a group of collectors as a single collector which process an event
+ * by calling each collector sequentially. This is analogous to CollectorRefs
+ * in CollectorRef.h, but does *not* erase the type information of the combined
+ * collectors.
  */
 template <class... Cs>
 class Collectors
 {
-    std::tuple<Cs&...> cs;
+    std::tuple<Cs&...> cs_;
 
     template <class C, class E>
     static void
@@ -51,11 +60,12 @@ class Collectors
     }
 
 public:
-    /** Constructor
-
-        @param cs References to the collectors to call together
-    */
-    Collectors(Cs&... cs_) : cs(std::tie(cs_...))
+    /**
+     * Constructor
+     *
+     * @param cs References to the collectors to call together
+     */
+    Collectors(Cs&... cs) : cs_(std::tie(cs...))
     {
     }
 
@@ -63,11 +73,13 @@ public:
     void
     on(PeerID who, SimTime when, E e)
     {
-        apply(cs, who, when, e, std::index_sequence_for<Cs...>{});
+        apply(cs_, who, when, e, std::index_sequence_for<Cs...>{});
     }
 };
 
-/** Create an instance of Collectors<Cs...> */
+/**
+ * Create an instance of Collectors<Cs...>
+ */
 template <class... Cs>
 Collectors<Cs...>
 makeCollectors(Cs&... cs)
@@ -75,14 +87,15 @@ makeCollectors(Cs&... cs)
     return Collectors<Cs...>(cs...);
 }
 
-/** Maintain an instance of a Collector per peer
-
-    For each peer that emits events, this class maintains a corresponding
-    instance of CollectorType, only forwarding events emitted by the peer to
-    the related instance.
-
-    CollectorType should be default constructible.
-*/
+/**
+ * Maintain an instance of a Collector per peer
+ *
+ * For each peer that emits events, this class maintains a corresponding
+ * instance of CollectorType, only forwarding events emitted by the peer to
+ * the related instance.
+ *
+ * CollectorType should be default constructible.
+ */
 template <class CollectorType>
 struct CollectByNode
 {
@@ -107,7 +120,9 @@ struct CollectByNode
     }
 };
 
-/** Collector which ignores all events */
+/**
+ * Collector which ignores all events
+ */
 struct NullCollector
 {
     template <class E>
@@ -117,7 +132,9 @@ struct NullCollector
     }
 };
 
-/** Tracks the overall duration of a simulation */
+/**
+ * Tracks the overall duration of a simulation
+ */
 struct SimDurationCollector
 {
     bool init = false;
@@ -134,19 +151,22 @@ struct SimDurationCollector
             init = true;
         }
         else
+        {
             stop = when;
+        }
     }
 };
 
-/** Tracks the submission -> accepted -> validated evolution of transactions.
-
-    This collector tracks transactions through the network by monitoring the
-    *first* time the transaction is seen by any node in the network, or
-    seen by any node's accepted or fully validated ledger.
-
-    If transactions submitted to the network do not have unique IDs, this
-    collector will not track subsequent submissions.
-*/
+/**
+ * Tracks the submission -> accepted -> validated evolution of transactions.
+ *
+ * This collector tracks transactions through the network by monitoring the
+ * *first* time the transaction is seen by any node in the network, or
+ * seen by any node's accepted or fully validated ledger.
+ *
+ * If transactions submitted to the network do not have unique IDs, this
+ * collector will not track subsequent submissions.
+ */
 struct TxCollector
 {
     // Counts
@@ -161,7 +181,7 @@ struct TxCollector
         std::optional<SimTime> accepted;
         std::optional<SimTime> validated;
 
-        Tracker(Tx tx_, SimTime submitted_) : tx{tx_}, submitted{submitted_}
+        Tracker(Tx tx, SimTime submitted) : tx{tx}, submitted{submitted}
         {
         }
     };
@@ -226,7 +246,7 @@ struct TxCollector
     }
 
     // Returns the number of txs which were never accepted
-    std::size_t
+    [[nodiscard]] std::size_t
     orphaned() const
     {
         return std::count_if(
@@ -234,7 +254,7 @@ struct TxCollector
     }
 
     // Returns the number of txs which were never validated
-    std::size_t
+    [[nodiscard]] std::size_t
     unvalidated() const
     {
         return std::count_if(
@@ -371,12 +391,12 @@ struct TxCollector
     }
 };
 
-/** Tracks the accepted -> validated evolution of ledgers.
-
-    This collector tracks ledgers through the network by monitoring the
-    *first* time the ledger is accepted or fully validated by ANY node.
-
-*/
+/**
+ * Tracks the accepted -> validated evolution of ledgers.
+ *
+ * This collector tracks ledgers through the network by monitoring the
+ * *first* time the ledger is accepted or fully validated by ANY node.
+ */
 struct LedgerCollector
 {
     std::size_t accepted{0};
@@ -387,12 +407,12 @@ struct LedgerCollector
         SimTime accepted;
         std::optional<SimTime> fullyValidated;
 
-        Tracker(SimTime accepted_) : accepted{accepted_}
+        Tracker(SimTime accepted) : accepted{accepted}
         {
         }
     };
 
-    hash_map<Ledger::ID, Tracker> ledgers_;
+    hash_map<Ledger::ID, Tracker> ledgers;
 
     using Hist = Histogram<SimTime::duration>;
     Hist acceptToFullyValid;
@@ -410,14 +430,14 @@ struct LedgerCollector
     on(PeerID who, SimTime when, AcceptLedger const& e)
     {
         // First time this ledger accepted
-        if (ledgers_.emplace(e.ledger.id(), Tracker{when}).second)
+        if (ledgers.emplace(e.ledger.id(), Tracker{when}).second)
         {
             ++accepted;
             // ignore jumps?
             if (e.prior.id() == e.ledger.parentID())
             {
-                auto const it = ledgers_.find(e.ledger.parentID());
-                if (it != ledgers_.end())
+                auto const it = ledgers.find(e.ledger.parentID());
+                if (it != ledgers.end())
                 {
                     acceptToAccept.insert(when - it->second.accepted);
                 }
@@ -431,8 +451,8 @@ struct LedgerCollector
         // ignore jumps
         if (e.prior.id() == e.ledger.parentID())
         {
-            auto const it = ledgers_.find(e.ledger.id());
-            assert(it != ledgers_.end());
+            auto const it = ledgers.find(e.ledger.id());
+            assert(it != ledgers.end());
             auto& tracker = it->second;
             // first time fully validated
             if (!tracker.fullyValidated)
@@ -441,8 +461,8 @@ struct LedgerCollector
                 tracker.fullyValidated = when;
                 acceptToFullyValid.insert(when - tracker.accepted);
 
-                auto const parentIt = ledgers_.find(e.ledger.parentID());
-                if (parentIt != ledgers_.end())
+                auto const parentIt = ledgers.find(e.ledger.parentID());
+                if (parentIt != ledgers.end())
                 {
                     auto& parentTracker = parentIt->second;
                     if (parentTracker.fullyValidated)
@@ -454,10 +474,10 @@ struct LedgerCollector
         }
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     unvalidated() const
     {
-        return std::count_if(ledgers_.begin(), ledgers_.end(), [](auto const& it) {
+        return std::count_if(ledgers.begin(), ledgers.end(), [](auto const& it) {
             return !it.second.fullyValidated;
         });
     }
@@ -570,11 +590,12 @@ struct LedgerCollector
     }
 };
 
-/** Write out stream of ledger activity
-
-    Writes information about every accepted and fully-validated ledger to a
-    provided std::ostream.
-*/
+/**
+ * Write out stream of ledger activity
+ *
+ * Writes information about every accepted and fully-validated ledger to a
+ * provided std::ostream.
+ */
 struct StreamCollector
 {
     std::ostream& out;
@@ -601,11 +622,12 @@ struct StreamCollector
     }
 };
 
-/** Saves information about Jumps for closed and fully validated ledgers. A
-    jump occurs when a node closes/fully validates a new ledger that is not the
-    immediate child of the prior closed/fully validated ledgers. This includes
-    jumps across branches and jumps ahead in the same branch of ledger history.
-*/
+/**
+ * Saves information about Jumps for closed and fully validated ledgers. A
+ * jump occurs when a node closes/fully validates a new ledger that is not the
+ * immediate child of the prior closed/fully validated ledgers. This includes
+ * jumps across branches and jumps ahead in the same branch of ledger history.
+ */
 struct JumpCollector
 {
     struct Jump
@@ -631,7 +653,7 @@ struct JumpCollector
     {
         // Not a direct child -> parent switch
         if (e.ledger.parentID() != e.prior.id())
-            closeJumps.emplace_back(Jump{who, when, e.prior, e.ledger});
+            closeJumps.emplace_back(Jump{.id = who, .when = when, .from = e.prior, .to = e.ledger});
     }
 
     void
@@ -639,10 +661,11 @@ struct JumpCollector
     {
         // Not a direct child -> parent switch
         if (e.ledger.parentID() != e.prior.id())
-            fullyValidatedJumps.emplace_back(Jump{who, when, e.prior, e.ledger});
+        {
+            fullyValidatedJumps.emplace_back(
+                Jump{.id = who, .when = when, .from = e.prior, .to = e.ledger});
+        }
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

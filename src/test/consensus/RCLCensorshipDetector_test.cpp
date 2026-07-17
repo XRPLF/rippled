@@ -1,14 +1,14 @@
 #include <xrpld/app/consensus/RCLCensorshipDetector.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-class RCLCensorshipDetector_test : public beast::unit_test::suite
+class RCLCensorshipDetector_test : public beast::unit_test::Suite
 {
     void
     test(
@@ -31,12 +31,12 @@ class RCLCensorshipDetector_test : public beast::unit_test::suite
         cdet.check(std::move(accepted), [&remove, &remain](auto id, auto seq) {
             // If the item is supposed to be removed from the censorship
             // detector internal tracker manually, do it now:
-            if (std::find(remove.begin(), remove.end(), id) != remove.end())
+            if (std::ranges::find(remove, id) != remove.end())
                 return true;
 
             // If the item is supposed to still remain in the censorship
             // detector internal tracker; remove it from the vector.
-            auto it = std::find(remain.begin(), remain.end(), id);
+            auto it = std::ranges::find(remain, id);
             if (it != remain.end())
                 remain.erase(it);
             return false;
@@ -80,5 +80,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(RCLCensorshipDetector, consensus, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

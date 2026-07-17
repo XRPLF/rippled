@@ -1,10 +1,34 @@
-#include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/InnerObjectFormats.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/digest.h>
 #include <xrpl/tx/transactors/oracle/OracleSet.h>
+
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/OracleHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/InnerObjectFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <map>
+#include <memory>
+#include <set>
+#include <utility>
 
 namespace xrpl {
 
@@ -22,7 +46,7 @@ OracleSet::preflight(PreflightContext const& ctx)
     auto const& dataSeries = ctx.tx.getFieldArray(sfPriceDataSeries);
     if (dataSeries.empty())
         return temARRAY_EMPTY;
-    if (dataSeries.size() > maxOracleDataSeries)
+    if (dataSeries.size() > kMaxOracleDataSeries)
         return temARRAY_TOO_LARGE;
 
     auto isInvalidLength = [&](auto const& sField, std::size_t length) {
@@ -30,8 +54,8 @@ OracleSet::preflight(PreflightContext const& ctx)
             (ctx.tx[sField].length() == 0 || ctx.tx[sField].length() > length);
     };
 
-    if (isInvalidLength(sfProvider, maxOracleProvider) || isInvalidLength(sfURI, maxOracleURI) ||
-        isInvalidLength(sfAssetClass, maxOracleSymbolClass))
+    if (isInvalidLength(sfProvider, kMaxOracleProvider) || isInvalidLength(sfURI, kMaxOracleUri) ||
+        isInvalidLength(sfAssetClass, kMaxOracleSymbolClass))
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -50,13 +74,13 @@ OracleSet::preclaim(PreclaimContext const& ctx)
     std::size_t const closeTime =
         duration_cast<seconds>(ctx.view.header().closeTime.time_since_epoch()).count();
     std::size_t const lastUpdateTime = ctx.tx[sfLastUpdateTime];
-    if (lastUpdateTime < epoch_offset.count())
+    if (lastUpdateTime < kEpochOffset.count())
         return tecINVALID_UPDATE_TIME;
-    std::size_t const lastUpdateTimeEpoch = lastUpdateTime - epoch_offset.count();
-    if (closeTime < maxLastUpdateTimeDelta)
+    std::size_t const lastUpdateTimeEpoch = lastUpdateTime - kEpochOffset.count();
+    if (closeTime < kMaxLastUpdateTimeDelta)
         return tecINTERNAL;  // LCOV_EXCL_LINE
-    if (lastUpdateTimeEpoch < (closeTime - maxLastUpdateTimeDelta) ||
-        lastUpdateTimeEpoch > (closeTime + maxLastUpdateTimeDelta))
+    if (lastUpdateTimeEpoch < (closeTime - kMaxLastUpdateTimeDelta) ||
+        lastUpdateTimeEpoch > (closeTime + kMaxLastUpdateTimeDelta))
         return tecINVALID_UPDATE_TIME;
 
     auto const sle =
@@ -74,7 +98,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         auto const key = tokenPairKey(entry);
         if (pairs.contains(key) || pairsDel.contains(key))
             return temMALFORMED;
-        if (entry[~sfScale] > maxPriceScale)
+        if (entry[~sfScale] > kMaxPriceScale)
             return temMALFORMED;
         if (entry.isFieldPresent(sfAssetPrice))
         {
@@ -98,7 +122,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         return !v || *v == (*sle)[field];
     };
 
-    std::uint32_t adjustReserve = 0;
+    std::int8_t adjustReserve = 0;
     if (sle)
     {
         // update
@@ -129,8 +153,9 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         if (!pairsDel.empty())
             return tecTOKEN_PAIR_NOT_FOUND;
 
-        auto const oldCount = sle->getFieldArray(sfPriceDataSeries).size() > 5 ? 2 : 1;
-        auto const newCount = pairs.size() > 5 ? 2 : 1;
+        auto const oldCount = calculateOracleReserve(sle);
+        auto const newCount = calculateOracleReserve(pairs);
+
         adjustReserve = newCount - oldCount;
     }
     else
@@ -139,16 +164,16 @@ OracleSet::preclaim(PreclaimContext const& ctx)
 
         if (!ctx.tx.isFieldPresent(sfProvider) || !ctx.tx.isFieldPresent(sfAssetClass))
             return temMALFORMED;
-        adjustReserve = pairs.size() > 5 ? 2 : 1;
+        adjustReserve = calculateOracleReserve(pairs);
     }
 
     if (pairs.empty())
         return tecARRAY_EMPTY;
-    if (pairs.size() > maxOracleDataSeries)
+    if (pairs.size() > kMaxOracleDataSeries)
         return tecARRAY_TOO_LARGE;
 
     auto const reserve =
-        ctx.view.fees().accountReserve(sleSetter->getFieldU32(sfOwnerCount) + adjustReserve);
+        accountReserve(ctx.view, sleSetter, ctx.j, {.ownerCountDelta = adjustReserve});
     auto const& balance = sleSetter->getFieldAmount(sfBalance);
 
     if (balance < reserve)
@@ -158,11 +183,22 @@ OracleSet::preclaim(PreclaimContext const& ctx)
 }
 
 static bool
-adjustOwnerCount(ApplyContext& ctx, int count)
+adjustOracleOwnerCount(ApplyContext& ctx, int count)
 {
+    XRPL_ASSERT(std::abs(count) <= 2, "xrpl::adjustOracleOwnerCount abs(counter) <= 2");
+
     if (auto const sleAccount = ctx.view().peek(keylet::account(ctx.tx[sfAccount])))
     {
-        adjustOwnerCount(ctx.view(), sleAccount, count, ctx.journal);
+        if (count > 0)
+        {
+            increaseOwnerCount(
+                ctx.view(), sleAccount, {}, static_cast<std::uint32_t>(count), ctx.journal);
+        }
+        else if (count < 0)
+        {
+            decreaseOwnerCount(
+                ctx.view(), sleAccount, {}, static_cast<std::uint32_t>(-count), ctx.journal);
+        }
         return true;
     }
 
@@ -180,7 +216,7 @@ setPriceDataInnerObjTemplate(STObject& obj)
 TER
 OracleSet::doApply()
 {
-    auto const oracleID = keylet::oracle(account_, ctx_.tx[sfOracleDocumentID]);
+    auto const oracleID = keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID]);
 
     auto populatePriceData = [](STObject& priceData, STObject const& entry) {
         setPriceDataInnerObjTemplate(priceData);
@@ -207,7 +243,7 @@ OracleSet::doApply()
             priceData.setFieldCurrency(sfQuoteAsset, entry.getFieldCurrency(sfQuoteAsset));
             pairs.emplace(tokenPairKey(entry), std::move(priceData));
         }
-        auto const oldCount = pairs.size() > 5 ? 2 : 1;
+        auto const oldCount = calculateOracleReserve(pairs);
         // update/add/delete pairs
         for (auto const& entry : ctx_.tx.getFieldArray(sfPriceDataSeries))
         {
@@ -234,7 +270,7 @@ OracleSet::doApply()
         }
         STArray updatedSeries;
         for (auto const& iter : pairs)
-            updatedSeries.push_back(std::move(iter.second));
+            updatedSeries.pushBack(iter.second);
         sle->setFieldArray(sfPriceDataSeries, updatedSeries);
         if (ctx_.tx.isFieldPresent(sfURI))
             sle->setFieldVL(sfURI, ctx_.tx[sfURI]);
@@ -245,9 +281,10 @@ OracleSet::doApply()
             (*sle)[sfOracleDocumentID] = ctx_.tx[sfOracleDocumentID];
         }
 
-        auto const newCount = pairs.size() > 5 ? 2 : 1;
-        auto const adjust = newCount - oldCount;
-        if (adjust != 0 && !adjustOwnerCount(ctx_, adjust))
+        auto const newCount = calculateOracleReserve(pairs);
+        int32_t const adjust = newCount - oldCount;
+
+        if (adjust != 0 && !adjustOracleOwnerCount(ctx_, adjust))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
         ctx_.view().update(sle);
@@ -282,7 +319,7 @@ OracleSet::doApply()
                 pairs.emplace(key, std::move(priceData));
             }
             for (auto const& iter : pairs)
-                series.push_back(std::move(iter.second));
+                series.pushBack(iter.second);
         }
 
         sle->setFieldArray(sfPriceDataSeries, series);
@@ -290,20 +327,33 @@ OracleSet::doApply()
         sle->setFieldU32(sfLastUpdateTime, ctx_.tx[sfLastUpdateTime]);
 
         auto page = ctx_.view().dirInsert(
-            keylet::ownerDir(account_), sle->key(), describeOwnerDir(account_));
+            keylet::ownerDir(accountID_), sle->key(), describeOwnerDir(accountID_));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         (*sle)[sfOwnerNode] = *page;
 
-        auto const count = series.size() > 5 ? 2 : 1;
-        if (!adjustOwnerCount(ctx_, count))
+        auto const count = calculateOracleReserve(series);
+        if (!adjustOracleOwnerCount(ctx_, count))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
         ctx_.view().insert(sle);
     }
 
     return tesSUCCESS;
+}
+
+void
+OracleSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+OracleSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

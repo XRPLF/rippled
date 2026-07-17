@@ -1,15 +1,19 @@
+#include <xrpl/protocol/STPathSet.h>
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
-#include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <stdexcept>
 #include <utility>
@@ -18,26 +22,33 @@
 namespace xrpl {
 
 std::size_t
-STPathElement::get_hash(STPathElement const& element)
+STPathElement::getHash(STPathElement const& element)
 {
-    std::size_t hash_account = 2654435761;
-    std::size_t hash_currency = 2654435761;
-    std::size_t hash_issuer = 2654435761;
+    std::size_t hashAccount = 2654435761;
+    std::size_t hashCurrency = 2654435761;
+    std::size_t hashIssuer = 2654435761;
 
     // NIKB NOTE: This doesn't have to be a secure hash as speed is more
     //            important. We don't even really need to fully hash the whole
     //            base_uint here, as a few bytes would do for our use.
 
     for (auto const x : element.getAccountID())
-        hash_account += (hash_account * 257) ^ x;
+        hashAccount += (hashAccount * 257) ^ x;
 
-    for (auto const x : element.getCurrency())
-        hash_currency += (hash_currency * 509) ^ x;
+    // Check pathAsset type instead of element's type_
+    // In some cases type_ might be account but the asset
+    // is still set to either MPT or currency (see Pathfinder::addLink())
+    element.getPathAsset().visit(
+        [&](MPTID const& mpt) { hashCurrency += beast::Uhash<>{}(mpt); },
+        [&](Currency const& currency) {
+            for (auto const x : currency)
+                hashCurrency += (hashCurrency * 509) ^ x;
+        });
 
     for (auto const x : element.getIssuerID())
-        hash_issuer += (hash_issuer * 911) ^ x;
+        hashIssuer += (hashIssuer * 911) ^ x;
 
-    return (hash_account ^ hash_currency ^ hash_issuer);
+    return (hashAccount ^ hashCurrency ^ hashIssuer);
 }
 
 STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
@@ -45,9 +56,9 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
     std::vector<STPathElement> path;
     for (;;)
     {
-        int iType = sit.get8();
+        int const iType = sit.get8();
 
-        if (iType == STPathElement::typeNone || iType == STPathElement::typeBoundary)
+        if (iType == STPathElement::TypeNone || iType == STPathElement::TypeBoundary)
         {
             if (path.empty())
             {
@@ -55,37 +66,47 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
                 Throw<std::runtime_error>("empty path");
             }
 
-            push_back(path);
+            pushBack(path);
             path.clear();
 
-            if (iType == STPathElement::typeNone)
+            if (iType == STPathElement::TypeNone)
                 return;
         }
-        else if (iType & ~STPathElement::typeAll)
+        else if ((iType & ~STPathElement::TypeAll) != 0)
         {
             JLOG(debugLog().error()) << "Bad path element " << iType << " in pathset";
             Throw<std::runtime_error>("bad path element");
         }
         else
         {
-            auto hasAccount = iType & STPathElement::typeAccount;
-            auto hasCurrency = iType & STPathElement::typeCurrency;
-            auto hasIssuer = iType & STPathElement::typeIssuer;
+            auto const hasAccount = (iType & STPathElement::TypeAccount) != 0u;
+            auto const hasCurrency = (iType & STPathElement::TypeCurrency) != 0u;
+            auto const hasIssuer = (iType & STPathElement::TypeIssuer) != 0u;
+            auto const hasMPT = (iType & STPathElement::TypeMpt) != 0u;
 
             AccountID account;
-            Currency currency;
+            PathAsset asset;
             AccountID issuer;
 
             if (hasAccount)
                 account = sit.get160();
 
+            if (hasCurrency && hasMPT)
+            {
+                JLOG(debugLog().error()) << "Bad path element MPT and Currency in pathset";
+                Throw<std::runtime_error>("bad path element: MPT and Currency");
+            }
+
             if (hasCurrency)
-                currency = sit.get160();
+                asset = Currency::fromRaw(sit.get160());
+
+            if (hasMPT)
+                asset = sit.get192();
 
             if (hasIssuer)
                 issuer = sit.get160();
 
-            path.emplace_back(account, currency, issuer, hasCurrency);
+            path.emplace_back(account, asset, issuer, hasCurrency || hasMPT);
         }
     }
 }
@@ -105,18 +126,18 @@ STPathSet::move(std::size_t n, void* buf)
 bool
 STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
 {  // assemble base+tail and add it to the set if it's not a duplicate
-    value.push_back(base);
+    value_.push_back(base);
 
-    std::vector<STPath>::reverse_iterator it = value.rbegin();
+    auto it = value_.rbegin();
 
     STPath& newPath = *it;
-    newPath.push_back(tail);
+    newPath.pushBack(tail);
 
-    while (++it != value.rend())
+    while (++it != value_.rend())
     {
         if (*it == newPath)
         {
-            value.pop_back();
+            value_.pop_back();
             return false;
         }
     }
@@ -126,47 +147,51 @@ STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
 bool
 STPathSet::isEquivalent(STBase const& t) const
 {
-    STPathSet const* v = dynamic_cast<STPathSet const*>(&t);
-    return v && (value == v->value);
+    auto const* v = dynamic_cast<STPathSet const*>(&t);
+    return (v != nullptr) && (value_ == v->value_);
 }
 
 bool
 STPathSet::isDefault() const
 {
-    return value.empty();
+    return value_.empty();
 }
 
 bool
-STPath::hasSeen(AccountID const& account, Currency const& currency, AccountID const& issuer) const
+STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const
 {
-    for (auto& p : mPath)
-    {
-        if (p.getAccountID() == account && p.getCurrency() == currency && p.getIssuerID() == issuer)
-            return true;
-    }
-
-    return false;
+    return std::ranges::any_of(path_, [&](auto& p) {
+        return p.getAccountID() == account && p.getPathAsset() == asset &&
+            p.getIssuerID() == issuer;
+    });
 }
 
-Json::Value
+json::Value
 STPath::getJson(JsonOptions) const
 {
-    Json::Value ret(Json::arrayValue);
+    json::Value ret(json::ValueType::Array);
 
-    for (auto it : mPath)
+    for (auto const& it : path_)
     {
-        Json::Value elem(Json::objectValue);
+        json::Value elem(json::ValueType::Object);
         auto const iType = it.getNodeType();
 
         elem[jss::type] = iType;
 
-        if (iType & STPathElement::typeAccount)
+        if ((iType & STPathElement::TypeAccount) != 0u)
             elem[jss::account] = to_string(it.getAccountID());
 
-        if (iType & STPathElement::typeCurrency)
+        XRPL_ASSERT(
+            ((iType & STPathElement::TypeCurrency) == 0u) ||
+                ((iType & STPathElement::TypeMpt) == 0u),
+            "xrpl::STPath::getJson : not type Currency and MPT");
+        if ((iType & STPathElement::TypeCurrency) != 0u)
             elem[jss::currency] = to_string(it.getCurrency());
 
-        if (iType & STPathElement::typeIssuer)
+        if ((iType & STPathElement::TypeMpt) != 0u)
+            elem[jss::mpt_issuance_id] = to_string(it.getMPTID());
+
+        if ((iType & STPathElement::TypeIssuer) != 0u)
             elem[jss::issuer] = to_string(it.getIssuerID());
 
         ret.append(elem);
@@ -175,11 +200,11 @@ STPath::getJson(JsonOptions) const
     return ret;
 }
 
-Json::Value
+json::Value
 STPathSet::getJson(JsonOptions options) const
 {
-    Json::Value ret(Json::arrayValue);
-    for (auto it : value)
+    json::Value ret(json::ValueType::Array);
+    for (auto const& it : value_)
         ret.append(it.getJson(options));
 
     return ret;
@@ -198,31 +223,34 @@ STPathSet::add(Serializer& s) const
     XRPL_ASSERT(getFName().fieldType == STI_PATHSET, "xrpl::STPathSet::add : valid field type");
     bool first = true;
 
-    for (auto const& spPath : value)
+    for (auto const& spPath : value_)
     {
         if (!first)
-            s.add8(STPathElement::typeBoundary);
+            s.add8(STPathElement::TypeBoundary);
 
         for (auto const& speElement : spPath)
         {
-            int iType = speElement.getNodeType();
+            int const iType = speElement.getNodeType();
 
             s.add8(iType);
 
-            if (iType & STPathElement::typeAccount)
+            if ((iType & STPathElement::TypeAccount) != 0u)
                 s.addBitString(speElement.getAccountID());
 
-            if (iType & STPathElement::typeCurrency)
+            if ((iType & STPathElement::TypeMpt) != 0u)
+                s.addBitString(speElement.getMPTID());
+
+            if ((iType & STPathElement::TypeCurrency) != 0u)
                 s.addBitString(speElement.getCurrency());
 
-            if (iType & STPathElement::typeIssuer)
+            if ((iType & STPathElement::TypeIssuer) != 0u)
                 s.addBitString(speElement.getIssuerID());
         }
 
         first = false;
     }
 
-    s.add8(STPathElement::typeNone);
+    s.add8(STPathElement::TypeNone);
 }
 
 }  // namespace xrpl

@@ -1,8 +1,27 @@
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceSet.h>
+
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
 
 namespace xrpl {
 
@@ -20,23 +39,34 @@ MPTokenIssuanceSet::getFlagsMask(PreflightContext const& ctx)
     return tfMPTokenIssuanceSetMask;
 }
 
-// Maps set/clear mutable flags in an MPTokenIssuanceSet transaction to the
-// corresponding ledger mutable flags that control whether the change is
-// allowed.
+// Maps each MPTokenIssuanceSet MutableFlags to the corresponding mutable
+// flag and the target ledger flag to mutate.
 struct MPTMutabilityFlags
 {
     std::uint32_t setFlag;
-    std::uint32_t clearFlag;
-    std::uint32_t canMutateFlag;
+    std::uint32_t canEnableFlag;
+    std::uint32_t ledgerFlag;
 };
 
-static constexpr std::array<MPTMutabilityFlags, 6> mptMutabilityFlags = {
-    {{tmfMPTSetCanLock, tmfMPTClearCanLock, lsmfMPTCanMutateCanLock},
-     {tmfMPTSetRequireAuth, tmfMPTClearRequireAuth, lsmfMPTCanMutateRequireAuth},
-     {tmfMPTSetCanEscrow, tmfMPTClearCanEscrow, lsmfMPTCanMutateCanEscrow},
-     {tmfMPTSetCanTrade, tmfMPTClearCanTrade, lsmfMPTCanMutateCanTrade},
-     {tmfMPTSetCanTransfer, tmfMPTClearCanTransfer, lsmfMPTCanMutateCanTransfer},
-     {tmfMPTSetCanClawback, tmfMPTClearCanClawback, lsmfMPTCanMutateCanClawback}}};
+static constexpr std::array<MPTMutabilityFlags, 6> kMptMutabilityFlags = {
+    {{.setFlag = tmfMPTSetCanLock,
+      .canEnableFlag = lsmfMPTCanEnableCanLock,
+      .ledgerFlag = lsfMPTCanLock},
+     {.setFlag = tmfMPTSetRequireAuth,
+      .canEnableFlag = lsmfMPTCanEnableRequireAuth,
+      .ledgerFlag = lsfMPTRequireAuth},
+     {.setFlag = tmfMPTSetCanEscrow,
+      .canEnableFlag = lsmfMPTCanEnableCanEscrow,
+      .ledgerFlag = lsfMPTCanEscrow},
+     {.setFlag = tmfMPTSetCanTrade,
+      .canEnableFlag = lsmfMPTCanEnableCanTrade,
+      .ledgerFlag = lsfMPTCanTrade},
+     {.setFlag = tmfMPTSetCanTransfer,
+      .canEnableFlag = lsmfMPTCanEnableCanTransfer,
+      .ledgerFlag = lsfMPTCanTransfer},
+     {.setFlag = tmfMPTSetCanClawback,
+      .canEnableFlag = lsmfMPTCanEnableCanClawback,
+      .ledgerFlag = lsfMPTCanClawback}}};
 
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
@@ -45,17 +75,31 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     auto const metadata = ctx.tx[~sfMPTokenMetadata];
     auto const transferFee = ctx.tx[~sfTransferFee];
     auto const isMutate = mutableFlags || metadata || transferFee;
+    auto const hasIssuerElGamalKey = ctx.tx.isFieldPresent(sfIssuerEncryptionKey);
+    auto const hasAuditorElGamalKey = ctx.tx.isFieldPresent(sfAuditorEncryptionKey);
+    auto const txFlags = ctx.tx.getFlags();
+
+    bool const enablePrivacy =
+        mutableFlags && (*mutableFlags & tmfMPTSetCanHoldConfidentialBalance) != 0u;
+
+    auto const hasDomain = ctx.tx.isFieldPresent(sfDomainID);
+    auto const hasHolder = ctx.tx.isFieldPresent(sfHolder);
 
     if (isMutate && !ctx.rules.enabled(featureDynamicMPT))
         return temDISABLED;
 
-    if (ctx.tx.isFieldPresent(sfDomainID) && ctx.tx.isFieldPresent(sfHolder))
+    if ((hasIssuerElGamalKey || hasAuditorElGamalKey || enablePrivacy) &&
+        !ctx.rules.enabled(featureConfidentialTransfer))
+        return temDISABLED;
+
+    if (hasDomain && hasHolder)
         return temMALFORMED;
 
-    auto const txFlags = ctx.tx.getFlags();
+    if (enablePrivacy && hasHolder)
+        return temMALFORMED;
 
     // fails if both flags are set
-    if ((txFlags & tfMPTLock) && (txFlags & tfMPTUnlock))
+    if (ctx.tx.isFlag(tfMPTLock) && ctx.tx.isFlag(tfMPTUnlock))
         return temINVALID_FLAG;
 
     auto const accountID = ctx.tx[sfAccount];
@@ -63,10 +107,12 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (holderID && accountID == holderID)
         return temMALFORMED;
 
-    if (ctx.rules.enabled(featureSingleAssetVault) || ctx.rules.enabled(featureDynamicMPT))
+    if (ctx.rules.enabled(featureSingleAssetVault) || ctx.rules.enabled(featureDynamicMPT) ||
+        ctx.rules.enabled(featureConfidentialTransfer))
     {
         // Is this transaction actually changing anything ?
-        if (txFlags == 0 && !ctx.tx.isFieldPresent(sfDomainID) && !isMutate)
+        if (txFlags == 0 && !hasDomain && !hasIssuerElGamalKey && !hasAuditorElGamalKey &&
+            !isMutate)
             return temMALFORMED;
     }
 
@@ -77,70 +123,36 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             return temMALFORMED;
 
         // Can not set flags when mutating MPTokenIssuance
-        if (isMutate && (txFlags & tfUniversalMask))
+        if (isMutate && ((ctx.tx.getFlags() & tfUniversalMask) != 0u))
             return temMALFORMED;
 
-        if (transferFee && *transferFee > maxTransferFee)
+        if (transferFee && *transferFee > kMaxTransferFee)
             return temBAD_TRANSFER_FEE;
 
-        if (metadata && metadata->length() > maxMPTokenMetadataLength)
+        if (transferFee && *transferFee > 0u && enablePrivacy)
+            return temBAD_TRANSFER_FEE;
+
+        if (metadata && metadata->length() > kMaxMpTokenMetadataLength)
             return temMALFORMED;
 
         if (mutableFlags)
         {
-            if (!*mutableFlags || (*mutableFlags & tmfMPTokenIssuanceSetMutableMask))
+            if ((*mutableFlags == 0u) || ((*mutableFlags & tmfMPTokenIssuanceSetMutableMask) != 0u))
                 return temINVALID_FLAG;
-
-            // Can not set and clear the same flag
-            if (std::any_of(
-                    mptMutabilityFlags.begin(),
-                    mptMutabilityFlags.end(),
-                    [mutableFlags](auto const& f) {
-                        return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
-                    }))
-                return temINVALID_FLAG;
-
-            // Trying to set a non-zero TransferFee and clear MPTCanTransfer
-            // in the same transaction is not allowed.
-            if (transferFee.value_or(0) && (*mutableFlags & tmfMPTClearCanTransfer))
-                return temMALFORMED;
         }
     }
 
-    return tesSUCCESS;
-}
+    if (hasHolder && (hasIssuerElGamalKey || hasAuditorElGamalKey))
+        return temMALFORMED;
 
-NotTEC
-MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
-{
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
+    if (hasAuditorElGamalKey && !hasIssuerElGamalKey)
+        return temMALFORMED;
 
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
+    if (hasIssuerElGamalKey && !isValidCompressedECPoint(ctx.tx[sfIssuerEncryptionKey]))
+        return temMALFORMED;
 
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (isTesSuccess(checkTxPermission(sle, tx)))
-        return tesSUCCESS;
-
-    auto const txFlags = tx.getFlags();
-
-    // this is added in case more flags will be added for MPTokenIssuanceSet
-    // in the future. Currently unreachable.
-    if (txFlags & tfMPTokenIssuanceSetMask)
-        return terNO_DELEGATE_PERMISSION;  // LCOV_EXCL_LINE
-
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttMPTOKEN_ISSUANCE_SET, granularPermissions);
-
-    if (txFlags & tfMPTLock && !granularPermissions.contains(MPTokenIssuanceLock))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (txFlags & tfMPTUnlock && !granularPermissions.contains(MPTokenIssuanceUnlock))
-        return terNO_DELEGATE_PERMISSION;
+    if (hasAuditorElGamalKey && !isValidCompressedECPoint(ctx.tx[sfAuditorEncryptionKey]))
+        return temMALFORMED;
 
     return tesSUCCESS;
 }
@@ -149,7 +161,7 @@ TER
 MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 {
     // ensure that issuance exists
-    auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    auto const sleMptIssuance = ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
     if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -187,7 +199,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         if (not sleMptIssuance->isFlag(lsfMPTRequireAuth))
             return tecNO_PERMISSION;
 
-        if (*domain != beast::zero)
+        if (*domain != beast::kZero)
         {
             auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domain));
             if (!sleDomain)
@@ -203,15 +215,19 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         return currentMutableFlags & mutableFlag;
     };
 
-    if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
+    auto const mutableFlags = ctx.tx[~sfMutableFlags];
+    // Whether the transaction is enabling confidential amounts.
+    bool const enablesConfidentialAmount =
+        mutableFlags && (*mutableFlags & tmfMPTSetCanHoldConfidentialBalance) != 0u;
+    if (mutableFlags)
     {
-        if (std::any_of(
-                mptMutabilityFlags.begin(),
-                mptMutabilityFlags.end(),
-                [mutableFlags, &isMutableFlag](auto const& f) {
-                    return !isMutableFlag(f.canMutateFlag) &&
-                        ((*mutableFlags & (f.setFlag | f.clearFlag)));
-                }))
+        if (std::ranges::any_of(kMptMutabilityFlags, [mutableFlags, &isMutableFlag](auto const& f) {
+                return !isMutableFlag(f.canEnableFlag) && ((*mutableFlags & f.setFlag) != 0u);
+            }))
+            return tecNO_PERMISSION;
+
+        if (enablesConfidentialAmount &&
+            isMutableFlag(lsmfMPTCannotEnableCanHoldConfidentialBalance))
             return tecNO_PERMISSION;
     }
 
@@ -227,8 +243,53 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         if (fee > 0u && !sleMptIssuance->isFlag(lsfMPTCanTransfer))
             return tecNO_PERMISSION;
 
+        // Cannot set a non-zero TransferFee on an issuance that has confidential
+        // transfer enabled
+        if (fee > 0u && sleMptIssuance->isFlag(lsfMPTCanHoldConfidentialBalance))
+            return tecNO_PERMISSION;
+
         if (!isMutableFlag(lsmfMPTCanMutateTransferFee))
             return tecNO_PERMISSION;
+    }
+
+    // cannot update issuer public key
+    if (ctx.tx.isFieldPresent(sfIssuerEncryptionKey) &&
+        sleMptIssuance->isFieldPresent(sfIssuerEncryptionKey))
+    {
+        return tecNO_PERMISSION;
+    }
+
+    // cannot update auditor public key
+    if (ctx.tx.isFieldPresent(sfAuditorEncryptionKey) &&
+        sleMptIssuance->isFieldPresent(sfAuditorEncryptionKey))
+    {
+        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+    }
+
+    if (enablesConfidentialAmount && sleMptIssuance->isFieldPresent(sfTransferFee) &&
+        (*sleMptIssuance)[sfTransferFee] > 0u)
+        return tecNO_PERMISSION;
+
+    // Encryption keys can only be set if confidential amounts are already
+    // enabled on the issuance OR if the transaction is enabling it
+    if (ctx.tx.isFieldPresent(sfIssuerEncryptionKey) &&
+        !sleMptIssuance->isFlag(lsfMPTCanHoldConfidentialBalance) && !enablesConfidentialAmount)
+    {
+        return tecNO_PERMISSION;
+    }
+
+    if (ctx.tx.isFieldPresent(sfAuditorEncryptionKey) &&
+        !sleMptIssuance->isFlag(lsfMPTCanHoldConfidentialBalance) && !enablesConfidentialAmount)
+    {
+        return tecNO_PERMISSION;
+    }
+
+    // cannot upload key if there's circulating supply of COA
+    if ((ctx.tx.isFieldPresent(sfIssuerEncryptionKey) ||
+         ctx.tx.isFieldPresent(sfAuditorEncryptionKey) || enablesConfidentialAmount) &&
+        (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0) > 0)
+    {
+        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
     }
 
     return tesSUCCESS;
@@ -238,10 +299,9 @@ TER
 MPTokenIssuanceSet::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
-    auto const txFlags = ctx_.tx.getFlags();
     auto const holderID = ctx_.tx[~sfHolder];
     auto const domainID = ctx_.tx[~sfDomainID];
-    std::shared_ptr<SLE> sle;
+    SLE::pointer sle;
 
     if (holderID)
     {
@@ -249,7 +309,7 @@ MPTokenIssuanceSet::doApply()
     }
     else
     {
-        sle = view().peek(keylet::mptIssuance(mptIssuanceID));
+        sle = view().peek(keylet::mptokenIssuance(mptIssuanceID));
     }
 
     if (!sle)
@@ -258,35 +318,27 @@ MPTokenIssuanceSet::doApply()
     std::uint32_t const flagsIn = sle->getFieldU32(sfFlags);
     std::uint32_t flagsOut = flagsIn;
 
-    if (txFlags & tfMPTLock)
+    if (ctx_.tx.isFlag(tfMPTLock))
     {
         flagsOut |= lsfMPTLocked;
     }
-    else if (txFlags & tfMPTUnlock)
+    else if (ctx_.tx.isFlag(tfMPTUnlock))
     {
         flagsOut &= ~lsfMPTLocked;
     }
 
     if (auto const mutableFlags = ctx_.tx[~sfMutableFlags].value_or(0))
     {
-        for (auto const& f : mptMutabilityFlags)
+        for (auto const& f : kMptMutabilityFlags)
         {
-            if (mutableFlags & f.setFlag)
+            if ((mutableFlags & f.setFlag) != 0u)
             {
-                flagsOut |= f.canMutateFlag;
-            }
-            else if (mutableFlags & f.clearFlag)
-            {
-                flagsOut &= ~f.canMutateFlag;
+                flagsOut |= f.ledgerFlag;
             }
         }
 
-        if (mutableFlags & tmfMPTClearCanTransfer)
-        {
-            // If the lsfMPTCanTransfer flag is being cleared, then also clear
-            // the TransferFee field.
-            sle->makeFieldAbsent(sfTransferFee);
-        }
+        if ((mutableFlags & tmfMPTSetCanHoldConfidentialBalance) != 0u)
+            flagsOut |= lsfMPTCanHoldConfidentialBalance;
     }
 
     if (flagsIn != flagsOut)
@@ -327,7 +379,7 @@ MPTokenIssuanceSet::doApply()
             sle->getType() == ltMPTOKEN_ISSUANCE,
             "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
 
-        if (*domainID != beast::zero)
+        if (*domainID != beast::kZero)
         {
             sle->setFieldH256(sfDomainID, *domainID);
         }
@@ -338,9 +390,47 @@ MPTokenIssuanceSet::doApply()
         }
     }
 
+    if (auto const pubKey = ctx_.tx[~sfIssuerEncryptionKey])
+    {
+        // This is enforced in preflight.
+        XRPL_ASSERT(
+            sle->getType() == ltMPTOKEN_ISSUANCE,
+            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+
+        sle->setFieldVL(sfIssuerEncryptionKey, *pubKey);
+    }
+
+    if (auto const pubKey = ctx_.tx[~sfAuditorEncryptionKey])
+    {
+        // This is enforced in preflight.
+        XRPL_ASSERT(
+            sle->getType() == ltMPTOKEN_ISSUANCE,
+            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+
+        sle->setFieldVL(sfAuditorEncryptionKey, *pubKey);
+    }
+
     view().update(sle);
 
     return tesSUCCESS;
+}
+
+void
+MPTokenIssuanceSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+MPTokenIssuanceSet::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

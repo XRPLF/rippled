@@ -1,21 +1,36 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/TrustedPublisherServer.h>
+#include <test/jtx/envconfig.h>
 
 #include <xrpld/app/main/BasicApp.h>
 #include <xrpld/app/misc/ValidatorSite.h>
-#include <xrpld/core/ConfigSections.h>
+#include <xrpld/core/Config.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 
+#include <chrono>
+#include <cstdint>
+#include <limits>
+#include <memory>
 #include <set>
+#include <sstream>
+#include <string>
+#include <vector>
 
-namespace xrpl {
+namespace xrpl::test {
 
-namespace test {
-
-class ValidatorRPC_test : public beast::unit_test::suite
+class ValidatorRPC_test : public beast::unit_test::Suite
 {
     using Validator = TrustedPublisherServer::Validator;
 
@@ -27,10 +42,10 @@ public:
 
         for (bool const isAdmin : {true, false})
         {
-            for (std::string cmd : {"validators", "validator_list_sites"})
+            for (std::string const cmd : {"validators", "validator_list_sites"})
             {
-                Env env{*this, isAdmin ? envconfig() : envconfig(no_admin)};
-                env.set_retries(isAdmin ? 5 : 0);
+                Env env{*this, isAdmin ? envconfig() : envconfig(noAdmin)};
+                env.setRetries(isAdmin ? 5 : 0);
                 auto const jrr = env.rpc(cmd)[jss::result];
                 if (isAdmin)
                 {
@@ -48,14 +63,14 @@ public:
             }
 
             {
-                Env env{*this, isAdmin ? envconfig() : envconfig(no_admin)};
+                Env env{*this, isAdmin ? envconfig() : envconfig(noAdmin)};
                 auto const jrr = env.rpc("server_info")[jss::result];
                 BEAST_EXPECT(jrr[jss::status] == "success");
                 BEAST_EXPECT(jrr[jss::info].isMember(jss::validator_list) == isAdmin);
             }
 
             {
-                Env env{*this, isAdmin ? envconfig() : envconfig(no_admin)};
+                Env env{*this, isAdmin ? envconfig() : envconfig(noAdmin)};
                 auto const jrr = env.rpc("server_state")[jss::result];
                 BEAST_EXPECT(jrr[jss::status] == "success");
                 BEAST_EXPECT(jrr[jss::state].isMember(jss::validator_list_expires) == isAdmin);
@@ -75,7 +90,7 @@ public:
             *this,
             envconfig([&keys](std::unique_ptr<Config> cfg) {
                 for (auto const& key : keys)
-                    cfg->section(SECTION_VALIDATORS).append(key);
+                    cfg->section(Sections::kValidators).append(key);
                 return cfg;
             }),
         };
@@ -118,11 +133,11 @@ public:
         // Negative UNL update
         {
             hash_set<PublicKey> disabledKeys;
-            auto k1 = randomKeyPair(KeyType::ed25519).first;
-            auto k2 = randomKeyPair(KeyType::ed25519).first;
+            auto k1 = randomKeyPair(KeyType::Ed25519).first;
+            auto k2 = randomKeyPair(KeyType::Ed25519).first;
             disabledKeys.insert(k1);
             disabledKeys.insert(k2);
-            env.app().validators().setNegativeUNL(disabledKeys);
+            env.app().getValidators().setNegativeUNL(disabledKeys);
 
             auto const jrr = env.rpc("validators")[jss::result];
             auto& jrrnUnl = jrr[jss::NegativeUNL];
@@ -138,7 +153,7 @@ public:
             }
 
             disabledKeys.clear();
-            env.app().validators().setNegativeUNL(disabledKeys);
+            env.app().getValidators().setNegativeUNL(disabledKeys);
             auto const jrrUpdated = env.rpc("validators")[jss::result];
             BEAST_EXPECT(jrrUpdated[jss::NegativeUNL].isNull());
         }
@@ -154,7 +169,7 @@ public:
         };
 
         // Validator keys that will be in the published list
-        std::vector<Validator> validators = {
+        std::vector<Validator> const validators = {
             TrustedPublisherServer::randomValidator(), TrustedPublisherServer::randomValidator()};
         std::set<std::string> expectedKeys;
         for (auto const& val : validators)
@@ -166,8 +181,8 @@ public:
         NetClock::time_point const validUntil{3600s};
         NetClock::time_point const validFrom2{validUntil - 60s};
         NetClock::time_point const validUntil2{validFrom2 + 3600s};
-        auto server = make_TrustedPublisherServer(
-            worker.get_io_context(),
+        auto server = makeTrustedPublisherServer(
+            worker.getIoContext(),
             validators,
             validUntil,
             {{validFrom2, validUntil2}},
@@ -185,15 +200,15 @@ public:
             Env env{
                 *this,
                 envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->section(SECTION_VALIDATOR_LIST_SITES).append(siteURI);
-                    cfg->section(SECTION_VALIDATOR_LIST_KEYS)
+                    cfg->section(Sections::kValidatorListSites).append(siteURI);
+                    cfg->section(Sections::kValidatorListKeys)
                         .append(strHex(server->publisherPublic()));
                     return cfg;
                 }),
             };
 
-            env.app().validatorSites().start();
-            env.app().validatorSites().join();
+            env.app().getValidatorSites().start();
+            env.app().getValidatorSites().join();
 
             {
                 auto const jrr = env.rpc("server_info")[jss::result];
@@ -245,15 +260,15 @@ public:
             Env env{
                 *this,
                 envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->section(SECTION_VALIDATOR_LIST_SITES).append(siteURI);
-                    cfg->section(SECTION_VALIDATOR_LIST_KEYS)
+                    cfg->section(Sections::kValidatorListSites).append(siteURI);
+                    cfg->section(Sections::kValidatorListKeys)
                         .append(strHex(server->publisherPublic()));
                     return cfg;
                 }),
             };
 
-            env.app().validatorSites().start();
-            env.app().validatorSites().join();
+            env.app().getValidatorSites().start();
+            env.app().getValidatorSites().join();
 
             {
                 auto const jrr = env.rpc("server_info")[jss::result];
@@ -302,30 +317,30 @@ public:
         // Publisher list site available v1
         {
             std::stringstream uri;
-            uri << "http://" << server->local_endpoint() << "/validators";
+            uri << "http://" << server->localEndpoint() << "/validators";
             auto siteURI = uri.str();
 
             Env env{
                 *this,
                 envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->section(SECTION_VALIDATOR_LIST_SITES).append(siteURI);
-                    cfg->section(SECTION_VALIDATOR_LIST_KEYS)
+                    cfg->section(Sections::kValidatorListSites).append(siteURI);
+                    cfg->section(Sections::kValidatorListKeys)
                         .append(strHex(server->publisherPublic()));
                     return cfg;
                 }),
             };
 
-            env.app().validatorSites().start();
-            env.app().validatorSites().join();
+            env.app().getValidatorSites().start();
+            env.app().getValidatorSites().join();
             hash_set<NodeID> startKeys;
             for (auto const& val : validators)
                 startKeys.insert(calcNodeID(val.masterPublic));
 
-            env.app().validators().updateTrusted(
+            env.app().getValidators().updateTrusted(
                 startKeys,
                 env.timeKeeper().now(),
                 env.app().getOPs(),
-                env.app().overlay(),
+                env.app().getOverlay(),
                 env.app().getHashRouter());
 
             {
@@ -395,30 +410,30 @@ public:
         // Publisher list site available v2
         {
             std::stringstream uri;
-            uri << "http://" << server->local_endpoint() << "/validators2";
+            uri << "http://" << server->localEndpoint() << "/validators2";
             auto siteURI = uri.str();
 
             Env env{
                 *this,
                 envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->section(SECTION_VALIDATOR_LIST_SITES).append(siteURI);
-                    cfg->section(SECTION_VALIDATOR_LIST_KEYS)
+                    cfg->section(Sections::kValidatorListSites).append(siteURI);
+                    cfg->section(Sections::kValidatorListKeys)
                         .append(strHex(server->publisherPublic()));
                     return cfg;
                 }),
             };
 
-            env.app().validatorSites().start();
-            env.app().validatorSites().join();
+            env.app().getValidatorSites().start();
+            env.app().getValidatorSites().join();
             hash_set<NodeID> startKeys;
             for (auto const& val : validators)
                 startKeys.insert(calcNodeID(val.masterPublic));
 
-            env.app().validators().updateTrusted(
+            env.app().getValidators().updateTrusted(
                 startKeys,
                 env.timeKeeper().now(),
                 env.app().getOPs(),
-                env.app().overlay(),
+                env.app().getOverlay(),
                 env.app().getHashRouter());
 
             {
@@ -507,7 +522,7 @@ public:
     }
 
     void
-    test_validation_create()
+    testValidationCreate()
     {
         using namespace test::jtx;
         Env env{*this};
@@ -524,11 +539,10 @@ public:
         testPrivileges();
         testStaticUNL();
         testDynamicUNL();
-        test_validation_create();
+        testValidationCreate();
     }
 };
 
 BEAST_DEFINE_TESTSUITE(ValidatorRPC, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

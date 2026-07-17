@@ -7,188 +7,189 @@
 #include <boost/operators.hpp>
 
 #include <iostream>
+#include <string>
 #include <type_traits>
 
 namespace xrpl {
 
-/** A type-safe wrap around standard integral types
-
-    The tag is used to implement type safety, catching mismatched types at
-    compile time. Multiple instantiations wrapping the same underlying integral
-    type are distinct types (distinguished by tag) and will not interoperate. A
-    tagged_integer supports all the usual assignment, arithmetic, comparison and
-    shifting operations defined for the underlying type
-
-    The tag is not meant as a unit, which would require restricting the set of
-    allowed arithmetic operations.
-*/
+/**
+ * A type-safe wrap around standard integral types
+ *
+ * The tag is used to implement type safety, catching mismatched types at
+ * compile time. Multiple instantiations wrapping the same underlying integral
+ * type are distinct types (distinguished by tag) and will not interoperate. A
+ * tagged_integer supports all the usual assignment, arithmetic, comparison and
+ * shifting operations defined for the underlying type
+ *
+ * The tag is not meant as a unit, which would require restricting the set of
+ * allowed arithmetic operations.
+ */
 template <class Int, class Tag>
-class tagged_integer : boost::totally_ordered<
-                           tagged_integer<Int, Tag>,
-                           boost::integer_arithmetic<
-                               tagged_integer<Int, Tag>,
-                               boost::bitwise<
-                                   tagged_integer<Int, Tag>,
-                                   boost::unit_steppable<
-                                       tagged_integer<Int, Tag>,
-                                       boost::shiftable<tagged_integer<Int, Tag>>>>>>
+class TaggedInteger : boost::totally_ordered<
+                          TaggedInteger<Int, Tag>,
+                          boost::integer_arithmetic<
+                              TaggedInteger<Int, Tag>,
+                              boost::bitwise<
+                                  TaggedInteger<Int, Tag>,
+                                  boost::unit_steppable<
+                                      TaggedInteger<Int, Tag>,
+                                      boost::shiftable<TaggedInteger<Int, Tag>>>>>>
 {
 private:
-    Int m_value;
+    Int value_;
 
 public:
     using value_type = Int;
     using tag_type = Tag;
 
-    tagged_integer() = default;
+    TaggedInteger() = default;
 
-    template <
-        class OtherInt,
-        class = typename std::enable_if<
-            std::is_integral<OtherInt>::value && sizeof(OtherInt) <= sizeof(Int)>::type>
-    explicit constexpr tagged_integer(OtherInt value) noexcept : m_value(value)
+    template <class OtherInt>
+    explicit constexpr TaggedInteger(OtherInt value) noexcept
+        requires(std::is_integral_v<OtherInt> && sizeof(OtherInt) <= sizeof(Int))
+        : value_(value)
     {
-        static_assert(sizeof(tagged_integer) == sizeof(Int), "tagged_integer is adding padding");
+        static_assert(sizeof(TaggedInteger) == sizeof(Int), "tagged_integer is adding padding");
     }
 
     bool
-    operator<(tagged_integer const& rhs) const noexcept
+    operator<(TaggedInteger const& rhs) const noexcept
     {
-        return m_value < rhs.m_value;
+        return value_ < rhs.value_;
     }
 
     bool
-    operator==(tagged_integer const& rhs) const noexcept
+    operator==(TaggedInteger const& rhs) const noexcept
     {
-        return m_value == rhs.m_value;
+        return value_ == rhs.value_;
     }
 
-    tagged_integer&
-    operator+=(tagged_integer const& rhs) noexcept
+    TaggedInteger&
+    operator+=(TaggedInteger const& rhs) noexcept
     {
-        m_value += rhs.m_value;
+        value_ += rhs.value_;
         return *this;
     }
 
-    tagged_integer&
-    operator-=(tagged_integer const& rhs) noexcept
+    TaggedInteger&
+    operator-=(TaggedInteger const& rhs) noexcept
     {
-        m_value -= rhs.m_value;
+        value_ -= rhs.value_;
         return *this;
     }
 
-    tagged_integer&
-    operator*=(tagged_integer const& rhs) noexcept
+    TaggedInteger&
+    operator*=(TaggedInteger const& rhs) noexcept
     {
-        m_value *= rhs.m_value;
+        value_ *= rhs.value_;
         return *this;
     }
 
-    tagged_integer&
-    operator/=(tagged_integer const& rhs) noexcept
+    TaggedInteger&
+    operator/=(TaggedInteger const& rhs) noexcept
     {
-        m_value /= rhs.m_value;
+        value_ /= rhs.value_;
         return *this;
     }
 
-    tagged_integer&
-    operator%=(tagged_integer const& rhs) noexcept
+    TaggedInteger&
+    operator%=(TaggedInteger const& rhs) noexcept
     {
-        m_value %= rhs.m_value;
+        value_ %= rhs.value_;
         return *this;
     }
 
-    tagged_integer&
-    operator|=(tagged_integer const& rhs) noexcept
+    TaggedInteger&
+    operator|=(TaggedInteger const& rhs) noexcept
     {
-        m_value |= rhs.m_value;
+        value_ |= rhs.value_;
         return *this;
     }
 
-    tagged_integer&
-    operator&=(tagged_integer const& rhs) noexcept
+    TaggedInteger&
+    operator&=(TaggedInteger const& rhs) noexcept
     {
-        m_value &= rhs.m_value;
+        value_ &= rhs.value_;
         return *this;
     }
 
-    tagged_integer&
-    operator^=(tagged_integer const& rhs) noexcept
+    TaggedInteger&
+    operator^=(TaggedInteger const& rhs) noexcept
     {
-        m_value ^= rhs.m_value;
+        value_ ^= rhs.value_;
         return *this;
     }
 
-    tagged_integer&
-    operator<<=(tagged_integer const& rhs) noexcept
+    TaggedInteger&
+    operator<<=(TaggedInteger const& rhs) noexcept
     {
-        m_value <<= rhs.m_value;
+        value_ <<= rhs.value_;
         return *this;
     }
 
-    tagged_integer&
-    operator>>=(tagged_integer const& rhs) noexcept
+    TaggedInteger&
+    operator>>=(TaggedInteger const& rhs) noexcept
     {
-        m_value >>= rhs.m_value;
+        value_ >>= rhs.value_;
         return *this;
     }
 
-    tagged_integer
+    TaggedInteger
     operator~() const noexcept
     {
-        return tagged_integer{~m_value};
+        return TaggedInteger{~value_};
     }
 
-    tagged_integer
+    TaggedInteger
     operator+() const noexcept
     {
         return *this;
     }
 
-    tagged_integer
+    TaggedInteger
     operator-() const noexcept
     {
-        return tagged_integer{-m_value};
+        return TaggedInteger{-value_};
     }
 
-    tagged_integer&
+    TaggedInteger&
     operator++() noexcept
     {
-        ++m_value;
+        ++value_;
         return *this;
     }
 
-    tagged_integer&
+    TaggedInteger&
     operator--() noexcept
     {
-        --m_value;
+        --value_;
         return *this;
     }
 
     explicit
     operator Int() const noexcept
     {
-        return m_value;
+        return value_;
     }
 
     friend std::ostream&
-    operator<<(std::ostream& s, tagged_integer const& t)
+    operator<<(std::ostream& s, TaggedInteger const& t)
     {
-        s << t.m_value;
+        s << t.value_;
         return s;
     }
 
     friend std::istream&
-    operator>>(std::istream& s, tagged_integer& t)
+    operator>>(std::istream& s, TaggedInteger& t)
     {
-        s >> t.m_value;
+        s >> t.value_;
         return s;
     }
 
     friend std::string
-    to_string(tagged_integer const& t)
+    to_string(TaggedInteger const& t)
     {
-        return std::to_string(t.m_value);
+        return std::to_string(t.value_);
     }
 };
 
@@ -196,10 +197,10 @@ public:
 
 namespace beast {
 template <class Int, class Tag, class HashAlgorithm>
-struct is_contiguously_hashable<xrpl::tagged_integer<Int, Tag>, HashAlgorithm>
-    : public is_contiguously_hashable<Int, HashAlgorithm>
+struct IsContiguouslyHashable<xrpl::TaggedInteger<Int, Tag>, HashAlgorithm>
+    : public IsContiguouslyHashable<Int, HashAlgorithm>
 {
-    explicit is_contiguously_hashable() = default;
+    explicit IsContiguouslyHashable() = default;
 };
 
 }  // namespace beast
