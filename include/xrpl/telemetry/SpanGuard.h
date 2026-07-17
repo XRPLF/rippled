@@ -112,20 +112,27 @@
  *
  * 6. Fresh trace root at an inbound entry point (primary rootSpan use):
  * @code
+ *     #include <xrpld/overlay/detail/PeerSpanNames.h>
+ *     using namespace xrpl::telemetry;
+ *
  *     // A peer message handled on a shared worker thread that may
  *     // already have unrelated spans active — start a clean root so
- *     // those do not become parents of this trace.
+ *     // those do not become parents of this trace. Names come from a
+ *     // *SpanNames.h header, never raw literals.
  *     auto span = SpanGuard::rootSpan(
- *         TraceCategory::Peer, "peer", "validation.receive");
- *     span.setAttribute("ledger_hash", hashStr);
+ *         TraceCategory::Peer, seg::peer, peer_span::op::validationReceive);
+ *     span.setAttribute(peer_span::attr::ledgerHash, hashStr);
  * @endcode
  *
  * 7. Hand a span to a job on another thread (edge case, detached):
  * @code
+ *     #include <xrpld/app/ledger/detail/LedgerSpanNames.h>
+ *     using namespace xrpl::telemetry;
+ *
  *     // Build the guard on THIS thread, then strip its thread-local
  *     // Scope so it can be safely moved into a job and ended there.
  *     auto span = SpanGuard::span(
- *         TraceCategory::Ledger, "ledger", "build");
+ *         TraceCategory::Ledger, seg::ledger, ledger_span::op::build);
  *     jobQueue.addJob(
  *         [g = std::move(span).detached()]() mutable {
  *             doWork();
