@@ -4,6 +4,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Peer.h>
 
+#include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/insight/Collector.h>
@@ -19,6 +20,36 @@
 #include <memory>
 
 namespace xrpl {
+
+// Per-node cap for AS state leaves stashed via `gotStaleData`.
+//
+// `gotStaleData` only handles `liAS_NODE` payloads, which carry
+// SHAMap state-map leaves (ledger objects).
+//
+// Sizing: worst-case serialized size across all 31 ledger entry
+// types is ~53 KB (`XChainOwnedCreateAccountClaimID`, 256
+// attestations x ~209 B, capped by `kMaxAttestations` in
+// `include/xrpl/protocol/XChainAttestations.h`), followed by
+// `XChainOwnedClaimID` ~40 KB, `NFTokenPage` ~9.5 KB, and
+// `LedgerHashes` ~8.2 KB. 256 KiB leaves ~4.8x headroom over the
+// current worst case.
+//
+// Future-proofing: this cap is NOT derived from a single protocol
+// constant — it is a soft bound over independently-tuned caps
+// (`kMaxAttestations`, `kDirMaxTokensPerPage`, `kMaxTokenUriLength`,
+// etc.). Two types (`Amendments`, `NegativeUNL`) have no hard schema
+// cap and grow with network state. Revisit if a new object type or
+// a lifted array cap approaches ~256 KiB. The downstream
+// `SHAMapAccountStateLeafNode` construction rejects anything above
+// the 16 MiB SHAMapItem invariant regardless.
+inline constexpr std::size_t kMaxFetchPackNodeBytes = 256 * 1024;
+
+// Aggregate cap on the sum of `nodedata().size()` across all entries
+// in a single `TMLedgerData` message. Rejects amplification-shaped
+// payloads (many nodes, each individually under `kMaxFetchPackNodeBytes`,
+// that together dwarf the per-message budget) at ingress in PeerImp,
+// before dispatch into `InboundLedger::gotData` or `gotStaleData`.
+inline constexpr std::size_t kMaxLedgerDataBytes = megabytes(1);
 
 /**
  * Manages the lifetime of inbound ledgers.
