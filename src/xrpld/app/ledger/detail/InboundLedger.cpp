@@ -103,8 +103,12 @@ InboundLedger::init(ScopedLockType& collectionLock)
     // observable. Finalized in done() with the outcome and timeout count.
     {
         using namespace telemetry;
+        // Detach the Scope: this guard is emplaced here but reset() on a
+        // JtLedgerData worker thread. Detaching strips the thread-local Scope
+        // so its destruction there does not corrupt this thread's context stack.
         acquireSpan_.emplace(
-            SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::acquire));
+            SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::acquire)
+                .detached());
         if (*acquireSpan_)
         {
             acquireSpan_->setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(seq_));
