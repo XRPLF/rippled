@@ -2,26 +2,18 @@
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
-#include <test/jtx/envconfig.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/pay.h>
 
-#include <xrpld/core/Config.h>
-
-#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/JobQueue.h>
-#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/Seed.h>
-#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>
-#include <memory>
-#include <ostream>
 
 namespace xrpl::test {
 
@@ -485,8 +477,9 @@ public:
             BEAST_EXPECT(debugLog.size() > 0);
 
             // Each entry should have "level" and "message" fields
-            for (auto const& entry : debugLog)
+            for (json::UInt i = 0; i < debugLog.size(); ++i)
             {
+                auto const& entry = debugLog[i];
                 BEAST_EXPECT(entry.isMember("level"));
                 BEAST_EXPECT(entry.isMember("message"));
                 BEAST_EXPECT(entry["level"].isString());
