@@ -1761,6 +1761,67 @@ struct EscrowToken_test : public beast::unit_test::Suite
     }
 
     void
+    testIOUTransferFeePrecisionLoss(FeatureBitset features)
+    {
+        testcase("IOU Transfer Fee Precision Loss");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        bool const withV2 = features[fixCleanup3_4_0];
+
+        // Escrow the smallest positive IOU amount with a non-zero transfer
+        // rate, then finish it. The net delivered amount underflows to zero.
+        // The legacy behavior rounds the net up to the smallest positive
+        // value, delivering the full amount with no fee. With fixCleanup3_4_0
+        // the finish fails with tecPRECISION_LOSS instead.
+        Env env{*this, features};
+        auto const baseFee = env.current()->fees().base;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account{"gateway"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(10'000), alice, bob, gw);
+        env(fset(gw, asfAllowTrustLineLocking));
+        env(rate(gw, 1.25));
+        env.close();
+        env.trust(usd(100), alice);
+        env.trust(usd(100), bob);
+        env.close();
+
+        // the smallest positive IOU amount
+        auto const tiny = usd(kEpsilon);
+        env(pay(gw, alice, tiny));
+        env.close();
+
+        auto const preAlice = env.balance(alice, usd);
+        auto const preBob = env.balance(bob, usd);
+        auto const seq1 = env.seq(alice);
+        env(escrow::create(alice, bob, tiny),
+            escrow::kFinishTime(env.now() + 1s),
+            Fee(baseFee * 150));
+        env.close();
+
+        if (withV2)
+        {
+            // The net delivered rounds to zero; the finish is rejected and
+            // the escrowed amount remains locked.
+            env(escrow::finish(bob, alice, seq1), Fee(baseFee * 150), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(env.balance(alice, usd) == preAlice - tiny);
+            BEAST_EXPECT(env.balance(bob, usd) == preBob);
+        }
+        else
+        {
+            // Legacy behavior: the net rounds up to the smallest positive
+            // value, so bob receives the full amount with no fee.
+            env(escrow::finish(bob, alice, seq1), Fee(baseFee * 150));
+            env.close();
+            BEAST_EXPECT(env.balance(alice, usd) == preAlice - tiny);
+            BEAST_EXPECT(env.balance(bob, usd) == preBob + tiny);
+        }
+    }
+
+    void
     testIOULimitAmount(FeatureBitset features)
     {
         testcase("IOU Limit");
@@ -3678,6 +3739,63 @@ struct EscrowToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(issuerMPTEscrowed(env, mpt) == 0);
             BEAST_EXPECT(env.balance(gw, mpt) == mpt(-19'875));
         }
+
+        // test locked rate: issuer lowers the transfer fee after creation
+        if (features[featureDynamicMPT])
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create(
+                {.transferFee = 25000,
+                 .ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+                 .mutableFlags = tmfMPTCanMutateTransferFee});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
+            env.close();
+
+            auto const preAlice = env.balance(alice, mpt);
+            auto const preBob = env.balance(bob, mpt);
+            auto const preOutstanding = env.balance(gw, mpt);
+
+            // alice can create escrow w/ 25% xfer rate locked in
+            auto const seq1 = env.seq(alice);
+            env(escrow::create(alice, bob, mpt(110)),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFinishTime(env.now() + 1s),
+                Fee(baseFee * 150));
+            env.close();
+            auto const transferRate = escrow::rate(env, alice, seq1);
+            BEAST_EXPECT(transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
+
+            // issuer lowers the transfer fee to 10%
+            mptGw.set({.transferFee = 10000});
+            env.close();
+
+            // bob can finish escrow - the lower rate applies:
+            // net 110 / 1.10 = 100, fee 10
+            env(escrow::finish(bob, alice, seq1),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFulfillment(escrow::kFb1),
+                Fee(baseFee * 150));
+            env.close();
+
+            // The fee is only burned from OutstandingAmount when the gross vs.
+            // net accounting fix (fixTokenEscrowV1) is active.
+            std::uint64_t const burn = features[fixTokenEscrowV1] ? 10 : 0;
+            BEAST_EXPECT(env.balance(alice, mpt) == preAlice - mpt(110));
+            BEAST_EXPECT(env.balance(bob, mpt) == preBob + mpt(100));
+            BEAST_EXPECT(env.balance(gw, mpt) == preOutstanding + mpt(burn));
+        }
     }
 
     void
@@ -4090,6 +4208,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
         testIOURippleState(features);
         testIOUGateway(features);
         testIOULockedRate(features);
+        testIOUTransferFeePrecisionLoss(features);
         testIOULimitAmount(features);
         testIOURequireAuth(features);
         testIOUFreeze(features);
@@ -4131,6 +4250,7 @@ public:
             testMPTWithFeats(feats);
             testMPTWithFeats(feats - fixTokenEscrowV1);
             testMPTTransferFeeRoundingBypass(feats - fixCleanup3_4_0);
+            testIOUTransferFeePrecisionLoss(feats - fixCleanup3_4_0);
         }
     }
 };
