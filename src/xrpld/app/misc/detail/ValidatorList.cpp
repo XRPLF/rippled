@@ -1065,6 +1065,8 @@ ValidatorList::updatePublisherList(
         {
             // Increment list count for added keys
             ++keyListings_[*iNew];
+            // Key is now listed: free its untrusted slot if it had one.
+            validatorManifests_.promoteToTrusted(*iNew);
             ++iNew;
         }
         else if (iNew == publisherList.end() || (iOld != oldList.end() && *iOld < *iNew))
@@ -1103,7 +1105,8 @@ ValidatorList::updatePublisherList(
             continue;
         }
 
-        if (auto const r = validatorManifests_.applyManifest(std::move(*m));
+        if (auto const r =
+                validatorManifests_.applyManifest(std::move(*m), ManifestRateLimitCap::Uncapped);
             r == ManifestDisposition::Invalid)
         {
             JLOG(j_.warn()) << "List for " << strHex(pubKey)
@@ -1357,7 +1360,10 @@ ValidatorList::verify(
     PublicKey masterPubKey = manifest.masterKey;
     auto const revoked = manifest.revoked();
 
-    auto const result = publisherManifests_.applyManifest(std::move(manifest));
+    // Publisher keys are configured/trusted (checked above), so bypass the
+    // untrusted cap.
+    auto const result =
+        publisherManifests_.applyManifest(std::move(manifest), ManifestRateLimitCap::Uncapped);
 
     if (revoked && result == ManifestDisposition::Accepted)
     {
