@@ -569,11 +569,9 @@ private:
         {
             if (jv.size() == 0)
                 return false;
-            for (auto const& j : jv)
-            {
-                if (!isValidJson2(j))
+            for (json::Value::ArrayIndex i = 0; i < jv.size(); ++i)
+                if (!isValidJson2(jv[i]))
                     return false;
-            }
             return true;
         }
         if (jv.isObject())

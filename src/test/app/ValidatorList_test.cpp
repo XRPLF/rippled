@@ -2596,7 +2596,7 @@ private:
     }
 
     void
-    testQuorumDisabled()
+    testQuorumDisabled()  // NOLINT(readability-function-size)
     {
         testcase("Test quorum disabled");
 

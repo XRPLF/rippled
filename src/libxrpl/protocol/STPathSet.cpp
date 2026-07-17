@@ -13,6 +13,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <stdexcept>
 #include <utility>
@@ -159,13 +160,10 @@ STPathSet::isDefault() const
 bool
 STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const
 {
-    for (auto& p : path_)
-    {
-        if (p.getAccountID() == account && p.getPathAsset() == asset && p.getIssuerID() == issuer)
-            return true;
-    }
-
-    return false;
+    return std::ranges::any_of(path_, [&](auto& p) {
+        return p.getAccountID() == account && p.getPathAsset() == asset &&
+            p.getIssuerID() == issuer;
+    });
 }
 
 json::Value

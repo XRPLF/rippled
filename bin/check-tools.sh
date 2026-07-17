@@ -110,6 +110,23 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
     fi
 fi
 
+# Rust toolchain. Part of the Nix commonPackages, so available on both Linux
+# and macOS. The cargo plugins are invoked through cargo (`cargo <sub>`), which
+# resolves the matching `cargo-<sub>` binary on PATH; `--version` is offline and
+# does not need a Cargo project.
+if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
+    echo
+    echo "Rust toolchain:"
+    check cargo
+    check cargo-audit cargo audit --version
+    check cargo-llvm-cov cargo llvm-cov --version
+    check cargo-nextest cargo nextest --version
+    check clippy clippy-driver --version
+    check rust-analyzer
+    check rustc
+    check rustfmt
+fi
+
 # GCC is the default compiler on Linux. macOS uses the system Apple Clang
 # instead, so GCC/g++/gcov are not expected there.
 if [ "${os}" = "linux" ]; then
