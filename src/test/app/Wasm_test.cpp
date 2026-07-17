@@ -1,8 +1,10 @@
 #include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx/Env.h>
+#include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/HostFunc.h>
@@ -238,14 +240,20 @@ struct Wasm_test : public beast::unit_test::Suite
             "010b0018127872706c2d657363726f772d7374646c6962342e352e360018127872706c2d636f6d6d6f6e2d"
             "7374646c6962312e322e33");
 
+        StreamSink sink{beast::Severity::Debug};
+        beast::Journal const journal{sink};
+
         auto& vm = WasmEngine::instance();
 
         auto hfs = HostFunctions{};
         auto imports = ImportVec{};
         WasmImpFunc<Add_proto>(imports, "func-add", reinterpret_cast<void*>(&add), &hfs);
 
-        auto _ = vm.run(kWasmModule, hfs, 10'000'000, "finish", wasmParams(1234), imports);
-        BEAST_EXPECT(true);
+        auto _ = vm.run(kWasmModule, hfs, 10'000'000, "finish", wasmParams(1234), imports, journal);
+
+        auto const logged = sink.messages().str();
+        BEAST_EXPECT(logged.find("Module version: xrpl-escrow-stdlib 4.5.6") != std::string::npos);
+        BEAST_EXPECT(logged.find("Module version: xrpl-common-stdlib 1.2.3") != std::string::npos);
     }
 
     void

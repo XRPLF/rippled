@@ -854,7 +854,7 @@ filterCustomSections(Bytes const& wasmCode, Filter&& filter)
         auto sectionSize = readLEB128(wasmCode, offset);
         auto nextSection = offset + sectionSize;
 
-        if (nextSection >= wasmCode.size())
+        if (nextSection > wasmCode.size())
         {
             break;
         }
