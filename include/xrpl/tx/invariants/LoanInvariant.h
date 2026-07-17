@@ -17,11 +17,51 @@ namespace xrpl {
  *
  * 1. If `Loan.PaymentRemaining = 0` then `Loan.PrincipalOutstanding = 0`
  *
- * A loan may only be deleted once it is fully paid off (no payments
- * remaining):
+ * The following invariants only apply once the `LendingProtocolV1_1`
+ * amendment is enabled (the two-step "pending loan" flow):
  *
- * 2. A loan may only be deleted by a `LoanDelete` transaction.
- * 3. A loan that is not fully paid off must not be deleted.
+ * 2. A loan's `OwnerNode` may only be added, removed, or changed on an
+ *    existing loan by `LoanAccept`.
+ * 3. A loan's `lsfLoanPending` flag may only be cleared (never set) on an
+ *    existing loan, and only by `LoanAccept`.
+ * 4. A `LoanAccept` may only modify an existing loan when:
+ *      a. the loan was pending (`lsfLoanPending` set);
+ *      b. the submitting account (`Account`) is the loan's `Borrower`;
+ *      c. the loan's `StartDate` is still in the future.
+ * 5. A `LoanSet` that creates a loan must use exactly one of two mutually
+ *    exclusive creation paths: it either names a `Borrower`, or it carries a
+ *    a `CounterpartySignature`. Specifically:
+ *      a. If `Borrower` is present, `Counterparty` and `CounterpartySignature`
+ *         must be absent.
+ *      b. If `CounterpartySignature` is present, `Borrower` must be absent.
+ *      c. Either `Borrower`, or `CounterpartySignature`,
+ *         must be present.
+ *      d. If `Borrower` is present, it must differ from the submitting
+ *         `Account`.
+ * 6. A `LoanSet` that creates a loan must set `lsfLoanPending` if and only if it
+ *    starts the two-step flow, i.e. `Borrower` and `StartDate` are present while
+ *    `Counterparty` and `CounterpartySignature` are absent.
+ * 7. A `LoanSet` that creates a loan must set the loan's `Borrower`.
+ *    Additionally, a pending loan's `StartDate` must be in the future (so it is
+ *    still in the future when `LoanAccept` finalizes it).
+ * 8. A pending loan (`lsfLoanPending` set) must not be linked into the
+ *    borrower's directory (`OwnerNode` absent), and a non-pending loan must
+ *    be linked (`OwnerNode` present).
+ *
+ * While the `LendingProtocolV1_1` amendment is not enabled, a `LoanSet` that
+ * creates a loan must not use any of the two-step flow's inputs:
+ *
+ * 9. It must not create a pending loan (`lsfLoanPending` must be clear).
+ * 10. It must not be given a `Borrower`.
+ * 11. It must always carry a `CounterpartySignature`.
+ *
+ * A loan may only be deleted once it is fully paid off (no payments remaining)
+ * or, once the `LendingProtocolV1_1` amendment is enabled, while it is still
+ * pending:
+ *
+ * 12. A loan may only be deleted by a `LoanDelete` transaction.
+ * 13. A pending loan must not be deleted while the amendment is not enabled.
+ * 14. A loan that is neither fully paid off nor pending must not be deleted.
  *
  */
 class ValidLoan
