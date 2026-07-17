@@ -44,8 +44,8 @@ public:
     float
     getCacheHitRate()
     {
-        auto lock = ledgerMaps_.lock();
-        return lock->byHash->getHitRate();
+        auto lockedMaps = ledgerMaps_.lock();
+        return lockedMaps->byHash->getHitRate();
     }
 
     /**
@@ -75,8 +75,8 @@ public:
     sweep()
     {
         {
-            auto lock = ledgerMaps_.lock();
-            lock->byHash->sweep();
+            auto lockedMaps = ledgerMaps_.lock();
+            lockedMaps->byHash->sweep();
         }
         consensusValidated_.sweep();
     }

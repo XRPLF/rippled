@@ -43,8 +43,8 @@ LedgerHistory::LedgerHistory(beast::insight::Collector::ptr const& collector, Ap
           app_.getJournal("TaggedCache"))
     , j_(app.getJournal("LedgerHistory"))
 {
-    auto lock = ledgerMaps_.lock();
-    lock->byHash = std::make_unique<LedgerMaps::LedgersByHash>(
+    auto lockedMaps = ledgerMaps_.lock();
+    lockedMaps->byHash = std::make_unique<LedgerMaps::LedgersByHash>(
         "LedgerCache",
         app_.config().getValueFor(SizedItem::LedgerSize),
         std::chrono::seconds{app_.config().getValueFor(SizedItem::LedgerAge)},
@@ -61,10 +61,10 @@ LedgerHistory::insert(std::shared_ptr<Ledger const> const& ledger, bool validate
     XRPL_ASSERT(
         ledger->stateMap().getHash().isNonZero(), "xrpl::LedgerHistory::insert : nonzero hash");
 
-    auto lock = ledgerMaps_.lock();
-    bool const alreadyHad = lock->byHash->canonicalizeReplaceCache(ledger->header().hash, ledger);
+    auto lockedMaps = ledgerMaps_.lock();
+    bool const alreadyHad = lockedMaps->byHash->canonicalizeReplaceCache(ledger->header().hash, ledger);
     if (validated)
-        lock->byIndex[ledger->header().seq] = ledger->header().hash;
+        lockedMaps->byIndex[ledger->header().seq] = ledger->header().hash;
 
     return alreadyHad;
 }
@@ -72,8 +72,8 @@ LedgerHistory::insert(std::shared_ptr<Ledger const> const& ledger, bool validate
 LedgerHash
 LedgerHistory::getLedgerHash(LedgerIndex index)
 {
-    auto lock = ledgerMaps_.lock();
-    if (auto it = lock->byIndex.find(index); it != lock->byIndex.end())
+    auto lockedMaps = ledgerMaps_.lock();
+    if (auto it = lockedMaps->byIndex.find(index); it != lockedMaps->byIndex.end())
         return it->second;
     return {};
 }
@@ -83,8 +83,8 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 {
     uint256 hash;
     {
-        auto lock = ledgerMaps_.lock();
-        if (auto it = lock->byIndex.find(index); it != lock->byIndex.end())
+        auto lockedMaps = ledgerMaps_.lock();
+        if (auto it = lockedMaps->byIndex.find(index); it != lockedMaps->byIndex.end())
             hash = it->second;
     }
 
@@ -103,11 +103,11 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 
     {
         // Add this ledger to the local tracking by index
-        auto lock = ledgerMaps_.lock();
+        auto lockedMaps = ledgerMaps_.lock();
         XRPL_ASSERT(
             ret->isImmutable(), "xrpl::LedgerHistory::getLedgerBySeq : immutable result ledger");
-        lock->byHash->canonicalizeReplaceClient(ret->header().hash, ret);
-        lock->byIndex[ret->header().seq] = ret->header().hash;
+        lockedMaps->byHash->canonicalizeReplaceClient(ret->header().hash, ret);
+        lockedMaps->byIndex[ret->header().seq] = ret->header().hash;
         return (ret->header().seq == index) ? ret : nullptr;
     }
 }
@@ -117,8 +117,8 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 {
     std::shared_ptr<Ledger const> ret;
     {
-        auto lock = ledgerMaps_.lock();
-        ret = lock->byHash->fetch(hash);
+        auto lockedMaps = ledgerMaps_.lock();
+        ret = lockedMaps->byHash->fetch(hash);
     }
 
     if (ret)
@@ -147,8 +147,8 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
         ret->header().hash == hash,
         "xrpl::LedgerHistory::getLedgerByHash : loaded ledger hash match");
     {
-        auto lock = ledgerMaps_.lock();
-        lock->byHash->canonicalizeReplaceClient(ret->header().hash, ret);
+        auto lockedMaps = ledgerMaps_.lock();
+        lockedMaps->byHash->canonicalizeReplaceClient(ret->header().hash, ret);
     }
     XRPL_ASSERT(
         ret->header().hash == hash, "xrpl::LedgerHistory::getLedgerByHash : result hash match");
@@ -547,8 +547,8 @@ LedgerHistory::validatedLedger(
 bool
 LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
-    auto lock = ledgerMaps_.lock();
-    if (auto it = lock->byIndex.find(ledgerIndex); it != lock->byIndex.end())
+    auto lockedMaps = ledgerMaps_.lock();
+    if (auto it = lockedMaps->byIndex.find(ledgerIndex); it != lockedMaps->byIndex.end())
     {
         if (it->second != ledgerHash)
         {
@@ -568,8 +568,8 @@ LedgerHistory::clearLedgerCachePrior(LedgerIndex seq)
     std::size_t indexSize = 0;
 
     std::vector<LedgerHash> const keys = [this] {
-        auto lock = ledgerMaps_.lock();
-        return lock->byHash->getKeys();
+        auto lockedMaps = ledgerMaps_.lock();
+        return lockedMaps->byHash->getKeys();
     }();
 
     for (LedgerHash const& it : keys)
@@ -577,22 +577,22 @@ LedgerHistory::clearLedgerCachePrior(LedgerIndex seq)
         auto const ledger = getLedgerByHash(it);
         if (!ledger || ledger->header().seq < seq)
         {
-            auto lock = ledgerMaps_.lock();
-            lock->byHash->del(it, false);
+            auto lockedMaps = ledgerMaps_.lock();
+            lockedMaps->byHash->del(it, false);
             ++hashesCleared;
         }
     }
 
     {
-        auto lock = ledgerMaps_.lock();
-        cacheSize = lock->byHash->size();
+        auto lockedMaps = ledgerMaps_.lock();
+        cacheSize = lockedMaps->byHash->size();
 
         indexesCleared =
-            std::erase_if(lock->byIndex, [seq](auto const& kv) { return kv.first < seq; });
-        indexSize = lock->byIndex.size();
+            std::erase_if(lockedMaps->byIndex, [seq](auto const& kv) { return kv.first < seq; });
+        indexSize = lockedMaps->byIndex.size();
 
         ALWAYS(
-            lock->byIndex.empty() || lock->byIndex.begin()->first >= seq,
+            lockedMaps->byIndex.empty() || lockedMaps->byIndex.begin()->first >= seq,
             "xrpl::LedgerHistory::clearLedgerCachePrior : byIndex pruned to seq");
     }
 
