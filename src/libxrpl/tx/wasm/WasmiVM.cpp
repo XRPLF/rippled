@@ -822,7 +822,7 @@ readLEB128(Bytes const& wasmCode, size_t& offset)
     while (offset < wasmCode.size())
     {
         auto byte = wasmCode[offset++];
-        result |= (byte & 0x7F) << shift;
+        result |= static_cast<uint32_t>(byte & 0x7F) << shift;
         if ((byte & 0x80) == 0)
         {
             break;
