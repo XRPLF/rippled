@@ -19,10 +19,11 @@
 
 namespace xrpl {
 
-/** Specifies an order book.
-    The order book is a pair of Issues called in and out.
-    @see Issue.
-*/
+/**
+ * Specifies an order book.
+ * The order book is a pair of Issues called in and out.
+ * @see Issue.
+ */
 class Book final : public CountedObject<Book>
 {
 public:
@@ -60,7 +61,9 @@ hash_append(Hasher& h, Book const& b)
 Book
 reversed(Book const& book);
 
-/** Equality comparison. */
+/**
+ * Equality comparison.
+ */
 /** @{ */
 [[nodiscard]] constexpr bool
 operator==(Book const& lhs, Book const& rhs)
@@ -69,14 +72,16 @@ operator==(Book const& lhs, Book const& rhs)
 }
 /** @} */
 
-/** Strict weak ordering. */
+/**
+ * Strict weak ordering.
+ */
 /** @{ */
 [[nodiscard]] constexpr std::weak_ordering
 operator<=>(Book const& lhs, Book const& rhs)
 {
-    if (auto const c{lhs.in <=> rhs.in}; c != 0)
+    if (auto const c{lhs.in <=> rhs.in}; c != 0)  // NOLINT(modernize-use-nullptr)
         return c;
-    if (auto const c{lhs.out <=> rhs.out}; c != 0)
+    if (auto const c{lhs.out <=> rhs.out}; c != 0)  // NOLINT(modernize-use-nullptr)
         return c;
 
     // Manually compare optionals

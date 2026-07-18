@@ -202,8 +202,6 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             if (ec)
                 return;
         }
-
-        return;
     }
 
     void
@@ -218,7 +216,6 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         auto ip = env.app().config()[Sections::kPortWs].get<std::string>(Keys::kIp);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         doRequest(yield, makeWSUpgrade(*ip, *port), *ip, *port, secure, resp, ec);
-        return;
     }
 
     void
@@ -235,7 +232,6 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         auto const ip = env.app().config()[Sections::kPortRpc].get<std::string>(Keys::kIp);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         doRequest(yield, makeHTTPRequest(*ip, *port, body, fields), *ip, *port, secure, resp, ec);
-        return;
     }
 
     static auto
