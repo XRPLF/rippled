@@ -873,8 +873,7 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
             // StrandFlow swallows FlowException, so pathfinding cannot catch it;
             // note here so later getAMMOffer() skips this pool.
             noteFailedAMM(book_, sb.seq());
-            Throw<FlowException>(
-                tecINVARIANT_FAILED, "AMM pool product invariant failed.", book_);
+            Throw<FlowException>(tecINVARIANT_FAILED, "AMM pool product invariant failed.", book_);
         }
     }
 
