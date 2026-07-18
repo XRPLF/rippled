@@ -869,7 +869,12 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
         // when the amendment isn't active.
         if (sb.rules().enabled(fixAMMOverflowOffer))
         {
-            Throw<FlowException>(tecINVARIANT_FAILED, "AMM pool product invariant failed.");
+            // One exception excludes only this AMM (not the CLOB on this book).
+            // StrandFlow swallows FlowException, so pathfinding cannot catch it;
+            // note here so later getAMMOffer() skips this pool.
+            noteFailedAMM(book_, sb.seq());
+            Throw<FlowException>(
+                tecINVARIANT_FAILED, "AMM pool product invariant failed.", book_);
         }
     }
 
@@ -911,7 +916,9 @@ BookStep<TIn, TOut, TDerived>::getAMMOffer(
     // AMM for domain books).
     if (book_.domain && view.rules().enabled(fixCleanup3_3_0))
         return std::nullopt;
-    if (ammLiquidity_)
+    // Skip AMMs that already failed an invariant this ledger.  CLOB offers
+    // on the same book are unaffected.
+    if (ammLiquidity_ && !isFailedAMM(book_, view.seq()))
         return ammLiquidity_->getOffer(view, clobQuality);
     return std::nullopt;
 }

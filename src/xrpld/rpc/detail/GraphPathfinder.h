@@ -169,18 +169,6 @@ private:
         uint64_t& qualityOut) const;
 
     //--------------------------------------------------------------------------
-    // Failed-AMM hop helpers (shared process-wide via PathRequestManager).
-    //--------------------------------------------------------------------------
-    [[nodiscard]] bool
-    assetPathTouchesFailedAmm(PayGraph::AssetPath const& assetPath) const;
-
-    [[nodiscard]] bool
-    stPathTouchesFailedAmm(STPath const& path) const;
-
-    void
-    noteFailedAmmHopsFromPath(STPath const& path) const;
-
-    //--------------------------------------------------------------------------
     // Rank paths (fills pathRanks_ from completePaths_).
     //--------------------------------------------------------------------------
     void

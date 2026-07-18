@@ -243,10 +243,9 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
             if (continueCallback && !continueCallback())
                 return !completePaths_.empty();
 
-            // Skip abstract paths that use a book hop known to throw FlowException
-            // from AMM (avoids re-paying Throw/logThrow on every path_find tick).
-            if (assetPathTouchesFailedAmm(ap))
-                continue;
+            // Broken AMMs are excluded inside BookStep::getAMMOffer after a
+            // single FlowException (noteFailedAMM).  Do not skip entire asset
+            // paths here — CLOB liquidity on the same book must stay eligible.
 
             auto concrete = materialise(ap);
             if (!concrete || concrete->empty())
@@ -650,77 +649,6 @@ GraphPathfinder::materialise(PayGraph::AssetPath const& assetPath)
 }
 
 //==============================================================================
-// Failed-AMM hop tracking helpers
-//==============================================================================
-
-namespace {
-
-Asset
-assetFromPathElement(STPathElement const& pe)
-{
-    if (pe.hasMPT())
-        return MPTIssue{pe.getMPTID()};
-    if (isXRP(pe.getCurrency()))
-        return xrpIssue();
-    return Issue{pe.getCurrency(), pe.getIssuerID()};
-}
-
-}  // namespace
-
-bool
-GraphPathfinder::assetPathTouchesFailedAmm(PayGraph::AssetPath const& assetPath) const
-{
-    auto& prm = app_.getPathRequestManager();
-    for (std::size_t i = 0; i + 1 < assetPath.vids.size(); ++i)
-    {
-        auto const u = assetPath.vids[i];
-        auto const v = assetPath.vids[i + 1];
-        if (u >= snap_->assets.size() || v >= snap_->assets.size())
-            continue;
-        if (prm.isFailedAmmHop(snap_->assets[u], snap_->assets[v]))
-            return true;
-    }
-    return false;
-}
-
-bool
-GraphPathfinder::stPathTouchesFailedAmm(STPath const& path) const
-{
-    if (path.empty())
-        return false;
-
-    auto& prm = app_.getPathRequestManager();
-    Asset prev = srcAmount_.asset();
-    for (auto const& pe : path)
-    {
-        Asset const next = assetFromPathElement(pe);
-        if (prm.isFailedAmmHop(prev, next))
-            return true;
-        prev = next;
-    }
-    return false;
-}
-
-void
-GraphPathfinder::noteFailedAmmHopsFromPath(STPath const& path) const
-{
-    auto& prm = app_.getPathRequestManager();
-    Asset prev = srcAmount_.asset();
-    if (path.empty())
-    {
-        // Default / empty path: still record src→dst book if present.
-        prm.noteFailedAmmHop(prev, dstAmount_.asset());
-        return;
-    }
-    for (auto const& pe : path)
-    {
-        Asset const next = assetFromPathElement(pe);
-        prm.noteFailedAmmHop(prev, next);
-        prev = next;
-    }
-}
-
-//==============================================================================
 // getPathLiquidity — same logic as Pathfinder::getPathLiquidity
 //==============================================================================
 
@@ -731,13 +659,6 @@ GraphPathfinder::getPathLiquidity(
     STAmount& amountOut,
     uint64_t& qualityOut) const
 {
-    // Cheap reject before expensive rippleCalculate / AMM Throw.
-    if (stPathTouchesFailedAmm(path))
-    {
-        JLOG(j_.trace()) << "GraphPathfinder::getPathLiquidity skip known-failed AMM hop";
-        return tefEXCEPTION;
-    }
-
     STPathSet pathSet;
     pathSet.pushBack(path);
 
@@ -761,6 +682,10 @@ GraphPathfinder::getPathLiquidity(
             domain_,
             app_,
             &rcInput);
+
+        // Broken AMMs are excluded inside BookStep::getAMMOffer after a single
+        // FlowException (noteFailedAMM).  Subsequent polls skip that AMM only;
+        // CLOB liquidity on the same book remains available.
 
         if (!isTesSuccess(rc.result()))
         {
@@ -794,12 +719,13 @@ GraphPathfinder::getPathLiquidity(
 
         return tesSUCCESS;
     }
-    catch (FlowException const&)
+    catch (FlowException const& e)
     {
-        // Remember hops so the next path_find tick skips this AMM strand.
-        noteFailedAmmHopsFromPath(path);
-        JLOG(j_.debug()) << "GraphPathfinder::getPathLiquidity AMM FlowException; "
-                            "blacklisting path hops";
+        // Rare: exception escaped StrandFlow.  Prefer the AMM attached to the
+        // exception; do not blacklist every hop on the path.
+        if (e.ammBook)
+            noteFailedAMM(*e.ammBook, ledger_ ? ledger_->seq() : 0);
+        JLOG(j_.debug()) << "GraphPathfinder::getPathLiquidity FlowException: " << e.what();
         return tefEXCEPTION;
     }
     catch (std::exception const& e)
@@ -839,8 +765,9 @@ GraphPathfinder::rankPaths(
         return largestAmount(dstAmount_);
     }();
 
-    // Hard cap on expensive rippleCalculate probes.  Each failed AMM path
-    // still pays Throw/logThrow + stack dump cost even when caught.
+    // Hard cap on expensive rippleCalculate probes.  After the first
+    // FlowException for an AMM, BookStep skips that AMM so later evals should
+    // not re-throw; these caps still bound worst case.
     int const maxProbes = std::max(maxPaths * 2, maxPaths + 3);
     int consecutiveFailures = 0;
     int probes = 0;
@@ -857,15 +784,6 @@ GraphPathfinder::rankPaths(
         // Enough ranked paths for the caller — stop probing.
         if (static_cast<int>(rankedPaths.size()) >= maxPaths)
             break;
-
-        // Skip paths that use a previously-failed AMM book hop (no recompute).
-        if (stPathTouchesFailedAmm(currentPath))
-        {
-            ++consecutiveFailures;
-            if (consecutiveFailures >= 3)
-                break;
-            continue;
-        }
 
         if (++probes > maxProbes)
             break;
