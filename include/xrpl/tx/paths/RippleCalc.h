@@ -37,6 +37,10 @@ public:
         bool defaultPathsAllowed = true;
         bool limitQuality = false;
         bool isLedgerOpen = true;
+        // Path_find ranking only. When true, BookStep may skip AMMs that
+        // already failed a pool invariant this ledger. Must remain false for
+        // payments and any consensus-critical calculation.
+        bool excludeFailedAMMs = false;
     };
     struct Output
     {

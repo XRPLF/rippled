@@ -35,6 +35,8 @@ struct FlowDebugInfo;
  * @param sendMax Do not spend more than this amount
  * @param j Journal to write journal messages to
  * @param flowDebugInfo If non-null a pointer to FlowDebugInfo for debugging
+ * @param excludeFailedAMMs Path_find only: skip AMMs blacklisted after invariant
+ *        failure. Must be false for payments / consensus paths.
  * @return Actual amount in and out, and the result code
  */
 path::RippleCalc::Output
@@ -52,6 +54,7 @@ flow(
     std::optional<STAmount> const& sendMax,
     std::optional<uint256> const& domainID,
     beast::Journal j,
-    path::detail::FlowDebugInfo* flowDebugInfo = nullptr);
+    path::detail::FlowDebugInfo* flowDebugInfo = nullptr,
+    bool excludeFailedAMMs = false);
 
 }  // namespace xrpl

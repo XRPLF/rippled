@@ -34,9 +34,16 @@ class ReadView;
 class ApplyView;
 class AMMContext;
 
-// Process-wide: AMMs that threw FlowException (broken pool invariant) during
-// flow.  One exception excludes only that AMM; CLOB offers on the same book
-// remain usable.  Cleared when the ledger sequence advances.
+// Process-wide, path_find ONLY: AMMs that threw FlowException (broken pool
+// invariant) during pathfinding probes.  One exception excludes only that AMM;
+// CLOB offers on the same book remain usable.  Cleared when the ledger sequence
+// advances.
+//
+// CRITICAL: Must never affect payments, offer crossing, or any consensus-
+// critical path.  BookStep may only note/read this when AMMContext::
+// excludeFailedAMMs() is true (set solely by path_find ranking probes).
+// Reading this during consensus would make payment results depend on which
+// non-deterministic pathfinding probes a node recently ran.
 struct FailedAMMBlacklist
 {
     std::mutex mutex;
@@ -551,8 +558,8 @@ class FlowException : public std::runtime_error
 {
 public:
     TER ter;
-    // When set, the AMM pool (book pair) that failed. One exception excludes
-    // only that AMM via noteFailedAMM / isFailedAMM.
+    // When set, the AMM pool (book pair) that failed. Path_find may exclude
+    // only that AMM via noteFailedAMM / isFailedAMM (never consensus).
     std::optional<Book> ammBook;
 
     FlowException(TER t, std::string const& msg) : std::runtime_error(msg), ter(t)

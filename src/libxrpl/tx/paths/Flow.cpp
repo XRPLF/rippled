@@ -55,7 +55,8 @@ flow(
     std::optional<STAmount> const& sendMax,
     std::optional<uint256> const& domainID,
     beast::Journal j,
-    path::detail::FlowDebugInfo* flowDebugInfo)
+    path::detail::FlowDebugInfo* flowDebugInfo,
+    bool excludeFailedAMMs)
 {
     Asset const srcAsset = [&]() -> Asset {
         if (sendMax)
@@ -75,7 +76,8 @@ flow(
     if (sendMax)
         sendMaxAsset = sendMax->asset();
 
-    AMMContext ammContext(src, false);
+    // excludeFailedAMMs is path_find only; payments and offer crossing leave it false.
+    AMMContext ammContext(src, false, excludeFailedAMMs);
 
     // convert the paths to a collection of strands. Each strand is the
     // collection of account->account steps and book steps that may be used in

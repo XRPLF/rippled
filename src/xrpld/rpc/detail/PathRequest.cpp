@@ -623,6 +623,8 @@ PathRequest::findPaths(
         path::RippleCalc::Input rcInput;
         if (convertAll_)
             rcInput.partialPaymentAllowed = true;
+        // path_find / ripple_path_find ranking only — not payments.
+        rcInput.excludeFailedAMMs = true;
         auto sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
 
         // rippleCalculate only catches FlowException internally; other exceptions

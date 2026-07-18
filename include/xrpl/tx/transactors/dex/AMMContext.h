@@ -30,10 +30,15 @@ private:
     bool ammUsed_{false};
     // Counter of payment engine iterations with consumed AMM
     std::uint16_t ammIters_{0};
+    // When true (path_find probes only), BookStep may skip AMMs that already
+    // failed a pool invariant this ledger.  Must stay false for payments,
+    // offer crossing, and any consensus-critical flow — the failed-AMM
+    // blacklist is process-local and non-deterministic across nodes.
+    bool excludeFailedAMMs_{false};
 
 public:
-    AMMContext(AccountID const& account, bool multiPath)
-        : accountID_(account), multiPath_(multiPath)
+    AMMContext(AccountID const& account, bool multiPath, bool excludeFailedAMMs = false)
+        : accountID_(account), multiPath_(multiPath), excludeFailedAMMs_(excludeFailedAMMs)
     {
     }
     ~AMMContext() = default;
@@ -51,6 +56,13 @@ public:
     setMultiPath(bool fs)
     {
         multiPath_ = fs;
+    }
+
+    /** True only for non-consensus path_find ranking probes. */
+    [[nodiscard]] bool
+    excludeFailedAMMs() const
+    {
+        return excludeFailedAMMs_;
     }
 
     void

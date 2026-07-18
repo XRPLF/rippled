@@ -74,6 +74,8 @@ RippleCalc::rippleCalculate(
             return std::nullopt;
         }();
 
+        bool const excludeFailedAMMs = pInputs && pInputs->excludeFailedAMMs;
+
         try
         {
             flowOut = flow(
@@ -90,7 +92,8 @@ RippleCalc::rippleCalculate(
                 sendMax,
                 domainID,
                 j,
-                nullptr);
+                nullptr,
+                excludeFailedAMMs);
         }
         catch (std::exception& e)
         {

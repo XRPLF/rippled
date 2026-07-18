@@ -243,9 +243,9 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
             if (continueCallback && !continueCallback())
                 return !completePaths_.empty();
 
-            // Broken AMMs are excluded inside BookStep::getAMMOffer after a
-            // single FlowException (noteFailedAMM).  Do not skip entire asset
-            // paths here — CLOB liquidity on the same book must stay eligible.
+            // Broken AMMs are excluded inside BookStep::getAMMOffer during
+            // path_find probes only (excludeFailedAMMs).  Do not skip entire
+            // asset paths here — CLOB liquidity on the same book stays eligible.
 
             auto concrete = materialise(ap);
             if (!concrete || concrete->empty())
@@ -664,6 +664,8 @@ GraphPathfinder::getPathLiquidity(
 
     path::RippleCalc::Input rcInput;
     rcInput.defaultPathsAllowed = false;
+    // Path_find ranking only — never enable for payments / consensus flow.
+    rcInput.excludeFailedAMMs = true;
 
     PaymentSandbox sandbox(&*ledger_, TapNone);
 
@@ -684,8 +686,8 @@ GraphPathfinder::getPathLiquidity(
             &rcInput);
 
         // Broken AMMs are excluded inside BookStep::getAMMOffer after a single
-        // FlowException (noteFailedAMM).  Subsequent polls skip that AMM only;
-        // CLOB liquidity on the same book remains available.
+        // FlowException (noteFailedAMM) when excludeFailedAMMs is set.
+        // Subsequent polls skip that AMM only; CLOB on the same book remains.
 
         if (!isTesSuccess(rc.result()))
         {
@@ -721,8 +723,8 @@ GraphPathfinder::getPathLiquidity(
     }
     catch (FlowException const& e)
     {
-        // Rare: exception escaped StrandFlow.  Prefer the AMM attached to the
-        // exception; do not blacklist every hop on the path.
+        // Rare: exception escaped StrandFlow.  Path_find only — note the AMM
+        // attached to the exception so later probes skip that pool, not every hop.
         if (e.ammBook)
             noteFailedAMM(*e.ammBook, ledger_ ? ledger_->seq() : 0);
         JLOG(j_.debug()) << "GraphPathfinder::getPathLiquidity FlowException: " << e.what();
@@ -831,6 +833,7 @@ GraphPathfinder::computePathRanks(int maxPaths, std::function<bool()> const& con
         PaymentSandbox sandbox(&*ledger_, TapNone);
         path::RippleCalc::Input rcInput;
         rcInput.partialPaymentAllowed = true;
+        rcInput.excludeFailedAMMs = true;
         auto rc = path::RippleCalc::rippleCalculate(
             sandbox,
             srcAmount_,
