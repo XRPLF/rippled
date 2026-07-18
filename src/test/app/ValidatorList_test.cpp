@@ -146,8 +146,8 @@ private:
 
         for (auto const& val : validators)
         {
-            data += "{\"validation_public_key\":\"" + strHex(val.masterPublic) +
-                "\",\"manifest\":\"" + val.manifest + "\"},";
+            data += R"({"validation_public_key":")" + strHex(val.masterPublic) +
+                R"(","manifest":")" + val.manifest + "\"},";
         }
 
         data.pop_back();
@@ -2596,7 +2596,7 @@ private:
     }
 
     void
-    testQuorumDisabled()
+    testQuorumDisabled()  // NOLINT(readability-function-size)
     {
         testcase("Test quorum disabled");
 

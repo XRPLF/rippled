@@ -48,6 +48,7 @@ public:
         if (length == kUnknown)
             length = (value != nullptr) ? (unsigned int)strlen(value) : 0;
 
+        // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
         char* newString = static_cast<char*>(malloc(length + 1));
         if (value != nullptr)
             memcpy(newString, value, length);
@@ -59,7 +60,10 @@ public:
     releaseStringValue(char* value) override
     {
         if (value != nullptr)
+        {
+            // NOLINTNEXTLINE(cppcoreguidelines-no-malloc)
             free(value);
+        }
     }
 };
 
@@ -90,7 +94,7 @@ static struct DummyValueAllocatorInitializer
 // Notes: index_ indicates if the string was allocated when
 // a string is stored.
 
-Value::CZString::CZString(int index) : cstr_(0), index_(index)
+Value::CZString::CZString(int index) : cstr_(nullptr), index_(index)
 {
 }
 
@@ -103,7 +107,8 @@ Value::CZString::CZString(char const* cstr, DuplicationPolicy allocate)
 
 Value::CZString::CZString(CZString const& other)
     : cstr_(
-          other.index_ != static_cast<int>(DuplicationPolicy::NoDuplication) && other.cstr_ != 0
+          other.index_ != static_cast<int>(DuplicationPolicy::NoDuplication) &&
+                  other.cstr_ != nullptr
               ? valueAllocator()->makeMemberName(other.cstr_)
               : other.cstr_)
     , index_([&]() -> int {
@@ -119,7 +124,10 @@ Value::CZString::CZString(CZString const& other)
 Value::CZString::~CZString()
 {
     if ((cstr_ != nullptr) && index_ == static_cast<int>(DuplicationPolicy::Duplicate))
+    {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
         valueAllocator()->releaseMemberName(const_cast<char*>(cstr_));
+    }
 }
 
 bool
@@ -166,7 +174,8 @@ Value::CZString::isStaticString() const
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 
-/*! \internal Default constructor initialization must be equivalent to:
+/**
+ * @internal Default constructor initialization must be equivalent to:
  * memset( this, 0, sizeof(Value) )
  * This optimization is used in ValueInternalMap fast allocator.
  */
@@ -187,7 +196,7 @@ Value::Value(ValueType type) : type_(type)
             break;
 
         case ValueType::String:
-            value_.stringVal = 0;
+            value_.stringVal = nullptr;
             break;
 
         case ValueType::Array:
@@ -240,6 +249,7 @@ Value::Value(std::string const& value) : type_(ValueType::String), allocated_(tr
 
 Value::Value(StaticString const& value) : type_(ValueType::String)
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     value_.stringVal = const_cast<char*>(value.cStr());
 }
 
@@ -268,7 +278,7 @@ Value::Value(Value const& other) : type_(other.type_)
             }
             else
             {
-                value_.stringVal = 0;
+                value_.stringVal = nullptr;
             }
 
             break;
@@ -304,8 +314,7 @@ Value::~Value()
 
         case ValueType::Array:
         case ValueType::Object:
-            if (value_.mapVal != nullptr)
-                delete value_.mapVal;
+            delete value_.mapVal;
             break;
 
         // LCOV_EXCL_START
@@ -405,7 +414,7 @@ operator<(Value const& x, Value const& y)
             return static_cast<int>(x.value_.boolVal) < static_cast<int>(y.value_.boolVal);
 
         case ValueType::String:
-            return (x.value_.stringVal == 0 && (y.value_.stringVal != nullptr)) ||
+            return (x.value_.stringVal == nullptr && (y.value_.stringVal != nullptr)) ||
                 ((y.value_.stringVal != nullptr) && (x.value_.stringVal != nullptr) &&
                  strcmp(x.value_.stringVal, y.value_.stringVal) < 0);
 
@@ -785,7 +794,9 @@ Value::isConvertibleTo(ValueType other) const
     return false;  // unreachable;
 }
 
-/// Number of values in array or object
+/**
+ * Number of values in array or object
+ */
 Value::UInt
 Value::size() const
 {

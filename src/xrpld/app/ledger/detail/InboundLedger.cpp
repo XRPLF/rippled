@@ -509,7 +509,8 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
     }
 }
 
-/** Called with a lock by the PeerSet when the timer expires
+/**
+ * Called with a lock by the PeerSet when the timer expires
  */
 void
 InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
@@ -558,7 +559,9 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
     }
 }
 
-/** Add more peers to the set, if possible */
+/**
+ * Add more peers to the set, if possible
+ */
 void
 InboundLedger::addPeers()
 {
@@ -638,7 +641,8 @@ InboundLedger::done()
     });
 }
 
-/** Request more nodes, perhaps from a specific peer
+/**
+ * Request more nodes, perhaps from a specific peer
  */
 void
 InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
@@ -953,9 +957,10 @@ InboundLedger::filterNodes(
         recentNodes_.insert(n.second);
 }
 
-/** Take ledger header data
-    Call with a lock
-*/
+/**
+ * Take ledger header data
+ * Call with a lock
+ */
 // data must not have hash prefix
 bool
 InboundLedger::takeHeader(std::string const& data)
@@ -999,9 +1004,10 @@ InboundLedger::takeHeader(std::string const& data)
     return true;
 }
 
-/** Process node data received from a peer
-    Call with a lock
-*/
+/**
+ * Process node data received from a peer
+ * Call with a lock
+ */
 void
 InboundLedger::receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode& san)
 {
@@ -1095,9 +1101,10 @@ InboundLedger::receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode& 
     }
 }
 
-/** Process AS root node received from a peer
-    Call with a lock
-*/
+/**
+ * Process AS root node received from a peer
+ * Call with a lock
+ */
 bool
 InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
 {
@@ -1121,9 +1128,10 @@ InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
     return san.isGood();
 }
 
-/** Process AS root node received from a peer
-    Call with a lock
-*/
+/**
+ * Process AS root node received from a peer
+ * Call with a lock
+ */
 bool
 InboundLedger::takeTxRootNode(Slice const& data, SHAMapAddNode& san)
 {
@@ -1178,9 +1186,10 @@ InboundLedger::getNeededHashes()
     return ret;
 }
 
-/** Stash a TMLedgerData received from a peer for later processing
-    Returns 'true' if we need to dispatch
-*/
+/**
+ * Stash a TMLedgerData received from a peer for later processing
+ * Returns 'true' if we need to dispatch
+ */
 bool
 InboundLedger::gotData(
     std::weak_ptr<Peer> peer,
@@ -1200,9 +1209,10 @@ InboundLedger::gotData(
     return true;
 }
 
-/** Process one TMLedgerData
-    Returns the number of useful nodes
-*/
+/**
+ * Process one TMLedgerData
+ * Returns the number of useful nodes
+ */
 // VFALCO NOTE, it is not necessary to pass the entire Peer,
 //              we can get away with just a Resource::Consumer endpoint.
 //
@@ -1377,9 +1387,10 @@ struct PeerDataCounts
 };
 }  // namespace detail
 
-/** Process pending TMLedgerData
-    Query the a random sample of the 'best' peers
-*/
+/**
+ * Process pending TMLedgerData
+ * Query the a random sample of the 'best' peers
+ */
 void
 InboundLedger::runData()
 {

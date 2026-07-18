@@ -46,6 +46,22 @@ struct LedgerRange
     uint32_t max;
 };
 
+/**
+ * @brief Enumeration of possible delegate types that can occur during filtering in account_tx
+ */
+enum class DelegateType {
+    Actor,  ///< Another account signed and submitted transactions on behalf of this account (this
+            ///< account is the owner/delegator).
+    Authorizer  ///< This account signed and submitted transactions on behalf of another account
+                ///< (this account is the signer/delegatee).
+};
+
+struct DelegateFilter
+{
+    DelegateType type = DelegateType::Actor;
+    std::optional<AccountID> counterparty;
+};
+
 class RelationalDatabase
 {
 public:
@@ -65,8 +81,10 @@ public:
     struct AccountTxOptions
     {
         AccountID const& account;
-        /// Ledger sequence range to search. A value of 0 for min or max
-        /// means unbounded in that direction (no constraint applied).
+        /**
+         * Ledger sequence range to search. A value of 0 for min or max
+         * means unbounded in that direction (no constraint applied).
+         */
         LedgerRange ledgerRange{};
         std::uint32_t offset = 0;
         std::uint32_t limit = 0;
@@ -80,6 +98,7 @@ public:
         std::optional<AccountTxMarker> marker;
         std::uint32_t limit = 0;
         bool bAdmin = false;
+        std::optional<DelegateFilter> delegate;
     };
 
     using AccountTx = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
@@ -99,6 +118,7 @@ public:
         bool forward = false;
         uint32_t limit = 0;
         std::optional<AccountTxMarker> marker;
+        std::optional<DelegateFilter> delegate;
     };
 
     struct AccountTxResult
@@ -107,6 +127,7 @@ public:
         LedgerRange ledgerRange{};
         uint32_t limit = 0;
         std::optional<AccountTxMarker> marker;
+        std::optional<DelegateFilter> delegate;
     };
 
     virtual ~RelationalDatabase() = default;

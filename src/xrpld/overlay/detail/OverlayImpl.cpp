@@ -632,11 +632,12 @@ OverlayImpl::onWrite(beast::PropertyStream::Map& stream)
 }
 
 //------------------------------------------------------------------------------
-/** A peer has connected successfully
-    This is called after the peer handshake has been completed and during
-    peer activation. At this point, the peer address and the public key
-    are known.
-*/
+/**
+ * A peer has connected successfully
+ * This is called after the peer handshake has been completed and during
+ * peer activation. At this point, the peer address and the public key
+ * are known.
+ */
 void
 OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 {
@@ -733,10 +734,11 @@ OverlayImpl::reportOutboundTraffic(TrafficCount::Category cat, int size)
 {
     traffic_.addCount(cat, false, size);
 }
-/** The number of active peers on the network
-    Active peers are only those peers that have completed the handshake
-    and are running the XRPL protocol.
-*/
+/**
+ * The number of active peers on the network
+ * Active peers are only those peers that have completed the handshake
+ * and are running the XRPL protocol.
+ */
 std::size_t
 OverlayImpl::size() const
 {

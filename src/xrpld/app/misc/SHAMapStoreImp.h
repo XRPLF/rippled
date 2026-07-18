@@ -102,10 +102,12 @@ private:
     std::uint32_t deleteBatch_ = 100;
     std::chrono::milliseconds backOff_{100};
     std::chrono::seconds ageThreshold_{60};
-    /// If  the node is out of sync during an online_delete healthWait()
-    /// call, sleep the thread for this time, and continue checking until
-    /// recovery.
-    /// See also: "recovery_wait_seconds" in xrpld-example.cfg
+    /**
+     * If  the node is out of sync during an online_delete healthWait()
+     * call, sleep the thread for this time, and continue checking until
+     * recovery.
+     * See also: "recovery_wait_seconds" in xrpld-example.cfg
+     */
     std::chrono::seconds recoveryWaitTime_{5};
 
     // these do not exist upon SHAMapStore creation, but do exist
@@ -206,7 +208,8 @@ private:
         return false;
     }
 
-    /** delete from sqlite table in batches to not lock the db excessively.
+    /**
+     * delete from sqlite table in batches to not lock the db excessively.
      *  Pause briefly to extend access time to other users.
      *  Call with mutex object unlocked.
      */

@@ -502,7 +502,7 @@ STObject::isFlag(std::uint32_t f) const
 }
 
 std::uint32_t
-STObject::getFlags(void) const
+STObject::getFlags() const
 {
     auto const* t = dynamic_cast<STUInt32 const*>(peekAtPField(sfFlags));
 
@@ -633,20 +633,6 @@ STObject::getAccountID(SField const& field) const
     return getFieldByValue<STAccount>(field);
 }
 
-AccountID
-STObject::getFeePayer() const
-{
-    // If sfDelegate is present, the delegate account is the payer
-    // note: if a delegate is specified, its authorization to act on behalf of the account is
-    // enforced in `Transactor::invokeCheckPermission`
-    // cryptographic signature validity is checked separately (e.g., in `Transactor::checkSign`)
-    if (isFieldPresent(sfDelegate))
-        return getAccountID(sfDelegate);
-
-    // Default payer
-    return getAccountID(sfAccount);
-}
-
 Blob
 STObject::getFieldVL(SField const& field) const
 {
@@ -710,7 +696,7 @@ STObject::getFieldNumber(SField const& field) const
 void
 STObject::set(std::unique_ptr<STBase> v)
 {
-    set(std::move(*v.get()));
+    set(std::move(*v));
 }
 
 void

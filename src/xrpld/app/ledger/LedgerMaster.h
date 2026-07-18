@@ -111,10 +111,11 @@ public:
     void
     setFullLedger(std::shared_ptr<Ledger const> const& ledger, bool isSynchronous, bool isCurrent);
 
-    /** Check the sequence number and parent close time of a
-        ledger against our clock and last validated ledger to
-        see if it can be the network's current ledger
-    */
+    /**
+     * Check the sequence number and parent close time of a
+     * ledger against our clock and last validated ledger to
+     * see if it can be the network's current ledger
+     */
     bool
     canBeCurrent(std::shared_ptr<Ledger const> const& ledger);
 
@@ -127,38 +128,44 @@ public:
     std::string
     getCompleteLedgers();
 
-    /** Apply held transactions to the open ledger
-        This is normally called as we close the ledger.
-        The open ledger remains open to handle new transactions
-        until a new open ledger is built.
-    */
+    /**
+     * Apply held transactions to the open ledger
+     * This is normally called as we close the ledger.
+     * The open ledger remains open to handle new transactions
+     * until a new open ledger is built.
+     */
     void
     applyHeldTransactions();
 
-    /** Get the next transaction held for a particular account if any.
-        This is normally called when a transaction for that account is
-        successfully applied to the open ledger so the next transaction
-        can be resubmitted without waiting for ledger close.
-    */
+    /**
+     * Get the next transaction held for a particular account if any.
+     * This is normally called when a transaction for that account is
+     * successfully applied to the open ledger so the next transaction
+     * can be resubmitted without waiting for ledger close.
+     */
     std::shared_ptr<STTx const>
     popAcctTransaction(std::shared_ptr<STTx const> const& tx);
 
-    /** Get a ledger's hash by sequence number using the cache
+    /**
+     * Get a ledger's hash by sequence number using the cache
      */
     uint256
     getHashBySeq(std::uint32_t index);
 
-    /** Walk to a ledger's hash using the skip list */
+    /**
+     * Walk to a ledger's hash using the skip list
+     */
     std::optional<LedgerHash>
     walkHashBySeq(std::uint32_t index, InboundLedger::Reason reason);
 
-    /** Walk the chain of ledger hashes to determine the hash of the
-        ledger with the specified index. The referenceLedger is used as
-        the base of the chain and should be fully validated and must not
-        precede the target index. This function may throw if nodes
-        from the reference ledger or any prior ledger are not present
-        in the node store.
-    */
+    /**
+     * Walk the chain of ledger hashes to determine the hash of the
+     * ledger with the specified index. The referenceLedger is used as
+     * the base of the chain and should be fully validated and must not
+     * precede the target index. This function may throw if nodes
+     * from the reference ledger or any prior ledger are not present
+     * in the node store.
+     */
     std::optional<LedgerHash>
     walkHashBySeq(
         std::uint32_t index,
@@ -258,7 +265,9 @@ public:
     std::size_t
     getFetchPackCacheSize() const;
 
-    //! Whether we have ever fully validated a ledger.
+    /**
+     * Whether we have ever fully validated a ledger.
+     */
     bool
     haveValidated()
     {

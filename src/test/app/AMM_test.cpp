@@ -2463,8 +2463,8 @@ private:
             // The vote is not added to the slots
             ammAlice.vote(carol_, 1'000);
             auto const info = ammAlice.ammRpcInfo()[jss::amm][jss::vote_slots];
-            for (std::uint32_t i = 0; i < info.size(); ++i)
-                BEAST_EXPECT(info[i][jss::account] != carol_.human());
+            for (auto const& entry : info)
+                BEAST_EXPECT(entry[jss::account] != carol_.human());
             // But the slots are refreshed and the fee is changed
             BEAST_EXPECT(ammAlice.expectTradingFee(82));
         });
@@ -4436,7 +4436,7 @@ private:
             auto const info = env.rpc(
                 "json",
                 "account_info",
-                std::string("{\"account\": \"" + to_string(ammAlice.ammAccount()) + "\"}"));
+                std::string(R"({"account": ")" + to_string(ammAlice.ammAccount()) + "\"}"));
             auto const flags = info[jss::result][jss::account_data][jss::Flags].asUInt();
             BEAST_EXPECT(flags == (lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth));
         });
@@ -5265,7 +5265,7 @@ private:
             auto const info = env.rpc(
                 "json",
                 "account_info",
-                std::string("{\"account\": \"" + to_string(amm.ammAccount()) + "\"}"));
+                std::string(R"({"account": ")" + to_string(amm.ammAccount()) + "\"}"));
             try
             {
                 BEAST_EXPECT(

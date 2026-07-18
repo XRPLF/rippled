@@ -18,7 +18,9 @@
 #include <functional>
 #include <memory>
 
-/** Directory operations. */
+/**
+ * Directory operations.
+ */
 namespace xrpl::test::jtx::directory {
 
 auto
