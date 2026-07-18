@@ -20,13 +20,14 @@
 
 namespace xrpl::NodeStore {
 
-/** Binary function that satisfies the strict-weak-ordering requirement.
-
-    This compares the hashes of both objects and returns true if
-    the first hash is considered to go before the second.
-
-    @see std::sort
-*/
+/**
+ * Binary function that satisfies the strict-weak-ordering requirement.
+ *
+ * This compares the hashes of both objects and returns true if
+ * the first hash is considered to go before the second.
+ *
+ * @see std::sort
+ */
 struct LessThan
 {
     bool
@@ -37,7 +38,9 @@ struct LessThan
     }
 };
 
-/** Returns `true` if objects are identical. */
+/**
+ * Returns `true` if objects are identical.
+ */
 inline bool
 isSame(std::shared_ptr<NodeObject> const& lhs, std::shared_ptr<NodeObject> const& rhs)
 {
@@ -124,9 +127,9 @@ public:
     static void
     storeBatch(Backend& backend, Batch const& batch)
     {
-        for (int i = 0; i < batch.size(); ++i)
+        for (auto const& object : batch)
         {
-            backend.store(batch[i]);
+            backend.store(object);
         }
     }
 
@@ -137,11 +140,11 @@ public:
         pCopy->clear();
         pCopy->reserve(batch.size());
 
-        for (int i = 0; i < batch.size(); ++i)
+        for (auto const& expected : batch)
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status = backend.fetch(batch[i]->getHash(), &object);
+            Status const status = backend.fetch(expected->getHash(), &object);
 
             BEAST_EXPECT(status == Status::Ok);
 
@@ -157,11 +160,11 @@ public:
     void
     fetchMissing(Backend& backend, Batch const& batch)
     {
-        for (int i = 0; i < batch.size(); ++i)
+        for (auto const& expected : batch)
         {
             std::shared_ptr<NodeObject> object;
 
-            Status const status = backend.fetch(batch[i]->getHash(), &object);
+            Status const status = backend.fetch(expected->getHash(), &object);
 
             BEAST_EXPECT(status == Status::NotFound);
         }
@@ -171,10 +174,8 @@ public:
     static void
     storeBatch(Database& db, Batch const& batch)
     {
-        for (int i = 0; i < batch.size(); ++i)
+        for (auto const& object : batch)
         {
-            std::shared_ptr<NodeObject> const object(batch[i]);
-
             Blob data(object->getData());
 
             db.store(object->getType(), std::move(data), object->getHash(), db.earliestLedgerSeq());
@@ -188,9 +189,9 @@ public:
         pCopy->clear();
         pCopy->reserve(batch.size());
 
-        for (int i = 0; i < batch.size(); ++i)
+        for (auto const& expected : batch)
         {
-            std::shared_ptr<NodeObject> const object = db.fetchNodeObject(batch[i]->getHash(), 0);
+            std::shared_ptr<NodeObject> const object = db.fetchNodeObject(expected->getHash(), 0);
 
             if (object != nullptr)
                 pCopy->push_back(object);

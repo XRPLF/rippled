@@ -135,19 +135,20 @@ struct IsUniquelyRepresented<std::array<T, N>>
     explicit IsUniquelyRepresented() = default;
 };
 
-/** Metafunction returning `true` if the type can be hashed in one call.
-
-    For `IsContiguouslyHashable<T>::value` to be true, then for every
-    combination of possible values of `T` held in `x` and `y`,
-    if `x == y`, then it must be true that `memcmp(&x, &y, sizeof(T))`
-    return 0; i.e. that `x` and `y` are represented by the same bit pattern.
-
-    For example:  A two's complement `int` should be contiguously hashable.
-    Every bit pattern produces a unique value that does not compare equal to
-    any other bit pattern's value.  A IEEE floating point should not be
-    contiguously hashable because -0. and 0. have different bit patterns,
-    though they compare equal.
-*/
+/**
+ * Metafunction returning `true` if the type can be hashed in one call.
+ *
+ * For `IsContiguouslyHashable<T>::value` to be true, then for every
+ * combination of possible values of `T` held in `x` and `y`,
+ * if `x == y`, then it must be true that `memcmp(&x, &y, sizeof(T))`
+ * return 0; i.e. that `x` and `y` are represented by the same bit pattern.
+ *
+ * For example:  A two's complement `int` should be contiguously hashable.
+ * Every bit pattern produces a unique value that does not compare equal to
+ * any other bit pattern's value.  A IEEE floating point should not be
+ * contiguously hashable because -0. and 0. have different bit patterns,
+ * though they compare equal.
+ */
 /** @{ */
 template <class T, class HashAlgorithm>
 struct IsContiguouslyHashable
@@ -172,29 +173,30 @@ struct IsContiguouslyHashable<T[N], HashAlgorithm>
 
 //------------------------------------------------------------------------------
 
-/** Logically concatenate input data to a `Hasher`.
-
-    Hasher requirements:
-
-        `X` is the type `Hasher`
-        `h` is a value of type `x`
-        `p` is a value convertible to `void const*`
-        `n` is a value of type `std::size_t`, greater than zero
-
-        Expression:
-            `h.append (p, n);`
-        Throws:
-            Never
-        Effect:
-            Adds the input data to the hasher state.
-
-        Expression:
-            `static_cast<std::size_t>(j)`
-        Throws:
-            Never
-        Effect:
-            Returns the resulting hash of all the input data.
-*/
+/**
+ * Logically concatenate input data to a `Hasher`.
+ *
+ * Hasher requirements:
+ *
+ *     `X` is the type `Hasher`
+ *     `h` is a value of type `x`
+ *     `p` is a value convertible to `void const*`
+ *     `n` is a value of type `std::size_t`, greater than zero
+ *
+ *     Expression:
+ *         `h.append (p, n);`
+ *     Throws:
+ *         Never
+ *     Effect:
+ *         Adds the input data to the hasher state.
+ *
+ *     Expression:
+ *         `static_cast<std::size_t>(j)`
+ *     Throws:
+ *         Never
+ *     Effect:
+ *         Returns the resulting hash of all the input data.
+ */
 /** @{ */
 
 // scalars
@@ -392,36 +394,12 @@ hash_append(Hasher& h, boost::container::flat_set<Key, Compare, Alloc> const& v)
 }
 // tuple
 
-namespace detail {
-
-inline void
-forEachItem(...) noexcept
-{
-}
-
-template <class Hasher, class T>
-inline int
-hashOne(Hasher& h, T const& t) noexcept
-{
-    hash_append(h, t);
-    return 0;
-}
-
-template <class Hasher, class... T, std::size_t... I>
-inline void
-tuple_hash(Hasher& h, std::tuple<T...> const& t, std::index_sequence<I...>) noexcept
-{
-    for_each_item(hash_one(h, std::get<I>(t))...);
-}
-
-}  // namespace detail
-
 template <class Hasher, class... T>
 inline void
 hash_append(Hasher& h, std::tuple<T...> const& t) noexcept
     requires(!IsContiguouslyHashable<std::tuple<T...>, Hasher>::value)
 {
-    detail::tuple_hash(h, t, std::index_sequence_for<T...>{});
+    std::apply([&h](auto const&... item) { (hash_append(h, item), ...); }, t);
 }
 
 // shared_ptr

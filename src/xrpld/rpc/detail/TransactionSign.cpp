@@ -985,7 +985,9 @@ checkFee(
 
 //------------------------------------------------------------------------------
 
-/** Returns a json::ValueType::Object. */
+/**
+ * Returns a json::ValueType::Object.
+ */
 json::Value
 transactionSign(
     json::Value jvRequest,
@@ -1019,7 +1021,9 @@ transactionSign(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-/** Returns a json::ValueType::Object. */
+/**
+ * Returns a json::ValueType::Object.
+ */
 json::Value
 transactionSubmit(
     json::Value jvRequest,
@@ -1142,7 +1146,9 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
 
 }  // namespace detail
 
-/** Returns a json::ValueType::Object. */
+/**
+ * Returns a json::ValueType::Object.
+ */
 json::Value
 transactionSignFor(
     json::Value jvRequest,
@@ -1248,7 +1254,7 @@ transactionSignFor(
         // The array must be sorted and validated.
         // For delegated transactions, the delegate account is
         // the one forbidden from appearing in its own Signers array.
-        auto err = sortAndValidateSigners(signers, sttx->getFeePayer());
+        auto err = sortAndValidateSigners(signers, sttx->getInitiator());
         if (RPC::containsError(err))
             return err;
     }
@@ -1263,7 +1269,9 @@ transactionSignFor(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-/** Returns a json::ValueType::Object. */
+/**
+ * Returns a json::ValueType::Object.
+ */
 json::Value
 transactionSubmitMultiSigned(
     json::Value jvRequest,
@@ -1415,9 +1423,9 @@ transactionSubmitMultiSigned(
     }
 
     // The array must be sorted and validated.
-    // For delegated transactions, getFeePayer() returns sfDelegate,
+    // For delegated transactions, getInitiator() returns sfDelegate,
     // that account is the one forbidden from appearing in its own Signers array.
-    auto err = sortAndValidateSigners(signers, stTx->getFeePayer());
+    auto err = sortAndValidateSigners(signers, stTx->getInitiator());
     if (RPC::containsError(err))
         return err;
 

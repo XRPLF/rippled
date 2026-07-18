@@ -16,7 +16,9 @@ class STPath;
 
 namespace test::jtx {
 
-/** Set Paths, SendMax on a JTx. */
+/**
+ * Set Paths, SendMax on a JTx.
+ */
 class Paths
 {
 private:
@@ -35,10 +37,11 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** Add a path.
-
-    If no paths are present, a new one is created.
-*/
+/**
+ * Add a path.
+ *
+ * If no paths are present, a new one is created.
+ */
 class Path
 {
 private:

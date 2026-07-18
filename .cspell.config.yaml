@@ -66,6 +66,7 @@ words:
   - Btrfs
   - Buildx
   - canonicality
+  - canonicalised
   - changespq
   - checkme
   - choco
@@ -73,6 +74,7 @@ words:
   - citardauq
   - clawback
   - clawbacks
+  - clippy
   - cmaketoolchain
   - coeffs
   - coldwallet
@@ -256,6 +258,9 @@ words:
   - rocksdb
   - Rohrs
   - roundings
+  - rustc
+  - rustfmt
+  - rustup
   - sahyadri
   - Satoshi
   - scons
@@ -276,6 +281,8 @@ words:
   - sles
   - soci
   - socidb
+  - sponsee
+  - sponsees
   - SRPMS
   - sslws
   - statsd
@@ -298,6 +305,8 @@ words:
   - takerpays
   - ters
   - TMEndpointv2
+  - toolchain
+  - tparam
   - trixie
   - tx
   - txid
@@ -325,6 +334,7 @@ words:
   - unserviced
   - unshareable
   - unshares
+  - unsponsored
   - unsquelch
   - unsquelched
   - unsquelching

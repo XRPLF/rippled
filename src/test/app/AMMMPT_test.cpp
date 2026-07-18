@@ -1002,7 +1002,7 @@ private:
 
         // Insufficient reserve, XRP/MPT
         {
-            Env env(*this);
+            Env env(*this, features);
             auto const startingXrp = reserve(env, 4) + env.current()->fees().base * 4;
             env.fund(XRP(10'000), gw_);
             env.fund(XRP(10'000), alice_);
@@ -3482,8 +3482,8 @@ private:
             // The vote is not added to the slots
             ammAlice.vote(carol_, 1'000);
             auto const info = ammAlice.ammRpcInfo()[jss::amm][jss::vote_slots];
-            for (auto i = 0; i < info.size(); ++i)
-                BEAST_EXPECT(info[i][jss::account] != carol_.human());
+            for (auto const& entry : info)
+                BEAST_EXPECT(entry[jss::account] != carol_.human());
             // But the slots are refreshed and the fee is changed
             BEAST_EXPECT(ammAlice.expectTradingFee(82));
         }
@@ -6270,7 +6270,7 @@ private:
                 auto const info = env.rpc(
                     "json",
                     "account_info",
-                    std::string("{\"account\": \"" + to_string(amm.ammAccount()) + "\"}"));
+                    std::string(R"({"account": ")" + to_string(amm.ammAccount()) + "\"}"));
                 try
                 {
                     BEAST_EXPECT(

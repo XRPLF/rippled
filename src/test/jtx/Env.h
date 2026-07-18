@@ -54,14 +54,15 @@
 
 namespace xrpl::test::jtx {
 
-/** Wrapper that captures std::source_location when implicitly constructed.
-    This solves the problem of combining std::source_location with variadic
-    templates. The std::source_location default argument is evaluated at the
-    call site when the wrapper is constructed via implicit conversion.
-
-    This is a template struct that holds the value directly, allowing implicit
-    conversion without template argument deduction issues via CTAD.
-*/
+/**
+ * Wrapper that captures std::source_location when implicitly constructed.
+ * This solves the problem of combining std::source_location with variadic
+ * templates. The std::source_location default argument is evaluated at the
+ * call site when the wrapper is constructed via implicit conversion.
+ *
+ * This is a template struct that holds the value directly, allowing implicit
+ * conversion without template argument deduction issues via CTAD.
+ */
 template <class T>
 struct WithSourceLocation
 {
@@ -76,7 +77,9 @@ struct WithSourceLocation
     }
 };
 
-/** Designate accounts as no-ripple in Env::fund */
+/**
+ * Designate accounts as no-ripple in Env::fund
+ */
 template <class... Args>
 std::array<Account, 1 + sizeof...(Args)>
 noripple(Account const& account, Args const&... args)
@@ -150,7 +153,9 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** A transaction testing environment. */
+/**
+ * A transaction testing environment.
+ */
 class Env
 {
 public:
@@ -158,7 +163,9 @@ public:
 
     Account const& master = Account::kMaster;
 
-    /// Used by parseResult() and postConditions()
+    /**
+     * Used by parseResult() and postConditions()
+     */
     struct ParsedResult
     {
         std::optional<TER> ter;
@@ -306,11 +313,12 @@ public:
         return *bundle_.timeKeeper;
     }
 
-    /** Returns the current network time
-
-        @note This is manually advanced when ledgers
-              close or by callers.
-    */
+    /**
+     * Returns the current network time
+     *
+     * @note This is manually advanced when ledgers
+     *       close or by callers.
+     */
     NetClock::time_point
     // NOLINTNEXTLINE(readability-make-member-function-const)
     now()
@@ -318,7 +326,9 @@ public:
         return timeKeeper().now();
     }
 
-    /** Returns the connected client. */
+    /**
+     * Returns the connected client.
+     */
     AbstractClient&
     // NOLINTNEXTLINE(readability-make-member-function-const)
     client()
@@ -326,11 +336,12 @@ public:
         return *bundle_.client;
     }
 
-    /** Execute an RPC command.
-
-        The command is examined and used to build
-        the correct JSON as per the arguments.
-    */
+    /**
+     * Execute an RPC command.
+     *
+     * The command is examined and used to build
+     * the correct JSON as per the arguments.
+     */
     template <class... Args>
     json::Value
     rpc(unsigned apiVersion,
@@ -352,61 +363,64 @@ public:
     json::Value
     rpc(std::string const& cmd, Args&&... args);
 
-    /** Returns the current ledger.
-
-        This is a non-modifiable snapshot of the
-        open ledger at the moment of the call.
-        Transactions applied after the call to open()
-        will not be visible.
-
-    */
+    /**
+     * Returns the current ledger.
+     *
+     * This is a non-modifiable snapshot of the
+     * open ledger at the moment of the call.
+     * Transactions applied after the call to open()
+     * will not be visible.
+     */
     [[nodiscard]] std::shared_ptr<OpenView const>
     current() const
     {
         return app().getOpenLedger().current();
     }
 
-    /** Returns the last closed ledger.
-
-        The open ledger is built on top of the
-        last closed ledger. When the open ledger
-        is closed, it becomes the new closed ledger
-        and a new open ledger takes its place.
-    */
+    /**
+     * Returns the last closed ledger.
+     *
+     * The open ledger is built on top of the
+     * last closed ledger. When the open ledger
+     * is closed, it becomes the new closed ledger
+     * and a new open ledger takes its place.
+     */
     std::shared_ptr<ReadView const>
     closed();
 
-    /** Close and advance the ledger.
-
-        The resulting close time will be different and
-        greater than the previous close time, and at or
-        after the passed-in close time.
-
-        Effects:
-
-            Creates a new closed ledger from the last
-            closed ledger.
-
-            All transactions that made it into the open
-            ledger are applied to the closed ledger.
-
-            The Application network time is set to
-            the close time of the resulting ledger.
-
-        @return true if no error, false if error
-    */
+    /**
+     * Close and advance the ledger.
+     *
+     * The resulting close time will be different and
+     * greater than the previous close time, and at or
+     * after the passed-in close time.
+     *
+     * Effects:
+     *
+     *     Creates a new closed ledger from the last
+     *     closed ledger.
+     *
+     *     All transactions that made it into the open
+     *     ledger are applied to the closed ledger.
+     *
+     *     The Application network time is set to
+     *     the close time of the resulting ledger.
+     *
+     * @return true if no error, false if error
+     */
     bool
     close(
         NetClock::time_point closeTime,
         std::optional<std::chrono::milliseconds> consensusDelay = std::nullopt);
 
-    /** Close and advance the ledger.
-
-        The time is calculated as the duration from
-        the previous ledger closing time.
-
-        @return true if no error, false if error
-    */
+    /**
+     * Close and advance the ledger.
+     *
+     * The time is calculated as the duration from
+     * the previous ledger closing time.
+     *
+     * @return true if no error, false if error
+     */
     template <class Rep, class Period>
     bool
     close(std::chrono::duration<Rep, Period> const& elapsed)
@@ -415,13 +429,14 @@ public:
         return close(now() + elapsed);
     }
 
-    /** Close and advance the ledger.
-
-        The time is calculated as five seconds from
-        the previous ledger closing time.
-
-        @return true if no error, false if error
-    */
+    /**
+     * Close and advance the ledger.
+     *
+     * The time is calculated as five seconds from
+     * the previous ledger closing time.
+     *
+     * @return true if no error, false if error
+     */
     bool
     close()
     {
@@ -429,34 +444,35 @@ public:
         return close(std::chrono::seconds(5));
     }
 
-    /** Close and advance the ledger, then synchronize with the server's
-        io_context to ensure all async operations initiated by the close have
-        been started.
-
-        This function performs the same ledger close as close(), but additionally
-        ensures that all tasks posted to the server's io_context (such as
-        WebSocket subscription message sends) have been initiated before returning.
-
-        What it guarantees:
-        - All async operations posted before syncClose() have been STARTED
-        - For WebSocket sends: async_write_some() has been called
-        - The actual I/O completion may still be pending (async)
-
-        What it does NOT guarantee:
-        - Async operations have COMPLETED
-        - WebSocket messages have been received by clients
-        - However, for localhost connections, the remaining latency is typically
-          microseconds, making tests reliable
-
-        Use this instead of close() when:
-        - Test code immediately checks for subscription messages
-        - Race conditions between test and worker threads must be avoided
-        - Deterministic test behavior is required
-
-        @param timeout Maximum time to wait for the barrier task to execute
-        @return true if close succeeded and barrier executed within timeout,
-                false otherwise
-    */
+    /**
+     * Close and advance the ledger, then synchronize with the server's
+     * io_context to ensure all async operations initiated by the close have
+     * been started.
+     *
+     * This function performs the same ledger close as close(), but additionally
+     * ensures that all tasks posted to the server's io_context (such as
+     * WebSocket subscription message sends) have been initiated before returning.
+     *
+     * What it guarantees:
+     * - All async operations posted before syncClose() have been STARTED
+     * - For WebSocket sends: async_write_some() has been called
+     * - The actual I/O completion may still be pending (async)
+     *
+     * What it does NOT guarantee:
+     * - Async operations have COMPLETED
+     * - WebSocket messages have been received by clients
+     * - However, for localhost connections, the remaining latency is typically
+     *   microseconds, making tests reliable
+     *
+     * Use this instead of close() when:
+     * - Test code immediately checks for subscription messages
+     * - Race conditions between test and worker threads must be avoided
+     * - Deterministic test behavior is required
+     *
+     * @param timeout Maximum time to wait for the barrier task to execute
+     * @return true if close succeeded and barrier executed within timeout,
+     *         false otherwise
+     */
     [[nodiscard]] bool
     syncClose(std::chrono::steady_clock::duration timeout = std::chrono::seconds{1})
     {
@@ -471,16 +487,19 @@ public:
         return result && status == std::future_status::ready;
     }
 
-    /** Turn on JSON tracing.
-        With no arguments, trace all
-    */
+    /**
+     * Turn on JSON tracing.
+     * With no arguments, trace all
+     */
     void
     trace(int howMany = -1)
     {
         trace_ = howMany;
     }
 
-    /** Turn off JSON tracing. */
+    /**
+     * Turn off JSON tracing.
+     */
     void
     notrace()
     {
@@ -493,7 +512,9 @@ public:
         parseFailureExpected_ = b;
     }
 
-    /** Turn off signature checks. */
+    /**
+     * Turn off signature checks.
+     */
     void
     disableSigs()
     {
@@ -514,11 +535,15 @@ public:
         return retries_;
     }
 
-    /** Associate AccountID with account. */
+    /**
+     * Associate AccountID with account.
+     */
     void
     memoize(Account const& account);
 
-    /** Returns the Account given the AccountID. */
+    /**
+     * Returns the Account given the AccountID.
+     */
     /** @{ */
     [[nodiscard]] Account const&
     lookup(AccountID const& id) const;
@@ -527,51 +552,84 @@ public:
     lookup(std::string const& base58ID) const;
     /** @} */
 
-    /** Returns the XRP balance on an account.
-        Returns 0 if the account does not exist.
-    */
+    /**
+     * Returns the XRP balance on an account.
+     * Returns 0 if the account does not exist.
+     */
     [[nodiscard]] PrettyAmount
     balance(Account const& account) const;
 
-    /** Returns the next sequence number on account.
-        Exceptions:
-            Throws if the account does not exist
-    */
+    /**
+     * Returns the next sequence number on account.
+     *
+     * @throws if the account does not exist
+     */
     [[nodiscard]] std::uint32_t
     seq(Account const& account) const;
 
-    /** Return the balance on an account.
-        Returns 0 if the trust line does not exist.
-    */
+    /**
+     * Return the balance on an account.
+     * Returns 0 if the trust line does not exist.
+     */
     // VFALCO NOTE This should return a unit-less amount
     [[nodiscard]] PrettyAmount
     balance(Account const& account, Asset const& asset) const;
 
-    /** Returns the IOU limit on an account.
-        Returns 0 if the trust line does not exist.
-    */
+    /**
+     * Returns the IOU limit on an account.
+     * Returns 0 if the trust line does not exist.
+     */
     [[nodiscard]] PrettyAmount
     limit(Account const& account, Issue const& issue) const;
 
-    /** Return the number of objects owned by an account.
+    /**
+     * Return the number of objects owned by an account.
      * Returns 0 if the account does not exist.
      */
     [[nodiscard]] std::uint32_t
     ownerCount(Account const& account) const;
 
-    /** Return an account root.
-        @return empty if the account does not exist.
-    */
+    /**
+     * Return the number of sponsored objects owned by an account.
+     *
+     * @throws if the account does not exist.
+     */
+    [[nodiscard]] std::uint32_t
+    sponsoredOwnerCount(Account const& account) const;
+
+    /**
+     * Return the number of sponsoring objects owned by an account.
+     *
+     * @throws if the account does not exist.
+     */
+    [[nodiscard]] std::uint32_t
+    sponsoringOwnerCount(Account const& account) const;
+
+    /**
+     * Return the number of sponsoring accounts owned by an account.
+     *
+     * @throws if the account does not exist.
+     */
+    [[nodiscard]] std::uint32_t
+    sponsoringAccountCount(Account const& account) const;
+
+    /**
+     * Return an account root.
+     * @return empty if the account does not exist.
+     */
     [[nodiscard]] SLE::const_pointer
     le(Account const& account) const;
 
-    /** Return a ledger entry.
-        @return empty if the ledger entry does not exist
-    */
+    /**
+     * Return a ledger entry.
+     * @return empty if the ledger entry does not exist
+     */
     [[nodiscard]] SLE::const_pointer
     le(Keylet const& k) const;
 
-    /** Create a JTx from parameters. */
+    /**
+     * Create a JTx from parameters.
+     */
     template <class JsonValue, class... FN>
     JTx
     jt(JsonValue&& jv, FN const&... fN)
@@ -583,7 +641,9 @@ public:
         return jt;
     }
 
-    /** Create a JTx from parameters. */
+    /**
+     * Create a JTx from parameters.
+     */
     template <class JsonValue, class... FN>
     JTx
     jtnofill(JsonValue&& jv, FN const&... fN)
@@ -595,9 +655,10 @@ public:
         return jt;
     }
 
-    /** Create JSON from parameters.
-        This will apply funclets and autofill.
-    */
+    /**
+     * Create JSON from parameters.
+     * This will apply funclets and autofill.
+     */
     template <class JsonValue, class... FN>
     json::Value
     json(JsonValue&& jv, FN const&... fN)
@@ -606,11 +667,12 @@ public:
         return std::move(tj.jv);
     }
 
-    /** Check a set of requirements.
-
-        The requirements are formed
-        from condition functors.
-    */
+    /**
+     * Check a set of requirements.
+     *
+     * The requirements are formed
+     * from condition functors.
+     */
     template <class... Args>
     void
     require(Args const&... args)
@@ -618,29 +680,33 @@ public:
         jtx::required(args...)(*this);
     }
 
-    /** Gets the TER result and `didApply` flag from a RPC Json result object.
+    /**
+     * Gets the TER result and `didApply` flag from a RPC Json result object.
      */
     static ParsedResult
     parseResult(json::Value const& jr);
 
-    /** Submit an existing JTx.
-        This calls postconditions.
-    */
+    /**
+     * Submit an existing JTx.
+     * This calls postconditions.
+     */
     virtual void
     submit(JTx const& jt, std::source_location const& loc = std::source_location::current());
 
-    /** Use the submit RPC command with a provided JTx object.
-        This calls postconditions.
-    */
+    /**
+     * Use the submit RPC command with a provided JTx object.
+     * This calls postconditions.
+     */
     void
     signAndSubmit(
         JTx const& jt,
         json::Value params = json::ValueType::Null,
         std::source_location const& loc = std::source_location::current());
 
-    /** Check expected postconditions
-        of JTx submission.
-    */
+    /**
+     * Check expected postconditions
+     * of JTx submission.
+     */
     void
     postconditions(
         JTx const& jt,
@@ -648,7 +714,9 @@ public:
         json::Value const& jr = json::Value(),
         std::source_location const& loc = std::source_location::current());
 
-    /** Apply funclets and submit. */
+    /**
+     * Apply funclets and submit.
+     */
     /** @{ */
     template <class... FN>
     Env&
@@ -681,38 +749,42 @@ public:
     }
     /** @} */
 
-    /** Return the TER for the last JTx. */
+    /**
+     * Return the TER for the last JTx.
+     */
     [[nodiscard]] TER
     ter() const
     {
         return ter_;
     }
 
-    /** Return metadata for the last JTx.
+    /**
+     * Return metadata for the last JTx.
      *
-     *  NOTE: this has a side effect of closing the open ledger.
-     *  The ledger will only be closed if it includes transactions.
+     * NOTE: this has a side effect of closing the open ledger.
+     * The ledger will only be closed if it includes transactions.
      *
-     *  Effects:
+     * Effects:
      *
-     *      The open ledger is closed as if by a call
-     *      to close(). The metadata for the last
-     *      transaction ID, if any, is returned.
+     *     The open ledger is closed as if by a call
+     *     to close(). The metadata for the last
+     *     transaction ID, if any, is returned.
      */
     std::shared_ptr<STObject const>
     meta();
 
-    /** Return the tx data for the last JTx.
-
-        Effects:
-
-            The tx data for the last transaction
-            ID, if any, is returned. No side
-            effects.
-
-        @note Only necessary for JTx submitted
-            with via sign-and-submit method.
-    */
+    /**
+     * Return the tx data for the last JTx.
+     *
+     * Effects:
+     *
+     *     The tx data for the last transaction
+     *     ID, if any, is returned. No side
+     *     effects.
+     *
+     * @note Only necessary for JTx submitted
+     *     with via sign-and-submit method.
+     */
     [[nodiscard]] std::shared_ptr<STTx const>
     tx() const;
 
@@ -747,32 +819,33 @@ private:
     }
 
 public:
-    /** Create a new account with some XRP.
-
-        These convenience functions are for easy set-up
-        of the environment, they bypass fee, seq, and sig
-        settings. The XRP is transferred from the master
-        account.
-
-        Preconditions:
-            The account must not already exist
-
-        Effects:
-            The asfDefaultRipple on the account is set,
-            and the sequence number is incremented, unless
-            the account is wrapped with a call to noripple.
-
-            The account's XRP balance is set to amount.
-
-            Generates a test that the balance is set.
-
-        @param amount The amount of XRP to transfer to
-                      each account.
-
-        @param args A heterogeneous list of accounts to fund
-                    or calls to noripple with lists of accounts
-                    to fund.
-    */
+    /**
+     * Create a new account with some XRP.
+     *
+     * These convenience functions are for easy set-up
+     * of the environment, they bypass fee, seq, and sig
+     * settings. The XRP is transferred from the master
+     * account.
+     *
+     * Preconditions:
+     *     The account must not already exist
+     *
+     * Effects:
+     *     The asfDefaultRipple on the account is set,
+     *     and the sequence number is incremented, unless
+     *     the account is wrapped with a call to noripple.
+     *
+     *     The account's XRP balance is set to amount.
+     *
+     *     Generates a test that the balance is set.
+     *
+     * @param amount The amount of XRP to transfer to
+     *               each account.
+     *
+     * @param args A heterogeneous list of accounts to fund
+     *             or calls to noripple with lists of accounts
+     *             to fund.
+     */
     template <class Arg, class... Args>
     void
     fund(STAmount const& amount, Arg const& arg, Args const&... args)
@@ -782,23 +855,24 @@ public:
             fund(amount, args...);
     }
 
-    /** Establish trust lines.
-
-        These convenience functions are for easy set-up
-        of the environment, they bypass fee, seq, and sig
-        settings.
-
-        Preconditions:
-            The account must already exist
-
-        Effects:
-            A trust line is added for the account.
-            The account's sequence number is incremented.
-            The account is refunded for the transaction fee
-                to set the trust line.
-
-        The refund comes from the master account.
-    */
+    /**
+     * Establish trust lines.
+     *
+     * These convenience functions are for easy set-up
+     * of the environment, they bypass fee, seq, and sig
+     * settings.
+     *
+     * Preconditions:
+     *     The account must already exist
+     *
+     * Effects:
+     *     A trust line is added for the account.
+     *     The account's sequence number is incremented.
+     *     The account is refunded for the transaction fee
+     *         to set the trust line.
+     *
+     * The refund comes from the master account.
+     */
     /** @{ */
     void
     trust(STAmount const& amount, Account const& account);
@@ -812,10 +886,11 @@ public:
     }
     /** @} */
 
-    /** Create a STTx from a JTx without sanitizing
-        Use to inject bogus values into test transactions by first
-        editing the JSON.
-    */
+    /**
+     * Create a STTx from a JTx without sanitizing
+     * Use to inject bogus values into test transactions by first
+     * editing the JSON.
+     */
     std::shared_ptr<STTx const>
     ust(JTx const& jt);
 
@@ -839,13 +914,14 @@ protected:
     virtual void
     autofill(JTx& jt);
 
-    /** Create a STTx from a JTx
-        The framework requires that JSON is valid.
-        On a parse error, the JSON is logged and
-        an exception thrown.
-        Throws:
-            ParseError
-    */
+    /**
+     * Create a STTx from a JTx
+     * The framework requires that JSON is valid.
+     * On a parse error, the JSON is logged and
+     * an exception thrown.
+     *
+     * @throws ParseError
+     */
     std::shared_ptr<STTx const>
     st(JTx const& jt);
 

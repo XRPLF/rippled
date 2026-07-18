@@ -370,10 +370,10 @@ public:
             {std::istreambuf_iterator<char>(&header_)}, std::istreambuf_iterator<char>()};
         JLOG(j_.trace()) << "Header: \"" << strHeader << "\"";
 
-        static boost::regex const kReStatus{"\\`HTTP/1\\S+ (\\d{3}) .*\\'"};  // HTTP/1.1 200 OK
+        static boost::regex const kReStatus{R"(\`HTTP/1\S+ (\d{3}) .*\')"};  // HTTP/1.1 200 OK
         static boost::regex const kReSize{
-            "\\`.*\\r\\nContent-Length:\\s+([0-9]+).*\\'", boost::regex::icase};
-        static boost::regex const kReBody{"\\`.*\\r\\n\\r\\n(.*)\\'"};
+            R"(\`.*\r\nContent-Length:\s+([0-9]+).*\')", boost::regex::icase};
+        static boost::regex const kReBody{R"(\`.*\r\n\r\n(.*)\')"};
 
         boost::smatch smMatch;
         // Match status code.

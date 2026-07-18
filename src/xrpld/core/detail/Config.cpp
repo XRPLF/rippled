@@ -99,7 +99,7 @@ getMemorySize()
     std::int64_t ram = 0;
     size_t size = sizeof(ram);
 
-    if (sysctl(mib, 2, &ram, &size, NULL, 0) == 0)
+    if (sysctl(mib, 2, &ram, &size, nullptr, 0) == 0)
         return static_cast<std::uint64_t>(ram);
 
     return 0;
@@ -797,7 +797,9 @@ Config::loadFromString(std::string const& fileContents)
     {
         auto sec = section(SECTION_REDUCE_RELAY);
 
-        /////////////////////  !!TEMPORARY CODE BLOCK!! ////////////////////////
+        /**
+         * //////////////////  !!TEMPORARY CODE BLOCK!! ////////////////////////
+         */
         // vp_enable config option is deprecated by vp_base_squelch_enable    //
         // This option is kept for backwards compatibility. When squelching   //
         // is the default algorithm, it must be replaced with:                //
@@ -824,9 +826,13 @@ Config::loadFromString(std::string const& fileContents)
         {
             vpReduceRelayBaseSquelchEnable = false;
         }
-        /////////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
+        /**
+         * //////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
+         */
 
-        /////////////////////  !!TEMPORARY CODE BLOCK!! ///////////////////////
+        /**
+         * //////////////////  !!TEMPORARY CODE BLOCK!! ///////////////////////
+         */
         // Temporary squelching config for the peers selected as a source of //
         // validator messages. The config must be removed once squelching is //
         // made the default routing algorithm.                               //
@@ -837,7 +843,9 @@ Config::loadFromString(std::string const& fileContents)
                                       " vp_base_squelch_max_selected_peers must be "
                                       "greater than or equal to 3");
         }
-        /////////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
+        /**
+         * //////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
+         */
 
         txReduceRelayEnable = sec.valueOr("tx_enable", false);
         txReduceRelayMetrics = sec.valueOr("tx_metrics", false);
@@ -915,7 +923,7 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_AMENDMENT_MAJORITY_TIME, strTemp, j_))
     {
         using namespace std::chrono;
-        boost::regex const re("^\\s*(\\d+)\\s*(minutes|hours|days|weeks)\\s*(\\s+.*)?$");
+        boost::regex const re(R"(^\s*(\d+)\s*(minutes|hours|days|weeks)\s*(\s+.*)?$)");
         boost::smatch match;
         if (!boost::regex_match(strTemp, match, re))
         {
