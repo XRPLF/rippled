@@ -4,7 +4,9 @@
  */
 
 #include <test/beast/IPEndpointCommon.h>
+
 #include <xrpld/peerfinder/detail/InMemoryStore.h>
+
 #include <xrpl/beast/unit_test.h>
 
 #include <set>
@@ -77,9 +79,7 @@ public:
         InMemoryStore store;
 
         std::size_t callCount = 0;
-        std::size_t count = store.load([&callCount](beast::IP::Endpoint, int) {
-            ++callCount;
-        });
+        std::size_t count = store.load([&callCount](beast::IP::Endpoint, int) { ++callCount; });
 
         BEAST_EXPECT(count == 0);
         BEAST_EXPECT(callCount == 0);
@@ -157,9 +157,8 @@ public:
         for (int iter = 0; iter < 3; ++iter)
         {
             std::set<int> valences;
-            std::size_t count = store.load([&valences](beast::IP::Endpoint, int valence) {
-                valences.insert(valence);
-            });
+            std::size_t count = store.load(
+                [&valences](beast::IP::Endpoint, int valence) { valences.insert(valence); });
 
             BEAST_EXPECT(count == inputs.size());
             BEAST_EXPECT(valences.count(100) == 1);

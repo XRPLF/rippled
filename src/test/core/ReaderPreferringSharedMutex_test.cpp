@@ -56,7 +56,7 @@ public:
                     // Track maximum concurrent readers
                     int expected = maxConcurrentReaders.load();
                     while (current > expected &&
-                        !maxConcurrentReaders.compare_exchange_weak(expected, current))
+                           !maxConcurrentReaders.compare_exchange_weak(expected, current))
                     {
                     }
                     --readerCount;

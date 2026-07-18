@@ -21,14 +21,13 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
 
+#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <utility>
 #include <vector>
-
-#include <atomic>
 
 namespace xrpl {
 

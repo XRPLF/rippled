@@ -4,6 +4,7 @@
  */
 
 #include <xrpld/app/rdb/backend/RWDBDatabase.h>
+
 #include <xrpl/beast/unit_test.h>
 
 namespace xrpl::test {

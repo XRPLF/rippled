@@ -7,8 +7,8 @@
 #include <test/jtx/envconfig.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpl/ledger/Ledger.h>
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/ledger/Ledger.h>
 
 #include <atomic>
 #include <thread>

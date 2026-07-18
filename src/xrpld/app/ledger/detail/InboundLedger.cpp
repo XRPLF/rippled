@@ -16,9 +16,11 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -28,8 +30,6 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/jss.h>
-#include <xrpl/config/Constants.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
@@ -608,7 +608,8 @@ InboundLedger::done()
         if (complete_ && !failed_)
         {
             XRPL_ASSERT(
-                ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
+                ledger_->header().seq < kXrpLedgerEarliestFees ||
+                    ledger_->read(keylet::feeSettings()),
                 "xrpl::InboundLedger::done : valid ledger fees");
             ledger_->setImmutable();
             switch (reason_)
