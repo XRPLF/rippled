@@ -1724,20 +1724,20 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
                         auto treeNode = getTreeNode(ledgerNode->nodedata());
                         if (!treeNode)
                         {
-                            JLOG(pJournal_.warn())
-                                << "Unable to get tree node while relaying ledger data for "
-                                << uint256::fromRaw(m->ledgerhash()) << " from peer " << id()
-                                << " to peer " << peer->id();
+                            badData(
+                                "Unable to get tree node while relaying ledger data for " +
+                                to_string(uint256::fromRaw(m->ledgerhash())) + " to peer " +
+                                std::to_string(peer->id()));
                             return;
                         }
 
                         auto const nodeID = getSHAMapNodeID(*ledgerNode, *treeNode);
                         if (!nodeID)
                         {
-                            JLOG(pJournal_.warn())
-                                << "Unable to get node ID while relaying ledger data for "
-                                << uint256::fromRaw(m->ledgerhash()) << " from peer " << id()
-                                << " to peer " << peer->id();
+                            badData(
+                                "Unable to get node ID while relaying ledger data for " +
+                                to_string(uint256::fromRaw(m->ledgerhash())) + " to peer " +
+                                std::to_string(peer->id()));
                             return;
                         }
 
