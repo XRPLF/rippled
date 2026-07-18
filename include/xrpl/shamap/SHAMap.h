@@ -95,9 +95,10 @@ enum class SHAMapState {
  * See https://en.wikipedia.org/wiki/Merkle_tree
  */
 
-/** Holds a SHAMap node's identity, serialized data, and leaf status.
-    Used by getNodeFat to return node data for peer synchronization.
-*/
+/**
+ * Holds a SHAMap node's identity, serialized data, and leaf status. Used by
+ * getNodeFat to return node data for peer synchronization.
+ */
 struct SHAMapNodeData
 {
     SHAMapNodeID nodeID;
@@ -331,7 +332,8 @@ public:
     void
     serializeRoot(Serializer& s) const;
 
-    /** Add a root node to the SHAMap during synchronization.
+    /**
+     * Add a root node to the SHAMap during synchronization.
      *
      * This function is used when receiving the root node of a SHAMap from a peer during ledger
      * synchronization. The node must already have been deserialized.
@@ -348,7 +350,8 @@ public:
     SHAMapAddNode
     addRootNode(SHAMapHash const& hash, SHAMapTreeNodePtr rootNode, SHAMapSyncFilter const* filter);
 
-    /** Add a known node at a specific position in the SHAMap during synchronization.
+    /**
+     * Add a known node at a specific position in the SHAMap during synchronization.
      *
      * This function is used when receiving nodes from peers during ledger synchronization. The node
      * is inserted at the position specified by nodeID. The node must already have been
