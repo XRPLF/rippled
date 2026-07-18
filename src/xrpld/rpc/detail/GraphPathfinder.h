@@ -55,6 +55,7 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
@@ -167,6 +168,22 @@ private:
         STAmount const& minDstAmount,
         STAmount& amountOut,
         uint64_t& qualityOut) const;
+
+    //--------------------------------------------------------------------------
+    // path_find-only failed-AMM hop helpers (PathRequestManager).
+    // Never consulted by payment / consensus flow.
+    //--------------------------------------------------------------------------
+    [[nodiscard]] bool
+    assetPathTouchesFailedAmm(PayGraph::AssetPath const& assetPath) const;
+
+    [[nodiscard]] bool
+    stPathTouchesFailedAmm(STPath const& path) const;
+
+    void
+    noteFailedAmmHopsFromPath(STPath const& path) const;
+
+    void
+    noteFailedAmmBook(Book const& book) const;
 
     //--------------------------------------------------------------------------
     // Rank paths (fills pathRanks_ from completePaths_).

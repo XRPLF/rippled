@@ -869,11 +869,9 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
         // when the amendment isn't active.
         if (sb.rules().enabled(fixAMMOverflowOffer))
         {
-            // Path_find only: note this AMM so later probes skip the pool while
-            // still using CLOB on the same book.  Never write during payments —
-            // the blacklist is process-local and must not affect consensus.
-            if (ammLiquidity_ && ammLiquidity_->context().excludeFailedAMMs())
-                noteFailedAMM(book_, sb.seq());
+            // Attach the book so path_find can record the hop if it catches
+            // this exception.  Never write/read any blacklist here — AMM
+            // participation in consensus payment flow must stay deterministic.
             Throw<FlowException>(tecINVARIANT_FAILED, "AMM pool product invariant failed.", book_);
         }
     }
@@ -916,15 +914,8 @@ BookStep<TIn, TOut, TDerived>::getAMMOffer(
     // AMM for domain books).
     if (book_.domain && view.rules().enabled(fixCleanup3_3_0))
         return std::nullopt;
-    // Path_find only: skip AMMs that already failed an invariant this ledger.
-    // Payments never consult the process-local blacklist (consensus safety).
-    // CLOB offers on the same book are unaffected either way.
     if (ammLiquidity_)
-    {
-        if (ammLiquidity_->context().excludeFailedAMMs() && isFailedAMM(book_, view.seq()))
-            return std::nullopt;
         return ammLiquidity_->getOffer(view, clobQuality);
-    }
     return std::nullopt;
 }
 

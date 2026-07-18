@@ -95,9 +95,10 @@ public:
     }
 
     //----------------------------------------------------------------------
-    // Failed AMM book hops (in→out assets).  When rippleCalculate throws
-    // FlowException from an AMM offer on a hop, remember that hop so later
-    // path_find ranking skips it instead of re-paying Throw/logThrow cost.
+    // path_find ONLY — failed AMM book hops (in→out assets).
+    // When a path_find ranking probe hits FlowException from a broken AMM,
+    // remember that hop so later path_find ticks skip it instead of re-paying
+    // Throw/logThrow cost.  Never read or written by payments / consensus.
     // Cleared on full graph rebuild (signalOrderBookReady / empty rebuild).
     //----------------------------------------------------------------------
     using AmmHop = std::pair<Asset, Asset>;

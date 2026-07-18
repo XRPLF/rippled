@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -20,7 +19,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <mutex>
 #include <optional>
 #include <ostream>
 #include <stdexcept>
@@ -33,58 +31,6 @@ class PaymentSandbox;
 class ReadView;
 class ApplyView;
 class AMMContext;
-
-// Process-wide, path_find ONLY: AMMs that threw FlowException (broken pool
-// invariant) during pathfinding probes.  One exception excludes only that AMM;
-// CLOB offers on the same book remain usable.  Cleared when the ledger sequence
-// advances.
-//
-// CRITICAL: Must never affect payments, offer crossing, or any consensus-
-// critical path.  BookStep may only note/read this when AMMContext::
-// excludeFailedAMMs() is true (set solely by path_find ranking probes).
-// Reading this during consensus would make payment results depend on which
-// non-deterministic pathfinding probes a node recently ran.
-struct FailedAMMBlacklist
-{
-    std::mutex mutex;
-    std::uint32_t ledgerSeq{0};
-    hash_set<Book> amms;
-};
-
-inline FailedAMMBlacklist&
-failedAMMBlacklist()
-{
-    static FailedAMMBlacklist store;
-    return store;
-}
-
-inline void
-noteFailedAMM(Book const& ammBook, std::uint32_t ledgerSeq)
-{
-    auto& store = failedAMMBlacklist();
-    std::lock_guard const lock(store.mutex);
-    if (store.ledgerSeq != ledgerSeq)
-    {
-        store.amms.clear();
-        store.ledgerSeq = ledgerSeq;
-    }
-    store.amms.insert(ammBook);
-    store.amms.insert(reversed(ammBook));
-}
-
-[[nodiscard]] inline bool
-isFailedAMM(Book const& ammBook, std::uint32_t ledgerSeq)
-{
-    auto& store = failedAMMBlacklist();
-    std::lock_guard const lock(store.mutex);
-    if (store.ledgerSeq != ledgerSeq)
-    {
-        store.amms.clear();
-        store.ledgerSeq = ledgerSeq;
-        return false;
-    }
-    return store.amms.contains(ammBook) || store.amms.contains(reversed(ammBook));
-}
 
 enum class DebtDirection { Issues, Redeems };
 enum class QualityDirection { In, Out };
@@ -558,8 +504,8 @@ class FlowException : public std::runtime_error
 {
 public:
     TER ter;
-    // When set, the AMM pool (book pair) that failed. Path_find may exclude
-    // only that AMM via noteFailedAMM / isFailedAMM (never consensus).
+    // When set, the AMM pool (book pair) that failed. Path_find may record
+    // this hop in PathRequestManager; consensus payment flow never consults it.
     std::optional<Book> ammBook;
 
     FlowException(TER t, std::string const& msg) : std::runtime_error(msg), ter(t)
