@@ -206,7 +206,8 @@ TransactionAcquire::takeNodes(
                 else if (!map_->addRootNode(SHAMapHash{hash_}, std::move(d.second), nullptr)
                               .isGood())
                 {
-                    JLOG(journal_.warn()) << "TX acquire got bad root node";
+                    JLOG(journal_.warn()) << "TX acquire got bad root node for TX set " << hash_
+                                          << " from peer " << peer->id();
                 }
                 else
                 {
@@ -215,7 +216,8 @@ TransactionAcquire::takeNodes(
             }
             else if (!map_->addKnownNode(d.first, std::move(d.second), &sf).isGood())
             {
-                JLOG(journal_.warn()) << "TX acquire got bad non-root node";
+                JLOG(journal_.warn()) << "TX acquire got bad non-root node " << d.first
+                                      << " for TX set " << hash_ << " from peer " << peer->id();
                 return SHAMapAddNode::invalid();
             }
         }

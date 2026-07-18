@@ -157,10 +157,7 @@ SHAMap::visitDifferences(
                     if ((have == nullptr) || !have->hasInnerNode(childID, childHash))
                         stack.emplace(safeDowncast<SHAMapInnerNode*>(next), childID);
                 }
-                else if (
-                    (have == nullptr) ||
-                    !have->hasLeafNode(
-                        safeDowncast<SHAMapLeafNode*>(next)->peekItem()->key(), childHash))
+                else if ((have == nullptr) || !have->hasLeafNode(leafKey(*next), childHash))
                 {
                     if (!function(*next))
                         return;
@@ -526,7 +523,8 @@ SHAMap::addRootNode(
 
     if (rootNode->getHash() != hash)
     {
-        JLOG(journal_.warn()) << "Corrupt node received";
+        JLOG(journal_.warn()) << "Corrupt root node received: expected hash " << hash << ", got "
+                              << rootNode->getHash();
         return SHAMapAddNode::invalid();
     }
 
@@ -559,10 +557,8 @@ SHAMap::addKnownNode(
     XRPL_ASSERT(treeNode, "xrpl::SHAMap::addKnownNode : non-null tree node");
     XRPL_ASSERT(
         !treeNode->isLeaf() ||
-            SHAMapNodeID::createID(
-                nodeID.getDepth(),
-                safeDowncast<SHAMapLeafNode const*>(treeNode.get())->peekItem()->key())
-                    .getNodeID() == nodeID.getNodeID(),
+            SHAMapNodeID::createID(nodeID.getDepth(), leafKey(*treeNode)).getNodeID() ==
+                nodeID.getNodeID(),
         "xrpl::SHAMap::addKnownNode : leaf position consistent with node ID");
 
     if (!isSynching())
@@ -584,7 +580,8 @@ SHAMap::addKnownNode(
         auto inner = safeDowncast<SHAMapInnerNode*>(currNode);
         if (inner->isEmptyBranch(branch))
         {
-            JLOG(journal_.warn()) << "Add known node for empty branch" << nodeID;
+            JLOG(journal_.warn()) << "Add known node " << nodeID << " for empty branch " << branch
+                                  << " at " << currNodeID;
             return SHAMapAddNode::invalid();
         }
 
@@ -602,7 +599,8 @@ SHAMap::addKnownNode(
 
         if (childHash != treeNode->getHash())
         {
-            JLOG(journal_.warn()) << "Corrupt node received";
+            JLOG(journal_.warn()) << "Corrupt node " << nodeID << " received: expected hash "
+                                  << childHash << ", got " << treeNode->getHash();
             return SHAMapAddNode::invalid();
         }
 

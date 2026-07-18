@@ -150,7 +150,8 @@ public:
             auto treeNode = getTreeNode(ledgerNode.nodedata());
             if (!treeNode)
             {
-                JLOG(j_.warn()) << "Got invalid node data";
+                JLOG(j_.warn()) << "Got invalid node data for TX set " << hash << " from peer "
+                                << peer->id();
                 peer->charge(Resource::kFeeInvalidData, "ledger_node.node_data invalid");
                 return;
             }
@@ -158,7 +159,8 @@ public:
             auto const nodeID = getSHAMapNodeID(ledgerNode, *treeNode);
             if (!nodeID)
             {
-                JLOG(j_.warn()) << "Got invalid node id";
+                JLOG(j_.warn()) << "Got invalid node id for TX set " << hash << " from peer "
+                                << peer->id();
                 peer->charge(Resource::kFeeInvalidData, "ledger_node.node_id invalid");
                 return;
             }

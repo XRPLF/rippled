@@ -877,7 +877,8 @@ InboundLedger::receiveNode(
             auto treeNode = getTreeNode(ledgerNode.nodedata());
             if (!treeNode)
             {
-                JLOG(journal_.warn()) << "Got invalid node data";
+                JLOG(journal_.warn())
+                    << "Got invalid node data for ledger " << hash_ << " from peer " << peer->id();
                 peer->charge(Resource::kFeeInvalidData, "ledger_node.node_data invalid");
                 san.incInvalid();
                 return;
@@ -886,7 +887,8 @@ InboundLedger::receiveNode(
             auto const nodeID = getSHAMapNodeID(ledgerNode, *treeNode);
             if (!nodeID)
             {
-                JLOG(journal_.warn()) << "Got invalid node id";
+                JLOG(journal_.warn())
+                    << "Got invalid node id for ledger " << hash_ << " from peer " << peer->id();
                 peer->charge(Resource::kFeeInvalidData, "ledger_node.node_id invalid");
                 san.incInvalid();
                 return;
@@ -903,7 +905,8 @@ InboundLedger::receiveNode(
 
             if (!san.isGood())
             {
-                JLOG(journal_.warn()) << "Got invalid node";
+                JLOG(journal_.warn()) << "Got invalid node " << *nodeID << " for ledger " << hash_
+                                      << " from peer " << peer->id();
                 peer->charge(Resource::kFeeInvalidData, "ledger_node invalid");
                 return;
             }
@@ -912,7 +915,8 @@ InboundLedger::receiveNode(
     catch (std::exception const& e)
     {
         // If we get here it is not necessarily because the node was bad, so don't charge the peer.
-        JLOG(journal_.error()) << "Could not process node: " << e.what();
+        JLOG(journal_.error()) << "Could not process node for ledger " << hash_ << " from peer "
+                               << peer->id() << ": " << e.what();
         san.incInvalid();
         return;
     }
@@ -960,7 +964,7 @@ InboundLedger::takeAsRootNode(std::string_view data, SHAMapAddNode& san)
     auto treeNode = getTreeNode(data);
     if (!treeNode)
     {
-        JLOG(journal_.warn()) << "Got invalid node data";
+        JLOG(journal_.warn()) << "Got invalid AS root node data for ledger " << hash_;
         san.incInvalid();
         return false;
     }
@@ -995,7 +999,7 @@ InboundLedger::takeTxRootNode(std::string_view data, SHAMapAddNode& san)
     auto treeNode = getTreeNode(data);
     if (!treeNode)
     {
-        JLOG(journal_.warn()) << "Got invalid node data";
+        JLOG(journal_.warn()) << "Got invalid TX root node data for ledger " << hash_;
         san.incInvalid();
         return false;
     }
@@ -1103,7 +1107,8 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
             if (!haveState_ && (packet.nodes().size() > 1) &&
                 !takeAsRootNode(packet.nodes(1).nodedata(), san))
             {
-                JLOG(journal_.warn()) << "Included AS root invalid";
+                JLOG(journal_.warn()) << "Included AS root invalid for ledger " << hash_
+                                      << " from peer " << peer->id();
                 if (san.isInvalid())
                 {
                     peer->charge(Resource::kFeeInvalidData, "ledger_data invalid AS root");
@@ -1114,7 +1119,8 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
             if (!haveTransactions_ && (packet.nodes().size() > 2) &&
                 !takeTxRootNode(packet.nodes(2).nodedata(), san))
             {
-                JLOG(journal_.warn()) << "Included TX root invalid";
+                JLOG(journal_.warn()) << "Included TX root invalid for ledger " << hash_
+                                      << " from peer " << peer->id();
                 if (san.isInvalid())
                 {
                     peer->charge(Resource::kFeeInvalidData, "ledger_data invalid TX root");
@@ -1124,7 +1130,8 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
         }
         catch (std::exception const& ex)
         {
-            JLOG(journal_.warn()) << "Included AS/TX root invalid: " << ex.what();
+            JLOG(journal_.warn()) << "Included AS/TX root invalid for ledger " << hash_
+                                  << " from peer " << peer->id() << ": " << ex.what();
             using namespace std::string_literals;
             peer->charge(Resource::kFeeInvalidData, "ledger_data "s + ex.what());
             return -1;

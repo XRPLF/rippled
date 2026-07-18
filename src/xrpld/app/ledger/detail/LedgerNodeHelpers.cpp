@@ -1,7 +1,6 @@
 #include <xrpld/app/ledger/LedgerNodeHelpers.h>
 
 #include <xrpl/basics/Slice.h>
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
@@ -52,12 +51,13 @@ getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNode const& 
             if (!ledgerNode.has_depth() || ledgerNode.depth() > SHAMap::kLeafDepth)
                 return std::nullopt;
 
-            auto const key = safeDowncast<SHAMapLeafNode const*>(&treeNode)->peekItem()->key();
+            auto const key = leafKey(treeNode);
             return SHAMapNodeID::createID(ledgerNode.depth(), key);
         }
-
+        // LCOV_EXCL_START
         UNREACHABLE("xrpl::getSHAMapNodeID : tree node is neither inner nor leaf");
         return std::nullopt;
+        // LCOV_EXCL_STOP
     }
 
     if (!ledgerNode.has_nodeid())
@@ -69,7 +69,7 @@ getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNode const& 
 
     if (treeNode.isLeaf())
     {
-        auto const key = safeDowncast<SHAMapLeafNode const*>(&treeNode)->peekItem()->key();
+        auto const key = leafKey(treeNode);
         auto const expectedID = SHAMapNodeID::createID(static_cast<int>(nodeID->getDepth()), key);
         if (nodeID->getNodeID() != expectedID.getNodeID())
             return std::nullopt;
