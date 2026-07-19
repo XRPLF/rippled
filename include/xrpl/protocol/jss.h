@@ -248,6 +248,7 @@ JSS(error_code);                     // out: error
 JSS(error_exception);                // out: Submit
 JSS(error_message);                  // out: error
 JSS(expand);                         // in: handler/Ledger
+JSS(expanded);                       // in: AccountCurrencies
 JSS(expected_date);                  // out: any (warnings)
 JSS(expected_date_UTC);              // out: any (warnings)
 JSS(expected_ledger_size);           // out: TxQ

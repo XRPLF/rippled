@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <optional>
+#include <string>
 #include <vector>
 
 namespace xrpl {
@@ -83,6 +84,24 @@ class AccountCurrencies_test : public beast::unit_test::Suite
             testInvalidIdentParam(json::Value(json::ValueType::Null));
             testInvalidIdentParam(json::Value(json::ValueType::Object));
             testInvalidIdentParam(json::Value(json::ValueType::Array));
+        }
+
+        {
+            // test expanded non-boolean
+            auto testInvalidExpandedParam = [&](auto const& param) {
+                json::Value params;
+                params[jss::account] = alice.human();
+                params[jss::expanded] = param;
+                auto jrr = env.rpc("json", "account_currencies", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'expanded'.");
+            };
+
+            testInvalidExpandedParam(1);
+            testInvalidExpandedParam("true");
+            testInvalidExpandedParam(json::Value(json::ValueType::Null));
+            testInvalidExpandedParam(json::Value(json::ValueType::Object));
+            testInvalidExpandedParam(json::Value(json::ValueType::Array));
         }
 
         {
@@ -192,12 +211,155 @@ class AccountCurrencies_test : public beast::unit_test::Suite
         BEAST_EXPECT(arrayCheck(jss::send_currencies, gwCurrenciesNoUSA));
     }
 
+    void
+    testExpanded()
+    {
+        testcase("Expanded request for account_currencies");
+
+        using namespace test::jtx;
+        Env env{*this};
+
+        auto const alice = Account{"alice"};
+        auto const gw1 = Account{"gw1"};
+        auto const gw2 = Account{"gw2"};
+        env.fund(XRP(10000), alice, gw1, gw2);
+        env.close();
+
+        // Two trust lines with the same currency code but different issuers
+        env(trust(alice, gw1["USD"](100)));
+        env(trust(alice, gw2["USD"](100)));
+        env.close();
+        env(pay(gw1, alice, gw1["USD"](50)));
+        env.close();
+
+        json::Value params;
+        params[jss::account] = alice.human();
+        params[jss::expanded] = true;
+
+        auto findEntry = [](json::Value const& array,
+                            std::string const& currency,
+                            std::string const& issuer) -> std::optional<json::Value> {
+            for (auto const& entry : array)
+            {
+                if (entry[jss::currency].asString() == currency &&
+                    entry[jss::issuer].asString() == issuer)
+                    return entry;
+            }
+            return std::nullopt;
+        };
+
+        {
+            // Both issuers are reported separately in receive_currencies,
+            // only the funded line qualifies for send_currencies
+            auto const result =
+                env.rpc("json", "account_currencies", to_string(params))[jss::result];
+            BEAST_EXPECT(
+                result[jss::receive_currencies].isArray() &&
+                result[jss::receive_currencies].size() == 2);
+            BEAST_EXPECT(
+                result[jss::send_currencies].isArray() && result[jss::send_currencies].size() == 1);
+            auto const recv1 = findEntry(result[jss::receive_currencies], "USD", gw1.human());
+            auto const recv2 = findEntry(result[jss::receive_currencies], "USD", gw2.human());
+            auto const send1 = findEntry(result[jss::send_currencies], "USD", gw1.human());
+            BEAST_EXPECT(recv1 && recv2 && send1);
+            // value is the remaining capacity of the line: alice holds 50
+            // out of a 100 limit from gw1, so she can receive 50 more and
+            // send the 50 she holds
+            BEAST_EXPECT(recv1 && (*recv1)[jss::value] == "50");
+            BEAST_EXPECT(recv2 && (*recv2)[jss::value] == "100");
+            BEAST_EXPECT(send1 && (*send1)[jss::value] == "50");
+            // entries carry exactly currency, issuer and value
+            for (auto const& entry : {recv1, recv2, send1})
+                BEAST_EXPECT(entry && entry->size() == 3);
+        }
+
+        {
+            // like the legacy format, membership and value ignore freeze
+            // state: freezing the line changes nothing in the response
+            env(trust(gw1, alice["USD"](0), tfSetFreeze));
+            env.close();
+            auto const result =
+                env.rpc("json", "account_currencies", to_string(params))[jss::result];
+            auto const entry = findEntry(result[jss::receive_currencies], "USD", gw1.human());
+            BEAST_EXPECT(entry && (*entry)[jss::value] == "50" && entry->size() == 3);
+            env(trust(gw1, alice["USD"](0), tfClearFreeze));
+            env.close();
+        }
+
+        {
+            // a second currency from another issuer: entries report the
+            // full remaining capacity of the line
+            auto const gw3 = Account{"gw3"};
+            env.fund(XRP(10000), gw3);
+            env.close();
+            env(trust(alice, gw3["EUR"](100)));
+            env.close();
+
+            auto result = env.rpc("json", "account_currencies", to_string(params))[jss::result];
+            auto entry = findEntry(result[jss::receive_currencies], "EUR", gw3.human());
+            BEAST_EXPECT(entry && (*entry)[jss::value] == "100");
+
+            // gw3's own perspective: issuance capacity is reported as a
+            // single aggregated entry with issuer = gw3 and no value
+            json::Value gwParams;
+            gwParams[jss::account] = gw3.human();
+            gwParams[jss::expanded] = true;
+            result = env.rpc("json", "account_currencies", to_string(gwParams))[jss::result];
+            BEAST_EXPECT(result[jss::send_currencies].size() == 1);
+            BEAST_EXPECT(result[jss::receive_currencies].size() == 0);
+            entry = findEntry(result[jss::send_currencies], "EUR", gw3.human());
+            BEAST_EXPECT(entry && !entry->isMember(jss::value));
+            BEAST_EXPECT(entry && entry->size() == 2);
+        }
+
+        {
+            // Issuer with multiple holders: self-issued entries are
+            // aggregated to one entry per currency instead of one entry
+            // per trust line
+            auto const bob = Account{"bob"};
+            env.fund(XRP(10000), bob);
+            env.close();
+            env(trust(bob, gw1["USD"](200)));
+            env.close();
+            env(pay(gw1, bob, gw1["USD"](30)));
+            env.close();
+
+            json::Value gwParams;
+            gwParams[jss::account] = gw1.human();
+            gwParams[jss::expanded] = true;
+            auto const result =
+                env.rpc("json", "account_currencies", to_string(gwParams))[jss::result];
+            // two holders (alice and bob), but a single aggregated entry
+            BEAST_EXPECT(result[jss::send_currencies].size() == 1);
+            BEAST_EXPECT(result[jss::receive_currencies].size() == 1);
+            auto const sendEntry = findEntry(result[jss::send_currencies], "USD", gw1.human());
+            auto const recvEntry = findEntry(result[jss::receive_currencies], "USD", gw1.human());
+            BEAST_EXPECT(sendEntry && recvEntry);
+            // aggregated self-issuance entries carry no value
+            BEAST_EXPECT(sendEntry && !sendEntry->isMember(jss::value));
+            BEAST_EXPECT(recvEntry && !recvEntry->isMember(jss::value));
+        }
+
+        {
+            // expanded: false behaves exactly like the legacy format
+            params[jss::expanded] = false;
+            auto const result =
+                env.rpc("json", "account_currencies", to_string(params))[jss::result];
+            BEAST_EXPECT(
+                result[jss::receive_currencies].isArray() &&
+                result[jss::receive_currencies].size() == 2);
+            for (auto const& c : result[jss::receive_currencies])
+                BEAST_EXPECT(c.isString());
+        }
+    }
+
 public:
     void
     run() override
     {
         testBadInput();
         testBasic();
+        testExpanded();
     }
 };
 

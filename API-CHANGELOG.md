@@ -40,6 +40,8 @@ This section contains changes targeting a future version.
   - `LEDGER_ENTRY_FLAGS`: Maps ledger entry type names to their flags and flag values.
   - `ACCOUNT_SET_FLAGS`: Maps AccountSet flag names (asf flags) to their numeric values.
 
+- `account_currencies`: Added an optional boolean `expanded` request parameter. When `expanded: true`, the `send_currencies` and `receive_currencies` arrays contain objects instead of plain currency codes, keyed by asset: entries for tokens held (or receivable) from a counterparty carry `currency`, `issuer` (the counterparty), and `value` (the maximum amount that can be received or sent on that line, as a decimal string); the account's own issuance across all of its holders is aggregated into a single entry per currency with `issuer` set to the requested account and no `value` (compare the aggregated `obligations` section of `gateway_balances`). This disambiguates currencies with the same code issued by different issuers without enumerating every holder of an issuing account. As with the legacy format, membership and `value` are derived from trust line limits and balances alone and do not reflect freeze or authorization state; use `account_lines` for per-line state. The default response format is unchanged. A non-boolean `expanded` value returns `invalidParams`. ([#6629](https://github.com/XRPLF/rippled/issues/6629))
+
 ### Bugfixes
 
 - Peer Crawler: The `port` field in `overlay.active[]` now consistently returns an integer instead of a string for outbound peers. [#6318](https://github.com/XRPLF/rippled/pull/6318)
