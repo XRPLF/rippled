@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry AccountRoot
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -67,15 +65,15 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
     builder.setTickSize(tickSizeValue);
     builder.setTicketCount(ticketCountValue);
     builder.setNFTokenMinter(nFTokenMinterValue);
-    builder.setMintedNFTokens(mintedNFTokensValue);
-    builder.setBurnedNFTokens(burnedNFTokensValue);
     builder.setFirstNFTokenSequence(firstNFTokenSequenceValue);
-    builder.setSponsoredOwnerCount(sponsoredOwnerCountValue);
-    builder.setSponsoringOwnerCount(sponsoringOwnerCountValue);
-    builder.setSponsoringAccountCount(sponsoringAccountCountValue);
     builder.setAMMID(aMMIDValue);
     builder.setVaultID(vaultIDValue);
     builder.setLoanBrokerID(loanBrokerIDValue);
+    builder.setMintedNFTokens(mintedNFTokensValue);
+    builder.setBurnedNFTokens(burnedNFTokensValue);
+    builder.setSponsoredOwnerCount(sponsoredOwnerCountValue);
+    builder.setSponsoringOwnerCount(sponsoringOwnerCountValue);
+    builder.setSponsoringAccountCount(sponsoringAccountCountValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -120,6 +118,36 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
         auto const& expected = previousTxnLgrSeqValue;
         auto const actual = entry.getPreviousTxnLgrSeq();
         expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
+    }
+
+    {
+        auto const& expected = mintedNFTokensValue;
+        auto const actual = entry.getMintedNFTokens();
+        expectEqualField(expected, actual, "sfMintedNFTokens");
+    }
+
+    {
+        auto const& expected = burnedNFTokensValue;
+        auto const actual = entry.getBurnedNFTokens();
+        expectEqualField(expected, actual, "sfBurnedNFTokens");
+    }
+
+    {
+        auto const& expected = sponsoredOwnerCountValue;
+        auto const actual = entry.getSponsoredOwnerCount();
+        expectEqualField(expected, actual, "sfSponsoredOwnerCount");
+    }
+
+    {
+        auto const& expected = sponsoringOwnerCountValue;
+        auto const actual = entry.getSponsoringOwnerCount();
+        expectEqualField(expected, actual, "sfSponsoringOwnerCount");
+    }
+
+    {
+        auto const& expected = sponsoringAccountCountValue;
+        auto const actual = entry.getSponsoringAccountCount();
+        expectEqualField(expected, actual, "sfSponsoringAccountCount");
     }
 
     {
@@ -211,51 +239,11 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = mintedNFTokensValue;
-        auto const actualOpt = entry.getMintedNFTokens();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfMintedNFTokens");
-        EXPECT_TRUE(entry.hasMintedNFTokens());
-    }
-
-    {
-        auto const& expected = burnedNFTokensValue;
-        auto const actualOpt = entry.getBurnedNFTokens();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfBurnedNFTokens");
-        EXPECT_TRUE(entry.hasBurnedNFTokens());
-    }
-
-    {
         auto const& expected = firstNFTokenSequenceValue;
         auto const actualOpt = entry.getFirstNFTokenSequence();
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfFirstNFTokenSequence");
         EXPECT_TRUE(entry.hasFirstNFTokenSequence());
-    }
-
-    {
-        auto const& expected = sponsoredOwnerCountValue;
-        auto const actualOpt = entry.getSponsoredOwnerCount();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfSponsoredOwnerCount");
-        EXPECT_TRUE(entry.hasSponsoredOwnerCount());
-    }
-
-    {
-        auto const& expected = sponsoringOwnerCountValue;
-        auto const actualOpt = entry.getSponsoringOwnerCount();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfSponsoringOwnerCount");
-        EXPECT_TRUE(entry.hasSponsoringOwnerCount());
-    }
-
-    {
-        auto const& expected = sponsoringAccountCountValue;
-        auto const actualOpt = entry.getSponsoringAccountCount();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfSponsoringAccountCount");
-        EXPECT_TRUE(entry.hasSponsoringAccountCount());
     }
 
     {
@@ -421,6 +409,56 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = mintedNFTokensValue;
+
+        auto const fromSle = entryFromSle.getMintedNFTokens();
+        auto const fromBuilder = entryFromBuilder.getMintedNFTokens();
+
+        expectEqualField(expected, fromSle, "sfMintedNFTokens");
+        expectEqualField(expected, fromBuilder, "sfMintedNFTokens");
+    }
+
+    {
+        auto const& expected = burnedNFTokensValue;
+
+        auto const fromSle = entryFromSle.getBurnedNFTokens();
+        auto const fromBuilder = entryFromBuilder.getBurnedNFTokens();
+
+        expectEqualField(expected, fromSle, "sfBurnedNFTokens");
+        expectEqualField(expected, fromBuilder, "sfBurnedNFTokens");
+    }
+
+    {
+        auto const& expected = sponsoredOwnerCountValue;
+
+        auto const fromSle = entryFromSle.getSponsoredOwnerCount();
+        auto const fromBuilder = entryFromBuilder.getSponsoredOwnerCount();
+
+        expectEqualField(expected, fromSle, "sfSponsoredOwnerCount");
+        expectEqualField(expected, fromBuilder, "sfSponsoredOwnerCount");
+    }
+
+    {
+        auto const& expected = sponsoringOwnerCountValue;
+
+        auto const fromSle = entryFromSle.getSponsoringOwnerCount();
+        auto const fromBuilder = entryFromBuilder.getSponsoringOwnerCount();
+
+        expectEqualField(expected, fromSle, "sfSponsoringOwnerCount");
+        expectEqualField(expected, fromBuilder, "sfSponsoringOwnerCount");
+    }
+
+    {
+        auto const& expected = sponsoringAccountCountValue;
+
+        auto const fromSle = entryFromSle.getSponsoringAccountCount();
+        auto const fromBuilder = entryFromBuilder.getSponsoringAccountCount();
+
+        expectEqualField(expected, fromSle, "sfSponsoringAccountCount");
+        expectEqualField(expected, fromBuilder, "sfSponsoringAccountCount");
+    }
+
+    {
         auto const& expected = accountTxnIDValue;
 
         auto const fromSleOpt = entryFromSle.getAccountTxnID();
@@ -564,32 +602,6 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = mintedNFTokensValue;
-
-        auto const fromSleOpt = entryFromSle.getMintedNFTokens();
-        auto const fromBuilderOpt = entryFromBuilder.getMintedNFTokens();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfMintedNFTokens");
-        expectEqualField(expected, *fromBuilderOpt, "sfMintedNFTokens");
-    }
-
-    {
-        auto const& expected = burnedNFTokensValue;
-
-        auto const fromSleOpt = entryFromSle.getBurnedNFTokens();
-        auto const fromBuilderOpt = entryFromBuilder.getBurnedNFTokens();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfBurnedNFTokens");
-        expectEqualField(expected, *fromBuilderOpt, "sfBurnedNFTokens");
-    }
-
-    {
         auto const& expected = firstNFTokenSequenceValue;
 
         auto const fromSleOpt = entryFromSle.getFirstNFTokenSequence();
@@ -600,45 +612,6 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfFirstNFTokenSequence");
         expectEqualField(expected, *fromBuilderOpt, "sfFirstNFTokenSequence");
-    }
-
-    {
-        auto const& expected = sponsoredOwnerCountValue;
-
-        auto const fromSleOpt = entryFromSle.getSponsoredOwnerCount();
-        auto const fromBuilderOpt = entryFromBuilder.getSponsoredOwnerCount();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfSponsoredOwnerCount");
-        expectEqualField(expected, *fromBuilderOpt, "sfSponsoredOwnerCount");
-    }
-
-    {
-        auto const& expected = sponsoringOwnerCountValue;
-
-        auto const fromSleOpt = entryFromSle.getSponsoringOwnerCount();
-        auto const fromBuilderOpt = entryFromBuilder.getSponsoringOwnerCount();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfSponsoringOwnerCount");
-        expectEqualField(expected, *fromBuilderOpt, "sfSponsoringOwnerCount");
-    }
-
-    {
-        auto const& expected = sponsoringAccountCountValue;
-
-        auto const fromSleOpt = entryFromSle.getSponsoringAccountCount();
-        auto const fromBuilderOpt = entryFromBuilder.getSponsoringAccountCount();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfSponsoringAccountCount");
-        expectEqualField(expected, *fromBuilderOpt, "sfSponsoringAccountCount");
     }
 
     {
@@ -766,23 +739,94 @@ TEST(AccountRootTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getTicketCount().has_value());
     EXPECT_FALSE(entry.hasNFTokenMinter());
     EXPECT_FALSE(entry.getNFTokenMinter().has_value());
-    EXPECT_FALSE(entry.hasMintedNFTokens());
-    EXPECT_FALSE(entry.getMintedNFTokens().has_value());
-    EXPECT_FALSE(entry.hasBurnedNFTokens());
-    EXPECT_FALSE(entry.getBurnedNFTokens().has_value());
     EXPECT_FALSE(entry.hasFirstNFTokenSequence());
     EXPECT_FALSE(entry.getFirstNFTokenSequence().has_value());
-    EXPECT_FALSE(entry.hasSponsoredOwnerCount());
-    EXPECT_FALSE(entry.getSponsoredOwnerCount().has_value());
-    EXPECT_FALSE(entry.hasSponsoringOwnerCount());
-    EXPECT_FALSE(entry.getSponsoringOwnerCount().has_value());
-    EXPECT_FALSE(entry.hasSponsoringAccountCount());
-    EXPECT_FALSE(entry.getSponsoringAccountCount().has_value());
     EXPECT_FALSE(entry.hasAMMID());
     EXPECT_FALSE(entry.getAMMID().has_value());
     EXPECT_FALSE(entry.hasVaultID());
     EXPECT_FALSE(entry.getVaultID().has_value());
     EXPECT_FALSE(entry.hasLoanBrokerID());
     EXPECT_FALSE(entry.getLoanBrokerID().has_value());
+}
+
+// 6) Default fields return the type default when unset, and the assigned value
+// after being set.
+TEST(AccountRootTests, DefaultFieldsRoundTrip)
+{
+    uint256 const index{4u};
+
+    auto const accountValue = canonical_ACCOUNT();
+    auto const sequenceValue = canonical_UINT32();
+    auto const balanceValue = canonical_AMOUNT();
+    auto const ownerCountValue = canonical_UINT32();
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
+
+    // Unset: default fields return the type default.
+    AccountRootBuilder defaultBuilder{
+        accountValue,
+        sequenceValue,
+        balanceValue,
+        ownerCountValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
+    };
+    auto const defaultEntry = defaultBuilder.build(index);
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getMintedNFTokens(), "sfMintedNFTokens");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getBurnedNFTokens(), "sfBurnedNFTokens");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getSponsoredOwnerCount(), "sfSponsoredOwnerCount");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getSponsoringOwnerCount(), "sfSponsoringOwnerCount");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getSponsoringAccountCount(), "sfSponsoringAccountCount");
+    }
+
+    // Set: default fields return the assigned value.
+    AccountRootBuilder setBuilder{
+        accountValue,
+        sequenceValue,
+        balanceValue,
+        ownerCountValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
+    };
+    setBuilder.setMintedNFTokens(canonical_UINT32());
+    setBuilder.setBurnedNFTokens(canonical_UINT32());
+    setBuilder.setSponsoredOwnerCount(canonical_UINT32());
+    setBuilder.setSponsoringOwnerCount(canonical_UINT32());
+    setBuilder.setSponsoringAccountCount(canonical_UINT32());
+    auto const setEntry = setBuilder.build(index);
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getMintedNFTokens(), "sfMintedNFTokens");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getBurnedNFTokens(), "sfBurnedNFTokens");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getSponsoredOwnerCount(), "sfSponsoredOwnerCount");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getSponsoringOwnerCount(), "sfSponsoringOwnerCount");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getSponsoringAccountCount(), "sfSponsoringAccountCount");
+    }
 }
 }

@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry AMM
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -39,11 +37,11 @@ TEST(AMMTests, BuilderSettersRoundTrip)
         ownerNodeValue
     };
 
-    builder.setTradingFee(tradingFeeValue);
     builder.setVoteSlots(voteSlotsValue);
     builder.setAuctionSlot(auctionSlotValue);
     builder.setPreviousTxnID(previousTxnIDValue);
     builder.setPreviousTxnLgrSeq(previousTxnLgrSeqValue);
+    builder.setTradingFee(tradingFeeValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -86,10 +84,8 @@ TEST(AMMTests, BuilderSettersRoundTrip)
 
     {
         auto const& expected = tradingFeeValue;
-        auto const actualOpt = entry.getTradingFee();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfTradingFee");
-        EXPECT_TRUE(entry.hasTradingFee());
+        auto const actual = entry.getTradingFee();
+        expectEqualField(expected, actual, "sfTradingFee");
     }
 
     {
@@ -223,14 +219,11 @@ TEST(AMMTests, BuilderFromSleRoundTrip)
     {
         auto const& expected = tradingFeeValue;
 
-        auto const fromSleOpt = entryFromSle.getTradingFee();
-        auto const fromBuilderOpt = entryFromBuilder.getTradingFee();
+        auto const fromSle = entryFromSle.getTradingFee();
+        auto const fromBuilder = entryFromBuilder.getTradingFee();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfTradingFee");
-        expectEqualField(expected, *fromBuilderOpt, "sfTradingFee");
+        expectEqualField(expected, fromSle, "sfTradingFee");
+        expectEqualField(expected, fromBuilder, "sfTradingFee");
     }
 
     {
@@ -347,8 +340,6 @@ TEST(AMMTests, OptionalFieldsReturnNullopt)
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(entry.hasTradingFee());
-    EXPECT_FALSE(entry.getTradingFee().has_value());
     EXPECT_FALSE(entry.hasVoteSlots());
     EXPECT_FALSE(entry.getVoteSlots().has_value());
     EXPECT_FALSE(entry.hasAuctionSlot());
@@ -357,5 +348,47 @@ TEST(AMMTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getPreviousTxnID().has_value());
     EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
     EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
+}
+
+// 6) Default fields return the type default when unset, and the assigned value
+// after being set.
+TEST(AMMTests, DefaultFieldsRoundTrip)
+{
+    uint256 const index{4u};
+
+    auto const accountValue = canonical_ACCOUNT();
+    auto const lPTokenBalanceValue = canonical_AMOUNT();
+    auto const assetValue = canonical_ISSUE();
+    auto const asset2Value = canonical_ISSUE();
+    auto const ownerNodeValue = canonical_UINT64();
+
+    // Unset: default fields return the type default.
+    AMMBuilder defaultBuilder{
+        accountValue,
+        lPTokenBalanceValue,
+        assetValue,
+        asset2Value,
+        ownerNodeValue
+    };
+    auto const defaultEntry = defaultBuilder.build(index);
+    {
+        auto const expected = SF_UINT16::type::value_type{};
+        expectEqualField(expected, defaultEntry.getTradingFee(), "sfTradingFee");
+    }
+
+    // Set: default fields return the assigned value.
+    AMMBuilder setBuilder{
+        accountValue,
+        lPTokenBalanceValue,
+        assetValue,
+        asset2Value,
+        ownerNodeValue
+    };
+    setBuilder.setTradingFee(canonical_UINT16());
+    auto const setEntry = setBuilder.build(index);
+    {
+        auto const expected = canonical_UINT16();
+        expectEqualField(expected, setEntry.getTradingFee(), "sfTradingFee");
+    }
 }
 }

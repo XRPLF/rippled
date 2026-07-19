@@ -1,18 +1,30 @@
 // Auto-generated unit tests for transaction ${name}
+<%! from itertools import chain %>\
 <%
+    default_fields = [f for f in fields if f["requirement"] == "SoeDefault"]
     required_fields = [f for f in fields if f["requirement"] == "SoeRequired"]
-    optional_fields = [f for f in fields if f["requirement"] != "SoeRequired"]
+    optional_fields = [f for f in fields if f["requirement"] == "SoeOptional"]
 
     def canonical_expr(field):
         return f"canonical_{field['stiSuffix']}()"
+
+    def default_expr(field):
+        # The value a SoeDefault field's getter returns when the field is unset.
+        if field["typed"]:
+            return f"{field['typeData']['return_type']}{{}}"
+        sti = field.get("stiSuffix")
+        if sti == "ARRAY":
+            return "STArray{}"
+        if sti == "PATHSET":
+            return "STPathSet{}"
+        return "STObject{sfGeneric}"
 
     # Pick a wrong transaction to test type mismatch
     if name != "AccountSet":
         wrong_tx_include = "AccountSet"
     else:
         wrong_tx_include = "OfferCancel"
-%>
-
+%>\
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -58,6 +70,10 @@ TEST(Transactions${name}Tests, BuilderSettersRoundTrip)
 % for field in optional_fields:
     builder.set${field["name"][2:]}(${field["paramName"]}Value);
 % endfor
+    // Set default fields
+% for field in default_fields:
+    builder.set${field["name"][2:]}(${field["paramName"]}Value);
+% endfor
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -73,8 +89,8 @@ TEST(Transactions${name}Tests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
-% for field in required_fields:
+    // Verify required and default fields
+% for field in chain(required_fields, default_fields):
     {
         auto const& expected = ${field["paramName"]}Value;
         auto const actual = tx.get${field["name"][2:]}();
@@ -126,6 +142,9 @@ TEST(Transactions${name}Tests, BuilderFromStTxRoundTrip)
 % for field in optional_fields:
     initialBuilder.set${field["name"][2:]}(${field["paramName"]}Value);
 % endfor
+% for field in default_fields:
+    initialBuilder.set${field["name"][2:]}(${field["paramName"]}Value);
+% endfor
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -142,8 +161,8 @@ TEST(Transactions${name}Tests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
-% for field in required_fields:
+    // Verify required and default fields
+% for field in chain(required_fields, default_fields):
     {
         auto const& expected = ${field["paramName"]}Value;
         auto const actual = rebuiltTx.get${field["name"][2:]}();
@@ -234,6 +253,64 @@ TEST(Transactions${name}Tests, OptionalFieldsReturnNullopt)
 % for field in optional_fields:
     EXPECT_FALSE(tx.has${field["name"][2:]}());
     EXPECT_FALSE(tx.get${field["name"][2:]}().has_value());
+% endfor
+}
+% endif
+
+% if default_fields:
+// 6) Default fields return the type default when unset, and the assigned value
+// after being set.
+TEST(Transactions${name}Tests, DefaultFieldsRoundTrip)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::Secp256k1, generateSeed("test${name}Default"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 4;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+% for field in required_fields:
+    auto const ${field["paramName"]}Value = ${canonical_expr(field)};
+% endfor
+
+    // Unset: default fields return the type default.
+    ${name}Builder defaultBuilder{
+        accountValue,
+% for field in required_fields:
+        ${field["paramName"]}Value,
+% endfor
+        sequenceValue,
+        feeValue
+    };
+    auto const defaultTx = defaultBuilder.build(publicKey, secretKey);
+% for field in default_fields:
+    {
+        auto const expected = ${default_expr(field)};
+        expectEqualField(expected, defaultTx.get${field["name"][2:]}(), "${field["name"]}");
+    }
+% endfor
+
+    // Set: default fields return the assigned value.
+    ${name}Builder setBuilder{
+        accountValue,
+% for field in required_fields:
+        ${field["paramName"]}Value,
+% endfor
+        sequenceValue,
+        feeValue
+    };
+% for field in default_fields:
+    setBuilder.set${field["name"][2:]}(${canonical_expr(field)});
+% endfor
+    auto const setTx = setBuilder.build(publicKey, secretKey);
+% for field in default_fields:
+    {
+        auto const expected = ${canonical_expr(field)};
+        expectEqualField(expected, setTx.get${field["name"][2:]}(), "${field["name"]}");
+    }
 % endfor
 }
 % endif

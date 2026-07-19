@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction UNLModify
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -43,6 +41,7 @@ TEST(TransactionsUNLModifyTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -58,7 +57,7 @@ TEST(TransactionsUNLModifyTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = uNLModifyDisablingValue;
         auto const actual = tx.getUNLModifyDisabling();
@@ -124,7 +123,7 @@ TEST(TransactionsUNLModifyTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = uNLModifyDisablingValue;
         auto const actual = rebuiltTx.getUNLModifyDisabling();
@@ -173,6 +172,7 @@ TEST(TransactionsUNLModifyTests, BuilderThrowsOnWrongTxType)
 
     EXPECT_THROW(UNLModifyBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
+
 
 
 }

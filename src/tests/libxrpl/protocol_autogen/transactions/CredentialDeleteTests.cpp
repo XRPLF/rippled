@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction CredentialDelete
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -43,6 +41,7 @@ TEST(TransactionsCredentialDeleteTests, BuilderSettersRoundTrip)
     // Set optional fields
     builder.setSubject(subjectValue);
     builder.setIssuer(issuerValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -58,7 +57,7 @@ TEST(TransactionsCredentialDeleteTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = credentialTypeValue;
         auto const actual = tx.getCredentialType();
@@ -128,7 +127,7 @@ TEST(TransactionsCredentialDeleteTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = credentialTypeValue;
         auto const actual = rebuiltTx.getCredentialType();
@@ -212,5 +211,6 @@ TEST(TransactionsCredentialDeleteTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasIssuer());
     EXPECT_FALSE(tx.getIssuer().has_value());
 }
+
 
 }

@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction OfferCreate
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -47,6 +45,7 @@ TEST(TransactionsOfferCreateTests, BuilderSettersRoundTrip)
     builder.setExpiration(expirationValue);
     builder.setOfferSequence(offerSequenceValue);
     builder.setDomainID(domainIDValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -62,7 +61,7 @@ TEST(TransactionsOfferCreateTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = takerPaysValue;
         auto const actual = tx.getTakerPays();
@@ -150,7 +149,7 @@ TEST(TransactionsOfferCreateTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = takerPaysValue;
         auto const actual = rebuiltTx.getTakerPays();
@@ -251,5 +250,6 @@ TEST(TransactionsOfferCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasDomainID());
     EXPECT_FALSE(tx.getDomainID().has_value());
 }
+
 
 }

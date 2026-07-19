@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction XChainCreateBridge
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -43,6 +41,7 @@ TEST(TransactionsXChainCreateBridgeTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setMinAccountCreateAmount(minAccountCreateAmountValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -58,7 +57,7 @@ TEST(TransactionsXChainCreateBridgeTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = xChainBridgeValue;
         auto const actual = tx.getXChainBridge();
@@ -126,7 +125,7 @@ TEST(TransactionsXChainCreateBridgeTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = xChainBridgeValue;
         auto const actual = rebuiltTx.getXChainBridge();
@@ -209,5 +208,6 @@ TEST(TransactionsXChainCreateBridgeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasMinAccountCreateAmount());
     EXPECT_FALSE(tx.getMinAccountCreateAmount().has_value());
 }
+
 
 }

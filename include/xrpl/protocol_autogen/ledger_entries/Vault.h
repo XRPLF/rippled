@@ -148,98 +148,46 @@ public:
 
     /**
      * @brief Get sfAssetsTotal (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    SF_NUMBER::type::value_type
     getAssetsTotal() const
     {
-        if (hasAssetsTotal())
-            return this->sle_->at(sfAssetsTotal);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAssetsTotal is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAssetsTotal() const
-    {
-        return this->sle_->isFieldPresent(sfAssetsTotal);
+        return this->sle_->at(sfAssetsTotal);
     }
 
     /**
      * @brief Get sfAssetsAvailable (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    SF_NUMBER::type::value_type
     getAssetsAvailable() const
     {
-        if (hasAssetsAvailable())
-            return this->sle_->at(sfAssetsAvailable);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAssetsAvailable is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAssetsAvailable() const
-    {
-        return this->sle_->isFieldPresent(sfAssetsAvailable);
+        return this->sle_->at(sfAssetsAvailable);
     }
 
     /**
      * @brief Get sfAssetsMaximum (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    SF_NUMBER::type::value_type
     getAssetsMaximum() const
     {
-        if (hasAssetsMaximum())
-            return this->sle_->at(sfAssetsMaximum);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAssetsMaximum is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAssetsMaximum() const
-    {
-        return this->sle_->isFieldPresent(sfAssetsMaximum);
+        return this->sle_->at(sfAssetsMaximum);
     }
 
     /**
      * @brief Get sfLossUnrealized (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    SF_NUMBER::type::value_type
     getLossUnrealized() const
     {
-        if (hasLossUnrealized())
-            return this->sle_->at(sfLossUnrealized);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLossUnrealized is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLossUnrealized() const
-    {
-        return this->sle_->isFieldPresent(sfLossUnrealized);
+        return this->sle_->at(sfLossUnrealized);
     }
 
     /**
@@ -266,26 +214,13 @@ public:
 
     /**
      * @brief Get sfScale (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    SF_UINT8::type::value_type
     getScale() const
     {
-        if (hasScale())
-            return this->sle_->at(sfScale);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfScale is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasScale() const
-    {
-        return this->sle_->isFieldPresent(sfScale);
+        return this->sle_->at(sfScale);
     }
 };
 

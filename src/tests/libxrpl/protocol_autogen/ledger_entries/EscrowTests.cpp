@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry Escrow
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -488,4 +486,5 @@ TEST(EscrowTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasIssuerNode());
     EXPECT_FALSE(entry.getIssuerNode().has_value());
 }
+
 }

@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction Clawback
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -41,6 +39,7 @@ TEST(TransactionsClawbackTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setHolder(holderValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -56,7 +55,7 @@ TEST(TransactionsClawbackTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = amountValue;
         auto const actual = tx.getAmount();
@@ -116,7 +115,7 @@ TEST(TransactionsClawbackTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = amountValue;
         auto const actual = rebuiltTx.getAmount();
@@ -191,5 +190,6 @@ TEST(TransactionsClawbackTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasHolder());
     EXPECT_FALSE(tx.getHolder().has_value());
 }
+
 
 }

@@ -99,26 +99,13 @@ public:
     /**
      * @brief Get sfPaths (SoeDefault)
      * @note This is an untyped field.
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    std::optional<std::reference_wrapper<STPathSet const>>
+    STPathSet const&
     getPaths() const
     {
-        if (this->tx_->isFieldPresent(sfPaths))
-            return this->tx_->getFieldPathSet(sfPaths);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPaths is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPaths() const
-    {
-        return this->tx_->isFieldPresent(sfPaths);
+        return this->tx_->getFieldPathSet(sfPaths);
     }
 
     /**

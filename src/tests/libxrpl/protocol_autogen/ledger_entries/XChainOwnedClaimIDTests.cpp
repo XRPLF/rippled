@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry XChainOwnedClaimID
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -279,5 +277,6 @@ TEST(XChainOwnedClaimIDTests, BuilderThrowsOnWrongEntryType)
 
     EXPECT_THROW(XChainOwnedClaimIDBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
+
 
 }

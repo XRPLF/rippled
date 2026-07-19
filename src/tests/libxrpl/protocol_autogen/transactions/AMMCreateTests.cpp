@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction AMMCreate
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -43,6 +41,7 @@ TEST(TransactionsAMMCreateTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -58,7 +57,7 @@ TEST(TransactionsAMMCreateTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = amountValue;
         auto const actual = tx.getAmount();
@@ -124,7 +123,7 @@ TEST(TransactionsAMMCreateTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = amountValue;
         auto const actual = rebuiltTx.getAmount();
@@ -173,6 +172,7 @@ TEST(TransactionsAMMCreateTests, BuilderThrowsOnWrongTxType)
 
     EXPECT_THROW(AMMCreateBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
+
 
 
 }

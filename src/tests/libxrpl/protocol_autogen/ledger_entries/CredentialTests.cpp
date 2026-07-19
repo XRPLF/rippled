@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry Credential
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -326,4 +324,5 @@ TEST(CredentialTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasSubjectNode());
     EXPECT_FALSE(entry.getSubjectNode().has_value());
 }
+
 }

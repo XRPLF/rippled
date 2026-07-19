@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction LoanManage
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -39,6 +37,7 @@ TEST(TransactionsLoanManageTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -54,7 +53,7 @@ TEST(TransactionsLoanManageTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = loanIDValue;
         auto const actual = tx.getLoanID();
@@ -104,7 +103,7 @@ TEST(TransactionsLoanManageTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = loanIDValue;
         auto const actual = rebuiltTx.getLoanID();
@@ -141,6 +140,7 @@ TEST(TransactionsLoanManageTests, BuilderThrowsOnWrongTxType)
 
     EXPECT_THROW(LoanManageBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
+
 
 
 }

@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry NFTokenOffer
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -321,4 +319,5 @@ TEST(NFTokenOfferTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasExpiration());
     EXPECT_FALSE(entry.getExpiration().has_value());
 }
+
 }

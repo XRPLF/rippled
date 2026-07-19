@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction SetFee
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -53,6 +51,7 @@ TEST(TransactionsSetFeeTests, BuilderSettersRoundTrip)
     builder.setBaseFeeDrops(baseFeeDropsValue);
     builder.setReserveBaseDrops(reserveBaseDropsValue);
     builder.setReserveIncrementDrops(reserveIncrementDropsValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -68,7 +67,7 @@ TEST(TransactionsSetFeeTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = ledgerSequenceValue;
@@ -190,7 +189,7 @@ TEST(TransactionsSetFeeTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = ledgerSequenceValue;
@@ -320,5 +319,6 @@ TEST(TransactionsSetFeeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasReserveIncrementDrops());
     EXPECT_FALSE(tx.getReserveIncrementDrops().has_value());
 }
+
 
 }

@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry Vault
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -119,51 +117,41 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = assetsTotalValue;
+        auto const actual = entry.getAssetsTotal();
+        expectEqualField(expected, actual, "sfAssetsTotal");
+    }
+
+    {
+        auto const& expected = assetsAvailableValue;
+        auto const actual = entry.getAssetsAvailable();
+        expectEqualField(expected, actual, "sfAssetsAvailable");
+    }
+
+    {
+        auto const& expected = assetsMaximumValue;
+        auto const actual = entry.getAssetsMaximum();
+        expectEqualField(expected, actual, "sfAssetsMaximum");
+    }
+
+    {
+        auto const& expected = lossUnrealizedValue;
+        auto const actual = entry.getLossUnrealized();
+        expectEqualField(expected, actual, "sfLossUnrealized");
+    }
+
+    {
+        auto const& expected = scaleValue;
+        auto const actual = entry.getScale();
+        expectEqualField(expected, actual, "sfScale");
+    }
+
+    {
         auto const& expected = dataValue;
         auto const actualOpt = entry.getData();
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfData");
         EXPECT_TRUE(entry.hasData());
-    }
-
-    {
-        auto const& expected = assetsTotalValue;
-        auto const actualOpt = entry.getAssetsTotal();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfAssetsTotal");
-        EXPECT_TRUE(entry.hasAssetsTotal());
-    }
-
-    {
-        auto const& expected = assetsAvailableValue;
-        auto const actualOpt = entry.getAssetsAvailable();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfAssetsAvailable");
-        EXPECT_TRUE(entry.hasAssetsAvailable());
-    }
-
-    {
-        auto const& expected = assetsMaximumValue;
-        auto const actualOpt = entry.getAssetsMaximum();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfAssetsMaximum");
-        EXPECT_TRUE(entry.hasAssetsMaximum());
-    }
-
-    {
-        auto const& expected = lossUnrealizedValue;
-        auto const actualOpt = entry.getLossUnrealized();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfLossUnrealized");
-        EXPECT_TRUE(entry.hasLossUnrealized());
-    }
-
-    {
-        auto const& expected = scaleValue;
-        auto const actualOpt = entry.getScale();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfScale");
-        EXPECT_TRUE(entry.hasScale());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -313,6 +301,56 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = assetsTotalValue;
+
+        auto const fromSle = entryFromSle.getAssetsTotal();
+        auto const fromBuilder = entryFromBuilder.getAssetsTotal();
+
+        expectEqualField(expected, fromSle, "sfAssetsTotal");
+        expectEqualField(expected, fromBuilder, "sfAssetsTotal");
+    }
+
+    {
+        auto const& expected = assetsAvailableValue;
+
+        auto const fromSle = entryFromSle.getAssetsAvailable();
+        auto const fromBuilder = entryFromBuilder.getAssetsAvailable();
+
+        expectEqualField(expected, fromSle, "sfAssetsAvailable");
+        expectEqualField(expected, fromBuilder, "sfAssetsAvailable");
+    }
+
+    {
+        auto const& expected = assetsMaximumValue;
+
+        auto const fromSle = entryFromSle.getAssetsMaximum();
+        auto const fromBuilder = entryFromBuilder.getAssetsMaximum();
+
+        expectEqualField(expected, fromSle, "sfAssetsMaximum");
+        expectEqualField(expected, fromBuilder, "sfAssetsMaximum");
+    }
+
+    {
+        auto const& expected = lossUnrealizedValue;
+
+        auto const fromSle = entryFromSle.getLossUnrealized();
+        auto const fromBuilder = entryFromBuilder.getLossUnrealized();
+
+        expectEqualField(expected, fromSle, "sfLossUnrealized");
+        expectEqualField(expected, fromBuilder, "sfLossUnrealized");
+    }
+
+    {
+        auto const& expected = scaleValue;
+
+        auto const fromSle = entryFromSle.getScale();
+        auto const fromBuilder = entryFromBuilder.getScale();
+
+        expectEqualField(expected, fromSle, "sfScale");
+        expectEqualField(expected, fromBuilder, "sfScale");
+    }
+
+    {
         auto const& expected = dataValue;
 
         auto const fromSleOpt = entryFromSle.getData();
@@ -323,71 +361,6 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfData");
         expectEqualField(expected, *fromBuilderOpt, "sfData");
-    }
-
-    {
-        auto const& expected = assetsTotalValue;
-
-        auto const fromSleOpt = entryFromSle.getAssetsTotal();
-        auto const fromBuilderOpt = entryFromBuilder.getAssetsTotal();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfAssetsTotal");
-        expectEqualField(expected, *fromBuilderOpt, "sfAssetsTotal");
-    }
-
-    {
-        auto const& expected = assetsAvailableValue;
-
-        auto const fromSleOpt = entryFromSle.getAssetsAvailable();
-        auto const fromBuilderOpt = entryFromBuilder.getAssetsAvailable();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfAssetsAvailable");
-        expectEqualField(expected, *fromBuilderOpt, "sfAssetsAvailable");
-    }
-
-    {
-        auto const& expected = assetsMaximumValue;
-
-        auto const fromSleOpt = entryFromSle.getAssetsMaximum();
-        auto const fromBuilderOpt = entryFromBuilder.getAssetsMaximum();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfAssetsMaximum");
-        expectEqualField(expected, *fromBuilderOpt, "sfAssetsMaximum");
-    }
-
-    {
-        auto const& expected = lossUnrealizedValue;
-
-        auto const fromSleOpt = entryFromSle.getLossUnrealized();
-        auto const fromBuilderOpt = entryFromBuilder.getLossUnrealized();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfLossUnrealized");
-        expectEqualField(expected, *fromBuilderOpt, "sfLossUnrealized");
-    }
-
-    {
-        auto const& expected = scaleValue;
-
-        auto const fromSleOpt = entryFromSle.getScale();
-        auto const fromBuilderOpt = entryFromBuilder.getScale();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfScale");
-        expectEqualField(expected, *fromBuilderOpt, "sfScale");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -462,15 +435,95 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
     // Verify optional fields are not present
     EXPECT_FALSE(entry.hasData());
     EXPECT_FALSE(entry.getData().has_value());
-    EXPECT_FALSE(entry.hasAssetsTotal());
-    EXPECT_FALSE(entry.getAssetsTotal().has_value());
-    EXPECT_FALSE(entry.hasAssetsAvailable());
-    EXPECT_FALSE(entry.getAssetsAvailable().has_value());
-    EXPECT_FALSE(entry.hasAssetsMaximum());
-    EXPECT_FALSE(entry.getAssetsMaximum().has_value());
-    EXPECT_FALSE(entry.hasLossUnrealized());
-    EXPECT_FALSE(entry.getLossUnrealized().has_value());
-    EXPECT_FALSE(entry.hasScale());
-    EXPECT_FALSE(entry.getScale().has_value());
+}
+
+// 6) Default fields return the type default when unset, and the assigned value
+// after being set.
+TEST(VaultTests, DefaultFieldsRoundTrip)
+{
+    uint256 const index{4u};
+
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
+    auto const sequenceValue = canonical_UINT32();
+    auto const ownerNodeValue = canonical_UINT64();
+    auto const ownerValue = canonical_ACCOUNT();
+    auto const accountValue = canonical_ACCOUNT();
+    auto const assetValue = canonical_ISSUE();
+    auto const shareMPTIDValue = canonical_UINT192();
+    auto const withdrawalPolicyValue = canonical_UINT8();
+
+    // Unset: default fields return the type default.
+    VaultBuilder defaultBuilder{
+        previousTxnIDValue,
+        previousTxnLgrSeqValue,
+        sequenceValue,
+        ownerNodeValue,
+        ownerValue,
+        accountValue,
+        assetValue,
+        shareMPTIDValue,
+        withdrawalPolicyValue
+    };
+    auto const defaultEntry = defaultBuilder.build(index);
+    {
+        auto const expected = SF_NUMBER::type::value_type{};
+        expectEqualField(expected, defaultEntry.getAssetsTotal(), "sfAssetsTotal");
+    }
+    {
+        auto const expected = SF_NUMBER::type::value_type{};
+        expectEqualField(expected, defaultEntry.getAssetsAvailable(), "sfAssetsAvailable");
+    }
+    {
+        auto const expected = SF_NUMBER::type::value_type{};
+        expectEqualField(expected, defaultEntry.getAssetsMaximum(), "sfAssetsMaximum");
+    }
+    {
+        auto const expected = SF_NUMBER::type::value_type{};
+        expectEqualField(expected, defaultEntry.getLossUnrealized(), "sfLossUnrealized");
+    }
+    {
+        auto const expected = SF_UINT8::type::value_type{};
+        expectEqualField(expected, defaultEntry.getScale(), "sfScale");
+    }
+
+    // Set: default fields return the assigned value.
+    VaultBuilder setBuilder{
+        previousTxnIDValue,
+        previousTxnLgrSeqValue,
+        sequenceValue,
+        ownerNodeValue,
+        ownerValue,
+        accountValue,
+        assetValue,
+        shareMPTIDValue,
+        withdrawalPolicyValue
+    };
+    setBuilder.setAssetsTotal(canonical_NUMBER());
+    setBuilder.setAssetsAvailable(canonical_NUMBER());
+    setBuilder.setAssetsMaximum(canonical_NUMBER());
+    setBuilder.setLossUnrealized(canonical_NUMBER());
+    setBuilder.setScale(canonical_UINT8());
+    auto const setEntry = setBuilder.build(index);
+    {
+        auto const expected = canonical_NUMBER();
+        expectEqualField(expected, setEntry.getAssetsTotal(), "sfAssetsTotal");
+    }
+    {
+        auto const expected = canonical_NUMBER();
+        expectEqualField(expected, setEntry.getAssetsAvailable(), "sfAssetsAvailable");
+    }
+    {
+        auto const expected = canonical_NUMBER();
+        expectEqualField(expected, setEntry.getAssetsMaximum(), "sfAssetsMaximum");
+    }
+    {
+        auto const expected = canonical_NUMBER();
+        expectEqualField(expected, setEntry.getLossUnrealized(), "sfLossUnrealized");
+    }
+    {
+        auto const expected = canonical_UINT8();
+        expectEqualField(expected, setEntry.getScale(), "sfScale");
+    }
 }
 }

@@ -124,218 +124,101 @@ public:
 
     /**
      * @brief Get sfLoanOriginationFee (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    SF_NUMBER::type::value_type
     getLoanOriginationFee() const
     {
-        if (hasLoanOriginationFee())
-            return this->sle_->at(sfLoanOriginationFee);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLoanOriginationFee is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLoanOriginationFee() const
-    {
-        return this->sle_->isFieldPresent(sfLoanOriginationFee);
+        return this->sle_->at(sfLoanOriginationFee);
     }
 
     /**
      * @brief Get sfLoanServiceFee (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    SF_NUMBER::type::value_type
     getLoanServiceFee() const
     {
-        if (hasLoanServiceFee())
-            return this->sle_->at(sfLoanServiceFee);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLoanServiceFee is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLoanServiceFee() const
-    {
-        return this->sle_->isFieldPresent(sfLoanServiceFee);
+        return this->sle_->at(sfLoanServiceFee);
     }
 
     /**
      * @brief Get sfLatePaymentFee (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    SF_NUMBER::type::value_type
     getLatePaymentFee() const
     {
-        if (hasLatePaymentFee())
-            return this->sle_->at(sfLatePaymentFee);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLatePaymentFee is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLatePaymentFee() const
-    {
-        return this->sle_->isFieldPresent(sfLatePaymentFee);
+        return this->sle_->at(sfLatePaymentFee);
     }
 
     /**
      * @brief Get sfClosePaymentFee (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    SF_NUMBER::type::value_type
     getClosePaymentFee() const
     {
-        if (hasClosePaymentFee())
-            return this->sle_->at(sfClosePaymentFee);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfClosePaymentFee is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasClosePaymentFee() const
-    {
-        return this->sle_->isFieldPresent(sfClosePaymentFee);
+        return this->sle_->at(sfClosePaymentFee);
     }
 
     /**
      * @brief Get sfOverpaymentFee (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getOverpaymentFee() const
     {
-        if (hasOverpaymentFee())
-            return this->sle_->at(sfOverpaymentFee);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOverpaymentFee is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOverpaymentFee() const
-    {
-        return this->sle_->isFieldPresent(sfOverpaymentFee);
+        return this->sle_->at(sfOverpaymentFee);
     }
 
     /**
      * @brief Get sfInterestRate (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getInterestRate() const
     {
-        if (hasInterestRate())
-            return this->sle_->at(sfInterestRate);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfInterestRate is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasInterestRate() const
-    {
-        return this->sle_->isFieldPresent(sfInterestRate);
+        return this->sle_->at(sfInterestRate);
     }
 
     /**
      * @brief Get sfLateInterestRate (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getLateInterestRate() const
     {
-        if (hasLateInterestRate())
-            return this->sle_->at(sfLateInterestRate);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLateInterestRate is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLateInterestRate() const
-    {
-        return this->sle_->isFieldPresent(sfLateInterestRate);
+        return this->sle_->at(sfLateInterestRate);
     }
 
     /**
      * @brief Get sfCloseInterestRate (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getCloseInterestRate() const
     {
-        if (hasCloseInterestRate())
-            return this->sle_->at(sfCloseInterestRate);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfCloseInterestRate is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasCloseInterestRate() const
-    {
-        return this->sle_->isFieldPresent(sfCloseInterestRate);
+        return this->sle_->at(sfCloseInterestRate);
     }
 
     /**
      * @brief Get sfOverpaymentInterestRate (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getOverpaymentInterestRate() const
     {
-        if (hasOverpaymentInterestRate())
-            return this->sle_->at(sfOverpaymentInterestRate);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOverpaymentInterestRate is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOverpaymentInterestRate() const
-    {
-        return this->sle_->isFieldPresent(sfOverpaymentInterestRate);
+        return this->sle_->at(sfOverpaymentInterestRate);
     }
 
     /**
@@ -362,98 +245,46 @@ public:
 
     /**
      * @brief Get sfGracePeriod (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getGracePeriod() const
     {
-        if (hasGracePeriod())
-            return this->sle_->at(sfGracePeriod);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfGracePeriod is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasGracePeriod() const
-    {
-        return this->sle_->isFieldPresent(sfGracePeriod);
+        return this->sle_->at(sfGracePeriod);
     }
 
     /**
      * @brief Get sfPreviousPaymentDueDate (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getPreviousPaymentDueDate() const
     {
-        if (hasPreviousPaymentDueDate())
-            return this->sle_->at(sfPreviousPaymentDueDate);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPreviousPaymentDueDate is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPreviousPaymentDueDate() const
-    {
-        return this->sle_->isFieldPresent(sfPreviousPaymentDueDate);
+        return this->sle_->at(sfPreviousPaymentDueDate);
     }
 
     /**
      * @brief Get sfNextPaymentDueDate (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getNextPaymentDueDate() const
     {
-        if (hasNextPaymentDueDate())
-            return this->sle_->at(sfNextPaymentDueDate);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfNextPaymentDueDate is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasNextPaymentDueDate() const
-    {
-        return this->sle_->isFieldPresent(sfNextPaymentDueDate);
+        return this->sle_->at(sfNextPaymentDueDate);
     }
 
     /**
      * @brief Get sfPaymentRemaining (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getPaymentRemaining() const
     {
-        if (hasPaymentRemaining())
-            return this->sle_->at(sfPaymentRemaining);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPaymentRemaining is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPaymentRemaining() const
-    {
-        return this->sle_->isFieldPresent(sfPaymentRemaining);
+        return this->sle_->at(sfPaymentRemaining);
     }
 
     /**
@@ -469,98 +300,46 @@ public:
 
     /**
      * @brief Get sfPrincipalOutstanding (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    SF_NUMBER::type::value_type
     getPrincipalOutstanding() const
     {
-        if (hasPrincipalOutstanding())
-            return this->sle_->at(sfPrincipalOutstanding);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfPrincipalOutstanding is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasPrincipalOutstanding() const
-    {
-        return this->sle_->isFieldPresent(sfPrincipalOutstanding);
+        return this->sle_->at(sfPrincipalOutstanding);
     }
 
     /**
      * @brief Get sfTotalValueOutstanding (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    SF_NUMBER::type::value_type
     getTotalValueOutstanding() const
     {
-        if (hasTotalValueOutstanding())
-            return this->sle_->at(sfTotalValueOutstanding);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfTotalValueOutstanding is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasTotalValueOutstanding() const
-    {
-        return this->sle_->isFieldPresent(sfTotalValueOutstanding);
+        return this->sle_->at(sfTotalValueOutstanding);
     }
 
     /**
      * @brief Get sfManagementFeeOutstanding (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    SF_NUMBER::type::value_type
     getManagementFeeOutstanding() const
     {
-        if (hasManagementFeeOutstanding())
-            return this->sle_->at(sfManagementFeeOutstanding);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfManagementFeeOutstanding is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasManagementFeeOutstanding() const
-    {
-        return this->sle_->isFieldPresent(sfManagementFeeOutstanding);
+        return this->sle_->at(sfManagementFeeOutstanding);
     }
 
     /**
      * @brief Get sfLoanScale (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_INT32::type::value_type>
+    SF_INT32::type::value_type
     getLoanScale() const
     {
-        if (hasLoanScale())
-            return this->sle_->at(sfLoanScale);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLoanScale is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLoanScale() const
-    {
-        return this->sle_->isFieldPresent(sfLoanScale);
+        return this->sle_->at(sfLoanScale);
     }
 };
 

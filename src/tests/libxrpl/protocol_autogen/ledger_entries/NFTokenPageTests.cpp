@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry NFTokenPage
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -233,4 +231,5 @@ TEST(NFTokenPageTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasNextPageMin());
     EXPECT_FALSE(entry.getNextPageMin().has_value());
 }
+
 }

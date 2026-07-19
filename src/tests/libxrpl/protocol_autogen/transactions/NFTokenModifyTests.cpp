@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction NFTokenModify
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -43,6 +41,7 @@ TEST(TransactionsNFTokenModifyTests, BuilderSettersRoundTrip)
     // Set optional fields
     builder.setOwner(ownerValue);
     builder.setURI(uRIValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -58,7 +57,7 @@ TEST(TransactionsNFTokenModifyTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = nFTokenIDValue;
         auto const actual = tx.getNFTokenID();
@@ -128,7 +127,7 @@ TEST(TransactionsNFTokenModifyTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = nFTokenIDValue;
         auto const actual = rebuiltTx.getNFTokenID();
@@ -212,5 +211,6 @@ TEST(TransactionsNFTokenModifyTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasURI());
     EXPECT_FALSE(tx.getURI().has_value());
 }
+
 
 }

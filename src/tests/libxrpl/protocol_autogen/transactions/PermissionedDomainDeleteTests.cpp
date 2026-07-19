@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction PermissionedDomainDelete
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -39,6 +37,7 @@ TEST(TransactionsPermissionedDomainDeleteTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -54,7 +53,7 @@ TEST(TransactionsPermissionedDomainDeleteTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = domainIDValue;
         auto const actual = tx.getDomainID();
@@ -104,7 +103,7 @@ TEST(TransactionsPermissionedDomainDeleteTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = domainIDValue;
         auto const actual = rebuiltTx.getDomainID();
@@ -141,6 +140,7 @@ TEST(TransactionsPermissionedDomainDeleteTests, BuilderThrowsOnWrongTxType)
 
     EXPECT_THROW(PermissionedDomainDeleteBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
+
 
 
 }

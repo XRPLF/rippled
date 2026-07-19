@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction EscrowFinish
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -47,6 +45,7 @@ TEST(TransactionsEscrowFinishTests, BuilderSettersRoundTrip)
     builder.setFulfillment(fulfillmentValue);
     builder.setCondition(conditionValue);
     builder.setCredentialIDs(credentialIDsValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -62,7 +61,7 @@ TEST(TransactionsEscrowFinishTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = ownerValue;
         auto const actual = tx.getOwner();
@@ -150,7 +149,7 @@ TEST(TransactionsEscrowFinishTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = ownerValue;
         auto const actual = rebuiltTx.getOwner();
@@ -251,5 +250,6 @@ TEST(TransactionsEscrowFinishTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasCredentialIDs());
     EXPECT_FALSE(tx.getCredentialIDs().has_value());
 }
+
 
 }

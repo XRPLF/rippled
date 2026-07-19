@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry DepositPreauth
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -255,4 +253,5 @@ TEST(DepositPreauthTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasAuthorizeCredentials());
     EXPECT_FALSE(entry.getAuthorizeCredentials().has_value());
 }
+
 }

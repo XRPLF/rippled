@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction NFTokenBurn
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -41,6 +39,7 @@ TEST(TransactionsNFTokenBurnTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setOwner(ownerValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -56,7 +55,7 @@ TEST(TransactionsNFTokenBurnTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = nFTokenIDValue;
         auto const actual = tx.getNFTokenID();
@@ -116,7 +115,7 @@ TEST(TransactionsNFTokenBurnTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = nFTokenIDValue;
         auto const actual = rebuiltTx.getNFTokenID();
@@ -191,5 +190,6 @@ TEST(TransactionsNFTokenBurnTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasOwner());
     EXPECT_FALSE(tx.getOwner().has_value());
 }
+
 
 }

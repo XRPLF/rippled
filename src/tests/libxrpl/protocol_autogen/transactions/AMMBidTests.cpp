@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction AMMBid
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -47,6 +45,7 @@ TEST(TransactionsAMMBidTests, BuilderSettersRoundTrip)
     builder.setBidMin(bidMinValue);
     builder.setBidMax(bidMaxValue);
     builder.setAuthAccounts(authAccountsValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -62,7 +61,7 @@ TEST(TransactionsAMMBidTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = assetValue;
         auto const actual = tx.getAsset();
@@ -150,7 +149,7 @@ TEST(TransactionsAMMBidTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = assetValue;
         auto const actual = rebuiltTx.getAsset();
@@ -251,5 +250,6 @@ TEST(TransactionsAMMBidTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasAuthAccounts());
     EXPECT_FALSE(tx.getAuthAccounts().has_value());
 }
+
 
 }

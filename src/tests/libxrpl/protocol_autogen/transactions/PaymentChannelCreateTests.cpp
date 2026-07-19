@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction PaymentChannelCreate
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -49,6 +47,7 @@ TEST(TransactionsPaymentChannelCreateTests, BuilderSettersRoundTrip)
     // Set optional fields
     builder.setCancelAfter(cancelAfterValue);
     builder.setDestinationTag(destinationTagValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -64,7 +63,7 @@ TEST(TransactionsPaymentChannelCreateTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = destinationValue;
         auto const actual = tx.getDestination();
@@ -158,7 +157,7 @@ TEST(TransactionsPaymentChannelCreateTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = destinationValue;
         auto const actual = rebuiltTx.getDestination();
@@ -266,5 +265,6 @@ TEST(TransactionsPaymentChannelCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasDestinationTag());
     EXPECT_FALSE(tx.getDestinationTag().has_value());
 }
+
 
 }

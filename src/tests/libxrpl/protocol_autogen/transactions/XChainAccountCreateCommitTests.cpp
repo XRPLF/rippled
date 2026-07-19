@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction XChainAccountCreateCommit
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -45,6 +43,7 @@ TEST(TransactionsXChainAccountCreateCommitTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -60,7 +59,7 @@ TEST(TransactionsXChainAccountCreateCommitTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = xChainBridgeValue;
         auto const actual = tx.getXChainBridge();
@@ -134,7 +133,7 @@ TEST(TransactionsXChainAccountCreateCommitTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = xChainBridgeValue;
         auto const actual = rebuiltTx.getXChainBridge();
@@ -189,6 +188,7 @@ TEST(TransactionsXChainAccountCreateCommitTests, BuilderThrowsOnWrongTxType)
 
     EXPECT_THROW(XChainAccountCreateCommitBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
+
 
 
 }

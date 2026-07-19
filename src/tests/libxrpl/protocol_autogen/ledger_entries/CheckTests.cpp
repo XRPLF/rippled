@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry Check
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -397,4 +395,5 @@ TEST(CheckTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasDestinationTag());
     EXPECT_FALSE(entry.getDestinationTag().has_value());
 }
+
 }

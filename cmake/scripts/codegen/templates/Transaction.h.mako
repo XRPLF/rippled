@@ -54,7 +54,7 @@ public:
 % if field.get('supports_mpt'):
      * @note This field supports MPT (Multi-Purpose Token) amounts.
 % endif
-% if field['requirement'] == 'SoeRequired':
+% if field['requirement'] == 'SoeRequired' or field['requirement'] == 'SoeDefault':
      * @return The field value.
 % else:
      * @return The field value, or std::nullopt if not present.
@@ -97,13 +97,13 @@ public:
      * @note This field supports MPT (Multi-Purpose Token) amounts.
 % endif
      * @note This is an untyped field.
-% if field['requirement'] == 'SoeRequired':
+% if field['requirement'] == 'SoeRequired' or field['requirement'] == 'SoeDefault':
      * @return The field value.
 % else:
      * @return The field value, or std::nullopt if not present.
 % endif
      */
-% if field['requirement'] == 'SoeRequired':
+% if field['requirement'] == 'SoeRequired' or field['requirement'] == 'SoeDefault':
     [[nodiscard]]
     ${field['typeData']['return_type']}
     get${field['name'][2:]}() const

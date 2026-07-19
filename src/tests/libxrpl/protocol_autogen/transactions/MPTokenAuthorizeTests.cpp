@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction MPTokenAuthorize
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -41,6 +39,7 @@ TEST(TransactionsMPTokenAuthorizeTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setHolder(holderValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -56,7 +55,7 @@ TEST(TransactionsMPTokenAuthorizeTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = mPTokenIssuanceIDValue;
         auto const actual = tx.getMPTokenIssuanceID();
@@ -116,7 +115,7 @@ TEST(TransactionsMPTokenAuthorizeTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = mPTokenIssuanceIDValue;
         auto const actual = rebuiltTx.getMPTokenIssuanceID();
@@ -191,5 +190,6 @@ TEST(TransactionsMPTokenAuthorizeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasHolder());
     EXPECT_FALSE(tx.getHolder().has_value());
 }
+
 
 }

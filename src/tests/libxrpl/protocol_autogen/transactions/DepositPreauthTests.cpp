@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction DepositPreauth
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -45,6 +43,7 @@ TEST(TransactionsDepositPreauthTests, BuilderSettersRoundTrip)
     builder.setUnauthorize(unauthorizeValue);
     builder.setAuthorizeCredentials(authorizeCredentialsValue);
     builder.setUnauthorizeCredentials(unauthorizeCredentialsValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -60,7 +59,7 @@ TEST(TransactionsDepositPreauthTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = authorizeValue;
@@ -142,7 +141,7 @@ TEST(TransactionsDepositPreauthTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = authorizeValue;
@@ -236,5 +235,6 @@ TEST(TransactionsDepositPreauthTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasUnauthorizeCredentials());
     EXPECT_FALSE(tx.getUnauthorizeCredentials().has_value());
 }
+
 
 }

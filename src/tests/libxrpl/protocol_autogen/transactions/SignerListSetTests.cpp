@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction SignerListSet
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -41,6 +39,7 @@ TEST(TransactionsSignerListSetTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setSignerEntries(signerEntriesValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -56,7 +55,7 @@ TEST(TransactionsSignerListSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = signerQuorumValue;
         auto const actual = tx.getSignerQuorum();
@@ -116,7 +115,7 @@ TEST(TransactionsSignerListSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = signerQuorumValue;
         auto const actual = rebuiltTx.getSignerQuorum();
@@ -191,5 +190,6 @@ TEST(TransactionsSignerListSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasSignerEntries());
     EXPECT_FALSE(tx.getSignerEntries().has_value());
 }
+
 
 }

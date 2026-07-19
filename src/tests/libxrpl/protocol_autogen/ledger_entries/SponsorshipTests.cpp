@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry Sponsorship
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -89,6 +87,12 @@ TEST(SponsorshipTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = remainingOwnerCountValue;
+        auto const actual = entry.getRemainingOwnerCount();
+        expectEqualField(expected, actual, "sfRemainingOwnerCount");
+    }
+
+    {
         auto const& expected = feeAmountValue;
         auto const actualOpt = entry.getFeeAmount();
         ASSERT_TRUE(actualOpt.has_value());
@@ -102,14 +106,6 @@ TEST(SponsorshipTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfMaxFee");
         EXPECT_TRUE(entry.hasMaxFee());
-    }
-
-    {
-        auto const& expected = remainingOwnerCountValue;
-        auto const actualOpt = entry.getRemainingOwnerCount();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfRemainingOwnerCount");
-        EXPECT_TRUE(entry.hasRemainingOwnerCount());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -217,6 +213,16 @@ TEST(SponsorshipTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = remainingOwnerCountValue;
+
+        auto const fromSle = entryFromSle.getRemainingOwnerCount();
+        auto const fromBuilder = entryFromBuilder.getRemainingOwnerCount();
+
+        expectEqualField(expected, fromSle, "sfRemainingOwnerCount");
+        expectEqualField(expected, fromBuilder, "sfRemainingOwnerCount");
+    }
+
+    {
         auto const& expected = feeAmountValue;
 
         auto const fromSleOpt = entryFromSle.getFeeAmount();
@@ -240,19 +246,6 @@ TEST(SponsorshipTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfMaxFee");
         expectEqualField(expected, *fromBuilderOpt, "sfMaxFee");
-    }
-
-    {
-        auto const& expected = remainingOwnerCountValue;
-
-        auto const fromSleOpt = entryFromSle.getRemainingOwnerCount();
-        auto const fromBuilderOpt = entryFromBuilder.getRemainingOwnerCount();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfRemainingOwnerCount");
-        expectEqualField(expected, *fromBuilderOpt, "sfRemainingOwnerCount");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -323,7 +316,50 @@ TEST(SponsorshipTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getFeeAmount().has_value());
     EXPECT_FALSE(entry.hasMaxFee());
     EXPECT_FALSE(entry.getMaxFee().has_value());
-    EXPECT_FALSE(entry.hasRemainingOwnerCount());
-    EXPECT_FALSE(entry.getRemainingOwnerCount().has_value());
+}
+
+// 6) Default fields return the type default when unset, and the assigned value
+// after being set.
+TEST(SponsorshipTests, DefaultFieldsRoundTrip)
+{
+    uint256 const index{4u};
+
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
+    auto const ownerValue = canonical_ACCOUNT();
+    auto const sponseeValue = canonical_ACCOUNT();
+    auto const ownerNodeValue = canonical_UINT64();
+    auto const sponseeNodeValue = canonical_UINT64();
+
+    // Unset: default fields return the type default.
+    SponsorshipBuilder defaultBuilder{
+        previousTxnIDValue,
+        previousTxnLgrSeqValue,
+        ownerValue,
+        sponseeValue,
+        ownerNodeValue,
+        sponseeNodeValue
+    };
+    auto const defaultEntry = defaultBuilder.build(index);
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getRemainingOwnerCount(), "sfRemainingOwnerCount");
+    }
+
+    // Set: default fields return the assigned value.
+    SponsorshipBuilder setBuilder{
+        previousTxnIDValue,
+        previousTxnLgrSeqValue,
+        ownerValue,
+        sponseeValue,
+        ownerNodeValue,
+        sponseeNodeValue
+    };
+    setBuilder.setRemainingOwnerCount(canonical_UINT32());
+    auto const setEntry = setBuilder.build(index);
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getRemainingOwnerCount(), "sfRemainingOwnerCount");
+    }
 }
 }

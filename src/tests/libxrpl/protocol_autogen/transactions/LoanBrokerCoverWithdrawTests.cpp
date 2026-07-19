@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction LoanBrokerCoverWithdraw
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -45,6 +43,7 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, BuilderSettersRoundTrip)
     // Set optional fields
     builder.setDestination(destinationValue);
     builder.setDestinationTag(destinationTagValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -60,7 +59,7 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = loanBrokerIDValue;
         auto const actual = tx.getLoanBrokerID();
@@ -138,7 +137,7 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = loanBrokerIDValue;
         auto const actual = rebuiltTx.getLoanBrokerID();
@@ -230,5 +229,6 @@ TEST(TransactionsLoanBrokerCoverWithdrawTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasDestinationTag());
     EXPECT_FALSE(tx.getDestinationTag().has_value());
 }
+
 
 }

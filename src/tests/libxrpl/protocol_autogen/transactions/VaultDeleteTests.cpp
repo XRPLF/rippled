@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction VaultDelete
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -41,6 +39,7 @@ TEST(TransactionsVaultDeleteTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setMemoData(memoDataValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -56,7 +55,7 @@ TEST(TransactionsVaultDeleteTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = vaultIDValue;
         auto const actual = tx.getVaultID();
@@ -116,7 +115,7 @@ TEST(TransactionsVaultDeleteTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = vaultIDValue;
         auto const actual = rebuiltTx.getVaultID();
@@ -191,5 +190,6 @@ TEST(TransactionsVaultDeleteTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasMemoData());
     EXPECT_FALSE(tx.getMemoData().has_value());
 }
+
 
 }

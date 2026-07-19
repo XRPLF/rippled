@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry LoanBroker
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -124,66 +122,50 @@ TEST(LoanBrokerTests, BuilderSettersRoundTrip)
 
     {
         auto const& expected = dataValue;
-        auto const actualOpt = entry.getData();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfData");
-        EXPECT_TRUE(entry.hasData());
+        auto const actual = entry.getData();
+        expectEqualField(expected, actual, "sfData");
     }
 
     {
         auto const& expected = managementFeeRateValue;
-        auto const actualOpt = entry.getManagementFeeRate();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfManagementFeeRate");
-        EXPECT_TRUE(entry.hasManagementFeeRate());
+        auto const actual = entry.getManagementFeeRate();
+        expectEqualField(expected, actual, "sfManagementFeeRate");
     }
 
     {
         auto const& expected = ownerCountValue;
-        auto const actualOpt = entry.getOwnerCount();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfOwnerCount");
-        EXPECT_TRUE(entry.hasOwnerCount());
+        auto const actual = entry.getOwnerCount();
+        expectEqualField(expected, actual, "sfOwnerCount");
     }
 
     {
         auto const& expected = debtTotalValue;
-        auto const actualOpt = entry.getDebtTotal();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfDebtTotal");
-        EXPECT_TRUE(entry.hasDebtTotal());
+        auto const actual = entry.getDebtTotal();
+        expectEqualField(expected, actual, "sfDebtTotal");
     }
 
     {
         auto const& expected = debtMaximumValue;
-        auto const actualOpt = entry.getDebtMaximum();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfDebtMaximum");
-        EXPECT_TRUE(entry.hasDebtMaximum());
+        auto const actual = entry.getDebtMaximum();
+        expectEqualField(expected, actual, "sfDebtMaximum");
     }
 
     {
         auto const& expected = coverAvailableValue;
-        auto const actualOpt = entry.getCoverAvailable();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfCoverAvailable");
-        EXPECT_TRUE(entry.hasCoverAvailable());
+        auto const actual = entry.getCoverAvailable();
+        expectEqualField(expected, actual, "sfCoverAvailable");
     }
 
     {
         auto const& expected = coverRateMinimumValue;
-        auto const actualOpt = entry.getCoverRateMinimum();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfCoverRateMinimum");
-        EXPECT_TRUE(entry.hasCoverRateMinimum());
+        auto const actual = entry.getCoverRateMinimum();
+        expectEqualField(expected, actual, "sfCoverRateMinimum");
     }
 
     {
         auto const& expected = coverRateLiquidationValue;
-        auto const actualOpt = entry.getCoverRateLiquidation();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfCoverRateLiquidation");
-        EXPECT_TRUE(entry.hasCoverRateLiquidation());
+        auto const actual = entry.getCoverRateLiquidation();
+        expectEqualField(expected, actual, "sfCoverRateLiquidation");
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -339,105 +321,81 @@ TEST(LoanBrokerTests, BuilderFromSleRoundTrip)
     {
         auto const& expected = dataValue;
 
-        auto const fromSleOpt = entryFromSle.getData();
-        auto const fromBuilderOpt = entryFromBuilder.getData();
+        auto const fromSle = entryFromSle.getData();
+        auto const fromBuilder = entryFromBuilder.getData();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfData");
-        expectEqualField(expected, *fromBuilderOpt, "sfData");
+        expectEqualField(expected, fromSle, "sfData");
+        expectEqualField(expected, fromBuilder, "sfData");
     }
 
     {
         auto const& expected = managementFeeRateValue;
 
-        auto const fromSleOpt = entryFromSle.getManagementFeeRate();
-        auto const fromBuilderOpt = entryFromBuilder.getManagementFeeRate();
+        auto const fromSle = entryFromSle.getManagementFeeRate();
+        auto const fromBuilder = entryFromBuilder.getManagementFeeRate();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfManagementFeeRate");
-        expectEqualField(expected, *fromBuilderOpt, "sfManagementFeeRate");
+        expectEqualField(expected, fromSle, "sfManagementFeeRate");
+        expectEqualField(expected, fromBuilder, "sfManagementFeeRate");
     }
 
     {
         auto const& expected = ownerCountValue;
 
-        auto const fromSleOpt = entryFromSle.getOwnerCount();
-        auto const fromBuilderOpt = entryFromBuilder.getOwnerCount();
+        auto const fromSle = entryFromSle.getOwnerCount();
+        auto const fromBuilder = entryFromBuilder.getOwnerCount();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfOwnerCount");
-        expectEqualField(expected, *fromBuilderOpt, "sfOwnerCount");
+        expectEqualField(expected, fromSle, "sfOwnerCount");
+        expectEqualField(expected, fromBuilder, "sfOwnerCount");
     }
 
     {
         auto const& expected = debtTotalValue;
 
-        auto const fromSleOpt = entryFromSle.getDebtTotal();
-        auto const fromBuilderOpt = entryFromBuilder.getDebtTotal();
+        auto const fromSle = entryFromSle.getDebtTotal();
+        auto const fromBuilder = entryFromBuilder.getDebtTotal();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfDebtTotal");
-        expectEqualField(expected, *fromBuilderOpt, "sfDebtTotal");
+        expectEqualField(expected, fromSle, "sfDebtTotal");
+        expectEqualField(expected, fromBuilder, "sfDebtTotal");
     }
 
     {
         auto const& expected = debtMaximumValue;
 
-        auto const fromSleOpt = entryFromSle.getDebtMaximum();
-        auto const fromBuilderOpt = entryFromBuilder.getDebtMaximum();
+        auto const fromSle = entryFromSle.getDebtMaximum();
+        auto const fromBuilder = entryFromBuilder.getDebtMaximum();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfDebtMaximum");
-        expectEqualField(expected, *fromBuilderOpt, "sfDebtMaximum");
+        expectEqualField(expected, fromSle, "sfDebtMaximum");
+        expectEqualField(expected, fromBuilder, "sfDebtMaximum");
     }
 
     {
         auto const& expected = coverAvailableValue;
 
-        auto const fromSleOpt = entryFromSle.getCoverAvailable();
-        auto const fromBuilderOpt = entryFromBuilder.getCoverAvailable();
+        auto const fromSle = entryFromSle.getCoverAvailable();
+        auto const fromBuilder = entryFromBuilder.getCoverAvailable();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfCoverAvailable");
-        expectEqualField(expected, *fromBuilderOpt, "sfCoverAvailable");
+        expectEqualField(expected, fromSle, "sfCoverAvailable");
+        expectEqualField(expected, fromBuilder, "sfCoverAvailable");
     }
 
     {
         auto const& expected = coverRateMinimumValue;
 
-        auto const fromSleOpt = entryFromSle.getCoverRateMinimum();
-        auto const fromBuilderOpt = entryFromBuilder.getCoverRateMinimum();
+        auto const fromSle = entryFromSle.getCoverRateMinimum();
+        auto const fromBuilder = entryFromBuilder.getCoverRateMinimum();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfCoverRateMinimum");
-        expectEqualField(expected, *fromBuilderOpt, "sfCoverRateMinimum");
+        expectEqualField(expected, fromSle, "sfCoverRateMinimum");
+        expectEqualField(expected, fromBuilder, "sfCoverRateMinimum");
     }
 
     {
         auto const& expected = coverRateLiquidationValue;
 
-        auto const fromSleOpt = entryFromSle.getCoverRateLiquidation();
-        auto const fromBuilderOpt = entryFromBuilder.getCoverRateLiquidation();
+        auto const fromSle = entryFromSle.getCoverRateLiquidation();
+        auto const fromBuilder = entryFromBuilder.getCoverRateLiquidation();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfCoverRateLiquidation");
-        expectEqualField(expected, *fromBuilderOpt, "sfCoverRateLiquidation");
+        expectEqualField(expected, fromSle, "sfCoverRateLiquidation");
+        expectEqualField(expected, fromBuilder, "sfCoverRateLiquidation");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -480,10 +438,12 @@ TEST(LoanBrokerTests, BuilderThrowsOnWrongEntryType)
     EXPECT_THROW(LoanBrokerBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
 
-// 5) Build with only required fields and verify optional fields return nullopt.
-TEST(LoanBrokerTests, OptionalFieldsReturnNullopt)
+
+// 6) Default fields return the type default when unset, and the assigned value
+// after being set.
+TEST(LoanBrokerTests, DefaultFieldsRoundTrip)
 {
-    uint256 const index{3u};
+    uint256 const index{4u};
 
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
@@ -495,7 +455,8 @@ TEST(LoanBrokerTests, OptionalFieldsReturnNullopt)
     auto const ownerValue = canonical_ACCOUNT();
     auto const loanSequenceValue = canonical_UINT32();
 
-    LoanBrokerBuilder builder{
+    // Unset: default fields return the type default.
+    LoanBrokerBuilder defaultBuilder{
         previousTxnIDValue,
         previousTxnLgrSeqValue,
         sequenceValue,
@@ -506,25 +467,92 @@ TEST(LoanBrokerTests, OptionalFieldsReturnNullopt)
         ownerValue,
         loanSequenceValue
     };
+    auto const defaultEntry = defaultBuilder.build(index);
+    {
+        auto const expected = SF_VL::type::value_type{};
+        expectEqualField(expected, defaultEntry.getData(), "sfData");
+    }
+    {
+        auto const expected = SF_UINT16::type::value_type{};
+        expectEqualField(expected, defaultEntry.getManagementFeeRate(), "sfManagementFeeRate");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getOwnerCount(), "sfOwnerCount");
+    }
+    {
+        auto const expected = SF_NUMBER::type::value_type{};
+        expectEqualField(expected, defaultEntry.getDebtTotal(), "sfDebtTotal");
+    }
+    {
+        auto const expected = SF_NUMBER::type::value_type{};
+        expectEqualField(expected, defaultEntry.getDebtMaximum(), "sfDebtMaximum");
+    }
+    {
+        auto const expected = SF_NUMBER::type::value_type{};
+        expectEqualField(expected, defaultEntry.getCoverAvailable(), "sfCoverAvailable");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getCoverRateMinimum(), "sfCoverRateMinimum");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getCoverRateLiquidation(), "sfCoverRateLiquidation");
+    }
 
-    auto const entry = builder.build(index);
-
-    // Verify optional fields are not present
-    EXPECT_FALSE(entry.hasData());
-    EXPECT_FALSE(entry.getData().has_value());
-    EXPECT_FALSE(entry.hasManagementFeeRate());
-    EXPECT_FALSE(entry.getManagementFeeRate().has_value());
-    EXPECT_FALSE(entry.hasOwnerCount());
-    EXPECT_FALSE(entry.getOwnerCount().has_value());
-    EXPECT_FALSE(entry.hasDebtTotal());
-    EXPECT_FALSE(entry.getDebtTotal().has_value());
-    EXPECT_FALSE(entry.hasDebtMaximum());
-    EXPECT_FALSE(entry.getDebtMaximum().has_value());
-    EXPECT_FALSE(entry.hasCoverAvailable());
-    EXPECT_FALSE(entry.getCoverAvailable().has_value());
-    EXPECT_FALSE(entry.hasCoverRateMinimum());
-    EXPECT_FALSE(entry.getCoverRateMinimum().has_value());
-    EXPECT_FALSE(entry.hasCoverRateLiquidation());
-    EXPECT_FALSE(entry.getCoverRateLiquidation().has_value());
+    // Set: default fields return the assigned value.
+    LoanBrokerBuilder setBuilder{
+        previousTxnIDValue,
+        previousTxnLgrSeqValue,
+        sequenceValue,
+        ownerNodeValue,
+        vaultNodeValue,
+        vaultIDValue,
+        accountValue,
+        ownerValue,
+        loanSequenceValue
+    };
+    setBuilder.setData(canonical_VL());
+    setBuilder.setManagementFeeRate(canonical_UINT16());
+    setBuilder.setOwnerCount(canonical_UINT32());
+    setBuilder.setDebtTotal(canonical_NUMBER());
+    setBuilder.setDebtMaximum(canonical_NUMBER());
+    setBuilder.setCoverAvailable(canonical_NUMBER());
+    setBuilder.setCoverRateMinimum(canonical_UINT32());
+    setBuilder.setCoverRateLiquidation(canonical_UINT32());
+    auto const setEntry = setBuilder.build(index);
+    {
+        auto const expected = canonical_VL();
+        expectEqualField(expected, setEntry.getData(), "sfData");
+    }
+    {
+        auto const expected = canonical_UINT16();
+        expectEqualField(expected, setEntry.getManagementFeeRate(), "sfManagementFeeRate");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getOwnerCount(), "sfOwnerCount");
+    }
+    {
+        auto const expected = canonical_NUMBER();
+        expectEqualField(expected, setEntry.getDebtTotal(), "sfDebtTotal");
+    }
+    {
+        auto const expected = canonical_NUMBER();
+        expectEqualField(expected, setEntry.getDebtMaximum(), "sfDebtMaximum");
+    }
+    {
+        auto const expected = canonical_NUMBER();
+        expectEqualField(expected, setEntry.getCoverAvailable(), "sfCoverAvailable");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getCoverRateMinimum(), "sfCoverRateMinimum");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getCoverRateLiquidation(), "sfCoverRateLiquidation");
+    }
 }
 }

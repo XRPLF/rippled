@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction SetRegularKey
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -39,6 +37,7 @@ TEST(TransactionsSetRegularKeyTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setRegularKey(regularKeyValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -54,7 +53,7 @@ TEST(TransactionsSetRegularKeyTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = regularKeyValue;
@@ -106,7 +105,7 @@ TEST(TransactionsSetRegularKeyTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = regularKeyValue;
@@ -173,5 +172,6 @@ TEST(TransactionsSetRegularKeyTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasRegularKey());
     EXPECT_FALSE(tx.getRegularKey().has_value());
 }
+
 
 }

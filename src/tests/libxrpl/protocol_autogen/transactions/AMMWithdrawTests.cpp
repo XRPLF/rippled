@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction AMMWithdraw
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -49,6 +47,7 @@ TEST(TransactionsAMMWithdrawTests, BuilderSettersRoundTrip)
     builder.setAmount2(amount2Value);
     builder.setEPrice(ePriceValue);
     builder.setLPTokenIn(lPTokenInValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -64,7 +63,7 @@ TEST(TransactionsAMMWithdrawTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = assetValue;
         auto const actual = tx.getAsset();
@@ -162,7 +161,7 @@ TEST(TransactionsAMMWithdrawTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = assetValue;
         auto const actual = rebuiltTx.getAsset();
@@ -272,5 +271,6 @@ TEST(TransactionsAMMWithdrawTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasLPTokenIn());
     EXPECT_FALSE(tx.getLPTokenIn().has_value());
 }
+
 
 }

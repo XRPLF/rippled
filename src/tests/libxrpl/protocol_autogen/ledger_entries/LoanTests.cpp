@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry Loan
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -150,138 +148,104 @@ TEST(LoanTests, BuilderSettersRoundTrip)
 
     {
         auto const& expected = loanOriginationFeeValue;
-        auto const actualOpt = entry.getLoanOriginationFee();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfLoanOriginationFee");
-        EXPECT_TRUE(entry.hasLoanOriginationFee());
+        auto const actual = entry.getLoanOriginationFee();
+        expectEqualField(expected, actual, "sfLoanOriginationFee");
     }
 
     {
         auto const& expected = loanServiceFeeValue;
-        auto const actualOpt = entry.getLoanServiceFee();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfLoanServiceFee");
-        EXPECT_TRUE(entry.hasLoanServiceFee());
+        auto const actual = entry.getLoanServiceFee();
+        expectEqualField(expected, actual, "sfLoanServiceFee");
     }
 
     {
         auto const& expected = latePaymentFeeValue;
-        auto const actualOpt = entry.getLatePaymentFee();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfLatePaymentFee");
-        EXPECT_TRUE(entry.hasLatePaymentFee());
+        auto const actual = entry.getLatePaymentFee();
+        expectEqualField(expected, actual, "sfLatePaymentFee");
     }
 
     {
         auto const& expected = closePaymentFeeValue;
-        auto const actualOpt = entry.getClosePaymentFee();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfClosePaymentFee");
-        EXPECT_TRUE(entry.hasClosePaymentFee());
+        auto const actual = entry.getClosePaymentFee();
+        expectEqualField(expected, actual, "sfClosePaymentFee");
     }
 
     {
         auto const& expected = overpaymentFeeValue;
-        auto const actualOpt = entry.getOverpaymentFee();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfOverpaymentFee");
-        EXPECT_TRUE(entry.hasOverpaymentFee());
+        auto const actual = entry.getOverpaymentFee();
+        expectEqualField(expected, actual, "sfOverpaymentFee");
     }
 
     {
         auto const& expected = interestRateValue;
-        auto const actualOpt = entry.getInterestRate();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfInterestRate");
-        EXPECT_TRUE(entry.hasInterestRate());
+        auto const actual = entry.getInterestRate();
+        expectEqualField(expected, actual, "sfInterestRate");
     }
 
     {
         auto const& expected = lateInterestRateValue;
-        auto const actualOpt = entry.getLateInterestRate();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfLateInterestRate");
-        EXPECT_TRUE(entry.hasLateInterestRate());
+        auto const actual = entry.getLateInterestRate();
+        expectEqualField(expected, actual, "sfLateInterestRate");
     }
 
     {
         auto const& expected = closeInterestRateValue;
-        auto const actualOpt = entry.getCloseInterestRate();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfCloseInterestRate");
-        EXPECT_TRUE(entry.hasCloseInterestRate());
+        auto const actual = entry.getCloseInterestRate();
+        expectEqualField(expected, actual, "sfCloseInterestRate");
     }
 
     {
         auto const& expected = overpaymentInterestRateValue;
-        auto const actualOpt = entry.getOverpaymentInterestRate();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfOverpaymentInterestRate");
-        EXPECT_TRUE(entry.hasOverpaymentInterestRate());
+        auto const actual = entry.getOverpaymentInterestRate();
+        expectEqualField(expected, actual, "sfOverpaymentInterestRate");
     }
 
     {
         auto const& expected = gracePeriodValue;
-        auto const actualOpt = entry.getGracePeriod();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfGracePeriod");
-        EXPECT_TRUE(entry.hasGracePeriod());
+        auto const actual = entry.getGracePeriod();
+        expectEqualField(expected, actual, "sfGracePeriod");
     }
 
     {
         auto const& expected = previousPaymentDueDateValue;
-        auto const actualOpt = entry.getPreviousPaymentDueDate();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPreviousPaymentDueDate");
-        EXPECT_TRUE(entry.hasPreviousPaymentDueDate());
+        auto const actual = entry.getPreviousPaymentDueDate();
+        expectEqualField(expected, actual, "sfPreviousPaymentDueDate");
     }
 
     {
         auto const& expected = nextPaymentDueDateValue;
-        auto const actualOpt = entry.getNextPaymentDueDate();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfNextPaymentDueDate");
-        EXPECT_TRUE(entry.hasNextPaymentDueDate());
+        auto const actual = entry.getNextPaymentDueDate();
+        expectEqualField(expected, actual, "sfNextPaymentDueDate");
     }
 
     {
         auto const& expected = paymentRemainingValue;
-        auto const actualOpt = entry.getPaymentRemaining();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPaymentRemaining");
-        EXPECT_TRUE(entry.hasPaymentRemaining());
+        auto const actual = entry.getPaymentRemaining();
+        expectEqualField(expected, actual, "sfPaymentRemaining");
     }
 
     {
         auto const& expected = principalOutstandingValue;
-        auto const actualOpt = entry.getPrincipalOutstanding();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfPrincipalOutstanding");
-        EXPECT_TRUE(entry.hasPrincipalOutstanding());
+        auto const actual = entry.getPrincipalOutstanding();
+        expectEqualField(expected, actual, "sfPrincipalOutstanding");
     }
 
     {
         auto const& expected = totalValueOutstandingValue;
-        auto const actualOpt = entry.getTotalValueOutstanding();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfTotalValueOutstanding");
-        EXPECT_TRUE(entry.hasTotalValueOutstanding());
+        auto const actual = entry.getTotalValueOutstanding();
+        expectEqualField(expected, actual, "sfTotalValueOutstanding");
     }
 
     {
         auto const& expected = managementFeeOutstandingValue;
-        auto const actualOpt = entry.getManagementFeeOutstanding();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfManagementFeeOutstanding");
-        EXPECT_TRUE(entry.hasManagementFeeOutstanding());
+        auto const actual = entry.getManagementFeeOutstanding();
+        expectEqualField(expected, actual, "sfManagementFeeOutstanding");
     }
 
     {
         auto const& expected = loanScaleValue;
-        auto const actualOpt = entry.getLoanScale();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfLoanScale");
-        EXPECT_TRUE(entry.hasLoanScale());
+        auto const actual = entry.getLoanScale();
+        expectEqualField(expected, actual, "sfLoanScale");
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -467,222 +431,171 @@ TEST(LoanTests, BuilderFromSleRoundTrip)
     {
         auto const& expected = loanOriginationFeeValue;
 
-        auto const fromSleOpt = entryFromSle.getLoanOriginationFee();
-        auto const fromBuilderOpt = entryFromBuilder.getLoanOriginationFee();
+        auto const fromSle = entryFromSle.getLoanOriginationFee();
+        auto const fromBuilder = entryFromBuilder.getLoanOriginationFee();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfLoanOriginationFee");
-        expectEqualField(expected, *fromBuilderOpt, "sfLoanOriginationFee");
+        expectEqualField(expected, fromSle, "sfLoanOriginationFee");
+        expectEqualField(expected, fromBuilder, "sfLoanOriginationFee");
     }
 
     {
         auto const& expected = loanServiceFeeValue;
 
-        auto const fromSleOpt = entryFromSle.getLoanServiceFee();
-        auto const fromBuilderOpt = entryFromBuilder.getLoanServiceFee();
+        auto const fromSle = entryFromSle.getLoanServiceFee();
+        auto const fromBuilder = entryFromBuilder.getLoanServiceFee();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfLoanServiceFee");
-        expectEqualField(expected, *fromBuilderOpt, "sfLoanServiceFee");
+        expectEqualField(expected, fromSle, "sfLoanServiceFee");
+        expectEqualField(expected, fromBuilder, "sfLoanServiceFee");
     }
 
     {
         auto const& expected = latePaymentFeeValue;
 
-        auto const fromSleOpt = entryFromSle.getLatePaymentFee();
-        auto const fromBuilderOpt = entryFromBuilder.getLatePaymentFee();
+        auto const fromSle = entryFromSle.getLatePaymentFee();
+        auto const fromBuilder = entryFromBuilder.getLatePaymentFee();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfLatePaymentFee");
-        expectEqualField(expected, *fromBuilderOpt, "sfLatePaymentFee");
+        expectEqualField(expected, fromSle, "sfLatePaymentFee");
+        expectEqualField(expected, fromBuilder, "sfLatePaymentFee");
     }
 
     {
         auto const& expected = closePaymentFeeValue;
 
-        auto const fromSleOpt = entryFromSle.getClosePaymentFee();
-        auto const fromBuilderOpt = entryFromBuilder.getClosePaymentFee();
+        auto const fromSle = entryFromSle.getClosePaymentFee();
+        auto const fromBuilder = entryFromBuilder.getClosePaymentFee();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfClosePaymentFee");
-        expectEqualField(expected, *fromBuilderOpt, "sfClosePaymentFee");
+        expectEqualField(expected, fromSle, "sfClosePaymentFee");
+        expectEqualField(expected, fromBuilder, "sfClosePaymentFee");
     }
 
     {
         auto const& expected = overpaymentFeeValue;
 
-        auto const fromSleOpt = entryFromSle.getOverpaymentFee();
-        auto const fromBuilderOpt = entryFromBuilder.getOverpaymentFee();
+        auto const fromSle = entryFromSle.getOverpaymentFee();
+        auto const fromBuilder = entryFromBuilder.getOverpaymentFee();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfOverpaymentFee");
-        expectEqualField(expected, *fromBuilderOpt, "sfOverpaymentFee");
+        expectEqualField(expected, fromSle, "sfOverpaymentFee");
+        expectEqualField(expected, fromBuilder, "sfOverpaymentFee");
     }
 
     {
         auto const& expected = interestRateValue;
 
-        auto const fromSleOpt = entryFromSle.getInterestRate();
-        auto const fromBuilderOpt = entryFromBuilder.getInterestRate();
+        auto const fromSle = entryFromSle.getInterestRate();
+        auto const fromBuilder = entryFromBuilder.getInterestRate();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfInterestRate");
-        expectEqualField(expected, *fromBuilderOpt, "sfInterestRate");
+        expectEqualField(expected, fromSle, "sfInterestRate");
+        expectEqualField(expected, fromBuilder, "sfInterestRate");
     }
 
     {
         auto const& expected = lateInterestRateValue;
 
-        auto const fromSleOpt = entryFromSle.getLateInterestRate();
-        auto const fromBuilderOpt = entryFromBuilder.getLateInterestRate();
+        auto const fromSle = entryFromSle.getLateInterestRate();
+        auto const fromBuilder = entryFromBuilder.getLateInterestRate();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfLateInterestRate");
-        expectEqualField(expected, *fromBuilderOpt, "sfLateInterestRate");
+        expectEqualField(expected, fromSle, "sfLateInterestRate");
+        expectEqualField(expected, fromBuilder, "sfLateInterestRate");
     }
 
     {
         auto const& expected = closeInterestRateValue;
 
-        auto const fromSleOpt = entryFromSle.getCloseInterestRate();
-        auto const fromBuilderOpt = entryFromBuilder.getCloseInterestRate();
+        auto const fromSle = entryFromSle.getCloseInterestRate();
+        auto const fromBuilder = entryFromBuilder.getCloseInterestRate();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfCloseInterestRate");
-        expectEqualField(expected, *fromBuilderOpt, "sfCloseInterestRate");
+        expectEqualField(expected, fromSle, "sfCloseInterestRate");
+        expectEqualField(expected, fromBuilder, "sfCloseInterestRate");
     }
 
     {
         auto const& expected = overpaymentInterestRateValue;
 
-        auto const fromSleOpt = entryFromSle.getOverpaymentInterestRate();
-        auto const fromBuilderOpt = entryFromBuilder.getOverpaymentInterestRate();
+        auto const fromSle = entryFromSle.getOverpaymentInterestRate();
+        auto const fromBuilder = entryFromBuilder.getOverpaymentInterestRate();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfOverpaymentInterestRate");
-        expectEqualField(expected, *fromBuilderOpt, "sfOverpaymentInterestRate");
+        expectEqualField(expected, fromSle, "sfOverpaymentInterestRate");
+        expectEqualField(expected, fromBuilder, "sfOverpaymentInterestRate");
     }
 
     {
         auto const& expected = gracePeriodValue;
 
-        auto const fromSleOpt = entryFromSle.getGracePeriod();
-        auto const fromBuilderOpt = entryFromBuilder.getGracePeriod();
+        auto const fromSle = entryFromSle.getGracePeriod();
+        auto const fromBuilder = entryFromBuilder.getGracePeriod();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfGracePeriod");
-        expectEqualField(expected, *fromBuilderOpt, "sfGracePeriod");
+        expectEqualField(expected, fromSle, "sfGracePeriod");
+        expectEqualField(expected, fromBuilder, "sfGracePeriod");
     }
 
     {
         auto const& expected = previousPaymentDueDateValue;
 
-        auto const fromSleOpt = entryFromSle.getPreviousPaymentDueDate();
-        auto const fromBuilderOpt = entryFromBuilder.getPreviousPaymentDueDate();
+        auto const fromSle = entryFromSle.getPreviousPaymentDueDate();
+        auto const fromBuilder = entryFromBuilder.getPreviousPaymentDueDate();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPreviousPaymentDueDate");
-        expectEqualField(expected, *fromBuilderOpt, "sfPreviousPaymentDueDate");
+        expectEqualField(expected, fromSle, "sfPreviousPaymentDueDate");
+        expectEqualField(expected, fromBuilder, "sfPreviousPaymentDueDate");
     }
 
     {
         auto const& expected = nextPaymentDueDateValue;
 
-        auto const fromSleOpt = entryFromSle.getNextPaymentDueDate();
-        auto const fromBuilderOpt = entryFromBuilder.getNextPaymentDueDate();
+        auto const fromSle = entryFromSle.getNextPaymentDueDate();
+        auto const fromBuilder = entryFromBuilder.getNextPaymentDueDate();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfNextPaymentDueDate");
-        expectEqualField(expected, *fromBuilderOpt, "sfNextPaymentDueDate");
+        expectEqualField(expected, fromSle, "sfNextPaymentDueDate");
+        expectEqualField(expected, fromBuilder, "sfNextPaymentDueDate");
     }
 
     {
         auto const& expected = paymentRemainingValue;
 
-        auto const fromSleOpt = entryFromSle.getPaymentRemaining();
-        auto const fromBuilderOpt = entryFromBuilder.getPaymentRemaining();
+        auto const fromSle = entryFromSle.getPaymentRemaining();
+        auto const fromBuilder = entryFromBuilder.getPaymentRemaining();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPaymentRemaining");
-        expectEqualField(expected, *fromBuilderOpt, "sfPaymentRemaining");
+        expectEqualField(expected, fromSle, "sfPaymentRemaining");
+        expectEqualField(expected, fromBuilder, "sfPaymentRemaining");
     }
 
     {
         auto const& expected = principalOutstandingValue;
 
-        auto const fromSleOpt = entryFromSle.getPrincipalOutstanding();
-        auto const fromBuilderOpt = entryFromBuilder.getPrincipalOutstanding();
+        auto const fromSle = entryFromSle.getPrincipalOutstanding();
+        auto const fromBuilder = entryFromBuilder.getPrincipalOutstanding();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfPrincipalOutstanding");
-        expectEqualField(expected, *fromBuilderOpt, "sfPrincipalOutstanding");
+        expectEqualField(expected, fromSle, "sfPrincipalOutstanding");
+        expectEqualField(expected, fromBuilder, "sfPrincipalOutstanding");
     }
 
     {
         auto const& expected = totalValueOutstandingValue;
 
-        auto const fromSleOpt = entryFromSle.getTotalValueOutstanding();
-        auto const fromBuilderOpt = entryFromBuilder.getTotalValueOutstanding();
+        auto const fromSle = entryFromSle.getTotalValueOutstanding();
+        auto const fromBuilder = entryFromBuilder.getTotalValueOutstanding();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfTotalValueOutstanding");
-        expectEqualField(expected, *fromBuilderOpt, "sfTotalValueOutstanding");
+        expectEqualField(expected, fromSle, "sfTotalValueOutstanding");
+        expectEqualField(expected, fromBuilder, "sfTotalValueOutstanding");
     }
 
     {
         auto const& expected = managementFeeOutstandingValue;
 
-        auto const fromSleOpt = entryFromSle.getManagementFeeOutstanding();
-        auto const fromBuilderOpt = entryFromBuilder.getManagementFeeOutstanding();
+        auto const fromSle = entryFromSle.getManagementFeeOutstanding();
+        auto const fromBuilder = entryFromBuilder.getManagementFeeOutstanding();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfManagementFeeOutstanding");
-        expectEqualField(expected, *fromBuilderOpt, "sfManagementFeeOutstanding");
+        expectEqualField(expected, fromSle, "sfManagementFeeOutstanding");
+        expectEqualField(expected, fromBuilder, "sfManagementFeeOutstanding");
     }
 
     {
         auto const& expected = loanScaleValue;
 
-        auto const fromSleOpt = entryFromSle.getLoanScale();
-        auto const fromBuilderOpt = entryFromBuilder.getLoanScale();
+        auto const fromSle = entryFromSle.getLoanScale();
+        auto const fromBuilder = entryFromBuilder.getLoanScale();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfLoanScale");
-        expectEqualField(expected, *fromBuilderOpt, "sfLoanScale");
+        expectEqualField(expected, fromSle, "sfLoanScale");
+        expectEqualField(expected, fromBuilder, "sfLoanScale");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -725,10 +638,12 @@ TEST(LoanTests, BuilderThrowsOnWrongEntryType)
     EXPECT_THROW(LoanBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
 
-// 5) Build with only required fields and verify optional fields return nullopt.
-TEST(LoanTests, OptionalFieldsReturnNullopt)
+
+// 6) Default fields return the type default when unset, and the assigned value
+// after being set.
+TEST(LoanTests, DefaultFieldsRoundTrip)
 {
-    uint256 const index{3u};
+    uint256 const index{4u};
 
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
@@ -741,7 +656,8 @@ TEST(LoanTests, OptionalFieldsReturnNullopt)
     auto const paymentIntervalValue = canonical_UINT32();
     auto const periodicPaymentValue = canonical_NUMBER();
 
-    LoanBuilder builder{
+    // Unset: default fields return the type default.
+    LoanBuilder defaultBuilder{
         previousTxnIDValue,
         previousTxnLgrSeqValue,
         ownerNodeValue,
@@ -753,43 +669,174 @@ TEST(LoanTests, OptionalFieldsReturnNullopt)
         paymentIntervalValue,
         periodicPaymentValue
     };
+    auto const defaultEntry = defaultBuilder.build(index);
+    {
+        auto const expected = SF_NUMBER::type::value_type{};
+        expectEqualField(expected, defaultEntry.getLoanOriginationFee(), "sfLoanOriginationFee");
+    }
+    {
+        auto const expected = SF_NUMBER::type::value_type{};
+        expectEqualField(expected, defaultEntry.getLoanServiceFee(), "sfLoanServiceFee");
+    }
+    {
+        auto const expected = SF_NUMBER::type::value_type{};
+        expectEqualField(expected, defaultEntry.getLatePaymentFee(), "sfLatePaymentFee");
+    }
+    {
+        auto const expected = SF_NUMBER::type::value_type{};
+        expectEqualField(expected, defaultEntry.getClosePaymentFee(), "sfClosePaymentFee");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getOverpaymentFee(), "sfOverpaymentFee");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getInterestRate(), "sfInterestRate");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getLateInterestRate(), "sfLateInterestRate");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getCloseInterestRate(), "sfCloseInterestRate");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getOverpaymentInterestRate(), "sfOverpaymentInterestRate");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getGracePeriod(), "sfGracePeriod");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getPreviousPaymentDueDate(), "sfPreviousPaymentDueDate");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getNextPaymentDueDate(), "sfNextPaymentDueDate");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getPaymentRemaining(), "sfPaymentRemaining");
+    }
+    {
+        auto const expected = SF_NUMBER::type::value_type{};
+        expectEqualField(expected, defaultEntry.getPrincipalOutstanding(), "sfPrincipalOutstanding");
+    }
+    {
+        auto const expected = SF_NUMBER::type::value_type{};
+        expectEqualField(expected, defaultEntry.getTotalValueOutstanding(), "sfTotalValueOutstanding");
+    }
+    {
+        auto const expected = SF_NUMBER::type::value_type{};
+        expectEqualField(expected, defaultEntry.getManagementFeeOutstanding(), "sfManagementFeeOutstanding");
+    }
+    {
+        auto const expected = SF_INT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getLoanScale(), "sfLoanScale");
+    }
 
-    auto const entry = builder.build(index);
-
-    // Verify optional fields are not present
-    EXPECT_FALSE(entry.hasLoanOriginationFee());
-    EXPECT_FALSE(entry.getLoanOriginationFee().has_value());
-    EXPECT_FALSE(entry.hasLoanServiceFee());
-    EXPECT_FALSE(entry.getLoanServiceFee().has_value());
-    EXPECT_FALSE(entry.hasLatePaymentFee());
-    EXPECT_FALSE(entry.getLatePaymentFee().has_value());
-    EXPECT_FALSE(entry.hasClosePaymentFee());
-    EXPECT_FALSE(entry.getClosePaymentFee().has_value());
-    EXPECT_FALSE(entry.hasOverpaymentFee());
-    EXPECT_FALSE(entry.getOverpaymentFee().has_value());
-    EXPECT_FALSE(entry.hasInterestRate());
-    EXPECT_FALSE(entry.getInterestRate().has_value());
-    EXPECT_FALSE(entry.hasLateInterestRate());
-    EXPECT_FALSE(entry.getLateInterestRate().has_value());
-    EXPECT_FALSE(entry.hasCloseInterestRate());
-    EXPECT_FALSE(entry.getCloseInterestRate().has_value());
-    EXPECT_FALSE(entry.hasOverpaymentInterestRate());
-    EXPECT_FALSE(entry.getOverpaymentInterestRate().has_value());
-    EXPECT_FALSE(entry.hasGracePeriod());
-    EXPECT_FALSE(entry.getGracePeriod().has_value());
-    EXPECT_FALSE(entry.hasPreviousPaymentDueDate());
-    EXPECT_FALSE(entry.getPreviousPaymentDueDate().has_value());
-    EXPECT_FALSE(entry.hasNextPaymentDueDate());
-    EXPECT_FALSE(entry.getNextPaymentDueDate().has_value());
-    EXPECT_FALSE(entry.hasPaymentRemaining());
-    EXPECT_FALSE(entry.getPaymentRemaining().has_value());
-    EXPECT_FALSE(entry.hasPrincipalOutstanding());
-    EXPECT_FALSE(entry.getPrincipalOutstanding().has_value());
-    EXPECT_FALSE(entry.hasTotalValueOutstanding());
-    EXPECT_FALSE(entry.getTotalValueOutstanding().has_value());
-    EXPECT_FALSE(entry.hasManagementFeeOutstanding());
-    EXPECT_FALSE(entry.getManagementFeeOutstanding().has_value());
-    EXPECT_FALSE(entry.hasLoanScale());
-    EXPECT_FALSE(entry.getLoanScale().has_value());
+    // Set: default fields return the assigned value.
+    LoanBuilder setBuilder{
+        previousTxnIDValue,
+        previousTxnLgrSeqValue,
+        ownerNodeValue,
+        loanBrokerNodeValue,
+        loanBrokerIDValue,
+        loanSequenceValue,
+        borrowerValue,
+        startDateValue,
+        paymentIntervalValue,
+        periodicPaymentValue
+    };
+    setBuilder.setLoanOriginationFee(canonical_NUMBER());
+    setBuilder.setLoanServiceFee(canonical_NUMBER());
+    setBuilder.setLatePaymentFee(canonical_NUMBER());
+    setBuilder.setClosePaymentFee(canonical_NUMBER());
+    setBuilder.setOverpaymentFee(canonical_UINT32());
+    setBuilder.setInterestRate(canonical_UINT32());
+    setBuilder.setLateInterestRate(canonical_UINT32());
+    setBuilder.setCloseInterestRate(canonical_UINT32());
+    setBuilder.setOverpaymentInterestRate(canonical_UINT32());
+    setBuilder.setGracePeriod(canonical_UINT32());
+    setBuilder.setPreviousPaymentDueDate(canonical_UINT32());
+    setBuilder.setNextPaymentDueDate(canonical_UINT32());
+    setBuilder.setPaymentRemaining(canonical_UINT32());
+    setBuilder.setPrincipalOutstanding(canonical_NUMBER());
+    setBuilder.setTotalValueOutstanding(canonical_NUMBER());
+    setBuilder.setManagementFeeOutstanding(canonical_NUMBER());
+    setBuilder.setLoanScale(canonical_INT32());
+    auto const setEntry = setBuilder.build(index);
+    {
+        auto const expected = canonical_NUMBER();
+        expectEqualField(expected, setEntry.getLoanOriginationFee(), "sfLoanOriginationFee");
+    }
+    {
+        auto const expected = canonical_NUMBER();
+        expectEqualField(expected, setEntry.getLoanServiceFee(), "sfLoanServiceFee");
+    }
+    {
+        auto const expected = canonical_NUMBER();
+        expectEqualField(expected, setEntry.getLatePaymentFee(), "sfLatePaymentFee");
+    }
+    {
+        auto const expected = canonical_NUMBER();
+        expectEqualField(expected, setEntry.getClosePaymentFee(), "sfClosePaymentFee");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getOverpaymentFee(), "sfOverpaymentFee");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getInterestRate(), "sfInterestRate");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getLateInterestRate(), "sfLateInterestRate");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getCloseInterestRate(), "sfCloseInterestRate");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getOverpaymentInterestRate(), "sfOverpaymentInterestRate");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getGracePeriod(), "sfGracePeriod");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getPreviousPaymentDueDate(), "sfPreviousPaymentDueDate");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getNextPaymentDueDate(), "sfNextPaymentDueDate");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getPaymentRemaining(), "sfPaymentRemaining");
+    }
+    {
+        auto const expected = canonical_NUMBER();
+        expectEqualField(expected, setEntry.getPrincipalOutstanding(), "sfPrincipalOutstanding");
+    }
+    {
+        auto const expected = canonical_NUMBER();
+        expectEqualField(expected, setEntry.getTotalValueOutstanding(), "sfTotalValueOutstanding");
+    }
+    {
+        auto const expected = canonical_NUMBER();
+        expectEqualField(expected, setEntry.getManagementFeeOutstanding(), "sfManagementFeeOutstanding");
+    }
+    {
+        auto const expected = canonical_INT32();
+        expectEqualField(expected, setEntry.getLoanScale(), "sfLoanScale");
+    }
 }
 }

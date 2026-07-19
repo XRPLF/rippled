@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry Oracle
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -343,4 +341,5 @@ TEST(OracleTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasURI());
     EXPECT_FALSE(entry.getURI().has_value());
 }
+
 }

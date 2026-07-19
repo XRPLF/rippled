@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction MPTokenIssuanceCreate
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -49,6 +47,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderSettersRoundTrip)
     builder.setMPTokenMetadata(mPTokenMetadataValue);
     builder.setDomainID(domainIDValue);
     builder.setMutableFlags(mutableFlagsValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -64,7 +63,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = assetScaleValue;
@@ -166,7 +165,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = assetScaleValue;
@@ -278,5 +277,6 @@ TEST(TransactionsMPTokenIssuanceCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasMutableFlags());
     EXPECT_FALSE(tx.getMutableFlags().has_value());
 }
+
 
 }

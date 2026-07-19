@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction SponsorshipTransfer
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -41,6 +39,7 @@ TEST(TransactionsSponsorshipTransferTests, BuilderSettersRoundTrip)
     // Set optional fields
     builder.setObjectID(objectIDValue);
     builder.setSponsee(sponseeValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -56,7 +55,7 @@ TEST(TransactionsSponsorshipTransferTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = objectIDValue;
@@ -118,7 +117,7 @@ TEST(TransactionsSponsorshipTransferTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = objectIDValue;
@@ -194,5 +193,6 @@ TEST(TransactionsSponsorshipTransferTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasSponsee());
     EXPECT_FALSE(tx.getSponsee().has_value());
 }
+
 
 }

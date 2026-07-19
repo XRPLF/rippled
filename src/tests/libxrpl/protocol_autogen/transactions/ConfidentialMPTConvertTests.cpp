@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction ConfidentialMPTConvert
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -53,6 +51,7 @@ TEST(TransactionsConfidentialMPTConvertTests, BuilderSettersRoundTrip)
     builder.setHolderEncryptionKey(holderEncryptionKeyValue);
     builder.setAuditorEncryptedAmount(auditorEncryptedAmountValue);
     builder.setZKProof(zKProofValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -68,7 +67,7 @@ TEST(TransactionsConfidentialMPTConvertTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = mPTokenIssuanceIDValue;
         auto const actual = tx.getMPTokenIssuanceID();
@@ -180,7 +179,7 @@ TEST(TransactionsConfidentialMPTConvertTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = mPTokenIssuanceIDValue;
         auto const actual = rebuiltTx.getMPTokenIssuanceID();
@@ -305,5 +304,6 @@ TEST(TransactionsConfidentialMPTConvertTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasZKProof());
     EXPECT_FALSE(tx.getZKProof().has_value());
 }
+
 
 }

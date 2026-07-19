@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction SponsorshipSet
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -47,6 +45,7 @@ TEST(TransactionsSponsorshipSetTests, BuilderSettersRoundTrip)
     builder.setFeeAmount(feeAmountValue);
     builder.setMaxFee(maxFeeValue);
     builder.setRemainingOwnerCount(remainingOwnerCountValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -62,7 +61,7 @@ TEST(TransactionsSponsorshipSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = counterpartySponsorValue;
@@ -154,7 +153,7 @@ TEST(TransactionsSponsorshipSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = counterpartySponsorValue;
@@ -257,5 +256,6 @@ TEST(TransactionsSponsorshipSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasRemainingOwnerCount());
     EXPECT_FALSE(tx.getRemainingOwnerCount().has_value());
 }
+
 
 }

@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry Offer
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -392,4 +390,5 @@ TEST(OfferTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasAdditionalBooks());
     EXPECT_FALSE(entry.getAdditionalBooks().has_value());
 }
+
 }

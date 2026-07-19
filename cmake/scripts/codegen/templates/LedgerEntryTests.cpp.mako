@@ -1,10 +1,23 @@
 // Auto-generated unit tests for ledger entry ${name}
+<%! from itertools import chain %>\
 <%
+    default_fields = [f for f in fields if f["requirement"] == "SoeDefault"]
     required_fields = [f for f in fields if f["requirement"] == "SoeRequired"]
-    optional_fields = [f for f in fields if f["requirement"] != "SoeRequired"]
+    optional_fields = [f for f in fields if f["requirement"] == "SoeOptional"]
 
     def canonical_expr(field):
         return f"canonical_{field['stiSuffix']}()"
+
+    def default_expr(field):
+        # The value a SoeDefault field's getter returns when the field is unset.
+        if field["typed"]:
+            return f"{field['typeData']['return_type']}{{}}"
+        sti = field.get("stiSuffix")
+        if sti == "ARRAY":
+            return "STArray{}"
+        if sti == "PATHSET":
+            return "STPathSet{}"
+        return "STObject{sfGeneric}"
 
     # Pick a wrong ledger entry to test type mismatch
     # Use Ticket as it has minimal required fields (just Account)
@@ -12,8 +25,7 @@
         wrong_le_include = "Ticket"
     else:
         wrong_le_include = "Check"
-%>
-
+%>\
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -46,6 +58,9 @@ TEST(${name}Tests, BuilderSettersRoundTrip)
 % for field in optional_fields:
     builder.set${field["name"][2:]}(${field["paramName"]}Value);
 % endfor
+% for field in default_fields:
+    builder.set${field["name"][2:]}(${field["paramName"]}Value);
+% endfor
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -56,7 +71,7 @@ TEST(${name}Tests, BuilderSettersRoundTrip)
 
     EXPECT_TRUE(entry.validate());
 
-% for field in required_fields:
+% for field in chain(required_fields, default_fields):
     {
         auto const& expected = ${field["paramName"]}Value;
         auto const actual = entry.get${field["name"][2:]}();
@@ -112,7 +127,7 @@ TEST(${name}Tests, BuilderFromSleRoundTrip)
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
-% for field in required_fields:
+% for field in chain(required_fields, default_fields):
     {
         auto const& expected = ${field["paramName"]}Value;
 
@@ -225,6 +240,50 @@ TEST(${name}Tests, OptionalFieldsReturnNullopt)
 % for field in optional_fields:
     EXPECT_FALSE(entry.has${field["name"][2:]}());
     EXPECT_FALSE(entry.get${field["name"][2:]}().has_value());
+% endfor
+}
+% endif
+
+% if default_fields:
+// 6) Default fields return the type default when unset, and the assigned value
+// after being set.
+TEST(${name}Tests, DefaultFieldsRoundTrip)
+{
+    uint256 const index{4u};
+
+% for field in required_fields:
+    auto const ${field["paramName"]}Value = ${canonical_expr(field)};
+% endfor
+
+    // Unset: default fields return the type default.
+    ${name}Builder defaultBuilder{
+% for i, field in enumerate(required_fields):
+        ${field["paramName"]}Value${"," if i < len(required_fields) - 1 else ""}
+% endfor
+    };
+    auto const defaultEntry = defaultBuilder.build(index);
+% for field in default_fields:
+    {
+        auto const expected = ${default_expr(field)};
+        expectEqualField(expected, defaultEntry.get${field["name"][2:]}(), "${field["name"]}");
+    }
+% endfor
+
+    // Set: default fields return the assigned value.
+    ${name}Builder setBuilder{
+% for i, field in enumerate(required_fields):
+        ${field["paramName"]}Value${"," if i < len(required_fields) - 1 else ""}
+% endfor
+    };
+% for field in default_fields:
+    setBuilder.set${field["name"][2:]}(${canonical_expr(field)});
+% endfor
+    auto const setEntry = setBuilder.build(index);
+% for field in default_fields:
+    {
+        auto const expected = ${canonical_expr(field)};
+        expectEqualField(expected, setEntry.get${field["name"][2:]}(), "${field["name"]}");
+    }
 % endfor
 }
 % endif

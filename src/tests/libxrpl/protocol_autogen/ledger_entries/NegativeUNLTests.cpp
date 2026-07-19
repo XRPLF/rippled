@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry NegativeUNL
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -248,4 +246,5 @@ TEST(NegativeUNLTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
     EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
 }
+
 }

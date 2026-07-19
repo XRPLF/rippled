@@ -69,26 +69,13 @@ public:
 
     /**
      * @brief Get sfTransferFee (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT16::type::value_type>
+    SF_UINT16::type::value_type
     getTransferFee() const
     {
-        if (hasTransferFee())
-            return this->sle_->at(sfTransferFee);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfTransferFee is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasTransferFee() const
-    {
-        return this->sle_->isFieldPresent(sfTransferFee);
+        return this->sle_->at(sfTransferFee);
     }
 
     /**
@@ -104,26 +91,13 @@ public:
 
     /**
      * @brief Get sfAssetScale (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    SF_UINT8::type::value_type
     getAssetScale() const
     {
-        if (hasAssetScale())
-            return this->sle_->at(sfAssetScale);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAssetScale is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAssetScale() const
-    {
-        return this->sle_->isFieldPresent(sfAssetScale);
+        return this->sle_->at(sfAssetScale);
     }
 
     /**
@@ -257,26 +231,13 @@ public:
 
     /**
      * @brief Get sfMutableFlags (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getMutableFlags() const
     {
-        if (hasMutableFlags())
-            return this->sle_->at(sfMutableFlags);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfMutableFlags is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasMutableFlags() const
-    {
-        return this->sle_->isFieldPresent(sfMutableFlags);
+        return this->sle_->at(sfMutableFlags);
     }
 
     /**
@@ -353,26 +314,13 @@ public:
 
     /**
      * @brief Get sfConfidentialOutstandingAmount (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    SF_UINT64::type::value_type
     getConfidentialOutstandingAmount() const
     {
-        if (hasConfidentialOutstandingAmount())
-            return this->sle_->at(sfConfidentialOutstandingAmount);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfConfidentialOutstandingAmount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasConfidentialOutstandingAmount() const
-    {
-        return this->sle_->isFieldPresent(sfConfidentialOutstandingAmount);
+        return this->sle_->at(sfConfidentialOutstandingAmount);
     }
 };
 

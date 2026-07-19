@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction CheckCash
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -43,6 +41,7 @@ TEST(TransactionsCheckCashTests, BuilderSettersRoundTrip)
     // Set optional fields
     builder.setAmount(amountValue);
     builder.setDeliverMin(deliverMinValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -58,7 +57,7 @@ TEST(TransactionsCheckCashTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = checkIDValue;
         auto const actual = tx.getCheckID();
@@ -128,7 +127,7 @@ TEST(TransactionsCheckCashTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = checkIDValue;
         auto const actual = rebuiltTx.getCheckID();
@@ -212,5 +211,6 @@ TEST(TransactionsCheckCashTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasDeliverMin());
     EXPECT_FALSE(tx.getDeliverMin().has_value());
 }
+
 
 }

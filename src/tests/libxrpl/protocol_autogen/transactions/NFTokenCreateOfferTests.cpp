@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction NFTokenCreateOffer
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -47,6 +45,7 @@ TEST(TransactionsNFTokenCreateOfferTests, BuilderSettersRoundTrip)
     builder.setDestination(destinationValue);
     builder.setOwner(ownerValue);
     builder.setExpiration(expirationValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -62,7 +61,7 @@ TEST(TransactionsNFTokenCreateOfferTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = nFTokenIDValue;
         auto const actual = tx.getNFTokenID();
@@ -150,7 +149,7 @@ TEST(TransactionsNFTokenCreateOfferTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = nFTokenIDValue;
         auto const actual = rebuiltTx.getNFTokenID();
@@ -251,5 +250,6 @@ TEST(TransactionsNFTokenCreateOfferTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasExpiration());
     EXPECT_FALSE(tx.getExpiration().has_value());
 }
+
 
 }

@@ -58,26 +58,13 @@ public:
 
     /**
      * @brief Get sfTradingFee (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT16::type::value_type>
+    SF_UINT16::type::value_type
     getTradingFee() const
     {
-        if (hasTradingFee())
-            return this->sle_->at(sfTradingFee);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfTradingFee is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasTradingFee() const
-    {
-        return this->sle_->isFieldPresent(sfTradingFee);
+        return this->sle_->at(sfTradingFee);
     }
 
     /**

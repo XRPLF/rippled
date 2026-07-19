@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction VaultSet
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -45,6 +43,7 @@ TEST(TransactionsVaultSetTests, BuilderSettersRoundTrip)
     builder.setAssetsMaximum(assetsMaximumValue);
     builder.setDomainID(domainIDValue);
     builder.setData(dataValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -60,7 +59,7 @@ TEST(TransactionsVaultSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = vaultIDValue;
         auto const actual = tx.getVaultID();
@@ -140,7 +139,7 @@ TEST(TransactionsVaultSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = vaultIDValue;
         auto const actual = rebuiltTx.getVaultID();
@@ -233,5 +232,6 @@ TEST(TransactionsVaultSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasData());
     EXPECT_FALSE(tx.getData().has_value());
 }
+
 
 }

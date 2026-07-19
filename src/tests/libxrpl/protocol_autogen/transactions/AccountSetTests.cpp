@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction AccountSet
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -57,6 +55,7 @@ TEST(TransactionsAccountSetTests, BuilderSettersRoundTrip)
     builder.setClearFlag(clearFlagValue);
     builder.setTickSize(tickSizeValue);
     builder.setNFTokenMinter(nFTokenMinterValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -72,7 +71,7 @@ TEST(TransactionsAccountSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = emailHashValue;
@@ -214,7 +213,7 @@ TEST(TransactionsAccountSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = emailHashValue;
@@ -362,5 +361,6 @@ TEST(TransactionsAccountSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasNFTokenMinter());
     EXPECT_FALSE(tx.getNFTokenMinter().has_value());
 }
+
 
 }

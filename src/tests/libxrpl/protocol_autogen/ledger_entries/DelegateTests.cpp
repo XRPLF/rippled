@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry Delegate
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -272,4 +270,5 @@ TEST(DelegateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasDestinationNode());
     EXPECT_FALSE(entry.getDestinationNode().has_value());
 }
+
 }

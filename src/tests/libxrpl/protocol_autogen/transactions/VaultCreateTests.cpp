@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction VaultCreate
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -51,6 +49,7 @@ TEST(TransactionsVaultCreateTests, BuilderSettersRoundTrip)
     builder.setWithdrawalPolicy(withdrawalPolicyValue);
     builder.setData(dataValue);
     builder.setScale(scaleValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -66,7 +65,7 @@ TEST(TransactionsVaultCreateTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = assetValue;
         auto const actual = tx.getAsset();
@@ -176,7 +175,7 @@ TEST(TransactionsVaultCreateTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = assetValue;
         auto const actual = rebuiltTx.getAsset();
@@ -296,5 +295,6 @@ TEST(TransactionsVaultCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasScale());
     EXPECT_FALSE(tx.getScale().has_value());
 }
+
 
 }

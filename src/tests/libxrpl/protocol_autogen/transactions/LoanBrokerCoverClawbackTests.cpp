@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction LoanBrokerCoverClawback
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -41,6 +39,7 @@ TEST(TransactionsLoanBrokerCoverClawbackTests, BuilderSettersRoundTrip)
     // Set optional fields
     builder.setLoanBrokerID(loanBrokerIDValue);
     builder.setAmount(amountValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -56,7 +55,7 @@ TEST(TransactionsLoanBrokerCoverClawbackTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = loanBrokerIDValue;
@@ -118,7 +117,7 @@ TEST(TransactionsLoanBrokerCoverClawbackTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = loanBrokerIDValue;
@@ -194,5 +193,6 @@ TEST(TransactionsLoanBrokerCoverClawbackTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasAmount());
     EXPECT_FALSE(tx.getAmount().has_value());
 }
+
 
 }

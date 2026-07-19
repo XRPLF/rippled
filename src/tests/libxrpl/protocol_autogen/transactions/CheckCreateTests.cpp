@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction CheckCreate
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -47,6 +45,7 @@ TEST(TransactionsCheckCreateTests, BuilderSettersRoundTrip)
     builder.setExpiration(expirationValue);
     builder.setDestinationTag(destinationTagValue);
     builder.setInvoiceID(invoiceIDValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -62,7 +61,7 @@ TEST(TransactionsCheckCreateTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = destinationValue;
         auto const actual = tx.getDestination();
@@ -150,7 +149,7 @@ TEST(TransactionsCheckCreateTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = destinationValue;
         auto const actual = rebuiltTx.getDestination();
@@ -251,5 +250,6 @@ TEST(TransactionsCheckCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasInvoiceID());
     EXPECT_FALSE(tx.getInvoiceID().has_value());
 }
+
 
 }

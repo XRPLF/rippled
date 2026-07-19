@@ -377,50 +377,24 @@ public:
 
     /**
      * @brief Get sfMintedNFTokens (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getMintedNFTokens() const
     {
-        if (hasMintedNFTokens())
-            return this->sle_->at(sfMintedNFTokens);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfMintedNFTokens is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasMintedNFTokens() const
-    {
-        return this->sle_->isFieldPresent(sfMintedNFTokens);
+        return this->sle_->at(sfMintedNFTokens);
     }
 
     /**
      * @brief Get sfBurnedNFTokens (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getBurnedNFTokens() const
     {
-        if (hasBurnedNFTokens())
-            return this->sle_->at(sfBurnedNFTokens);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfBurnedNFTokens is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasBurnedNFTokens() const
-    {
-        return this->sle_->isFieldPresent(sfBurnedNFTokens);
+        return this->sle_->at(sfBurnedNFTokens);
     }
 
     /**
@@ -449,74 +423,35 @@ public:
 
     /**
      * @brief Get sfSponsoredOwnerCount (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getSponsoredOwnerCount() const
     {
-        if (hasSponsoredOwnerCount())
-            return this->sle_->at(sfSponsoredOwnerCount);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSponsoredOwnerCount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSponsoredOwnerCount() const
-    {
-        return this->sle_->isFieldPresent(sfSponsoredOwnerCount);
+        return this->sle_->at(sfSponsoredOwnerCount);
     }
 
     /**
      * @brief Get sfSponsoringOwnerCount (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getSponsoringOwnerCount() const
     {
-        if (hasSponsoringOwnerCount())
-            return this->sle_->at(sfSponsoringOwnerCount);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSponsoringOwnerCount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSponsoringOwnerCount() const
-    {
-        return this->sle_->isFieldPresent(sfSponsoringOwnerCount);
+        return this->sle_->at(sfSponsoringOwnerCount);
     }
 
     /**
      * @brief Get sfSponsoringAccountCount (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getSponsoringAccountCount() const
     {
-        if (hasSponsoringAccountCount())
-            return this->sle_->at(sfSponsoringAccountCount);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfSponsoringAccountCount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasSponsoringAccountCount() const
-    {
-        return this->sle_->isFieldPresent(sfSponsoringAccountCount);
+        return this->sle_->at(sfSponsoringAccountCount);
     }
 
     /**

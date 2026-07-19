@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction AMMDeposit
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -51,6 +49,7 @@ TEST(TransactionsAMMDepositTests, BuilderSettersRoundTrip)
     builder.setEPrice(ePriceValue);
     builder.setLPTokenOut(lPTokenOutValue);
     builder.setTradingFee(tradingFeeValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -66,7 +65,7 @@ TEST(TransactionsAMMDepositTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = assetValue;
         auto const actual = tx.getAsset();
@@ -174,7 +173,7 @@ TEST(TransactionsAMMDepositTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = assetValue;
         auto const actual = rebuiltTx.getAsset();
@@ -293,5 +292,6 @@ TEST(TransactionsAMMDepositTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasTradingFee());
     EXPECT_FALSE(tx.getTradingFee().has_value());
 }
+
 
 }

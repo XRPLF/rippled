@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry PermissionedDomain
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -219,5 +217,6 @@ TEST(PermissionedDomainTests, BuilderThrowsOnWrongEntryType)
 
     EXPECT_THROW(PermissionedDomainBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
+
 
 }

@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry LedgerHashes
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -189,4 +187,5 @@ TEST(LedgerHashesTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasLastLedgerSequence());
     EXPECT_FALSE(entry.getLastLedgerSequence().has_value());
 }
+
 }

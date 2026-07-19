@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction NFTokenMint
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -51,6 +49,7 @@ TEST(TransactionsNFTokenMintTests, BuilderSettersRoundTrip)
     builder.setAmount(amountValue);
     builder.setDestination(destinationValue);
     builder.setExpiration(expirationValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -66,7 +65,7 @@ TEST(TransactionsNFTokenMintTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = nFTokenTaxonValue;
         auto const actual = tx.getNFTokenTaxon();
@@ -176,7 +175,7 @@ TEST(TransactionsNFTokenMintTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = nFTokenTaxonValue;
         auto const actual = rebuiltTx.getNFTokenTaxon();
@@ -296,5 +295,6 @@ TEST(TransactionsNFTokenMintTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasExpiration());
     EXPECT_FALSE(tx.getExpiration().has_value());
 }
+
 
 }

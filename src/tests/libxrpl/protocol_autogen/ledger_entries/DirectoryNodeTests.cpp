@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry DirectoryNode
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -535,4 +533,5 @@ TEST(DirectoryNodeTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasDomainID());
     EXPECT_FALSE(entry.getDomainID().has_value());
 }
+
 }

@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction AccountDelete
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -43,6 +41,7 @@ TEST(TransactionsAccountDeleteTests, BuilderSettersRoundTrip)
     // Set optional fields
     builder.setDestinationTag(destinationTagValue);
     builder.setCredentialIDs(credentialIDsValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -58,7 +57,7 @@ TEST(TransactionsAccountDeleteTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = destinationValue;
         auto const actual = tx.getDestination();
@@ -128,7 +127,7 @@ TEST(TransactionsAccountDeleteTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = destinationValue;
         auto const actual = rebuiltTx.getDestination();
@@ -212,5 +211,6 @@ TEST(TransactionsAccountDeleteTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasCredentialIDs());
     EXPECT_FALSE(tx.getCredentialIDs().has_value());
 }
+
 
 }

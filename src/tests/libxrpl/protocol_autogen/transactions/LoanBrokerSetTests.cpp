@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction LoanBrokerSet
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -51,6 +49,7 @@ TEST(TransactionsLoanBrokerSetTests, BuilderSettersRoundTrip)
     builder.setDebtMaximum(debtMaximumValue);
     builder.setCoverRateMinimum(coverRateMinimumValue);
     builder.setCoverRateLiquidation(coverRateLiquidationValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -66,7 +65,7 @@ TEST(TransactionsLoanBrokerSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = vaultIDValue;
         auto const actual = tx.getVaultID();
@@ -176,7 +175,7 @@ TEST(TransactionsLoanBrokerSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = vaultIDValue;
         auto const actual = rebuiltTx.getVaultID();
@@ -296,5 +295,6 @@ TEST(TransactionsLoanBrokerSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasCoverRateLiquidation());
     EXPECT_FALSE(tx.getCoverRateLiquidation().has_value());
 }
+
 
 }

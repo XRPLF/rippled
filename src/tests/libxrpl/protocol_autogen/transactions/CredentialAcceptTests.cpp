@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction CredentialAccept
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -41,6 +39,7 @@ TEST(TransactionsCredentialAcceptTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -56,7 +55,7 @@ TEST(TransactionsCredentialAcceptTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = issuerValue;
         auto const actual = tx.getIssuer();
@@ -114,7 +113,7 @@ TEST(TransactionsCredentialAcceptTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = issuerValue;
         auto const actual = rebuiltTx.getIssuer();
@@ -157,6 +156,7 @@ TEST(TransactionsCredentialAcceptTests, BuilderThrowsOnWrongTxType)
 
     EXPECT_THROW(CredentialAcceptBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
+
 
 
 }

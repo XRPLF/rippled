@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction PaymentChannelFund
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -43,6 +41,7 @@ TEST(TransactionsPaymentChannelFundTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setExpiration(expirationValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -58,7 +57,7 @@ TEST(TransactionsPaymentChannelFundTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = channelValue;
         auto const actual = tx.getChannel();
@@ -126,7 +125,7 @@ TEST(TransactionsPaymentChannelFundTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = channelValue;
         auto const actual = rebuiltTx.getChannel();
@@ -209,5 +208,6 @@ TEST(TransactionsPaymentChannelFundTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasExpiration());
     EXPECT_FALSE(tx.getExpiration().has_value());
 }
+
 
 }

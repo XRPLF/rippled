@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction LoanBrokerCoverDeposit
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -41,6 +39,7 @@ TEST(TransactionsLoanBrokerCoverDepositTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -56,7 +55,7 @@ TEST(TransactionsLoanBrokerCoverDepositTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = loanBrokerIDValue;
         auto const actual = tx.getLoanBrokerID();
@@ -114,7 +113,7 @@ TEST(TransactionsLoanBrokerCoverDepositTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = loanBrokerIDValue;
         auto const actual = rebuiltTx.getLoanBrokerID();
@@ -157,6 +156,7 @@ TEST(TransactionsLoanBrokerCoverDepositTests, BuilderThrowsOnWrongTxType)
 
     EXPECT_THROW(LoanBrokerCoverDepositBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
+
 
 
 }

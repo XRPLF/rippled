@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction Batch
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -41,6 +39,7 @@ TEST(TransactionsBatchTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setBatchSigners(batchSignersValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -56,7 +55,7 @@ TEST(TransactionsBatchTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = rawTransactionsValue;
         auto const actual = tx.getRawTransactions();
@@ -116,7 +115,7 @@ TEST(TransactionsBatchTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = rawTransactionsValue;
         auto const actual = rebuiltTx.getRawTransactions();
@@ -191,5 +190,6 @@ TEST(TransactionsBatchTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasBatchSigners());
     EXPECT_FALSE(tx.getBatchSigners().has_value());
 }
+
 
 }

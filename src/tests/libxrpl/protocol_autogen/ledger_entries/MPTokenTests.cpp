@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry MPToken
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -42,14 +40,14 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
         previousTxnLgrSeqValue
     };
 
-    builder.setMPTAmount(mPTAmountValue);
     builder.setLockedAmount(lockedAmountValue);
     builder.setConfidentialBalanceInbox(confidentialBalanceInboxValue);
     builder.setConfidentialBalanceSpending(confidentialBalanceSpendingValue);
-    builder.setConfidentialBalanceVersion(confidentialBalanceVersionValue);
     builder.setIssuerEncryptedBalance(issuerEncryptedBalanceValue);
     builder.setAuditorEncryptedBalance(auditorEncryptedBalanceValue);
     builder.setHolderEncryptionKey(holderEncryptionKeyValue);
+    builder.setMPTAmount(mPTAmountValue);
+    builder.setConfidentialBalanceVersion(confidentialBalanceVersionValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -92,10 +90,14 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
 
     {
         auto const& expected = mPTAmountValue;
-        auto const actualOpt = entry.getMPTAmount();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfMPTAmount");
-        EXPECT_TRUE(entry.hasMPTAmount());
+        auto const actual = entry.getMPTAmount();
+        expectEqualField(expected, actual, "sfMPTAmount");
+    }
+
+    {
+        auto const& expected = confidentialBalanceVersionValue;
+        auto const actual = entry.getConfidentialBalanceVersion();
+        expectEqualField(expected, actual, "sfConfidentialBalanceVersion");
     }
 
     {
@@ -120,14 +122,6 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfConfidentialBalanceSpending");
         EXPECT_TRUE(entry.hasConfidentialBalanceSpending());
-    }
-
-    {
-        auto const& expected = confidentialBalanceVersionValue;
-        auto const actualOpt = entry.getConfidentialBalanceVersion();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfConfidentialBalanceVersion");
-        EXPECT_TRUE(entry.hasConfidentialBalanceVersion());
     }
 
     {
@@ -259,14 +253,21 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     {
         auto const& expected = mPTAmountValue;
 
-        auto const fromSleOpt = entryFromSle.getMPTAmount();
-        auto const fromBuilderOpt = entryFromBuilder.getMPTAmount();
+        auto const fromSle = entryFromSle.getMPTAmount();
+        auto const fromBuilder = entryFromBuilder.getMPTAmount();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
+        expectEqualField(expected, fromSle, "sfMPTAmount");
+        expectEqualField(expected, fromBuilder, "sfMPTAmount");
+    }
 
-        expectEqualField(expected, *fromSleOpt, "sfMPTAmount");
-        expectEqualField(expected, *fromBuilderOpt, "sfMPTAmount");
+    {
+        auto const& expected = confidentialBalanceVersionValue;
+
+        auto const fromSle = entryFromSle.getConfidentialBalanceVersion();
+        auto const fromBuilder = entryFromBuilder.getConfidentialBalanceVersion();
+
+        expectEqualField(expected, fromSle, "sfConfidentialBalanceVersion");
+        expectEqualField(expected, fromBuilder, "sfConfidentialBalanceVersion");
     }
 
     {
@@ -306,19 +307,6 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfConfidentialBalanceSpending");
         expectEqualField(expected, *fromBuilderOpt, "sfConfidentialBalanceSpending");
-    }
-
-    {
-        auto const& expected = confidentialBalanceVersionValue;
-
-        auto const fromSleOpt = entryFromSle.getConfidentialBalanceVersion();
-        auto const fromBuilderOpt = entryFromBuilder.getConfidentialBalanceVersion();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfConfidentialBalanceVersion");
-        expectEqualField(expected, *fromBuilderOpt, "sfConfidentialBalanceVersion");
     }
 
     {
@@ -422,21 +410,68 @@ TEST(MPTokenTests, OptionalFieldsReturnNullopt)
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(entry.hasMPTAmount());
-    EXPECT_FALSE(entry.getMPTAmount().has_value());
     EXPECT_FALSE(entry.hasLockedAmount());
     EXPECT_FALSE(entry.getLockedAmount().has_value());
     EXPECT_FALSE(entry.hasConfidentialBalanceInbox());
     EXPECT_FALSE(entry.getConfidentialBalanceInbox().has_value());
     EXPECT_FALSE(entry.hasConfidentialBalanceSpending());
     EXPECT_FALSE(entry.getConfidentialBalanceSpending().has_value());
-    EXPECT_FALSE(entry.hasConfidentialBalanceVersion());
-    EXPECT_FALSE(entry.getConfidentialBalanceVersion().has_value());
     EXPECT_FALSE(entry.hasIssuerEncryptedBalance());
     EXPECT_FALSE(entry.getIssuerEncryptedBalance().has_value());
     EXPECT_FALSE(entry.hasAuditorEncryptedBalance());
     EXPECT_FALSE(entry.getAuditorEncryptedBalance().has_value());
     EXPECT_FALSE(entry.hasHolderEncryptionKey());
     EXPECT_FALSE(entry.getHolderEncryptionKey().has_value());
+}
+
+// 6) Default fields return the type default when unset, and the assigned value
+// after being set.
+TEST(MPTokenTests, DefaultFieldsRoundTrip)
+{
+    uint256 const index{4u};
+
+    auto const accountValue = canonical_ACCOUNT();
+    auto const mPTokenIssuanceIDValue = canonical_UINT192();
+    auto const ownerNodeValue = canonical_UINT64();
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
+
+    // Unset: default fields return the type default.
+    MPTokenBuilder defaultBuilder{
+        accountValue,
+        mPTokenIssuanceIDValue,
+        ownerNodeValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
+    };
+    auto const defaultEntry = defaultBuilder.build(index);
+    {
+        auto const expected = SF_UINT64::type::value_type{};
+        expectEqualField(expected, defaultEntry.getMPTAmount(), "sfMPTAmount");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getConfidentialBalanceVersion(), "sfConfidentialBalanceVersion");
+    }
+
+    // Set: default fields return the assigned value.
+    MPTokenBuilder setBuilder{
+        accountValue,
+        mPTokenIssuanceIDValue,
+        ownerNodeValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
+    };
+    setBuilder.setMPTAmount(canonical_UINT64());
+    setBuilder.setConfidentialBalanceVersion(canonical_UINT32());
+    auto const setEntry = setBuilder.build(index);
+    {
+        auto const expected = canonical_UINT64();
+        expectEqualField(expected, setEntry.getMPTAmount(), "sfMPTAmount");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getConfidentialBalanceVersion(), "sfConfidentialBalanceVersion");
+    }
 }
 }

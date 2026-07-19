@@ -69,26 +69,13 @@ public:
 
     /**
      * @brief Get sfMPTAmount (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    SF_UINT64::type::value_type
     getMPTAmount() const
     {
-        if (hasMPTAmount())
-            return this->sle_->at(sfMPTAmount);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfMPTAmount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasMPTAmount() const
-    {
-        return this->sle_->isFieldPresent(sfMPTAmount);
+        return this->sle_->at(sfMPTAmount);
     }
 
     /**
@@ -198,26 +185,13 @@ public:
 
     /**
      * @brief Get sfConfidentialBalanceVersion (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getConfidentialBalanceVersion() const
     {
-        if (hasConfidentialBalanceVersion())
-            return this->sle_->at(sfConfidentialBalanceVersion);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfConfidentialBalanceVersion is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasConfidentialBalanceVersion() const
-    {
-        return this->sle_->isFieldPresent(sfConfidentialBalanceVersion);
+        return this->sle_->at(sfConfidentialBalanceVersion);
     }
 
     /**

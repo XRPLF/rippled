@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry SignerList
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -272,4 +270,5 @@ TEST(SignerListTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasOwner());
     EXPECT_FALSE(entry.getOwner().has_value());
 }
+
 }

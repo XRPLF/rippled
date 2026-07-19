@@ -139,26 +139,13 @@ public:
 
     /**
      * @brief Get sfRemainingOwnerCount (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getRemainingOwnerCount() const
     {
-        if (hasRemainingOwnerCount())
-            return this->sle_->at(sfRemainingOwnerCount);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfRemainingOwnerCount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasRemainingOwnerCount() const
-    {
-        return this->sle_->isFieldPresent(sfRemainingOwnerCount);
+        return this->sle_->at(sfRemainingOwnerCount);
     }
 
     /**

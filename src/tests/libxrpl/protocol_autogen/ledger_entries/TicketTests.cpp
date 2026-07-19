@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry Ticket
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -205,5 +203,6 @@ TEST(TicketTests, BuilderThrowsOnWrongEntryType)
 
     EXPECT_THROW(TicketBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
+
 
 }

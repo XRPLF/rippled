@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction LedgerStateFix
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -43,6 +41,7 @@ TEST(TransactionsLedgerStateFixTests, BuilderSettersRoundTrip)
     // Set optional fields
     builder.setOwner(ownerValue);
     builder.setBookDirectory(bookDirectoryValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -58,7 +57,7 @@ TEST(TransactionsLedgerStateFixTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = ledgerFixTypeValue;
         auto const actual = tx.getLedgerFixType();
@@ -128,7 +127,7 @@ TEST(TransactionsLedgerStateFixTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = ledgerFixTypeValue;
         auto const actual = rebuiltTx.getLedgerFixType();
@@ -212,5 +211,6 @@ TEST(TransactionsLedgerStateFixTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasBookDirectory());
     EXPECT_FALSE(tx.getBookDirectory().has_value());
 }
+
 
 }

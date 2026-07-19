@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction MPTokenIssuanceSet
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -53,6 +51,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
     builder.setMutableFlags(mutableFlagsValue);
     builder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
     builder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -68,7 +67,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = mPTokenIssuanceIDValue;
         auto const actual = tx.getMPTokenIssuanceID();
@@ -188,7 +187,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = mPTokenIssuanceIDValue;
         auto const actual = rebuiltTx.getMPTokenIssuanceID();
@@ -317,5 +316,6 @@ TEST(TransactionsMPTokenIssuanceSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasAuditorEncryptionKey());
     EXPECT_FALSE(tx.getAuditorEncryptionKey().has_value());
 }
+
 
 }

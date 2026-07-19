@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry FeeSettings
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -356,4 +354,5 @@ TEST(FeeSettingsTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasPreviousTxnLgrSeq());
     EXPECT_FALSE(entry.getPreviousTxnLgrSeq().has_value());
 }
+
 }

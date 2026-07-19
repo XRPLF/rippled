@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction XChainClaim
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -47,6 +45,7 @@ TEST(TransactionsXChainClaimTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setDestinationTag(destinationTagValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -62,7 +61,7 @@ TEST(TransactionsXChainClaimTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = xChainBridgeValue;
         auto const actual = tx.getXChainBridge();
@@ -146,7 +145,7 @@ TEST(TransactionsXChainClaimTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = xChainBridgeValue;
         auto const actual = rebuiltTx.getXChainBridge();
@@ -245,5 +244,6 @@ TEST(TransactionsXChainClaimTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasDestinationTag());
     EXPECT_FALSE(tx.getDestinationTag().has_value());
 }
+
 
 }

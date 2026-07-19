@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction TrustSet
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -43,6 +41,7 @@ TEST(TransactionsTrustSetTests, BuilderSettersRoundTrip)
     builder.setLimitAmount(limitAmountValue);
     builder.setQualityIn(qualityInValue);
     builder.setQualityOut(qualityOutValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -58,7 +57,7 @@ TEST(TransactionsTrustSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = limitAmountValue;
@@ -130,7 +129,7 @@ TEST(TransactionsTrustSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = limitAmountValue;
@@ -215,5 +214,6 @@ TEST(TransactionsTrustSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasQualityOut());
     EXPECT_FALSE(tx.getQualityOut().has_value());
 }
+
 
 }

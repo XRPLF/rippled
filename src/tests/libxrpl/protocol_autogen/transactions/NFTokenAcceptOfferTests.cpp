@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction NFTokenAcceptOffer
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -43,6 +41,7 @@ TEST(TransactionsNFTokenAcceptOfferTests, BuilderSettersRoundTrip)
     builder.setNFTokenBuyOffer(nFTokenBuyOfferValue);
     builder.setNFTokenSellOffer(nFTokenSellOfferValue);
     builder.setNFTokenBrokerFee(nFTokenBrokerFeeValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -58,7 +57,7 @@ TEST(TransactionsNFTokenAcceptOfferTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = nFTokenBuyOfferValue;
@@ -130,7 +129,7 @@ TEST(TransactionsNFTokenAcceptOfferTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = nFTokenBuyOfferValue;
@@ -215,5 +214,6 @@ TEST(TransactionsNFTokenAcceptOfferTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasNFTokenBrokerFee());
     EXPECT_FALSE(tx.getNFTokenBrokerFee().has_value());
 }
+
 
 }

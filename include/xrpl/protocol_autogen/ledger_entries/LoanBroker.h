@@ -146,194 +146,90 @@ public:
 
     /**
      * @brief Get sfData (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    SF_VL::type::value_type
     getData() const
     {
-        if (hasData())
-            return this->sle_->at(sfData);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfData is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasData() const
-    {
-        return this->sle_->isFieldPresent(sfData);
+        return this->sle_->at(sfData);
     }
 
     /**
      * @brief Get sfManagementFeeRate (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT16::type::value_type>
+    SF_UINT16::type::value_type
     getManagementFeeRate() const
     {
-        if (hasManagementFeeRate())
-            return this->sle_->at(sfManagementFeeRate);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfManagementFeeRate is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasManagementFeeRate() const
-    {
-        return this->sle_->isFieldPresent(sfManagementFeeRate);
+        return this->sle_->at(sfManagementFeeRate);
     }
 
     /**
      * @brief Get sfOwnerCount (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getOwnerCount() const
     {
-        if (hasOwnerCount())
-            return this->sle_->at(sfOwnerCount);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfOwnerCount is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasOwnerCount() const
-    {
-        return this->sle_->isFieldPresent(sfOwnerCount);
+        return this->sle_->at(sfOwnerCount);
     }
 
     /**
      * @brief Get sfDebtTotal (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    SF_NUMBER::type::value_type
     getDebtTotal() const
     {
-        if (hasDebtTotal())
-            return this->sle_->at(sfDebtTotal);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfDebtTotal is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasDebtTotal() const
-    {
-        return this->sle_->isFieldPresent(sfDebtTotal);
+        return this->sle_->at(sfDebtTotal);
     }
 
     /**
      * @brief Get sfDebtMaximum (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    SF_NUMBER::type::value_type
     getDebtMaximum() const
     {
-        if (hasDebtMaximum())
-            return this->sle_->at(sfDebtMaximum);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfDebtMaximum is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasDebtMaximum() const
-    {
-        return this->sle_->isFieldPresent(sfDebtMaximum);
+        return this->sle_->at(sfDebtMaximum);
     }
 
     /**
      * @brief Get sfCoverAvailable (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    SF_NUMBER::type::value_type
     getCoverAvailable() const
     {
-        if (hasCoverAvailable())
-            return this->sle_->at(sfCoverAvailable);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfCoverAvailable is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasCoverAvailable() const
-    {
-        return this->sle_->isFieldPresent(sfCoverAvailable);
+        return this->sle_->at(sfCoverAvailable);
     }
 
     /**
      * @brief Get sfCoverRateMinimum (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getCoverRateMinimum() const
     {
-        if (hasCoverRateMinimum())
-            return this->sle_->at(sfCoverRateMinimum);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfCoverRateMinimum is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasCoverRateMinimum() const
-    {
-        return this->sle_->isFieldPresent(sfCoverRateMinimum);
+        return this->sle_->at(sfCoverRateMinimum);
     }
 
     /**
      * @brief Get sfCoverRateLiquidation (SoeDefault)
-     * @return The field value, or std::nullopt if not present.
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    SF_UINT32::type::value_type
     getCoverRateLiquidation() const
     {
-        if (hasCoverRateLiquidation())
-            return this->sle_->at(sfCoverRateLiquidation);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfCoverRateLiquidation is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasCoverRateLiquidation() const
-    {
-        return this->sle_->isFieldPresent(sfCoverRateLiquidation);
+        return this->sle_->at(sfCoverRateLiquidation);
     }
 };
 

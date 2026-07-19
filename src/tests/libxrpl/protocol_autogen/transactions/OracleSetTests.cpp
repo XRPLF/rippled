@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction OracleSet
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -49,6 +47,7 @@ TEST(TransactionsOracleSetTests, BuilderSettersRoundTrip)
     builder.setProvider(providerValue);
     builder.setURI(uRIValue);
     builder.setAssetClass(assetClassValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -64,7 +63,7 @@ TEST(TransactionsOracleSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = oracleDocumentIDValue;
         auto const actual = tx.getOracleDocumentID();
@@ -160,7 +159,7 @@ TEST(TransactionsOracleSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = oracleDocumentIDValue;
         auto const actual = rebuiltTx.getOracleDocumentID();
@@ -269,5 +268,6 @@ TEST(TransactionsOracleSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasAssetClass());
     EXPECT_FALSE(tx.getAssetClass().has_value());
 }
+
 
 }

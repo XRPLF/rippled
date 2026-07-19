@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry RippleState
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -439,4 +437,5 @@ TEST(RippleStateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasLowSponsor());
     EXPECT_FALSE(entry.getLowSponsor().has_value());
 }
+
 }

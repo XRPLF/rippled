@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction ConfidentialMPTSend
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -59,6 +57,7 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderSettersRoundTrip)
     builder.setDestinationTag(destinationTagValue);
     builder.setAuditorEncryptedAmount(auditorEncryptedAmountValue);
     builder.setCredentialIDs(credentialIDsValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -74,7 +73,7 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = mPTokenIssuanceIDValue;
         auto const actual = tx.getMPTokenIssuanceID();
@@ -210,7 +209,7 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     {
         auto const& expected = mPTokenIssuanceIDValue;
         auto const actual = rebuiltTx.getMPTokenIssuanceID();
@@ -359,5 +358,6 @@ TEST(TransactionsConfidentialMPTSendTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasCredentialIDs());
     EXPECT_FALSE(tx.getCredentialIDs().has_value());
 }
+
 
 }

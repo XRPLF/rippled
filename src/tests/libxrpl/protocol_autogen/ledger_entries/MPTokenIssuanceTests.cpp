@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry MPTokenIssuance
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -47,16 +45,16 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
         previousTxnLgrSeqValue
     };
 
-    builder.setTransferFee(transferFeeValue);
-    builder.setAssetScale(assetScaleValue);
     builder.setMaximumAmount(maximumAmountValue);
     builder.setLockedAmount(lockedAmountValue);
     builder.setMPTokenMetadata(mPTokenMetadataValue);
     builder.setDomainID(domainIDValue);
-    builder.setMutableFlags(mutableFlagsValue);
     builder.setReferenceHolding(referenceHoldingValue);
     builder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
     builder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
+    builder.setTransferFee(transferFeeValue);
+    builder.setAssetScale(assetScaleValue);
+    builder.setMutableFlags(mutableFlagsValue);
     builder.setConfidentialOutstandingAmount(confidentialOutstandingAmountValue);
 
     builder.setLedgerIndex(index);
@@ -106,18 +104,26 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
 
     {
         auto const& expected = transferFeeValue;
-        auto const actualOpt = entry.getTransferFee();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfTransferFee");
-        EXPECT_TRUE(entry.hasTransferFee());
+        auto const actual = entry.getTransferFee();
+        expectEqualField(expected, actual, "sfTransferFee");
     }
 
     {
         auto const& expected = assetScaleValue;
-        auto const actualOpt = entry.getAssetScale();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfAssetScale");
-        EXPECT_TRUE(entry.hasAssetScale());
+        auto const actual = entry.getAssetScale();
+        expectEqualField(expected, actual, "sfAssetScale");
+    }
+
+    {
+        auto const& expected = mutableFlagsValue;
+        auto const actual = entry.getMutableFlags();
+        expectEqualField(expected, actual, "sfMutableFlags");
+    }
+
+    {
+        auto const& expected = confidentialOutstandingAmountValue;
+        auto const actual = entry.getConfidentialOutstandingAmount();
+        expectEqualField(expected, actual, "sfConfidentialOutstandingAmount");
     }
 
     {
@@ -153,14 +159,6 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = mutableFlagsValue;
-        auto const actualOpt = entry.getMutableFlags();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfMutableFlags");
-        EXPECT_TRUE(entry.hasMutableFlags());
-    }
-
-    {
         auto const& expected = referenceHoldingValue;
         auto const actualOpt = entry.getReferenceHolding();
         ASSERT_TRUE(actualOpt.has_value());
@@ -182,14 +180,6 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfAuditorEncryptionKey");
         EXPECT_TRUE(entry.hasAuditorEncryptionKey());
-    }
-
-    {
-        auto const& expected = confidentialOutstandingAmountValue;
-        auto const actualOpt = entry.getConfidentialOutstandingAmount();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfConfidentialOutstandingAmount");
-        EXPECT_TRUE(entry.hasConfidentialOutstandingAmount());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -315,27 +305,41 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     {
         auto const& expected = transferFeeValue;
 
-        auto const fromSleOpt = entryFromSle.getTransferFee();
-        auto const fromBuilderOpt = entryFromBuilder.getTransferFee();
+        auto const fromSle = entryFromSle.getTransferFee();
+        auto const fromBuilder = entryFromBuilder.getTransferFee();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfTransferFee");
-        expectEqualField(expected, *fromBuilderOpt, "sfTransferFee");
+        expectEqualField(expected, fromSle, "sfTransferFee");
+        expectEqualField(expected, fromBuilder, "sfTransferFee");
     }
 
     {
         auto const& expected = assetScaleValue;
 
-        auto const fromSleOpt = entryFromSle.getAssetScale();
-        auto const fromBuilderOpt = entryFromBuilder.getAssetScale();
+        auto const fromSle = entryFromSle.getAssetScale();
+        auto const fromBuilder = entryFromBuilder.getAssetScale();
 
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
+        expectEqualField(expected, fromSle, "sfAssetScale");
+        expectEqualField(expected, fromBuilder, "sfAssetScale");
+    }
 
-        expectEqualField(expected, *fromSleOpt, "sfAssetScale");
-        expectEqualField(expected, *fromBuilderOpt, "sfAssetScale");
+    {
+        auto const& expected = mutableFlagsValue;
+
+        auto const fromSle = entryFromSle.getMutableFlags();
+        auto const fromBuilder = entryFromBuilder.getMutableFlags();
+
+        expectEqualField(expected, fromSle, "sfMutableFlags");
+        expectEqualField(expected, fromBuilder, "sfMutableFlags");
+    }
+
+    {
+        auto const& expected = confidentialOutstandingAmountValue;
+
+        auto const fromSle = entryFromSle.getConfidentialOutstandingAmount();
+        auto const fromBuilder = entryFromBuilder.getConfidentialOutstandingAmount();
+
+        expectEqualField(expected, fromSle, "sfConfidentialOutstandingAmount");
+        expectEqualField(expected, fromBuilder, "sfConfidentialOutstandingAmount");
     }
 
     {
@@ -391,19 +395,6 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = mutableFlagsValue;
-
-        auto const fromSleOpt = entryFromSle.getMutableFlags();
-        auto const fromBuilderOpt = entryFromBuilder.getMutableFlags();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfMutableFlags");
-        expectEqualField(expected, *fromBuilderOpt, "sfMutableFlags");
-    }
-
-    {
         auto const& expected = referenceHoldingValue;
 
         auto const fromSleOpt = entryFromSle.getReferenceHolding();
@@ -440,19 +431,6 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfAuditorEncryptionKey");
         expectEqualField(expected, *fromBuilderOpt, "sfAuditorEncryptionKey");
-    }
-
-    {
-        auto const& expected = confidentialOutstandingAmountValue;
-
-        auto const fromSleOpt = entryFromSle.getConfidentialOutstandingAmount();
-        auto const fromBuilderOpt = entryFromBuilder.getConfidentialOutstandingAmount();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfConfidentialOutstandingAmount");
-        expectEqualField(expected, *fromBuilderOpt, "sfConfidentialOutstandingAmount");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -519,10 +497,6 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(entry.hasTransferFee());
-    EXPECT_FALSE(entry.getTransferFee().has_value());
-    EXPECT_FALSE(entry.hasAssetScale());
-    EXPECT_FALSE(entry.getAssetScale().has_value());
     EXPECT_FALSE(entry.hasMaximumAmount());
     EXPECT_FALSE(entry.getMaximumAmount().has_value());
     EXPECT_FALSE(entry.hasLockedAmount());
@@ -531,15 +505,83 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getMPTokenMetadata().has_value());
     EXPECT_FALSE(entry.hasDomainID());
     EXPECT_FALSE(entry.getDomainID().has_value());
-    EXPECT_FALSE(entry.hasMutableFlags());
-    EXPECT_FALSE(entry.getMutableFlags().has_value());
     EXPECT_FALSE(entry.hasReferenceHolding());
     EXPECT_FALSE(entry.getReferenceHolding().has_value());
     EXPECT_FALSE(entry.hasIssuerEncryptionKey());
     EXPECT_FALSE(entry.getIssuerEncryptionKey().has_value());
     EXPECT_FALSE(entry.hasAuditorEncryptionKey());
     EXPECT_FALSE(entry.getAuditorEncryptionKey().has_value());
-    EXPECT_FALSE(entry.hasConfidentialOutstandingAmount());
-    EXPECT_FALSE(entry.getConfidentialOutstandingAmount().has_value());
+}
+
+// 6) Default fields return the type default when unset, and the assigned value
+// after being set.
+TEST(MPTokenIssuanceTests, DefaultFieldsRoundTrip)
+{
+    uint256 const index{4u};
+
+    auto const issuerValue = canonical_ACCOUNT();
+    auto const sequenceValue = canonical_UINT32();
+    auto const ownerNodeValue = canonical_UINT64();
+    auto const outstandingAmountValue = canonical_UINT64();
+    auto const previousTxnIDValue = canonical_UINT256();
+    auto const previousTxnLgrSeqValue = canonical_UINT32();
+
+    // Unset: default fields return the type default.
+    MPTokenIssuanceBuilder defaultBuilder{
+        issuerValue,
+        sequenceValue,
+        ownerNodeValue,
+        outstandingAmountValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
+    };
+    auto const defaultEntry = defaultBuilder.build(index);
+    {
+        auto const expected = SF_UINT16::type::value_type{};
+        expectEqualField(expected, defaultEntry.getTransferFee(), "sfTransferFee");
+    }
+    {
+        auto const expected = SF_UINT8::type::value_type{};
+        expectEqualField(expected, defaultEntry.getAssetScale(), "sfAssetScale");
+    }
+    {
+        auto const expected = SF_UINT32::type::value_type{};
+        expectEqualField(expected, defaultEntry.getMutableFlags(), "sfMutableFlags");
+    }
+    {
+        auto const expected = SF_UINT64::type::value_type{};
+        expectEqualField(expected, defaultEntry.getConfidentialOutstandingAmount(), "sfConfidentialOutstandingAmount");
+    }
+
+    // Set: default fields return the assigned value.
+    MPTokenIssuanceBuilder setBuilder{
+        issuerValue,
+        sequenceValue,
+        ownerNodeValue,
+        outstandingAmountValue,
+        previousTxnIDValue,
+        previousTxnLgrSeqValue
+    };
+    setBuilder.setTransferFee(canonical_UINT16());
+    setBuilder.setAssetScale(canonical_UINT8());
+    setBuilder.setMutableFlags(canonical_UINT32());
+    setBuilder.setConfidentialOutstandingAmount(canonical_UINT64());
+    auto const setEntry = setBuilder.build(index);
+    {
+        auto const expected = canonical_UINT16();
+        expectEqualField(expected, setEntry.getTransferFee(), "sfTransferFee");
+    }
+    {
+        auto const expected = canonical_UINT8();
+        expectEqualField(expected, setEntry.getAssetScale(), "sfAssetScale");
+    }
+    {
+        auto const expected = canonical_UINT32();
+        expectEqualField(expected, setEntry.getMutableFlags(), "sfMutableFlags");
+    }
+    {
+        auto const expected = canonical_UINT64();
+        expectEqualField(expected, setEntry.getConfidentialOutstandingAmount(), "sfConfidentialOutstandingAmount");
+    }
 }
 }

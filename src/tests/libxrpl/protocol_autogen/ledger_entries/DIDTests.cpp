@@ -1,6 +1,4 @@
 // Auto-generated unit tests for ledger entry DID
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -282,4 +280,5 @@ TEST(DIDTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.hasData());
     EXPECT_FALSE(entry.getData().has_value());
 }
+
 }

@@ -1,6 +1,4 @@
 // Auto-generated unit tests for transaction DIDSet
-
-
 #include <gtest/gtest.h>
 
 #include <protocol_autogen/TestHelpers.h>
@@ -43,6 +41,7 @@ TEST(TransactionsDIDSetTests, BuilderSettersRoundTrip)
     builder.setDIDDocument(dIDDocumentValue);
     builder.setURI(uRIValue);
     builder.setData(dataValue);
+    // Set default fields
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -58,7 +57,7 @@ TEST(TransactionsDIDSetTests, BuilderSettersRoundTrip)
     EXPECT_EQ(tx.getSequence(), sequenceValue);
     EXPECT_EQ(tx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = dIDDocumentValue;
@@ -130,7 +129,7 @@ TEST(TransactionsDIDSetTests, BuilderFromStTxRoundTrip)
     EXPECT_EQ(rebuiltTx.getSequence(), sequenceValue);
     EXPECT_EQ(rebuiltTx.getFee(), feeValue);
 
-    // Verify required fields
+    // Verify required and default fields
     // Verify optional fields
     {
         auto const& expected = dIDDocumentValue;
@@ -215,5 +214,6 @@ TEST(TransactionsDIDSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.hasData());
     EXPECT_FALSE(tx.getData().has_value());
 }
+
 
 }
