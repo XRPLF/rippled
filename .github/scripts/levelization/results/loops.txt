@@ -1,6 +1,3 @@
-Loop: xrpl.telemetry xrpld.rpc
-  xrpld.rpc == xrpl.telemetry
-
 Loop: xrpld.app xrpld.overlay
   xrpld.app > xrpld.overlay
 

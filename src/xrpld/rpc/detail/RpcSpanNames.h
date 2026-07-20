@@ -1,6 +1,7 @@
 #pragma once
 
-/** Compile-time span name constants for the RPC subsystem.
+/**
+ * Compile-time span name constants for the RPC subsystem.
  *
  *  All span prefixes, operation names, and attribute keys used by RPC
  *  tracing call sites are defined here. Built on the StaticStr/join()
@@ -116,9 +117,13 @@ namespace xrpl::telemetry::rpc_span {
 // ===== Span prefixes =======================================================
 
 namespace prefix {
-/// "rpc" — root prefix for transport-level spans.
+/**
+ * "rpc" — root prefix for transport-level spans.
+ */
 inline constexpr auto rpc = seg::rpc;
-/// "rpc.command" — prefix for individual RPC command spans.
+/**
+ * "rpc.command" — prefix for individual RPC command spans.
+ */
 inline constexpr auto command = join(seg::rpc, makeStr("command"));
 }  // namespace prefix
 
@@ -134,15 +139,25 @@ inline constexpr auto process = makeStr("process");
 // ===== Attribute keys ======================================================
 
 namespace attr {
-/// "command" — RPC method name.
+/**
+ * "command" — RPC method name.
+ */
 inline constexpr auto command = makeStr("command");
-/// "version" — api_version per request.
+/**
+ * "version" — api_version per request.
+ */
 inline constexpr auto version = makeStr("version");
-/// "rpc_role" — admin|user. Domain-qualified: collides with grpc_role.
+/**
+ * "rpc_role" — admin|user. Domain-qualified: collides with grpc_role.
+ */
 inline constexpr auto rpcRole = makeStr("rpc_role");
-/// "rpc_status" — success|error. Domain-qualified: avoids OTel reserved span status.
+/**
+ * "rpc_status" — success|error. Domain-qualified: avoids OTel reserved span status.
+ */
 inline constexpr auto rpcStatus = makeStr("rpc_status");
-/// "request_payload_size" — bytes of inbound request payload.
+/**
+ * "request_payload_size" — bytes of inbound request payload.
+ */
 inline constexpr auto requestPayloadSize = makeStr("request_payload_size");
 }  // namespace attr
 
@@ -154,7 +169,9 @@ using telemetry::attr_val::success;
 inline constexpr auto admin = makeStr("admin");
 inline constexpr auto user = makeStr("user");
 inline constexpr auto unknownCommand = makeStr("unknown");
-/// "invalid_json" — WS message parse failure or oversize.
+/**
+ * "invalid_json" — WS message parse failure or oversize.
+ */
 inline constexpr auto invalidJson = makeStr("invalid_json");
 }  // namespace val
 
