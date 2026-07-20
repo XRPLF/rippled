@@ -1,18 +1,19 @@
 #pragma once
 
-/** Utilities for trace context propagation across nodes.
-
-    Provides serialization/deserialization of OTel trace context to/from
-    Protocol Buffer TraceContext messages (P2P cross-node propagation).
-    Wired into the P2P message flow via PropagationHelpers.h for
-    TMTransaction, TMProposeSet, and TMValidation messages.
-
-    Only compiled when XRPL_ENABLE_TELEMETRY is defined.
-
-    @see PropagationHelpers.h (high-level inject helpers),
-         TxTracing.h (transaction receive-side extraction),
-         ConsensusReceiveTracing.h (proposal/validation receive-side).
-*/
+/**
+ * Utilities for trace context propagation across nodes.
+ *
+ * Provides serialization/deserialization of OTel trace context to/from
+ * Protocol Buffer TraceContext messages (P2P cross-node propagation).
+ * Wired into the P2P message flow via PropagationHelpers.h for
+ * TMTransaction, TMProposeSet, and TMValidation messages.
+ *
+ * Only compiled when XRPL_ENABLE_TELEMETRY is defined.
+ *
+ * @see PropagationHelpers.h (high-level inject helpers),
+ * TxTracing.h (transaction receive-side extraction),
+ * ConsensusReceiveTracing.h (proposal/validation receive-side).
+ */
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
@@ -35,12 +36,13 @@
 
 namespace xrpl::telemetry {
 
-/** Extract OTel context from a protobuf TraceContext message.
-
-    @param proto  The protobuf TraceContext received from a peer.
-    @return An OTel Context with the extracted parent span, or an empty
-            context if the protobuf fields are missing or invalid.
-*/
+/**
+ * Extract OTel context from a protobuf TraceContext message.
+ *
+ * @param proto  The protobuf TraceContext received from a peer.
+ * @return An OTel Context with the extracted parent span, or an empty
+ * context if the protobuf fields are missing or invalid.
+ */
 inline opentelemetry::context::Context
 extractFromProtobuf(protocol::TraceContext const& proto)
 {
@@ -69,11 +71,12 @@ extractFromProtobuf(protocol::TraceContext const& proto)
         opentelemetry::nostd::shared_ptr<trace::Span>(new trace::DefaultSpan(spanCtx)));
 }
 
-/** Inject the current span's trace context into a protobuf TraceContext.
-
-    @param ctx    The OTel context containing the span to propagate.
-    @param proto  The protobuf TraceContext to populate.
-*/
+/**
+ * Inject the current span's trace context into a protobuf TraceContext.
+ *
+ * @param ctx    The OTel context containing the span to propagate.
+ * @param proto  The protobuf TraceContext to populate.
+ */
 inline void
 injectToProtobuf(opentelemetry::context::Context const& ctx, protocol::TraceContext& proto)
 {
