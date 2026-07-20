@@ -228,7 +228,7 @@ jobs:
               --config "${BUILD_TYPE}" \
               --parallel "${BUILD_NPROC}" \
               --target "${CMAKE_TARGET}" \
-              2>&1 | tee build.log
+              2>&1 | tee "${GITHUB_WORKSPACE}/build.log"
 
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}
@@ -349,7 +349,7 @@ jobs:
         run: |
           if [ ! -d "${WORKING_DIR}" ]; then
               echo "Working directory '${WORKING_DIR}' does not exist."
-              exit 0
+              exit 1
           fi
 
           cd "${WORKING_DIR}"
@@ -358,12 +358,13 @@ jobs:
               if ! grep -E "failed" unittest.log | grep -vE "^I[0-9]|^[0-9]+> (ERR:|FTL:)"; then
                   echo "unittest.log present but no failure lines found."
               fi
-          elif [ -f build.log ]; then
-              if ! grep -E "error:" build.log; then
+          elif [ -f "${GITHUB_WORKSPACE}/build.log" ]; then
+              if ! grep -E "error:" "${GITHUB_WORKSPACE}/build.log"; then
                   echo "build.log present but no compile errors found."
               fi
           else
               echo "unittest.log/build.log not found; something went wrong."
+              exit 1
           fi
       - name: Debug failure (Linux)
         if: ${{ failure() && runner.os == 'Linux' && !inputs.build_only }}
