@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
+#include <expected>
 #include <functional>
 #include <optional>
 #include <stdexcept>
@@ -170,7 +171,7 @@ getDataSlice(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t&
     if (std::cmp_greater(ptr + size, memory.s))
         return std::unexpected(HostFunctionError::PointerOutOfBounds);
 
-    Slice data(memory.p + ptr, size);
+    Slice const data(memory.p + ptr, size);
     return data;
 }
 
@@ -202,7 +203,7 @@ getDataUnsigned(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32
         return std::unexpected(HostFunctionError::InvalidParams);
 
     T x;
-    uintptr_t const p = reinterpret_cast<uintptr_t>(r->data());
+    auto const p = reinterpret_cast<uintptr_t>(r->data());
     if (p & (alignof(T) - 1))  // unaligned
     {
         memcpy(&x, r->data(), sizeof(T));
@@ -357,7 +358,7 @@ getDataLocator(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_
         return std::unexpected(HostFunctionError::LocatorMalformed);
 
     uint32_t const locSize = slice->size() / sizeof(int32_t);
-    uintptr_t const p = reinterpret_cast<uintptr_t>(slice->data());
+    auto const p = reinterpret_cast<uintptr_t>(slice->data());
 
     if ((p & (alignof(int32_t) - 1)) != 0u)
     {  // unaligned
@@ -376,7 +377,7 @@ getDataLocator(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_
         return locator;
     }
 
-    int32_t const* locPtr = reinterpret_cast<int32_t const*>(slice->data());
+    auto const* locPtr = reinterpret_cast<int32_t const*>(slice->data());
     return FieldLocator(locPtr, locSize);
 }
 

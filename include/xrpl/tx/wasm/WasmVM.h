@@ -1,9 +1,17 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/HostFunc.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
 #include <xrpl/tx/wasm/WasmImportsHelper.h>
 
+#include <cstdint>
+#include <expected>
+#include <memory>
+#include <string>
 #include <string_view>
+#include <vector>
 
 namespace xrpl {
 

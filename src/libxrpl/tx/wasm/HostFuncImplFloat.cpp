@@ -10,6 +10,7 @@
 #include <boost/algorithm/hex.hpp>
 
 #include <cstdint>
+#include <expected>
 #include <iterator>
 #include <string>
 #include <utility>
@@ -91,7 +92,7 @@ public:
         return Number::operator int64_t();
     }
 
-    std::expected<Bytes, HostFunctionError>
+    [[nodiscard]] std::expected<Bytes, HostFunctionError>
     toBytes() const
     {
         Serializer msg;

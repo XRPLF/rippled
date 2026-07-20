@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
+#include <expected>
 #include <limits>
 #include <memory>
 #include <mutex>
@@ -427,7 +428,7 @@ ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports) const
         auto fieldName = std::string_view(fn->data, fn->size);
 
         wasm_externkind_t const itype = wasm_externtype_kind(wasm_importtype_type(importType));
-        if ((itype) != WASM_EXTERN_FUNC)
+        if (itype != WASM_EXTERN_FUNC)
         {
             Throw<std::runtime_error>(
                 "Invalid import type " + std::to_string(itype));  // LCOV_EXCL_LINE
@@ -702,9 +703,7 @@ WasmiEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in)
         // Classify the trap into a TER by matching tokens as substrings of the
         // message (see the trap-signal constants in WasmCommon.h for why).
         std::string const msg = trapMessage(trap);
-        auto const has = [&msg](std::string_view token) {
-            return msg.find(token) != std::string::npos;
-        };
+        auto const has = [&msg](std::string_view token) { return msg.contains(token); };
         if (has(hfErrInternal))
         {
             ret.ter = tecINTERNAL;

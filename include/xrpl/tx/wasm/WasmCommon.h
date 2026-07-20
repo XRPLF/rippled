@@ -4,10 +4,15 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/TER.h>
 
+#include <bit>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <stdexcept>
 #include <string_view>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -184,7 +189,6 @@ wasmParamsHlp(std::vector<WasmParam>& v, std::int64_t p, Types&&... args)
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v)
 {
-    return;
 }
 
 template <class... Types>

@@ -13,6 +13,7 @@
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <cstdint>
+#include <expected>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -31,7 +32,7 @@ getIntBytes(STBase const* obj)
 
     auto const* num(static_cast<STInteger<T> const*>(obj));  // NOLINT
     T const data = adjustWasmEndianess(num->value());
-    uint8_t const* b = reinterpret_cast<uint8_t const*>(&data);
+    auto const* b = reinterpret_cast<uint8_t const*>(&data);
     return Bytes{b, b + sizeof(T)};
 }
 

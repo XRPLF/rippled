@@ -9,6 +9,7 @@
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <cstdint>
+#include <expected>
 
 namespace xrpl {
 

@@ -7,6 +7,7 @@
 #include <xrpl/tx/wasm/WasmImportsHelper.h>
 
 #include <cstdint>
+#include <expected>
 #include <string>
 #include <vector>
 #ifdef _DEBUG

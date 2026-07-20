@@ -1,12 +1,28 @@
 #pragma once
 
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/tx/wasm/HostFunc.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
+#include <xrpl/tx/wasm/WasmImportsHelper.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
 #include <wasm.h>
-#include <wasmi.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <expected>
+#include <memory>
+#include <mutex>
 #include <optional>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 

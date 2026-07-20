@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpl/tx/wasm/WasmImportsHelper.h>
+#include <xrpl/tx/wasm/HostFunc.h>
 
 #include <wasm.h>
 

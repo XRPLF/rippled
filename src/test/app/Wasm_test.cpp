@@ -1,3 +1,4 @@
+#include <expected>
 #ifdef _DEBUG
 // #define DEBUG_OUTPUT 1
 #endif
@@ -312,7 +313,7 @@ struct Wasm_test : public beast::unit_test::Suite
                 explicit FieldNotFoundHostFunctions(Env& env) : TestHostFunctions(env)
                 {
                 }
-                std::expected<Bytes, HostFunctionError>
+                [[nodiscard]] std::expected<Bytes, HostFunctionError>
                 getTxField(SField const& fname) const override
                 {
                     return std::unexpected(HostFunctionError::FieldNotFound);
@@ -330,7 +331,7 @@ struct Wasm_test : public beast::unit_test::Suite
                 explicit OversizedFieldHostFunctions(Env& env) : TestHostFunctions(env)
                 {
                 }
-                std::expected<Bytes, HostFunctionError>
+                [[nodiscard]] std::expected<Bytes, HostFunctionError>
                 getTxField(SField const& fname) const override
                 {
                     return Bytes((128 + 1) * 64 * 1024, 1);

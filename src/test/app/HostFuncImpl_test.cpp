@@ -3859,7 +3859,6 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         printFloats("ten", 10, 0);
         printFloats("pi", 3141592653589793, -15);
         printFloats("-three", -3, 0);
-        return;
     }
 
     void

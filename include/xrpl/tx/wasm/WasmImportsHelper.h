@@ -1,7 +1,7 @@
 #pragma once
 
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/tx/wasm/HostFunc.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <boost/function_types/function_arity.hpp>
 #include <boost/function_types/parameter_types.hpp>
@@ -9,6 +9,13 @@
 #include <boost/mpl/vector.hpp>
 
 #include <wasm.h>
+
+#include <cstdint>
+#include <optional>
+#include <string_view>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace bft = boost::function_types;
 
@@ -37,7 +44,7 @@ WasmImpArgs(WasmImportFunc& e)
 {
     if constexpr (N < C)
     {
-        using at = typename boost::mpl::at_c<Mpl, N>::type;
+        using at = boost::mpl::at_c<Mpl, N>::type;
         if constexpr (std::is_pointer_v<at>)
         {
             e.params.push_back(WasmTypes::WtI32);
@@ -57,7 +64,6 @@ WasmImpArgs(WasmImportFunc& e)
 
         return WasmImpArgs<N + 1, C, Mpl>(e);
     }
-    return;
 }
 
 template <typename>
@@ -93,8 +99,8 @@ template <typename F>
 void
 WasmImpFuncHelper(WasmImportFunc& e)
 {
-    using rt = typename bft::result_type<F>::type;
-    using pt = typename bft::parameter_types<F>::type;
+    using rt = bft::result_type<F>::type;
+    using pt = bft::parameter_types<F>::type;
     // typename boost::mpl::at_c<mpl, N>::type
 
     WasmImpRet<rt>(e);
