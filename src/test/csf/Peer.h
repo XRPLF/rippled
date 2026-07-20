@@ -24,6 +24,7 @@
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
@@ -698,6 +699,15 @@ struct Peer
     void
     onOutcomeEvent(std::string_view)
     {
+    }
+
+    // The generic engine parents its phase spans under the round span via
+    // this context; the simulator runs without telemetry, so return an
+    // invalid context and no phase span is created.
+    static telemetry::SpanContext
+    roundSpanContext()
+    {
+        return {};
     }
 
     // Share a message by broadcasting to all connected peers
