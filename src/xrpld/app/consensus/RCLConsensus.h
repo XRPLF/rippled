@@ -285,6 +285,24 @@ class RCLConsensus
         void
         onOutcomeEvent(std::string_view eventName);
 
+        /**
+         * Captured context of the current round span.
+         *
+         * The generic engine uses this to parent the phase spans it owns
+         * (consensus.phase.open, consensus.establish) under the round span
+         * without touching roundSpan_ across threads. roundSpan_ is detached
+         * after this context is captured, so it is no longer the thread's
+         * ambient parent; child spans must link via this context. Returns an
+         * invalid context before the round span is created.
+         *
+         * @return The round span's captured context, or an invalid context.
+         */
+        telemetry::SpanContext
+        roundSpanContext() const
+        {
+            return roundSpanContext_;
+        }
+
     private:
         //---------------------------------------------------------------------
         // The following members implement the generic Consensus requirements

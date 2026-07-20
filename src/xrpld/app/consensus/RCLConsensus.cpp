@@ -234,7 +234,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
     // Child of the round span via its captured context (roundSpan_ is detached,
     // so it is no longer the thread's ambient parent).
     auto span = telemetry::SpanGuard::childSpan(
-        telemetry::consensus::span::op::proposalSend, roundSpanContext_);
+        telemetry::consensus::span::proposalSend, roundSpanContext_);
     span.setAttribute(
         telemetry::consensus::span::attr::round, static_cast<int64_t>(proposal.proposeSeq()));
     span.setAttribute(telemetry::consensus::span::attr::isBowOut, proposal.isBowOut());
@@ -350,7 +350,7 @@ RCLConsensus::Adaptor::onClose(
 
     // Child of the round span via its captured context (roundSpan_ is detached,
     // so it is no longer the thread's ambient parent).
-    auto span = telemetry::SpanGuard::childSpan(cs::op::ledgerClose, roundSpanContext_);
+    auto span = telemetry::SpanGuard::childSpan(cs::ledgerClose, roundSpanContext_);
     span.setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(ledger.ledger->header().seq) + 1);
     span.setAttribute(cs::attr::mode, toDisplayString(mode).c_str());
     span.setAttribute(
@@ -1064,14 +1064,10 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
     // Inject the current thread's active span context so receiving
     // peers can link their validation.receive span as a child.
     //
-    // TODO(observability/secure-OTel): the trace_context appended below is
-    // outside the cryptographic signature on `serialized` and is therefore
-    // unauthenticated. Receivers cannot prove it was not tampered with by
-    // a relay. A signed trace context (either folded into the validation
-    // payload or carried by an authenticated trace_state token) is tracked
-    // as a follow-up — see PR #6425 discussion r3317273388 and
-    // OpenTelemetryPlan/secure-OTel.md. Until then, downstream consumers
-    // must treat the validation trace_context as advisory only.
+    // The trace_context appended below is outside the signature on
+    // `serialized`, so it is not covered by validation authenticity.
+    // Downstream consumers treat it as advisory only. A signature-covered
+    // trace context is a possible future enhancement.
     telemetry::SpanGuard::injectCurrentContextToProtobuf(*val.mutable_trace_context());
     app_.getOverlay().broadcast(val);
 
@@ -1096,7 +1092,7 @@ RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
     // Child of the round span via its captured context (roundSpan_ is detached,
     // so it is no longer the thread's ambient parent). A mode change outside a
     // round leaves roundSpanContext_ invalid, yielding a null guard (no-op).
-    auto span = telemetry::SpanGuard::childSpan(cs::op::modeChange, roundSpanContext_);
+    auto span = telemetry::SpanGuard::childSpan(cs::modeChange, roundSpanContext_);
     span.setAttribute(cs::attr::modeOld, toDisplayString(before).c_str());
     span.setAttribute(cs::attr::modeNew, toDisplayString(after).c_str());
 
