@@ -113,10 +113,14 @@ using namespace std::chrono_literals;
 namespace xrpl {
 
 namespace {
-/** The threshold above which we treat a peer connection as high latency */
+/**
+ * The threshold above which we treat a peer connection as high latency
+ */
 constexpr std::chrono::milliseconds kPeerHighLatency{300};
 
-/** How often we PING the peer to check for latency and sendq probe */
+/**
+ * How often we PING the peer to check for latency and sendq probe
+ */
 constexpr std::chrono::seconds kPeerTimerInterval{60};
 
 }  // namespace
@@ -1311,7 +1315,10 @@ PeerImp::handleTransaction(
         uint256 const txID = stx->getTransactionID();
 
         using namespace telemetry;
-        auto span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
+        // Detached: this span is handed to a job-queue worker and must not
+        // leave its Scope bound to this peer thread's context stack (that
+        // leak would adopt later peer messages into this transaction's trace).
+        auto span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m).detached());
         span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
         span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
         if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
@@ -1850,7 +1857,12 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             app_.getTimeKeeper().closeTime(),
             calcNodeID(app_.getValidatorManifests().getMasterKey(publicKey))});
 
-    auto consSpan = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
+    // Create a receive span that links to the sender's trace context
+    // (if propagated). shared_ptr keeps it alive across the job boundary.
+    // Detach the guard's Scope on this peer thread so it is not popped on the
+    // job worker thread (which would leak this thread's context stack).
+    auto consSpan =
+        std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set).detached());
     consSpan->setAttribute(telemetry::consensus::span::attr::proposalTrusted, isTrusted);
     consSpan->setAttribute(
         telemetry::consensus::span::attr::round, static_cast<int64_t>(set.proposeseq()));
@@ -2453,8 +2465,12 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             return;
         }
 
+        // Create a receive span that links to the sender's trace context
+        // (if propagated). shared_ptr keeps it alive across the job boundary.
+        // Detach the guard's Scope on this peer thread so it is not popped on
+        // the job worker thread (which would leak this thread's context stack).
         auto consSpan =
-            std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
+            std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m).detached());
         consSpan->setAttribute(telemetry::consensus::span::attr::validationTrusted, isTrusted);
         if (val->isFieldPresent(sfLedgerSequence))
         {

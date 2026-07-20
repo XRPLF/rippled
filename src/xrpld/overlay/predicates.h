@@ -8,7 +8,9 @@
 
 namespace xrpl {
 
-/** Sends a message to all peers */
+/**
+ * Sends a message to all peers
+ */
 struct SendAlways
 {
     using return_type = void;
@@ -28,7 +30,9 @@ struct SendAlways
 
 //------------------------------------------------------------------------------
 
-/** Sends a message to match peers */
+/**
+ * Sends a message to match peers
+ */
 template <typename Predicate>
 struct SendIfPred
 {
@@ -49,7 +53,9 @@ struct SendIfPred
     }
 };
 
-/** Helper function to aid in type deduction */
+/**
+ * Helper function to aid in type deduction
+ */
 template <typename Predicate>
 SendIfPred<Predicate>
 sendIf(std::shared_ptr<Message> const& m, Predicate const& f)
@@ -59,7 +65,9 @@ sendIf(std::shared_ptr<Message> const& m, Predicate const& f)
 
 //------------------------------------------------------------------------------
 
-/** Sends a message to non-matching peers */
+/**
+ * Sends a message to non-matching peers
+ */
 template <typename Predicate>
 struct SendIfNotPred
 {
@@ -80,7 +88,9 @@ struct SendIfNotPred
     }
 };
 
-/** Helper function to aid in type deduction */
+/**
+ * Helper function to aid in type deduction
+ */
 template <typename Predicate>
 SendIfNotPred<Predicate>
 sendIfNot(std::shared_ptr<Message> const& m, Predicate const& f)
@@ -90,7 +100,9 @@ sendIfNot(std::shared_ptr<Message> const& m, Predicate const& f)
 
 //------------------------------------------------------------------------------
 
-/** Select the specific peer */
+/**
+ * Select the specific peer
+ */
 struct MatchPeer
 {
     Peer const* matchPeer;
@@ -108,7 +120,9 @@ struct MatchPeer
 
 //------------------------------------------------------------------------------
 
-/** Select all peers (except optional excluded) that are in our cluster */
+/**
+ * Select all peers (except optional excluded) that are in our cluster
+ */
 struct PeerInCluster
 {
     MatchPeer skipPeer;
@@ -132,7 +146,9 @@ struct PeerInCluster
 
 //------------------------------------------------------------------------------
 
-/** Select all peers that are in the specified set */
+/**
+ * Select all peers that are in the specified set
+ */
 struct PeerInSet
 {
     std::set<Peer::id_t> const& peerSet;

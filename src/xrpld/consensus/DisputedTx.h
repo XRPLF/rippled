@@ -17,19 +17,20 @@
 
 namespace xrpl {
 
-/** A transaction discovered to be in dispute during consensus.
-
-    During consensus, a @ref DisputedTx is created when a transaction
-    is discovered to be disputed. The object persists only as long as
-    the dispute.
-
-    Undisputed transactions have no corresponding @ref DisputedTx object.
-
-    Refer to @ref Consensus for details on the template type requirements.
-
-    @tparam Tx The type for a transaction
-    @tparam NodeId The type for a node identifier
-*/
+/**
+ * A transaction discovered to be in dispute during consensus.
+ *
+ * During consensus, a @ref DisputedTx is created when a transaction
+ * is discovered to be disputed. The object persists only as long as
+ * the dispute.
+ *
+ * Undisputed transactions have no corresponding @ref DisputedTx object.
+ *
+ * Refer to @ref Consensus for details on the template type requirements.
+ *
+ * @tparam Tx The type for a transaction
+ * @tparam NodeId The type for a node identifier
+ */
 
 template <class Tx, class NodeId>
 class DisputedTx
@@ -38,35 +39,42 @@ class DisputedTx
     using Map_t = boost::container::flat_map<NodeId, bool>;
 
 public:
-    /** Constructor
-
-        @param tx The transaction under dispute
-        @param ourVote Our vote on whether tx should be included
-        @param numPeers Anticipated number of peer votes
-        @param j Journal for debugging
-    */
+    /**
+     * Constructor
+     *
+     * @param tx The transaction under dispute
+     * @param ourVote Our vote on whether tx should be included
+     * @param numPeers Anticipated number of peer votes
+     * @param j Journal for debugging
+     */
     DisputedTx(Tx tx, bool ourVote, std::size_t numPeers, beast::Journal j)
         : ourVote_(ourVote), tx_(std::move(tx)), j_(j)
     {
         votes_.reserve(numPeers);
     }
 
-    //! The unique id/hash of the disputed transaction.
+    /**
+     * The unique id/hash of the disputed transaction.
+     */
     [[nodiscard]] TxID_t const&
     id() const
     {
         return tx_.id();
     }
 
-    //! Our vote on whether the transaction should be included.
+    /**
+     * Our vote on whether the transaction should be included.
+     */
     [[nodiscard]] bool
     getOurVote() const
     {
         return ourVote_;
     }
 
-    //! Are we and our peers "stalled" where we probably won't change
-    //! our vote?
+    /**
+     * Are we and our peers "stalled" where we probably won't change
+     * our vote?
+     */
     [[nodiscard]] bool
     stalled(
         ConsensusParms const& p,
@@ -131,64 +139,77 @@ public:
         return stalled;
     }
 
-    //! The disputed transaction.
+    /**
+     * The disputed transaction.
+     */
     [[nodiscard]] Tx const&
     tx() const
     {
         return tx_;
     }
 
-    //! Change our vote
+    /**
+     * Change our vote
+     */
     void
     setOurVote(bool o)
     {
         ourVote_ = o;
     }
 
-    /** Change a peer's vote
-
-        @param peer Identifier of peer.
-        @param votesYes Whether peer votes to include the disputed transaction.
-
-        @return bool Whether the peer changed its vote. (A new vote counts as a
-       change.)
-    */
+    /**
+     * Change a peer's vote
+     *
+     * @param peer Identifier of peer.
+     * @param votesYes Whether peer votes to include the disputed transaction.
+     *
+     * @return bool Whether the peer changed its vote. (A new vote counts as a
+     * change.)
+     */
     [[nodiscard]] bool
     setVote(NodeId const& peer, bool votesYes);
 
-    /** Remove a peer's vote
-
-        @param peer Identifier of peer.
-    */
+    /**
+     * Remove a peer's vote
+     *
+     * @param peer Identifier of peer.
+     */
     void
     unVote(NodeId const& peer);
 
-    /** Update our vote given progression of consensus.
-
-        Updates our vote on this disputed transaction based on our peers' votes
-        and how far along consensus has proceeded.
-
-        @param percentTime Percentage progress through consensus, e.g. 50%
-               through or 90%.
-        @param proposing Whether we are proposing to our peers in this round.
-        @param p Consensus parameters controlling thresholds for voting
-        @return Whether our vote changed
-    */
+    /**
+     * Update our vote given progression of consensus.
+     *
+     * Updates our vote on this disputed transaction based on our peers' votes
+     * and how far along consensus has proceeded.
+     *
+     * @param percentTime Percentage progress through consensus, e.g. 50%
+     *        through or 90%.
+     * @param proposing Whether we are proposing to our peers in this round.
+     * @param p Consensus parameters controlling thresholds for voting
+     * @return Whether our vote changed
+     */
     bool
     updateVote(int percentTime, bool proposing, ConsensusParms const& p);
 
-    //! JSON representation of dispute, used for debugging
+    /**
+     * JSON representation of dispute, used for debugging
+     */
     [[nodiscard]] json::Value
     getJson() const;
 
-    //! Number of peers voting yes.
+    /**
+     * Number of peers voting yes.
+     */
     [[nodiscard]] int
     getYays() const
     {
         return yays_;
     }
 
-    //! Number of peers voting no.
+    /**
+     * Number of peers voting no.
+     */
     [[nodiscard]] int
     getNays() const
     {
@@ -201,11 +222,17 @@ private:
     bool ourVote_;  //< Our vote (true is yes)
     Tx tx_;         //< Transaction under dispute
     Map_t votes_;   //< Map from NodeID to vote
-    //! The number of rounds we've gone without changing our vote
+    /**
+     * The number of rounds we've gone without changing our vote
+     */
     std::size_t currentVoteCounter_ = 0;
-    //! Which minimum acceptance percentage phase we are currently in
+    /**
+     * Which minimum acceptance percentage phase we are currently in
+     */
     ConsensusParms::AvalancheState avalancheState_ = ConsensusParms::AvalancheState::Init;
-    //! How long we have been in the current acceptance phase
+    /**
+     * How long we have been in the current acceptance phase
+     */
     std::size_t avalancheCounter_ = 0;
     beast::Journal const j_;
 };

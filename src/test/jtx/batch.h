@@ -18,7 +18,9 @@
 #include <utility>
 #include <vector>
 
-/** @brief Helpers for constructing Batch test transactions. */
+/**
+ * @brief Helpers for constructing Batch test transactions.
+ */
 namespace xrpl::test::jtx::batch {
 
 /**
@@ -57,7 +59,9 @@ calcConfidentialBatchFee(jtx::Env const& env, uint32_t const& numSigners, uint32
 json::Value
 outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags);
 
-/** @brief Adds an inner Batch transaction to a JTx and autofills it. */
+/**
+ * @brief Adds an inner Batch transaction to a JTx and autofills it.
+ */
 class Inner
 {
 private:
@@ -106,7 +110,9 @@ public:
     }
 };
 
-/** @brief Sets the Batch transaction signers on a JTx. */
+/**
+ * @brief Sets the Batch transaction signers on a JTx.
+ */
 class Sig
 {
 public:
@@ -129,7 +135,9 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-/** @brief Sets a nested multi-signature for a Batch transaction on a JTx. */
+/**
+ * @brief Sets a nested multi-signature for a Batch transaction on a JTx.
+ */
 class Msig
 {
 public:

@@ -50,7 +50,9 @@ public:
     void
     setValue(STVector256 const& v);
 
-    /** Retrieve a copy of the vector we contain */
+    /**
+     * Retrieve a copy of the vector we contain
+     */
     explicit
     operator std::vector<uint256>() const;
 
@@ -138,7 +140,9 @@ STVector256::setValue(STVector256 const& v)
     value_ = v.value_;
 }
 
-/** Retrieve a copy of the vector we contain */
+/**
+ * Retrieve a copy of the vector we contain
+ */
 inline STVector256::
 operator std::vector<uint256>() const
 {
