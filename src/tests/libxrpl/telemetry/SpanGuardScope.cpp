@@ -38,6 +38,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -439,6 +440,108 @@ TEST_F(SpanGuardScopeTest, non_detached_cross_thread_corrupts_origin_stack)
     EXPECT_TRUE(after->GetParentSpanId().IsValid());
     EXPECT_EQ(after->GetParentSpanId(), build->GetSpanId());
     EXPECT_EQ(after->GetTraceId(), build->GetTraceId());
+}
+
+// detachInPlace(optional&) must detach the live guard the same way the
+// hand-rolled emplace(std::move(*opt).detached()) idiom does: after the call
+// the guard can be moved to and ended on a worker thread without leaving the
+// origin thread's context stack holding it.
+TEST_F(SpanGuardScopeTest, detach_in_place_optional_detaches_active_guard)
+{
+    // Scoped optional guard is active on this (origin) thread.
+    std::optional<SpanGuard> opt = SpanGuard::span(TraceCategory::Ledger, "ledger", "build");
+    ASSERT_TRUE(opt.has_value());
+    ASSERT_TRUE(static_cast<bool>(*opt));
+
+    // Strip the thread-local Scope here on the origin thread via the helper.
+    detachInPlace(opt);
+    ASSERT_TRUE(opt.has_value());
+    ASSERT_TRUE(static_cast<bool>(*opt));
+
+    // End the detached span on a worker thread.
+    std::thread worker([d = std::move(*opt)]() mutable {});
+    worker.join();
+
+    // Back on the origin thread: a new span must be a fresh root, proving the
+    // origin stack top was restored by detachInPlace() (not left holding
+    // ledger.build).
+    {
+        auto after = SpanGuard::span(TraceCategory::Rpc, "rpc", "command");
+        ASSERT_TRUE(static_cast<bool>(after));
+    }
+
+    auto spans = spanData()->GetSpans();
+    auto* build = findSpan(spans, "ledger.build");
+    auto* after = findSpan(spans, "rpc.command");
+    ASSERT_NE(build, nullptr);
+    ASSERT_NE(after, nullptr);
+
+    // 'after' is a new root: zero parent and a different trace than
+    // ledger.build.
+    EXPECT_FALSE(after->GetParentSpanId().IsValid());
+    EXPECT_NE(after->GetTraceId(), build->GetTraceId());
+}
+
+// detachInPlace(optional&) on an empty optional is a no-op: it must not crash,
+// must leave the optional empty, and must export nothing.
+TEST_F(SpanGuardScopeTest, detach_in_place_optional_noop_on_empty)
+{
+    std::optional<SpanGuard> opt;
+    ASSERT_FALSE(opt.has_value());
+
+    detachInPlace(opt);
+
+    // Still empty, no span was created or exported.
+    EXPECT_FALSE(opt.has_value());
+    EXPECT_TRUE(spanData()->GetSpans().empty());
+}
+
+// detachInPlace(shared_ptr) must detach the live guard and return it as a new
+// shared_ptr, so the returned guard can be moved to and ended on a worker
+// thread without corrupting the origin thread's context stack.
+TEST_F(SpanGuardScopeTest, detach_in_place_shared_detaches_active_guard)
+{
+    // Scoped shared guard is active on this (origin) thread.
+    auto span =
+        std::make_shared<SpanGuard>(SpanGuard::span(TraceCategory::Ledger, "ledger", "build"));
+    ASSERT_NE(span, nullptr);
+    ASSERT_TRUE(static_cast<bool>(*span));
+
+    // Strip the thread-local Scope here on the origin thread via the helper.
+    span = detachInPlace(std::move(span));
+    ASSERT_NE(span, nullptr);
+    ASSERT_TRUE(static_cast<bool>(*span));
+
+    // End the detached span on a worker thread.
+    std::thread worker([d = std::move(span)]() mutable {});
+    worker.join();
+
+    // Back on the origin thread: a new span must be a fresh root, proving the
+    // origin stack top was restored by detachInPlace() (not left holding
+    // ledger.build).
+    {
+        auto after = SpanGuard::span(TraceCategory::Rpc, "rpc", "command");
+        ASSERT_TRUE(static_cast<bool>(after));
+    }
+
+    auto spans = spanData()->GetSpans();
+    auto* build = findSpan(spans, "ledger.build");
+    auto* after = findSpan(spans, "rpc.command");
+    ASSERT_NE(build, nullptr);
+    ASSERT_NE(after, nullptr);
+
+    // 'after' is a new root: zero parent and a different trace than
+    // ledger.build.
+    EXPECT_FALSE(after->GetParentSpanId().IsValid());
+    EXPECT_NE(after->GetTraceId(), build->GetTraceId());
+}
+
+// detachInPlace(shared_ptr) on a null pointer is a no-op: it must not crash and
+// must return null unchanged.
+TEST_F(SpanGuardScopeTest, detach_in_place_shared_noop_on_null)
+{
+    auto result = detachInPlace(std::shared_ptr<SpanGuard>{});
+    EXPECT_EQ(result, nullptr);
 }
 
 }  // namespace
