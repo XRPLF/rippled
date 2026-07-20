@@ -324,7 +324,7 @@ jobs:
               PRELOAD=""
           fi
 
-          LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee unittest.log
+          LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee "${GITHUB_WORKSPACE}/unittest.log"
 
       # Smoke-run every benchmark module with a single repetition to confirm the
       # benchmarks still build and execute. This is a correctness check, not a
@@ -345,27 +345,20 @@ jobs:
 
       - name: Show build/test failure summary
         if: ${{ failure() }}
-        env:
-          WORKING_DIR: ${{ runner.os == 'Windows' && format('{0}\{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
         run: |
-          if [ ! -d "${WORKING_DIR}" ]; then
-              echo "Working directory '${WORKING_DIR}' does not exist."
-              exit 1
-          fi
-
-          cd "${WORKING_DIR}"
+          cd "${GITHUB_WORKSPACE}"
 
           if [ -f unittest.log ]; then
               if ! grep -E "failed" unittest.log | grep -vE "^I[0-9]|^[0-9]+> (ERR:|FTL:)"; then
                   echo "unittest.log present but no failure lines found."
               fi
-          elif [ -f "${GITHUB_WORKSPACE}/build.log" ]; then
+          elif [ -f build.log ]; then
               # GCC/Clang emit "error:" (covers "fatal error:"); MSVC emits
               # "error C####:", "error LNK####:", and "fatal error LNK####:".
               # -A6 prints the lines that follow each match (source line, caret,
               # notes, and the "N errors generated" tally) to capture the whole
               # diagnostic block.
-              if ! grep -E -A6 "error:|error C[0-9]{4}|error LNK[0-9]{4}|fatal error" "${GITHUB_WORKSPACE}/build.log"; then
+              if ! grep -E -A6 "error:|error C[0-9]{4}|error LNK[0-9]{4}|fatal error" build.log; then
                   echo "build.log present but no compile errors found."
               fi
           else
