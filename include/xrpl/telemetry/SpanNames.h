@@ -117,27 +117,33 @@ namespace attr {
 inline constexpr auto networkId = join(join(seg::xrpl, seg::network), makeStr("id"));
 inline constexpr auto networkType = join(join(seg::xrpl, seg::network), makeStr("type"));
 
-/// Canonical shared attrs (rule 5 — <domain>_<field> underscore form).
-///
-/// Per the naming convention header note: shared cross-span attribute
-/// keys use the underscore form, reserving the dotted xrpl.<domain>.<field>
-/// form for resource attributes set on the OTel resource at startup.
-/// Defined once here, aliased by domain-specific headers. These are
-/// literal underscore-joined names, not dot-joined via `join()`, since
-/// `join()` always inserts `.` between its arguments.
+/**
+ * Canonical shared attrs (rule 5 — <domain>_<field> underscore form).
+ *
+ * Per the naming convention header note: shared cross-span attribute
+ * keys use the underscore form, reserving the dotted xrpl.<domain>.<field>
+ * form for resource attributes set on the OTel resource at startup.
+ * Defined once here, aliased by domain-specific headers. These are
+ * literal underscore-joined names, not dot-joined via `join()`, since
+ * `join()` always inserts `.` between its arguments.
+ */
 inline constexpr auto txHash = makeStr("tx_hash");
 inline constexpr auto peerId = makeStr("peer_id");
 inline constexpr auto ledgerSeq = makeStr("ledger_seq");
 
-/// Shared close-time attrs — bare names, reused by consensus and ledger.
+/**
+ * Shared close-time attrs — bare names, reused by consensus and ledger.
+ */
 inline constexpr auto closeTime = makeStr("close_time");
 inline constexpr auto closeTimeCorrect = makeStr("close_time_correct");
 inline constexpr auto closeResolutionMs = makeStr("close_resolution_ms");
-/// Shared validation attrs — reused by the consensus and peer validation
-/// spans. Same concept, same key on every span; the span name tells them
-/// apart, so neither is emitter-prefixed. `ledgerHash` is a ledger-object
-/// property (bare, like ledgerSeq); `fullValidation` is the is-full-validation
-/// flag. Never the dotted xrpl. form (reserved for resource attrs).
+/**
+ * Shared validation attrs — reused by the consensus and peer validation
+ * spans. Same concept, same key on every span; the span name tells them
+ * apart, so neither is emitter-prefixed. `ledgerHash` is a ledger-object
+ * property (bare, like ledgerSeq); `fullValidation` is the is-full-validation
+ * flag. Never the dotted xrpl. form (reserved for resource attrs).
+ */
 inline constexpr auto ledgerHash = makeStr("ledger_hash");
 inline constexpr auto fullValidation = makeStr("full_validation");
 }  // namespace attr

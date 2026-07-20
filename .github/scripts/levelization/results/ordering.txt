@@ -112,6 +112,7 @@ test.csf > xrpl.basics
 test.csf > xrpld.consensus
 test.csf > xrpl.json
 test.csf > xrpl.ledger
+test.csf > xrpl.telemetry
 test.json > test.jtx
 test.json > xrpl.json
 test.jtx > test.unit_test

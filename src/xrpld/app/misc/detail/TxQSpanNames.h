@@ -1,6 +1,7 @@
 #pragma once
 
-/** Compile-time span name constants for Transaction Queue tracing.
+/**
+ * Compile-time span name constants for Transaction Queue tracing.
  *
  *  Covers the TxQ lifecycle: enqueue decisions, direct apply, batch
  *  clear, ledger-close accept loop, per-tx apply, and cleanup.
@@ -55,7 +56,9 @@ namespace xrpl::telemetry::txq_span {
 // ===== Span prefixes =======================================================
 
 namespace prefix {
-/// "txq" — root prefix for transaction queue spans.
+/**
+ * "txq" — root prefix for transaction queue spans.
+ */
 inline constexpr auto txq = makeStr("txq");
 }  // namespace prefix
 
@@ -73,29 +76,51 @@ inline constexpr auto cleanup = makeStr("cleanup");
 // ===== Attribute keys ======================================================
 
 namespace attr {
-/// Canonical shared constants (defined in SpanNames.h).
+/**
+ * Canonical shared constants (defined in SpanNames.h).
+ */
 using ::xrpl::telemetry::attr::ledgerSeq;
 using ::xrpl::telemetry::attr::txHash;
 
-/// "txq_status" — domain-qualified (collides with tx_status, rpc_status).
+/**
+ * "txq_status" — domain-qualified (collides with tx_status, rpc_status).
+ */
 inline constexpr auto txqStatus = makeStr("txq_status");
-/// "fee_level_paid" — fee level paid by queued tx.
+/**
+ * "fee_level_paid" — fee level paid by queued tx.
+ */
 inline constexpr auto feeLevelPaid = makeStr("fee_level_paid");
-/// "required_fee_level" — minimum fee level for inclusion.
+/**
+ * "required_fee_level" — minimum fee level for inclusion.
+ */
 inline constexpr auto requiredFeeLevel = makeStr("required_fee_level");
-/// "queue_size" — current TxQ depth.
+/**
+ * "queue_size" — current TxQ depth.
+ */
 inline constexpr auto queueSize = makeStr("queue_size");
-/// "ledger_changed" — whether ledger changed since last attempt.
+/**
+ * "ledger_changed" — whether ledger changed since last attempt.
+ */
 inline constexpr auto ledgerChanged = makeStr("ledger_changed");
-/// "expired_count" — number of expired entries cleared.
+/**
+ * "expired_count" — number of expired entries cleared.
+ */
 inline constexpr auto expiredCount = makeStr("expired_count");
-/// "ter_code" — transaction engine result code.
+/**
+ * "ter_code" — transaction engine result code.
+ */
 inline constexpr auto terCode = makeStr("ter_code");
-/// "retries_remaining" — retries left before discard.
+/**
+ * "retries_remaining" — retries left before discard.
+ */
 inline constexpr auto retriesRemaining = makeStr("retries_remaining");
-/// "num_cleared" — entries cleared in batch.
+/**
+ * "num_cleared" — entries cleared in batch.
+ */
 inline constexpr auto numCleared = makeStr("num_cleared");
-/// "tx_type" — transaction type name (e.g., "Payment", "OfferCreate").
+/**
+ * "tx_type" — transaction type name (e.g., "Payment", "OfferCreate").
+ */
 inline constexpr auto txType = makeStr("tx_type");
 }  // namespace attr
 
