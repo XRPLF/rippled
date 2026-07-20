@@ -67,9 +67,15 @@ endif()
 # The telemetry test module exercises SpanGuard/Telemetry, which link against
 # the OpenTelemetry SDK when the telemetry build option is enabled.
 if(telemetry)
+    # The umbrella opentelemetry-cpp target does NOT include the in-memory
+    # exporter in its link set, so link that component explicitly: the
+    # SpanGuardScope tests drive an InMemorySpanExporter to read exported
+    # spans. Test-only -- production code never uses this exporter.
     target_link_libraries(
         xrpl_tests
-        PRIVATE opentelemetry-cpp::opentelemetry-cpp
+        PRIVATE
+            opentelemetry-cpp::opentelemetry-cpp
+            opentelemetry-cpp::exporter_in_memory
     )
 endif()
 
