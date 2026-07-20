@@ -321,6 +321,7 @@ xrpld.rpc > xrpl.rdb
 xrpld.rpc > xrpl.resource
 xrpld.rpc > xrpl.server
 xrpld.rpc > xrpl.shamap
+xrpld.rpc > xrpl.telemetry
 xrpld.rpc > xrpl.tx
 xrpld.shamap > xrpl.basics
 xrpld.shamap > xrpld.core
