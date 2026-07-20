@@ -342,7 +342,7 @@ jobs:
           done < <(find src/benchmarks -type f -perm -u+x -name 'xrpl.bench.*')
           exit "${rc}"
 
-      - name: Show test failure summary
+      - name: Show build/test failure summary
         if: ${{ failure() }}
         env:
           WORKING_DIR: ${{ runner.os == 'Windows' && format('{0}\{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
