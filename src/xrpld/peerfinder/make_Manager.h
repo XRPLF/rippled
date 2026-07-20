@@ -12,7 +12,9 @@
 
 namespace xrpl::PeerFinder {
 
-/** Create a new Manager. */
+/**
+ * Create a new Manager.
+ */
 std::unique_ptr<Manager>
 makeManager(
     boost::asio::io_context& ioContext,

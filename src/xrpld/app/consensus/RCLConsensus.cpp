@@ -231,10 +231,10 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
 void
 RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 {
-    auto span = telemetry::SpanGuard::span(
-        telemetry::TraceCategory::Consensus,
-        telemetry::seg::consensus,
-        telemetry::consensus::span::op::proposalSend);
+    // Child of the round span via its captured context (roundSpan_ is detached,
+    // so it is no longer the thread's ambient parent).
+    auto span = telemetry::SpanGuard::childSpan(
+        telemetry::consensus::span::op::proposalSend, roundSpanContext_);
     span.setAttribute(
         telemetry::consensus::span::attr::round, static_cast<int64_t>(proposal.proposeSeq()));
     span.setAttribute(telemetry::consensus::span::attr::isBowOut, proposal.isBowOut());
@@ -348,8 +348,9 @@ RCLConsensus::Adaptor::onClose(
 {
     namespace cs = telemetry::consensus::span;
 
-    auto span = telemetry::SpanGuard::span(
-        telemetry::TraceCategory::Consensus, telemetry::seg::consensus, cs::op::ledgerClose);
+    // Child of the round span via its captured context (roundSpan_ is detached,
+    // so it is no longer the thread's ambient parent).
+    auto span = telemetry::SpanGuard::childSpan(cs::op::ledgerClose, roundSpanContext_);
     span.setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(ledger.ledger->header().seq) + 1);
     span.setAttribute(cs::attr::mode, toDisplayString(mode).c_str());
     span.setAttribute(
@@ -535,6 +536,13 @@ RCLConsensus::Adaptor::makeAcceptSpan(Result const& result)
     if (*span)
     {
         acceptSpanContext_ = span->captureContext();
+        // The accept span is moved into the JtAccept worker (onAccept) and
+        // ended there. Detach its Scope now, on this thread, AFTER the capture
+        // above, so it is not popped on the wrong thread. accept.apply parents
+        // via acceptSpanContext_ (captured above), so no ambient child is
+        // orphaned on either the sync (onForceAccept) or async (onAccept) path.
+        // Rebuild the shared_ptr from the detached rvalue (move-assign deleted).
+        span = std::make_shared<telemetry::SpanGuard>(std::move(*span).detached());
     }
     return span;
 }
@@ -577,8 +585,13 @@ RCLConsensus::Adaptor::doAccept(
         closeTimeCorrect = true;
     }
 
-    auto doAcceptSpan = acceptSpan
-        ? acceptSpan->childSpan(cs::acceptApply)
+    // Parent accept.apply via the captured accept context (acceptSpanContext_)
+    // rather than the accept guard's ambient Scope: the accept span is detached
+    // (its Scope no longer sits on this thread), so an explicit context is used
+    // for both the sync (onForceAccept) and async (onAccept) paths. Falls back
+    // to the round context if the accept span was null.
+    auto doAcceptSpan = acceptSpanContext_.isValid()
+        ? telemetry::SpanGuard::childSpan(cs::acceptApply, acceptSpanContext_)
         : telemetry::SpanGuard::childSpan(cs::acceptApply, roundSpanContext_);
     doAcceptSpan.setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(prevLedger.seq()) + 1);
     doAcceptSpan.setAttribute(
@@ -1080,8 +1093,10 @@ RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
 {
     namespace cs = telemetry::consensus::span;
 
-    auto span = telemetry::SpanGuard::span(
-        telemetry::TraceCategory::Consensus, telemetry::seg::consensus, cs::op::modeChange);
+    // Child of the round span via its captured context (roundSpan_ is detached,
+    // so it is no longer the thread's ambient parent). A mode change outside a
+    // round leaves roundSpanContext_ invalid, yielding a null guard (no-op).
+    auto span = telemetry::SpanGuard::childSpan(cs::op::modeChange, roundSpanContext_);
     span.setAttribute(cs::attr::modeOld, toDisplayString(before).c_str());
     span.setAttribute(cs::attr::modeNew, toDisplayString(after).c_str());
 
@@ -1146,7 +1161,9 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
     }
 }
 
-//! @see Consensus::simulate
+/**
+ * @see Consensus::simulate
+ */
 
 void
 RCLConsensus::simulate(
@@ -1325,6 +1342,13 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
     roundSpan_->addEvent(cs::event::phaseOpen);
 
     roundSpanContext_ = roundSpan_->captureContext();
+
+    // roundSpanContext_ (captured above) is the durable handle that child
+    // spans on other threads link to. The guard itself is reset() on a
+    // different worker than it was emplaced on, so detach its Scope now --
+    // AFTER the context capture -- to avoid a wrong-thread Scope pop. Re-emplace
+    // the detached guard in place (SpanGuard move-assignment is deleted).
+    roundSpan_.emplace(std::move(*roundSpan_).detached());
 }
 
 std::optional<telemetry::SpanGuard>

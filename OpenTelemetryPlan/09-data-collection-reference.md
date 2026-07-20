@@ -213,6 +213,11 @@ Controlled by `trace_peer` in `[telemetry]` config. **Enabled by default** (high
 | `peer.proposal.receive`   | —      | PeerImp.cpp | Consensus proposal received from peer |
 | `peer.validation.receive` | —      | PeerImp.cpp | Validation message received from peer |
 
+A `—` parent means the span is a fresh trace root (`kConsumer`): it is started
+via `SpanGuard::rootSpan()` at the inbound-message entry point and never
+inherits an ambient span left active on the peer thread, so it does not nest
+under an unrelated transaction's trace.
+
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"peer.*"}`
 
 **Grafana dashboard**: _Peer Network_ (`peer-network`)

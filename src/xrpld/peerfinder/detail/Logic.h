@@ -41,10 +41,11 @@
 
 namespace xrpl::PeerFinder {
 
-/** The Logic for maintaining the list of Slot addresses.
-    We keep this in a separate class so it can be instantiated
-    for unit tests.
-*/
+/**
+ * The Logic for maintaining the list of Slot addresses.
+ * We keep this in a separate class so it can be instantiated
+ * for unit tests.
+ */
 template <class Checker>
 class Logic
 {
@@ -127,12 +128,13 @@ public:
         bootcache.load();
     }
 
-    /** Stop the logic.
-        This will cancel the current fetch and set the stopping flag
-        to `true` to prevent further fetches.
-        Thread safety:
-            Safe to call from any thread.
-    */
+    /**
+     * Stop the logic.
+     * This will cancel the current fetch and set the stopping flag
+     * to `true` to prevent further fetches.
+     * Thread safety:
+     *     Safe to call from any thread.
+     */
     void
     stop()
     {
@@ -448,10 +450,11 @@ public:
         return Result::Success;
     }
 
-    /** Return a list of addresses suitable for redirection.
-        This is a legacy function, redirects should be returned in
-        the HTTP handshake and not via TMEndpoints.
-    */
+    /**
+     * Return a list of addresses suitable for redirection.
+     * This is a legacy function, redirects should be returned in
+     * the HTTP handshake and not via TMEndpoints.
+     */
     std::vector<Endpoint>
     redirect(SlotImp::ptr const& slot)
     {
@@ -462,9 +465,10 @@ public:
         return std::move(h.list());
     }
 
-    /** Create new outbound connection attempts as needed.
-        This implements PeerFinder's "Outbound Connection Strategy"
-    */
+    /**
+     * Create new outbound connection attempts as needed.
+     * This implements PeerFinder's "Outbound Connection Strategy"
+     */
     // VFALCO TODO This should add the returned addresses to the
     //             squelch list in one go once the list is built,
     //             rather than having each module add to the squelch list.
@@ -961,12 +965,8 @@ public:
     bool
     fixed(beast::IP::Endpoint const& endpoint) const
     {
-        for (auto const& entry : fixed_)
-        {
-            if (entry.first == endpoint)
-                return true;
-        }
-        return false;
+        return std::ranges::any_of(
+            fixed_, [&endpoint](auto const& entry) { return entry.first == endpoint; });
     }
 
     // Returns `true` if the address matches a fixed slot address
@@ -975,12 +975,8 @@ public:
     bool
     fixed(beast::IP::Address const& address) const
     {
-        for (auto const& entry : fixed_)
-        {
-            if (entry.first.address() == address)
-                return true;
-        }
-        return false;
+        return std::ranges::any_of(
+            fixed_, [&address](auto const& entry) { return entry.first.address() == address; });
     }
 
     //--------------------------------------------------------------------------
@@ -989,7 +985,9 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    /** Adds eligible Fixed addresses for outbound attempts. */
+    /**
+     * Adds eligible Fixed addresses for outbound attempts.
+     */
     template <class Container>
     void
     getFixed(std::size_t needed, Container& c, ConnectHandouts::Squelches& squelches)

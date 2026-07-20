@@ -326,13 +326,10 @@ AMM::expectAuctionSlot(std::vector<AccountID> const& authAccounts) const
 {
     return expectAuctionSlot(
         [&](std::uint32_t, std::optional<std::uint8_t>, IOUAmount const&, STArray const& accounts) {
-            for (auto const& account : accounts)
-            {
-                if (std::ranges::find(authAccounts, account.getAccountID(sfAccount)) ==
-                    authAccounts.end())
-                    return false;
-            }
-            return true;
+            return std::ranges::all_of(accounts, [&](auto const& account) {
+                return std::ranges::find(authAccounts, account.getAccountID(sfAccount)) !=
+                    authAccounts.end();
+            });
         });
 }
 
