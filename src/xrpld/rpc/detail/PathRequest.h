@@ -1,19 +1,31 @@
 #pragma once
 
+#include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
 
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/PathAsset.h>
-#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
 
+#include <chrono>
+#include <functional>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <set>
+#include <utility>
 
 namespace xrpl {
 
@@ -51,7 +63,7 @@ public:
     // Completion function is called after path update is complete
     PathRequest(
         Application& app,
-        std::function<void(void)> const& completion,
+        std::function<void(void)> completion,
         Resource::Consumer& consumer,
         int id,
         PathRequestManager&,
@@ -102,9 +114,10 @@ private:
         int const,
         std::function<bool(void)> const&);
 
-    /** Finds and sets a PathSet in the JSON argument.
-        Returns false if the source currencies are invalid.
-    */
+    /**
+     * Finds and sets a PathSet in the JSON argument.
+     * Returns false if the source currencies are invalid.
+     */
     bool
     findPaths(
         std::shared_ptr<AssetCache> const&,
@@ -140,7 +153,7 @@ private:
 
     std::optional<uint256> domain_;
 
-    bool convert_all_{};
+    bool convertAll_{};
 
     std::recursive_mutex indexLock_;
     LedgerIndex lastIndex_;
@@ -152,8 +165,8 @@ private:
     int const iIdentifier_;
 
     std::chrono::steady_clock::time_point const created_;
-    std::chrono::steady_clock::time_point quick_reply_;
-    std::chrono::steady_clock::time_point full_reply_;
+    std::chrono::steady_clock::time_point quickReply_;
+    std::chrono::steady_clock::time_point fullReply_;
 
     static unsigned int const kMaxPaths = 4;
 };

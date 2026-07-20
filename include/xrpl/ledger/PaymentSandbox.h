@@ -1,11 +1,20 @@
 #pragma once
 
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/RawView.h>
-#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <cstdint>
 #include <map>
+#include <optional>
+#include <tuple>
 #include <utility>
 
 namespace xrpl {
@@ -99,12 +108,12 @@ public:
     issuerSelfDebitMPT(MPTIssue const& issue, std::uint64_t amount, std::int64_t origBalance);
 
     void
-    ownerCount(AccountID const& id, std::uint32_t cur, std::uint32_t next);
+    ownerCount(AccountID const& id, OwnerCounts const& cur, OwnerCounts const& next);
 
     // Get the adjusted owner count. Since DeferredCredits is meant to be used
     // in payments, and payments only decrease owner counts, return the max
     // remembered owner count.
-    [[nodiscard]] std::optional<std::uint32_t>
+    [[nodiscard]] std::optional<OwnerCounts>
     ownerCount(AccountID const& id) const;
 
     void
@@ -116,25 +125,26 @@ private:
 
     std::map<KeyIOU, ValueIOU> creditsIOU_;
     std::map<MPTID, IssuerValueMPT> creditsMPT_;
-    std::map<AccountID, std::uint32_t> ownerCounts_;
+    std::map<AccountID, OwnerCounts> ownerCounts_;
 };
 
 }  // namespace detail
 
 //------------------------------------------------------------------------------
 
-/** A wrapper which makes credits unavailable to balances.
-
-    This is used for payments and pathfinding, so that consuming
-    liquidity from a path never causes portions of that path or
-    other paths to gain liquidity.
-
-    The behavior of certain free functions in the ApplyView API
-    will change via the balanceHook and creditHook overrides
-    of PaymentSandbox.
-
-    @note Presented as ApplyView to clients
-*/
+/**
+ * A wrapper which makes credits unavailable to balances.
+ *
+ * This is used for payments and pathfinding, so that consuming
+ * liquidity from a path never causes portions of that path or
+ * other paths to gain liquidity.
+ *
+ * The behavior of certain free functions in the ApplyView API
+ * will change via the balanceHook and creditHook overrides
+ * of PaymentSandbox.
+ *
+ * @note Presented as ApplyView to clients
+ */
 class PaymentSandbox final : public detail::ApplyViewBase
 {
 public:
@@ -155,16 +165,17 @@ public:
     {
     }
 
-    /** Construct on top of existing PaymentSandbox.
-
-        The changes are pushed to the parent when
-        apply() is called.
-
-        @param parent A non-null pointer to the parent.
-
-        @note A pointer is used to prevent confusion
-              with copy construction.
-    */
+    /**
+     * Construct on top of existing PaymentSandbox.
+     *
+     * The changes are pushed to the parent when
+     * apply() is called.
+     *
+     * @param parent A non-null pointer to the parent.
+     *
+     * @note A pointer is used to prevent confusion
+     *       with copy construction.
+     */
     // VFALCO If we are constructing on top of a PaymentSandbox,
     //        or a PaymentSandbox-derived class, we MUST go through
     //        one of these constructors or invariants will be broken.
@@ -210,17 +221,19 @@ public:
         override;
 
     void
-    adjustOwnerCountHook(AccountID const& account, std::uint32_t cur, std::uint32_t next) override;
+    adjustOwnerCountHook(AccountID const& account, OwnerCounts const& cur, OwnerCounts const& next)
+        override;
 
-    [[nodiscard]] std::uint32_t
-    ownerCountHook(AccountID const& account, std::uint32_t count) const override;
+    [[nodiscard]] OwnerCounts
+    ownerCountHook(AccountID const& account, OwnerCounts const& count) const override;
 
-    /** Apply changes to base view.
-
-        `to` must contain contents identical to the parent
-        view passed upon construction, else undefined
-        behavior will result.
-    */
+    /**
+     * Apply changes to base view.
+     *
+     * `to` must contain contents identical to the parent
+     * view passed upon construction, else undefined
+     * behavior will result.
+     */
     /** @{ */
     void
     apply(RawView& to);

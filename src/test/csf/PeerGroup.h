@@ -1,21 +1,31 @@
 #pragma once
 
 #include <test/csf/Peer.h>
+#include <test/csf/SimTime.h>
+#include <test/csf/Validation.h>
 #include <test/csf/random.h>
 
 #include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <iterator>
+#include <ostream>
+#include <random>
+#include <set>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test::csf {
 
-/** A group of simulation Peers
-
-    A PeerGroup is a convenient handle for logically grouping peers together,
-    and then creating trust or network relations for the group at large. Peer
-    groups may also be combined to build out more complex structures.
-
-    The PeerGroup provides random access style iterators and operator[]
-*/
+/**
+ * A group of simulation Peers
+ *
+ * A PeerGroup is a convenient handle for logically grouping peers together,
+ * and then creating trust or network relations for the group at large. Peer
+ * groups may also be combined to build out more complex structures.
+ *
+ * The PeerGroup provides random access style iterators and operator[]
+ */
 class PeerGroup
 {
     using peers_type = std::vector<Peer*>;
@@ -93,12 +103,13 @@ public:
         return peers_.size();
     }
 
-    /** Establish trust
-
-        Establish trust from all peers in this group to all peers in o
-
-        @param o The group of peers to trust
-    */
+    /**
+     * Establish trust
+     *
+     * Establish trust from all peers in this group to all peers in o
+     *
+     * @param o The group of peers to trust
+     */
     void
     trust(PeerGroup const& o)
     {
@@ -111,12 +122,13 @@ public:
         }
     }
 
-    /** Revoke trust
-
-        Revoke trust from all peers in this group to all peers in o
-
-        @param o The group of peers to untrust
-    */
+    /**
+     * Revoke trust
+     *
+     * Revoke trust from all peers in this group to all peers in o
+     *
+     * @param o The group of peers to untrust
+     */
     void
     untrust(PeerGroup const& o)
     {
@@ -129,16 +141,15 @@ public:
         }
     }
 
-    /** Establish network connection
-
-        Establish outbound connections from all peers in this group to all peers
-       in o. If a connection already exists, no new connection is established.
-
-        @param o The group of peers to connect to (will get inbound connections)
-        @param delay The fixed messaging delay for all established connections
-
-
-    */
+    /**
+     * Establish network connection
+     *
+     * Establish outbound connections from all peers in this group to all peers
+     * in o. If a connection already exists, no new connection is established.
+     *
+     * @param o The group of peers to connect to (will get inbound connections)
+     * @param delay The fixed messaging delay for all established connections
+     */
     void
     connect(PeerGroup const& o, SimDuration delay)
     {
@@ -153,12 +164,13 @@ public:
         }
     }
 
-    /** Destroy network connection
-
-        Destroy connections from all peers in this group to all peers in o
-
-        @param o The group of peers to disconnect from
-    */
+    /**
+     * Destroy network connection
+     *
+     * Destroy connections from all peers in this group to all peers in o
+     *
+     * @param o The group of peers to disconnect from
+     */
     void
     disconnect(PeerGroup const& o)
     {
@@ -171,14 +183,15 @@ public:
         }
     }
 
-    /** Establish trust and network connection
-
-        Establish trust and create a network connection with fixed delay
-        from all peers in this group to all peers in o
-
-        @param o The group of peers to trust and connect to
-        @param delay The fixed messaging delay for all established connections
-    */
+    /**
+     * Establish trust and network connection
+     *
+     * Establish trust and create a network connection with fixed delay
+     * from all peers in this group to all peers in o
+     *
+     * @param o The group of peers to trust and connect to
+     * @param delay The fixed messaging delay for all established connections
+     */
     void
     trustAndConnect(PeerGroup const& o, SimDuration delay)
     {
@@ -186,15 +199,15 @@ public:
         connect(o, delay);
     }
 
-    /** Establish network connections based on trust relations
-
-        For each peers in this group, create outbound network connection
-        to the set of peers it trusts. If a connection already exists, it is
-        not recreated.
-
-        @param delay The fixed messaging delay for all established connections
-
-    */
+    /**
+     * Establish network connections based on trust relations
+     *
+     * For each peers in this group, create outbound network connection
+     * to the set of peers it trusts. If a connection already exists, it is
+     * not recreated.
+     *
+     * @param delay The fixed messaging delay for all established connections
+     */
     void
     connectFromTrust(SimDuration delay)
     {
@@ -244,25 +257,25 @@ public:
     }
 };
 
-/** Randomly generate peer groups according to ranks.
-
-    Generates random peer groups based on a provided ranking of peers. This
-    mimics a process of randomly generating UNLs, where more "important" peers
-    are more likely to appear in a UNL.
-
-    `numGroups` subgroups are generated by randomly sampling without without
-    replacement from peers according to the `ranks`.
-
-
-
-    @param peers The group of peers
-    @param ranks The relative importance of each peer, must match the size of
-                 peers. Higher relative rank means more likely to be sampled.
-    @param numGroups The number of peer link groups to generate
-    @param sizeDist The distribution that determines the size of a link group
-    @param g The uniform random bit generator
-
-*/
+/**
+ * Randomly generate peer groups according to ranks.
+ *
+ * Generates random peer groups based on a provided ranking of peers. This
+ * mimics a process of randomly generating UNLs, where more "important" peers
+ * are more likely to appear in a UNL.
+ *
+ * `numGroups` subgroups are generated by randomly sampling without without
+ * replacement from peers according to the `ranks`.
+ *
+ *
+ *
+ * @param peers The group of peers
+ * @param ranks The relative importance of each peer, must match the size of
+ *              peers. Higher relative rank means more likely to be sampled.
+ * @param numGroups The number of peer link groups to generate
+ * @param sizeDist The distribution that determines the size of a link group
+ * @param g The uniform random bit generator
+ */
 template <class RandomNumberDistribution, class Generator>
 std::vector<PeerGroup>
 randomRankedGroups(
@@ -286,10 +299,11 @@ randomRankedGroups(
     return groups;
 }
 
-/** Generate random trust groups based on peer rankings.
-
-    @see randomRankedGroups for descriptions of the arguments
-*/
+/**
+ * Generate random trust groups based on peer rankings.
+ *
+ * @see randomRankedGroups for descriptions of the arguments
+ */
 template <class RandomNumberDistribution, class Generator>
 void
 randomRankedTrust(
@@ -309,10 +323,11 @@ randomRankedTrust(
     }
 }
 
-/** Generate random network groups based on peer rankings.
-
-    @see randomRankedGroups for descriptions of the arguments
-*/
+/**
+ * Generate random network groups based on peer rankings.
+ *
+ * @see randomRankedGroups for descriptions of the arguments
+ */
 template <class RandomNumberDistribution, class Generator>
 void
 randomRankedConnect(

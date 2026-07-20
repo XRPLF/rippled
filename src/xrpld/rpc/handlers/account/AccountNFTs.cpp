@@ -12,6 +12,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/protocol/nftPageMask.h>
@@ -22,16 +23,17 @@
 
 namespace xrpl {
 
-/** General RPC command that can retrieve objects in the account root.
-    {
-      account: <account>
-      ledger_hash: <string> // optional
-      ledger_index: <string | unsigned integer> // optional
-      type: <string> // optional, defaults to all account objects types
-      limit: <integer> // optional
-      marker: <opaque> // optional, resume previous query
-    }
-*/
+/**
+ * General RPC command that can retrieve objects in the account root.
+ * {
+ *   account: <account>
+ *   ledger_hash: <string> // optional
+ *   ledger_index: <string | unsigned integer> // optional
+ *   type: <string> // optional, defaults to all account objects types
+ *   limit: <integer> // optional
+ *   marker: <opaque> // optional, resume previous query
+ * }
+ */
 json::Value
 doAccountNFTs(RPC::JsonContext& context)
 {
@@ -74,8 +76,8 @@ doAccountNFTs(RPC::JsonContext& context)
             return RPC::invalidFieldError(jss::marker);
     }
 
-    auto const first = keylet::nftpage(keylet::nftpageMin(accountID), marker);
-    auto const last = keylet::nftpageMax(accountID);
+    auto const first = keylet::nftokenPage(keylet::nftokenPageMin(accountID), marker);
+    auto const last = keylet::nftokenPageMax(accountID);
 
     auto cp = ledger->read(
         Keylet(ltNFTOKEN_PAGE, ledger->succ(first.key, last.key.next()).value_or(last.key)));
@@ -134,7 +136,7 @@ doAccountNFTs(RPC::JsonContext& context)
                 obj[sfFlags.jsonName] = nft::getFlags(nftokenID);
                 obj[sfIssuer.jsonName] = to_string(nft::getIssuer(nftokenID));
                 obj[sfNFTokenTaxon.jsonName] = nft::toUInt32(nft::getTaxon(nftokenID));
-                obj[jss::nft_serial] = nft::getSerial(nftokenID);
+                obj[jss::nft_serial] = nft::getSequence(nftokenID);
                 if (std::uint16_t const xferFee = {nft::getTransferFee(nftokenID)})
                     obj[sfTransferFee.jsonName] = xferFee;
             }

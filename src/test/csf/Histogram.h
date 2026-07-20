@@ -1,24 +1,23 @@
 #pragma once
 
-#include <algorithm>
 #include <cassert>
-#include <chrono>
 #include <cmath>
+#include <cstddef>
+#include <functional>
 #include <map>
 
 namespace xrpl::test::csf {
 
-/** Basic histogram.
-
-    Histogram for a type `T` that satisfies
-      - Default construction: T{}
-      - Comparison : T a, b;  bool res = a < b
-      - Addition: T a, b; T c = a + b;
-      - Multiplication : T a, std::size_t b; T c = a * b;
-      - Division: T a; std::size_t b;  T c = a/b;
-
-
-*/
+/**
+ * Basic histogram.
+ *
+ * Histogram for a type `T` that satisfies
+ *   - Default construction: T{}
+ *   - Comparison : T a, b;  bool res = a < b
+ *   - Addition: T a, b; T c = a + b;
+ *   - Multiplication : T a, std::size_t b; T c = a * b;
+ *   - Division: T a; std::size_t b;  T c = a/b;
+ */
 template <class T, class Compare = std::less<T>>
 class Histogram
 {
@@ -28,7 +27,9 @@ class Histogram
     std::size_t samples_ = 0;
 
 public:
-    /** Insert an sample */
+    /**
+     * Insert an sample
+     */
     void
     insert(T const& s)
     {
@@ -36,35 +37,45 @@ public:
         ++samples_;
     }
 
-    /** The number of samples */
+    /**
+     * The number of samples
+     */
     [[nodiscard]] std::size_t
     size() const
     {
         return samples_;
     }
 
-    /** The number of distinct samples (bins) */
+    /**
+     * The number of distinct samples (bins)
+     */
     [[nodiscard]] std::size_t
     numBins() const
     {
         return counts_.size();
     }
 
-    /** Minimum observed value */
+    /**
+     * Minimum observed value
+     */
     [[nodiscard]] T
     minValue() const
     {
         return counts_.empty() ? T{} : counts_.begin()->first;
     }
 
-    /** Maximum observed value */
+    /**
+     * Maximum observed value
+     */
     [[nodiscard]] T
     maxValue() const
     {
         return counts_.empty() ? T{} : counts_.rbegin()->first;
     }
 
-    /** Histogram average */
+    /**
+     * Histogram average
+     */
     [[nodiscard]] T
     avg() const
     {
@@ -80,12 +91,13 @@ public:
         return tmp / samples_;
     }
 
-    /** Calculate the given percentile of the distribution.
-
-        @param p Percentile between 0 and 1, e.g. 0.50 is 50-th percentile
-                 If the percentile falls between two bins, uses the nearest bin.
-        @return The given percentile of the distribution
-    */
+    /**
+     * Calculate the given percentile of the distribution.
+     *
+     * @param p Percentile between 0 and 1, e.g. 0.50 is 50-th percentile
+     *          If the percentile falls between two bins, uses the nearest bin.
+     * @return The given percentile of the distribution
+     */
     [[nodiscard]] T
     percentile(float p) const
     {
