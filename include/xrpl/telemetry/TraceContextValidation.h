@@ -1,6 +1,7 @@
 #pragma once
 
-/** Validation predicates for peer-supplied trace context.
+/**
+ * Validation predicates for peer-supplied trace context.
  *
  *  A protobuf TraceContext arrives inside untrusted peer messages
  *  (TMTransaction, TMProposeSet, TMValidation). Before a receiving node
@@ -28,7 +29,7 @@
  *  no OpenTelemetry headers, so receive sites that use SpanGuard keep
  *  SpanGuard's encapsulation of OTel types.
  *
- *  @note Thread-safe: all functions are pure and operate only on their
+ * @note Thread-safe: all functions are pure and operate only on their
  *  arguments. No shared state.
  *
  *  Usage:
@@ -50,10 +51,11 @@
 
 namespace xrpl::telemetry {
 
-/** True if the bytes are a valid OTel trace_id: 16 bytes, not all-zero.
+/**
+ * True if the bytes are a valid OTel trace_id: 16 bytes, not all-zero.
  *
- *  @param traceId The raw trace_id bytes from a protobuf TraceContext.
- *  @return true if usable as a trace identifier, false otherwise.
+ * @param traceId The raw trace_id bytes from a protobuf TraceContext.
+ * @return true if usable as a trace identifier, false otherwise.
  */
 inline bool
 isValidTraceId(std::string const& traceId)
@@ -61,10 +63,11 @@ isValidTraceId(std::string const& traceId)
     return traceId.size() == 16 && std::ranges::any_of(traceId, [](char c) { return c != 0; });
 }
 
-/** True if the bytes are a valid OTel span_id: 8 bytes, not all-zero.
+/**
+ * True if the bytes are a valid OTel span_id: 8 bytes, not all-zero.
  *
- *  @param spanId The raw span_id bytes from a protobuf TraceContext.
- *  @return true if usable as a span identifier, false otherwise.
+ * @param spanId The raw span_id bytes from a protobuf TraceContext.
+ * @return true if usable as a span identifier, false otherwise.
  */
 inline bool
 isValidSpanId(std::string const& spanId)
@@ -72,15 +75,16 @@ isValidSpanId(std::string const& spanId)
     return spanId.size() == 8 && std::ranges::any_of(spanId, [](char c) { return c != 0; });
 }
 
-/** True if the context carries a usable parent: a valid trace_id and a
+/**
+ * True if the context carries a usable parent: a valid trace_id and a
  *  valid span_id together.
  *
  *  Use this where both ids are taken from the peer (consensus receive,
  *  generic extraction). The transaction path derives its trace_id
  *  locally from the txID, so it checks isValidSpanId() alone instead.
  *
- *  @param tc The protobuf TraceContext received from a peer.
- *  @return true if both ids are present and valid, false otherwise.
+ * @param tc The protobuf TraceContext received from a peer.
+ * @return true if both ids are present and valid, false otherwise.
  */
 inline bool
 isValidTraceContext(protocol::TraceContext const& tc)
