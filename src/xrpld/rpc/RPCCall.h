@@ -23,7 +23,9 @@ namespace xrpl {
 //
 // Improvements to be more strict and to provide better diagnostics are welcome.
 
-/** Processes XRPL RPC calls. */
+/**
+ * Processes XRPL RPC calls.
+ */
 namespace RPCCall {
 
 int
@@ -54,7 +56,8 @@ rpcCmdToJson(
     unsigned int apiVersion,
     beast::Journal j);
 
-/** Internal invocation of RPC client.
+/**
+ * Internal invocation of RPC client.
  *  Used by both xrpld command line as well as xrpld unit tests
  */
 std::pair<int, json::Value>

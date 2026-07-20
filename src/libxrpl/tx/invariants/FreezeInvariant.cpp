@@ -16,6 +16,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
+#include <algorithm>
 #include <utility>
 
 namespace xrpl {
@@ -73,8 +74,8 @@ TransfersNotFrozen::finalize(
      */
     [[maybe_unused]] bool const enforce = view.rules().enabled(featureDeepFreeze);
 
-    for (auto const& [issue, changes] : balanceChanges_)
-    {
+    return std::ranges::all_of(balanceChanges_, [&](auto const& entry) {
+        auto const& [issue, changes] = entry;
         auto const issuerSle = findIssuer(issue.account, view);
         // It should be impossible for the issuer to not be found, but check
         // just in case so xrpld doesn't crash in release.
@@ -86,20 +87,11 @@ TransfersNotFrozen::finalize(
                 enforce,
                 "xrpl::TransfersNotFrozen::finalize : enforce "
                 "invariant.");
-            if (enforce)
-            {
-                return false;
-            }
-            continue;
+            return !enforce;
         }
 
-        if (!validateIssuerChanges(issuerSle, changes, tx, j, enforce))
-        {
-            return false;
-        }
-    }
-
-    return true;
+        return validateIssuerChanges(issuerSle, changes, tx, j, enforce);
+    });
 }
 
 bool
