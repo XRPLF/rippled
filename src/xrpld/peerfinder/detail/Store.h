@@ -8,7 +8,9 @@
 
 namespace xrpl::PeerFinder {
 
-/** Abstract persistence for PeerFinder data. */
+/**
+ * Abstract persistence for PeerFinder data.
+ */
 class Store
 {
 public:
