@@ -177,6 +177,12 @@ RED metrics on the _Transaction Overview_ dashboard.
 | `peer.proposal.receive`   | PeerImp.cpp:1667 | `peer_id`, `proposal_trusted`   | Proposal received from peer   |
 | `peer.validation.receive` | PeerImp.cpp:2264 | `peer_id`, `validation_trusted` | Validation received from peer |
 
+Both peer receive spans are `kConsumer` inbound entry points started as fresh
+trace roots. They never inherit an ambient span left active on the peer thread,
+so they do not nest under an unrelated transaction's trace. The distributed
+child span that links back to the sending node is the separate
+`consensus.*.receive` / `tx.receive` span (see Cross-Node Trace Propagation).
+
 ---
 
 ## Insights and Sample Queries

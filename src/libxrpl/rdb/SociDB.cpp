@@ -17,7 +17,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-#if defined(__clang__)
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated"
 #endif
@@ -188,14 +188,15 @@ convert(std::string const& from, soci::blob& to)
 
 namespace {
 
-/** Run a thread to checkpoint the write ahead log (wal) for
-    the given soci::session every 1000 pages. This is only implemented
-    for sqlite databases.
-
-    Note: According to: https://www.sqlite.org/wal.html#ckpt this
-    is the default behavior of sqlite. We may be able to remove this
-    class.
-*/
+/**
+ * Run a thread to checkpoint the write ahead log (wal) for
+ * the given soci::session every 1000 pages. This is only implemented
+ * for sqlite databases.
+ *
+ * Note: According to: https://www.sqlite.org/wal.html#ckpt this
+ * is the default behavior of sqlite. We may be able to remove this
+ * class.
+ */
 
 class WALCheckpointer : public Checkpointer
 {
@@ -341,6 +342,6 @@ makeCheckpointer(
 
 }  // namespace xrpl
 
-#if defined(__clang__)
+#ifdef __clang__
 #pragma clang diagnostic pop
 #endif

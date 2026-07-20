@@ -155,11 +155,11 @@ LoanBrokerDelete::doApply()
     {
         auto const coverAvailable = STAmount{vaultAsset, broker->at(sfCoverAvailable)};
         if (auto const ter = accountSend(
-                view(), brokerPseudoID, accountID_, coverAvailable, j_, WaiveTransferFee::Yes))
+                view(), brokerPseudoID, accountID_, coverAvailable, j_, {}, WaiveTransferFee::Yes))
             return ter;
     }
 
-    if (auto ter = removeEmptyHolding(view(), brokerPseudoID, vaultAsset, j_))
+    if (auto ter = removeEmptyHolding(ctx_.getApplyViewContext(), brokerPseudoID, vaultAsset, j_))
         return ter;
 
     auto brokerPseudoSLE = view().peek(keylet::account(brokerPseudoID));
@@ -186,8 +186,6 @@ LoanBrokerDelete::doApply()
 
     view().erase(brokerPseudoSLE);
 
-    view().erase(broker);
-
     {
         auto owner = view().peek(keylet::account(accountID_));
         if (!owner)
@@ -195,8 +193,10 @@ LoanBrokerDelete::doApply()
 
         // Decreases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        adjustOwnerCount(view(), owner, -2, j_);
+        decreaseOwnerCountForObject(view(), owner, broker, 2, j_);
     }
+
+    view().erase(broker);
 
     associateAsset(*broker, vaultAsset);
 

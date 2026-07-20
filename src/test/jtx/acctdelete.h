@@ -9,7 +9,9 @@
 
 namespace xrpl::test::jtx {
 
-/** Delete account.  If successful transfer remaining XRP to dest. */
+/**
+ * Delete account.  If successful transfer remaining XRP to dest.
+ */
 json::Value
 acctdelete(Account const& account, Account const& dest);
 
