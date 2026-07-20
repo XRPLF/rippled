@@ -822,8 +822,6 @@ def run_rule_d_dashboards(
         "service_instance_id",
         "job",
         "instance",
-        "xrpl_branch",  # perf-iac identity label: git ref of the build under test
-        "xrpl_node_role",  # perf-iac identity label: validator/peer role in the perf cluster
     }
     # A dashboard label is valid if it is a span attribute (L1), a native-metric
     # label (L6), or a Prometheus/Grafana builtin.
