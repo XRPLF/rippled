@@ -1,6 +1,7 @@
 #pragma once
 
-/** Compile-time span name constants for the transaction apply pipeline.
+/**
+ * Compile-time span name constants for the transaction apply pipeline.
  *
  *  Defines the span names and attribute keys used by the three apply-pipeline
  *  stages — preflight, preclaim, and transactor (apply) — that run inside the
@@ -67,47 +68,73 @@ namespace xrpl::telemetry::tx_apply_span {
 // ===== Span operation suffixes =============================================
 
 namespace op {
-/// "preflight" — stateless transaction checks (suffix form).
+/**
+ * "preflight" — stateless transaction checks (suffix form).
+ */
 inline constexpr auto preflight = makeStr("preflight");
-/// "preclaim" — ledger-aware checks before fee claim (suffix form).
+/**
+ * "preclaim" — ledger-aware checks before fee claim (suffix form).
+ */
 inline constexpr auto preclaim = makeStr("preclaim");
-/// "transactor" — the apply stage (suffix form, used with span()).
+/**
+ * "transactor" — the apply stage (suffix form, used with span()).
+ */
 inline constexpr auto transactor = makeStr("transactor");
 }  // namespace op
 
 // ===== Full span names (tx.<op>) ===========================================
 
-/// "tx.preflight" — full name for hashSpan() at the preflight stage.
+/**
+ * "tx.preflight" — full name for hashSpan() at the preflight stage.
+ */
 inline constexpr auto preflight = join(seg::tx, op::preflight);
-/// "tx.preclaim" — full name for hashSpan() at the preclaim stage.
+/**
+ * "tx.preclaim" — full name for hashSpan() at the preclaim stage.
+ */
 inline constexpr auto preclaim = join(seg::tx, op::preclaim);
-/// "tx.transactor" — full name for hashSpan() at the apply stage. Shares the
-/// txID-derived trace_id so it co-traces with tx.preflight and tx.preclaim.
+/**
+ * "tx.transactor" — full name for hashSpan() at the apply stage. Shares the
+ * txID-derived trace_id so it co-traces with tx.preflight and tx.preclaim.
+ */
 inline constexpr auto transactor = join(seg::tx, op::transactor);
 
 // ===== Attribute keys ======================================================
 
 namespace attr {
-/// "stage" — which apply-pipeline stage this span represents. Drives the
-/// collector spanmetrics `stage` dimension for per-stage RED metrics.
+/**
+ * "stage" — which apply-pipeline stage this span represents. Drives the
+ * collector spanmetrics `stage` dimension for per-stage RED metrics.
+ */
 inline constexpr auto stage = makeStr("stage");
-/// "tx_type" — transaction type name (e.g., "Payment", "OfferCreate").
-/// Matches tx_span::attr::txType so both share the spanmetrics dimension.
+/**
+ * "tx_type" — transaction type name (e.g., "Payment", "OfferCreate").
+ * Matches tx_span::attr::txType so both share the spanmetrics dimension.
+ */
 inline constexpr auto txType = makeStr("tx_type");
-/// "ter_result" — engine result code after the stage (e.g., "tesSUCCESS").
+/**
+ * "ter_result" — engine result code after the stage (e.g., "tesSUCCESS").
+ */
 inline constexpr auto terResult = makeStr("ter_result");
-/// "applied" — whether the transaction was applied to the ledger (apply only).
+/**
+ * "applied" — whether the transaction was applied to the ledger (apply only).
+ */
 inline constexpr auto applied = makeStr("applied");
 }  // namespace attr
 
 // ===== Attribute values (stage names) ======================================
 
 namespace val {
-/// "preflight" — value of the stage attribute on tx.preflight.
+/**
+ * "preflight" — value of the stage attribute on tx.preflight.
+ */
 inline constexpr auto preflight = makeStr("preflight");
-/// "preclaim" — value of the stage attribute on tx.preclaim.
+/**
+ * "preclaim" — value of the stage attribute on tx.preclaim.
+ */
 inline constexpr auto preclaim = makeStr("preclaim");
-/// "apply" — value of the stage attribute on tx.transactor.
+/**
+ * "apply" — value of the stage attribute on tx.transactor.
+ */
 inline constexpr auto apply = makeStr("apply");
 }  // namespace val
 
