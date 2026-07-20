@@ -11,7 +11,7 @@ RUN <<EOF
 pkgs=()
 pkgs+=(curl)         # Required to install nix.
 pkgs+=(git)          # Required for prepare-runner.
-pkgs+=(libatomic1)   # Required to run GitHub mounted node.
+pkgs+=(libatomic1)   # Required to run pre-commit provided `node`.
 pkgs+=(python3)      # Python 3 interpreter.
 pkgs+=(python3-pip)  # Package manager for Python applications.
 pkgs+=(xz-utils)     # Required to install nix
