@@ -1,17 +1,18 @@
-/** OpenTelemetry SDK implementation of the Telemetry interface.
-
-    Compiled only when XRPL_ENABLE_TELEMETRY is defined (via CMake
-    telemetry=ON). Contains:
-
-      - FilteringSpanProcessor: decorator that drops spans marked with
-        kDiscardedAttr before they enter the batch export queue.
-      - TelemetryImpl: configures the OTel SDK with an OTLP/HTTP exporter,
-        FilteringSpanProcessor wrapping a batch span processor,
-        trace-ID-ratio sampler, and resource attributes.
-      - NullTelemetryOtel: no-op fallback used when telemetry is compiled in
-        but disabled at runtime (enabled=0 in config).
-      - makeTelemetry(): factory that selects the appropriate implementation.
-*/
+/**
+ * OpenTelemetry SDK implementation of the Telemetry interface.
+ *
+ * Compiled only when XRPL_ENABLE_TELEMETRY is defined (via CMake
+ * telemetry=ON). Contains:
+ *
+ * - FilteringSpanProcessor: decorator that drops spans marked with
+ * kDiscardedAttr before they enter the batch export queue.
+ * - TelemetryImpl: configures the OTel SDK with an OTLP/HTTP exporter,
+ * FilteringSpanProcessor wrapping a batch span processor,
+ * trace-ID-ratio sampler, and resource attributes.
+ * - NullTelemetryOtel: no-op fallback used when telemetry is compiled in
+ * but disabled at runtime (enabled=0 in config).
+ * - makeTelemetry(): factory that selects the appropriate implementation.
+ */
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
@@ -60,39 +61,40 @@ namespace trace_sdk = opentelemetry::sdk::trace;
 namespace otlp_http = opentelemetry::exporter::otlp;
 namespace resource = opentelemetry::sdk::resource;
 
-/** SpanProcessor decorator that drops discarded spans.
-
-    Wraps a delegate processor (typically BatchSpanProcessor). In OnEnd(),
-    calls DiscardScope::isActive(). If the calling thread is inside a
-    DiscardScope (entered by SpanGuard::discard()), the span is silently
-    dropped — never entering the batch queue, never sent over the network,
-    never stored.
-
-    Uses a thread-local flag rather than inspecting Recordable attributes
-    because the Recordable type varies by exporter (SpanData for simple
-    exporters, OtlpRecordable for OTLP) and none expose a uniform getter.
-    The flag is safe because Span::End() calls OnEnd() synchronously on
-    the same thread.
-
-    All other methods delegate directly to the wrapped processor.
-
-    Dependency diagram:
-
-        +---------------------------+
-        | FilteringSpanProcessor    |
-        +---------------------------+
-        | - delegate_ : unique_ptr  |
-        |   <SpanProcessor>         |
-        +---------------------------+
-                    |  wraps
-          +---------+-----------+
-          | BatchSpanProcessor  |
-          +---------------------+
-
-    @note Thread safety: OnEnd() may be called concurrently from multiple
-    threads. The discard flag behind DiscardScope is thread-local, so each
-    thread's discard state is independent — no synchronization needed.
-*/
+/**
+ * SpanProcessor decorator that drops discarded spans.
+ *
+ * Wraps a delegate processor (typically BatchSpanProcessor). In OnEnd(),
+ * calls DiscardScope::isActive(). If the calling thread is inside a
+ * DiscardScope (entered by SpanGuard::discard()), the span is silently
+ * dropped — never entering the batch queue, never sent over the network,
+ * never stored.
+ *
+ * Uses a thread-local flag rather than inspecting Recordable attributes
+ * because the Recordable type varies by exporter (SpanData for simple
+ * exporters, OtlpRecordable for OTLP) and none expose a uniform getter.
+ * The flag is safe because Span::End() calls OnEnd() synchronously on
+ * the same thread.
+ *
+ * All other methods delegate directly to the wrapped processor.
+ *
+ * Dependency diagram:
+ *
+ * +---------------------------+
+ * | FilteringSpanProcessor    |
+ * +---------------------------+
+ * | - delegate_ : unique_ptr  |
+ * |   <SpanProcessor>         |
+ * +---------------------------+
+ * |  wraps
+ * +---------+-----------+
+ * | BatchSpanProcessor  |
+ * +---------------------+
+ *
+ * @note Thread safety: OnEnd() may be called concurrently from multiple
+ * threads. The discard flag behind DiscardScope is thread-local, so each
+ * thread's discard state is independent — no synchronization needed.
+ */
 class FilteringSpanProcessor : public trace_sdk::SpanProcessor
 {
     std::unique_ptr<trace_sdk::SpanProcessor> delegate_;
@@ -144,15 +146,18 @@ public:
     }
 };
 
-/** No-op implementation used when XRPL_ENABLE_TELEMETRY is defined but
-    setup.enabled is false at runtime.
-
-    Lives in the anonymous namespace so there is no ODR conflict with the
-    NullTelemetry in NullTelemetry.cpp.
-*/
+/**
+ * No-op implementation used when XRPL_ENABLE_TELEMETRY is defined but
+ * setup.enabled is false at runtime.
+ *
+ * Lives in the anonymous namespace so there is no ODR conflict with the
+ * NullTelemetry in NullTelemetry.cpp.
+ */
 class NullTelemetryOtel : public Telemetry
 {
-    /** Retained configuration (unused, kept for diagnostic access). */
+    /**
+     * Retained configuration (unused, kept for diagnostic access).
+     */
     Setup const setup_;
 
 public:
@@ -230,27 +235,32 @@ public:
     }
 };
 
-/** Full OTel SDK implementation that exports trace spans via OTLP/HTTP.
-
-    Configures an OTLP/HTTP exporter, batch span processor,
-    TraceIdRatioBasedSampler, and resource attributes on start().
-*/
+/**
+ * Full OTel SDK implementation that exports trace spans via OTLP/HTTP.
+ *
+ * Configures an OTLP/HTTP exporter, batch span processor,
+ * TraceIdRatioBasedSampler, and resource attributes on start().
+ */
 class TelemetryImpl : public Telemetry
 {
-    /** Configuration from the [telemetry] config section.
-        Non-const so setServiceInstanceId() can update the instance ID
-        before start() creates the OTel resource.
-    */
+    /**
+     * Configuration from the [telemetry] config section.
+     * Non-const so setServiceInstanceId() can update the instance ID
+     * before start() creates the OTel resource.
+     */
     Setup setup_;
 
-    /** Journal used for log output during start/stop. */
+    /**
+     * Journal used for log output during start/stop.
+     */
     beast::Journal const journal_;
 
-    /** The SDK TracerProvider that owns the export pipeline.
-
-        Held as std::shared_ptr so we can call ForceFlush() on shutdown.
-        Wrapped in a nostd::shared_ptr when registered as the global provider.
-    */
+    /**
+     * The SDK TracerProvider that owns the export pipeline.
+     *
+     * Held as std::shared_ptr so we can call ForceFlush() on shutdown.
+     * Wrapped in a nostd::shared_ptr when registered as the global provider.
+     */
     std::shared_ptr<trace_sdk::TracerProvider> sdkProvider_;
 
 public:

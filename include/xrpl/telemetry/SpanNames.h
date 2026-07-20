@@ -1,18 +1,19 @@
 #pragma once
 
-/** Compile-time string concatenation utility and shared telemetry constants.
+/**
+ * Compile-time string concatenation utility and shared telemetry constants.
  *
  *  Provides StaticStr<N> — a compile-time string buffer that implicitly
  *  converts to std::string_view — and join() for dot-separated concatenation.
  *  Module-specific span names (e.g. RPC, consensus) live in their respective
  *  modules and build upon these shared primitives.
  *
- *  @note These constants are NOT guarded by XRPL_ENABLE_TELEMETRY because
+ * @note These constants are NOT guarded by XRPL_ENABLE_TELEMETRY because
  *  call sites reference them even when SpanGuard methods are no-ops
  *  (the no-op stubs still accept string_view parameters). The compiler
  *  elides all inline constexpr values whose only uses are in dead code.
  *
- *  @note Json::StaticString (jss.h) is a pointer wrapper without
+ * @note Json::StaticString (jss.h) is a pointer wrapper without
  *  concatenation support. boost::static_string is not constexpr.
  *  StaticStr<N> exists specifically for compile-time dot-join composition.
  *
@@ -37,8 +38,10 @@ namespace xrpl::telemetry {
 
 // ===== Compile-time string utility =========================================
 
-/// Fixed-size character buffer for compile-time string operations.
-/// Implicitly converts to std::string_view at zero cost.
+/**
+ * Fixed-size character buffer for compile-time string operations.
+ * Implicitly converts to std::string_view at zero cost.
+ */
 template <std::size_t N>
 struct StaticStr
 {
@@ -60,11 +63,15 @@ struct StaticStr
     }
 };
 
-/// Deduction guide: StaticStr from string literal.
+/**
+ * Deduction guide: StaticStr from string literal.
+ */
 template <std::size_t N>
 StaticStr(char const (&)[N]) -> StaticStr<N - 1>;
 
-/// Create a StaticStr from a string literal.
+/**
+ * Create a StaticStr from a string literal.
+ */
 template <std::size_t N>
 constexpr auto
 makeStr(char const (&str)[N])
@@ -72,7 +79,9 @@ makeStr(char const (&str)[N])
     return StaticStr<N - 1>(str);
 }
 
-/// Concatenate two StaticStr values with a dot separator.
+/**
+ * Concatenate two StaticStr values with a dot separator.
+ */
 template <std::size_t A, std::size_t B>
 constexpr auto
 join(StaticStr<A> const& lhs, StaticStr<B> const& rhs)

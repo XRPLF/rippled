@@ -1,11 +1,12 @@
-/** Parser for the [telemetry] section of xrpld.cfg.
-
-    Reads configuration values from the config file and populates a
-    Telemetry::Setup struct. All options have sensible defaults so the
-    section can be minimal or omitted entirely.
-
-    See cfg/xrpld-example.cfg for the full list of available options.
-*/
+/**
+ * Parser for the [telemetry] section of xrpld.cfg.
+ *
+ * Reads configuration values from the config file and populates a
+ * Telemetry::Setup struct. All options have sensible defaults so the
+ * section can be minimal or omitted entirely.
+ *
+ * See cfg/xrpld-example.cfg for the full list of available options.
+ */
 
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/telemetry/Telemetry.h>
@@ -18,13 +19,14 @@ namespace xrpl::telemetry {
 
 namespace {
 
-/** Config key names for the [telemetry] section.
-
-    Each must match the corresponding option documented in
-    cfg/xrpld-example.cfg verbatim. Defined as `char const*` so they
-    pass to Section::valueOr() (which takes `std::string const&`)
-    without an explicit conversion, exactly as a literal would.
-*/
+/**
+ * Config key names for the [telemetry] section.
+ *
+ * Each must match the corresponding option documented in
+ * cfg/xrpld-example.cfg verbatim. Defined as `char const*` so they
+ * pass to Section::valueOr() (which takes `std::string const&`)
+ * without an explicit conversion, exactly as a literal would.
+ */
 namespace key {
 constexpr char const* enabled = "enabled";
 constexpr char const* serviceName = "service_name";
@@ -42,13 +44,14 @@ constexpr char const* tracePeer = "trace_peer";
 constexpr char const* traceLedger = "trace_ledger";
 }  // namespace key
 
-/** Default values applied when a key is absent from the config.
-
-    @note serviceName mirrors SystemParameters' systemName() ("xrpld") but
-    is duplicated here as a literal: the telemetry module deliberately does
-    not link xrpl.libxrpl.protocol, so including SystemParameters.h would
-    introduce an undeclared cross-module dependency.
-*/
+/**
+ * Default values applied when a key is absent from the config.
+ *
+ * @note serviceName mirrors SystemParameters' systemName() ("xrpld") but
+ * is duplicated here as a literal: the telemetry module deliberately does
+ * not link xrpl.libxrpl.protocol, so including SystemParameters.h would
+ * introduce an undeclared cross-module dependency.
+ */
 namespace dflt {
 constexpr char const* serviceName = "xrpld";
 constexpr char const* endpoint = "http://localhost:4318/v1/traces";
@@ -57,10 +60,11 @@ constexpr std::uint32_t batchDelayMs = 5000u;
 constexpr std::uint32_t maxQueueSize = 2048u;
 }  // namespace dflt
 
-/** Derive a human-readable network type label from the numeric network ID.
-    @param networkId  The network identifier from [network_id] config.
-    @return "mainnet", "testnet", "devnet", or "unknown" for other values.
-*/
+/**
+ * Derive a human-readable network type label from the numeric network ID.
+ * @param networkId  The network identifier from [network_id] config.
+ * @return "mainnet", "testnet", "devnet", or "unknown" for other values.
+ */
 std::string
 networkTypeFromId(std::uint32_t networkId)
 {

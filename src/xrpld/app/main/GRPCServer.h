@@ -197,7 +197,9 @@ private:
 
         std::vector<boost::asio::ip::address> const& secureGatewayIPs_;
 
-        /// Human-readable name for telemetry spans (e.g. "GetLedger").
+        /**
+         * Human-readable name for telemetry spans (e.g. "GetLedger").
+         */
         std::string_view name_;
 
     public:
