@@ -1,4 +1,4 @@
-name: Build pre-commit Docker image
+name: Build `pre-commit` Docker image
 
 on:
   push:

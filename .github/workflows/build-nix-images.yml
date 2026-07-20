@@ -1,4 +1,4 @@
-name: Build Nix Docker images
+name: Build `nix` Docker images
 
 on:
   push:

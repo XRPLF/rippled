@@ -1,4 +1,4 @@
-name: Build packaging Docker images
+name: Build `packaging` Docker images
 
 on:
   push:
