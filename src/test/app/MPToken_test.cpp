@@ -2108,6 +2108,15 @@ class MPToken_test : public beast::unit_test::Suite
                 reward = STAmount{sfSignatureReward, usd(10)};
                 minAmount = STAmount{sfMinAccountCreateAmount, mpt};
             }
+            // SponsorshipSet
+            {
+                json::Value jv;
+                jv[jss::TransactionType] = jss::SponsorshipSet;
+                jv[jss::Account] = alice.human();
+                jv[sfSponsee.fieldName] = carol.human();
+                jv[sfFeeAmount.fieldName] = mpt.getJson(JsonOptions::Values::None);
+                test(jv, sfFeeAmount.fieldName);
+            }
         }
         BEAST_EXPECT(txWithAmounts.empty());
     }
@@ -7563,7 +7572,7 @@ class MPToken_test : public beast::unit_test::Suite
     void
     testFixDoubleOwnerCount(FeatureBitset all)
     {
-        testcase("Fix Double adjustOwnerCount in AMMWithdraw");
+        testcase("Fix Double OwnerCount in AMMWithdraw");
 
         using namespace jtx;
 

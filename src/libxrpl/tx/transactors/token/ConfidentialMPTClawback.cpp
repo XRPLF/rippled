@@ -4,7 +4,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
@@ -22,9 +21,6 @@ namespace xrpl {
 NotTEC
 ConfidentialMPTClawback::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureConfidentialTransfer))
-        return temDISABLED;
-
     auto const account = ctx.tx[sfAccount];
 
     // Only issuer can clawback

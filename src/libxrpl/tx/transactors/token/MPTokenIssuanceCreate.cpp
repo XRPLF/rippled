@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -113,22 +114,35 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 }
 
 std::expected<MPTID, TER>
-MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreateArgs const& args)
+MPTokenIssuanceCreate::create(
+    ApplyViewContext ctx,
+    beast::Journal journal,
+    MPTCreateArgs const& args)
 {
-    auto const acct = view.peek(keylet::account(args.account));
+    auto const acct = ctx.view.peek(keylet::account(args.account));
     if (!acct)
         return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
-    if (args.priorBalance &&
-        *(args.priorBalance) < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
-        return std::unexpected(tecINSUFFICIENT_RESERVE);
+    // A reserve sponsor only covers tx.Account's own objects.
+    auto const sponsorExp = getEffectiveTxReserveSponsor(ctx, acct);
+    if (!sponsorExp)
+        return std::unexpected(sponsorExp.error());  // LCOV_EXCL_LINE
+    auto const sponsorSle = *sponsorExp;
+
+    if (args.priorBalance)
+    {
+        if (auto const ret = checkReserve(
+                ctx, acct, *(args.priorBalance), sponsorSle, {.ownerCountDelta = 1}, journal);
+            !isTesSuccess(ret))
+            return std::unexpected(ret);
+    }
 
     auto const mptId = makeMptID(args.sequence, args.account);
     auto const mptIssuanceKeylet = keylet::mptokenIssuance(mptId);
 
     // create the MPTokenIssuance
     {
-        auto const ownerNode = view.dirInsert(
+        auto const ownerNode = ctx.view.dirInsert(
             keylet::ownerDir(args.account), mptIssuanceKeylet, describeOwnerDir(args.account));
 
         if (!ownerNode)
@@ -166,7 +180,7 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
             // populate this after the pseudo-account's MPToken /
             // RippleState has been installed. A missing holding here
             // would dangle the pointer and is a programmer error.
-            auto const sleHolding = view.read(keylet::unchecked(*args.referenceHolding));
+            auto const sleHolding = ctx.view.read(keylet::unchecked(*args.referenceHolding));
             if (!sleHolding)
                 return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const type = sleHolding->getType();
@@ -175,11 +189,13 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
             (*mptIssuance)[sfReferenceHolding] = *args.referenceHolding;
         }
 
-        view.insert(mptIssuance);
+        addSponsorToLedgerEntry(mptIssuance, sponsorSle);
+
+        ctx.view.insert(mptIssuance);
     }
 
     // Update owner count.
-    adjustOwnerCount(view, acct, 1, journal);
+    increaseOwnerCount(ctx.view, acct, sponsorSle, 1, journal);
 
     return mptId;
 }
@@ -189,7 +205,7 @@ MPTokenIssuanceCreate::doApply()
 {
     auto const& tx = ctx_.tx;
     auto const result = create(
-        view(),
+        ctx_.getApplyViewContext(),
         j_,
         {
             .priorBalance = preFeeBalance_,

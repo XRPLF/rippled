@@ -42,7 +42,8 @@ using namespace boost::bimaps;
 // sorted descending by lastUpdateTime, ascending by AssetPrice
 using Prices = bimap<multiset_of<std::uint32_t, std::greater<>>, multiset_of<STAmount>>;
 
-/** Calls callback "f" on the ledger-object sle and up to three previous
+/**
+ * Calls callback "f" on the ledger-object sle and up to three previous
  * metadata objects. Stops early if the callback returns true.
  */
 static void

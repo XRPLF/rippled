@@ -33,7 +33,9 @@ public:
     using const_pointer = std::shared_ptr<STLedgerEntry const>;
     using const_ref = std::shared_ptr<STLedgerEntry const> const&;
 
-    /** Create an empty object with the given key and type. */
+    /**
+     * Create an empty object with the given key and type.
+     */
     explicit STLedgerEntry(Keylet const& k);
     STLedgerEntry(LedgerEntryType type, uint256 const& key);
     STLedgerEntry(SerialIter& sit, uint256 const& index);
@@ -52,10 +54,11 @@ public:
     [[nodiscard]] json::Value
     getJson(JsonOptions options = JsonOptions::Values::None) const override;
 
-    /** Returns the 'key' (or 'index') of this item.
-        The key identifies this entry's position in
-        the SHAMap associative container.
-    */
+    /**
+     * Returns the 'key' (or 'index') of this item.
+     * The key identifies this entry's position in
+     * the SHAMap associative container.
+     */
     [[nodiscard]] uint256 const&
     key() const;
 
@@ -105,10 +108,11 @@ inline STLedgerEntry::STLedgerEntry(
 {
 }
 
-/** Returns the 'key' (or 'index') of this item.
-    The key identifies this entry's position in
-    the SHAMap associative container.
-*/
+/**
+ * Returns the 'key' (or 'index') of this item.
+ * The key identifies this entry's position in
+ * the SHAMap associative container.
+ */
 inline uint256 const&
 STLedgerEntry::key() const
 {
