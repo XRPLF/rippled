@@ -744,6 +744,12 @@ class RuleDDashboards(unittest.TestCase):
             [],
         )
 
+    def test_perf_iac_identity_labels_not_flagged(self):
+        self.assertEqual(
+            self._run('"expr": "sum by (xrpl_branch, xrpl_node_role) (x)"', set()),
+            [],
+        )
+
     def test_prometheus_name_label_not_flagged(self):
         # `__name__` is the Prometheus reserved metric-name label; the renamed
         # system-*.json dashboards use `sum by (le, __name__)`.
