@@ -4,7 +4,8 @@
 
 #include <string_view>
 
-/** Contract tests for the transaction apply-pipeline span constants.
+/**
+ * Contract tests for the transaction apply-pipeline span constants.
  *
  *  The span names and attribute keys in TxApplySpanNames.h are a cross-component
  *  contract: the collector spanmetrics connector aggregates on these exact

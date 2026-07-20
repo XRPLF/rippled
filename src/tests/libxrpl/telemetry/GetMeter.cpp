@@ -1,19 +1,20 @@
-/** @file GetMeter.cpp
-    Unit tests for the direct OTel metrics API surface:
-      - xrpl::telemetry::Telemetry::getMeter() on the disabled (noop) path.
-      - The global MeterProvider contract that beast's OTelCollector shim
-        relies on (GetMeterProvider()->GetMeter(kMeterName, kMeterVersion)).
-
-    These tests deliberately exercise the global-provider level rather than a
-    fully started TelemetryImpl: TelemetryImpl::start() spins up an OTLP HTTP
-    exporter with background export threads and network connect attempts, which
-    is unsuitable for a hermetic unit test. The design spec permits testing the
-    metrics unlock at the provider level, which is the exact path the beast shim
-    and getMeter() delegate to.
-
-    Compiled only when XRPL_ENABLE_TELEMETRY is defined; the metrics API and SDK
-    headers exist only in that build.
-*/
+/**
+ * @file GetMeter.cpp
+ * Unit tests for the direct OTel metrics API surface:
+ * - xrpl::telemetry::Telemetry::getMeter() on the disabled (noop) path.
+ * - The global MeterProvider contract that beast's OTelCollector shim
+ * relies on (GetMeterProvider()->GetMeter(kMeterName, kMeterVersion)).
+ *
+ * These tests deliberately exercise the global-provider level rather than a
+ * fully started TelemetryImpl: TelemetryImpl::start() spins up an OTLP HTTP
+ * exporter with background export threads and network connect attempts, which
+ * is unsuitable for a hermetic unit test. The design spec permits testing the
+ * metrics unlock at the provider level, which is the exact path the beast shim
+ * and getMeter() delegate to.
+ *
+ * Compiled only when XRPL_ENABLE_TELEMETRY is defined; the metrics API and SDK
+ * headers exist only in that build.
+ */
 
 #ifdef XRPL_ENABLE_TELEMETRY
 

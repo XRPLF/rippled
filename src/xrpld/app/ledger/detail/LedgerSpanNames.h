@@ -1,6 +1,7 @@
 #pragma once
 
-/** Compile-time span name constants for ledger tracing.
+/**
+ * Compile-time span name constants for ledger tracing.
  *
  *  Used by BuildLedger and LedgerMaster for ledger lifecycle spans.
  *  Built on StaticStr/join() from SpanNames.h.
@@ -31,19 +32,25 @@ inline constexpr auto acquire = makeStr("acquire");
 // ===== Attribute keys ========================================================
 
 namespace attr {
-/// Canonical shared constants (defined in SpanNames.h).
+/**
+ * Canonical shared constants (defined in SpanNames.h).
+ */
 using ::xrpl::telemetry::attr::closeResolutionMs;
 using ::xrpl::telemetry::attr::closeTime;
 using ::xrpl::telemetry::attr::closeTimeCorrect;
 using ::xrpl::telemetry::attr::ledgerHash;
 using ::xrpl::telemetry::attr::ledgerSeq;
 
-/// Domain-owned bare attrs.
+/**
+ * Domain-owned bare attrs.
+ */
 inline constexpr auto txCount = makeStr("tx_count");
 inline constexpr auto txFailed = makeStr("tx_failed");
 inline constexpr auto validations = makeStr("validations");
 
-/// ledger.acquire attrs (InboundLedger fetch lifecycle).
+/**
+ * ledger.acquire attrs (InboundLedger fetch lifecycle).
+ */
 inline constexpr auto acquireReason = makeStr("acquire_reason");
 inline constexpr auto timeouts = makeStr("timeouts");
 inline constexpr auto peerCount = makeStr("peer_count");
@@ -53,10 +60,14 @@ inline constexpr auto outcome = makeStr("outcome");
 // ===== Attribute values ======================================================
 
 namespace val {
-/// ledger.acquire outcome values.
+/**
+ * ledger.acquire outcome values.
+ */
 inline constexpr auto complete = makeStr("complete");
 inline constexpr auto failed = makeStr("failed");
-/// ledger.acquire reason values (mirror InboundLedger::Reason).
+/**
+ * ledger.acquire reason values (mirror InboundLedger::Reason).
+ */
 inline constexpr auto history = makeStr("history");
 inline constexpr auto consensus = makeStr("consensus");
 inline constexpr auto generic = makeStr("generic");

@@ -107,10 +107,14 @@ public:
     callHandler();
 
 private:
-    /** Owning collector. Prevents collector destruction while hook alive. */
+    /**
+     * Owning collector. Prevents collector destruction while hook alive.
+     */
     std::shared_ptr<OTelCollectorImp> impl_;
 
-    /** User-supplied handler called at each collection interval. */
+    /**
+     * User-supplied handler called at each collection interval.
+     */
     HandlerType handler_;
 };
 
@@ -151,7 +155,9 @@ public:
     increment(value_type amount) override;
 
 private:
-    /** OTel synchronous counter instrument. */
+    /**
+     * OTel synchronous counter instrument.
+     */
     opentelemetry::nostd::unique_ptr<metrics_api::Counter<uint64_t>> counter_;
 };
 
@@ -193,7 +199,9 @@ public:
     notify(value_type const& value) override;
 
 private:
-    /** OTel histogram instrument for recording durations. */
+    /**
+     * OTel histogram instrument for recording durations.
+     */
     opentelemetry::nostd::unique_ptr<metrics_api::Histogram<double>> histogram_;
 };
 
@@ -259,18 +267,26 @@ public:
     OTelGaugeImpl&
     operator=(OTelGaugeImpl const&) = delete;
 
-    /** Static callback registered with the OTel SDK observable gauge. */
+    /**
+     * Static callback registered with the OTel SDK observable gauge.
+     */
     static void
     gaugeCallback(opentelemetry::metrics::ObserverResult result, void* state);
 
 private:
-    /** Current gauge value, updated atomically by set()/increment(). */
+    /**
+     * Current gauge value, updated atomically by set()/increment().
+     */
     std::atomic<int64_t> value_{0};
 
-    /** OTel observable gauge handle (prevents deregistration). */
+    /**
+     * OTel observable gauge handle (prevents deregistration).
+     */
     opentelemetry::nostd::shared_ptr<metrics_api::ObservableInstrument> gauge_;
 
-    /** Owning collector, used to invoke hooks before reading gauge values. */
+    /**
+     * Owning collector, used to invoke hooks before reading gauge values.
+     */
     std::shared_ptr<OTelCollectorImp> collector_;
 };
 
@@ -315,7 +331,9 @@ public:
     increment(value_type amount) override;
 
 private:
-    /** OTel synchronous counter instrument (unsigned). */
+    /**
+     * OTel synchronous counter instrument (unsigned).
+     */
     opentelemetry::nostd::unique_ptr<metrics_api::Counter<uint64_t>> counter_;
 };
 
@@ -410,7 +428,9 @@ public:
      */
     ~OTelCollectorImp() override;
 
-    /** @name Collector interface implementation */
+    /**
+     * @name Collector interface implementation
+     */
     /** @{ */
     Hook
     makeHook(HookImpl::HandlerType const& handler) override;
@@ -428,7 +448,9 @@ public:
     makeMeter(std::string const& name) override;
     /** @} */
 
-    /** @name Hook management for observable callbacks */
+    /**
+     * @name Hook management for observable callbacks
+     */
     /** @{ */
 
     /**
@@ -455,7 +477,9 @@ public:
     callHooks();
     /** @} */
 
-    /** @name Gauge registration for observable callbacks */
+    /**
+     * @name Gauge registration for observable callbacks
+     */
     /** @{ */
 
     /**
@@ -494,22 +518,34 @@ public:
     formatName(std::string const& name);
 
 private:
-    /** Journal for log output. */
+    /**
+     * Journal for log output.
+     */
     Journal journal_;
 
-    /** Prefix for all metric names (e.g., "xrpld"). */
+    /**
+     * Prefix for all metric names (e.g., "xrpld").
+     */
     std::string prefix_;
 
-    /** OTel Meter used to create all instruments. */
+    /**
+     * OTel Meter used to create all instruments.
+     */
     opentelemetry::nostd::shared_ptr<metrics_api::Meter> otelMeter_;
 
-    /** Mutex protecting hook and gauge registration lists. */
+    /**
+     * Mutex protecting hook and gauge registration lists.
+     */
     std::mutex mutex_;
 
-    /** Registered hooks called during observable callbacks. */
+    /**
+     * Registered hooks called during observable callbacks.
+     */
     std::vector<OTelHookImpl*> hooks_;
 
-    /** Registered gauges read during observable callbacks. */
+    /**
+     * Registered gauges read during observable callbacks.
+     */
     std::vector<OTelGaugeImpl*> gauges_;
 
     /**
