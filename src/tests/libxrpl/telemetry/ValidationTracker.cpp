@@ -1,6 +1,7 @@
-/** @file ValidationTracker.cpp
-    Unit tests for xrpl::telemetry::ValidationTracker.
-*/
+/**
+ * @file ValidationTracker.cpp
+ * Unit tests for xrpl::telemetry::ValidationTracker.
+ */
 
 #include <xrpld/telemetry/ValidationTracker.h>
 
@@ -17,14 +18,18 @@
 using namespace xrpl;
 using namespace xrpl::telemetry;
 
-/// Helper to create a unique uint256 from an integer seed.
+/**
+ * Helper to create a unique uint256 from an integer seed.
+ */
 static uint256
 makeHash(std::uint64_t n)
 {
     return uint256(n);
 }
 
-/// Test fixture providing a fresh ValidationTracker per test.
+/**
+ * Test fixture providing a fresh ValidationTracker per test.
+ */
 class ValidationTrackerTest : public ::testing::Test
 {
 protected:

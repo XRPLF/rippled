@@ -1,8 +1,9 @@
 #pragma once
 
-/** @file ValidationTracker.h
-    Standalone validation agreement tracker for telemetry.
-*/
+/**
+ * @file ValidationTracker.h
+ * Standalone validation agreement tracker for telemetry.
+ */
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
@@ -93,10 +94,14 @@ namespace xrpl::telemetry {
 class ValidationTracker
 {
 public:
-    /// Monotonic clock used for all internal timestamps.
+    /**
+     * Monotonic clock used for all internal timestamps.
+     */
     using Clock = std::chrono::steady_clock;
 
-    /// Time point type from the monotonic clock.
+    /**
+     * Time point type from the monotonic clock.
+     */
     using TimePoint = Clock::time_point;
 
     /**
@@ -124,74 +129,103 @@ public:
     void
     reconcile();
 
-    /** @name Rolling-window percentage getters */
+    /**
+     * @name Rolling-window percentage getters
+     */
     /** @{ */
 
-    /** Agreement percentage over the last 1 hour.
-     *  @return Percentage [0.0, 100.0], or 0.0 if no data.
+    /**
+     * Agreement percentage over the last 1 hour.
+     * @return Percentage [0.0, 100.0], or 0.0 if no data.
      */
     double
     agreementPct1h() const;
 
-    /** Agreement percentage over the last 24 hours.
-     *  @return Percentage [0.0, 100.0], or 0.0 if no data.
+    /**
+     * Agreement percentage over the last 24 hours.
+     * @return Percentage [0.0, 100.0], or 0.0 if no data.
      */
     double
     agreementPct24h() const;
 
-    /** Agreement percentage over the last 7 days.
-     *  @return Percentage [0.0, 100.0], or 0.0 if no data.
+    /**
+     * Agreement percentage over the last 7 days.
+     * @return Percentage [0.0, 100.0], or 0.0 if no data.
      */
     double
     agreementPct7d() const;
 
     /** @} */
 
-    /** @name Rolling-window count getters */
+    /**
+     * @name Rolling-window count getters
+     */
     /** @{ */
 
-    /** Number of agreements in the 1-hour window. */
+    /**
+     * Number of agreements in the 1-hour window.
+     */
     uint64_t
     agreements1h() const;
 
-    /** Number of misses in the 1-hour window. */
+    /**
+     * Number of misses in the 1-hour window.
+     */
     uint64_t
     missed1h() const;
 
-    /** Number of agreements in the 24-hour window. */
+    /**
+     * Number of agreements in the 24-hour window.
+     */
     uint64_t
     agreements24h() const;
 
-    /** Number of misses in the 24-hour window. */
+    /**
+     * Number of misses in the 24-hour window.
+     */
     uint64_t
     missed24h() const;
 
-    /** Number of agreements in the 7-day window. */
+    /**
+     * Number of agreements in the 7-day window.
+     */
     uint64_t
     agreements7d() const;
 
-    /** Number of misses in the 7-day window. */
+    /**
+     * Number of misses in the 7-day window.
+     */
     uint64_t
     missed7d() const;
 
     /** @} */
 
-    /** @name Lifetime totals (atomic, lock-free reads) */
+    /**
+     * @name Lifetime totals (atomic, lock-free reads)
+     */
     /** @{ */
 
-    /** Total agreements since process start. */
+    /**
+     * Total agreements since process start.
+     */
     uint64_t
     totalAgreements() const;
 
-    /** Total misses since process start. */
+    /**
+     * Total misses since process start.
+     */
     uint64_t
     totalMissed() const;
 
-    /** Total validations this node sent. */
+    /**
+     * Total validations this node sent.
+     */
     uint64_t
     totalValidationsSent() const;
 
-    /** Total network validations observed for comparison. */
+    /**
+     * Total network validations observed for comparison.
+     */
     uint64_t
     totalValidationsChecked() const;
 
@@ -222,49 +256,79 @@ private:
         bool agreed{false};  ///< Whether this was an agreement.
     };
 
-    /// Grace period before reconciling a ledger event.
+    /**
+     * Grace period before reconciling a ledger event.
+     */
     static constexpr auto kGracePeriod = std::chrono::seconds(8);
 
-    /// Window during which a missed event can be repaired.
+    /**
+     * Window during which a missed event can be repaired.
+     */
     static constexpr auto kLateRepairWindow = std::chrono::minutes(5);
 
-    /// Maximum number of pending (unreconciled + recently reconciled) events.
+    /**
+     * Maximum number of pending (unreconciled + recently reconciled) events.
+     */
     static constexpr std::size_t kMaxPendingEvents = 1000;
 
-    /// Duration of the short rolling window.
+    /**
+     * Duration of the short rolling window.
+     */
     static constexpr auto kWindow1h = std::chrono::hours(1);
 
-    /// Duration of the long rolling window.
+    /**
+     * Duration of the long rolling window.
+     */
     static constexpr auto kWindow24h = std::chrono::hours(24);
 
-    /// Duration of the extended rolling window (7 days).
+    /**
+     * Duration of the extended rolling window (7 days).
+     */
     static constexpr auto kWindow7d = std::chrono::hours(168);
 
-    /// Protects pending_, window1h_, window24h_, and window7d_.
+    /**
+     * Protects pending_, window1h_, window24h_, and window7d_.
+     */
     mutable std::mutex mutex_;
 
-    /// Pending ledger events indexed by ledger hash.
+    /**
+     * Pending ledger events indexed by ledger hash.
+     */
     hash_map<uint256, LedgerEvent> pending_;
 
-    /// Sliding window of reconciled events (last 1 hour).
+    /**
+     * Sliding window of reconciled events (last 1 hour).
+     */
     std::deque<WindowEvent> window1h_;
 
-    /// Sliding window of reconciled events (last 24 hours).
+    /**
+     * Sliding window of reconciled events (last 24 hours).
+     */
     std::deque<WindowEvent> window24h_;
 
-    /// Sliding window of reconciled events (last 7 days).
+    /**
+     * Sliding window of reconciled events (last 7 days).
+     */
     std::deque<WindowEvent> window7d_;
 
-    /// Lifetime count of agreements.
+    /**
+     * Lifetime count of agreements.
+     */
     std::atomic<uint64_t> totalAgreements_{0};
 
-    /// Lifetime count of misses.
+    /**
+     * Lifetime count of misses.
+     */
     std::atomic<uint64_t> totalMissed_{0};
 
-    /// Lifetime count of validations this node sent.
+    /**
+     * Lifetime count of validations this node sent.
+     */
     std::atomic<uint64_t> totalValidationsSent_{0};
 
-    /// Lifetime count of network validations observed.
+    /**
+     * Lifetime count of network validations observed.
+     */
     std::atomic<uint64_t> totalValidationsChecked_{0};
 
     /**
