@@ -540,8 +540,8 @@ RCLConsensus::Adaptor::makeAcceptSpan(Result const& result)
         // above, so it is not popped on the wrong thread. accept.apply parents
         // via acceptSpanContext_ (captured above), so no ambient child is
         // orphaned on either the sync (onForceAccept) or async (onAccept) path.
-        // Rebuild the shared_ptr from the detached rvalue (move-assign deleted).
-        span = std::make_shared<telemetry::SpanGuard>(std::move(*span).detached());
+        // detachInPlace rebuilds the shared_ptr (move-assign is deleted).
+        span = telemetry::detachInPlace(std::move(span));
     }
     return span;
 }
@@ -1328,9 +1328,9 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
     // roundSpanContext_ (captured above) is the durable handle that child
     // spans on other threads link to. The guard itself is reset() on a
     // different worker than it was emplaced on, so detach its Scope now --
-    // AFTER the context capture -- to avoid a wrong-thread Scope pop. Re-emplace
-    // the detached guard in place (SpanGuard move-assignment is deleted).
-    roundSpan_.emplace(std::move(*roundSpan_).detached());
+    // AFTER the context capture -- to avoid a wrong-thread Scope pop.
+    // detachInPlace re-emplaces it (move-assignment is deleted).
+    telemetry::detachInPlace(roundSpan_);
 }
 
 std::optional<telemetry::SpanGuard>
