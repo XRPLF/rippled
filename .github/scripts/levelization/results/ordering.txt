@@ -244,8 +244,6 @@ xrpl.shamap > xrpl.basics
 xrpl.shamap > xrpl.nodestore
 xrpl.shamap > xrpl.protocol
 xrpl.telemetry > xrpl.config
-xrpl.telemetry > xrpld.consensus
-xrpl.telemetry > xrpld.rpc
 xrpl.tx > xrpl.basics
 xrpl.tx > xrpl.core
 xrpl.tx > xrpl.ledger
