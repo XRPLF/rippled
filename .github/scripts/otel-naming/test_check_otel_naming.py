@@ -744,6 +744,12 @@ class RuleDDashboards(unittest.TestCase):
             [],
         )
 
+    def test_external_infra_labels_not_flagged(self):
+        # EXTERNAL_INFRA_LABELS (perf-iac identity labels with no in-tree
+        # source) must be recognized as valid, distinct from `builtins`.
+        expr = "sum by (" + ", ".join(sorted(chk.EXTERNAL_INFRA_LABELS)) + ") (x)"
+        self.assertEqual(self._run(f'"expr": "{expr}"', set()), [])
+
     def test_prometheus_name_label_not_flagged(self):
         # `__name__` is the Prometheus reserved metric-name label; the renamed
         # system-*.json dashboards use `sum by (le, __name__)`.
