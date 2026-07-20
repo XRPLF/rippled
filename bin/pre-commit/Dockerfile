@@ -10,6 +10,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN <<EOF
 pkgs=()
 pkgs+=(curl)         # Required to install nix.
+pkgs+=(git)          # Required for prepare-runner.
 pkgs+=(python3)      # Python 3 interpreter.
 pkgs+=(python3-pip)  # Package manager for Python applications.
 pkgs+=(xz-utils)     # Required to install nix
