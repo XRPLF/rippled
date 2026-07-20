@@ -2471,6 +2471,63 @@ private:
     }
 
     void
+    testFeeVoteWithdraw(FeatureBitset features)
+    {
+        testcase("Fee Vote On Withdraw");
+        using namespace jtx;
+
+        // PoC: an LP with a dominant, fee-suppressing vote withdraws all
+        // liquidity. With fixCleanup3_4_0 the stale vote slot is pruned and
+        // the trading fee is recomputed from the remaining LPs; without it the
+        // suppressed fee (and the stale vote slot) persists until the next
+        // AMMVote.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // Alice (pool creator, 10'000 LPTokens) votes for a 1% fee.
+                ammAlice.vote(alice_, 1'000);
+                BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
+
+                // Carol flash-deposits an equal amount, gaining 50% of the
+                // voting power, and votes for a 0.1% fee, halving the fee to
+                // (1'000 + 100) / 2 = 550.
+                ammAlice.deposit(carol_, XRP(10'000), USD(10'000));
+                BEAST_EXPECT(ammAlice.getLPTokensBalance(carol_) > beast::kZero);
+                ammAlice.vote(carol_, 100);
+                BEAST_EXPECT(ammAlice.expectTradingFee(550));
+
+                // Carol withdraws all her liquidity. Alice remains the only LP.
+                ammAlice.withdrawAll(carol_);
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{0}));
+
+                auto const voteSlots = ammAlice.ammRpcInfo()[jss::amm][jss::vote_slots];
+                bool carolPresent = false;
+                for (auto const& entry : voteSlots)
+                {
+                    if (entry[jss::account] == carol_.human())
+                        carolPresent = true;
+                }
+
+                if (env.enabled(fixCleanup3_4_0))
+                {
+                    // The stale vote slot is pruned and the fee reverts to
+                    // Alice's 1% vote.
+                    BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
+                    BEAST_EXPECT(!carolPresent);
+                }
+                else
+                {
+                    // The suppressed fee and Carol's stale vote slot persist.
+                    BEAST_EXPECT(ammAlice.expectTradingFee(550));
+                    BEAST_EXPECT(carolPresent);
+                }
+            },
+            std::nullopt,
+            0,
+            std::nullopt,
+            {features});
+    }
+
+    void
     testInvalidBid()
     {
         testcase("Invalid Bid");
@@ -7223,6 +7280,8 @@ private:
         testWithdraw();
         testInvalidFeeVote();
         testFeeVote();
+        testFeeVoteWithdraw(all);
+        testFeeVoteWithdraw(all - fixCleanup3_4_0);
         testInvalidBid();
         testBid(all);
         testBid(all - fixAMMv1_3);

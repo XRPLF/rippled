@@ -454,6 +454,12 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         return {res.first, false};
     // LCOV_EXCL_STOP
 
+    // fixCleanup3_4_0: while the AMM still holds liquidity, prune vote slots
+    // held by accounts that no longer hold LP tokens and recompute the trading
+    // fee so a fully withdrawn LP's vote can no longer control the pool fee.
+    if (sb.rules().enabled(fixCleanup3_4_0) && newLPTokenBalance != beast::kZero)
+        updateAMMVoteSlotsAndFee(sb, ammSle, j_);
+
     JLOG(ctx_.journal.trace()) << "AMM Withdraw: tokens " << to_string(newLPTokenBalance.iou())
                                << " " << to_string(lpTokens.iou()) << " "
                                << to_string(lptAMMBalance.iou());

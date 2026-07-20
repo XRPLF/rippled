@@ -871,6 +871,15 @@ initializeFeeAuctionVote(
     std::uint16_t tfee);
 
 /**
+ * Remove vote slots held by accounts that no longer hold LP tokens and
+ * recompute the trading fee (and auction discounted fee) as the LP-weighted
+ * average of the remaining voters. Used after an LP withdrawal so a departed
+ * LP's vote can no longer control the pool fee.
+ */
+void
+updateAMMVoteSlotsAndFee(ApplyView& view, SLE::pointer& ammSle, beast::Journal j);
+
+/**
  * Return true if the Liquidity Provider is the only AMM provider, false
  * otherwise. Return tecINTERNAL if encountered an unexpected condition,
  * for instance Liquidity Provider has more than one LPToken trustline.

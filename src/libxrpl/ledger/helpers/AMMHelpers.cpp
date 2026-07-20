@@ -856,6 +856,80 @@ initializeFeeAuctionVote(
         auctionSlot.makeFieldAbsent(sfAuthAccounts);
 }
 
+void
+updateAMMVoteSlotsAndFee(ApplyView& view, SLE::pointer& ammSle, beast::Journal j)
+{
+    if (!ammSle->isFieldPresent(sfVoteSlots))
+        return;
+
+    STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
+    // AMM is (being) emptied; nothing to recompute.
+    if (lptAMMBalance == beast::kZero)
+        return;  // LCOV_EXCL_LINE
+
+    STArray updatedVoteSlots;
+    Number num{0};
+    Number den{0};
+
+    // Keep only the vote entries whose account still holds LP tokens and
+    // recompute each entry's weight and the running fee numerator/denominator.
+    for (auto const& entry : ammSle->getFieldArray(sfVoteSlots))
+    {
+        auto const entryAccount = entry[sfAccount];
+        auto const lpTokens = ammLPHolds(view, *ammSle, entryAccount, j);
+        if (lpTokens == beast::kZero)
+        {
+            JLOG(j.debug()) << "updateAMMVoteSlotsAndFee, account " << entryAccount << " is not LP";
+            continue;
+        }
+        auto const feeVal = entry[sfTradingFee];
+        num += feeVal * lpTokens;
+        den += lpTokens;
+        STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
+        newEntry.setAccountID(sfAccount, entryAccount);
+        if (feeVal != 0)
+            newEntry.setFieldU16(sfTradingFee, feeVal);
+        newEntry.setFieldU32(
+            sfVoteWeight,
+            static_cast<std::int64_t>(Number(lpTokens) * kVoteWeightScaleFactor / lptAMMBalance));
+        updatedVoteSlots.pushBack(std::move(newEntry));
+    }
+
+    ammSle->setFieldArray(sfVoteSlots, updatedVoteSlots);
+
+    // Recompute the trading/discounted fee, mirroring AMMVote::applyVote.
+    std::int64_t const fee = den != Number{0} ? static_cast<std::int64_t>(num / den) : 0;
+    if (fee != 0)
+    {
+        ammSle->setFieldU16(sfTradingFee, fee);
+        if (ammSle->isFieldPresent(sfAuctionSlot))
+        {
+            auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
+            if (auto const discountedFee = fee / kAuctionSlotDiscountedFeeFraction)
+            {
+                auctionSlot.setFieldU16(sfDiscountedFee, discountedFee);
+            }
+            else if (auctionSlot.isFieldPresent(sfDiscountedFee))
+            {
+                auctionSlot.makeFieldAbsent(sfDiscountedFee);
+            }
+        }
+    }
+    else
+    {
+        if (ammSle->isFieldPresent(sfTradingFee))
+            ammSle->makeFieldAbsent(sfTradingFee);
+        if (ammSle->isFieldPresent(sfAuctionSlot))
+        {
+            auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
+            if (auctionSlot.isFieldPresent(sfDiscountedFee))
+                auctionSlot.makeFieldAbsent(sfDiscountedFee);
+        }
+    }
+
+    view.update(ammSle);
+}
+
 std::expected<bool, TER>
 isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID const& lpAccount)
 {
