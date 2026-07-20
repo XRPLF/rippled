@@ -167,6 +167,7 @@
 #include <exception>
 #include <initializer_list>
 #include <memory>
+#include <optional>
 #include <string_view>
 #include <utility>
 
@@ -541,6 +542,43 @@ public:
     operator bool() const;
 };
 
+// --- Detach-in-place helpers -----------------------------------------------
+
+/**
+ * Detach an active `std::optional<SpanGuard>` member in place.
+ *
+ * Equivalent to `guard.emplace(std::move(*guard).detached())`, which is the
+ * required idiom for detaching a live guard stored in an `optional` (move
+ * assignment is deleted because the underlying Scope cannot be re-scoped in
+ * place). No-op if `guard` is empty or already null.
+ *
+ * @param guard  The optional guard to detach. Must be called on the thread
+ *               that constructed the active guard inside it (same rule as
+ *               `SpanGuard::detached()`).
+ * @note Must run BEFORE any `captureContext()` snapshot is taken if the
+ *       caller also needs the pre-detach context — capture first, then call
+ *       this helper (same ordering rule `detached()` itself has).
+ */
+void
+detachInPlace(std::optional<SpanGuard>& guard);
+
+/**
+ * Detach an active `std::shared_ptr<SpanGuard>`, returning the detached
+ * guard as a new `shared_ptr`.
+ *
+ * Equivalent to
+ * `guard = std::make_shared<SpanGuard>(std::move(*guard).detached())`.
+ * No-op (returns the input unchanged) if `guard` is null or points at a
+ * null guard.
+ *
+ * @param guard  The guard to detach, taken by value (the caller's pointer
+ *               is consumed; assign the return value back).
+ * @return A `shared_ptr` to the detached guard (new allocation), or the
+ *         input pointer unchanged if it was null/inactive.
+ */
+[[nodiscard]] std::shared_ptr<SpanGuard>
+detachInPlace(std::shared_ptr<SpanGuard> guard);
+
 // ---------------------------------------------------------------------------
 // No-op stub (all inline, zero overhead, no OTel dependency)
 // ---------------------------------------------------------------------------
@@ -690,6 +728,19 @@ public:
         return false;
     }
 };
+
+// --- Detach-in-place helpers (no-op stubs) ---------------------------------
+
+inline void
+detachInPlace(std::optional<SpanGuard>&)
+{
+}
+
+[[nodiscard]] inline std::shared_ptr<SpanGuard>
+detachInPlace(std::shared_ptr<SpanGuard> guard)
+{
+    return guard;
+}
 
 #endif  // XRPL_ENABLE_TELEMETRY
 
