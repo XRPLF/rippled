@@ -629,12 +629,22 @@ private:
 
     /** Span for the establish phase of consensus.
      *  Created when the ledger closes and we enter phaseEstablish;
-     *  cleared (ended) when consensus is reached.
+     *  cleared (ended) when consensus is reached. Stored detached (its Scope
+     *  is stripped right after its context is captured) because it is emplaced
+     *  and reset on different job workers.
      */
     std::optional<xrpl::telemetry::SpanGuard> establishSpan_;
 
+    /** Captured context of establishSpan_, snapshotted while it was still
+     *  scoped. Same-thread children (update_positions, check) build from this
+     *  explicit context instead of the (now detached) ambient establish span.
+     */
+    xrpl::telemetry::SpanContext establishSpanContext_;
+
     /** Span for the open phase of consensus.
      *  Created in startRoundInternal(); cleared (ended) in closeLedger().
+     *  Stored detached: emplaced and reset on different job workers;
+     *  detached() prevents wrong-thread Scope pop.
      */
     std::optional<xrpl::telemetry::SpanGuard> openSpan_;
 
@@ -741,11 +751,16 @@ Consensus<Adaptor>::startRoundInternal(
     // leak the prior round's span into the new one (startEstablishTracing
     // early-returns when establishSpan_ is populated).
     establishSpan_.reset();
+    establishSpanContext_ = telemetry::SpanContext{};
+    // Detached: emplaced here on one job worker and reset() on another, so
+    // strip the thread-local Scope to avoid a wrong-thread Scope pop. No
+    // same-thread child span nests under openSpan_, so detaching is safe.
     openSpan_.emplace(
         telemetry::SpanGuard::span(
             telemetry::TraceCategory::Consensus,
             telemetry::seg::consensus,
-            telemetry::consensus::span::op::phaseOpen));
+            telemetry::consensus::span::op::phaseOpen)
+            .detached());
     // On the Recovered path, fire phase.open here because startRoundTracing
     // (which fires it for the Initial path) is not called on re-entry. On
     // the Initial path this is a no-op because the round span hasn't been
@@ -1584,8 +1599,10 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
     XRPL_ASSERT(result_, "xrpl::Consensus::updateOurPositions : result is set");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
     using namespace telemetry;
-    auto span = SpanGuard::span(
-        TraceCategory::Consensus, seg::consensus, consensus::span::op::updatePositions);
+    // Child of the establish span via its captured context (establishSpan_ is
+    // detached, so it is no longer the thread's ambient parent). Null context
+    // (establish not started) yields a null guard, same as before.
+    auto span = SpanGuard::childSpan(consensus::span::op::updatePositions, establishSpanContext_);
     span.setAttribute(
         consensus::span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
     span.setAttribute(
@@ -1792,8 +1809,9 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     XRPL_ASSERT(result_, "xrpl::Consensus::haveConsensus : has result");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
     using namespace telemetry;
-    auto span =
-        SpanGuard::span(TraceCategory::Consensus, seg::consensus, consensus::span::op::check);
+    // Child of the establish span via its captured context (establishSpan_ is
+    // detached, so it is no longer the thread's ambient parent).
+    auto span = SpanGuard::childSpan(consensus::span::op::check, establishSpanContext_);
 
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
@@ -2057,6 +2075,16 @@ Consensus<Adaptor>::startEstablishTracing()
             telemetry::TraceCategory::Consensus,
             telemetry::seg::consensus,
             telemetry::consensus::span::op::establish));
+    // Capture the establish context while the guard is still scoped, then
+    // detach. Same-thread children (update_positions, check) link to this
+    // captured context explicitly instead of relying on establishSpan_ being
+    // the ambient parent -- the guard is reset() on a different worker than it
+    // is emplaced on, so it must not keep a thread-local Scope.
+    if (*establishSpan_)
+    {
+        establishSpanContext_ = establishSpan_->captureContext();
+        establishSpan_.emplace(std::move(*establishSpan_).detached());
+    }
 }
 
 template <class Adaptor>
@@ -2082,6 +2110,7 @@ void
 Consensus<Adaptor>::endEstablishTracing()
 {
     establishSpan_.reset();
+    establishSpanContext_ = telemetry::SpanContext{};
 }
 
 }  // namespace xrpl

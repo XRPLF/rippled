@@ -92,6 +92,10 @@ class RCLConsensus
          *  round begins. When consensusTraceStrategy is "deterministic",
          *  the trace_id is derived from previousLedger.id() so that all
          *  validators in the same round share the same trace_id.
+         *
+         *  Stored detached: its Scope is stripped right after roundSpanContext_
+         *  is captured, because it is emplaced and reset on different job
+         *  workers. Child spans link via roundSpanContext_, not the ambient span.
          */
         std::optional<telemetry::SpanGuard> roundSpan_;
 
