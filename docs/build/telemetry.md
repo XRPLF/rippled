@@ -15,6 +15,7 @@ This document explains how to build xrpld with OpenTelemetry distributed tracing
     - [Conan lockfile error](#conan-lockfile-error)
     - [CMake target not found](#cmake-target-not-found)
   - [Conditional compilation](#conditional-compilation)
+  - [Span lifetime and cross-thread handling](#span-lifetime-and-cross-thread-handling)
 
 ## Overview
 
@@ -127,3 +128,34 @@ no-op stub class with zero overhead and zero OTel dependencies.
 At runtime, if `enabled=0` is set in config (or the section is omitted), a
 `NullTelemetry` implementation is used that returns no-op spans.
 This two-layer approach ensures zero overhead when telemetry is not wanted.
+
+## Span lifetime and cross-thread handling
+
+`SpanGuard` is an RAII wrapper: it activates a span on the current thread when
+constructed and ends it when destroyed. A normal (scoped) guard binds an OTel
+`Scope` to the constructing thread's thread-local context stack. Because of
+this, a scoped guard must be used and destroyed on the thread that created it.
+
+Two entry points cover the cases where the default scoped behaviour is wrong:
+
+- **`SpanGuard::rootSpan(cat, prefix, name)`** starts a span as a fresh trace
+  root, ignoring whatever span is already active on the current thread. Use it
+  at an inbound entry point that runs on a shared worker thread (for example a
+  peer message received while unrelated work is still on the stack), so those
+  unrelated spans do not become parents of the new trace.
+
+- **`std::move(guard).detached()`** returns a new guard that holds the same
+  span with **no** thread-local `Scope`. Call it on the origin thread before
+  handing the guard to a job that runs on another thread. The returned guard
+  can be moved freely across threads and ended anywhere; only its final
+  destruction ends the span.
+
+### Why are unrelated spans in my trace?
+
+If a trace shows hundreds of unrelated spans nested under one operation, a
+scoped guard was likely moved to another thread (for example stored in a job
+and destroyed on a worker thread). Destroying a scoped guard off its origin
+thread pops the wrong context stack, leaving the origin thread's active span
+in place so later spans inherit it. Fix it by calling `.detached()` on the
+origin thread before the hand-off, or by starting the operation with
+`rootSpan()` so it never inherits an ambient parent.

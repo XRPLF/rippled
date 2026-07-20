@@ -12,7 +12,9 @@ namespace xrpl::RPC {
 
 struct JsonContext;
 
-/** Execute an RPC command and store the results in a json::Value. */
+/**
+ * Execute an RPC command and store the results in a json::Value.
+ */
 Status
 doCommand(RPC::JsonContext&, json::Value&);
 

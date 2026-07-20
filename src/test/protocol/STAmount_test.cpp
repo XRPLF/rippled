@@ -537,51 +537,6 @@ public:
     {
         // VFALCO TODO There are no actual tests here, just printed output?
         //             Change this to actually do something.
-
-#if 0
-        beginTestCase ("rounding ");
-
-        std::uint64_t value = 25000000000000000ull;
-        int offset = -14;
-        canonicalizeRound (false, value, offset, true);
-
-        STAmount one (noIssue(), 1);
-        STAmount two (noIssue(), 2);
-        STAmount three (noIssue(), 3);
-
-        STAmount oneThird1 = divRound (one, three, noIssue(), false);
-        STAmount oneThird2 = divide (one, three, noIssue());
-        STAmount oneThird3 = divRound (one, three, noIssue(), true);
-        log << oneThird1;
-        log << oneThird2;
-        log << oneThird3;
-
-        STAmount twoThird1 = divRound (two, three, noIssue(), false);
-        STAmount twoThird2 = divide (two, three, noIssue());
-        STAmount twoThird3 = divRound (two, three, noIssue(), true);
-        log << twoThird1;
-        log << twoThird2;
-        log << twoThird3;
-
-        STAmount oneA = mulRound (oneThird1, three, noIssue(), false);
-        STAmount oneB = multiply (oneThird2, three, noIssue());
-        STAmount oneC = mulRound (oneThird3, three, noIssue(), true);
-        log << oneA;
-        log << oneB;
-        log << oneC;
-
-        STAmount fourThirdsB = twoThird2 + twoThird2;
-        log << fourThirdsA;
-        log << fourThirdsB;
-        log << fourThirdsC;
-
-        STAmount dripTest1 = mulRound (twoThird2, two, xrpIssue (), false);
-        STAmount dripTest2 = multiply (twoThird2, two, xrpIssue ());
-        STAmount dripTest3 = mulRound (twoThird2, two, xrpIssue (), true);
-        log << dripTest1;
-        log << dripTest2;
-        log << dripTest3;
-#endif
     }
 
     void
