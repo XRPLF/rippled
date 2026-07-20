@@ -223,7 +223,7 @@ public:
      * @note Unlike totalAgreements(), this is strictly monotonic: it is
      * incremented only when a ledger is first reconciled as an agreement and
      * is never adjusted by a late repair. It backs the monotonic Prometheus
-     * counter xrpld_validation_agreements_total. See the counting-semantics
+     * counter validation_agreements_total. See the counting-semantics
      * note in detail/ValidationTracker.cpp.
      */
     uint64_t
@@ -235,7 +235,7 @@ public:
      * @note Unlike totalMissed(), this is strictly monotonic: it is
      * incremented only when a ledger is first reconciled as a miss and is
      * never decremented by a late repair. It backs the monotonic Prometheus
-     * counter xrpld_validation_missed_total. See the counting-semantics note
+     * counter validation_missed_total. See the counting-semantics note
      * in detail/ValidationTracker.cpp.
      */
     uint64_t
@@ -357,17 +357,17 @@ private:
      * strictly monotonic (a Prometheus _total must never decrease) and
      * additive: totalAgreementsGross_ + totalMissedGross_ == ledgers
      * reconciled. The repaired/agreement view is still available from the
-     * windowed gauge (xrpld_validation_agreement) and the net totals above.
+     * windowed gauge (validation_agreement) and the net totals above.
      */
 
     /**
      * Monotonic lifetime initial agreements; backs
-     * xrpld_validation_agreements_total. Never adjusted on repair.
+     * validation_agreements_total. Never adjusted on repair.
      */
     std::atomic<uint64_t> totalAgreementsGross_{0};
 
     /**
-     * Monotonic lifetime initial misses; backs xrpld_validation_missed_total.
+     * Monotonic lifetime initial misses; backs validation_missed_total.
      * Never decremented on repair.
      */
     std::atomic<uint64_t> totalMissedGross_{0};
