@@ -419,7 +419,9 @@ public:
         storeBatch(batch);
     }
 
-    /** Returns the number of file descriptors the backend expects to need */
+    /**
+     * Returns the number of file descriptors the backend expects to need
+     */
     [[nodiscard]] int
     fdRequired() const override
     {

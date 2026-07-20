@@ -53,9 +53,10 @@ struct UnknownTxnType : std::exception
     }
 };
 
-/** Look up the human-readable transaction type name for span attributes.
- *  Returns nullptr if the type is unknown so the caller can skip the
- *  attribute rather than emit an empty value.
+/**
+ * Look up the human-readable transaction type name for span attributes.
+ * Returns nullptr if the type is unknown so the caller can skip the
+ * attribute rather than emit an empty value.
  */
 char const*
 txTypeName(TxType txnType)
@@ -65,17 +66,18 @@ txTypeName(TxType txnType)
     return nullptr;
 }
 
-/** Create a deterministic-trace span for an apply-pipeline stage.
+/**
+ * Create a deterministic-trace span for an apply-pipeline stage.
  *
- *  The trace_id is derived from txID[0:16] so the preflight, preclaim, and
- *  transactor spans of one transaction share a trace even though they run
- *  sequentially and often on different threads. Sets the stage, tx_type, and
- *  (after the stage runs) ter_result attributes that drive the collector
- *  spanmetrics dimensions. A no-op when telemetry is disabled.
+ * The trace_id is derived from txID[0:16] so the preflight, preclaim, and
+ * transactor spans of one transaction share a trace even though they run
+ * sequentially and often on different threads. Sets the stage, tx_type, and
+ * (after the stage runs) ter_result attributes that drive the collector
+ * spanmetrics dimensions. A no-op when telemetry is disabled.
  *
- *  @param name   Full span name (tx_apply_span::preflight / ::preclaim).
- *  @param stage  Stage attribute value (tx_apply_span::val::*).
- *  @param tx     The transaction supplying the id and type.
+ * @param name   Full span name (tx_apply_span::preflight / ::preclaim).
+ * @param stage  Stage attribute value (tx_apply_span::val::*).
+ * @param tx     The transaction supplying the id and type.
  */
 [[nodiscard]] telemetry::SpanGuard
 makeStageSpan(std::string_view name, std::string_view stage, STTx const& tx)
@@ -251,6 +253,9 @@ invokePreclaim(PreclaimContext const& ctx)
                                 return result;
 
                             if (NotTEC const result = T::checkPriorTxAndLastLedger(ctx))
+                                return result;
+
+                            if (NotTEC const result = T::checkSponsor(ctx.view, ctx.tx))
                                 return result;
 
                             if (NotTEC const result =

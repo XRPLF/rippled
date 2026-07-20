@@ -32,25 +32,26 @@
 
 namespace xrpl {
 
-/** Determines whether the current ledger should close at this time.
-
-    This function should be called when a ledger is open and there is no close
-    in progress, or when a transaction is received and no close is in progress.
-
-    @param anyTransactions indicates whether any transactions have been received
-    @param prevProposers proposers in the last closing
-    @param proposersClosed proposers who have currently closed this ledger
-    @param proposersValidated proposers who have validated the last closed
-                              ledger
-    @param prevRoundTime time for the previous ledger to reach consensus
-    @param timeSincePrevClose  time since the previous ledger's (possibly
-   rounded) close time
-    @param openTime     duration this ledger has been open
-    @param idleInterval the network's desired idle interval
-    @param parms        Consensus constant parameters
-    @param j            journal for logging
-    @param clog         log object to which to append
-*/
+/**
+ * Determines whether the current ledger should close at this time.
+ *
+ * This function should be called when a ledger is open and there is no close
+ * in progress, or when a transaction is received and no close is in progress.
+ *
+ * @param anyTransactions indicates whether any transactions have been received
+ * @param prevProposers proposers in the last closing
+ * @param proposersClosed proposers who have currently closed this ledger
+ * @param proposersValidated proposers who have validated the last closed
+ *                           ledger
+ * @param prevRoundTime time for the previous ledger to reach consensus
+ * @param timeSincePrevClose  time since the previous ledger's (possibly
+ * rounded) close time
+ * @param openTime     duration this ledger has been open
+ * @param idleInterval the network's desired idle interval
+ * @param parms        Consensus constant parameters
+ * @param j            journal for logging
+ * @param clog         log object to which to append
+ */
 bool
 shouldCloseLedger(
     bool anyTransactions,
@@ -65,25 +66,26 @@ shouldCloseLedger(
     beast::Journal j,
     std::unique_ptr<std::stringstream> const& clog = {});
 
-/** Determine whether the network reached consensus and whether we joined.
-
-    @param prevProposers proposers in the last closing (not including us)
-    @param currentProposers proposers in this closing so far (not including us)
-    @param currentAgree proposers who agree with us
-    @param currentFinished proposers who have validated a ledger after this one
-    @param previousAgreeTime how long, in milliseconds, it took to agree on the
-                             last ledger
-    @param currentAgreeTime how long, in milliseconds, we've been trying to
-                            agree
-    @param stalled the network appears to be stalled, where
-           neither we nor our peers have changed their vote on any disputes in a
-           while. This is undesirable, and should be rare, and will cause us to
-           end consensus without 80% agreement.
-    @param parms            Consensus constant parameters
-    @param proposing        whether we should count ourselves
-    @param j                journal for logging
-    @param clog             log object to which to append
-*/
+/**
+ * Determine whether the network reached consensus and whether we joined.
+ *
+ * @param prevProposers proposers in the last closing (not including us)
+ * @param currentProposers proposers in this closing so far (not including us)
+ * @param currentAgree proposers who agree with us
+ * @param currentFinished proposers who have validated a ledger after this one
+ * @param previousAgreeTime how long, in milliseconds, it took to agree on the
+ *                          last ledger
+ * @param currentAgreeTime how long, in milliseconds, we've been trying to
+ *                         agree
+ * @param stalled the network appears to be stalled, where
+ *        neither we nor our peers have changed their vote on any disputes in a
+ *        while. This is undesirable, and should be rare, and will cause us to
+ *        end consensus without 80% agreement.
+ * @param parms            Consensus constant parameters
+ * @param proposing        whether we should count ourselves
+ * @param j                journal for logging
+ * @param clog             log object to which to append
+ */
 ConsensusState
 checkConsensus(
     std::size_t prevProposers,
@@ -98,194 +100,195 @@ checkConsensus(
     beast::Journal j,
     std::unique_ptr<std::stringstream> const& clog = {});
 
-/** Generic implementation of consensus algorithm.
-
-  Achieves consensus on the next ledger.
-
-  Two things need consensus:
-
-    1.  The set of transactions included in the ledger.
-    2.  The close time for the ledger.
-
-  The basic flow:
-
-    1. A call to `startRound` places the node in the `Open` phase.  In this
-       phase, the node is waiting for transactions to include in its open
-       ledger.
-    2. Successive calls to `timerEntry` check if the node can close the ledger.
-       Once the node `Close`s the open ledger, it transitions to the
-       `Establish` phase.  In this phase, the node shares/receives peer
-       proposals on which transactions should be accepted in the closed ledger.
-    3. During a subsequent call to `timerEntry`, the node determines it has
-       reached consensus with its peers on which transactions to include. It
-       transitions to the `Accept` phase. In this phase, the node works on
-       applying the transactions to the prior ledger to generate a new closed
-       ledger. Once the new ledger is completed, the node shares the validated
-       ledger with the network, does some book-keeping, then makes a call to
-       `startRound` to start the cycle again.
-
-  This class uses a generic interface to allow adapting Consensus for specific
-  applications. The Adaptor template implements a set of helper functions that
-  plug the consensus algorithm into a specific application.  It also identifies
-  the types that play important roles in Consensus (transactions, ledgers, ...).
-  The code stubs below outline the interface and type requirements.  The traits
-  types must be copy constructible and assignable.
-
-  @warning The generic implementation is not thread safe and the public methods
-  are not intended to be run concurrently.  When in a concurrent environment,
-  the application is responsible for ensuring thread-safety.  Simply locking
-  whenever touching the Consensus instance is one option.
-
-  @code
-  // A single transaction
-  struct Tx
-  {
-    // Unique identifier of transaction
-    using ID = ...;
-
-    ID id() const;
-
-  };
-
-  // A set of transactions
-  struct TxSet
-  {
-    // Unique ID of TxSet (not of Tx)
-    using ID = ...;
-    // Type of individual transaction comprising the TxSet
-    using Tx = Tx;
-
-    bool exists(Tx::ID const &) const;
-    // Return value should have semantics like Tx const *
-    Tx const * find(Tx::ID const &) const ;
-    ID const & id() const;
-
-    // Return set of transactions that are not common to this set or other
-    // boolean indicates which set it was in
-    std::map<Tx::ID, bool> compare(TxSet const & other) const;
-
-    // A mutable view of transactions
-    struct MutableTxSet
-    {
-        MutableTxSet(TxSet const &);
-        bool insert(Tx const &);
-        bool erase(Tx::ID const &);
-    };
-
-    // Construct from a mutable view.
-    TxSet(MutableTxSet const &);
-
-    // Alternatively, if the TxSet is itself mutable
-    // just alias MutableTxSet = TxSet
-
-  };
-
-  // Agreed upon state that consensus transactions will modify
-  struct Ledger
-  {
-    using ID = ...;
-    using Seq = ...;
-
-    // Unique identifier of ledger
-    ID const id() const;
-    Seq seq() const;
-    auto closeTimeResolution() const;
-    auto closeAgree() const;
-    auto closeTime() const;
-    auto parentCloseTime() const;
-    json::Value getJson() const;
-  };
-
-  // Wraps a peer's ConsensusProposal
-  struct PeerPosition
-  {
-    ConsensusProposal<
-        std::uint32_t, //NodeID,
-        typename Ledger::ID,
-        typename TxSet::ID> const &
-    proposal() const;
-
-  };
-
-
-  class Adaptor
-  {
-  public:
-      //-----------------------------------------------------------------------
-      // Define consensus types
-      using Ledger_t = Ledger;
-      using NodeID_t = std::uint32_t;
-      using TxSet_t = TxSet;
-      using PeerPosition_t = PeerPosition;
-
-      //-----------------------------------------------------------------------
-      //
-      // Attempt to acquire a specific ledger.
-      std::optional<Ledger> acquireLedger(Ledger::ID const & ledgerID);
-
-      // Acquire the transaction set associated with a proposed position.
-      std::optional<TxSet> acquireTxSet(TxSet::ID const & setID);
-
-      // Whether any transactions are in the open ledger
-      bool hasOpenTransactions() const;
-
-      // Number of proposers that have validated the given ledger
-      std::size_t proposersValidated(Ledger::ID const & prevLedger) const;
-
-      // Number of proposers that have validated a ledger descended from the
-      // given ledger; if prevLedger.id() != prevLedgerID, use prevLedgerID
-      // for the determination
-      std::size_t proposersFinished(Ledger const & prevLedger,
-                                    Ledger::ID const & prevLedger) const;
-
-      // Return the ID of the last closed (and validated) ledger that the
-      // application thinks consensus should use as the prior ledger.
-      Ledger::ID getPrevLedger(Ledger::ID const & prevLedgerID,
-                      Ledger const & prevLedger,
-                      Mode mode);
-
-      // Called whenever consensus operating mode changes
-      void onModeChange(ConsensusMode before, ConsensusMode after);
-
-      // Called when ledger closes
-      Result onClose(Ledger const &, Ledger const & prev, Mode mode);
-
-      // Called when ledger is accepted by consensus
-      void onAccept(Result const & result,
-        RCLCxLedger const & prevLedger,
-        NetClock::duration closeResolution,
-        CloseTimes const & rawCloseTimes,
-        Mode const & mode);
-
-      // Called when ledger was forcibly accepted by consensus via the simulate
-      // function.
-      void onForceAccept(Result const & result,
-        RCLCxLedger const & prevLedger,
-        NetClock::duration closeResolution,
-        CloseTimes const & rawCloseTimes,
-        Mode const & mode);
-
-      // Propose the position to peers.
-      void propose(ConsensusProposal<...> const & pos);
-
-      // Share a received peer proposal with other peer's.
-      void share(PeerPosition_t const & prop);
-
-      // Share a disputed transaction with peers
-      void share(Txn const & tx);
-
-      // Share given transaction set with peers
-      void share(TxSet const &s);
-
-      // Consensus timing parameters and constants
-      ConsensusParms const &
-      parms() const;
-  };
-  @endcode
-
-  @tparam Adaptor Defines types and provides helper functions needed to adapt
-                  Consensus to the larger application.
-*/
+/**
+ * Generic implementation of consensus algorithm.
+ *
+ * Achieves consensus on the next ledger.
+ *
+ * Two things need consensus:
+ *
+ *   1.  The set of transactions included in the ledger.
+ *   2.  The close time for the ledger.
+ *
+ * The basic flow:
+ *
+ *   1. A call to `startRound` places the node in the `Open` phase.  In this
+ *      phase, the node is waiting for transactions to include in its open
+ *      ledger.
+ *   2. Successive calls to `timerEntry` check if the node can close the ledger.
+ *      Once the node `Close`s the open ledger, it transitions to the
+ *      `Establish` phase.  In this phase, the node shares/receives peer
+ *      proposals on which transactions should be accepted in the closed ledger.
+ *   3. During a subsequent call to `timerEntry`, the node determines it has
+ *      reached consensus with its peers on which transactions to include. It
+ *      transitions to the `Accept` phase. In this phase, the node works on
+ *      applying the transactions to the prior ledger to generate a new closed
+ *      ledger. Once the new ledger is completed, the node shares the validated
+ *      ledger with the network, does some book-keeping, then makes a call to
+ *      `startRound` to start the cycle again.
+ *
+ * This class uses a generic interface to allow adapting Consensus for specific
+ * applications. The Adaptor template implements a set of helper functions that
+ * plug the consensus algorithm into a specific application.  It also identifies
+ * the types that play important roles in Consensus (transactions, ledgers, ...).
+ * The code stubs below outline the interface and type requirements.  The traits
+ * types must be copy constructible and assignable.
+ *
+ * @warning The generic implementation is not thread safe and the public methods
+ * are not intended to be run concurrently.  When in a concurrent environment,
+ * the application is responsible for ensuring thread-safety.  Simply locking
+ * whenever touching the Consensus instance is one option.
+ *
+ * @code
+ * // A single transaction
+ * struct Tx
+ * {
+ *   // Unique identifier of transaction
+ *   using ID = ...;
+ *
+ *   ID id() const;
+ *
+ * };
+ *
+ * // A set of transactions
+ * struct TxSet
+ * {
+ *   // Unique ID of TxSet (not of Tx)
+ *   using ID = ...;
+ *   // Type of individual transaction comprising the TxSet
+ *   using Tx = Tx;
+ *
+ *   bool exists(Tx::ID const &) const;
+ *   // Return value should have semantics like Tx const *
+ *   Tx const * find(Tx::ID const &) const ;
+ *   ID const & id() const;
+ *
+ *   // Return set of transactions that are not common to this set or other
+ *   // boolean indicates which set it was in
+ *   std::map<Tx::ID, bool> compare(TxSet const & other) const;
+ *
+ *   // A mutable view of transactions
+ *   struct MutableTxSet
+ *   {
+ *       MutableTxSet(TxSet const &);
+ *       bool insert(Tx const &);
+ *       bool erase(Tx::ID const &);
+ *   };
+ *
+ *   // Construct from a mutable view.
+ *   TxSet(MutableTxSet const &);
+ *
+ *   // Alternatively, if the TxSet is itself mutable
+ *   // just alias MutableTxSet = TxSet
+ *
+ * };
+ *
+ * // Agreed upon state that consensus transactions will modify
+ * struct Ledger
+ * {
+ *   using ID = ...;
+ *   using Seq = ...;
+ *
+ *   // Unique identifier of ledger
+ *   ID const id() const;
+ *   Seq seq() const;
+ *   auto closeTimeResolution() const;
+ *   auto closeAgree() const;
+ *   auto closeTime() const;
+ *   auto parentCloseTime() const;
+ *   json::Value getJson() const;
+ * };
+ *
+ * // Wraps a peer's ConsensusProposal
+ * struct PeerPosition
+ * {
+ *   ConsensusProposal<
+ *       std::uint32_t, //NodeID,
+ *       typename Ledger::ID,
+ *       typename TxSet::ID> const &
+ *   proposal() const;
+ *
+ * };
+ *
+ *
+ * class Adaptor
+ * {
+ * public:
+ *     //-----------------------------------------------------------------------
+ *     // Define consensus types
+ *     using Ledger_t = Ledger;
+ *     using NodeID_t = std::uint32_t;
+ *     using TxSet_t = TxSet;
+ *     using PeerPosition_t = PeerPosition;
+ *
+ *     //-----------------------------------------------------------------------
+ *     //
+ *     // Attempt to acquire a specific ledger.
+ *     std::optional<Ledger> acquireLedger(Ledger::ID const & ledgerID);
+ *
+ *     // Acquire the transaction set associated with a proposed position.
+ *     std::optional<TxSet> acquireTxSet(TxSet::ID const & setID);
+ *
+ *     // Whether any transactions are in the open ledger
+ *     bool hasOpenTransactions() const;
+ *
+ *     // Number of proposers that have validated the given ledger
+ *     std::size_t proposersValidated(Ledger::ID const & prevLedger) const;
+ *
+ *     // Number of proposers that have validated a ledger descended from the
+ *     // given ledger; if prevLedger.id() != prevLedgerID, use prevLedgerID
+ *     // for the determination
+ *     std::size_t proposersFinished(Ledger const & prevLedger,
+ *                                   Ledger::ID const & prevLedger) const;
+ *
+ *     // Return the ID of the last closed (and validated) ledger that the
+ *     // application thinks consensus should use as the prior ledger.
+ *     Ledger::ID getPrevLedger(Ledger::ID const & prevLedgerID,
+ *                     Ledger const & prevLedger,
+ *                     Mode mode);
+ *
+ *     // Called whenever consensus operating mode changes
+ *     void onModeChange(ConsensusMode before, ConsensusMode after);
+ *
+ *     // Called when ledger closes
+ *     Result onClose(Ledger const &, Ledger const & prev, Mode mode);
+ *
+ *     // Called when ledger is accepted by consensus
+ *     void onAccept(Result const & result,
+ *       RCLCxLedger const & prevLedger,
+ *       NetClock::duration closeResolution,
+ *       CloseTimes const & rawCloseTimes,
+ *       Mode const & mode);
+ *
+ *     // Called when ledger was forcibly accepted by consensus via the simulate
+ *     // function.
+ *     void onForceAccept(Result const & result,
+ *       RCLCxLedger const & prevLedger,
+ *       NetClock::duration closeResolution,
+ *       CloseTimes const & rawCloseTimes,
+ *       Mode const & mode);
+ *
+ *     // Propose the position to peers.
+ *     void propose(ConsensusProposal<...> const & pos);
+ *
+ *     // Share a received peer proposal with other peer's.
+ *     void share(PeerPosition_t const & prop);
+ *
+ *     // Share a disputed transaction with peers
+ *     void share(Txn const & tx);
+ *
+ *     // Share given transaction set with peers
+ *     void share(TxSet const &s);
+ *
+ *     // Consensus timing parameters and constants
+ *     ConsensusParms const &
+ *     parms() const;
+ * };
+ * @endcode
+ *
+ * @tparam Adaptor Defines types and provides helper functions needed to adapt
+ *                 Consensus to the larger application.
+ */
 template <class Adaptor>
 class Consensus
 {
@@ -323,34 +326,38 @@ class Consensus
     };
 
 public:
-    //! Clock type for measuring time within the consensus code
+    /**
+     * Clock type for measuring time within the consensus code
+     */
     using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
     Consensus(Consensus&&) noexcept = default;
 
-    /** Constructor.
-
-        @param clock The clock used to internally sample consensus progress
-        @param adaptor The instance of the adaptor class
-        @param j The journal to log debug output
-    */
+    /**
+     * Constructor.
+     *
+     * @param clock The clock used to internally sample consensus progress
+     * @param adaptor The instance of the adaptor class
+     * @param j The journal to log debug output
+     */
     Consensus(clock_type const& clock, Adaptor& adaptor, beast::Journal j);
 
-    /** Kick-off the next round of consensus.
-
-        Called by the client code to start each round of consensus.
-
-        @param now          The network adjusted time
-        @param prevLedgerID the ID of the last ledger
-        @param prevLedger   The last ledger
-        @param nowUntrusted ID of nodes that are newly untrusted this round
-        @param proposing    Whether we want to send proposals to peers this
-       round.
-        @param clog         log object to which to append
-
-        @note @b prevLedgerID is not required to the ID of @b prevLedger since
-        the ID may be known locally before the contents of the ledger arrive
-    */
+    /**
+     * Kick-off the next round of consensus.
+     *
+     * Called by the client code to start each round of consensus.
+     *
+     * @param now          The network adjusted time
+     * @param prevLedgerID the ID of the last ledger
+     * @param prevLedger   The last ledger
+     * @param nowUntrusted ID of nodes that are newly untrusted this round
+     * @param proposing    Whether we want to send proposals to peers this
+     * round.
+     * @param clog         log object to which to append
+     *
+     * @note @b prevLedgerID is not required to the ID of @b prevLedger since
+     * the ID may be known locally before the contents of the ledger arrive
+     */
     void
     startRound(
         NetClock::time_point const& now,
@@ -360,61 +367,66 @@ public:
         bool proposing,
         std::unique_ptr<std::stringstream> const& clog = {});
 
-    /** A peer has proposed a new position, adjust our tracking.
-
-        @param now The network adjusted time
-        @param newProposal The new proposal from a peer
-        @return Whether we should do delayed relay of this proposal.
-    */
+    /**
+     * A peer has proposed a new position, adjust our tracking.
+     *
+     * @param now The network adjusted time
+     * @param newProposal The new proposal from a peer
+     * @return Whether we should do delayed relay of this proposal.
+     */
     bool
     peerProposal(NetClock::time_point const& now, PeerPosition_t const& newProposal);
 
-    /** Call periodically to drive consensus forward.
-
-        @param now  The network adjusted time
-        @param clog log object to which to append
-    */
+    /**
+     * Call periodically to drive consensus forward.
+     *
+     * @param now  The network adjusted time
+     * @param clog log object to which to append
+     */
     void
     timerEntry(
         NetClock::time_point const& now,
         std::unique_ptr<std::stringstream> const& clog = {});
 
-    /** Process a transaction set acquired from the network
-
-        @param now The network adjusted time
-        @param txSet the transaction set
-    */
+    /**
+     * Process a transaction set acquired from the network
+     *
+     * @param now The network adjusted time
+     * @param txSet the transaction set
+     */
     void
     gotTxSet(NetClock::time_point const& now, TxSet_t const& txSet);
 
-    /** Simulate the consensus process without any network traffic.
-
-       The end result, is that consensus begins and completes as if everyone
-       had agreed with whatever we propose.
-
-       This function is only called from the rpc "ledger_accept" path with the
-       server in standalone mode and SHOULD NOT be used during the normal
-       consensus process.
-
-       Simulate will call onForceAccept since clients are manually driving
-       consensus to the accept phase.
-
-       @param now The current network adjusted time.
-       @param consensusDelay Duration to delay between closing and accepting the
-                             ledger. Uses 100ms if unspecified.
-    */
+    /**
+     * Simulate the consensus process without any network traffic.
+     *
+     * The end result, is that consensus begins and completes as if everyone
+     * had agreed with whatever we propose.
+     *
+     * This function is only called from the rpc "ledger_accept" path with the
+     * server in standalone mode and SHOULD NOT be used during the normal
+     * consensus process.
+     *
+     * Simulate will call onForceAccept since clients are manually driving
+     * consensus to the accept phase.
+     *
+     * @param now The current network adjusted time.
+     * @param consensusDelay Duration to delay between closing and accepting the
+     *                       ledger. Uses 100ms if unspecified.
+     */
     void
     simulate(
         NetClock::time_point const& now,
         std::optional<std::chrono::milliseconds> consensusDelay);
 
-    /** Get the previous ledger ID.
-
-        The previous ledger is the last ledger seen by the consensus code and
-        should correspond to the most recent validated ledger seen by this peer.
-
-        @return ID of previous ledger
-    */
+    /**
+     * Get the previous ledger ID.
+     *
+     * The previous ledger is the last ledger seen by the consensus code and
+     * should correspond to the most recent validated ledger seen by this peer.
+     *
+     * @return ID of previous ledger
+     */
     Ledger_t::ID
     prevLedgerID() const
     {
@@ -427,18 +439,20 @@ public:
         return phase_;
     }
 
-    /** Get the Json state of the consensus process.
-
-        Called by the consensus_info RPC.
-
-        @param full True if verbose response desired.
-        @return     The Json state.
-    */
+    /**
+     * Get the Json state of the consensus process.
+     *
+     * Called by the consensus_info RPC.
+     *
+     * @param full True if verbose response desired.
+     * @return     The Json state.
+     */
     [[nodiscard]] json::Value
     getJson(bool full) const;
 
 private:
-    /** Why startRoundInternal is being entered.
+    /**
+     * Why startRoundInternal is being entered.
      *
      *  Distinguishes the normal Initial entry (from public startRound)
      *  from a Recovered re-entry (from handleWrongLedger after the
@@ -465,46 +479,52 @@ private:
     void
     handleWrongLedger(Ledger_t::ID const& lgrId, std::unique_ptr<std::stringstream> const& clog);
 
-    /** Check if our previous ledger matches the network's.
-
-        If the previous ledger differs, we are no longer in sync with
-        the network and need to bow out/switch modes.
-    */
+    /**
+     * Check if our previous ledger matches the network's.
+     *
+     * If the previous ledger differs, we are no longer in sync with
+     * the network and need to bow out/switch modes.
+     */
     void
     checkLedger(std::unique_ptr<std::stringstream> const& clog);
 
-    /** If we radically changed our consensus context for some reason,
-        we need to replay recent proposals so that they're not lost.
-    */
+    /**
+     * If we radically changed our consensus context for some reason,
+     * we need to replay recent proposals so that they're not lost.
+     */
     void
     playbackProposals();
 
-    /** Handle a replayed or a new peer proposal.
+    /**
+     * Handle a replayed or a new peer proposal.
      */
     bool
     peerProposalInternal(NetClock::time_point const& now, PeerPosition_t const& newProposal);
 
-    /** Handle pre-close phase.
-
-        In the pre-close phase, the ledger is open as we wait for new
-        transactions.  After enough time has elapsed, we will close the ledger,
-        switch to the establish phase and start the consensus process.
-    */
+    /**
+     * Handle pre-close phase.
+     *
+     * In the pre-close phase, the ledger is open as we wait for new
+     * transactions.  After enough time has elapsed, we will close the ledger,
+     * switch to the establish phase and start the consensus process.
+     */
     void
     phaseOpen(std::unique_ptr<std::stringstream> const& clog);
 
-    /** Handle establish phase.
-
-        In the establish phase, the ledger has closed and we work with peers
-        to reach consensus. Update our position only on the timer, and in this
-        phase.
-
-        If we have consensus, move to the accepted phase.
-    */
+    /**
+     * Handle establish phase.
+     *
+     * In the establish phase, the ledger has closed and we work with peers
+     * to reach consensus. Update our position only on the timer, and in this
+     * phase.
+     *
+     * If we have consensus, move to the accepted phase.
+     */
     void
     phaseEstablish(std::unique_ptr<std::stringstream> const& clog);
 
-    /** Evaluate whether pausing increases likelihood of validation.
+    /**
+     * Evaluate whether pausing increases likelihood of validation.
      *
      *  As a validator that has previously synced to the network, if our most
      *  recent locally-validated ledger did not also achieve
@@ -627,7 +647,8 @@ private:
     // nodes that have bowed out of this consensus process
     hash_set<NodeID_t> deadNodes_;
 
-    /** Span for the establish phase of consensus.
+    /**
+     * Span for the establish phase of consensus.
      *  Created when the ledger closes and we enter phaseEstablish;
      *  cleared (ended) when consensus is reached. Stored detached (its Scope
      *  is stripped right after its context is captured) because it is emplaced
@@ -635,32 +656,38 @@ private:
      */
     std::optional<xrpl::telemetry::SpanGuard> establishSpan_;
 
-    /** Captured context of establishSpan_, snapshotted while it was still
+    /**
+     * Captured context of establishSpan_, snapshotted while it was still
      *  scoped. Same-thread children (update_positions, check) build from this
      *  explicit context instead of the (now detached) ambient establish span.
      */
     xrpl::telemetry::SpanContext establishSpanContext_;
 
-    /** Span for the open phase of consensus.
+    /**
+     * Span for the open phase of consensus.
      *  Created in startRoundInternal(); cleared (ended) in closeLedger().
      *  Stored detached: emplaced and reset on different job workers;
      *  detached() prevents wrong-thread Scope pop.
      */
     std::optional<xrpl::telemetry::SpanGuard> openSpan_;
 
-    /** Create the establish-phase span if not yet active.
+    /**
+     * Create the establish-phase span if not yet active.
      *  Called on each phaseEstablish() invocation; no-op while span is live.
      */
     void
     startEstablishTracing();
 
-    /** Overwrite convergence metrics on the establish span each iteration.
+    /**
+     * Overwrite convergence metrics on the establish span each iteration.
      *  Final span attributes always reflect the last state before consensus.
      */
     void
     updateEstablishTracing();
 
-    /** End the establish span when transitioning to the accepted phase. */
+    /**
+     * End the establish span when transitioning to the accepted phase.
+     */
     void
     endEstablishTracing();
 
@@ -1348,7 +1375,8 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
 
     bool willPause = false;
 
-    /** Maximum phase with distinct thresholds to determine how
+    /**
+     * Maximum phase with distinct thresholds to determine how
      *  many validators must be on our same ledger sequence number.
      *  The threshold for the 1st (0) phase is >= the minimum number that
      *  can achieve quorum. Threshold for the maximum phase is 100%
@@ -1571,18 +1599,19 @@ Consensus<Adaptor>::closeLedger(std::unique_ptr<std::stringstream> const& clog)
     }
 }
 
-/** How many of the participants must agree to reach a given threshold?
-
-Note that the number may not precisely yield the requested percentage.
-For example, with with size = 5 and percent = 70, we return 3, but
-3 out of 5 works out to 60%. There are no security implications to
-this.
-
-@param participants The number of participants (i.e. validators)
-@param percent The percent that we want to reach
-
-@return the number of participants which must agree
-*/
+/**
+ * How many of the participants must agree to reach a given threshold?
+ *
+ * Note that the number may not precisely yield the requested percentage.
+ * For example, with with size = 5 and percent = 70, we return 3, but
+ * 3 out of 5 works out to 60%. There are no security implications to
+ * this.
+ *
+ * @param participants The number of participants (i.e. validators)
+ * @param percent The percent that we want to reach
+ *
+ * @return the number of participants which must agree
+ */
 inline int
 participantsNeeded(int participants, int percent)
 {
