@@ -36,7 +36,7 @@ defaults:
 
 jobs:
   build-merge:
-    name: Build and push nix-${{ matrix.distro.name }}
+    name: Build and push `nix-${{ matrix.distro.name }}` image
     permissions:
       contents: read
       packages: write
