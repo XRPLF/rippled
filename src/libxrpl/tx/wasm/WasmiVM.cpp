@@ -1,6 +1,5 @@
 #include <xrpl/tx/wasm/WasmiVM.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/TER.h>
@@ -757,7 +756,7 @@ checkImports(ImportVec const& imports, HostFunctions* hfs)
     }
 }
 
-Expected<WasmResult<int32_t>, WasmTER>
+std::expected<WasmResult<int32_t>, WasmTER>
 WasmiEngine::run(
     Bytes const& wasmCode,
     HostFunctions& hfs,
@@ -768,7 +767,7 @@ WasmiEngine::run(
     beast::Journal j)
 {
     if (gas <= 0)
-        return Unexpected(WasmTER{.ter = temBAD_AMOUNT, .cost = std::nullopt});
+        return std::unexpected(WasmTER{.ter = temBAD_AMOUNT, .cost = std::nullopt});
 
     try
     {
@@ -787,10 +786,10 @@ WasmiEngine::run(
     // LCOV_EXCL_STOP
     // An exception escaping the engine is an xrpld-side fault -> tecINTERNAL,
     // no gas. Genuine wasm faults don't throw; they surface as traps in runHlp.
-    return Unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
+    return std::unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
 }
 
-Expected<WasmResult<int32_t>, WasmTER>
+std::expected<WasmResult<int32_t>, WasmTER>
 WasmiEngine::runHlp(
     Bytes const& wasmCode,
     HostFunctions& hfs,
@@ -841,7 +840,7 @@ WasmiEngine::runHlp(
         // call() already classified the trap (see WasmiEngine::call).
         // tecINTERNAL is an xrpld-side bug: report no gas.
         if (*res.ter == tecINTERNAL)
-            return Unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
+            return std::unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
 
         // Out-of-gas / wasm faults report gas (caller writes it to metadata).
         // Force fuel to 0 on out-of-gas so cost is the full limit (wasmi leaves
@@ -849,7 +848,7 @@ WasmiEngine::runHlp(
         if (*res.ter == tecOUT_OF_GAS)
             iw.setGas(0);
 
-        return Unexpected(WasmTER{.ter = *res.ter, .cost = gas - moduleWrap_->getGas()});
+        return std::unexpected(WasmTER{.ter = *res.ter, .cost = gas - moduleWrap_->getGas()});
     }
 
     if (res.r.empty())

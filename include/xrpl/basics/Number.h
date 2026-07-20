@@ -347,7 +347,7 @@ concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::u
  * (SingleAssetVault and LendingProtocol), and/or check if either of those
  * amendments are enabled to determine which result to expect.
  */
-class Number final
+class Number
 {
     using rep = std::int64_t;
     using internalrep = MantissaRange::rep;

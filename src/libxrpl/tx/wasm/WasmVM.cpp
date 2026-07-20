@@ -1,6 +1,5 @@
 #include <xrpl/tx/wasm/WasmVM.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/HostFuncWrapper.h>  // IWYU pragma: keep
@@ -62,15 +61,15 @@ setCommonHostFunctions(HostFunctions& hfs, ImportVec& i)
     WASM_IMPORT_FUNC2(i, depositPreauthKeylet, "deposit_preauth_id", hfs,                                     350);
     WASM_IMPORT_FUNC2(i, didKeylet, "did_id", hfs,                                                            350);
     WASM_IMPORT_FUNC2(i, escrowKeylet, "escrow_id", hfs,                                                      350);
-    WASM_IMPORT_FUNC2(i, lineKeylet, "trustline_id", hfs,                                                     400);
-    WASM_IMPORT_FUNC2(i, mptIssuanceKeylet, "mpt_issuance_id", hfs,                                           350);
+    WASM_IMPORT_FUNC2(i, trustLineKeylet, "trustline_id", hfs,                                                     400);
+    WASM_IMPORT_FUNC2(i, mptokenIssuanceKeylet, "mptoken_issuance_id", hfs,                                           350);
     WASM_IMPORT_FUNC2(i, mptokenKeylet, "mptoken_id", hfs,                                                    500);
-    WASM_IMPORT_FUNC2(i, nftOfferKeylet, "nft_offer_id", hfs,                                                 350);
+    WASM_IMPORT_FUNC2(i, nftokenOfferKeylet, "nft_offer_id", hfs,                                                 350);
     WASM_IMPORT_FUNC2(i, offerKeylet, "offer_id", hfs,                                                        350);
     WASM_IMPORT_FUNC2(i, oracleKeylet, "oracle_id", hfs,                                                      350);
-    WASM_IMPORT_FUNC2(i, paychanKeylet, "paychan_id", hfs,                                                    350);
+    WASM_IMPORT_FUNC2(i, paychannelKeylet, "paychannel_id", hfs,                                                    350);
     WASM_IMPORT_FUNC2(i, permissionedDomainKeylet, "permissioned_domain_id", hfs,                             350);
-    WASM_IMPORT_FUNC2(i, signersKeylet, "signers_id", hfs,                                                    350);
+    WASM_IMPORT_FUNC2(i, signerListKeylet, "signer_list_id", hfs,                                                    350);
     WASM_IMPORT_FUNC2(i, ticketKeylet, "ticket_id", hfs,                                                      350);
     WASM_IMPORT_FUNC2(i, vaultKeylet, "vault_id", hfs,                                                        350);
 
@@ -79,7 +78,7 @@ setCommonHostFunctions(HostFunctions& hfs, ImportVec& i)
     WASM_IMPORT_FUNC2(i, getNFTTaxon, "nft_taxon", hfs,                                                        60);
     WASM_IMPORT_FUNC2(i, getNFTFlags, "nft_flags", hfs,                                                        60);
     WASM_IMPORT_FUNC2(i, getNFTTransferFee, "nft_xfer_fee", hfs,                                               60);
-    WASM_IMPORT_FUNC2(i, getNFTSerial, "nft_serial", hfs,                                                      60);
+    WASM_IMPORT_FUNC2(i, getNFTSequence, "nft_seq", hfs,                                                       60);
 
     WASM_IMPORT_FUNC (i, trace, hfs,                                                                          500);
     WASM_IMPORT_FUNC2(i, traceNum, "trace_num", hfs,                                                          500);
@@ -115,7 +114,7 @@ createWasmImport(HostFunctions& hfs)
     return i;
 }
 
-Expected<EscrowResult, WasmTER>
+std::expected<EscrowResult, WasmTER>
 runEscrowWasm(
     Bytes const& wasmCode,
     HostFunctions& hfs,
@@ -138,7 +137,7 @@ runEscrowWasm(
         // Carries the TER (tecOUT_OF_GAS / tecFAILED_PROCESSING / tecINTERNAL /
         // temBAD_AMOUNT) and, when meaningful, the gas consumed. The caller is
         // responsible for writing that gas to tx metadata.
-        return Unexpected(ret.error());
+        return std::unexpected(ret.error());
     }
 
 #ifdef DEBUG_OUTPUT
@@ -177,7 +176,7 @@ WasmEngine::instance()
     return e;
 }
 
-Expected<WasmResult<int32_t>, WasmTER>
+std::expected<WasmResult<int32_t>, WasmTER>
 WasmEngine::run(
     Bytes const& wasmCode,
     HostFunctions& hfs,

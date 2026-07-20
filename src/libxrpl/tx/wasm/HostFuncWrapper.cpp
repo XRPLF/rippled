@@ -1,6 +1,5 @@
 #include <xrpl/tx/wasm/HostFuncWrapper.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
@@ -69,7 +68,7 @@ checkGas(WasmRuntimeWrapper& rt, int64_t delta)
 
 // Transfer limit is a separate soft budget: exceeding it is a normal guest-facing
 // return code, not a trap. Only a failed setTransferLimit (an xrpld bug) throws.
-static inline Expected<std::int64_t, HostFunctionError>
+static inline std::expected<std::int64_t, HostFunctionError>
 checkTransfer(WasmRuntimeWrapper& rt, int64_t delta)
 {
     auto const transLimit = rt.getTransferLimit();
@@ -79,7 +78,7 @@ checkTransfer(WasmRuntimeWrapper& rt, int64_t delta)
         Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
     if (transLimit < delta)
-        return Unexpected(HostFunctionError::OutOfTransferLimit);
+        return std::unexpected(HostFunctionError::OutOfTransferLimit);
 
     return x;
 }
@@ -147,35 +146,35 @@ setData(
     return srcSize;
 }
 
-static Expected<Slice, HostFunctionError>
+static std::expected<Slice, HostFunctionError>
 getDataSlice(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     int64_t const ptr = params->data[i].of.i32;
     int64_t const size = params->data[i + 1].of.i32;
     i += 2;
     if (ptr < 0 || size < 0)
-        return Unexpected(HostFunctionError::InvalidParams);
+        return std::unexpected(HostFunctionError::InvalidParams);
 
     if (size == 0)
         return Slice();
 
     if (size > kMaxWasmDataLength)
-        return Unexpected(HostFunctionError::DataFieldTooLarge);
+        return std::unexpected(HostFunctionError::DataFieldTooLarge);
 
     auto const memory = runtime.getMem();
     // LCOV_EXCL_START
     if (memory.s == 0u)
-        return Unexpected(HostFunctionError::NoMemExported);
+        return std::unexpected(HostFunctionError::NoMemExported);
     // LCOV_EXCL_STOP
 
     if (std::cmp_greater(ptr + size, memory.s))
-        return Unexpected(HostFunctionError::PointerOutOfBounds);
+        return std::unexpected(HostFunctionError::PointerOutOfBounds);
 
     Slice data(memory.p + ptr, size);
     return data;
 }
 
-static Expected<int32_t, HostFunctionError>
+static std::expected<int32_t, HostFunctionError>
 getDataInt32(WasmRuntimeWrapper const&, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const result = params->data[i].of.i32;
@@ -183,7 +182,7 @@ getDataInt32(WasmRuntimeWrapper const&, wasm_val_vec_t const* params, int32_t& i
     return result;
 }
 
-static Expected<int64_t, HostFunctionError>
+static std::expected<int64_t, HostFunctionError>
 getDataInt64(WasmRuntimeWrapper const&, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const result = params->data[i].of.i64;
@@ -192,15 +191,15 @@ getDataInt64(WasmRuntimeWrapper const&, wasm_val_vec_t const* params, int32_t& i
 }
 
 template <class T>
-static Expected<T, HostFunctionError>
+static std::expected<T, HostFunctionError>
 getDataUnsigned(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     static_assert(std::is_unsigned_v<T>);
     auto const r = getDataSlice(runtime, params, i);
     if (!r)
-        return Unexpected(r.error());
+        return std::unexpected(r.error());
     if (r->size() != sizeof(T))
-        return Unexpected(HostFunctionError::InvalidParams);
+        return std::unexpected(HostFunctionError::InvalidParams);
 
     T x;
     uintptr_t const p = reinterpret_cast<uintptr_t>(r->data());
@@ -217,89 +216,89 @@ getDataUnsigned(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32
     return x;
 }
 
-static Expected<uint32_t, HostFunctionError>
+static std::expected<uint32_t, HostFunctionError>
 getDataUInt32(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     return getDataUnsigned<uint32_t>(runtime, params, i);
 }
 
-static Expected<uint64_t, HostFunctionError>
+static std::expected<uint64_t, HostFunctionError>
 getDataUInt64(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     return getDataUnsigned<uint64_t>(runtime, params, i);
 }
 
-static Expected<SFieldCRef, HostFunctionError>
+static std::expected<SFieldCRef, HostFunctionError>
 getDataSField(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const& m = SField::getKnownCodeToField();
     auto const it = m.find(params->data[i].of.i32);
     i++;
     if (it == m.end())
-        return Unexpected(HostFunctionError::InvalidField);
+        return std::unexpected(HostFunctionError::InvalidField);
 
     return *it->second;
 }
 
-static Expected<uint256, HostFunctionError>
+static std::expected<uint256, HostFunctionError>
 getDataUInt256(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
-        return Unexpected(slice.error());
+        return std::unexpected(slice.error());
 
     if (slice->size() != uint256::size())
-        return Unexpected(HostFunctionError::InvalidParams);
+        return std::unexpected(HostFunctionError::InvalidParams);
 
     if (auto t = checkTransfer(runtime, uint256::size()); !t)
-        return Unexpected(t.error());
+        return std::unexpected(t.error());
 
     return uint256::fromVoid(slice->data());
 }
 
-static Expected<AccountID, HostFunctionError>
+static std::expected<AccountID, HostFunctionError>
 getDataAccountID(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
-        return Unexpected(slice.error());
+        return std::unexpected(slice.error());
 
     if (slice->size() != AccountID::size())
-        return Unexpected(HostFunctionError::InvalidParams);
+        return std::unexpected(HostFunctionError::InvalidParams);
 
     if (auto t = checkTransfer(runtime, AccountID::size()); !t)
-        return Unexpected(t.error());
+        return std::unexpected(t.error());
 
     return AccountID::fromVoid(slice->data());
 }
 
-static Expected<Currency, HostFunctionError>
+static std::expected<Currency, HostFunctionError>
 getDataCurrency(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
-        return Unexpected(slice.error());
+        return std::unexpected(slice.error());
 
     if (slice->size() != Currency::size())
-        return Unexpected(HostFunctionError::InvalidParams);
+        return std::unexpected(HostFunctionError::InvalidParams);
 
     if (auto t = checkTransfer(runtime, Currency::size()); !t)
-        return Unexpected(t.error());
+        return std::unexpected(t.error());
 
     return Currency::fromVoid(slice->data());
 }
 
-static Expected<Asset, HostFunctionError>
+static std::expected<Asset, HostFunctionError>
 getDataAsset(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
-        return Unexpected(slice.error());
+        return std::unexpected(slice.error());
 
     if (slice->size() == MPTID::size())
     {
         if (auto t = checkTransfer(runtime, slice->size()); !t)
-            return Unexpected(t.error());
+            return std::unexpected(t.error());
 
         auto const mptid = MPTID::fromVoid(slice->data());
         return Asset{mptid};
@@ -308,12 +307,12 @@ getDataAsset(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t&
     if (slice->size() == Currency::size())
     {
         if (auto t = checkTransfer(runtime, slice->size()); !t)
-            return Unexpected(t.error());
+            return std::unexpected(t.error());
 
         auto const currency = Currency::fromVoid(slice->data());
         auto const issue = Issue{currency, xrpAccount()};
         if (!issue.native())
-            return Unexpected(HostFunctionError::InvalidParams);
+            return std::unexpected(HostFunctionError::InvalidParams);
 
         return Asset{issue};
     }
@@ -321,41 +320,41 @@ getDataAsset(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t&
     if (slice->size() == (Currency::size() + AccountID::size()))
     {
         if (auto t = checkTransfer(runtime, slice->size()); !t)
-            return Unexpected(t.error());
+            return std::unexpected(t.error());
 
         auto const issue = Issue(
             Currency::fromVoid(slice->data()),
             AccountID::fromVoid(slice->data() + Currency::size()));
 
         if (issue.native())
-            return Unexpected(HostFunctionError::InvalidParams);
+            return std::unexpected(HostFunctionError::InvalidParams);
 
         return Asset{issue};
     }
 
-    return Unexpected(HostFunctionError::InvalidParams);
+    return std::unexpected(HostFunctionError::InvalidParams);
 }
 
-static Expected<std::string_view, HostFunctionError>
+static std::expected<std::string_view, HostFunctionError>
 getDataString(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
-        return Unexpected(slice.error());
+        return std::unexpected(slice.error());
 
     return std::string_view(reinterpret_cast<char const*>(slice->data()), slice->size());
 }
 
-static Expected<FieldLocator, HostFunctionError>
+static std::expected<FieldLocator, HostFunctionError>
 getDataLocator(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     static_assert(kMaxWasmDataLength % sizeof(int32_t) == 0);
 
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
-        return Unexpected(slice.error());
+        return std::unexpected(slice.error());
     if (slice->empty() || ((slice->size() & 3) != 0u))  // must be multiple of 4
-        return Unexpected(HostFunctionError::LocatorMalformed);
+        return std::unexpected(HostFunctionError::LocatorMalformed);
 
     uint32_t const locSize = slice->size() / sizeof(int32_t);
     uintptr_t const p = reinterpret_cast<uintptr_t>(slice->data());
@@ -368,7 +367,7 @@ getDataLocator(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_
         // guest-facing code when the transfer limit is exceeded.
         checkGas(runtime, unalignedGas);
         if (auto t = checkTransfer(runtime, slice->size()); !t)
-            return Unexpected(t.error());
+            return std::unexpected(t.error());
 
         std::vector<int32_t> locBuf(locSize);
         memcpy(&locBuf[0], slice->data(), slice->size());
@@ -403,7 +402,7 @@ returnResult(
     WasmRuntimeWrapper& runtime,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results,
-    Expected<T, HostFunctionError> const& res,
+    std::expected<T, HostFunctionError> const& res,
     int32_t index)
 {
     if (!res)
@@ -979,7 +978,7 @@ escrowKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 }
 
 wasm_trap_t*
-lineKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
+trustLineKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
     int index = 0;
     WasmRuntimeWrapper& runtime = hf.getRT();
@@ -1000,12 +999,12 @@ lineKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
         runtime,
         params,
         results,
-        hf.lineKeylet(acc1.value(), acc2.value(), currency.value()),
+        hf.trustLineKeylet(acc1.value(), acc2.value(), currency.value()),
         index);
 }
 
 wasm_trap_t*
-mptIssuanceKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
+mptokenIssuanceKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
     int index = 0;
     WasmRuntimeWrapper& runtime = hf.getRT();
@@ -1019,7 +1018,7 @@ mptIssuanceKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
         return hfResult(results, seq.error());
 
     return returnResult(
-        runtime, params, results, hf.mptIssuanceKeylet(acc.value(), seq.value()), index);
+        runtime, params, results, hf.mptokenIssuanceKeylet(acc.value(), seq.value()), index);
 }
 
 wasm_trap_t*
@@ -1044,7 +1043,7 @@ mptokenKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 }
 
 wasm_trap_t*
-nftOfferKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
+nftokenOfferKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
     int index = 0;
     WasmRuntimeWrapper& runtime = hf.getRT();
@@ -1058,7 +1057,7 @@ nftOfferKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
         return hfResult(results, seq.error());
 
     return returnResult(
-        runtime, params, results, hf.nftOfferKeylet(acc.value(), seq.value()), index);
+        runtime, params, results, hf.nftokenOfferKeylet(acc.value(), seq.value()), index);
 }
 
 wasm_trap_t*
@@ -1096,7 +1095,7 @@ oracleKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 }
 
 wasm_trap_t*
-paychanKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
+paychannelKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
     int index = 0;
     WasmRuntimeWrapper& runtime = hf.getRT();
@@ -1114,7 +1113,11 @@ paychanKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
         return hfResult(results, seq.error());
 
     return returnResult(
-        runtime, params, results, hf.paychanKeylet(acc.value(), dest.value(), seq.value()), index);
+        runtime,
+        params,
+        results,
+        hf.paychannelKeylet(acc.value(), dest.value(), seq.value()),
+        index);
 }
 
 wasm_trap_t*
@@ -1136,7 +1139,7 @@ permissionedDomainKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 }
 
 wasm_trap_t*
-signersKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
+signerListKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
     int index = 0;
     WasmRuntimeWrapper& runtime = hf.getRT();
@@ -1145,7 +1148,7 @@ signersKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
     if (!acc)
         return hfResult(results, acc.error());
 
-    return returnResult(runtime, params, results, hf.signersKeylet(acc.value()), index);
+    return returnResult(runtime, params, results, hf.signerListKeylet(acc.value()), index);
 }
 
 wasm_trap_t*
@@ -1252,7 +1255,7 @@ getNFTTransferFee_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 }
 
 wasm_trap_t*
-getNFTSerial_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
+getNFTSequence_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
     int index = 0;
     WasmRuntimeWrapper& runtime = hf.getRT();
@@ -1261,7 +1264,7 @@ getNFTSerial_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
     if (!nftId)
         return hfResult(results, nftId.error());
 
-    return returnResult(runtime, params, results, hf.getNFTSerial(*nftId), index);
+    return returnResult(runtime, params, results, hf.getNFTSequence(*nftId), index);
 }
 
 wasm_trap_t*
@@ -1362,7 +1365,7 @@ traceAmount_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
     std::optional<STAmount> amount;
     try
     {
-        amount = STAmount(serialIter, kSfGeneric);
+        amount = STAmount(serialIter, sfGeneric);
     }
     catch (std::exception const&)
     {
@@ -1429,7 +1432,7 @@ floatFromSTAmount_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
     std::optional<STAmount> amount;
     try
     {
-        amount = STAmount(serialIter, kSfGeneric);
+        amount = STAmount(serialIter, sfGeneric);
     }
     catch (std::exception const&)
     {
@@ -1461,7 +1464,7 @@ floatFromSTNumber_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
     std::optional<STNumber> num;
     try
     {
-        num = STNumber(serialIter, kSfGeneric);
+        num = STNumber(serialIter, sfGeneric);
     }
     catch (std::exception const&)
     {
