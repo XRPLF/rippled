@@ -19,6 +19,12 @@ Design principles
        and the `join(seg::..., ...)` dotted resource compositions), and
      * the keys the code passes to `Resource::Create({ ... })` in Telemetry.cpp
        (the standard `semconv::service::*` keys -> service.name/version/...).
+   The one narrow, explicit exception is EXTERNAL_INFRA_LABELS (Rule D):
+   identity labels stamped by infrastructure outside this repo's OTel code
+   (the perf-iac harness), which by definition have no source in-tree to
+   derive from. Kept separate from the generic Prometheus/Grafana builtins
+   set so the exception stays visible rather than blending into "things
+   every OTel setup has".
 
 2. Presence-gated enforcement. Every rule runs ONLY when the source files it
    needs are present in the tree, and is otherwise skipped (never failed). This
@@ -800,6 +806,23 @@ def metric_label_names(root: Path) -> Set[str]:
     return labels
 
 
+# Identity labels stamped by EXTERNAL infrastructure the OTel pipeline in this
+# repo does not own: the perf-iac harness attaches these to every metric it
+# scrapes so dashboards can filter by which build/role produced a series. They
+# have no L1 (*SpanNames.h), L2 (collector config), or L6 (MetricsRegistry.cpp)
+# source to derive from, so — unlike every other dashboard label — they cannot
+# be validated dynamically. This is a deliberate, narrow exception to the "no
+# hardcoded allowlist" design principle, kept separate from the generic
+# Prometheus/Grafana `builtins` set below so it stays visible and auditable.
+# Add a label here ONLY if it is genuinely injected by infra outside this
+# repo's OTel code (never as a workaround for a dashboard querying a label
+# that nothing actually emits — that is a real Rule D violation).
+EXTERNAL_INFRA_LABELS = {
+    "xrpl_branch",  # perf-iac: git ref of the xrpld build under test
+    "xrpl_node_role",  # perf-iac: validator/peer role in the perf cluster
+}
+
+
 def run_rule_d_dashboards(
     root: Path, l1_keys: Set[str], metric_labels: Set[str], report: Report
 ) -> None:
@@ -825,8 +848,9 @@ def run_rule_d_dashboards(
         "instance",
     }
     # A dashboard label is valid if it is a span attribute (L1), a native-metric
-    # label (L6), or a Prometheus/Grafana builtin.
-    valid = l1_keys | metric_labels | builtins
+    # label (L6), a Prometheus/Grafana builtin, or an external-infra identity
+    # label (EXTERNAL_INFRA_LABELS).
+    valid = l1_keys | metric_labels | builtins | EXTERNAL_INFRA_LABELS
     found = False
     for f in files:
         try:
