@@ -7344,7 +7344,7 @@ class Vault_test : public beast::unit_test::Suite
             jv[sfMPTokenIssuanceID] = to_string(mptt.issuanceID());
             jv[sfFlags] = tfMPTUnauthorize;
             jv[sfTransactionType] = jss::MPTokenAuthorize;
-            env(jv, Ter{tesSUCCESS});
+            env(jv, Ter{tecNO_PERMISSION});
             env.close();
             BEAST_EXPECT(referencedHoldingExists(env, keylet));
         }
