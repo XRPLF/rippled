@@ -223,6 +223,7 @@ jobs:
           BUILD_TYPE: ${{ inputs.build_type }}
           CMAKE_TARGET: ${{ inputs.cmake_target }}
         run: |
+          set -o pipefail
           cmake \
               --build . \
               --config "${BUILD_TYPE}" \
