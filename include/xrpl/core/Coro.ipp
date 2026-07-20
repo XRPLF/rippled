@@ -4,8 +4,10 @@
 
 namespace xrpl {
 
-/// Coroutine stack size (1.5 MB). Increased from 1 MB because
-/// ASAN-instrumented deep call stacks exceeded the original limit.
+/**
+ * Coroutine stack size (1.5 MB). Increased from 1 MB because
+ * ASAN-instrumented deep call stacks exceeded the original limit.
+ */
 constexpr std::size_t kCoroStackSize = 1536 * 1024;
 
 template <class F>

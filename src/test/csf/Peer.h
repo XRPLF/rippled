@@ -47,24 +47,26 @@ namespace xrpl::test::csf {
 
 namespace bc = boost::container;
 
-/** A single peer in the simulation.
-
-    This is the main work-horse of the consensus simulation framework and is
-    where many other components are integrated. The peer
-
-     - Implements the Callbacks required by Consensus
-     - Manages trust & network connections with other peers
-     - Issues events back to the simulation based on its actions for analysis
-       by Collectors
-     - Exposes most internal state for forcibly simulating arbitrary scenarios
-*/
+/**
+ * A single peer in the simulation.
+ *
+ * This is the main work-horse of the consensus simulation framework and is
+ * where many other components are integrated. The peer
+ *
+ *  - Implements the Callbacks required by Consensus
+ *  - Manages trust & network connections with other peers
+ *  - Issues events back to the simulation based on its actions for analysis
+ *    by Collectors
+ *  - Exposes most internal state for forcibly simulating arbitrary scenarios
+ */
 struct Peer
 {
-    /** Basic wrapper of a proposed position taken by a peer.
-
-        For real consensus, this would add additional data for serialization
-        and signing. For simulation, nothing extra is needed.
-    */
+    /**
+     * Basic wrapper of a proposed position taken by a peer.
+     *
+     * For real consensus, this would add additional data for serialization
+     * and signing. For simulation, nothing extra is needed.
+     */
     class Position
     {
     public:
@@ -94,16 +96,21 @@ struct Peer
         Proposal proposal_;
     };
 
-    /** Simulated delays in internal peer processing.
+    /**
+     * Simulated delays in internal peer processing.
      */
     struct ProcessingDelays
     {
-        //! Delay in consensus calling doAccept to accepting and issuing
-        //! validation
-        //! TODO: This should be a function of the number of transactions
+        /**
+         * Delay in consensus calling doAccept to accepting and issuing
+         * validation
+         * TODO: This should be a function of the number of transactions
+         */
         std::chrono::milliseconds ledgerAccept{0};
 
-        //! Delay in processing validations from remote peers
+        /**
+         * Delay in processing validations from remote peers
+         */
         std::chrono::milliseconds recvValidation{0};
 
         // Return the receive delay for message type M, default is no delay
@@ -127,7 +134,8 @@ struct Peer
     {
     };
 
-    /** Generic Validations adaptor that simply ignores recently stale
+    /**
+     * Generic Validations adaptor that simply ignores recently stale
      * validations
      */
     class ValAdaptor
@@ -170,7 +178,9 @@ struct Peer
         }
     };
 
-    //! Type definitions for generic consensus
+    /**
+     * Type definitions for generic consensus
+     */
     using Ledger_t = Ledger;
     using NodeID_t = PeerID;
     using NodeKey_t = PeerKey;
@@ -179,74 +189,114 @@ struct Peer
     using Result = ConsensusResult<Peer>;
     using NodeKey = Validation::NodeKey;
 
-    //! Logging support that prefixes messages with the peer ID
+    /**
+     * Logging support that prefixes messages with the peer ID
+     */
     beast::WrappedSink sink;
     beast::Journal j;
 
-    //! Generic consensus
+    /**
+     * Generic consensus
+     */
     Consensus<Peer> consensus;
 
-    //! Our unique ID
+    /**
+     * Our unique ID
+     */
     PeerID id;
 
-    //! Current signing key
+    /**
+     * Current signing key
+     */
     PeerKey key;
 
-    //! The oracle that manages unique ledgers
+    /**
+     * The oracle that manages unique ledgers
+     */
     LedgerOracle& oracle;
 
-    //! Scheduler of events
+    /**
+     * Scheduler of events
+     */
     Scheduler& scheduler;
 
-    //! Handle to network for sending messages
+    /**
+     * Handle to network for sending messages
+     */
     BasicNetwork<Peer*>& net;
 
-    //! Handle to Trust graph of network
+    /**
+     * Handle to Trust graph of network
+     */
     TrustGraph<Peer*>& trustGraph;
 
-    //! openTxs that haven't been closed in a ledger yet
+    /**
+     * openTxs that haven't been closed in a ledger yet
+     */
     TxSetType openTxs;
 
-    //! The last ledger closed by this node
+    /**
+     * The last ledger closed by this node
+     */
     Ledger lastClosedLedger;
 
-    //! Ledgers this node has closed or loaded from the network
+    /**
+     * Ledgers this node has closed or loaded from the network
+     */
     hash_map<Ledger::ID, Ledger> ledgers;
 
-    //! Validations from trusted nodes
+    /**
+     * Validations from trusted nodes
+     */
     Validations<ValAdaptor> validations;
 
-    //! The most recent ledger that has been fully validated by the network from
-    //! the perspective of this Peer
+    /**
+     * The most recent ledger that has been fully validated by the network from
+     * the perspective of this Peer
+     */
     Ledger fullyValidatedLedger;
 
     //-------------------------------------------------------------------------
     // Store most network messages; these could be purged if memory use ever
     // becomes problematic
 
-    //! Map from Ledger::ID to vector of Positions with that ledger
-    //! as the prior ledger
+    /**
+     * Map from Ledger::ID to vector of Positions with that ledger
+     * as the prior ledger
+     */
     bc::flat_map<Ledger::ID, std::vector<Proposal>> peerPositions;
-    //! TxSet associated with a TxSet::ID
+    /**
+     * TxSet associated with a TxSet::ID
+     */
     bc::flat_map<TxSet::ID, TxSet> txSets;
 
     // Ledgers/TxSets we are acquiring and when that request times out
     bc::flat_map<Ledger::ID, SimTime> acquiringLedgers;
     bc::flat_map<TxSet::ID, SimTime> acquiringTxSets;
 
-    //! The number of ledgers this peer has completed
+    /**
+     * The number of ledgers this peer has completed
+     */
     int completedLedgers = 0;
 
-    //! The number of ledgers this peer should complete before stopping to run
+    /**
+     * The number of ledgers this peer should complete before stopping to run
+     */
     int targetLedgers = std::numeric_limits<int>::max();
 
-    //! Skew of time relative to the common scheduler clock
+    /**
+     * Skew of time relative to the common scheduler clock
+     */
     std::chrono::seconds clockSkew{0};
 
-    //! Simulated delays to use for internal processing
+    /**
+     * Simulated delays to use for internal processing
+     */
     ProcessingDelays delays;
 
-    //! Whether to simulate running as validator or a tracking node
+    /**
+     * Whether to simulate running as validator or a tracking node
+     */
     bool runAsValidator = true;
 
     // TODO: Consider removing these two, they are only a convenience for tests
@@ -264,20 +314,22 @@ struct Peer
     // Simulation parameters
     ConsensusParms consensusParms;
 
-    //! The collectors to report events to
+    /**
+     * The collectors to report events to
+     */
     CollectorRefs& collectors;
 
-    /** Constructor
-
-        @param i Unique PeerID
-        @param s Simulation Scheduler
-        @param o Simulation Oracle
-        @param n Simulation network
-        @param tg Simulation trust graph
-        @param c Simulation collectors
-        @param jIn Simulation journal
-
-    */
+    /**
+     * Constructor
+     *
+     * @param i Unique PeerID
+     * @param s Simulation Scheduler
+     * @param o Simulation Oracle
+     * @param n Simulation network
+     * @param tg Simulation trust graph
+     * @param c Simulation collectors
+     * @param jIn Simulation journal
+     */
     Peer(
         PeerID i,
         Scheduler& s,
@@ -307,9 +359,10 @@ struct Peer
         trustGraph.trust(this, this);
     }
 
-    /**  Schedule the provided callback in `when` duration, but if
-        `when` is 0, call immediately
-    */
+    /**
+     * Schedule the provided callback in `when` duration, but if
+     * `when` is 0, call immediately
+     */
     template <class T>
     void
     schedule(std::chrono::nanoseconds when, T&& what)
@@ -365,22 +418,19 @@ struct Peer
     bool
     trusts(PeerID const& oId)
     {
-        for (auto const p : trustGraph.trustedPeers(this))
-        {
-            if (p->id == oId)
-                return true;
-        }
-        return false;
+        return std::ranges::any_of(
+            trustGraph.trustedPeers(this), [&oId](auto const p) { return p->id == oId; });
     }
 
-    /** Create network connection
-
-        Creates a new outbound connection to another Peer if none exists
-
-        @param o The peer with the inbound connection
-        @param dur The fixed delay for messages between the two Peers
-        @return Whether the connection was created.
-    */
+    /**
+     * Create network connection
+     *
+     * Creates a new outbound connection to another Peer if none exists
+     *
+     * @param o The peer with the inbound connection
+     * @param dur The fixed delay for messages between the two Peers
+     * @return Whether the connection was created.
+     */
 
     bool
     connect(Peer& o, SimDuration dur)
@@ -388,13 +438,14 @@ struct Peer
         return net.connect(this, &o, dur);
     }
 
-    /** Remove a network connection
-
-        Removes a connection between peers if one exists
-
-        @param o The peer we disconnect from
-        @return Whether the connection was removed
-    */
+    /**
+     * Remove a network connection
+     *
+     * Removes a connection between peers if one exists
+     *
+     * @param o The peer we disconnect from
+     * @return Whether the connection was removed
+     */
     bool
     disconnect(Peer& o)
     {
@@ -689,7 +740,9 @@ struct Peer
     //--------------------------------------------------------------------------
     // Validation members
 
-    /** Add a trusted validation and return true if it is worth forwarding */
+    /**
+     * Add a trusted validation and return true if it is worth forwarding
+     */
     bool
     addTrustedValidation(Validation v)
     {
@@ -706,7 +759,9 @@ struct Peer
         return true;
     }
 
-    /** Check if a new ledger can be deemed fully validated */
+    /**
+     * Check if a new ledger can be deemed fully validated
+     */
     void
     checkFullyValidated(Ledger const& ledger)
     {
@@ -908,7 +963,9 @@ struct Peer
     //--------------------------------------------------------------------------
     // Simulation "driver" members
 
-    //! Heartbeat timer call
+    /**
+     * Heartbeat timer call
+     */
     void
     timerEntry()
     {
@@ -975,16 +1032,17 @@ struct Peer
     // TODO: Make this more robust
     hash_map<Ledger::Seq, Tx> txInjections;
 
-    /** Inject non-consensus Tx
-
-        Injects a transactionsinto the ledger following prevLedger's sequence
-        number.
-
-        @param prevLedger The ledger we are building the new ledger on top of
-        @param src The Consensus TxSet
-        @return Consensus TxSet with inject transactions added if prevLedger.seq
-                matches a previously registered Tx.
-    */
+    /**
+     * Inject non-consensus Tx
+     *
+     * Injects a transactionsinto the ledger following prevLedger's sequence
+     * number.
+     *
+     * @param prevLedger The ledger we are building the new ledger on top of
+     * @param src The Consensus TxSet
+     * @return Consensus TxSet with inject transactions added if prevLedger.seq
+     *         matches a previously registered Tx.
+     */
     TxSet
     injectTxs(Ledger prevLedger, TxSet const& src)
     {

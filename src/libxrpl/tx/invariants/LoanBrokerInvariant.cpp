@@ -15,6 +15,8 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
+
 namespace xrpl {
 
 void
@@ -127,8 +129,8 @@ ValidLoanBroker::finalize(
         }
     }
 
-    for (auto const& [brokerID, broker] : brokers_)
-    {
+    return std::ranges::all_of(brokers_, [&](auto const& entry) {
+        auto const& [brokerID, broker] = entry;
         auto const& after =
             broker.brokerAfter ? broker.brokerAfter : view.read(keylet::loanBroker(brokerID));
 
@@ -204,8 +206,8 @@ ValidLoanBroker::finalize(
                 return false;
             }
         }
-    }
-    return true;
+        return true;
+    });
 }
 
 }  // namespace xrpl

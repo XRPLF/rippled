@@ -10,7 +10,9 @@
 
 namespace xrpl {
 
-/** Provides the beast::insight::Collector service. */
+/**
+ * Provides the beast::insight::Collector service.
+ */
 class CollectorManager
 {
 public:

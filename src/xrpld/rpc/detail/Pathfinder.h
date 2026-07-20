@@ -26,16 +26,19 @@
 
 namespace xrpl {
 
-/** Calculates payment paths.
-
-    The @ref RippleCalc determines the quality of the found paths.
-
-    @see RippleCalc
-*/
+/**
+ * Calculates payment paths.
+ *
+ * The @ref RippleCalc determines the quality of the found paths.
+ *
+ * @see RippleCalc
+ */
 class Pathfinder : public CountedObject<Pathfinder>
 {
 public:
-    /** Construct a pathfinder without an issuer.*/
+    /**
+     * Construct a pathfinder without an issuer.
+     */
     Pathfinder(
         std::shared_ptr<AssetCache> const& cache,
         AccountID const& srcAccount,
@@ -57,7 +60,9 @@ public:
     bool
     findPaths(int searchLevel, std::function<bool(void)> const& continueCallback = {});
 
-    /** Compute the rankings of the paths. */
+    /**
+     * Compute the rankings of the paths.
+     */
     void
     computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback = {});
 
@@ -189,8 +194,10 @@ private:
     PathAsset srcPathAsset_;
     std::optional<AccountID> srcIssuer_;
     STAmount srcAmount_;
-    /** The amount remaining from srcAccount_ after the default liquidity has
-        been removed. */
+    /**
+     * The amount remaining from srcAccount_ after the default liquidity has
+     * been removed.
+     */
     STAmount remainingAmount_;
     bool convertAll_;
     std::optional<uint256> domain_;
