@@ -321,6 +321,24 @@ SpanGuard::detached() &&
     return SpanGuard(std::make_unique<Impl>(std::move(s), Impl::Detached{}));
 }
 
+// ===== Detach-in-place helpers =============================================
+
+void
+detachInPlace(std::optional<SpanGuard>& guard)
+{
+    if (!guard || !*guard)
+        return;
+    guard.emplace(std::move(*guard).detached());
+}
+
+std::shared_ptr<SpanGuard>
+detachInPlace(std::shared_ptr<SpanGuard> guard)
+{
+    if (!guard || !*guard)
+        return guard;
+    return std::make_shared<SpanGuard>(std::move(*guard).detached());
+}
+
 // ===== Context capture =====================================================
 
 SpanContext
