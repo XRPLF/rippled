@@ -121,6 +121,14 @@ class RuleERunbook(unittest.TestCase):
     def test_legit_dotted_resource_attrs_in_l1(self):
         self.assertEqual(_run_rule_e("`xrpl.network.id` `xrpl.network.type`"), [])
 
+    def test_external_infra_dotted_resource_attrs_not_flagged(self):
+        # perf-iac stamps these as dotted resource attrs (alloy pipeline);
+        # EXTERNAL_INFRA_LABELS (Rule D) holds their underscore metric-label
+        # form -- Rule E must also exempt the dotted resource-attr form.
+        self.assertEqual(
+            _run_rule_e("`xrpl.work.item` `xrpl.branch` `xrpl.node.role`"), []
+        )
+
     def test_prose_word(self):
         self.assertEqual(_run_rule_e("the `command` attribute"), [])
 
@@ -743,6 +751,12 @@ class RuleDDashboards(unittest.TestCase):
             self._run('"expr": "sum by (le, span_name, exported_instance) (x)"', set()),
             [],
         )
+
+    def test_external_infra_labels_not_flagged(self):
+        # EXTERNAL_INFRA_LABELS (perf-iac identity labels with no in-tree
+        # source) must be recognized as valid, distinct from `builtins`.
+        expr = "sum by (" + ", ".join(sorted(chk.EXTERNAL_INFRA_LABELS)) + ") (x)"
+        self.assertEqual(self._run(f'"expr": "{expr}"', set()), [])
 
     def test_prometheus_name_label_not_flagged(self):
         # `__name__` is the Prometheus reserved metric-name label; the renamed

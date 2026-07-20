@@ -1,4 +1,5 @@
-/** GTest unit tests for MetricsRegistry (no-op / telemetry-disabled path).
+/**
+ * GTest unit tests for MetricsRegistry (no-op / telemetry-disabled path).
  *
  *  Tests cover:
  *  - Construction with telemetry disabled (no-op behavior).
@@ -36,7 +37,8 @@ using namespace xrpl;
 
 namespace {
 
-/** Minimal mock ServiceRegistry for MetricsRegistry testing.
+/**
+ * Minimal mock ServiceRegistry for MetricsRegistry testing.
  *
  *  Only the getMetricsRegistry() call is used in the tests; other methods
  *  are not invoked because the registry is disabled (enabled=false) so no
@@ -297,7 +299,9 @@ public:
     }
 };
 
-/// Test fixture that provides a MockServiceRegistry and null Journal.
+/**
+ * Test fixture that provides a MockServiceRegistry and null Journal.
+ */
 class MetricsRegistryTest : public ::testing::Test
 {
 protected:

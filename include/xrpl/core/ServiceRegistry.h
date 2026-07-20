@@ -231,9 +231,10 @@ public:
     virtual telemetry::Telemetry&
     getTelemetry() = 0;
 
-    /** Return the MetricsRegistry, or nullptr if telemetry is disabled.
-        Used by PerfLog and other hot paths to record OTel metrics.
-    */
+    /**
+     * Return the MetricsRegistry, or nullptr if telemetry is disabled.
+     * Used by PerfLog and other hot paths to record OTel metrics.
+     */
     virtual telemetry::MetricsRegistry*
     getMetricsRegistry() = 0;
 

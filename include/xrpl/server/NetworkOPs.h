@@ -103,11 +103,12 @@ public:
 
     [[nodiscard]] virtual OperatingMode
     getOperatingMode() const = 0;
-    /** Time spent in the current operating mode so far, in microseconds.
-        Same value as `server_state_duration_us` in server_info; exposed as a
-        lightweight accessor so metrics can read it without building the full
-        server_info JSON on every collection tick.
-    */
+    /**
+     * Time spent in the current operating mode so far, in microseconds.
+     * Same value as `server_state_duration_us` in server_info; exposed as a
+     * lightweight accessor so metrics can read it without building the full
+     * server_info JSON on every collection tick.
+     */
     [[nodiscard]] virtual std::chrono::microseconds
     getServerStateDurationUs() const = 0;
     [[nodiscard]] virtual std::string

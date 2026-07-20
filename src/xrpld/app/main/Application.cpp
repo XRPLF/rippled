@@ -221,8 +221,10 @@ public:
     beast::Journal journal_;
     std::unique_ptr<perf::PerfLog> perfLog_;
     std::unique_ptr<telemetry::Telemetry> telemetry_;
-    /// OTel metrics registry for gap-fill metrics (counters, histograms,
-    /// observable gauges). Created after telemetry_ during setup().
+    /**
+     * OTel metrics registry for gap-fill metrics (counters, histograms,
+     * observable gauges). Created after telemetry_ during setup().
+     */
     std::unique_ptr<telemetry::MetricsRegistry> metricsRegistry_;
     Application::MutexType masterMutex_;
 

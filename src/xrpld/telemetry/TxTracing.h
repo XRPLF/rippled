@@ -1,6 +1,7 @@
 #pragma once
 
-/** Helper functions for creating transaction trace spans.
+/**
+ * Helper functions for creating transaction trace spans.
  *
  *  Encapsulates the logic for creating SpanGuard instances with
  *  hash-derived trace IDs and optional protobuf parent extraction.
@@ -21,7 +22,8 @@
 
 namespace xrpl::telemetry {
 
-/** Create a "tx.receive" span for a transaction received from a peer.
+/**
+ * Create a "tx.receive" span for a transaction received from a peer.
  *  trace_id is derived from txID[0:16]. If the incoming message carries
  *  a protobuf TraceContext with a valid span_id, it is used as the
  *  parent to preserve relay ordering.
@@ -53,7 +55,8 @@ txReceiveSpan(uint256 const& txID, [[maybe_unused]] protocol::TMTransaction cons
         TraceCategory::Transactions, tx_span::receive, txID.data(), txID.kBytes);
 }
 
-/** Create a "tx.process" span for transaction processing in NetworkOPs.
+/**
+ * Create a "tx.process" span for transaction processing in NetworkOPs.
  *  trace_id is derived from txID[0:16].
  */
 inline SpanGuard

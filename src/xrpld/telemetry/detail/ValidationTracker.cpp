@@ -1,6 +1,7 @@
-/** @file ValidationTracker.cpp
-    Implementation of the ValidationTracker class.
-*/
+/**
+ * @file ValidationTracker.cpp
+ * Implementation of the ValidationTracker class.
+ */
 
 #include <xrpld/telemetry/ValidationTracker.h>
 
