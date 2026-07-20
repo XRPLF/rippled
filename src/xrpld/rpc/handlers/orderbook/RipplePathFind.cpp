@@ -27,8 +27,19 @@ json::Value
 doRipplePathFind(RPC::JsonContext& context)
 {
     using namespace telemetry;
-    auto span = SpanGuard::span(
-        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::request);
+    // This RPC span is held live across context.coro->yield() below, so it is
+    // both rooted and detached:
+    //  - rootSpan: on resume the coroutine may run on a different JobQueue
+    //    worker whose thread-local context stack holds unrelated spans; a fresh
+    //    root avoids inheriting a stale ambient parent at creation.
+    //  - detached(): strips the thread-local Scope so the guard does not sit on
+    //    the worker's context stack across the yield (which would adopt other
+    //    spans run on that thread) and is not popped on the wrong thread when
+    //    the coroutine resumes elsewhere. The span still ends when this frame
+    //    unwinds after resume.
+    auto span = SpanGuard::rootSpan(
+                    TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::request)
+                    .detached();
     // Addresses are hashed before emission for privacy.
     if (auto const& src = context.params[jss::source_account]; src.isString())
         span.setAttribute(pathfind_span::attr::sourceAccount, redactAccount(src.asString()));

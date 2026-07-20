@@ -81,7 +81,7 @@ public:
 
     /**
      * @return the replaced reservation if it existed
-     * @throw soci::soci_error
+     * @throws soci::soci_error
      */
     std::optional<PeerReservation>
     insertOrAssign(PeerReservation const& reservation);
