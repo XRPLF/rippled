@@ -2116,7 +2116,7 @@ Consensus<Adaptor>::startEstablishTracing()
     if (*establishSpan_)
     {
         establishSpanContext_ = establishSpan_->captureContext();
-        establishSpan_.emplace(std::move(*establishSpan_).detached());
+        telemetry::detachInPlace(establishSpan_);
     }
 }
 
