@@ -55,7 +55,7 @@ TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate,
     {sfCondition, SoeOptional},
     {sfCancelAfter, SoeOptional},
     {sfFinishAfter, SoeOptional},
-    {sfFinishFunction, SoeOptional},
+    {sfBytecode, SoeOptional},
     {sfData,           SoeOptional},
 }))
 
@@ -73,7 +73,7 @@ TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish,
     {sfFulfillment, SoeOptional},
     {sfCondition, SoeOptional},
     {sfCredentialIDs, SoeOptional},
-    {sfComputationAllowance, SoeOptional},
+    {sfGas, SoeOptional},
 }))
 
 

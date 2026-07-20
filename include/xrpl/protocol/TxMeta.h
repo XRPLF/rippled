@@ -88,8 +88,8 @@ public:
         if (obj.isFieldPresent(sfGasUsed))
             gasUsed_ = obj.getFieldU32(sfGasUsed);
 
-        if (obj.isFieldPresent(sfWasmReturnCode))
-            wasmReturnCode_ = obj.getFieldI32(sfWasmReturnCode);
+        if (obj.isFieldPresent(sfVMReturnCode))
+            vmReturnCode_ = obj.getFieldI32(sfVMReturnCode);
     }
 
     [[nodiscard]] std::optional<STAmount> const&
@@ -123,15 +123,15 @@ public:
     }
 
     void
-    setWasmReturnCode(std::optional<std::int32_t> const wasmReturnCode)
+    setVMReturnCode(std::optional<std::int32_t> const vmReturnCode)
     {
-        wasmReturnCode_ = wasmReturnCode;
+        vmReturnCode_ = vmReturnCode;
     }
 
     [[nodiscard]] std::optional<std::int32_t> const&
-    getWasmReturnCode() const
+    getVMReturnCode() const
     {
-        return wasmReturnCode_;
+        return vmReturnCode_;
     }
 
 private:
@@ -143,7 +143,7 @@ private:
     std::optional<STAmount> deliveredAmount_;
     std::optional<uint256> parentBatchID_;
     std::optional<std::uint32_t> gasUsed_;
-    std::optional<std::int32_t> wasmReturnCode_;
+    std::optional<std::int32_t> vmReturnCode_;
 
     STArray nodes_;
 };
