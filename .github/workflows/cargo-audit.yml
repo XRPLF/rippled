@@ -39,7 +39,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/xrpld/nix-debian:sha-fe4c8ae
+    container: ghcr.io/xrplf/xrpld/nix-debian:sha-2e25435
     permissions:
       contents: read
       # Needed to open an issue on scheduled failures.
@@ -47,11 +47,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-
-      - name: Install cargo-audit
-        uses: taiki-e/install-action@b8cecb83565409bcc297b2df6e77f030b2a468d5 # v2.82.0
-        with:
-          tool: cargo-audit
 
       - name: Run cargo audit
         id: audit
@@ -64,14 +59,14 @@ jobs:
         if: ${{ steps.audit.outcome != 'success' && github.event_name == 'schedule' }}
         run: |
           {
-            echo "## \`cargo audit\` found advisories"
-            echo
-            echo '```'
-            cat /tmp/cargo-audit.txt
-            echo '```'
-            echo
-            echo "---"
-            echo "*This issue was automatically created by the cargo-audit workflow.*"
+              echo "## \`cargo audit\` found advisories"
+              echo
+              echo '```'
+              cat /tmp/cargo-audit.txt
+              echo '```'
+              echo
+              echo "---"
+              echo "*This issue was automatically created by the cargo-audit workflow.*"
           } >/tmp/cargo-audit-issue.md
 
       - name: Create issue
