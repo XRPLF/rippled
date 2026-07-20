@@ -28,6 +28,7 @@
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
@@ -704,13 +705,23 @@ struct Peer
     {
     }
 
+    // The generic engine parents its phase spans under the round span via
+    // this context; the simulator runs without telemetry, so return an
+    // invalid context and no phase span is created.
+    static telemetry::SpanContext
+    roundSpanContext()
+    {
+        return {};
+    }
+
 #ifdef XRPL_ENABLE_TELEMETRY
-    /** Provide telemetry access for the Consensus template.
+    /**
+     * Provide telemetry access for the Consensus template.
      *
-     *  The test Peer adaptor uses a static disabled NullTelemetry instance
-     *  so that all shouldTrace*() checks return false and no spans are
-     *  created during simulation tests. It is static because the shared
-     *  disabled instance does not depend on any per-peer state.
+     * The test Peer adaptor uses a static disabled NullTelemetry instance
+     * so that all shouldTrace*() checks return false and no spans are
+     * created during simulation tests. It is static because the shared
+     * disabled instance does not depend on any per-peer state.
      */
     static telemetry::Telemetry&
     getTelemetry()
