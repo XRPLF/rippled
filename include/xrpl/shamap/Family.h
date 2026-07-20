@@ -35,18 +35,23 @@ public:
     virtual beast::Journal const&
     journal() = 0;
 
-    /** Return a pointer to the Family Full Below Cache */
+    /**
+     * Return a pointer to the Family Full Below Cache
+     */
     virtual std::shared_ptr<FullBelowCache>
     getFullBelowCache() = 0;
 
-    /** Return a pointer to the Family Tree Node Cache */
+    /**
+     * Return a pointer to the Family Tree Node Cache
+     */
     virtual std::shared_ptr<TreeNodeCache>
     getTreeNodeCache() = 0;
 
     virtual void
     sweep() = 0;
 
-    /** Acquire ledger that has a missing node by ledger sequence
+    /**
+     * Acquire ledger that has a missing node by ledger sequence
      *
      * @param refNum Sequence of ledger to acquire.
      * @param nodeHash Hash of missing node to report in throw.
@@ -54,7 +59,8 @@ public:
     virtual void
     missingNodeAcquireBySeq(std::uint32_t refNum, uint256 const& nodeHash) = 0;
 
-    /** Acquire ledger that has a missing node by ledger hash
+    /**
+     * Acquire ledger that has a missing node by ledger hash
      *
      * @param refHash Hash of ledger to acquire.
      * @param refNum Ledger sequence with missing node.

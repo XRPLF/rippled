@@ -61,14 +61,18 @@ public:
     void
     update(std::uint32_t seq);
 
-    /** Returns true if we got all the data. */
+    /**
+     * Returns true if we got all the data.
+     */
     bool
     isComplete() const
     {
         return complete_;
     }
 
-    /** Returns false if we failed to get the data. */
+    /**
+     * Returns false if we failed to get the data.
+     */
     bool
     isFailed() const
     {
@@ -97,7 +101,9 @@ public:
 
     using neededHash_t = std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
 
-    /** Return a json::ValueType::Object. */
+    /**
+     * Return a json::ValueType::Object.
+     */
     json::Value
     getJson(int);
 
@@ -194,6 +200,10 @@ private:
     /// with the outcome (complete/failed), timeout count, and peer count.
     /// Gives operators visibility into back-fill / fork-recovery cost, which
     /// previously emitted no span or metric.
+    /// Stored detached: emplaced by the acquiring thread, reset on a
+    /// JtLedgerData worker. detached() strips the thread-local Scope so the
+    /// guard can be destroyed on the worker without corrupting the origin
+    /// thread's context stack.
     std::optional<telemetry::SpanGuard> acquireSpan_;
 };
 

@@ -7,12 +7,13 @@
 
 namespace xrpl {
 
-/** Discardable, editable view to a ledger.
-
-    The sandbox inherits the flags of the base.
-
-    @note Presented as ApplyView to clients.
-*/
+/**
+ * Discardable, editable view to a ledger.
+ *
+ * The sandbox inherits the flags of the base.
+ *
+ * @note Presented as ApplyView to clients.
+ */
 class Sandbox : public detail::ApplyViewBase
 {
 public:

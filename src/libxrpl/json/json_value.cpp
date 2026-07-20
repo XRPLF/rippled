@@ -174,7 +174,8 @@ Value::CZString::isStaticString() const
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 
-/*! \internal Default constructor initialization must be equivalent to:
+/**
+ * @internal Default constructor initialization must be equivalent to:
  * memset( this, 0, sizeof(Value) )
  * This optimization is used in ValueInternalMap fast allocator.
  */
@@ -313,8 +314,7 @@ Value::~Value()
 
         case ValueType::Array:
         case ValueType::Object:
-            if (value_.mapVal != nullptr)
-                delete value_.mapVal;
+            delete value_.mapVal;
             break;
 
         // LCOV_EXCL_START
@@ -794,7 +794,9 @@ Value::isConvertibleTo(ValueType other) const
     return false;  // unreachable;
 }
 
-/// Number of values in array or object
+/**
+ * Number of values in array or object
+ */
 Value::UInt
 Value::size() const
 {

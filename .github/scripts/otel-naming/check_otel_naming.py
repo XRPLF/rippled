@@ -31,7 +31,8 @@ Layers
 ------
   L1 code      : src/**/*SpanNames.h, include/**/*SpanNames.h  (ground truth)
   L1 resource  : src/libxrpl/telemetry/Telemetry.cpp           (dotted allowlist)
-  L1 callsites : setAttribute/addEvent/span/childSpan in src/**, include/**
+  L1 callsites : setAttribute/addEvent/span/rootSpan/childSpan in src/**,
+                 include/**
   L2 collector : docker/telemetry/otel-collector-config.yaml   (spanmetrics dims)
   L3 tempo     : docker/telemetry/tempo.yaml                    (span filter tags)
   L4 dashboards: docker/telemetry/grafana/dashboards/*.json     (PromQL labels)
@@ -46,9 +47,9 @@ Rules (each FAILS the build, when its inputs are present)
   G  Attribute keys must be lower_snake_case (^[a-z][a-z0-9_]*$ per segment).
      Flags camelCase, UPPERCASE, spaces, and other stray characters.
   F  No string literals as attribute keys or span-name arguments. The
-     setAttribute/addEvent key and the span/childSpan prefix/name args must
-     reference a *SpanNames.h constant, never a "literal". Attribute VALUES are
-     exempt (runtime data). Definitions inside *SpanNames.h are exempt, and
+     setAttribute/addEvent key and the span/rootSpan/childSpan prefix/name args
+     must reference a *SpanNames.h constant, never a "literal". Attribute VALUES
+     are exempt (runtime data). Definitions inside *SpanNames.h are exempt, and
      test files are exempt (they pass arbitrary literals to exercise the API).
   B  Every collector spanmetrics dimension exists in the L1 key set.
   C  Every tempo span-filter tag exists in the L1 key set.
@@ -123,12 +124,14 @@ USING_DECL = re.compile(r"using\s+(?:::)?[\w:]*::(\w+)\s*;")
 # Telemetry call-sites whose string arguments must be constants, not literals.
 # Require a receiver so we match real SpanGuard calls, not std::span / a math
 # `span(...)` / a bare method declaration:
-#   - `SpanGuard::span(` / `SpanGuard::childSpan(`  (static factory)
+#   - `SpanGuard::span(` / `SpanGuard::rootSpan(` / `SpanGuard::childSpan(`
+#     (static factories)
 #   - `<obj>.span(` / `<obj>->setAttribute(` etc.   (member call)
-# `span`/`childSpan` additionally require the `SpanGuard`/`.`/`->` receiver;
-# `setAttribute`/`addEvent` only ever exist on a guard, so a `.`/`->` suffices.
+# `span`/`rootSpan`/`childSpan` additionally require the `SpanGuard`/`.`/`->`
+# receiver; `setAttribute`/`addEvent` only ever exist on a guard, so a `.`/`->`
+# suffices. `rootSpan` shares `span`'s (cat, prefix, name) signature.
 CALLSITE = re.compile(
-    r"(?:SpanGuard::|\.|->)\s*(setAttribute|addEvent|span|childSpan)\s*\("
+    r"(?:SpanGuard::|\.|->)\s*(setAttribute|addEvent|span|rootSpan|childSpan)\s*\("
 )
 # A C++ string literal (used to flag literals inside call-site argument lists).
 STRING_LITERAL = re.compile(r'"((?:[^"\\]|\\.)*)"')
@@ -562,11 +565,13 @@ def run_rule_g(keys_by_header: Dict[Path, Set[str]], report: Report) -> None:
 #   setAttribute(key, value)        -> check arg 0 (key); value (arg 1) exempt
 #   addEvent(name[, attrs])         -> check arg 0 (event name)
 #   span(category, prefix, name)    -> check args 1,2 (prefix + span-name leaf)
+#   rootSpan(category, prefix, name)-> check args 1,2 (same signature as span)
 #   childSpan(name[, parentCtx])    -> check arg 0 (span-name leaf)
 CONSTANT_ARG_POSITIONS: Dict[str, Set[int]] = {
     "setAttribute": {0},
     "addEvent": {0},
     "span": {1, 2},
+    "rootSpan": {1, 2},  # same signature as span(cat, prefix, name)
     "childSpan": {0},
 }
 
@@ -597,7 +602,8 @@ def spanname_symbol_names(headers: List[Path]) -> Set[str]:
 
 def run_rule_f(root: Path, report: Report, header_symbols: Set[str]) -> None:
     """Walk every telemetry call-site (non-test, non-*SpanNames.h) and check the
-    constant-only argument positions of setAttribute/addEvent/span/childSpan:
+    constant-only argument positions of
+    setAttribute/addEvent/span/rootSpan/childSpan:
 
       Rule F (FAIL): a string literal in a key / span-name position. Attribute
         VALUES are exempt (runtime data).
@@ -664,7 +670,8 @@ def run_rule_f(root: Path, report: Report, header_symbols: Set[str]) -> None:
 
 def iter_calls(text: str):
     """Yield (call_name, raw_arglist, lineno) for each setAttribute/addEvent/
-    span/childSpan invocation, spanning multiple physical lines if needed."""
+    span/rootSpan/childSpan invocation, spanning multiple physical lines if
+    needed."""
     for m in CALLSITE.finditer(text):
         name = m.group(1)
         # Walk from the opening paren, balancing nesting to find the close.
