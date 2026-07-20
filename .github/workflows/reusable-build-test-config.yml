@@ -359,7 +359,12 @@ jobs:
                   echo "unittest.log present but no failure lines found."
               fi
           elif [ -f "${GITHUB_WORKSPACE}/build.log" ]; then
-              if ! grep -E "error:" "${GITHUB_WORKSPACE}/build.log"; then
+              # GCC/Clang emit "error:" (covers "fatal error:"); MSVC emits
+              # "error C####:", "error LNK####:", and "fatal error LNK####:".
+              # -A6 prints the lines that follow each match (source line, caret,
+              # notes, and the "N errors generated" tally) to capture the whole
+              # diagnostic block.
+              if ! grep -E -A6 "error:|error C[0-9]{4}|error LNK[0-9]{4}|fatal error" "${GITHUB_WORKSPACE}/build.log"; then
                   echo "build.log present but no compile errors found."
               fi
           else
