@@ -7,10 +7,12 @@ on:
     paths:
       - ".github/workflows/build-pre-commit-image.yml"
       - "bin/pre-commit/Dockerfile"
+      - "rust-toolchain.toml"
   pull_request:
     paths:
       - ".github/workflows/build-pre-commit-image.yml"
       - "bin/pre-commit/Dockerfile"
+      - "rust-toolchain.toml"
   workflow_dispatch:
 
 concurrency:
