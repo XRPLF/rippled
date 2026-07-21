@@ -381,38 +381,43 @@ TEST_F(SpanGuardScopeTest, root_then_detached_is_root_and_leaves_stack_clean)
     EXPECT_EQ(child->GetTraceId(), ambient->GetTraceId());
 }
 
-// Negative control (documents the bug detached() fixes): a scoped guard NOT
-// detached, moved to and destroyed on a worker thread, pops the WRONG thread's
-// stack, so a later span on the origin thread inherits the stale span. The
-// whole scenario runs on a dedicated origin thread so the corrupted
-// thread-local stack cannot leak into other tests.
-TEST_F(SpanGuardScopeTest, non_detached_cross_thread_corrupts_origin_stack)
+// Death test guarding the cross-thread scope-leak bug.
+//
+// This used to be a "negative control": a scoped guard was NOT detached, moved
+// to and destroyed on a worker thread (popping the WRONG thread's stack), and
+// the test then asserted that a later span on the origin thread had SILENTLY
+// inherited the stale span -- proving the corruption happened undetected.
+//
+// SpanGuard::Impl::~Impl now enforces thread affinity with an XRPL_ASSERT: a
+// live scope must be destroyed on the thread that created it. In debug/test
+// builds (NDEBUG unset) XRPL_ASSERT expands to assert(), so the exact sequence
+// above now aborts the process inside the worker thread's destructor instead of
+// corrupting the origin stack. The bug therefore moved from "silently wrong" to
+// "loudly crashes early" -- the intended tradeoff, since a crash is far easier
+// to catch than a corrupted trace hierarchy.
+//
+// The death happens on the WORKER thread (the moved-in guard is destroyed when
+// the worker lambda returns, before worker.join() completes). A failed assert()
+// calls abort(), which raises SIGABRT process-wide regardless of which thread
+// hit it, so EXPECT_DEATH -- which runs the statement in a forked child and
+// checks it dies -- observes the crash. The regex matches the assert message
+// substring rather than the whole line, because the file:line/function prefix
+// glibc prints around it is platform and compiler dependent.
+TEST_F(SpanGuardScopeTest, non_detached_cross_thread_death_asserts_at_wrong_thread_destroy)
 {
-    std::thread origin([&] {
-        auto guard = SpanGuard::span(TraceCategory::Ledger, "ledger", "build");
+    EXPECT_DEATH(
         {
-            // ~SpanGuard on the worker ends the span and Detaches on the
-            // WORKER stack -- the origin stack is never popped.
+            // Scoped guard is active on this (origin) thread; its Scope is
+            // bound to this thread.
+            auto guard = SpanGuard::span(TraceCategory::Ledger, "ledger", "build");
+
+            // Move the still-scoped guard to a worker thread WITHOUT detaching.
+            // ~SpanGuard::Impl runs on the worker when the lambda returns and
+            // trips the thread-affinity assertion -> abort().
             std::thread worker([d = std::move(guard)]() mutable {});
             worker.join();
-        }
-        // Origin stack still holds the stale ledger.build as active, so this
-        // span inherits it as parent instead of being a root.
-        auto after = SpanGuard::span(TraceCategory::Rpc, "rpc", "command");
-        ASSERT_TRUE(static_cast<bool>(after));
-    });
-    origin.join();
-
-    auto spans = spanData()->GetSpans();
-    auto* build = findSpan(spans, "ledger.build");
-    auto* after = findSpan(spans, "rpc.command");
-    ASSERT_NE(build, nullptr);
-    ASSERT_NE(after, nullptr);
-
-    // BUG: 'after' inherited the stale span -- non-zero parent, same trace.
-    EXPECT_TRUE(after->GetParentSpanId().IsValid());
-    EXPECT_EQ(after->GetParentSpanId(), build->GetSpanId());
-    EXPECT_EQ(after->GetTraceId(), build->GetTraceId());
+        },
+        ".*scoped guard destroyed on constructing thread.*");
 }
 
 // detachInPlace(optional&) must detach the live guard the same way the
