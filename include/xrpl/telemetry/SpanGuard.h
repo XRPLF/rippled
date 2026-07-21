@@ -149,6 +149,10 @@
  * it may be moved to and destroyed on another thread; detached()
  * itself must be called on the origin (constructing) thread. Use
  * captureContext() to propagate the trace context to other threads.
+ * Violating this rule is enforced (not just documented): a scoped
+ * guard destroyed on a foreign thread, or detached() called from one,
+ * trips an XRPL_ASSERT in debug/test/fuzzing builds instead of
+ * silently corrupting the other thread's context stack.
  *
  * @note Move semantics: Move construction transfers ownership of
  * the pimpl pointer — no double-Scope issues. Move assignment is
@@ -333,7 +337,8 @@ public:
      *
      * @return A scope-less guard safe to move to and destroy on
      * another thread, or a null guard if this guard was null.
-     * @note Must be called on the origin (constructing) thread. The
+     * @note Must be called on the origin (constructing) thread; this is
+     * checked by an XRPL_ASSERT in debug/test/fuzzing builds. The
      * returned guard may be freely moved across threads; only
      * its final destruction ends the span.
      */
