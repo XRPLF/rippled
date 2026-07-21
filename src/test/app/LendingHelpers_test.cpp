@@ -9,6 +9,7 @@
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -19,6 +20,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {
@@ -1518,7 +1520,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         Number const principalRequested{1'000};
         Number const interestDue{75};
 
-        auto const deltas = loanOriginationDeltas(principalRequested, interestDue);
+        auto const deltas = loanOriginationDeltas(principalRequested);
         BEAST_EXPECTS(
             deltas.assetsTotalDelta == 0,
             "assetsTotalDelta mismatch: expected 0, got " + to_string(deltas.assetsTotalDelta));
@@ -1541,6 +1543,17 @@ class LendingHelpers_test : public beast::unit_test::Suite
         sle->at(sfTotalValueOutstanding) = totalValueOutstanding;
         sle->at(sfPrincipalOutstanding) = principalOutstanding;
         sle->at(sfManagementFeeOutstanding) = managementFeeOutstanding;
+        return sle;
+    }
+
+    // Constructs a minimal ltVAULT SLE with just LEVersion set (or left
+    // absent), for exercising the dispatchers' per-Vault gating.
+    static std::shared_ptr<SLE>
+    makeVaultSle(std::optional<VaultVersion> leVersion = std::nullopt)
+    {
+        auto sle = std::make_shared<SLE>(ltVAULT, uint256{2u});
+        if (leVersion)
+            sle->at(sfLEVersion) = std::to_underlying(*leVersion);
         return sle;
     }
 
@@ -1599,12 +1612,15 @@ class LendingHelpers_test : public beast::unit_test::Suite
         Number const principalRequested{1'000};
         Number const interestDue{75};
 
+        auto const legacyVault = makeVaultSle();
+        auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis);
+
         {
             testcase("loanOriginationDeltas dispatcher: amendment disabled picks Accrual");
             Env env{*this};
             env.disableFeature(featureLendingProtocolV1_1);
-            auto const deltas =
-                loanOriginationDeltas(env.current()->rules(), principalRequested, interestDue);
+            auto const deltas = loanOriginationDeltas(
+                env.current()->rules(), cashBasisVault, principalRequested, interestDue);
             auto const expected =
                 xrpl::Accrual::loanOriginationDeltas(principalRequested, interestDue);
             BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
@@ -1612,12 +1628,26 @@ class LendingHelpers_test : public beast::unit_test::Suite
         }
 
         {
-            testcase("loanOriginationDeltas dispatcher: amendment enabled picks CashBasis");
+            testcase(
+                "loanOriginationDeltas dispatcher: amendment enabled, legacy vault picks "
+                "Accrual");
             Env const env{*this};
-            auto const deltas =
-                loanOriginationDeltas(env.current()->rules(), principalRequested, interestDue);
+            auto const deltas = loanOriginationDeltas(
+                env.current()->rules(), legacyVault, principalRequested, interestDue);
             auto const expected =
-                xrpl::CashBasis::loanOriginationDeltas(principalRequested, interestDue);
+                xrpl::Accrual::loanOriginationDeltas(principalRequested, interestDue);
+            BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
+            BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
+        }
+
+        {
+            testcase(
+                "loanOriginationDeltas dispatcher: amendment enabled, LEVersion == "
+                "VaultVersion::CashBasis picks CashBasis");
+            Env const env{*this};
+            auto const deltas = loanOriginationDeltas(
+                env.current()->rules(), cashBasisVault, principalRequested, interestDue);
+            auto const expected = xrpl::CashBasis::loanOriginationDeltas(principalRequested);
             BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
             BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
         }
@@ -1628,22 +1658,37 @@ class LendingHelpers_test : public beast::unit_test::Suite
     {
         using namespace jtx;
 
+        auto const legacyVault = makeVaultSle();
+        auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis);
+
         {
             testcase("loanVaultExposure dispatcher: amendment disabled picks Accrual");
             Env env{*this};
             env.disableFeature(featureLendingProtocolV1_1);
             auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
             BEAST_EXPECT(
-                loanVaultExposure(env.current()->rules(), sle) ==
+                loanVaultExposure(env.current()->rules(), cashBasisVault, sle) ==
                 xrpl::Accrual::loanVaultExposure(sle));
         }
 
         {
-            testcase("loanVaultExposure dispatcher: amendment enabled picks CashBasis");
+            testcase("loanVaultExposure dispatcher: amendment enabled, legacy vault picks Accrual");
             Env const env{*this};
             auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
             BEAST_EXPECT(
-                loanVaultExposure(env.current()->rules(), sle) ==
+                loanVaultExposure(env.current()->rules(), legacyVault, sle) ==
+                xrpl::Accrual::loanVaultExposure(sle));
+        }
+
+        {
+            testcase(
+                "loanVaultExposure dispatcher: amendment enabled, LEVersion == "
+                "VaultVersion::CashBasis "
+                "picks CashBasis");
+            Env const env{*this};
+            auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
+            BEAST_EXPECT(
+                loanVaultExposure(env.current()->rules(), cashBasisVault, sle) ==
                 xrpl::CashBasis::loanVaultExposure(sle));
         }
     }
@@ -1659,20 +1704,35 @@ class LendingHelpers_test : public beast::unit_test::Suite
             .valueChange = Number{5},
             .feePaid = Number{3}};
 
+        auto const legacyVault = makeVaultSle();
+        auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis);
+
         {
             testcase("loanPaymentDeltas dispatcher: amendment disabled picks Accrual");
             Env env{*this};
             env.disableFeature(featureLendingProtocolV1_1);
-            auto const deltas = loanPaymentDeltas(env.current()->rules(), parts);
+            auto const deltas = loanPaymentDeltas(env.current()->rules(), cashBasisVault, parts);
             auto const expected = xrpl::Accrual::loanPaymentDeltas(parts);
             BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
             BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
         }
 
         {
-            testcase("loanPaymentDeltas dispatcher: amendment enabled picks CashBasis");
+            testcase("loanPaymentDeltas dispatcher: amendment enabled, legacy vault picks Accrual");
             Env const env{*this};
-            auto const deltas = loanPaymentDeltas(env.current()->rules(), parts);
+            auto const deltas = loanPaymentDeltas(env.current()->rules(), legacyVault, parts);
+            auto const expected = xrpl::Accrual::loanPaymentDeltas(parts);
+            BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
+            BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
+        }
+
+        {
+            testcase(
+                "loanPaymentDeltas dispatcher: amendment enabled, LEVersion == "
+                "VaultVersion::CashBasis "
+                "picks CashBasis");
+            Env const env{*this};
+            auto const deltas = loanPaymentDeltas(env.current()->rules(), cashBasisVault, parts);
             auto const expected = xrpl::CashBasis::loanPaymentDeltas(parts);
             BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
             BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);

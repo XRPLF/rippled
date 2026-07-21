@@ -39,6 +39,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -368,18 +369,21 @@ protected:
             {
                 TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
                 auto const brokerDebt = brokerSle->at(sfDebtTotal);
-                auto const expectedDebt = env.current()->rules().enabled(featureLendingProtocolV1_1)
-                    ? principalOutstanding
-                    : principalOutstanding + interestOwed;
-                env.test.BEAST_EXPECT(brokerDebt == expectedDebt);
-                env.test.BEAST_EXPECT(
-                    env.balance(pseudoAccount, broker.asset).number() ==
-                    brokerSle->at(sfCoverAvailable));
-                env.test.BEAST_EXPECT(brokerSle->at(sfOwnerCount) == ownerCount);
 
                 if (auto vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
                     env.test.BEAST_EXPECT(vaultSle))
                 {
+                    auto const expectedDebt =
+                        env.current()->rules().enabled(featureLendingProtocolV1_1) &&
+                            getVaultVersion(vaultSle) == VaultVersion::CashBasis
+                        ? principalOutstanding
+                        : principalOutstanding + interestOwed;
+                    env.test.BEAST_EXPECT(brokerDebt == expectedDebt);
+                    env.test.BEAST_EXPECT(
+                        env.balance(pseudoAccount, broker.asset).number() ==
+                        brokerSle->at(sfCoverAvailable));
+                    env.test.BEAST_EXPECT(brokerSle->at(sfOwnerCount) == ownerCount);
+
                     Account const vaultPseudo{"vaultPseudoAccount", vaultSle->at(sfAccount)};
                     env.test.BEAST_EXPECT(
                         vaultSle->at(sfAssetsAvailable) ==
@@ -475,7 +479,8 @@ protected:
                         {
                             env.test.BEAST_EXPECT(
                                 vaultSle->at(sfLossUnrealized) ==
-                                (env.current()->rules().enabled(featureLendingProtocolV1_1)
+                                (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
+                                         getVaultVersion(vaultSle) == VaultVersion::CashBasis
                                      ? principalOutstanding
                                      : totalValue - managementFeeOutstanding));
                         }
@@ -645,7 +650,8 @@ protected:
                 auto const assetsUnavailable =
                     vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable);
                 auto const unrealizedLoss = vaultSle->at(sfLossUnrealized) +
-                    (env.current()->rules().enabled(featureLendingProtocolV1_1)
+                    (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
+                             getVaultVersion(vaultSle) == VaultVersion::CashBasis
                          ? state.principalOutstanding
                          : state.totalValue - state.managementFeeOutstanding);
 
@@ -9190,6 +9196,197 @@ protected:
         }
     }
 
+    // 3b. LEVersion regression: a Vault created before featureLendingProtocolV1_1
+    // activates (LEVersion absent) must keep whole-life (accrual) accounting
+    // forever, even after the amendment is later enabled -- the switch is
+    // per-Vault (LEVersion == VaultVersion::CashBasis), not a single global amendment
+    // flag.
+    void
+    testLegacyVaultKeepsAccrualAfterAmendmentEnabled()
+    {
+        testcase("LEVersion: legacy vault keeps accrual after amendment enabled");
+
+        using namespace jtx;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 1'000'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{percentageToTenthBips(10)},
+            .coverDeposit = 5'000,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{percentageToTenthBips(25)}};
+
+        Number const principalRequest{10'000};
+        TenthBips32 const interestRate{percentageToTenthBips(12)};
+        std::uint32_t const paymentTotal = 4;
+        std::uint32_t const paymentInterval = 600;
+        std::uint32_t const gracePeriod = 60;
+
+        // Amendment disabled at Vault creation time: LEVersion stays absent.
+        Env env(*this, all_);
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+
+        {
+            auto const vaultSle = env.le(broker.vaultKeylet());
+            BEAST_EXPECT(vaultSle);
+            BEAST_EXPECT(!vaultSle->isFieldPresent(sfLEVersion));
+        }
+
+        // Now enable the amendment -- production dispatch must still treat
+        // this specific Vault as accrual-basis, since its LEVersion is
+        // (and remains) absent.
+        env.enableFeature(featureLendingProtocolV1_1);
+        env.close();
+
+        LoanParameters const loanParams{
+            .account = borrower,
+            .counter = lender,
+            .principalRequest = principalRequest,
+            .interest = interestRate,
+            .payTotal = paymentTotal,
+            .payInterval = paymentInterval,
+            .gracePd = gracePeriod,
+        };
+
+        auto const brokerBeforeLoan = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(brokerBeforeLoan);
+        auto const loanSequence = brokerBeforeLoan->at(sfLoanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+
+        // ---- LoanSet origination: whole-life formulas expected ----
+        auto const vaultBeforeSet = env.le(broker.vaultKeylet());
+        auto const brokerBeforeSet = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(vaultBeforeSet && brokerBeforeSet);
+        Number const assetsTotalBeforeSet = vaultBeforeSet->at(sfAssetsTotal);
+        Number const debtTotalBeforeSet = brokerBeforeSet->at(sfDebtTotal);
+
+        env(loanParams(env, broker));
+        env.close();
+
+        auto const loanAfterSet = env.le(loanKeylet);
+        BEAST_EXPECT(loanAfterSet);
+        Number const principalOutstanding = loanAfterSet->at(sfPrincipalOutstanding);
+        Number const totalValueOutstanding = loanAfterSet->at(sfTotalValueOutstanding);
+        Number const interestDue = totalValueOutstanding - principalOutstanding;
+        BEAST_EXPECT(interestDue > beast::kZero);
+
+        auto const vaultAfterSet = env.le(broker.vaultKeylet());
+        auto const brokerAfterSet = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(vaultAfterSet && brokerAfterSet);
+        Number const assetsTotalDeltaSet =
+            Number(vaultAfterSet->at(sfAssetsTotal)) - assetsTotalBeforeSet;
+        Number const debtTotalDeltaSet =
+            Number(brokerAfterSet->at(sfDebtTotal)) - debtTotalBeforeSet;
+
+        BEAST_EXPECTS(
+            assetsTotalDeltaSet == interestDue,
+            "legacy vault origination must still add interestDue to AssetsTotal; delta=" +
+                to_string(assetsTotalDeltaSet) + " interestDue=" + to_string(interestDue));
+        BEAST_EXPECTS(
+            debtTotalDeltaSet == principalOutstanding + interestDue,
+            "legacy vault origination must still add principal+interest to DebtTotal; delta=" +
+                to_string(debtTotalDeltaSet));
+
+        LoanState const state = getCurrentState(env, broker, loanKeylet);
+        env.close();
+
+        // ---- LoanPay: whole-life formulas expected ----
+        auto const vaultBeforePay = env.le(broker.vaultKeylet());
+        auto const brokerBeforePay = env.le(broker.brokerKeylet());
+        auto const loanBeforePay = env.le(loanKeylet);
+        BEAST_EXPECT(vaultBeforePay && brokerBeforePay && loanBeforePay);
+        Number const totalValueBeforePay = loanBeforePay->at(sfTotalValueOutstanding);
+        Number const assetsTotalBeforePay = vaultBeforePay->at(sfAssetsTotal);
+        Number const debtTotalBeforePay = brokerBeforePay->at(sfDebtTotal);
+
+        STAmount const paymentAmount{
+            xrpAsset, roundPeriodicPayment(xrpAsset, state.periodicPayment, state.loanScale)};
+        env(pay(borrower, loanKeylet.key, paymentAmount), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultAfterPay = env.le(broker.vaultKeylet());
+        auto const brokerAfterPay = env.le(broker.brokerKeylet());
+        auto const loanAfterPay = env.le(loanKeylet);
+        BEAST_EXPECT(vaultAfterPay && brokerAfterPay && loanAfterPay);
+        Number const totalValueAfterPay = loanAfterPay->at(sfTotalValueOutstanding);
+        Number const assetsTotalDeltaPay =
+            Number(vaultAfterPay->at(sfAssetsTotal)) - assetsTotalBeforePay;
+        Number const debtTotalDeltaPay =
+            Number(brokerAfterPay->at(sfDebtTotal)) - debtTotalBeforePay;
+        Number const totalValueDeltaPay = totalValueAfterPay - totalValueBeforePay;
+
+        // A regular, on-time payment has valueChange == 0, so whole-life
+        // AssetsTotal is untouched and DebtTotal mirrors TotalValueOutstanding.
+        BEAST_EXPECTS(
+            assetsTotalDeltaPay == beast::kZero,
+            "legacy vault regular payment must not change AssetsTotal; delta=" +
+                to_string(assetsTotalDeltaPay));
+        BEAST_EXPECTS(
+            debtTotalDeltaPay == totalValueDeltaPay,
+            "legacy vault DebtTotal delta must mirror TotalValueOutstanding delta; "
+            "debtTotalDelta=" +
+                to_string(debtTotalDeltaPay) + " totalValueDelta=" + to_string(totalValueDeltaPay));
+
+        // ---- LoanManage: impair, then default -- whole-life exposure expected ----
+        auto const loanBeforeImpair = env.le(loanKeylet);
+        BEAST_EXPECT(loanBeforeImpair);
+        Number const totalValueBeforeImpair = loanBeforeImpair->at(sfTotalValueOutstanding);
+        Number const managementFeeBeforeImpair = loanBeforeImpair->at(sfManagementFeeOutstanding);
+        Number const expectedExposure = totalValueBeforeImpair - managementFeeBeforeImpair;
+
+        env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+        env.close();
+
+        LoanState const stateAtImpair = getCurrentState(env, broker, loanKeylet);
+        env.close(
+            stateAtImpair.startDate + std::chrono::seconds(paymentInterval) +
+            std::chrono::seconds(gracePeriod) + 60s);
+
+        auto const vaultBeforeDefault = env.le(broker.vaultKeylet());
+        auto const brokerBeforeDefault = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(vaultBeforeDefault && brokerBeforeDefault);
+        Number const debtTotalBeforeDefault = brokerBeforeDefault->at(sfDebtTotal);
+        Number const lossBeforeDefault = vaultBeforeDefault->at(sfLossUnrealized);
+
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultAfterDefault = env.le(broker.vaultKeylet());
+        auto const brokerAfterDefault = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(vaultAfterDefault && brokerAfterDefault);
+        Number const debtTotalDeltaDefault =
+            Number(brokerAfterDefault->at(sfDebtTotal)) - debtTotalBeforeDefault;
+        Number const lossDeltaDefault =
+            Number(vaultAfterDefault->at(sfLossUnrealized)) - lossBeforeDefault;
+
+        BEAST_EXPECTS(
+            debtTotalDeltaDefault == -expectedExposure,
+            "legacy vault default must reduce DebtTotal by whole-life exposure; delta=" +
+                to_string(debtTotalDeltaDefault) + " expected=" + to_string(expectedExposure));
+        BEAST_EXPECTS(
+            lossDeltaDefault == -expectedExposure,
+            "legacy vault default must reverse the earlier impair's LossUnrealized exactly; "
+            "delta=" +
+                to_string(lossDeltaDefault) + " expected=" + to_string(expectedExposure));
+
+        // Confirm the Vault's LEVersion truly never got set, throughout.
+        {
+            auto const vaultSle = env.le(broker.vaultKeylet());
+            BEAST_EXPECT(vaultSle);
+            BEAST_EXPECT(!vaultSle->isFieldPresent(sfLEVersion));
+            BEAST_EXPECT(getVaultVersion(vaultSle) == VaultVersion::Legacy);
+        }
+    }
+
     // 4. End-to-end trajectory: LoanSet -> 2 LoanPays -> LoanManage(default),
     // entirely under the amendment, with independently hand-computed
     // expected AssetsTotal/DebtTotal/LossUnrealized/CoverAvailable values at
@@ -9351,6 +9548,7 @@ protected:
         testCashBasisLoanSetOrigination();
         testCashBasisLoanPay();
         testCashBasisLoanManage();
+        testLegacyVaultKeepsAccrualAfterAmendmentEnabled();
         testCashBasisEndToEndTrajectory();
     }
 

@@ -634,7 +634,7 @@ LoanSet::doApply()
 
     // Update the balances in the vault
     auto const [assetsTotalDelta, debtTotalDelta] =
-        loanOriginationDeltas(ctx_.view().rules(), principalRequested, state.interestDue);
+        loanOriginationDeltas(ctx_.view().rules(), vaultSle, principalRequested, state.interestDue);
     vaultAvailableProxy -= principalRequested;
     vaultTotalProxy += assetsTotalDelta;
     XRPL_ASSERT_PARTS(

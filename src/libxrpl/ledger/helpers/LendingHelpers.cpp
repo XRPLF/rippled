@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -139,7 +140,7 @@ loanOriginationDeltas(Number const& principalRequested, Number const& interestDu
 }
 
 Number
-loanVaultExposure(SLE::ref loanSle)
+loanVaultExposure(SLE::const_ref loanSle)
 {
     return loanSle->at(sfTotalValueOutstanding) - loanSle->at(sfManagementFeeOutstanding);
 }
@@ -157,13 +158,13 @@ loanPaymentDeltas(LoanPaymentParts const& parts)
 namespace CashBasis {
 
 AccountingDeltas
-loanOriginationDeltas(Number const& principalRequested, Number const&)
+loanOriginationDeltas(Number const& principalRequested)
 {
     return {.assetsTotalDelta = kNumZero, .debtTotalDelta = principalRequested};
 }
 
 Number
-loanVaultExposure(SLE::ref loanSle)
+loanVaultExposure(SLE::const_ref loanSle)
 {
     return loanSle->at(sfPrincipalOutstanding);
 }
@@ -176,29 +177,45 @@ loanPaymentDeltas(LoanPaymentParts const& parts)
 
 }  // namespace CashBasis
 
+namespace {
+
+// Cash-basis accounting applies only when featureLendingProtocolV1_1 is
+// enabled AND the specific Vault was created under it (LEVersion ==
+// VaultVersion::CashBasis). Vaults created before activation keep accrual-basis
+// accounting forever, even after the amendment later turns on.
+bool
+cashBasisEnabled(Rules const& rules, SLE::const_ref vaultSle)
+{
+    return rules.enabled(featureLendingProtocolV1_1) &&
+        getVaultVersion(vaultSle) == VaultVersion::CashBasis;
+}
+
+}  // namespace
+
 AccountingDeltas
 loanOriginationDeltas(
     Rules const& rules,
+    SLE::const_ref vaultSle,
     Number const& principalRequested,
     Number const& interestDue)
 {
-    return rules.enabled(featureLendingProtocolV1_1)
-        ? CashBasis::loanOriginationDeltas(principalRequested, interestDue)
+    return cashBasisEnabled(rules, vaultSle)
+        ? CashBasis::loanOriginationDeltas(principalRequested)
         : Accrual::loanOriginationDeltas(principalRequested, interestDue);
 }
 
 Number
-loanVaultExposure(Rules const& rules, SLE::ref loanSle)
+loanVaultExposure(Rules const& rules, SLE::const_ref vaultSle, SLE::const_ref loanSle)
 {
-    return rules.enabled(featureLendingProtocolV1_1) ? CashBasis::loanVaultExposure(loanSle)
-                                                     : Accrual::loanVaultExposure(loanSle);
+    return cashBasisEnabled(rules, vaultSle) ? CashBasis::loanVaultExposure(loanSle)
+                                             : Accrual::loanVaultExposure(loanSle);
 }
 
 AccountingDeltas
-loanPaymentDeltas(Rules const& rules, LoanPaymentParts const& parts)
+loanPaymentDeltas(Rules const& rules, SLE::const_ref vaultSle, LoanPaymentParts const& parts)
 {
-    return rules.enabled(featureLendingProtocolV1_1) ? CashBasis::loanPaymentDeltas(parts)
-                                                     : Accrual::loanPaymentDeltas(parts);
+    return cashBasisEnabled(rules, vaultSle) ? CashBasis::loanPaymentDeltas(parts)
+                                             : Accrual::loanPaymentDeltas(parts);
 }
 
 namespace detail {

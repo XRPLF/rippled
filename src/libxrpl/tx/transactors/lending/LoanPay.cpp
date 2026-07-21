@@ -420,7 +420,8 @@ LoanPay::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto const [assetsTotalDelta, debtTotalDelta] = loanPaymentDeltas(view.rules(), *paymentParts);
+    auto const [assetsTotalDelta, debtTotalDelta] =
+        loanPaymentDeltas(view.rules(), vaultSle, *paymentParts);
 
     JLOG(j_.debug()) << "Loan Pay: principal paid: " << paymentParts->principalPaid
                      << ", interest paid: " << paymentParts->interestPaid

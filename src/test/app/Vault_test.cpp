@@ -7647,6 +7647,81 @@ class Vault_test : public beast::unit_test::Suite
     }
 
     void
+    testVaultCreateLEVersion()
+    {
+        using namespace test::jtx;
+
+        Account const owner{"owner"};
+        PrettyAsset const xrpAsset = xrpIssue();
+
+        {
+            testcase("VaultCreate LEVersion: featureLendingProtocolV1_1 disabled, field absent");
+            Env env{*this};
+            env.disableFeature(featureLendingProtocolV1_1);
+            env.fund(XRP(1'000'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto const [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
+            env(tx, Ter(tesSUCCESS));
+            env.close();
+
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault);
+            BEAST_EXPECT(!sleVault->isFieldPresent(sfLEVersion));
+        }
+
+        {
+            testcase("VaultCreate LEVersion: featureLendingProtocolV1_1 enabled, LEVersion == 2");
+            Env env{*this};
+            env.fund(XRP(1'000'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto const [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
+            env(tx, Ter(tesSUCCESS));
+            env.close();
+
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault);
+            BEAST_EXPECT(sleVault->isFieldPresent(sfLEVersion));
+            BEAST_EXPECT(sleVault->at(sfLEVersion) == std::to_underlying(VaultVersion::CashBasis));
+        }
+
+        {
+            testcase("VaultCreate rejects LEVersion set in the transaction");
+            Env env{*this};
+            env.fund(XRP(1'000'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
+            tx[sfLEVersion] = 2;
+            env(tx, Ter(temMALFORMED));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet));
+        }
+
+        {
+            testcase("VaultSet rejects LEVersion set in the transaction");
+            Env env{*this};
+            env.fund(XRP(1'000'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto const [createTx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
+            env(createTx, Ter(tesSUCCESS));
+            env.close();
+
+            auto setTx = vault.set({.owner = owner, .id = keylet.key});
+            setTx[sfLEVersion] = 2;
+            env(setTx, Ter(temMALFORMED));
+            env.close();
+        }
+    }
+
+    void
     testVaultDepositFreezeIOU()
     {
         using namespace test::jtx;
@@ -8318,6 +8393,7 @@ public:
         testVaultEscrowedMPT();
         testAssetsMaximum();
         testVaultDeleteMemoData();
+        testVaultCreateLEVersion();
         testBug6LimitBypassWithShares();
         testRemoveEmptyHoldingLockedAmount();
         testRemoveEmptyHoldingConfidentialBalances();

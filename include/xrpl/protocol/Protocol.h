@@ -317,6 +317,18 @@ constexpr std::uint8_t kVaultDefaultIouScale = 6;
 constexpr std::uint8_t kVaultMaximumIouScale = 18;
 
 /**
+ * Vault ledger-entry schema versions. Assigned to newly created
+ * Vaults once featureLendingProtocolV1_1 is enabled. Vaults created before
+ * activation are left without LEVersion (implicit legacy version 0,
+ * accrual-basis accounting).
+ */
+enum class VaultVersion : uint8_t {
+    Legacy = 0,
+    Invalid,
+    CashBasis,
+};
+
+/**
  * Maximum recursion depth for vault shares being put as an asset inside
  * another vault; counted from 0
  */

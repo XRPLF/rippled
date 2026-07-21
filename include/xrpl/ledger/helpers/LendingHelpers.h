@@ -304,7 +304,7 @@ loanOriginationDeltas(Number const& principalRequested, Number const& interestDu
 
 // LoanManage impair/unimpair/default: the vault's exposure to this loan
 Number
-loanVaultExposure(SLE::ref loanSle);
+loanVaultExposure(SLE::const_ref loanSle);
 
 // LoanPay: what's added to Vault.AssetsTotal and subtracted from LoanBroker.DebtTotal for a payment
 AccountingDeltas
@@ -317,10 +317,10 @@ loanPaymentDeltas(LoanPaymentParts const& parts);
 namespace CashBasis {
 
 AccountingDeltas
-loanOriginationDeltas(Number const& principalRequested, Number const& interestDue);
+loanOriginationDeltas(Number const& principalRequested);
 
 Number
-loanVaultExposure(SLE::ref loanSle);
+loanVaultExposure(SLE::const_ref loanSle);
 
 AccountingDeltas
 loanPaymentDeltas(LoanPaymentParts const& parts);
@@ -328,18 +328,21 @@ loanPaymentDeltas(LoanPaymentParts const& parts);
 }  // namespace CashBasis
 
 // Public dispatchers: pick CashBasis:: if featureLendingProtocolV1_1 is
-// enabled, else Accrual::. These are the only entry points transactors call.
+// enabled AND the Vault's LEVersion (VaultHelpers::getVaultVersion) is
+// VaultVersion::CashBasis, else Accrual::. These are the only entry points
+// transactors call.
 AccountingDeltas
 loanOriginationDeltas(
     Rules const& rules,
+    SLE::const_ref vaultSle,
     Number const& principalRequested,
     Number const& interestDue);
 
 Number
-loanVaultExposure(Rules const& rules, SLE::ref loanSle);
+loanVaultExposure(Rules const& rules, SLE::const_ref vaultSle, SLE::const_ref loanSle);
 
 AccountingDeltas
-loanPaymentDeltas(Rules const& rules, LoanPaymentParts const& parts);
+loanPaymentDeltas(Rules const& rules, SLE::const_ref vaultSle, LoanPaymentParts const& parts);
 
 namespace detail {
 // These classes and functions should only be accessed by LendingHelper
