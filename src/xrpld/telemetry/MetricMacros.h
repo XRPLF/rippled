@@ -454,6 +454,14 @@
     do                                                                       \
     {                                                                        \
     } while (false)
+#define XRPL_METRIC_UPDOWN_ADD(app, name, description, amount) \
+    do                                                         \
+    {                                                          \
+    } while (false)
+#define XRPL_METRIC_UPDOWN_ADD_LABELED(app, name, description, amount, ...) \
+    do                                                                      \
+    {                                                                       \
+    } while (false)
 #define XRPL_METRIC_HISTOGRAM_RECORD(app, name, description, value) \
     do                                                              \
     {                                                               \
