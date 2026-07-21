@@ -48,7 +48,7 @@ where
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+pub extern "C" fn escrow_finish() -> i32 {
     let _ = trace("$$$$$ STARTING WASM EXECUTION $$$$$");
 
     // ########################################
