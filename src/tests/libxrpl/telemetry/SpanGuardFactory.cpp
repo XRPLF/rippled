@@ -46,10 +46,10 @@ TEST(SpanGuardFactory, linked_span_null_when_no_context)
     EXPECT_FALSE(linked);
 }
 
-TEST(SpanGuardFactory, capture_context_returns_invalid_on_null)
+TEST(SpanGuardFactory, span_context_returns_invalid_on_null)
 {
     auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "ctx");
-    auto ctx = span.captureContext();
+    auto ctx = span.spanContext();
     EXPECT_FALSE(ctx.isValid());
 }
 
