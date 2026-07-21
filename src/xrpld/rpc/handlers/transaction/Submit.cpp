@@ -6,7 +6,6 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -14,7 +13,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/tx/apply.h>

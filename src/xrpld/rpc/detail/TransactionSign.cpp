@@ -19,6 +19,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/NetworkIDService.h>

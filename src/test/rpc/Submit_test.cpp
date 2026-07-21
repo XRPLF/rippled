@@ -5,6 +5,8 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/pay.h>
 
+#include <xrpld/core/Config.h>
+
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
@@ -13,6 +15,8 @@
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+
+#include <memory>
 
 namespace xrpl::test {
 
@@ -28,9 +32,9 @@ public:
 
         // Enable signing support in config
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    static std::string const signingSupportCfg =
+                    static std::string const kSigningSupportCfg =
                         std::string("[") + Sections::kSigningSupport + "]\ntrue";
-                    cfg->loadFromString(signingSupportCfg);
+                    cfg->loadFromString(kSigningSupportCfg);
                     return cfg;
                 })};
 

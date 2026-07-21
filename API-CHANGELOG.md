@@ -98,18 +98,6 @@ This release contains bug fixes only and no API changes.
 - `subscribe` (`validations` stream): `network_id` is now included. ([#5579](https://github.com/XRPLF/rippled/pull/5579))
 - `subscribe` (`transactions` stream): `nftoken_id`, `nftoken_ids`, and `offer_id` are now included in transaction metadata. ([#5230](https://github.com/XRPLF/rippled/pull/5230))
 
-## XRP Ledger server version 2.5.1
-
-[Version 2.5.1](https://github.com/XRPLF/rippled/releases/tag/2.5.1) was released on Sep 17, 2025.
-
-This release contains bug fixes only and no API changes.
-
-## Unreleased Changes
-
-### Additions and bugfixes
-
-- `submit`: Augmented response fields (`accepted`, `applied`, `broadcast`, `queued`, `kept`, `account_sequence_next`, `account_sequence_available`, `open_ledger_cost`, `validated_ledger_index`) are now included in sign-and-submit mode. Previously, these fields were only returned when submitting a binary transaction blob. ([#6304](https://github.com/XRPLF/rippled/pull/6304))
-
 ## XRP Ledger server version 2.5.0
 
 [Version 2.5.0](https://github.com/XRPLF/rippled/releases/tag/2.5.0) was released on Jun 24, 2025.
