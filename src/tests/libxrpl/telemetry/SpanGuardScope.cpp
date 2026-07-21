@@ -403,8 +403,28 @@ TEST_F(SpanGuardScopeTest, root_then_detached_is_root_and_leaves_stack_clean)
 // checks it dies -- observes the crash. The regex matches the assert message
 // substring rather than the whole line, because the file:line/function prefix
 // glibc prints around it is platform and compiler dependent.
+//
+// The test is skipped where the assertion cannot fire: under NDEBUG (Release
+// builds) XRPL_ASSERT is a no-op, and under ENABLE_VOIDSTAR a failed assert
+// continues instead of aborting -- in both cases the worker would not crash and
+// EXPECT_DEATH would report a spurious failure.
 TEST_F(SpanGuardScopeTest, non_detached_cross_thread_death_asserts_at_wrong_thread_destroy)
 {
+    // XRPL_ASSERT only aborts when assertions are live. Under NDEBUG (Release
+    // builds) it expands to assert(), which the C standard strips to a no-op,
+    // so the worker thread destroys the guard without crashing. Under
+    // ENABLE_VOIDSTAR (Antithesis fuzzing) a failed XRPL_ASSERT continues
+    // execution instead of aborting. In either case the process does not die
+    // and EXPECT_DEATH would fail, so skip this test there. The two macros are
+    // mutually exclusive (instrumentation.h #errors on ENABLE_VOIDSTAR+NDEBUG),
+    // but both break the death check, so guard against each.
+#ifdef NDEBUG
+    GTEST_SKIP() << "XRPL_ASSERT compiles to a no-op under NDEBUG (Release builds), so the "
+                    "cross-thread scope-leak assertion this test exercises does not fire.";
+#elif defined(ENABLE_VOIDSTAR)
+    GTEST_SKIP() << "ENABLE_VOIDSTAR continues past a failed XRPL_ASSERT instead of aborting, so "
+                    "the cross-thread scope-leak assertion this test exercises does not crash.";
+#else
     EXPECT_DEATH(
         {
             // Scoped guard is active on this (origin) thread; its Scope is
@@ -417,7 +437,12 @@ TEST_F(SpanGuardScopeTest, non_detached_cross_thread_death_asserts_at_wrong_thre
             std::thread worker([d = std::move(guard)]() mutable {});
             worker.join();
         },
-        ".*scoped guard destroyed on constructing thread.*");
+        // The assert message is written as two adjacent string literals in
+        // SpanGuard.cpp; glibc's assert() stringifies the expression source via
+        // the preprocessor '#' operator, keeping both quoted literals with the
+        // "\" \"" gap between "on" and "constructing". Match across that gap.
+        ".*scoped guard destroyed on.*constructing thread.*");
+#endif
 }
 
 // detachInPlace(optional&) must detach the live guard the same way the
