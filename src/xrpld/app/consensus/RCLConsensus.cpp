@@ -22,6 +22,7 @@
 #include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
+#include <xrpld/telemetry/MetricMacros.h>
 #include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/Log.h>
@@ -739,9 +740,10 @@ RCLConsensus::Adaptor::doAccept(
     // See if we can accept a ledger as fully-validated
     ledgerMaster_.consensusBuilt(built.ledger, result.txns.id(), std::move(consensusJson));
 
-    // Record ledger close for OTel dashboard parity counter.
-    if (auto* mr = app_.getMetricsRegistry())
-        mr->incrementLedgersClosed();
+    // Record ledger close for OTel dashboard parity counter. Uses the
+    // call-site macro (see MetricMacros.h) rather than a MetricsRegistry
+    // member -- proof-of-concept for tasks/metric-macro-plan.md.
+    XRPL_METRIC_COUNTER_INC(app_, "ledgers_closed_total", "Total ledgers closed by consensus");
 
     //-------------------------------------------------------------------------
     {
