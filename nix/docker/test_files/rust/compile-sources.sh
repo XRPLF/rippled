@@ -8,8 +8,6 @@ set -eo pipefail
 src_dir="${1:?usage: $0 <src_dir> <dst_dir>}"
 dst_dir="${2:?usage: $0 <src_dir> <dst_dir>}"
 
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 loader="$(/tmp/loader-path.sh)"
 
 mkdir -p "${dst_dir}"
@@ -48,33 +46,36 @@ compile overflow "-C overflow-checks=on"
 # exactly the step that regresses to "E0463 can't find crate for <proc-macro>"
 # when the toolchain's libstd isn't resolvable for proc-macro dylibs. The plain
 # `rustc` sources above only build executables (static std), so they never
-# exercise this path; the wasmi C-API build does, which is why it broke.
-# We mirror wasmi's invocation shape: an explicit `--target` (so cargo splits
-# host vs. target artifacts, and the proc-macro is built as a host tool) and
-# `--profile bench`. Only path deps + the built-in `proc_macro` crate, so
-# `--offline` needs no network.
+# exercise this path; the wasmi C-API build does, which is why it broke. The
+# cargo profile is irrelevant to this check — a proc-macro is always built as a
+# host dylib and loaded regardless — so we use the default profile. Depends only
+# on path deps + the built-in `proc_macro` crate, so `--offline` needs no
+# network. Sticks to the tools the other steps already rely on (no sed/mktemp)
+# so it runs on every base image.
 function compile_proc_macro() {
-    local proj="${script_dir}/proc_macro"
-    local host_triple
-    host_triple="$(rustc -vV | sed -n 's/^host: //p')"
-    local target_dir
-    target_dir="$(mktemp -d)"
+    # `sources` sibling; the proc-macro is built as a host dylib and loaded
+    # during compilation regardless of --target, so we omit it (and the host
+    # triple it would require).
+    local proj="${src_dir}/../proc_macro"
 
-    echo "=== Building proc-macro workspace (cargo, target=${host_triple}, profile=bench) ==="
-    cargo build \
-        --manifest-path "${proj}/Cargo.toml" \
-        --target "${host_triple}" \
-        --profile bench \
-        --offline \
-        --target-dir "${target_dir}"
+    echo "=== Building proc-macro workspace (cargo) ==="
+    cargo build --manifest-path "${proj}/Cargo.toml" --offline
 
-    # The built-in `bench` profile shares the `release/` output directory.
-    local built="${target_dir}/${host_triple}/release/answer_user"
+    local built="${proj}/target/debug/answer_user"
+    if [ ! -f "${built}" ]; then
+        echo "ERROR: built answer_user binary not found at ${built}" >&2
+        exit 1
+    fi
+
     local binary="${dst_dir}/proc_macro"
     cp "${built}" "${binary}"
 
     echo "=== Patching ${binary} to use ${loader} as PT_INTERP ==="
     patchelf --set-interpreter "${loader}" --remove-rpath "${binary}"
+
+    # The build tree only exists to produce that binary; drop it so it doesn't
+    # bloat this RUN layer in the final image.
+    rm -rf "${proj}/target"
 }
 
 compile_proc_macro

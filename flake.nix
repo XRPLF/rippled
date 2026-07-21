@@ -21,7 +21,12 @@
   };
 
   outputs =
-    { nixpkgs, nixpkgs-custom-glibc, rust-overlay, ... }:
+    {
+      nixpkgs,
+      nixpkgs-custom-glibc,
+      rust-overlay,
+      ...
+    }:
     let
       forEachSystem = import ./nix/utils.nix { inherit nixpkgs nixpkgs-custom-glibc rust-overlay; };
     in

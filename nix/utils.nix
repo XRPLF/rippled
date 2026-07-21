@@ -1,4 +1,8 @@
-{ nixpkgs, nixpkgs-custom-glibc, rust-overlay }:
+{
+  nixpkgs,
+  nixpkgs-custom-glibc,
+  rust-overlay,
+}:
 function:
 nixpkgs.lib.genAttrs
   [

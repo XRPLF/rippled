@@ -89,11 +89,11 @@ image.
 
 ## Files
 
-| File                                                                    | Purpose                                                                       |
-| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| [`./Dockerfile`](./Dockerfile)                                          | Multi-stage build described above.                                            |
-| [`./loader-path.sh`](./loader-path.sh)                                  | Print the dynamic-linker (`PT_INTERP`) path for the current architecture.     |
-| [`./test_files/cpp/`](./test_files/cpp)                                 | C++ sanitizer smoke test: sources + compile/run scripts.                      |
+| File                                                                    | Purpose                                                                              |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [`./Dockerfile`](./Dockerfile)                                          | Multi-stage build described above.                                                   |
+| [`./loader-path.sh`](./loader-path.sh)                                  | Print the dynamic-linker (`PT_INTERP`) path for the current architecture.            |
+| [`./test_files/cpp/`](./test_files/cpp)                                 | C++ sanitizer smoke test: sources + compile/run scripts.                             |
 | [`./test_files/rust/`](./test_files/rust)                               | Rust smoke test: rustc sources + a cargo proc-macro workspace + compile/run scripts. |
-| [`/bin/check-tools.sh`](../../bin/check-tools.sh)                       | Verify every expected tools are present and runnable.                         |
-| [`/bin/install-sanitizer-libs.sh`](../../bin/install-sanitizer-libs.sh) | Install `libasan`/`libtsan`/`libubsan` runtimes on the supported base images. |
+| [`/bin/check-tools.sh`](../../bin/check-tools.sh)                       | Verify every expected tools are present and runnable.                                |
+| [`/bin/install-sanitizer-libs.sh`](../../bin/install-sanitizer-libs.sh) | Install `libasan`/`libtsan`/`libubsan` runtimes on the supported base images.        |

@@ -1,8 +1,8 @@
-use answer_macro::define_answer;
+use answer_macro::answer_echo;
 
 // Expands to `fn answer() -> u32 { 42 }`. Reaching this point at all means the
 // proc-macro dylib was loaded and expanded successfully during compilation.
-define_answer!();
+answer_echo!(42);
 
 fn main() {
     let a = answer();

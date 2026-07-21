@@ -1,6 +1,8 @@
 use proc_macro::TokenStream;
 
-/// Function-like proc macro that expands to `fn answer() -> u32 { 42 }`.
+/// Function-like proc macro that echoes its input back as the body of a
+/// generated `answer()` function — e.g. `answer_echo!(42)` expands to
+/// `fn answer() -> u32 { 42 }`.
 ///
 /// The value of this macro is not the expansion itself but the fact that a
 /// crate using it must be compiled — which makes rustc load this crate's
@@ -8,6 +10,6 @@ use proc_macro::TokenStream;
 /// "E0463 can't find crate for answer_macro" when the toolchain's libstd is
 /// not resolvable for proc-macro dylibs (see nix/packages.nix).
 #[proc_macro]
-pub fn define_answer(_item: TokenStream) -> TokenStream {
-    "fn answer() -> u32 { 42 }".parse().unwrap()
+pub fn answer_echo(item: TokenStream) -> TokenStream {
+    format!("fn answer() -> u32 {{ {item} }}").parse().unwrap()
 }
