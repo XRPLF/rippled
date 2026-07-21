@@ -401,9 +401,15 @@ SpanGuard::hashSpan(
 SpanContext
 SpanGuard::captureContext() const
 {
-    if (!impl_)
+    if (!impl_ || !impl_->span)
         return {};
-    auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
+    // Capture THIS guard's own span, not the thread's ambient span. A
+    // SpanGuard is unscoped (never pushed onto the thread-local stack), so
+    // RuntimeContext::GetCurrent() would return an unrelated ambient span.
+    // Building the context from impl_->span makes captureContext() correct
+    // for every caller regardless of scoping, and lets childSpan(name, ctx)
+    // parent explicitly to this span across threads.
+    auto ctx = opentelemetry::context::Context{}.SetValue(otel_trace::kSpanKey, impl_->span);
     return SpanContext(std::make_shared<SpanContext::Impl>(std::move(ctx)));
 }
 
