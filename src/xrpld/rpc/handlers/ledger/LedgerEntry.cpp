@@ -186,11 +186,11 @@ parseCheck(
     auto const account =
         LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAddress");
     if (!account)
-        return Unexpected(account.error());
+        return std::unexpected(account.error());
 
     auto const sequence = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
     if (!sequence)
-        return Unexpected(sequence.error());
+        return std::unexpected(sequence.error());
 
     return keylet::check(*account, *sequence).key;
 }
@@ -585,13 +585,13 @@ parseNFTokenOffer(
 
     auto const owner = LedgerEntryHelpers::requiredAccountID(params, jss::owner, "malformedOwner");
     if (!owner)
-        return Unexpected(owner.error());
+        return std::unexpected(owner.error());
 
     auto const sequence = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
     if (!sequence)
-        return Unexpected(sequence.error());
+        return std::unexpected(sequence.error());
 
-    return jss::nft_offer(*owner, *sequence).key;
+    return keylet::nftokenOffer(*owner, *sequence).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -664,18 +664,18 @@ parsePayChannel(
     auto const account =
         LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAddress");
     if (!account)
-        return Unexpected(account.error());
+        return std::unexpected(account.error());
 
     auto const destination =
         LedgerEntryHelpers::requiredAccountID(params, jss::destination, "malformedDestination");
     if (!destination)
-        return Unexpected(destination.error());
+        return std::unexpected(destination.error());
 
     auto const sequence = LedgerEntryHelpers::requiredUInt32(params, jss::seq, "malformedRequest");
     if (!sequence)
-        return Unexpected(sequence.error());
+        return std::unexpected(sequence.error());
 
-    return keylet::payChan(*account, *destination, *sequence).key;
+    return keylet::payChannel(*account, *destination, *sequence).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -769,9 +769,9 @@ parseSignerList(
 
     auto const id = LedgerEntryHelpers::requiredAccountID(params, jss::account, "malformedAddress");
     if (!id)
-        return Unexpected(id.error());
+        return std::unexpected(id.error());
 
-    return sfSigners(*id).key;
+    return keylet::signerList(*id).key;
 }
 
 static std::expected<uint256, json::Value>

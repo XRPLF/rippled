@@ -828,7 +828,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         {
             // Request a check by account and seq.
             json::Value jvParams;
-            jvParams[jss::check] = json::objectValue;
+            jvParams[jss::check] = json::ValueType::Object;
             jvParams[jss::check][jss::account] = env.master.human();
             jvParams[jss::check][jss::seq] = checkSeq;
             jvParams[jss::ledger_hash] = ledgerHash;
@@ -841,7 +841,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         {
             // Request a non-existent check by account and seq.
             json::Value jvParams;
-            jvParams[jss::check] = json::objectValue;
+            jvParams[jss::check] = json::ValueType::Object;
             jvParams[jss::check][jss::account] = env.master.human();
             jvParams[jss::check][jss::seq] = checkSeq + 1000;
             jvParams[jss::ledger_hash] = ledgerHash;
@@ -1578,7 +1578,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         {
             // Request by owner and seq.
             json::Value jvParams;
-            jvParams[jss::nft_offer] = json::objectValue;
+            jvParams[jss::nft_offer] = json::ValueType::Object;
             jvParams[jss::nft_offer][jss::owner] = issuer.human();
             jvParams[jss::nft_offer][jss::seq] = offerSeq;
             json::Value const jrr =
@@ -1592,7 +1592,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         {
             // Request a non-existent offer by owner and seq.
             json::Value jvParams;
-            jvParams[jss::nft_offer] = json::objectValue;
+            jvParams[jss::nft_offer] = json::ValueType::Object;
             jvParams[jss::nft_offer][jss::owner] = issuer.human();
             jvParams[jss::nft_offer][jss::seq] = offerSeq + 1000;
             json::Value const jrr =
@@ -1790,7 +1790,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         {
             // Request the payment channel by account, destination, and seq.
             json::Value jvParams;
-            jvParams[jss::payment_channel] = json::objectValue;
+            jvParams[jss::payment_channel] = json::ValueType::Object;
             jvParams[jss::payment_channel][jss::account] = alice.human();
             jvParams[jss::payment_channel][jss::destination] = env.master.human();
             jvParams[jss::payment_channel][jss::seq] = payChanSeq;
@@ -1805,7 +1805,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         {
             // Request a non-existent payment channel by account, destination, and seq.
             json::Value jvParams;
-            jvParams[jss::payment_channel] = json::objectValue;
+            jvParams[jss::payment_channel] = json::ValueType::Object;
             jvParams[jss::payment_channel][jss::account] = alice.human();
             jvParams[jss::payment_channel][jss::destination] = env.master.human();
             jvParams[jss::payment_channel][jss::seq] = payChanSeq + 1000;
@@ -1994,7 +1994,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         env.close();
 
         std::string const ledgerHash{to_string(env.closed()->header().hash)};
-        auto const signerListIndex = signers(alice).key;
+        auto const signerListIndex = keylet::signerList(alice).key;
         {
             // Request by hash.
             json::Value jvParams;
@@ -2008,7 +2008,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         {
             // Request by account.
             json::Value jvParams;
-            jvParams[jss::signer_list] = J = json::objectValue;
+            jvParams[jss::signer_list] = json::ValueType::Object;
             jvParams[jss::signer_list][jss::account] = alice.human();
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
@@ -2020,7 +2020,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         {
             // Request a non-existent signer list by account.
             json::Value jvParams;
-            jvParams[jss::signer_list] = json::objectValue;
+            jvParams[jss::signer_list] = json::ValueType::Object;
             jvParams[jss::signer_list][jss::account] = env.master.human();
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
