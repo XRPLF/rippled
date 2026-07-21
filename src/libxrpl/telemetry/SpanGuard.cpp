@@ -1,23 +1,26 @@
 /**
- * Pimpl implementation for SpanGuard and SpanContext.
+ * Pimpl implementation for SpanGuard, ScopedSpanGuard and SpanContext.
  *
  * All OpenTelemetry SDK types are confined to this translation unit.
  * The public SpanGuard.h header contains only standard-library types
- * and forward-declares the Impl struct.
+ * and forward-declares the Impl / ScopedImpl structs.
+ *
+ * Two guards with split responsibilities live here:
+ * - SpanGuard::Impl holds ONLY the OTel Span (shared_ptr). It never
+ *   touches the thread-local context stack, so a SpanGuard is
+ *   thread-free and may be moved to and destroyed on any thread.
+ * - ScopedSpanGuard::ScopedImpl holds a SpanGuard plus an optional
+ *   Scope. The Scope pushes the span onto the constructing thread's
+ *   context stack; member order (guard first, scope second) ensures
+ *   the Scope pops BEFORE the span ends on destruction. It is
+ *   thread-bound: construct and destroy on the same thread.
  *
  * Static factory methods access the global Telemetry instance via
  * Telemetry::getInstance(), check whether the requested TraceCategory
- * is enabled, and return either an active guard with a real Span+Scope
- * or a null guard whose methods are all no-ops.
+ * is enabled, and return either an active guard with a real Span or a
+ * null guard whose methods are all no-ops.
  *
- * The Impl struct holds the OTel Span (shared_ptr) and an optional
- * Scope. Scope is non-movable, but since Impl lives behind a
- * unique_ptr, SpanGuard's move constructor simply transfers the
- * pointer — no double-Scope issues. A scoped guard holds the Scope;
- * detached() produces an Impl with no Scope (nullopt) so the guard
- * carries no thread-local binding and is safe to move across threads.
- *
- * @see SpanGuard (SpanGuard.h), Telemetry (Telemetry.h),
+ * @see SpanGuard, ScopedSpanGuard (SpanGuard.h), Telemetry (Telemetry.h),
  * FilteringSpanProcessor (Telemetry.cpp)
  */
 
@@ -87,65 +90,22 @@ SpanContext::isValid() const
 struct SpanGuard::Impl
 {
     /**
-     * The OTel span being guarded. Set to nullptr after discard() or
-     * once detached() moves it into a new guard, so ~Impl skips End().
+     * The OTel span being guarded. Set to nullptr after discard() so
+     * ~Impl skips End().
      */
     opentelemetry::nostd::shared_ptr<otel_trace::Span> span;
 
     /**
-     * Scope that activates span on the current thread's context stack.
-     * nullopt for a detached guard, which holds the span with no
-     * thread-local binding and is therefore safe to move across threads.
-     */
-    std::optional<otel_trace::Scope> scope;
-
-    /**
-     * Thread that constructed this Impl. Meaningful only when `scope`
-     * holds a value: a Scope is bound to the thread-local context stack
-     * of the thread that pushed it, so popping it (via ~Scope, when
-     * ~Impl runs) on a different thread corrupts that thread's stack.
-     * Checked in ~Impl() and detached() to turn a silent cross-thread
-     * corruption into an assertion failure in debug/test/fuzzing builds.
-     */
-    std::thread::id owner{std::this_thread::get_id()};
-
-    /**
-     * Construct a scoped guard: the span is pushed onto this thread's
-     * active-context stack for the lifetime of the guard.
+     * Construct an unscoped guard: the span is owned but NOT pushed
+     * onto any thread's context stack. The guard is thread-free.
      * @param s The span to guard.
      */
     explicit Impl(opentelemetry::nostd::shared_ptr<otel_trace::Span> s) : span(std::move(s))
-    {
-        scope.emplace(span);
-    }
-
-    /**
-     * Tag type selecting the scope-less (detached) constructor.
-     */
-    struct Detached
-    {
-    };
-
-    /**
-     * Construct a detached guard: the span is held with NO thread-local
-     * Scope, so the guard carries no context-stack binding and is safe
-     * to move to and destroy on another thread.
-     * @param s The span to guard.
-     */
-    Impl(opentelemetry::nostd::shared_ptr<otel_trace::Span> s, Detached) : span(std::move(s))
     {
     }
 
     ~Impl()
     {
-        // A live Scope (scope engaged) must be popped on the thread that
-        // pushed it; ending on any other thread corrupts that thread's
-        // context stack. A detached guard (scope == nullopt) carries no
-        // binding and may be destroyed anywhere, so the check is skipped.
-        XRPL_ASSERT(
-            !scope.has_value() || owner == std::this_thread::get_id(),
-            "xrpl::telemetry::SpanGuard::Impl::~Impl : scoped guard destroyed on "
-            "constructing thread");
         if (span)
             span->End();
     }
@@ -163,6 +123,8 @@ struct SpanGuard::Impl
 SpanGuard::SpanGuard() = default;
 SpanGuard::~SpanGuard() = default;
 SpanGuard::SpanGuard(SpanGuard&&) noexcept = default;
+SpanGuard&
+SpanGuard::operator=(SpanGuard&&) noexcept = default;
 
 SpanGuard::SpanGuard(std::unique_ptr<Impl> impl) : impl_(std::move(impl))
 {
@@ -245,7 +207,7 @@ SpanGuard::span(TraceCategory cat, std::string_view prefix, std::string_view nam
 }
 
 SpanGuard
-SpanGuard::rootSpan(TraceCategory cat, std::string_view prefix, std::string_view name)
+SpanGuard::freshRoot(TraceCategory cat, std::string_view prefix, std::string_view name)
 {
     auto* tel = Telemetry::getInstance();
     if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
@@ -337,43 +299,6 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
             {{linkSpan->GetContext(), {{kLinkTypeKey, kLinkTypeFollowsFrom}}}},
             opts)));
     // LCOV_EXCL_STOP
-}
-
-SpanGuard
-SpanGuard::detached() &&
-{
-    if (!impl_)
-        return {};
-    // Popping the Scope (below, via impl_.reset()) must happen on the thread
-    // that pushed it; calling detached() elsewhere would pop the wrong stack.
-    XRPL_ASSERT(
-        !impl_->scope.has_value() || impl_->owner == std::this_thread::get_id(),
-        "xrpl::telemetry::SpanGuard::detached : called on constructing thread");
-    // Take the span out; the old Impl.span is now null so ~Impl won't End().
-    auto s = std::move(impl_->span);
-    // Resetting the old Impl destroys its Scope HERE, on the origin thread,
-    // popping this thread's context stack correctly. The returned guard holds
-    // the span with no Scope, so it is safe to move to another thread.
-    impl_.reset();
-    return SpanGuard(std::make_unique<Impl>(std::move(s), Impl::Detached{}));
-}
-
-// ===== Detach-in-place helpers =============================================
-
-void
-detachInPlace(std::optional<SpanGuard>& guard)
-{
-    if (!guard || !*guard)
-        return;
-    guard.emplace(std::move(*guard).detached());
-}
-
-std::shared_ptr<SpanGuard>
-detachInPlace(std::shared_ptr<SpanGuard> guard)
-{
-    if (!guard || !*guard)
-        return guard;
-    return std::make_shared<SpanGuard>(std::move(*guard).detached());
 }
 
 // ===== Hash-derived span (category-gated) ==================================
@@ -577,6 +502,201 @@ SpanGuard::discard()
         impl_->span = nullptr;  // prevent ~Impl from calling End() again
         impl_.reset();
     }
+}
+
+// ===== ScopedSpanGuard::ScopedImpl =========================================
+
+struct ScopedSpanGuard::ScopedImpl
+{
+    /**
+     * The unscoped guard that owns the span. Declared FIRST so it is
+     * destroyed AFTER `scope`: the Scope must pop before the span ends.
+     */
+    SpanGuard guard;
+
+    /**
+     * Active OTel Scope binding the span to this thread's context stack.
+     * Present while the guard is active; reset() (via operator SpanGuard)
+     * pops it eagerly on the origin thread. Declared AFTER `guard` so
+     * destruction order pops the scope before the span ends.
+     */
+    std::optional<otel_trace::Scope> scope;
+
+    /**
+     * Thread that constructed this ScopedImpl. The Scope is bound to
+     * this thread's context stack, so popping it (via ~Scope or reset())
+     * on a different thread corrupts that thread's stack. Checked in the
+     * destructor and operator SpanGuard() to turn a silent cross-thread
+     * corruption into an assertion failure in debug/test/fuzzing builds.
+     */
+    std::thread::id owner{std::this_thread::get_id()};
+
+    /**
+     * Wrap a SpanGuard and activate its span on this thread. If the
+     * guard is active, push its span onto the thread-local context
+     * stack; a null guard leaves `scope` empty.
+     * @param g The span-owning guard to activate.
+     */
+    explicit ScopedImpl(SpanGuard g) : guard(std::move(g))
+    {
+        if (guard)
+            scope.emplace(guard.impl_->span);
+    }
+};
+
+// ===== ScopedSpanGuard core lifecycle ======================================
+
+ScopedSpanGuard::ScopedSpanGuard(SpanGuard&& guard)
+    : impl_(std::make_unique<ScopedImpl>(std::move(guard)))
+{
+}
+
+ScopedSpanGuard::~ScopedSpanGuard()
+{
+    // A live Scope must be popped on the thread that pushed it; destroying
+    // the guard on any other thread corrupts that thread's context stack.
+    // A null guard holds no Scope, so the check is skipped.
+    XRPL_ASSERT(
+        !impl_ || !impl_->scope.has_value() || impl_->owner == std::this_thread::get_id(),
+        "xrpl::telemetry::ScopedSpanGuard::~ScopedSpanGuard : destroyed on "
+        "constructing thread");
+}
+
+// ===== ScopedSpanGuard factory methods =====================================
+
+ScopedSpanGuard::ScopedSpanGuard(TraceCategory cat, std::string_view prefix, std::string_view name)
+    : ScopedSpanGuard(SpanGuard::span(cat, prefix, name))
+{
+}
+
+ScopedSpanGuard
+ScopedSpanGuard::freshRoot(TraceCategory cat, std::string_view prefix, std::string_view name)
+{
+    return ScopedSpanGuard(SpanGuard::freshRoot(cat, prefix, name));
+}
+
+ScopedSpanGuard
+ScopedSpanGuard::childSpan(std::string_view name) const
+{
+    return ScopedSpanGuard(impl_->guard.childSpan(name));
+}
+
+ScopedSpanGuard
+ScopedSpanGuard::childSpan(std::string_view name, SpanContext const& parentCtx)
+{
+    return ScopedSpanGuard(SpanGuard::childSpan(name, parentCtx));
+}
+
+ScopedSpanGuard
+ScopedSpanGuard::linkedSpan(std::string_view name) const
+{
+    return ScopedSpanGuard(impl_->guard.linkedSpan(name));
+}
+
+ScopedSpanGuard
+ScopedSpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
+{
+    return ScopedSpanGuard(SpanGuard::linkedSpan(name, linkCtx));
+}
+
+// ===== ScopedSpanGuard handoff bridge ======================================
+
+ScopedSpanGuard::
+operator SpanGuard() &&
+{
+    // The scope must be popped on the thread that pushed it; handing off
+    // elsewhere would pop the wrong stack.
+    XRPL_ASSERT(
+        impl_->owner == std::this_thread::get_id(),
+        "xrpl::telemetry::ScopedSpanGuard::operator SpanGuard : handoff on "
+        "constructing thread");
+    impl_->scope.reset();  // eager pop, on the origin thread
+    return std::move(impl_->guard);
+}
+
+// ===== ScopedSpanGuard context capture =====================================
+
+SpanContext
+ScopedSpanGuard::captureContext() const
+{
+    return impl_->guard.captureContext();
+}
+
+// ===== ScopedSpanGuard forwarding methods ==================================
+
+void
+ScopedSpanGuard::setAttribute(std::string_view key, std::string_view value)
+{
+    impl_->guard.setAttribute(key, value);
+}
+
+void
+ScopedSpanGuard::setAttribute(std::string_view key, char const* value)
+{
+    impl_->guard.setAttribute(key, value);
+}
+
+void
+ScopedSpanGuard::setAttribute(std::string_view key, std::int64_t value)
+{
+    impl_->guard.setAttribute(key, value);
+}
+
+void
+ScopedSpanGuard::setAttribute(std::string_view key, double value)
+{
+    impl_->guard.setAttribute(key, value);
+}
+
+void
+ScopedSpanGuard::setAttribute(std::string_view key, bool value)
+{
+    impl_->guard.setAttribute(key, value);
+}
+
+void
+ScopedSpanGuard::setOk()
+{
+    impl_->guard.setOk();
+}
+
+void
+ScopedSpanGuard::setError(std::string_view description)
+{
+    impl_->guard.setError(description);
+}
+
+void
+ScopedSpanGuard::addEvent(std::string_view name)
+{
+    impl_->guard.addEvent(name);
+}
+
+void
+ScopedSpanGuard::recordException(std::exception const& e)
+{
+    impl_->guard.recordException(e);
+}
+
+void
+ScopedSpanGuard::discard()
+{
+    // A live Scope must be popped on the thread that pushed it; discarding
+    // on any other thread corrupts that thread's context stack. A null guard
+    // holds no Scope, so the check is skipped.
+    XRPL_ASSERT(
+        !impl_ || !impl_->scope.has_value() || impl_->owner == std::this_thread::get_id(),
+        "xrpl::telemetry::ScopedSpanGuard::discard : discarded on constructing thread");
+    // Pop the scope first (on this thread) so no span stays active on the
+    // stack, then discard the span via the owned guard.
+    impl_->scope.reset();
+    impl_->guard.discard();
+}
+
+ScopedSpanGuard::
+operator bool() const
+{
+    return impl_ && static_cast<bool>(impl_->guard);
 }
 
 }  // namespace xrpl::telemetry
