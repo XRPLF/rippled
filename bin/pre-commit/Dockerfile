@@ -36,3 +36,18 @@ ENV NIX_SSL_CERT_FILE="/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt
 
 # Verify nix installation
 RUN nix --version
+
+ENV RUSTUP_HOME="/opt/rust/rustup"
+ENV CARGO_HOME="/opt/rust/cargo"
+ENV PATH="/opt/rust/cargo/bin:${PATH}"
+
+COPY rust-toolchain.toml /tmp/rust-toolchain.toml
+RUN <<EOF
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+    | sh -s -- -y --no-modify-path --profile minimal --default-toolchain none
+cd /tmp
+rustup toolchain install
+rustup show
+cargo fmt --version
+rm -f /tmp/rust-toolchain.toml
+EOF
