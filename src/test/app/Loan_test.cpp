@@ -446,7 +446,7 @@ protected:
                 env.test.BEAST_EXPECT(loan->at(sfPeriodicPayment) == periodicPayment);
                 env.test.BEAST_EXPECT(loan->at(sfFlags) == flags);
 
-                auto const ls = constructRoundedLoanState(loan);
+                auto const ls = constructLoanState(loan);
 
                 auto const interestRate = TenthBips32{loan->at(sfInterestRate)};
                 auto const paymentInterval = loan->at(sfPaymentInterval);
@@ -1119,7 +1119,7 @@ protected:
                     // No reason for this not to exist
                     return;
                 }
-                auto const current = constructRoundedLoanState(loanSle);
+                auto const current = constructLoanState(loanSle);
                 auto const errors = nextTrueState - current;
                 log << currencyLabel << " Loan balances: "
                     << "\n\tAmount taken: " << paymentComponents.trackedValueDelta
@@ -6056,7 +6056,7 @@ protected:
             auto const loanSle = env.le(loanKeylet);
             if (!BEAST_EXPECT(loanSle))
                 return;
-            auto const state = constructRoundedLoanState(loanSle);
+            auto const state = constructLoanState(loanSle);
 
             log << "Loan state:" << std::endl;
             log << "  ValueOutstanding: " << state.valueOutstanding << std::endl;
