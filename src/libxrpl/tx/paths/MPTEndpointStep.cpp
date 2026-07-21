@@ -691,17 +691,7 @@ MPTEndpointStep<TDerived>::fwdImp(
         // Don't have to factor in dstQIn since it's always QUALITY_ONE
         MPTAmount const out = srcToDst;
         setCacheLimiting(in, srcToDst, out, srcDebtDir);
-        auto const ter = sendWithMPTCreate(sb, src_, dst_, cache_->srcToDst);
-        if (!isTesSuccess(ter))
-        {
-            // Unreachable: send fails only on funds/auth/overflow, precluded by
-            // maxPaymentFlow, check() requireAuth, and 2*kMaxMpTokenAmount < 2^64.
-            // LCOV_EXCL_START
-            JLOG(j_.trace()) << "MPTEndpointStep::fwd: error " << ter;
-            resetCache(srcDebtDir);
-            return {beast::kZero, beast::kZero};
-            // LCOV_EXCL_STOP
-        }
+
         JLOG(j_.trace()) << "MPTEndpointStep::fwd: Non-limiting"
                          << " srcRedeems: " << redeems(srcDebtDir) << " in: " << to_string(in)
                          << " srcToDst: " << to_string(srcToDst) << " out: " << to_string(out);
@@ -725,18 +715,25 @@ MPTEndpointStep<TDerived>::fwdImp(
         // Don't have to factor in dstQIn since it's always QUALITY_ONE
         MPTAmount const out = maxSrcToDst;
         setCacheLimiting(actualIn, maxSrcToDst, out, srcDebtDir);
-        auto const ter = sendWithMPTCreate(sb, src_, dst_, cache_->srcToDst);
-        if (!isTesSuccess(ter))
-        {
-            JLOG(j_.trace()) << "MPTEndpointStep::fwd: error " << ter;
-            resetCache(srcDebtDir);
-            return {beast::kZero, beast::kZero};
-        }
+
         JLOG(j_.trace()) << "MPTEndpointStep::fwd: Limiting"
                          << " srcRedeems: " << redeems(srcDebtDir) << " in: " << to_string(actualIn)
                          << " srcToDst: " << to_string(srcToDst) << " out: " << to_string(out);
         // LCOV_EXCL_STOP
     }
+
+    auto const ter = sendWithMPTCreate(sb, src_, dst_, cache_->srcToDst);
+    if (!isTesSuccess(ter))
+    {
+        // Unreachable: send fails only on funds/auth/overflow, precluded by
+        // maxPaymentFlow, check() requireAuth, and 2*kMaxMpTokenAmount < 2^64.
+        // LCOV_EXCL_START
+        JLOG(j_.trace()) << "MPTEndpointStep::fwd: error " << ter;
+        resetCache(srcDebtDir);
+        return {beast::kZero, beast::kZero};
+        // LCOV_EXCL_STOP
+    }
+
     return {cache_->in, cache_->out};
     // NOLINTEND(bugprone-unchecked-optional-access)
 }

@@ -132,9 +132,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             }
             catch (std::overflow_error const&)
             {
-                if (lpAccepted->rules().enabled(featureMPTokensV2))
-                    continue;
-                throw;
+                continue;
             }
             STAmount const rate = *maybeRate;
 

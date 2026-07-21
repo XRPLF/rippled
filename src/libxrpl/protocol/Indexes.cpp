@@ -123,6 +123,10 @@ getBookBase(Book const& book)
 {
     XRPL_ASSERT(isConsistent(book), "xrpl::getBookBase : input is consistent");
 
+    constexpr std::uint8_t kIssueToMPTTag = 0x01;
+    constexpr std::uint8_t kMPTToIssueTag = 0x02;
+    constexpr std::uint8_t kMPTToMPTTag = 0x03;
+
     auto getIndexHash = [&book]<typename... Args>(Args... args) {
         if (book.domain)
             return indexHash(std::forward<Args>(args)..., *book.domain);
@@ -148,7 +152,7 @@ getBookBase(Book const& book)
             {
                 return getIndexHash(
                     LedgerNameSpace::BookDir,
-                    std::uint8_t{0x01},
+                    kIssueToMPTTag,
                     in.currency,
                     out.getMptID(),
                     in.account);
@@ -157,7 +161,7 @@ getBookBase(Book const& book)
             {
                 return getIndexHash(
                     LedgerNameSpace::BookDir,
-                    std::uint8_t{0x02},
+                    kMPTToIssueTag,
                     in.getMptID(),
                     out.currency,
                     out.account);
@@ -165,7 +169,7 @@ getBookBase(Book const& book)
             else
             {
                 return getIndexHash(
-                    LedgerNameSpace::BookDir, std::uint8_t{0x03}, in.getMptID(), out.getMptID());
+                    LedgerNameSpace::BookDir, kMPTToMPTTag, in.getMptID(), out.getMptID());
             }
         },
         book.in.value(),

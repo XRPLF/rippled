@@ -134,9 +134,9 @@ public:
     }
 
     void
-    testMPTV2SkipsOverflowingRate()
+    testSkipsOverflowingRate()
     {
-        testcase("MPTokensV2 skips overflowing book-change rate");
+        testcase("book_changes skips overflowing rate");
         using namespace jtx;
 
         Env env(*this);
@@ -172,7 +172,7 @@ public:
 
         auto tx = std::make_shared<STTx const>(ttOFFER_CREATE, [](STObject&) {});
 
-        auto const makeLedger = [&](std::unordered_set<uint256, beast::Uhash<>> const& features) {
+        auto const test = [&](std::unordered_set<uint256, beast::Uhash<>> const& features) {
             auto ledger = std::make_shared<Ledger>(
                 2,
                 NetClock::time_point{},
@@ -189,25 +189,22 @@ public:
             ledger->rawTxInsert(uint256{1}, txSerializer, metaSerializer);
             ledger->setImmutable();
             ledger->setValidated();
-            return std::static_pointer_cast<Ledger const>(ledger);
+
+            try
+            {
+                auto const result =
+                    RPC::computeBookChanges(std::static_pointer_cast<Ledger const>(ledger));
+                BEAST_EXPECT(result[jss::type] == "bookChanges");
+                BEAST_EXPECT(result[jss::changes].size() == 0);
+            }
+            catch (std::overflow_error const&)
+            {
+                fail("Overflowing book-change rate shouldn't throw");
+            }
         };
 
-        auto const enabledResult = RPC::computeBookChanges(
-            makeLedger(std::unordered_set<uint256, beast::Uhash<>>{featureMPTokensV2}));
-
-        BEAST_EXPECT(enabledResult[jss::type] == "bookChanges");
-        BEAST_EXPECT(enabledResult[jss::changes].size() == 0);
-
-        try
-        {
-            (void)RPC::computeBookChanges(
-                makeLedger(std::unordered_set<uint256, beast::Uhash<>>{}));
-            fail("Expected overflowing book-change rate to throw without MPTokensV2");
-        }
-        catch (std::overflow_error const&)
-        {
-            pass();
-        }
+        test(std::unordered_set<uint256, beast::Uhash<>>{});
+        test(std::unordered_set<uint256, beast::Uhash<>>{featureMPTokensV2});
     }
 
     void
@@ -217,7 +214,7 @@ public:
         testLedgerInputDefaultBehavior();
 
         testDomainOffer();
-        testMPTV2SkipsOverflowingRate();
+        testSkipsOverflowingRate();
         // Note: Other aspects of the book_changes rpc are fertile grounds
         // for unit-testing purposes. It can be included in future work
     }
