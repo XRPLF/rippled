@@ -7425,6 +7425,192 @@ protected:
     }
 
     void
+    testImpairedOverdueLoanPayRequiresLateFlag()
+    {
+        using namespace jtx;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        // FN-68: a borrower must not be able to bypass late-payment charges by
+        // paying an impaired, overdue loan with a plain LoanPay. Under
+        // featureLendingProtocolV1_1 impairment no longer moves the due date,
+        // so the payment logic sees the real (overdue) date: a regular payment
+        // is rejected with tecEXPIRED, and only a tfLoanLatePayment (which
+        // charges the late fee + late interest) is accepted.
+        testcase("Impaired overdue LoanPay requires late-payment flag");
+
+        Env env(*this, all_);
+        BEAST_EXPECT(env.enabled(featureLendingProtocolV1_1));
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        auto const broker = createVaultAndBroker(env, xrpAsset, lender);
+
+        auto const sleBroker = env.le(keylet::loanBroker(broker.brokerID));
+        if (!BEAST_EXPECT(sleBroker))
+            return;
+        auto const loanKeylet = keylet::loan(broker.brokerID, sleBroker->at(sfLoanSequence));
+
+        // Loan with non-zero late-payment terms, so the late path carries a
+        // real penalty that the exploit would otherwise avoid.
+        Number const principalRequest{1, 3};
+        env(set(borrower, broker.brokerID, broker.asset(principalRequest).value()),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(12),
+            kPaymentInterval(600),
+            kLatePaymentFee(broker.asset(3).number()),
+            kLateInterestRate(TenthBips32{30322}),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const loanSle = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanSle))
+            return;
+        auto const originalNextDueDate = loanSle->at(sfNextPaymentDueDate);
+        auto const paymentsBefore = loanSle->at(sfPaymentRemaining);
+        BEAST_EXPECT(originalNextDueDate > 0);
+
+        // Advance past the due date so the loan is overdue, then impair it
+        // (impairment is only allowed once the payment is late).
+        env.close(NetClock::time_point{NetClock::duration{originalNextDueDate}} + 1s);
+        env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+        env.close();
+
+        // The loan is impaired and overdue, and its due date was NOT moved.
+        {
+            auto const loan = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loan))
+                return;
+            BEAST_EXPECT(loan->isFlag(lsfLoanImpaired));
+            BEAST_EXPECT(loan->at(sfNextPaymentDueDate) == originalNextDueDate);
+        }
+
+        auto const payAmount = broker.asset(500).value();
+
+        // The exploit: a plain LoanPay (Flags = 0) on an impaired, overdue loan
+        // must be rejected. Before FN-9 the auto-unimpair pushed the due date
+        // into the future and this returned tesSUCCESS, letting the borrower
+        // skip the late fee and late interest.
+        env(pay(borrower, loanKeylet.key, payAmount), Ter(tecEXPIRED));
+        env.close();
+
+        // The failed payment changed nothing: still impaired, still overdue,
+        // no payment applied.
+        {
+            auto const loan = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loan))
+                return;
+            BEAST_EXPECT(loan->isFlag(lsfLoanImpaired));
+            BEAST_EXPECT(loan->at(sfPaymentRemaining) == paymentsBefore);
+            BEAST_EXPECT(loan->at(sfNextPaymentDueDate) == originalNextDueDate);
+        }
+
+        // The same payment WITH the late flag is accepted, clears impairment,
+        // and advances the schedule by one period.
+        env(pay(borrower, loanKeylet.key, payAmount, tfLoanLatePayment), Ter(tesSUCCESS));
+        env.close();
+        {
+            auto const loan = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loan))
+                return;
+            BEAST_EXPECT(!loan->isFlag(lsfLoanImpaired));
+            BEAST_EXPECT(loan->at(sfPaymentRemaining) == paymentsBefore - 1);
+        }
+
+        // A loan that is no longer impaired must leave no unrealized loss on
+        // the vault.
+        {
+            auto const vaultSle = env.le(broker.vaultKeylet());
+            if (!BEAST_EXPECT(vaultSle))
+                return;
+            BEAST_EXPECT(vaultSle->at(sfLossUnrealized) == 0);
+        }
+    }
+
+    void
+    testImpairedOverdueLoanPayBypassPreAmendment()
+    {
+        using namespace jtx;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        // FN-68 (pre-amendment): documents the original vulnerability. Without
+        // featureLendingProtocolV1_1, impairing moves the due date and LoanPay
+        // auto-unimpair pushes it into the future before the late check, so a
+        // plain (Flags = 0) LoanPay on an impaired, overdue loan is accepted as
+        // on-time (tesSUCCESS) and the borrower dodges the late-payment charges.
+        // This is what testImpairedOverdueLoanPayRequiresLateFlag closes once
+        // the amendment is enabled.
+        testcase("Impaired overdue LoanPay bypass (pre-amendment)");
+
+        Env env(*this, all_ - featureLendingProtocolV1_1);
+        BEAST_EXPECT(!env.enabled(featureLendingProtocolV1_1));
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        auto const broker = createVaultAndBroker(env, xrpAsset, lender);
+
+        auto const sleBroker = env.le(keylet::loanBroker(broker.brokerID));
+        if (!BEAST_EXPECT(sleBroker))
+            return;
+        auto const loanKeylet = keylet::loan(broker.brokerID, sleBroker->at(sfLoanSequence));
+
+        Number const principalRequest{1, 3};
+        env(set(borrower, broker.brokerID, broker.asset(principalRequest).value()),
+            Sig(sfCounterpartySignature, lender),
+            kPaymentTotal(12),
+            kPaymentInterval(600),
+            kLatePaymentFee(broker.asset(3).number()),
+            kLateInterestRate(TenthBips32{30322}),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const loanSle = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanSle))
+            return;
+        auto const originalNextDueDate = loanSle->at(sfNextPaymentDueDate);
+        BEAST_EXPECT(originalNextDueDate > 0);
+
+        // Pre-amendment: a loan can be impaired before it is late, which moves
+        // the due date to "now".
+        env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+        env.close();
+
+        // Advance past the ORIGINAL due date so the loan is genuinely overdue.
+        env.close(NetClock::time_point{NetClock::duration{originalNextDueDate}} + 1s);
+
+        {
+            auto const loan = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loan))
+                return;
+            BEAST_EXPECT(loan->isFlag(lsfLoanImpaired));
+        }
+
+        auto const payAmount = broker.asset(500).value();
+
+        // The bug: a plain LoanPay is accepted as on-time and clears the loan's
+        // impaired flag, so the late fee / late interest are never charged.
+        env(pay(borrower, loanKeylet.key, payAmount), Ter(tesSUCCESS));
+        env.close();
+        {
+            auto const loan = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loan))
+                return;
+            BEAST_EXPECT(!loan->isFlag(lsfLoanImpaired));
+        }
+    }
+
+    void
     testYieldTheftRounding(std::uint32_t flags)
     {
         testcase("Rounding manipulation does not permit yield theft");
@@ -8842,6 +9028,8 @@ protected:
         testBugOverpayUnroundedAmount();
         testImpairmentPaymentDateUnchanged();
         testImpairmentPaymentDatePreAmendment();
+        testImpairedOverdueLoanPayRequiresLateFlag();
+        testImpairedOverdueLoanPayBypassPreAmendment();
 
         for (auto const flags : {0u, tfLoanOverpayment})
             testYieldTheftRounding(flags);
