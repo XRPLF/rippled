@@ -7216,16 +7216,27 @@ private:
 
         // Found by Antithesis: two-asset deposit with a huge Amount against a
         // tiny pool leg makes frac = Amount/amountBalance enormous, so the
-        // computed XRP-side deposit exceeds Number's int64 range and
-        // Number::operator rep() throws out of doApply.
+        // computed XRP-side deposit exceeds the integral asset's range and the
+        // conversion to an STAmount throws out of doApply.
         //
-        // Without featureMPTokensV2 the exception escapes and is converted to
+        // equalDepositLimit catches std::runtime_error, which covers both ways
+        // the conversion can throw:
+        //   - value beyond int64 range: Number::operator rep() throws
+        //     std::overflow_error (a std::runtime_error); and
+        //   - value within int64 but above the asset maximum (kMaxNativeN):
+        //     STAmount::canonicalize throws std::runtime_error.
+        // XRP(10) is 1e7 drops, so the computed XRP leg is 1e7 * frac:
+        //   asset1In 1e15 => frac ~1e15 => ~1e22 drops, past int64max; and
+        //   asset1In 1e11 => frac ~1e11 => ~1e18 drops, in [kMaxNativeN=1e17,
+        //   int64max) - the canonicalize band, which would otherwise escape.
+        //
+        // Without fixCleanup3_4_0 the exception escapes and is converted to
         // tefEXCEPTION by applySteps. With the amendment, equalDepositLimit
-        // guards the overflow and fails cleanly with a tec.
-        auto const test = [this](FeatureBitset features, TER expected) {
-            // These deposits intentionally trigger the overflow, which logs at
-            // error (guarded) or fatal (legacy tefEXCEPTION). Disable the log
-            // threshold to keep the test output clean.
+        // guards it and fails cleanly with a tec.
+        auto const test = [this](FeatureBitset features, STAmount const& asset1In, TER expected) {
+            // These deposits intentionally trigger the overflow, which logs
+            // at error (guarded) or fatal (legacy tefEXCEPTION). Disable the
+            // log threshold to keep the test output clean.
             Env env(*this, envconfig(), features, nullptr, beast::Severity::Disabled);
             env.fund(XRP(30'000), gw_, alice_);
             env(trust(alice_, STAmount{USD, 1, 20}));
@@ -7236,15 +7247,19 @@ private:
             amm.deposit(
                 DepositArg{
                     .account = alice_,
-                    .asset1In = STAmount{USD, 1, 15},
+                    .asset1In = asset1In,
                     .asset2In = XRP(1),
                     .err = Ter(expected)});
         };
 
-        // Legacy behavior: overflow escapes as tefEXCEPTION.
-        test(all - featureMPTokensV2, tefEXCEPTION);
-        // Fixed behavior: overflow is guarded and returns a tec.
-        test(all, tecAMM_INVALID_TOKENS);
+        // int64-range band (overflow_error): legacy escapes as tefEXCEPTION,
+        // fixed returns a tec.
+        test(all - fixCleanup3_4_0, STAmount{USD, 1, 15}, tefEXCEPTION);
+        test(all, STAmount{USD, 1, 15}, tecAMM_INVALID_TOKENS);
+        // canonicalize band (runtime_error): same behavior. Regression guard
+        // for the band the plain overflow_error catch used to miss.
+        test(all - fixCleanup3_4_0, STAmount{USD, 1, 11}, tefEXCEPTION);
+        test(all, STAmount{USD, 1, 11}, tecAMM_INVALID_TOKENS);
     }
 
     void

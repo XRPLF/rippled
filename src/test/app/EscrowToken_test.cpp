@@ -3686,10 +3686,10 @@ struct EscrowToken_test : public beast::unit_test::Suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        bool const withMPTokensV2 = features[featureMPTokensV2];
+        bool const withCleanup340 = features[fixCleanup3_4_0];
         testcase(
             std::string("MPT Split Escrow Transfer Fee ") +
-            (withMPTokensV2 ? "with MPTokensV2" : "without MPTokensV2"));
+            (withCleanup340 ? "with Cleanup340" : "without Cleanup340"));
 
         Env env{*this, features};
         auto const baseFee = env.current()->fees().base;
@@ -3738,7 +3738,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env.close();
         }
 
-        auto const feeBurned = withMPTokensV2 ? escrowCount : 0;
+        auto const feeBurned = withCleanup340 ? escrowCount : 0;
         BEAST_EXPECT(env.balance(alice, mpt) == mpt(10'000 - totalLocked));
         BEAST_EXPECT(env.balance(bob, mpt) == mpt(totalLocked - feeBurned));
         BEAST_EXPECT(env.balance(gw, mpt) == mpt(-10'000 + feeBurned));
@@ -4064,7 +4064,7 @@ public:
             testMPTWithFeats(feats);
             testMPTWithFeats(feats - fixTokenEscrowV1);
         }
-        testMPTSplitEscrowTransferFee(all - featureMPTokensV2);
+        testMPTSplitEscrowTransferFee(all - fixCleanup3_4_0);
         testMPTSplitEscrowTransferFee(all);
     }
 };

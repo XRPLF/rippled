@@ -835,20 +835,30 @@ AMMDeposit::equalDepositLimit(
         }
         return {tecAMM_FAILED, STAmount{}};
     }
-    catch (std::overflow_error const& e)
+    catch (std::runtime_error const& e)
     {
         // A huge Amount against a tiny integral (XRP/MPT) pool leg makes
         // frac = Amount / balance enormous, so the computed pool-side deposit
-        // exceeds Number's int64 range and the conversion to an integral
-        // STAmount throws. Guard it and fail cleanly with a tec instead of
-        // letting the exception escape doApply as tefEXCEPTION.
+        // exceeds the integral asset's range and converting it to an STAmount
+        // throws. This happens two ways, both handled here since
+        // std::overflow_error derives from std::runtime_error:
+        //   - value beyond int64 range: the Number -> int64 conversion throws
+        //     std::overflow_error (Number::operator rep()); and
+        //   - value within int64 but above the asset maximum (kMaxNativeN /
+        //     kMaxMpTokenAmount): STAmount::canonicalize throws
+        //     std::runtime_error.
+        // Both are user-triggered out-of-range conditions, so fail cleanly with
+        // a tec instead of letting the exception escape doApply as
+        // tefEXCEPTION. Any other (non-runtime_error) exception is left to
+        // propagate and is surfaced as tefEXCEPTION by the outer applySteps
+        // layer, consistent with treating it as an unexpected/internal error.
         //
-        // Gated by featureMPTokensV2: without the amendment we must preserve
+        // Gated by fixCleanup3_4_0: without the amendment we must preserve
         // the pre-existing (tefEXCEPTION) behavior so that upgraded and
         // non-upgraded nodes agree on the transaction result.
-        if (!view.rules().enabled(featureMPTokensV2))
+        if (!view.rules().enabled(fixCleanup3_4_0))
             throw;  // LCOV_EXCL_LINE - preserve legacy tefEXCEPTION
-        JLOG(j_.error()) << "AMMDeposit::equalDepositLimit overflow " << e.what();
+        JLOG(j_.error()) << "AMMDeposit::equalDepositLimit out of range " << e.what();
         return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
 }
