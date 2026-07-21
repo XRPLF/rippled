@@ -949,7 +949,7 @@ WasmiEngine::runHlp(
 
     for (auto const& version : extractVersionInfo(wasmCode))
     {
-        j_.debug() << "Module version: " << version.name << " " << version.version << "\n";
+        j_.debug() << "Module version: " << version.name << " " << version.version;
     }
 
     // Create and instantiate the module.
