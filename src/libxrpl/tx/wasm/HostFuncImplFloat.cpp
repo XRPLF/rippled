@@ -83,18 +83,18 @@ struct FloatState
 {
     // Set only when the requested mode is valid; sets the rounding mode on
     // construction and restores the previous mode on destruction.
-    std::optional<NumberRoundModeGuard> guard_;
+    std::optional<NumberRoundModeGuard> guard;
 
     explicit FloatState(int32_t mode)
     {
         if (auto const rm = Number::checkedRoundingMode(mode))
-            guard_.emplace(*rm);
+            guard.emplace(*rm);
     }
 
     explicit
     operator bool() const
     {
-        return guard_.has_value();
+        return guard.has_value();
     }
 };
 
