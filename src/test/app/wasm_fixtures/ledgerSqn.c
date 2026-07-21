@@ -2,7 +2,7 @@
 
 int32_t ldgr_index(uint8_t *, int32_t);
 
-int finish()
+int escrow_finish()
 {
   uint32_t sqn;
   int32_t result = ldgr_index((uint8_t *)&sqn, sizeof(sqn));

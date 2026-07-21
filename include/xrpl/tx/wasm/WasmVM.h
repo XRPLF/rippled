@@ -25,7 +25,7 @@ std::string_view inline constexpr wAlloc = "allocate";
 std::string_view inline constexpr wDealloc = "deallocate";
 std::string_view inline constexpr wProcExit = "proc_exit";
 
-std::string_view inline constexpr escrowFunctionName = "finish";
+std::string_view inline constexpr escrowFunctionName = "escrow_finish";
 
 uint32_t inline constexpr maxPages = 128;  // 8MB = 64KB*128
 

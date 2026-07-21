@@ -103,7 +103,7 @@ WASM execution is metered, and if the gas limit is exceeded, execution fails.
 ## Entry Point
 
 The WASM module must export a function with the name defined by
-`ESCROW_FUNCTION_NAME` (currently `"finish"`). This function:
+`escrowFunctionName` (currently `"escrow_finish"`). This function:
 
 - Takes no parameters (or parameters passed via host function calls)
 - Returns an `int32_t`:
