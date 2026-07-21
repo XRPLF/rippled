@@ -24,6 +24,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
@@ -755,9 +756,9 @@ class LedgerRPC_test : public beast::unit_test::Suite
             BEAST_EXPECT(jrr[jss::status] == "success");
             auto const& txns = jrr[jss::ledger][jss::transactions];
             BEAST_EXPECT(txns.isArray() && txns.size() > 0);
-            for (unsigned i = 0; i < txns.size(); ++i)
+            for (auto const& txn : txns)
             {
-                BEAST_EXPECT(txns[i].isMember(jss::ctid));
+                BEAST_EXPECT(txn.isMember(jss::ctid));
             }
         }
 
@@ -773,9 +774,9 @@ class LedgerRPC_test : public beast::unit_test::Suite
             BEAST_EXPECT(jrr[jss::status] == "success");
             auto const& txns = jrr[jss::ledger][jss::transactions];
             BEAST_EXPECT(txns.isArray() && txns.size() > 0);
-            for (unsigned i = 0; i < txns.size(); ++i)
+            for (auto const& txn : txns)
             {
-                BEAST_EXPECT(txns[i].isMember(jss::ctid));
+                BEAST_EXPECT(txn.isMember(jss::ctid));
             }
         }
 
@@ -789,9 +790,9 @@ class LedgerRPC_test : public beast::unit_test::Suite
             BEAST_EXPECT(jrr[jss::status] == "success");
             auto const& txns = jrr[jss::ledger][jss::transactions];
             BEAST_EXPECT(txns.isArray() && txns.size() > 0);
-            for (unsigned i = 0; i < txns.size(); ++i)
+            for (auto const& txn : txns)
             {
-                BEAST_EXPECT(txns[i].isString());
+                BEAST_EXPECT(txn.isString());
             }
         }
     }
