@@ -28,8 +28,8 @@
 
 #include <xrpl/telemetry/SpanGuard.h>
 
-#include <xrpl/basics/random.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/telemetry/DeterministicIdGenerator.h>
 #include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/Telemetry.h>
 
@@ -49,6 +49,7 @@
 #include <opentelemetry/trace/trace_flags.h>
 #include <opentelemetry/trace/trace_id.h>
 
+#include <array>
 #include <cstdint>
 #include <cstring>
 #include <exception>
@@ -303,6 +304,7 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
 
 // ===== Hash-derived span (category-gated) ==================================
 
+// Standalone hash-derived span: a TRUE root whose trace_id == hashData[0:16].
 SpanGuard
 SpanGuard::hashSpan(
     TraceCategory const cat,
@@ -316,26 +318,22 @@ SpanGuard::hashSpan(
     if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
         return {};
 
-    otel_trace::TraceId const traceId(
-        opentelemetry::nostd::span<std::uint8_t const, 16>(hashData, 16));
-
-    auto const rval = defaultPrng()();
-    std::uint8_t spanIdBytes[8];
-    std::memcpy(spanIdBytes, &rval, sizeof(spanIdBytes));
-    otel_trace::SpanId const spanId(
-        opentelemetry::nostd::span<std::uint8_t const, 8>(spanIdBytes, 8));
-
-    otel_trace::SpanContext const syntheticCtx(
-        traceId, spanId, otel_trace::TraceFlags(1), /* remote = */ false);
-
-    auto parentCtx = opentelemetry::context::Context{}.SetValue(
-        otel_trace::kSpanKey,
-        opentelemetry::nostd::shared_ptr<otel_trace::Span>(
-            new otel_trace::DefaultSpan(syntheticCtx)));
-
-    return SpanGuard(std::make_unique<Impl>(tel->startSpan(std::string(name), parentCtx)));
+    // Force the deterministic trace_id via the DeterministicIdGenerator, on the
+    // SDK root branch, so the span is a TRUE root (empty parent_span_id) whose
+    // trace_id == hashData[0:16]. The kIsRootSpanKey context forces the SDK's
+    // no-valid-parent branch, where GenerateTraceId() is called and returns the
+    // pending id. The PendingTraceId guard scopes that id to this one startSpan.
+    std::array<std::uint8_t, 16> tid{};
+    std::memcpy(tid.data(), hashData, 16);
+    auto rootCtx = opentelemetry::context::Context{otel_trace::kIsRootSpanKey, true};
+    PendingTraceId const pending{tid};
+    return SpanGuard(
+        std::make_unique<Impl>(
+            tel->startSpan(std::string(name), rootCtx, categoryToSpanKind(cat))));
 }
 
+// Cross-node hash-derived span: a CHILD of the sender's real remote span
+// (remote=true), not a root — so it must NOT use PendingTraceId / rootCtx.
 SpanGuard
 SpanGuard::hashSpan(
     TraceCategory const cat,
