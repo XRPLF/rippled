@@ -10,6 +10,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN <<EOF
 pkgs=()
 pkgs+=(curl)         # Required to install nix.
+pkgs+=(doxygen)      # Needed for Clio's check-doxygen-docs.sh.
 pkgs+=(git)          # Required for prepare-runner.
 pkgs+=(libatomic1)   # Required to run pre-commit provided `node`.
 pkgs+=(python3)      # Python 3 interpreter.
