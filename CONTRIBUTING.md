@@ -83,6 +83,7 @@ If you create new source files, they must be organized as follows:
   `src/libxrpl`.
 - All other non-test files must go under `src/xrpld`.
 - All test source files must go under `src/test`.
+- All benchmark source files must go under `src/benchmarks`.
 
 The source must be formatted according to the style guide below. The easiest
 way to satisfy this is to install the [`pre-commit`](#pre-commit-hooks) hooks,
