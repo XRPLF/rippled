@@ -1719,8 +1719,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
                 for (int i = 0; i < m->nodes_size(); ++i)
                 {
                     auto* ledgerNode = m->mutable_nodes(i);
-                    if (ledgerNode->reference_case() != ledgerNode->REFERENCE_NOT_SET)
+                    if (ledgerNode->has_id())
                     {
+                        // We can directly copy the `id` field, because it uses the wire format as
+                        // the legacy `nodeid` field.
+                        ledgerNode->set_nodeid(ledgerNode->id());
+                        ledgerNode->clear_id();
+                    }
+                    else if (ledgerNode->has_depth())
+                    {
+                        // We need to regenerate the node ID from the node data and depth.
                         auto treeNode = getTreeNode(ledgerNode->nodedata());
                         if (!treeNode)
                         {
@@ -1742,7 +1750,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
                         }
 
                         ledgerNode->set_nodeid(nodeID->getRawString());
-                        ledgerNode->clear_id();
                         ledgerNode->clear_depth();
                     }
                 }
