@@ -20,6 +20,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/telemetry/DeterministicIdGenerator.h>
 #include <xrpl/telemetry/DiscardFlag.h>
 
 #include <opentelemetry/context/context.h>
@@ -321,9 +322,15 @@ public:
             std::make_shared<trace_sdk::TraceIdRatioBasedSampler>(setup_.samplingRatio);
         auto sampler = trace_sdk::ParentBasedSamplerFactory::Create(std::move(rootSampler));
 
-        // Create TracerProvider
+        // Create TracerProvider with a DeterministicIdGenerator. It returns a
+        // deterministic trace_id when a PendingTraceId is active on the thread,
+        // else a random one — letting hash-derived roots (introduced on a later
+        // branch) become true trace roots. Dormant until such a caller exists.
         sdkProvider_ = trace_sdk::TracerProviderFactory::Create(
-            std::move(processor), resourceAttrs, std::move(sampler));
+            std::move(processor),
+            resourceAttrs,
+            std::move(sampler),
+            std::make_unique<DeterministicIdGenerator>());
 
         // Set as global provider
         trace_api::Provider::SetTracerProvider(
