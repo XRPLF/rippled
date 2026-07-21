@@ -1,10 +1,13 @@
 #pragma once
 
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Task.h>
 
 namespace xrpl::NodeStore {
 
-/** Simple NodeStore Scheduler that just performs the tasks synchronously. */
+/**
+ * Simple NodeStore Scheduler that just performs the tasks synchronously.
+ */
 class DummyScheduler : public Scheduler
 {
 public:

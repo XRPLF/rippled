@@ -1,22 +1,31 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STVector256.h>
+
+#include <cstddef>
+#include <iterator>
+#include <optional>
+#include <vector>
 
 namespace xrpl {
 
-/** A class that simplifies iterating ledger directory pages
-
-    The Dir class provides a forward iterator for walking through
-    the uint256 values contained in ledger directories.
-
-    The Dir class also allows accelerated directory walking by
-    stepping directly from one page to the next using the next_page()
-    member function.
-
-    As of July 2024, the Dir class is only being used with NFTokenOffer
-    directories and for unit tests.
-*/
+/**
+ * A class that simplifies iterating ledger directory pages
+ *
+ * The Dir class provides a forward iterator for walking through
+ * the uint256 values contained in ledger directories.
+ *
+ * The Dir class also allows accelerated directory walking by
+ * stepping directly from one page to the next using the next_page()
+ * member function.
+ *
+ * As of July 2024, the Dir class is only being used with NFTokenOffer
+ * directories and for unit tests.
+ */
 class Dir
 {
 private:

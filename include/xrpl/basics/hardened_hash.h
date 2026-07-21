@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/xxhasher.h>
 
 #include <cstdint>
@@ -40,33 +39,33 @@ makeSeedPair() noexcept
 
 /**
  * Seed functor once per construction
-
-   A std compatible hash adapter that resists adversarial inputs.
-   For this to work, T must implement in its own namespace:
-
-   @code
-
-   template <class Hasher>
-   void
-   hash_append (Hasher& h, T const& t) noexcept
-   {
-       // hash_append each base and member that should
-       //  participate in forming the hash
-       using beast::hash_append;
-       hash_append (h, static_cast<T::base1 const&>(t));
-       hash_append (h, static_cast<T::base2 const&>(t));
-       // ...
-       hash_append (h, t.member1);
-       hash_append (h, t.member2);
-       // ...
-   }
-
-   @endcode
-
-   Do not use any version of Murmur or CityHash for the Hasher
-   template parameter (the hashing algorithm).  For details
-   see https://131002.net/siphash/#at
-*/
+ *
+ * A std compatible hash adapter that resists adversarial inputs.
+ * For this to work, T must implement in its own namespace:
+ *
+ * @code
+ *
+ * template <class Hasher>
+ * void
+ * hash_append (Hasher& h, T const& t) noexcept
+ * {
+ *     // hash_append each base and member that should
+ *     //  participate in forming the hash
+ *     using beast::hash_append;
+ *     hash_append (h, static_cast<T::base1 const&>(t));
+ *     hash_append (h, static_cast<T::base2 const&>(t));
+ *     // ...
+ *     hash_append (h, t.member1);
+ *     hash_append (h, t.member2);
+ *     // ...
+ * }
+ *
+ * @endcode
+ *
+ * Do not use any version of Murmur or CityHash for the Hasher
+ * template parameter (the hashing algorithm).  For details
+ * see https://131002.net/siphash/#at
+ */
 
 template <class HashAlgorithm = beast::Xxhasher>
 class HardenedHash

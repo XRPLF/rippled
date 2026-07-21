@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 namespace xrpl {

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
 
 #include <boost/beast/core/string.hpp>
@@ -11,11 +10,15 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
-/** Manages partitions for logging. */
+/**
+ * Manages partitions for logging.
+ */
 class Logs
 {
 private:
@@ -39,69 +42,81 @@ private:
         writeAlways(beast::Severity level, std::string const& text) override;
     };
 
-    /** Manages a system file containing logged output.
-        The system file remains open during program execution. Interfaces
-        are provided for interoperating with standard log management
-        tools like logrotate(8):
-            http://linuxcommand.org/man_pages/logrotate8.html
-        @note None of the listed interfaces are thread-safe.
-    */
+    /**
+     * Manages a system file containing logged output.
+     * The system file remains open during program execution. Interfaces
+     * are provided for interoperating with standard log management
+     * tools like logrotate(8):
+     *     http://linuxcommand.org/man_pages/logrotate8.html
+     * @note None of the listed interfaces are thread-safe.
+     */
     class File
     {
     public:
-        /** Construct with no associated system file.
-            A system file may be associated later with @ref open.
-            @see open
-        */
+        /**
+         * Construct with no associated system file.
+         * A system file may be associated later with @ref open.
+         * @see open
+         */
         File();
 
-        /** Destroy the object.
-            If a system file is associated, it will be flushed and closed.
-        */
+        /**
+         * Destroy the object.
+         * If a system file is associated, it will be flushed and closed.
+         */
         ~File() = default;
 
-        /** Determine if a system file is associated with the log.
-            @return `true` if a system file is associated and opened for
-            writing.
-        */
+        /**
+         * Determine if a system file is associated with the log.
+         * @return `true` if a system file is associated and opened for
+         * writing.
+         */
         [[nodiscard]] bool
         isOpen() const noexcept;
 
-        /** Associate a system file with the log.
-            If the file does not exist an attempt is made to create it
-            and open it for writing. If the file already exists an attempt is
-            made to open it for appending.
-            If a system file is already associated with the log, it is closed
-            first.
-            @return `true` if the file was opened.
-        */
+        /**
+         * Associate a system file with the log.
+         * If the file does not exist an attempt is made to create it
+         * and open it for writing. If the file already exists an attempt is
+         * made to open it for appending.
+         * If a system file is already associated with the log, it is closed
+         * first.
+         * @return `true` if the file was opened.
+         */
         bool
         open(boost::filesystem::path const& path);
 
-        /** Close and re-open the system file associated with the log
-            This assists in interoperating with external log management tools.
-            @return `true` if the file was opened.
-        */
+        /**
+         * Close and re-open the system file associated with the log
+         * This assists in interoperating with external log management tools.
+         * @return `true` if the file was opened.
+         */
         bool
         closeAndReopen();
 
-        /** Close the system file if it is open. */
+        /**
+         * Close the system file if it is open.
+         */
         void
         close();
 
-        /** write to the log file.
-            Does nothing if there is no associated system file.
-        */
+        /**
+         * write to the log file.
+         * Does nothing if there is no associated system file.
+         */
         void
         write(char const* text);
 
-        /** write to the log file and append an end of line marker.
-            Does nothing if there is no associated system file.
-        */
+        /**
+         * write to the log file and append an end of line marker.
+         * Does nothing if there is no associated system file.
+         */
         void
         writeln(char const* text);
 
-        /** Write to the log file using std::string. */
+        /**
+         * Write to the log file using std::string.
+         */
         /** @{ */
         void
         write(std::string const& str)
@@ -222,19 +237,21 @@ private:
 //------------------------------------------------------------------------------
 // Debug logging:
 
-/** Set the sink for the debug journal.
-
-    @param sink unique_ptr to new debug Sink.
-    @return unique_ptr to the previous Sink.  nullptr if there was no Sink.
-*/
+/**
+ * Set the sink for the debug journal.
+ *
+ * @param sink unique_ptr to new debug Sink.
+ * @return unique_ptr to the previous Sink.  nullptr if there was no Sink.
+ */
 std::unique_ptr<beast::Journal::Sink>
 setDebugLogSink(std::unique_ptr<beast::Journal::Sink> sink);
 
-/** Returns a debug journal.
-    The journal may drain to a null sink, so its output
-    may never be seen. Never use it for critical
-    information.
-*/
+/**
+ * Returns a debug journal.
+ * The journal may drain to a null sink, so its output
+ * may never be seen. Never use it for critical
+ * information.
+ */
 beast::Journal
 debugLog();
 

@@ -2,20 +2,28 @@
 
 #include <test/csf/BasicNetwork.h>
 #include <test/csf/CollectorRef.h>
-#include <test/csf/Digraph.h>
 #include <test/csf/Peer.h>
 #include <test/csf/PeerGroup.h>
 #include <test/csf/Scheduler.h>
 #include <test/csf/SimTime.h>
 #include <test/csf/TrustGraph.h>
+#include <test/csf/ledgers.h>
 
+#include <xrpl/beast/utility/Journal.h>
+
+#include <cstddef>
+#include <cstdint>
 #include <deque>
 #include <iostream>
 #include <random>
+#include <string>
+#include <vector>
 
 namespace xrpl::test::csf {
 
-/** Sink that prepends simulation time to messages */
+/**
+ * Sink that prepends simulation time to messages
+ */
 class BasicSink : public beast::Journal::Sink
 {
     Scheduler::clock_type const& clock_;
@@ -59,28 +67,29 @@ public:
     TrustGraph<Peer*> trustGraph;
     CollectorRefs collectors;
 
-    /** Create a simulation
-
-        Creates a new simulation. The simulation has no peers, no trust links
-        and no network connections.
-
-    */
+    /**
+     * Create a simulation
+     *
+     * Creates a new simulation. The simulation has no peers, no trust links
+     * and no network connections.
+     */
     // NOLINTNEXTLINE(bugprone-random-generator-seed): fixed seed for reproducible test
     Sim() : sink{scheduler.clock()}, j{sink}, net{scheduler}
     {
     }
 
-    /** Create a new group of peers.
-
-        Creates a new group of peers. The peers do not have any trust relations
-        or network connections by default. Those must be configured by the
-       client.
-
-        @param numPeers The number of peers in the group
-        @return PeerGroup representing these new peers
-
-        @note This increases the number of peers in the simulation by numPeers.
-    */
+    /**
+     * Create a new group of peers.
+     *
+     * Creates a new group of peers. The peers do not have any trust relations
+     * or network connections by default. Those must be configured by the
+     * client.
+     *
+     * @param numPeers The number of peers in the group
+     * @return PeerGroup representing these new peers
+     *
+     * @note This increases the number of peers in the simulation by numPeers.
+     */
     PeerGroup
     createGroup(std::size_t numPeers)
     {
@@ -103,48 +112,57 @@ public:
         return res;
     }
 
-    //! The number of peers in the simulation
+    /**
+     * The number of peers in the simulation
+     */
     std::size_t
     size() const
     {
         return peers_.size();
     }
 
-    /** Run consensus protocol to generate the provided number of ledgers.
-
-        Has each peer run consensus until it closes `ledgers` more ledgers.
-
-        @param ledgers The number of additional ledgers to close
-    */
+    /**
+     * Run consensus protocol to generate the provided number of ledgers.
+     *
+     * Has each peer run consensus until it closes `ledgers` more ledgers.
+     *
+     * @param ledgers The number of additional ledgers to close
+     */
     void
     run(int ledgers);
 
-    /** Run consensus for the given duration */
+    /**
+     * Run consensus for the given duration
+     */
     void
     run(SimDuration const& dur);
 
-    /** Check whether all peers in the group are synchronized.
-
-        Nodes in the group are synchronized if they share the same last
-        fully validated and last generated ledger.
-    */
+    /**
+     * Check whether all peers in the group are synchronized.
+     *
+     * Nodes in the group are synchronized if they share the same last
+     * fully validated and last generated ledger.
+     */
     static bool
     synchronized(PeerGroup const& g);
 
-    /** Check whether all peers in the network are synchronized
+    /**
+     * Check whether all peers in the network are synchronized
      */
     bool
     synchronized() const;
 
-    /** Calculate the number of branches in the group.
-
-        A branch occurs if two nodes in the group have fullyValidatedLedgers
-        that are not on the same chain of ledgers.
-    */
+    /**
+     * Calculate the number of branches in the group.
+     *
+     * A branch occurs if two nodes in the group have fullyValidatedLedgers
+     * that are not on the same chain of ledgers.
+     */
     std::size_t
     branches(PeerGroup const& g) const;
 
-    /** Calculate the number  of branches in the network
+    /**
+     * Calculate the number  of branches in the network
      */
     std::size_t
     branches() const;

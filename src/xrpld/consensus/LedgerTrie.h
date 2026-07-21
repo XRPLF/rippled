@@ -5,9 +5,13 @@
 #include <xrpl/json/json_value.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <iomanip>
+#include <map>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <sstream>
 #include <stack>
 #include <utility>
@@ -15,7 +19,8 @@
 
 namespace xrpl {
 
-/** The tip of a span of ledger ancestry
+/**
+ * The tip of a span of ledger ancestry
  */
 template <class Ledger>
 class SpanTip
@@ -33,14 +38,15 @@ public:
     // The ID of the tip ledger
     ID id;
 
-    /** Lookup the ID of an ancestor of the tip ledger
-
-        @param s The sequence number of the ancestor
-        @return The ID of the ancestor with that sequence number
-
-        @note s must be less than or equal to the sequence number of the
-              tip ledger
-    */
+    /**
+     * Lookup the ID of an ancestor of the tip ledger
+     *
+     * @param s The sequence number of the ancestor
+     * @return The ID of the ancestor with that sequence number
+     *
+     * @note s must be less than or equal to the sequence number of the
+     *       tip ledger
+     */
     [[nodiscard]] ID
     ancestor(Seq const& s) const
     {
@@ -195,12 +201,13 @@ struct Node
     std::vector<std::unique_ptr<Node>> children;
     Node* parent = nullptr;
 
-    /** Remove the given node from this Node's children
-
-        @param child The address of the child node to remove
-        @note The child must be a member of the vector. The passed pointer
-              will be dangling as a result of this call
-    */
+    /**
+     * Remove the given node from this Node's children
+     *
+     * @param child The address of the child node to remove
+     * @note The child must be a member of the vector. The passed pointer
+     *       will be dangling as a result of this call
+     */
     void
     erase(Node const* child)
     {
@@ -241,83 +248,84 @@ struct Node
 };
 }  // namespace ledger_trie_detail
 
-/** Ancestry trie of ledgers
-
-    A compressed trie tree that maintains validation support of recent ledgers
-    based on their ancestry.
-
-    The compressed trie structure comes from recognizing that ledger history
-    can be viewed as a string over the alphabet of ledger ids. That is,
-    a given ledger with sequence number `seq` defines a length `seq` string,
-    with i-th entry equal to the id of the ancestor ledger with sequence
-    number i. "Sequence" strings with a common prefix share those ancestor
-    ledgers in common. Tracking this ancestry information and relations across
-    all validated ledgers is done conveniently in a compressed trie. A node in
-    the trie is an ancestor of all its children. If a parent node has sequence
-    number `seq`, each child node has a different ledger starting at `seq+1`.
-    The compression comes from the invariant that any non-root node with 0 tip
-    support has either no children or multiple children. In other words, a
-    non-root 0-tip-support node can be combined with its single child.
-
-    Each node has a tipSupport, which is the number of current validations for
-    that particular ledger. The node's branch support is the sum of the tip
-    support and the branch support of that node's children:
-
-        @code
-        node->branchSupport = node->tipSupport;
-        for (child : node->children)
-           node->branchSupport += child->branchSupport;
-        @endcode
-
-    The templated Ledger type represents a ledger which has a unique history.
-    It should be lightweight and cheap to copy.
-
-       @code
-       // Identifier types that should be equality-comparable and copyable
-       struct ID;
-       struct Seq;
-
-       struct Ledger
-       {
-          struct MakeGenesis{};
-
-          // The genesis ledger represents a ledger that prefixes all other
-          // ledgers
-          Ledger(MakeGenesis{});
-
-          Ledger(Ledger const&);
-          Ledger& operator=(Ledger const&);
-
-          // Return the sequence number of this ledger
-          Seq seq() const;
-
-          // Return the ID of this ledger's ancestor with given sequence number
-          // or ID{0} if unknown
-          ID
-          operator[](Seq s);
-
-       };
-
-       // Return the sequence number of the first possible mismatching ancestor
-       // between two ledgers
-       Seq
-       mismatch(ledgerA, ledgerB);
-       @endcode
-
-    The unique history invariant of ledgers requires any ledgers that agree
-    on the id of a given sequence number agree on ALL ancestors before that
-    ledger:
-
-        @code
-        Ledger a,b;
-        // For all Seq s:
-        if(a[s] == b[s]);
-            for(Seq p = 0; p < s; ++p)
-                assert(a[p] == b[p]);
-        @endcode
-
-    @tparam Ledger A type representing a ledger and its history
-*/
+/**
+ * Ancestry trie of ledgers
+ *
+ * A compressed trie tree that maintains validation support of recent ledgers
+ * based on their ancestry.
+ *
+ * The compressed trie structure comes from recognizing that ledger history
+ * can be viewed as a string over the alphabet of ledger ids. That is,
+ * a given ledger with sequence number `seq` defines a length `seq` string,
+ * with i-th entry equal to the id of the ancestor ledger with sequence
+ * number i. "Sequence" strings with a common prefix share those ancestor
+ * ledgers in common. Tracking this ancestry information and relations across
+ * all validated ledgers is done conveniently in a compressed trie. A node in
+ * the trie is an ancestor of all its children. If a parent node has sequence
+ * number `seq`, each child node has a different ledger starting at `seq+1`.
+ * The compression comes from the invariant that any non-root node with 0 tip
+ * support has either no children or multiple children. In other words, a
+ * non-root 0-tip-support node can be combined with its single child.
+ *
+ * Each node has a tipSupport, which is the number of current validations for
+ * that particular ledger. The node's branch support is the sum of the tip
+ * support and the branch support of that node's children:
+ *
+ *     @code
+ *     node->branchSupport = node->tipSupport;
+ *     for (child : node->children)
+ *        node->branchSupport += child->branchSupport;
+ *     @endcode
+ *
+ * The templated Ledger type represents a ledger which has a unique history.
+ * It should be lightweight and cheap to copy.
+ *
+ *    @code
+ *    // Identifier types that should be equality-comparable and copyable
+ *    struct ID;
+ *    struct Seq;
+ *
+ *    struct Ledger
+ *    {
+ *       struct MakeGenesis{};
+ *
+ *       // The genesis ledger represents a ledger that prefixes all other
+ *       // ledgers
+ *       Ledger(MakeGenesis{});
+ *
+ *       Ledger(Ledger const&);
+ *       Ledger& operator=(Ledger const&);
+ *
+ *       // Return the sequence number of this ledger
+ *       Seq seq() const;
+ *
+ *       // Return the ID of this ledger's ancestor with given sequence number
+ *       // or ID{0} if unknown
+ *       ID
+ *       operator[](Seq s);
+ *
+ *    };
+ *
+ *    // Return the sequence number of the first possible mismatching ancestor
+ *    // between two ledgers
+ *    Seq
+ *    mismatch(ledgerA, ledgerB);
+ *    @endcode
+ *
+ * The unique history invariant of ledgers requires any ledgers that agree
+ * on the id of a given sequence number agree on ALL ancestors before that
+ * ledger:
+ *
+ *     @code
+ *     Ledger a,b;
+ *     // For all Seq s:
+ *     if(a[s] == b[s]);
+ *         for(Seq p = 0; p < s; ++p)
+ *             assert(a[p] == b[p]);
+ *     @endcode
+ *
+ * @tparam Ledger A type representing a ledger and its history
+ */
 template <class Ledger>
 class LedgerTrie
 {
@@ -334,12 +342,13 @@ class LedgerTrie
     // Count of the tip support for each sequence number
     std::map<Seq, std::uint32_t> seqSupport_;
 
-    /** Find the node in the trie that represents the longest common ancestry
-        with the given ledger.
-
-        @return Pair of the found node and the sequence number of the first
-                ledger difference.
-    */
+    /**
+     * Find the node in the trie that represents the longest common ancestry
+     * with the given ledger.
+     *
+     * @return Pair of the found node and the sequence number of the first
+     *         ledger difference.
+     */
     [[nodiscard]] std::pair<Node*, Seq>
     find(Ledger const& ledger) const
     {
@@ -373,12 +382,13 @@ class LedgerTrie
         return std::make_pair(curr, pos);
     }
 
-    /** Find the node in the trie with an exact match to the given ledger ID
-
-        @return the found node or nullptr if an exact match was not found.
-
-        @note O(n) since this searches all nodes until a match is found
-    */
+    /**
+     * Find the node in the trie with an exact match to the given ledger ID
+     *
+     * @return the found node or nullptr if an exact match was not found.
+     *
+     * @note O(n) since this searches all nodes until a match is found
+     */
     Node*
     findByLedgerID(Ledger const& ledger, Node* parent = nullptr) const
     {
@@ -416,10 +426,11 @@ public:
     {
     }
 
-    /** Insert and/or increment the support for the given ledger.
-
-        @param ledger A ledger and its ancestry
-        @param count The count of support for this ledger
+    /**
+     * Insert and/or increment the support for the given ledger.
+     *
+     * @param ledger A ledger and its ancestry
+     * @param count The count of support for this ledger
      */
     void
     insert(Ledger const& ledger, std::uint32_t count = 1)
@@ -500,13 +511,14 @@ public:
         seqSupport_[ledger.seq()] += count;
     }
 
-    /** Decrease support for a ledger, removing and compressing if possible.
-
-        @param ledger The ledger history to remove
-        @param count The amount of tip support to remove
-
-        @return Whether a matching node was decremented and possibly removed.
-    */
+    /**
+     * Decrease support for a ledger, removing and compressing if possible.
+     *
+     * @param ledger The ledger history to remove
+     * @param count The amount of tip support to remove
+     *
+     * @return Whether a matching node was decremented and possibly removed.
+     */
     bool
     remove(Ledger const& ledger, std::uint32_t count = 1)
     {
@@ -560,10 +572,11 @@ public:
         return true;
     }
 
-    /** Return count of tip support for the specific ledger.
-
-        @param ledger The ledger to lookup
-        @return The number of entries in the trie for this *exact* ledger
+    /**
+     * Return count of tip support for the specific ledger.
+     *
+     * @param ledger The ledger to lookup
+     * @return The number of entries in the trie for this *exact* ledger
      */
     [[nodiscard]] std::uint32_t
     tipSupport(Ledger const& ledger) const
@@ -573,11 +586,12 @@ public:
         return 0;
     }
 
-    /** Return the count of branch support for the specific ledger
-
-        @param ledger The ledger to lookup
-        @return The number of entries in the trie for this ledger or a
-                descendant
+    /**
+     * Return the count of branch support for the specific ledger
+     *
+     * @param ledger The ledger to lookup
+     * @return The number of entries in the trie for this ledger or a
+     *         descendant
      */
     [[nodiscard]] std::uint32_t
     branchSupport(Ledger const& ledger) const
@@ -594,65 +608,66 @@ public:
         return loc ? loc->branchSupport : 0;
     }
 
-    /** Return the preferred ledger ID
-
-        The preferred ledger is used to determine the working ledger
-        for consensus amongst competing alternatives.
-
-        Recall that each validator is normally validating a chain of ledgers,
-        e.g. A->B->C->D. However, if due to network connectivity or other
-        issues, validators generate different chains
-
-        @code
-               /->C
-           A->B
-               \->D->E
-        @endcode
-
-        we need a way for validators to converge on the chain with the most
-        support. We call this the preferred ledger.  Intuitively, the idea is to
-        be conservative and only switch to a different branch when you see
-        enough peer validations to *know* another branch won't have preferred
-        support.
-
-        The preferred ledger is found by walking this tree of validated ledgers
-        starting from the common ancestor ledger.
-
-        At each sequence number, we have
-
-           - The prior sequence preferred ledger, e.g. B.
-           - The (tip) support of ledgers with this sequence number,e.g. the
-             number of validators whose last validation was for C or D.
-           - The (branch) total support of all descendants of the current
-             sequence number ledgers, e.g. the branch support of D is the
-             tip support of D plus the tip support of E; the branch support of
-             C is just the tip support of C.
-           - The number of validators that have yet to validate a ledger
-             with this sequence number (uncommitted support). Uncommitted
-             includes all validators whose last sequence number is smaller than
-             our last issued sequence number, since due to asynchrony, we may
-             not have heard from those nodes yet.
-
-        The preferred ledger for this sequence number is then the ledger
-        with relative majority of support, where uncommitted support
-        can be given to ANY ledger at that sequence number
-        (including one not yet known). If no such preferred ledger exists, then
-        the prior sequence preferred ledger is the overall preferred ledger.
-
-        In this example, for D to be preferred, the number of validators
-        supporting it or a descendant must exceed the number of validators
-        supporting C _plus_ the current uncommitted support. This is because if
-        all uncommitted validators end up validating C, that new support must
-        be less than that for D to be preferred.
-
-        If a preferred ledger does exist, then we continue with the next
-        sequence using that ledger as the root.
-
-        @param largestIssued The sequence number of the largest validation
-                             issued by this node.
-        @return Pair with the sequence number and ID of the preferred ledger or
-                std::nullopt if no preferred ledger exists
-    */
+    /**
+     * Return the preferred ledger ID
+     *
+     * The preferred ledger is used to determine the working ledger
+     * for consensus amongst competing alternatives.
+     *
+     * Recall that each validator is normally validating a chain of ledgers,
+     * e.g. A->B->C->D. However, if due to network connectivity or other
+     * issues, validators generate different chains
+     *
+     * @code
+     *        /->C
+     *    A->B
+     *        \->D->E
+     * @endcode
+     *
+     * we need a way for validators to converge on the chain with the most
+     * support. We call this the preferred ledger.  Intuitively, the idea is to
+     * be conservative and only switch to a different branch when you see
+     * enough peer validations to *know* another branch won't have preferred
+     * support.
+     *
+     * The preferred ledger is found by walking this tree of validated ledgers
+     * starting from the common ancestor ledger.
+     *
+     * At each sequence number, we have
+     *
+     *    - The prior sequence preferred ledger, e.g. B.
+     *    - The (tip) support of ledgers with this sequence number,e.g. the
+     *      number of validators whose last validation was for C or D.
+     *    - The (branch) total support of all descendants of the current
+     *      sequence number ledgers, e.g. the branch support of D is the
+     *      tip support of D plus the tip support of E; the branch support of
+     *      C is just the tip support of C.
+     *    - The number of validators that have yet to validate a ledger
+     *      with this sequence number (uncommitted support). Uncommitted
+     *      includes all validators whose last sequence number is smaller than
+     *      our last issued sequence number, since due to asynchrony, we may
+     *      not have heard from those nodes yet.
+     *
+     * The preferred ledger for this sequence number is then the ledger
+     * with relative majority of support, where uncommitted support
+     * can be given to ANY ledger at that sequence number
+     * (including one not yet known). If no such preferred ledger exists, then
+     * the prior sequence preferred ledger is the overall preferred ledger.
+     *
+     * In this example, for D to be preferred, the number of validators
+     * supporting it or a descendant must exceed the number of validators
+     * supporting C _plus_ the current uncommitted support. This is because if
+     * all uncommitted validators end up validating C, that new support must
+     * be less than that for D to be preferred.
+     *
+     * If a preferred ledger does exist, then we continue with the next
+     * sequence using that ledger as the root.
+     *
+     * @param largestIssued The sequence number of the largest validation
+     *                      issued by this node.
+     * @return Pair with the sequence number and ID of the preferred ledger or
+     *         std::nullopt if no preferred ledger exists
+     */
     [[nodiscard]] std::optional<SpanTip<Ledger>>
     getPreferred(Seq const largestIssued) const
     {
@@ -754,7 +769,8 @@ public:
         return curr->span.tip();
     }
 
-    /** Return whether the trie is tracking any ledgers
+    /**
+     * Return whether the trie is tracking any ledgers
      */
     [[nodiscard]] bool
     empty() const
@@ -762,7 +778,8 @@ public:
         return !root_ || root_->branchSupport == 0;
     }
 
-    /** Dump an ascii representation of the trie to the stream
+    /**
+     * Dump an ascii representation of the trie to the stream
      */
     void
     dump(std::ostream& o) const
@@ -770,7 +787,8 @@ public:
         dumpImpl(o, root_, 0);
     }
 
-    /** Dump JSON representation of trie state
+    /**
+     * Dump JSON representation of trie state
      */
     [[nodiscard]] json::Value
     getJson() const
@@ -783,7 +801,8 @@ public:
         return res;
     }
 
-    /** Check the compressed trie and support invariants.
+    /**
+     * Check the compressed trie and support invariants.
      */
     [[nodiscard]] bool
     checkInvariants() const

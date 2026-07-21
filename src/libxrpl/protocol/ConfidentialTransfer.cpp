@@ -7,6 +7,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>

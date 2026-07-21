@@ -1,4 +1,4 @@
-name: Build packaging Docker images
+name: Build `packaging` Docker images
 
 on:
   push:
@@ -26,7 +26,7 @@ defaults:
 
 jobs:
   build-merge:
-    name: Build and push packaging-${{ matrix.distro.name }}
+    name: Build and push `packaging-${{ matrix.distro.name }}` image
     permissions:
       contents: read
       packages: write
