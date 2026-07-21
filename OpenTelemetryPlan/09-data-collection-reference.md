@@ -1035,12 +1035,18 @@ via OTLP/HTTP to the OTel Collector and scraped by Prometheus.
 
 #### Per-RPC Method Metrics (Synchronous Counters/Histogram)
 
-| Prometheus Metric           | Type      | Labels            | Description                      |
-| --------------------------- | --------- | ----------------- | -------------------------------- |
-| `rpc_method_started_total`  | Counter   | `method="<name>"` | RPC calls started                |
-| `rpc_method_finished_total` | Counter   | `method="<name>"` | RPC calls completed successfully |
-| `rpc_method_errored_total`  | Counter   | `method="<name>"` | RPC calls that errored           |
-| `rpc_method_us`             | Histogram | `method="<name>"` | Execution time distribution (us) |
+| Prometheus Metric           | Type          | Labels            | Description                                            |
+| --------------------------- | ------------- | ----------------- | ------------------------------------------------------ |
+| `rpc_method_started_total`  | Counter       | `method="<name>"` | RPC calls started                                      |
+| `rpc_method_finished_total` | Counter       | `method="<name>"` | RPC calls completed successfully                       |
+| `rpc_method_errored_total`  | Counter       | `method="<name>"` | RPC calls that errored                                 |
+| `rpc_method_us`             | Histogram     | `method="<name>"` | Execution time distribution (us)                       |
+| `rpc_in_flight_requests`    | UpDownCounter | (none)            | RPC calls currently executing (+1 rpcStart, -1 rpcEnd) |
+
+`rpc_in_flight_requests` is emitted at its call site via the `XRPL_METRIC_UPDOWN_ADD`
+macro (see `src/xrpld/telemetry/MetricMacros.h` and `PerfLogImp.cpp`), not through a
+`MetricsRegistry` member. As an UpDownCounter it carries no `_total` suffix (that is
+reserved for monotonic counters).
 
 #### Per-Job-Type Metrics (Synchronous Counters/Histogram)
 
