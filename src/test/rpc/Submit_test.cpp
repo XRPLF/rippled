@@ -5,15 +5,13 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/pay.h>
 
-#include <xrpld/core/ConfigSections.h>
-
-#include <xrpl/basics/Serializer.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/protocol/JsonOptions.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 
 namespace xrpl::test {
@@ -30,7 +28,9 @@ public:
 
         // Enable signing support in config
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                    static std::string const signingSupportCfg =
+                        std::string("[") + Sections::kSigningSupport + "]\ntrue";
+                    cfg->loadFromString(signingSupportCfg);
                     return cfg;
                 })};
 
@@ -46,7 +46,7 @@ public:
             jv[jss::tx_json][jss::TransactionType] = jss::Payment;
             jv[jss::tx_json][jss::Account] = alice.human();
             jv[jss::tx_json][jss::Destination] = bob.human();
-            jv[jss::tx_json][jss::Amount] = XRP(100).value().getJson(JsonOptions::none);
+            jv[jss::tx_json][jss::Amount] = XRP(100).value().getJson();
             jv[jss::secret] = alice.name();
 
             auto const result = env.rpc("json", "submit", to_string(jv))[jss::result];
