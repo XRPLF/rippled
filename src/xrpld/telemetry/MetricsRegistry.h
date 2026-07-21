@@ -344,8 +344,12 @@ public:
 
     /**
      * Increment the ledgers_closed_total counter.
-     * Called from RCLConsensus::Adaptor::doAccept() after a ledger is
-     * accepted by consensus.
+     *
+     * @note Currently has no callers: the ledgers_closed_total counter is
+     * incremented at its consensus call site via the XRPL_METRIC_COUNTER_INC
+     * macro (see MetricMacros.h). This method and its eagerly-created
+     * counter are retained as a fallback and are slated for removal in a
+     * separate cleanup once the macro path has proven out.
      */
     void
     incrementLedgersClosed();
