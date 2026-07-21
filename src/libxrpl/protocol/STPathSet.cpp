@@ -13,6 +13,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <stdexcept>
 #include <utility>
@@ -90,8 +91,12 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             if (hasAccount)
                 account = sit.get160();
 
-            XRPL_ASSERT(
-                !(hasCurrency && hasMPT), "xrpl::STPathSet::STPathSet : not has Currency and MPT");
+            if (hasCurrency && hasMPT)
+            {
+                JLOG(debugLog().error()) << "Bad path element MPT and Currency in pathset";
+                Throw<std::runtime_error>("bad path element: MPT and Currency");
+            }
+
             if (hasCurrency)
                 asset = Currency::fromRaw(sit.get160());
 
@@ -101,7 +106,7 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             if (hasIssuer)
                 issuer = sit.get160();
 
-            path.emplace_back(account, asset, issuer, hasCurrency);
+            path.emplace_back(account, asset, issuer, hasCurrency || hasMPT);
         }
     }
 }
@@ -123,7 +128,7 @@ STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
 {  // assemble base+tail and add it to the set if it's not a duplicate
     value_.push_back(base);
 
-    std::vector<STPath>::reverse_iterator it = value_.rbegin();
+    auto it = value_.rbegin();
 
     STPath& newPath = *it;
     newPath.pushBack(tail);
@@ -142,7 +147,7 @@ STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
 bool
 STPathSet::isEquivalent(STBase const& t) const
 {
-    STPathSet const* v = dynamic_cast<STPathSet const*>(&t);
+    auto const* v = dynamic_cast<STPathSet const*>(&t);
     return (v != nullptr) && (value_ == v->value_);
 }
 
@@ -155,13 +160,10 @@ STPathSet::isDefault() const
 bool
 STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const
 {
-    for (auto& p : path_)
-    {
-        if (p.getAccountID() == account && p.getPathAsset() == asset && p.getIssuerID() == issuer)
-            return true;
-    }
-
-    return false;
+    return std::ranges::any_of(path_, [&](auto& p) {
+        return p.getAccountID() == account && p.getPathAsset() == asset &&
+            p.getIssuerID() == issuer;
+    });
 }
 
 json::Value

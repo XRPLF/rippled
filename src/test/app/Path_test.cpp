@@ -101,9 +101,9 @@ class Path_test : public beast::unit_test::Suite
         // with the search parameters that the tests were written for.
         using namespace jtx;
         return Env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->PATH_SEARCH_OLD = 7;
-            cfg->PATH_SEARCH = 7;
-            cfg->PATH_SEARCH_MAX = 10;
+            cfg->pathSearchOld = 7;
+            cfg->pathSearch = 7;
+            cfg->pathSearchMax = 10;
             return cfg;
         }));
     }
@@ -880,7 +880,7 @@ public:
             })",
             jv);
 
-        auto const jvL = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"]))
+        auto const jvL = env.le(keylet::trustLine(Account("bob").id(), Account("alice")["USD"]))
                              ->getJson(JsonOptions::Values::None);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jvL[it.memberName()]);
@@ -922,14 +922,15 @@ public:
             })",
             jv);
 
-        auto const jvL = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"]))
+        auto const jvL = env.le(keylet::trustLine(Account("bob").id(), Account("alice")["USD"]))
                              ->getJson(JsonOptions::Values::None);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jvL[it.memberName()]);
 
         env.trust(Account("bob")["USD"](0), "alice");
         env.trust(Account("alice")["USD"](0), "bob");
-        BEAST_EXPECT(env.le(keylet::line(Account("bob").id(), Account("alice")["USD"])) == nullptr);
+        BEAST_EXPECT(
+            env.le(keylet::trustLine(Account("bob").id(), Account("alice")["USD"])) == nullptr);
     }
 
     void
@@ -972,13 +973,14 @@ public:
             })",
             jv);
 
-        auto const jvL = env.le(keylet::line(Account("alice").id(), Account("bob")["USD"]))
+        auto const jvL = env.le(keylet::trustLine(Account("alice").id(), Account("bob")["USD"]))
                              ->getJson(JsonOptions::Values::None);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jvL[it.memberName()]);
 
         env(pay("alice", "bob", Account("alice")["USD"](50)));
-        BEAST_EXPECT(env.le(keylet::line(Account("alice").id(), Account("bob")["USD"])) == nullptr);
+        BEAST_EXPECT(
+            env.le(keylet::trustLine(Account("alice").id(), Account("bob")["USD"])) == nullptr);
     }
 
     void

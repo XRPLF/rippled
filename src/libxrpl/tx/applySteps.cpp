@@ -7,8 +7,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -66,26 +64,14 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
     // so these need to be more global.
     //
     // To prevent unintentional side effects on existing checks, they will be
-    // set for every operation only once SingleAssetVault (or later
-    // LendingProtocol) are enabled.
+    // set for every operation only once at least one of the relevant amendments
+    // are enabled.
     //
     // See also Transactor::operator().
     //
-    std::optional<NumberSO> stNumberSO;
     std::optional<CurrentTransactionRulesGuard> rulesGuard;
     std::optional<NumberMantissaScaleGuard> mantissaScaleGuard;
-    if (rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol))
-    {
-        // raii classes for the current ledger rules.
-        // fixUniversalNumber predates the rulesGuard and should be replaced.
-        stNumberSO.emplace(rules.enabled(fixUniversalNumber));
-        rulesGuard.emplace(rules);
-    }
-    else
-    {
-        // Without those features enabled, always use the old number rules.
-        mantissaScaleGuard.emplace(MantissaRange::MantissaScale::Small);
-    }
+    createGuards(rules, rulesGuard, mantissaScaleGuard);
 
     switch (txnType)
     {
@@ -195,7 +181,11 @@ invokePreclaim(PreclaimContext const& ctx)
                         if (NotTEC const result = T::checkPriorTxAndLastLedger(ctx))
                             return result;
 
-                        if (NotTEC const result = T::checkPermission(ctx.view, ctx.tx))
+                        if (NotTEC const result = T::checkSponsor(ctx.view, ctx.tx))
+                            return result;
+
+                        if (NotTEC const result =
+                                Transactor::invokeCheckPermission<T>(ctx.view, ctx.tx))
                             return result;
 
                         if (NotTEC const result = T::checkSign(ctx))

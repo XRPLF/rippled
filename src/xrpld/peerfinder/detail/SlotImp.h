@@ -4,9 +4,14 @@
 #include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/beast/container/aged_unordered_map.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/protocol/PublicKey.h>
 
 #include <atomic>
+#include <cstdint>
+#include <memory>
 #include <optional>
+#include <string>
 
 namespace xrpl::PeerFinder {
 
@@ -52,19 +57,19 @@ public:
     beast::IP::Endpoint const&
     remoteEndpoint() const override
     {
-        return remote_endpoint_;
+        return remoteEndpoint_;
     }
 
     std::optional<beast::IP::Endpoint> const&
     localEndpoint() const override
     {
-        return local_endpoint_;
+        return localEndpoint_;
     }
 
     std::optional<PublicKey> const&
     publicKey() const override
     {
-        return public_key_;
+        return publicKey_;
     }
 
     std::string
@@ -76,7 +81,7 @@ public:
     std::optional<std::uint16_t>
     listeningPort() const override
     {
-        std::uint32_t const value = listening_port_;
+        std::uint32_t const value = listeningPort_;
         if (value == kUnknownPort)
             return std::nullopt;
         return value;
@@ -85,25 +90,25 @@ public:
     void
     setListeningPort(std::uint16_t port)
     {
-        listening_port_ = port;
+        listeningPort_ = port;
     }
 
     void
     localEndpoint(beast::IP::Endpoint const& endpoint)
     {
-        local_endpoint_ = endpoint;
+        localEndpoint_ = endpoint;
     }
 
     void
     remoteEndpoint(beast::IP::Endpoint const& endpoint)
     {
-        remote_endpoint_ = endpoint;
+        remoteEndpoint_ = endpoint;
     }
 
     void
     publicKey(PublicKey const& key)
     {
-        public_key_ = key;
+        publicKey_ = key;
     }
 
     void
@@ -130,14 +135,17 @@ public:
     public:
         explicit RecentT(clock_type& clock);
 
-        /** Called for each valid endpoint received for a slot.
-            We also insert messages that we send to the slot to prevent
-            sending a slot the same address too frequently.
-        */
+        /**
+         * Called for each valid endpoint received for a slot.
+         * We also insert messages that we send to the slot to prevent
+         * sending a slot the same address too frequently.
+         */
         void
         insert(beast::IP::Endpoint const& ep, std::uint32_t hops);
 
-        /** Returns `true` if we should not send endpoint to the slot. */
+        /**
+         * Returns `true` if we should not send endpoint to the slot.
+         */
         bool
         filter(beast::IP::Endpoint const& ep, std::uint32_t hops);
 
@@ -160,12 +168,12 @@ private:
     bool const fixed_;
     bool reserved_;
     State state_;
-    beast::IP::Endpoint remote_endpoint_;
-    std::optional<beast::IP::Endpoint> local_endpoint_;
-    std::optional<PublicKey> public_key_;
+    beast::IP::Endpoint remoteEndpoint_;
+    std::optional<beast::IP::Endpoint> localEndpoint_;
+    std::optional<PublicKey> publicKey_;
 
     static constexpr std::int32_t kUnknownPort = -1;
-    std::atomic<std::int32_t> listening_port_;
+    std::atomic<std::int32_t> listeningPort_;
 
 public:
     // DEPRECATED public data members
