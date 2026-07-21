@@ -873,8 +873,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 env,
                 jss::check,
                 {
-                    {jss::account, "malformedAddress"},
-                    {jss::seq, "malformedRequest"},
+                    {.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
+                    {.fieldName = jss::seq, .malformedErrorMsg = "malformedRequest"},
                 });
         }
     }
@@ -1605,8 +1605,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
             env,
             jss::nft_offer,
             {
-                {jss::owner, "malformedOwner"},
-                {jss::seq, "malformedRequest"},
+                {.fieldName = jss::owner, .malformedErrorMsg = "malformedOwner"},
+                {.fieldName = jss::seq, .malformedErrorMsg = "malformedRequest"},
             });
     }
 
@@ -1830,9 +1830,9 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 env,
                 jss::payment_channel,
                 {
-                    {jss::account, "malformedAddress"},
-                    {jss::destination, "malformedDestination"},
-                    {jss::seq, "malformedRequest"},
+                    {.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
+                    {.fieldName = jss::destination, .malformedErrorMsg = "malformedDestination"},
+                    {.fieldName = jss::seq, .malformedErrorMsg = "malformedRequest"},
                 });
         }
     }
@@ -1994,7 +1994,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         env.close();
 
         std::string const ledgerHash{to_string(env.closed()->header().hash)};
-        auto const signerListIndex = keylet::signers(alice).key;
+        auto const signerListIndex = signers(alice).key;
         {
             // Request by hash.
             json::Value jvParams;
@@ -2043,7 +2043,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 env,
                 jss::signer_list,
                 {
-                    {jss::account, "malformedAddress"},
+                    {.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
                 });
         }
     }

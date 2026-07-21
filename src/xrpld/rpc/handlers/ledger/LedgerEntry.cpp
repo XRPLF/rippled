@@ -591,7 +591,7 @@ parseNFTokenOffer(
     if (!sequence)
         return Unexpected(sequence.error());
 
-    return keylet::nftoffer(*owner, *sequence).key;
+    return jss::nft_offer(*owner, *sequence).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -771,7 +771,7 @@ parseSignerList(
     if (!id)
         return Unexpected(id.error());
 
-    return keylet::signers(*id).key;
+    return sfSigners(*id).key;
 }
 
 static std::expected<uint256, json::Value>
