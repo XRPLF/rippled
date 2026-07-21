@@ -1849,10 +1849,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 
     // Create a receive span that links to the sender's trace context
     // (if propagated). shared_ptr keeps it alive across the job boundary.
-    // Detach the guard's Scope on this peer thread so it is not popped on the
-    // job worker thread (which would leak this thread's context stack).
-    auto span =
-        std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set).detached());
+    // The receive span is a thread-free SpanGuard handed to the job worker;
+    // no scope to strip.
+    auto span = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
     span->setAttribute(telemetry::consensus::span::attr::proposalTrusted, isTrusted);
     span->setAttribute(
         telemetry::consensus::span::attr::round, static_cast<int64_t>(set.proposeseq()));
@@ -2447,10 +2446,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 
         // Create a receive span that links to the sender's trace context
         // (if propagated). shared_ptr keeps it alive across the job boundary.
-        // Detach the guard's Scope on this peer thread so it is not popped on
-        // the job worker thread (which would leak this thread's context stack).
-        auto span =
-            std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m).detached());
+        // The receive span is a thread-free SpanGuard handed to the job worker;
+        // no scope to strip.
+        auto span = std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
         span->setAttribute(telemetry::consensus::span::attr::validationTrusted, isTrusted);
         if (val->isFieldPresent(sfLedgerSequence))
         {
