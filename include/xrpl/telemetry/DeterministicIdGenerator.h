@@ -55,11 +55,12 @@ namespace xrpl::telemetry {
  * @note Limitation: minting a deterministic root only works when the caller
  * forces the SDK's root branch (e.g. by starting the span with a
  * Context{kIsRootSpanKey, true}); otherwise the SDK reuses the parent's
- * trace_id and never calls GenerateTraceId(). That caller (hashSpan) lands on
- * a later branch, so this generator is installed but dormant here.
+ * trace_id and never calls GenerateTraceId(). The primary such caller is
+ * SpanGuard::hashSpan(), which forces the root branch to mint deterministic
+ * per-object trace roots.
  *
- * Example 1 - primary use, inside a forced-root hash span (arrives on a later
- * branch; shown as pseudocode):
+ * Example 1 - primary use, inside a forced-root hash span (shown as
+ * pseudocode):
  * @code
  * // std::array<std::uint8_t, 16> id = deriveTraceIdFromHash(txHash);
  * // PendingTraceId const pending{id};           // pin id for this thread
@@ -128,8 +129,7 @@ public:
  * guards on one thread is unsupported: the inner guard consumes/clears first,
  * so the outer id is silently dropped and its destructor trips the assert.
  *
- * Example 1 - primary use, wrapping a forced-root span start (pseudocode; the
- * caller lands on a later branch):
+ * Example 1 - primary use, wrapping a forced-root span start (pseudocode):
  * @code
  * // {
  * //   PendingTraceId const pending{id};            // pin for this scope
