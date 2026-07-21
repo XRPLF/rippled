@@ -1,8 +1,11 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/core/PerfLog.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 
 #include <cstdint>
+#include <string>
 
 //------------------------------------------------------------------------------
 

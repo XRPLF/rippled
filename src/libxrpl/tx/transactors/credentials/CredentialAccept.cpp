@@ -4,6 +4,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -11,7 +12,6 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -20,8 +20,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
-
 namespace xrpl {
 
 using namespace credentials;
@@ -89,21 +87,28 @@ CredentialAccept::doApply()
     AccountID const issuer{ctx_.tx[sfIssuer]};
 
     // Both exist as credential object exist itself (checked in preclaim)
-    auto const sleSubject = view().peek(keylet::account(account_));
+    auto const sleSubject = view().peek(keylet::account(accountID_));
     auto const sleIssuer = view().peek(keylet::account(issuer));
 
     if (!sleSubject || !sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    {
-        STAmount const reserve{
-            view().fees().accountReserve(sleSubject->getFieldU32(sfOwnerCount) + 1)};
-        if (preFeeBalance_ < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
+    auto txSponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
+    if (!txSponsorSle)
+        return txSponsorSle.error();  // LCOV_EXCL_LINE
+
+    if (auto const ret = checkReserve(
+            ctx_.getApplyViewContext(),
+            sleSubject,
+            preFeeBalance_,
+            *txSponsorSle,
+            {.ownerCountDelta = 1},
+            j_);
+        !isTesSuccess(ret))
+        return ret;
 
     auto const credType(ctx_.tx[sfCredentialType]);
-    Keylet const credentialKey = keylet::credential(account_, issuer, credType);
+    Keylet const credentialKey = keylet::credential(accountID_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
     if (!sleCred)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -117,19 +122,22 @@ CredentialAccept::doApply()
     }
 
     sleCred->setFieldU32(sfFlags, lsfAccepted);
-    view().update(sleCred);
 
-    adjustOwnerCount(view(), sleIssuer, -1, j_);
-    adjustOwnerCount(view(), sleSubject, 1, j_);
+    // Release the original creation sponsor from the credential (it covered
+    // the issuer's reserve), then assign the accept tx's sponsor (if any) so
+    // the credential reflects whoever is now covering the subject's reserve.
+    decreaseOwnerCountForObject(view(), sleIssuer, sleCred, 1, j_);
+    removeSponsorFromLedgerEntry(sleCred);
+
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred);
+    increaseOwnerCount(ctx_.getApplyViewContext(), sleSubject, 1, j_);
+    view().update(sleCred);
 
     return tesSUCCESS;
 }
 
 void
-CredentialAccept::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+CredentialAccept::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

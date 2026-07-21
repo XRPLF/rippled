@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/lending/LoanPay.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -29,7 +28,7 @@
 #include <algorithm>
 #include <bit>
 #include <cstdint>
-#include <memory>
+#include <expected>
 #include <vector>
 
 namespace xrpl {
@@ -99,7 +98,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     if (loanSle->at(sfPaymentRemaining) <= kLoanPaymentsPerFeeIncrement)
     {
-        // If there are fewer than loanPaymentsPerFeeIncrement payments left to
+        // If there are fewer than kLoanPaymentsPerFeeIncrement payments left to
         // pay, we can skip the computations.
         return normalCost;
     }
@@ -111,7 +110,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
         return normalCost;
     }
 
-    auto const brokerSle = view.read(keylet::loanbroker(loanSle->at(sfLoanBrokerID)));
+    auto const brokerSle = view.read(keylet::loanBroker(loanSle->at(sfLoanBrokerID)));
     if (!brokerSle)
     {
         // Let preclaim worry about the error for this
@@ -214,7 +213,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     }
 
     auto const loanBrokerID = loanSle->at(sfLoanBrokerID);
-    auto const loanBrokerSle = ctx.view.read(keylet::loanbroker(loanBrokerID));
+    auto const loanBrokerSle = ctx.view.read(keylet::loanBroker(loanBrokerID));
     if (!loanBrokerSle)
     {
         // This should be impossible
@@ -294,7 +293,7 @@ LoanPay::doApply()
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
 
     auto const brokerID = loanSle->at(sfLoanBrokerID);
-    auto const brokerSle = view.peek(keylet::loanbroker(brokerID));
+    auto const brokerSle = view.peek(keylet::loanBroker(brokerID));
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const brokerOwner = brokerSle->at(sfOwner);
@@ -311,6 +310,8 @@ LoanPay::doApply()
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     auto debtTotalProxy = brokerSle->at(sfDebtTotal);
 
+    auto const vaultScale = getAssetsTotalScale(vaultSle);
+
     // Send the broker fee to the owner if they have sufficient cover available,
     // _and_ if the owner can receive funds
     // _and_ if the broker is authorized to hold funds. If not, so as not to
@@ -320,14 +321,22 @@ LoanPay::doApply()
     // Normally freeze status is checked in preclaim, but we do it here to
     // avoid duplicating the check. It'll claim a fee either way.
     bool const sendBrokerFeeToOwner = [&]() {
-        // Round the minimum required cover up to be conservative. This ensures
-        // CoverAvailable never drops below the theoretical minimum, protecting
-        // the broker's solvency.
-        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
-        return coverAvailableProxy >=
-            roundToAsset(
-                   asset, tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum), loanScale) &&
-            !isDeepFrozen(view, brokerOwner, asset) &&
+        // In the fixCleanup3_2_0 path, vault-related values (for example,
+        // DebtTotal) use vaultScale. The legacy path below intentionally retains
+        // its pre-amendment loanScale behavior.
+        auto const minCover = [&]() {
+            if (view.rules().enabled(fixCleanup3_2_0))
+            {
+                return minimumBrokerCover(debtTotalProxy.value(), coverRateMinimum, vaultSle);
+            }
+            // Round the minimum required cover up to be conservative. This ensures
+            // CoverAvailable never drops below the theoretical minimum, protecting
+            // the broker's solvency.
+            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+            return roundToAsset(
+                asset, tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum), loanScale);
+        }();
+        return coverAvailableProxy >= minCover && !isDeepFrozen(view, brokerOwner, asset) &&
             !requireAuth(view, asset, brokerOwner, AuthType::StrongAuth);
     }();
 
@@ -371,7 +380,7 @@ LoanPay::doApply()
         return LoanPaymentType::Regular;
     }();
 
-    Expected<LoanPaymentParts, TER> const paymentParts =
+    std::expected<LoanPaymentParts, TER> const paymentParts =
         loanMakePayment(asset, view, loanSle, brokerSle, amount, paymentType, j_);
 
     if (!paymentParts)
@@ -422,10 +431,6 @@ LoanPay::doApply()
 
     auto assetsAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto assetsTotalProxy = vaultSle->at(sfAssetsTotal);
-
-    // The vault may be at a different scale than the loan. Reduce rounding
-    // errors during the payment by rounding some of the values to that scale.
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
     auto const totalPaidToVaultRounded =
@@ -581,13 +586,13 @@ LoanPay::doApply()
     // These three values are used to check that funds are conserved after the transfers
     auto const accountBalanceBefore = accountHolds(
         view,
-        account_,
+        accountID_,
         asset,
         FreezeHandling::IgnoreFreeze,
         AuthHandling::IgnoreAuth,
         j_,
         SpendableHandling::FullBalance);
-    auto const vaultBalanceBefore = account_ == vaultPseudoAccount
+    auto const vaultBalanceBefore = accountID_ == vaultPseudoAccount
         ? STAmount{asset, 0}
         : accountHolds(
               view,
@@ -597,15 +602,16 @@ LoanPay::doApply()
               AuthHandling::IgnoreAuth,
               j_,
               SpendableHandling::FullBalance);
-    auto const brokerBalanceBefore = account_ == brokerPayee ? STAmount{asset, 0}
-                                                             : accountHolds(
-                                                                   view,
-                                                                   brokerPayee,
-                                                                   asset,
-                                                                   FreezeHandling::IgnoreFreeze,
-                                                                   AuthHandling::IgnoreAuth,
-                                                                   j_,
-                                                                   SpendableHandling::FullBalance);
+    auto const brokerBalanceBefore = accountID_ == brokerPayee
+        ? STAmount{asset, 0}
+        : accountHolds(
+              view,
+              brokerPayee,
+              asset,
+              FreezeHandling::IgnoreFreeze,
+              AuthHandling::IgnoreAuth,
+              j_,
+              SpendableHandling::FullBalance);
 
     if (totalPaidToVaultRounded != beast::kZero)
     {
@@ -615,11 +621,15 @@ LoanPay::doApply()
 
     if (totalPaidToBroker != beast::kZero)
     {
-        if (brokerPayee == account_)
+        if (brokerPayee == accountID_)
         {
             // The broker may have deleted their holding. Recreate it if needed
             if (auto const ter = addEmptyHolding(
-                    view, brokerPayee, brokerPayeeSle->at(sfBalance).value().xrp(), asset, j_);
+                    ctx_.getApplyViewContext(),
+                    brokerPayee,
+                    brokerPayeeSle->at(sfBalance).value().xrp(),
+                    asset,
+                    j_);
                 ter && ter != tecDUPLICATE)
             {
                 // ignore tecDUPLICATE. That means the holding already exists,
@@ -633,7 +643,7 @@ LoanPay::doApply()
 
     if (auto const ter = accountSendMulti(
             view,
-            account_,
+            accountID_,
             asset,
             {{vaultPseudoAccount, totalPaidToVaultRounded}, {brokerPayee, totalPaidToBroker}},
             j_,
@@ -659,13 +669,13 @@ LoanPay::doApply()
     // Check that funds are conserved
     auto const accountBalanceAfter = accountHolds(
         view,
-        account_,
+        accountID_,
         asset,
         FreezeHandling::IgnoreFreeze,
         AuthHandling::IgnoreAuth,
         j_,
         SpendableHandling::FullBalance);
-    auto const vaultBalanceAfter = account_ == vaultPseudoAccount
+    auto const vaultBalanceAfter = accountID_ == vaultPseudoAccount
         ? STAmount{asset, 0}
         : accountHolds(
               view,
@@ -675,15 +685,15 @@ LoanPay::doApply()
               AuthHandling::IgnoreAuth,
               j_,
               SpendableHandling::FullBalance);
-    auto const brokerBalanceAfter = account_ == brokerPayee ? STAmount{asset, 0}
-                                                            : accountHolds(
-                                                                  view,
-                                                                  brokerPayee,
-                                                                  asset,
-                                                                  FreezeHandling::IgnoreFreeze,
-                                                                  AuthHandling::IgnoreAuth,
-                                                                  j_,
-                                                                  SpendableHandling::FullBalance);
+    auto const brokerBalanceAfter = accountID_ == brokerPayee ? STAmount{asset, 0}
+                                                              : accountHolds(
+                                                                    view,
+                                                                    brokerPayee,
+                                                                    asset,
+                                                                    FreezeHandling::IgnoreFreeze,
+                                                                    AuthHandling::IgnoreAuth,
+                                                                    j_,
+                                                                    SpendableHandling::FullBalance);
     auto const balanceScale = [&]() {
         // Find a reasonable scale to use for the balance comparisons.
         //
@@ -800,7 +810,7 @@ LoanPay::doApply()
         goodRounding, "xrpl::LoanPay::doApply", "funds are conserved (with rounding)");
 
     XRPL_ASSERT_PARTS(
-        accountBalanceAfter < accountBalanceBefore || account_ == asset.getIssuer(),
+        accountBalanceAfter < accountBalanceBefore || accountID_ == asset.getIssuer(),
         "xrpl::LoanPay::doApply",
         "account balance decreased");
     XRPL_ASSERT_PARTS(
@@ -824,10 +834,7 @@ LoanPay::doApply()
 }
 
 void
-LoanPay::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+LoanPay::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

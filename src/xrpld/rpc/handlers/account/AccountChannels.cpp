@@ -114,7 +114,7 @@ doAccountChannels(RPC::JsonContext& context)
     json::Value jsonChannels{json::ValueType::Array};
     struct VisitData
     {
-        std::vector<std::shared_ptr<SLE const>> items;
+        std::vector<SLE::const_pointer> items;
         AccountID const& accountID;
         std::optional<AccountID> const& raDstAccount;
     };
@@ -170,8 +170,7 @@ doAccountChannels(RPC::JsonContext& context)
             startAfter,
             startHint,
             limit + 1,
-            [&visitData, &accountID, &count, &limit, &marker, &nextHint](
-                std::shared_ptr<SLE const> const& sleCur) {
+            [&visitData, &accountID, &count, &limit, &marker, &nextHint](SLE::const_ref sleCur) {
                 if (!sleCur)
                 {
                     // LCOV_EXCL_START

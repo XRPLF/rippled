@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/vault/VaultClawback.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -26,7 +25,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
+#include <expected>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -61,7 +60,7 @@ VaultClawback::preflight(PreflightContext const& ctx)
 
 [[nodiscard]] STAmount
 clawbackAmount(
-    std::shared_ptr<SLE const> const& vault,
+    SLE::const_ref vault,
     std::optional<STAmount> const& maybeAmount,
     AccountID const& account)
 {
@@ -87,7 +86,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     auto const holder = ctx.tx[sfHolder];
     auto const maybeAmount = ctx.tx[~sfAmount];
     auto const mptIssuanceID = vault->at(sfShareMPTID);
-    auto const sleShareIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleShareIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleShareIssuance)
     {
         // LCOV_EXCL_START
@@ -181,7 +180,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 
         return vaultAsset.visit(
             [&](MPTIssue const& issue) -> TER {
-                auto const mptIssue = ctx.view.read(keylet::mptIssuance(issue.getMptID()));
+                auto const mptIssue = ctx.view.read(keylet::mptokenIssuance(issue.getMptID()));
                 if (mptIssue == nullptr)
                     return tecOBJECT_NOT_FOUND;
 
@@ -219,10 +218,10 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     return tecWRONG_ASSET;
 }
 
-Expected<std::pair<STAmount, STAmount>, TER>
+std::expected<std::pair<STAmount, STAmount>, TER>
 VaultClawback::assetsToClawback(
-    std::shared_ptr<SLE> const& vault,
-    std::shared_ptr<SLE const> const& sleShareIssuance,
+    SLE::ref vault,
+    SLE::const_ref sleShareIssuance,
     AccountID const& holder,
     STAmount const& clawbackAmount)
 {
@@ -231,7 +230,7 @@ VaultClawback::assetsToClawback(
         // preclaim should have blocked this , now it's an internal error
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultClawback: asset mismatch in clawback.";
-        return Unexpected(tecINTERNAL);
+        return std::unexpected(tecINTERNAL);
         // LCOV_EXCL_STOP
     }
 
@@ -249,7 +248,7 @@ VaultClawback::assetsToClawback(
             view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
         auto const maybeAssets = sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
         if (!maybeAssets)
-            return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+            return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
         return std::make_pair(*maybeAssets, sharesDestroyed);
     }
@@ -266,7 +265,7 @@ VaultClawback::assetsToClawback(
             auto const maybeAssets =
                 sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
             if (!maybeAssets)
-                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
             assetsRecovered = *maybeAssets;
         }
@@ -275,13 +274,13 @@ VaultClawback::assetsToClawback(
             auto const maybeShares =
                 assetsToSharesWithdraw(vault, sleShareIssuance, clawbackAmount);
             if (!maybeShares)
-                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             sharesDestroyed = *maybeShares;
 
             auto const maybeAssets =
                 sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
             if (!maybeAssets)
-                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             assetsRecovered = *maybeAssets;
         }
         // Clamp to maximum.
@@ -295,20 +294,20 @@ VaultClawback::assetsToClawback(
                 auto const maybeShares = assetsToSharesWithdraw(
                     vault, sleShareIssuance, assetsRecovered, TruncateShares::Yes);
                 if (!maybeShares)
-                    return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                    return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
                 sharesDestroyed = *maybeShares;
             }
 
             auto const maybeAssets =
                 sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
             if (!maybeAssets)
-                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             assetsRecovered = *maybeAssets;
             if (assetsRecovered > *assetsAvailable)
             {
                 // LCOV_EXCL_START
                 JLOG(j_.error()) << "VaultClawback: invalid rounding of shares.";
-                return Unexpected(tecINTERNAL);
+                return std::unexpected(tecINTERNAL);
                 // LCOV_EXCL_STOP
             }
         }
@@ -323,7 +322,7 @@ VaultClawback::assetsToClawback(
             << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
             << ", sharesTotal=" << sleShareIssuance->at(sfOutstandingAmount)
             << ", amount=" << clawbackAmount.value();
-        return Unexpected(tecPATH_DRY);
+        return std::unexpected(tecPATH_DRY);
     }
 
     return std::make_pair(assetsRecovered, sharesDestroyed);
@@ -338,7 +337,7 @@ VaultClawback::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
-    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -349,7 +348,7 @@ VaultClawback::doApply()
     MPTIssue const share{mptIssuanceID};
 
     Asset const vaultAsset = vault->at(sfAsset);
-    STAmount const amount = clawbackAmount(vault, tx[~sfAmount], account_);
+    STAmount const amount = clawbackAmount(vault, tx[~sfAmount], accountID_);
 
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
@@ -364,7 +363,7 @@ VaultClawback::doApply()
     STAmount assetsRecovered = {vault->at(sfAsset)};
 
     // The Owner is burning shares
-    if (account_ == vault->at(sfOwner) && amount.asset() == share)
+    if (accountID_ == vault->at(sfOwner) && amount.asset() == share)
     {
         sharesDestroyed = accountHolds(
             view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
@@ -390,8 +389,8 @@ VaultClawback::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from holder to vault.
-    if (auto const ter =
-            accountSend(view(), holder, vaultAccount, sharesDestroyed, j_, WaiveTransferFee::Yes);
+    if (auto const ter = accountSend(
+            view(), holder, vaultAccount, sharesDestroyed, j_, {}, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
@@ -400,7 +399,8 @@ VaultClawback::doApply()
     // Keep MPToken if holder is the vault owner.
     if (holder != vault->at(sfOwner))
     {
-        if (auto const ter = removeEmptyHolding(view(), holder, sharesDestroyed.asset(), j_);
+        if (auto const ter =
+                removeEmptyHolding(ctx_.getApplyViewContext(), holder, sharesDestroyed.asset(), j_);
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
@@ -426,7 +426,7 @@ VaultClawback::doApply()
     {
         // Transfer assets from vault to issuer.
         if (auto const ter = accountSend(
-                view(), vaultAccount, account_, assetsRecovered, j_, WaiveTransferFee::Yes);
+                view(), vaultAccount, accountID_, assetsRecovered, j_, {}, WaiveTransferFee::Yes);
             !isTesSuccess(ter))
             return ter;
 
@@ -452,10 +452,7 @@ VaultClawback::doApply()
 }
 
 void
-VaultClawback::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+VaultClawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

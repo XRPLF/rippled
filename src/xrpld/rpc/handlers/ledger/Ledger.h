@@ -1,16 +1,18 @@
 #pragma once
 
-#include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/TxQ.h>  // IWYU pragma: keep
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Handler.h>
 
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ApiVersion.h>
-#include <xrpl/protocol/jss.h>
+
+#include <memory>
+#include <vector>
 
 namespace json {
 class Object;

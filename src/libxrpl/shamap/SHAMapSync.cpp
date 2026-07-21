@@ -66,7 +66,7 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
         {
             if (!node->isEmptyBranch(pos))
             {
-                intr_ptr::SharedPtr<SHAMapTreeNode> const child = descendNoStore(*node, pos);
+                SHAMapTreeNodePtr const child = descendNoStore(*node, pos);
                 if (!function(*child))
                     return;
 
@@ -204,8 +204,7 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
                 branch,
                 mn.filter,
                 pending,
-                [node, nodeID, branch, &mn](
-                    intr_ptr::SharedPtr<SHAMapTreeNode> found, SHAMapHash const&) {
+                [node, nodeID, branch, &mn](SHAMapTreeNodePtr found, SHAMapHash const&) {
                     // a read completed asynchronously
                     std::unique_lock<std::mutex> const lock{mn.deferLock};
                     mn.finishedReads.emplace_back(node, nodeID, branch, std::move(found));
@@ -266,8 +265,7 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
     int complete = 0;
     while (complete != mn.deferred)
     {
-        std::tuple<SHAMapInnerNode*, SHAMapNodeID, int, intr_ptr::SharedPtr<SHAMapTreeNode>>
-            deferredNode;
+        std::tuple<SHAMapInnerNode*, SHAMapNodeID, int, SHAMapTreeNodePtr> deferredNode;
         {
             std::unique_lock<std::mutex> lock{mn.deferLock};
 
@@ -302,12 +300,13 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
     mn.deferred = 0;
 }
 
-/** Get a list of node IDs and hashes for nodes that are part of this SHAMap
-    but not available locally.  The filter can hold alternate sources of
-    nodes that are not permanently stored locally
-*/
+/**
+ * Get a list of node IDs and hashes for nodes that are part of this SHAMap
+ * but not available locally.  The filter can hold alternate sources of
+ * nodes that are not permanently stored locally
+ */
 std::vector<std::pair<SHAMapNodeID, uint256>>
-SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
+SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
 {
     XRPL_ASSERT(root_->getHash().isNonZero(), "xrpl::SHAMap::getMissingNodes : nonzero root hash");
     XRPL_ASSERT(max > 0, "xrpl::SHAMap::getMissingNodes : valid max input");
@@ -509,7 +508,7 @@ SHAMap::serializeRoot(Serializer& s) const
 }
 
 SHAMapAddNode
-SHAMap::addRootNode(SHAMapHash const& hash, Slice const& rootNode, SHAMapSyncFilter* filter)
+SHAMap::addRootNode(SHAMapHash const& hash, Slice const& rootNode, SHAMapSyncFilter const* filter)
 {
     // we already have a root_ node
     if (root_->getHash().isNonZero())
@@ -544,7 +543,7 @@ SHAMap::addRootNode(SHAMapHash const& hash, Slice const& rootNode, SHAMapSyncFil
 }
 
 SHAMapAddNode
-SHAMap::addKnownNode(SHAMapNodeID const& node, Slice const& rawNode, SHAMapSyncFilter* filter)
+SHAMap::addKnownNode(SHAMapNodeID const& node, Slice const& rawNode, SHAMapSyncFilter const* filter)
 {
     XRPL_ASSERT(!node.isRoot(), "xrpl::SHAMap::addKnownNode : valid node input");
 
@@ -722,7 +721,8 @@ SHAMap::deepCompare(SHAMap& other) const
     return true;
 }
 
-/** Does this map have this inner node?
+/**
+ * Does this map have this inner node?
  */
 bool
 SHAMap::hasInnerNode(SHAMapNodeID const& targetNodeID, SHAMapHash const& targetNodeHash) const
@@ -744,7 +744,8 @@ SHAMap::hasInnerNode(SHAMapNodeID const& targetNodeID, SHAMapHash const& targetN
     return (node->isInner()) && (node->getHash() == targetNodeHash);
 }
 
-/** Does this map have this leaf node?
+/**
+ * Does this map have this leaf node?
  */
 bool
 SHAMap::hasLeafNode(uint256 const& tag, SHAMapHash const& targetNodeHash) const

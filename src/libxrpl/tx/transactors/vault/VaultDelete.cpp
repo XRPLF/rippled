@@ -7,8 +7,10 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
@@ -16,8 +18,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-
-#include <memory>
 
 namespace xrpl {
 
@@ -29,6 +29,12 @@ VaultDelete::preflight(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "VaultDelete: zero/empty vault ID.";
         return temMALFORMED;
     }
+
+    if (ctx.tx.isFieldPresent(sfMemoData) && !ctx.rules.enabled(featureLendingProtocolV1_1))
+        return temDISABLED;
+
+    if (!validDataLength(ctx.tx[~sfMemoData], kMaxDataPayloadLength))
+        return temMALFORMED;
 
     return tesSUCCESS;
 }
@@ -59,7 +65,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     }
 
     // Verify we can destroy MPTokenIssuance
-    auto const sleMPT = ctx.view.read(keylet::mptIssuance(vault->at(sfShareMPTID)));
+    auto const sleMPT = ctx.view.read(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
 
     if (!sleMPT)
     {
@@ -90,13 +96,15 @@ TER
 VaultDelete::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Destroy the asset holding.
     auto asset = vault->at(sfAsset);
 
-    if (auto ter = removeEmptyHolding(view(), vault->at(sfAccount), asset, j_); !isTesSuccess(ter))
+    if (auto ter = removeEmptyHolding(applyViewContext, vault->at(sfAccount), asset, j_);
+        !isTesSuccess(ter))
         return ter;
 
     auto const& pseudoID = vault->at(sfAccount);
@@ -112,7 +120,7 @@ VaultDelete::doApply()
     // Destroy the share issuance. Do not use MPTokenIssuanceDestroy for this,
     // no special logic needed. First run few checks, duplicated from preclaim.
     auto const shareMPTID = *vault->at(sfShareMPTID);
-    auto const mpt = view().peek(keylet::mptIssuance(shareMPTID));
+    auto const mpt = view().peek(keylet::mptokenIssuance(shareMPTID));
     if (!mpt)
     {
         // LCOV_EXCL_START
@@ -122,16 +130,17 @@ VaultDelete::doApply()
     }
 
     // Try to remove MPToken for vault shares for the vault owner if it exists.
-    if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, account_)))
+    if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, accountID_)))
     {
-        if (auto const ter = removeEmptyHolding(view(), account_, MPTIssue(shareMPTID), j_);
+        if (auto const ter =
+                removeEmptyHolding(applyViewContext, accountID_, MPTIssue(shareMPTID), j_);
             !isTesSuccess(ter))
         {
             // LCOV_EXCL_START
             JLOG(j_.error())  //
                 << "VaultDelete: failed to remove vault owner's MPToken"
-                << " MPTID=" << to_string(shareMPTID)  //
-                << " account=" << toBase58(account_)   //
+                << " MPTID=" << to_string(shareMPTID)   //
+                << " account=" << toBase58(accountID_)  //
                 << " with result: " << transToken(ter);
             return ter;
             // LCOV_EXCL_STOP
@@ -145,7 +154,7 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    adjustOwnerCount(view(), pseudoAcct, -1, j_);
+    decreaseOwnerCountForObject(view(), pseudoAcct, mpt, 1, j_);
 
     view().erase(mpt);
 
@@ -204,7 +213,7 @@ VaultDelete::doApply()
     }
 
     // We are destroying Vault and PseudoAccount, hence decrease by 2
-    adjustOwnerCount(view(), owner, -2, j_);
+    decreaseOwnerCountForObject(view(), owner, vault, 2, j_);
 
     // Destroy the vault.
     view().erase(vault);
@@ -213,10 +222,7 @@ VaultDelete::doApply()
 }
 
 void
-VaultDelete::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+VaultDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

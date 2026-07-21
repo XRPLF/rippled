@@ -1,9 +1,10 @@
 #pragma once
 
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/net/IPEndpoint.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/resource/detail/Kind.h>
 
+#include <cstddef>
 #include <utility>
 
 namespace xrpl::Resource {
@@ -25,11 +26,11 @@ struct Key
         std::size_t
         operator()(Key const& v) const
         {
-            return addr_hash_(v.address);
+            return addrHash_(v.address);
         }
 
     private:
-        beast::Uhash<> addr_hash_;
+        beast::Uhash<> addrHash_;
     };
 
     struct KeyEqual

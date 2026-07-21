@@ -2,10 +2,13 @@
 
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Task.h>
 
 namespace xrpl {
 
-/** A NodeStore::Scheduler which uses the JobQueue. */
+/**
+ * A NodeStore::Scheduler which uses the JobQueue.
+ */
 class NodeStoreScheduler : public NodeStore::Scheduler
 {
 public:

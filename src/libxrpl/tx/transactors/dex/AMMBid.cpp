@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/dex/AMMBid.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -27,7 +26,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
-#include <memory>
+#include <expected>
 #include <optional>
 #include <set>
 #include <utility>
@@ -185,18 +184,11 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
     auto const lpTokens = ammLPHolds(sb, *ammSle, account, ctx.journal);
-    auto const& rules = ctx.view().rules();
-    if (!rules.enabled(fixInnerObjTemplate))
-    {
-        if (!ammSle->isFieldPresent(sfAuctionSlot))
-            ammSle->makeFieldPresent(sfAuctionSlot);
-    }
-    else
-    {
-        XRPL_ASSERT(ammSle->isFieldPresent(sfAuctionSlot), "xrpl::applyBid : has auction slot");
-        if (!ammSle->isFieldPresent(sfAuctionSlot))
-            return {tecINTERNAL, false};
-    }
+
+    XRPL_ASSERT(ammSle->isFieldPresent(sfAuctionSlot), "xrpl::applyBid : has auction slot");
+    if (!ammSle->isFieldPresent(sfAuctionSlot))
+        return {tecINTERNAL, false};
+
     auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
     auto const current =
         duration_cast<seconds>(ctx.view().header().parentCloseTime.time_since_epoch()).count();
@@ -267,7 +259,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     auto const bidMin = ctx.tx[~sfBidMin];
     auto const bidMax = ctx.tx[~sfBidMax];
 
-    auto getPayPrice = [&](Number const& computedPrice) -> Expected<Number, TER> {
+    auto getPayPrice = [&](Number const& computedPrice) -> std::expected<Number, TER> {
         auto const payPrice = [&]() -> std::optional<Number> {
             // Both min/max bid price are defined
             if (bidMin && bidMax)
@@ -296,11 +288,11 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
         }();
         if (!payPrice)
         {
-            return Unexpected(tecAMM_FAILED);
+            return std::unexpected(tecAMM_FAILED);
         }
         if (payPrice > lpTokens)
         {
-            return Unexpected(tecAMM_INVALID_TOKENS);
+            return std::unexpected(tecAMM_INVALID_TOKENS);
         }
         return *payPrice;
     };
@@ -371,7 +363,7 @@ AMMBid::doApply()
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
-    auto const result = applyBid(ctx_, sb, account_, j_);
+    auto const result = applyBid(ctx_, sb, accountID_, j_);
     if (result.second)
         sb.apply(ctx_.rawView());
 
@@ -379,10 +371,7 @@ AMMBid::doApply()
 }
 
 void
-AMMBid::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+AMMBid::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

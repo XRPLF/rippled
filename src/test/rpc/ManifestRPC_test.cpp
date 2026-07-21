@@ -4,9 +4,9 @@
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/protocol/jss.h>
 
 #include <memory>
@@ -48,7 +48,7 @@ public:
         using namespace jtx;
         std::string const key = "n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7";
         Env env{*this, envconfig([&key](std::unique_ptr<Config> cfg) {
-                    cfg->section(SECTION_VALIDATORS).append(key);
+                    cfg->section(Sections::kValidators).append(key);
                     return cfg;
                 })};
         {

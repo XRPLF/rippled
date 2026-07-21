@@ -5,10 +5,10 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -52,8 +52,12 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.exists(keylet::account(ctx.tx[sfAccount])))
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
-    if (!ctx.view.exists(keylet::account(ctx.tx[sfAuthorize])))
+    auto const sleAuthorize = ctx.view.read(keylet::account(ctx.tx[sfAuthorize]));
+    if (!sleAuthorize)
         return tecNO_TARGET;
+
+    if (isPseudoAccount(sleAuthorize))
+        return tecNO_PERMISSION;
 
     // Deleting the delegate object is invalid if it doesn’t exist.
     if (ctx.tx.getFieldArray(sfPermissions).empty() &&
@@ -68,12 +72,12 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
 TER
 DelegateSet::doApply()
 {
-    auto const sleOwner = ctx_.view().peek(keylet::account(account_));
+    auto const sleOwner = ctx_.view().peek(keylet::account(accountID_));
     if (!sleOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const& authAccount = ctx_.tx[sfAuthorize];
-    auto const delegateKey = keylet::delegate(account_, authAccount);
+    auto const delegateKey = keylet::delegate(accountID_, authAccount);
 
     auto sle = ctx_.view().peek(delegateKey);
     if (sle)
@@ -94,29 +98,32 @@ DelegateSet::doApply()
     if (permissions.empty())
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    STAmount const reserve{
-        ctx_.view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
-
-    if (preFeeBalance_ < reserve)
-        return tecINSUFFICIENT_RESERVE;
+    if (auto const ret = checkReserve(
+            ctx_.getApplyViewContext(),
+            sleOwner,
+            preFeeBalance_,
+            {.ownerCountDelta = 1},
+            ctx_.journal);
+        !isTesSuccess(ret))
+        return ret;
 
     sle = std::make_shared<SLE>(delegateKey);
-    sle->setAccountID(sfAccount, account_);
+    sle->setAccountID(sfAccount, accountID_);
     sle->setAccountID(sfAuthorize, authAccount);
 
     sle->setFieldArray(sfPermissions, permissions);
 
     // Add to delegating account's owner directory
-    auto const page =
-        ctx_.view().dirInsert(keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
+    auto const page = ctx_.view().dirInsert(
+        keylet::ownerDir(accountID_), delegateKey, describeOwnerDir(accountID_));
 
     if (!page)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     (*sle)[sfOwnerNode] = *page;
 
-    // Add to authorized account's owner directory so the object can be found
-    // and cleaned up when the authorized account is deleted.
+    // Add to authorized account's owner directory so AccountDelete can find
+    // and clean up inbound delegations when the authorized account is deleted.
     auto const destPage = ctx_.view().dirInsert(
         keylet::ownerDir(authAccount), delegateKey, describeOwnerDir(authAccount));
 
@@ -126,13 +133,14 @@ DelegateSet::doApply()
     (*sle)[sfDestinationNode] = *destPage;
 
     ctx_.view().insert(sle);
-    adjustOwnerCount(ctx_.view(), sleOwner, 1, ctx_.journal);
+    increaseOwnerCount(ctx_.getApplyViewContext(), sleOwner, 1, ctx_.journal);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sle);
 
     return tesSUCCESS;
 }
 
 TER
-DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
+DelegateSet::deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j)
 {
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -166,7 +174,7 @@ DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, be
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCount(view, sleOwner, -1, j);
+    decreaseOwnerCountForObject(view, sleOwner, sle, 1, j);
 
     view.erase(sle);
 
@@ -174,10 +182,7 @@ DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, be
 }
 
 void
-DelegateSet::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+DelegateSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

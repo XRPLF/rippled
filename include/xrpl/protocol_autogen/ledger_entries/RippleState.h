@@ -33,7 +33,7 @@ public:
      * @brief Construct a RippleState ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit RippleState(std::shared_ptr<SLE const> sle)
+    explicit RippleState(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -243,6 +243,54 @@ public:
     {
         return this->sle_->isFieldPresent(sfHighQualityOut);
     }
+
+    /**
+     * @brief Get sfHighSponsor (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    getHighSponsor() const
+    {
+        if (hasHighSponsor())
+            return this->sle_->at(sfHighSponsor);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfHighSponsor is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasHighSponsor() const
+    {
+        return this->sle_->isFieldPresent(sfHighSponsor);
+    }
+
+    /**
+     * @brief Get sfLowSponsor (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    getLowSponsor() const
+    {
+        if (hasLowSponsor())
+            return this->sle_->at(sfLowSponsor);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLowSponsor is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLowSponsor() const
+    {
+        return this->sle_->isFieldPresent(sfLowSponsor);
+    }
 };
 
 /**
@@ -278,7 +326,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    RippleStateBuilder(std::shared_ptr<SLE const> sle)
+    RippleStateBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltRIPPLE_STATE)
         {
@@ -287,7 +335,9 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
      * @brief Set sfBalance (SoeRequired)
@@ -407,6 +457,28 @@ public:
     setHighQualityOut(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfHighQualityOut] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfHighSponsor (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    RippleStateBuilder&
+    setHighSponsor(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    {
+        object_[sfHighSponsor] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfLowSponsor (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    RippleStateBuilder&
+    setLowSponsor(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    {
+        object_[sfLowSponsor] = value;
         return *this;
     }
 

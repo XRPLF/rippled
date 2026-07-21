@@ -6,8 +6,8 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -21,13 +21,11 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
 #include <unordered_set>
 
 namespace {
@@ -125,51 +123,21 @@ TrustSet::preflight(PreflightContext const& ctx)
 }
 
 NotTEC
-TrustSet::checkPermission(ReadView const& view, STTx const& tx)
+TrustSet::checkGranularSemantics(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
 {
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (isTesSuccess(checkTxPermission(sle, tx)))
-        return tesSUCCESS;
-
-    // Currently we only support TrustlineAuthorize, TrustlineFreeze and
-    // TrustlineUnfreeze granular permission. Setting other flags returns
-    // error.
-    if ((tx.getFlags() & tfTrustSetPermissionMask) != 0u)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (tx.isFieldPresent(sfQualityIn) || tx.isFieldPresent(sfQualityOut))
-        return terNO_DELEGATE_PERMISSION;
-
     auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
     auto const sleRippleState = view.read(
-        keylet::line(
+        keylet::trustLine(
             tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.get<Issue>().currency));
 
-    // if the trustline does not exist, granular permissions are
-    // not allowed to create trustline
+    // granular permissions are not allowed to create a trustline
     if (!sleRippleState)
         return terNO_DELEGATE_PERMISSION;
 
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttTRUST_SET, granularPermissions);
-
-    if (tx.isFlag(tfSetfAuth) && !granularPermissions.contains(TrustlineAuthorize))
-        return terNO_DELEGATE_PERMISSION;
-    if (tx.isFlag(tfSetFreeze) && !granularPermissions.contains(TrustlineFreeze))
-        return terNO_DELEGATE_PERMISSION;
-    if (tx.isFlag(tfClearFreeze) && !granularPermissions.contains(TrustlineUnfreeze))
-        return terNO_DELEGATE_PERMISSION;
-
-    // updating LimitAmount is not allowed only with granular permissions,
+    // updating LimitAmount is not allowed with granular permissions,
     // unless there's a new granular permission for this in the future.
     auto const curLimit = tx[sfAccount] > saLimitAmount.getIssuer()
         ? sleRippleState->getFieldAmount(sfHighLimit)
@@ -217,22 +185,10 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
-    if (sleDst->isFlag(lsfDisallowIncomingTrustline))
+    if (sleDst && sleDst->isFlag(lsfDisallowIncomingTrustline) &&
+        !ctx.view.exists(keylet::trustLine(id, uDstAccountID, currency)))
     {
-        // The original implementation of featureDisallowIncoming was
-        // too restrictive. If
-        //   o fixDisallowIncomingV1 is enabled and
-        //   o The trust line already exists
-        // Then allow the TrustSet.
-        if (ctx.view.rules().enabled(fixDisallowIncomingV1) &&
-            ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
-        {
-            // pass
-        }
-        else
-        {
-            return tecNO_PERMISSION;
-        }
+        return tecNO_PERMISSION;
     }
 
     // In general, trust lines to pseudo accounts are not permitted, unless
@@ -245,7 +201,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
         // TrustSet if the asset is AMM LP token and AMM is not in empty state.
         if (sleDst->isFieldPresent(sfAMMID))
         {
-            if (ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
+            if (ctx.view.exists(keylet::trustLine(id, uDstAccountID, currency)))
             {
                 // pass
             }
@@ -268,7 +224,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
         }
         else if (sleDst->isFieldPresent(sfVaultID) || sleDst->isFieldPresent(sfLoanBrokerID))
         {
-            if (!ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
+            if (!ctx.view.exists(keylet::trustLine(id, uDstAccountID, currency)))
                 return tecNO_PERMISSION;
             // else pass
         }
@@ -302,7 +258,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
         bool const bHigh = id > uDstAccountID;
         // Fetching current state of trust line
-        auto const sleRippleState = ctx.view.read(keylet::line(id, uDstAccountID, currency));
+        auto const sleRippleState = ctx.view.read(keylet::trustLine(id, uDstAccountID, currency));
         std::uint32_t uFlags = sleRippleState ? sleRippleState->getFieldU32(sfFlags) : 0u;
         // Computing expected trust line state
         uFlags = computeFreezeFlags(
@@ -336,13 +292,11 @@ TrustSet::doApply()
     AccountID const uDstAccountID(saLimitAmount.getIssuer());
 
     // true, if current is high account.
-    bool const bHigh = account_ > uDstAccountID;
+    bool const bHigh = accountID_ > uDstAccountID;
 
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peek(keylet::account(accountID_));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
-
-    std::uint32_t const uOwnerCount = sle->getFieldU32(sfOwnerCount);
 
     // The reserve that is required to create the line. Note
     // that although the reserve increases with every item
@@ -362,9 +316,23 @@ TrustSet::doApply()
     // well. A person with no intention of using the gateway
     // could use the extra XRP for their own purposes.
 
+    auto const sponsorExp = getTxReserveSponsor(ctx_.getApplyViewContext());
+    if (!sponsorExp)
+        return sponsorExp.error();  // LCOV_EXCL_LINE
+    auto const sponsorSle = *sponsorExp;
+
+    auto getSponsor = [&sponsorSle, this](AccountID const& account) {
+        return (sponsorSle && account == accountID_) ? sponsorSle : SLE::pointer();
+    };
+
+    // The "free-tier" shortcut (ownerCount < 2) only applies when there is no sponsor.
+    // With any sponsor on the tx, the sponsor must cover the reserve (via balance or
+    // prefunded budget), so the reserve check always runs.
+    bool const freeTrustLine = !sponsorSle && (ownerCount(sle, j_) < 2);
+    std::uint32_t const uOwnerCount = ownerCount(sle, j_);
     XRPAmount const reserveCreate(
         (uOwnerCount < 2) ? XRPAmount(beast::kZero)
-                          : view().fees().accountReserve(uOwnerCount + 1));
+                          : accountReserve(view(), sle, j_, {.ownerCountDelta = 1}));
 
     std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
@@ -391,10 +359,10 @@ TrustSet::doApply()
     }
 
     STAmount saLimitAllow = saLimitAmount;
-    saLimitAllow.get<Issue>().account = account_;
+    saLimitAllow.get<Issue>().account = accountID_;
 
     SLE::pointer const sleRippleState =
-        view().peek(keylet::line(account_, uDstAccountID, currency));
+        view().peek(keylet::trustLine(accountID_, uDstAccountID, currency));
 
     if (sleRippleState)
     {
@@ -406,8 +374,8 @@ TrustSet::doApply()
         std::uint32_t uLowQualityOut = 0;
         std::uint32_t uHighQualityIn = 0;
         std::uint32_t uHighQualityOut = 0;
-        auto const& uLowAccountID = !bHigh ? account_ : uDstAccountID;
-        auto const& uHighAccountID = bHigh ? account_ : uDstAccountID;
+        auto const& uLowAccountID = !bHigh ? accountID_ : uDstAccountID;
+        auto const& uHighAccountID = bHigh ? accountID_ : uDstAccountID;
         SLE::ref sleLowAccount = !bHigh ? sle : sleDst;
         SLE::ref sleHighAccount = bHigh ? sle : sleDst;
 
@@ -550,6 +518,11 @@ TrustSet::doApply()
 
         bool bReserveIncrease = false;
 
+        auto const currentHighSponsor =
+            getLedgerEntryReserveSponsor(view(), sleRippleState, sfHighSponsor);
+        auto const currentLowSponsor =
+            getLedgerEntryReserveSponsor(view(), sleRippleState, sfLowSponsor);
+
         if (bSetAuth)
         {
             uFlagsOut |= (bHigh ? lsfHighAuth : lsfLowAuth);
@@ -557,9 +530,29 @@ TrustSet::doApply()
 
         if (bLowReserveSet && !bLowReserved)
         {
+            SLE::pointer const lowSponsor = getSponsor(uLowAccountID);
+
+            if (view().rules().enabled(featureSponsor))
+            {
+                if (auto const ret = checkReserve(
+                        ctx_.getApplyViewContext(),
+                        sleLowAccount,
+                        preFeeBalance_,
+                        lowSponsor,
+                        {.ownerCountDelta = 1},
+                        j_,
+                        tecINSUF_RESERVE_LINE);
+                    lowSponsor && !isTesSuccess(ret))
+                {
+                    return ret;
+                }
+            }
+
             // Set reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, 1, viewJ);
+            increaseOwnerCount(view(), sleLowAccount, lowSponsor, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
+
+            addSponsorToLedgerEntry(sleRippleState, lowSponsor, sfLowSponsor);
 
             if (!bHigh)
                 bReserveIncrease = true;
@@ -568,15 +561,40 @@ TrustSet::doApply()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, -1, viewJ);
+            decreaseOwnerCount(view(), sleLowAccount, currentLowSponsor, 1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
+
+            removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsor);
         }
 
         if (bHighReserveSet && !bHighReserved)
         {
+            SLE::pointer const highSponsor = getSponsor(uHighAccountID);
+
+            // should be checked PreFunded Sponsor before increaseOwnerCount()
+            // For PreFunded sponsors, we need to check if there are sufficient reserves before
+            // calling increaseOwnerCount().
+            if (view().rules().enabled(featureSponsor))
+            {
+                if (auto const ret = checkReserve(
+                        ctx_.getApplyViewContext(),
+                        sleHighAccount,
+                        preFeeBalance_,
+                        highSponsor,
+                        {.ownerCountDelta = 1},
+                        j_,
+                        tecINSUF_RESERVE_LINE);
+                    highSponsor && !isTesSuccess(ret))
+                {
+                    return ret;
+                }
+            }
+
             // Set reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, 1, viewJ);
+            increaseOwnerCount(view(), sleHighAccount, highSponsor, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
+
+            addSponsorToLedgerEntry(sleRippleState, highSponsor, sfHighSponsor);
 
             if (bHigh)
                 bReserveIncrease = true;
@@ -585,34 +603,75 @@ TrustSet::doApply()
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, -1, viewJ);
+            decreaseOwnerCount(view(), sleHighAccount, currentHighSponsor, 1, viewJ);
             uFlagsOut &= ~lsfHighReserve;
+
+            removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsor);
         }
 
         if (uFlagsIn != uFlagsOut)
             sleRippleState->setFieldU32(sfFlags, uFlagsOut);
 
-        if (bDefault || badCurrency() == currency)
+        if (view().rules().enabled(featureSponsor))
         {
-            // Delete.
+            if (bDefault || badCurrency() == currency)
+            {
+                // Delete.
 
-            terResult = trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
-        }
-        // Reserve is not scaled by load.
-        else if (bReserveIncrease && preFeeBalance_ < reserveCreate)
-        {
-            JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
-                                "add trust line.";
+                terResult =
+                    trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
+            }
+            // Reserve is not scaled by load
+            else if (
+                auto const ret = checkReserve(
+                    ctx_.getApplyViewContext(),
+                    sle,
+                    preFeeBalance_,
+                    sponsorSle,
+                    {},
+                    j_,
+                    tecINSUF_RESERVE_LINE);
+                !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
+            {
+                JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
+                                    "add trust line.";
 
-            // Another transaction could provide XRP to the account and then
-            // this transaction would succeed.
-            terResult = tecINSUF_RESERVE_LINE;
+                // Another transaction could provide XRP to the account and then
+                // this transaction would succeed.
+                terResult = ret;
+            }
+            else
+            {
+                view().update(sleRippleState);
+
+                JLOG(j_.trace()) << "Modify ripple line";
+            }
         }
         else
         {
-            view().update(sleRippleState);
+            if (bDefault || badCurrency() == currency)
+            {
+                // Delete.
 
-            JLOG(j_.trace()) << "Modify ripple line";
+                terResult =
+                    trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
+            }
+            // Reserve is not scaled by load.
+            else if (bReserveIncrease && preFeeBalance_ < reserveCreate)
+            {
+                JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
+                                    "add trust line.";
+
+                // Another transaction could provide XRP to the account and then
+                // this transaction would succeed.
+                terResult = tecINSUF_RESERVE_LINE;
+            }
+            else
+            {
+                view().update(sleRippleState);
+
+                JLOG(j_.trace()) << "Modify ripple line";
+            }
         }
     }
     // Line does not exist.
@@ -627,8 +686,8 @@ TrustSet::doApply()
         JLOG(j_.trace()) << "Redundant: Setting non-existent ripple line to defaults.";
         return tecNO_LINE_REDUNDANT;
     }
-    else if (preFeeBalance_ < reserveCreate)  // Reserve is not scaled by
-                                              // load.
+    // reserve is not scaled by load
+    else if (!view().rules().enabled(featureSponsor) && preFeeBalance_ < reserveCreate)
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
                             "Insufficent reserve to create line.";
@@ -637,12 +696,31 @@ TrustSet::doApply()
         // transaction would succeed.
         terResult = tecNO_LINE_INSUF_RESERVE;
     }
+    else if (
+        auto const ret = checkReserve(
+            ctx_.getApplyViewContext(),
+            sle,
+            preFeeBalance_,
+            sponsorSle,
+            {.ownerCountDelta = 1},
+            j_,
+            tecNO_LINE_INSUF_RESERVE);
+        view().rules().enabled(featureSponsor) && !freeTrustLine &&
+        !isTesSuccess(ret))  // Reserve is not scaled by load.
+    {
+        JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
+                            "Insufficent reserve to create line.";
+
+        // Another transaction could create the account and then this
+        // transaction would succeed.
+        terResult = ret;
+    }
     else
     {
         // Zero balance in currency.
         STAmount const saBalance(Issue{currency, noAccount()});
 
-        auto const k = keylet::line(account_, uDstAccountID, currency);
+        auto const k = keylet::trustLine(accountID_, uDstAccountID, currency);
 
         JLOG(j_.trace()) << "doTrustSet: Creating ripple line: " << to_string(k.key);
 
@@ -650,7 +728,7 @@ TrustSet::doApply()
         terResult = trustCreate(
             view(),
             bHigh,
-            account_,
+            accountID_,
             uDstAccountID,
             k.key,
             sle,
@@ -662,6 +740,7 @@ TrustSet::doApply()
             saLimitAllow,  // Limit for who is being charged.
             uQualityIn,
             uQualityOut,
+            sponsorSle,
             viewJ);
     }
 
@@ -669,10 +748,7 @@ TrustSet::doApply()
 }
 
 void
-TrustSet::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+TrustSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

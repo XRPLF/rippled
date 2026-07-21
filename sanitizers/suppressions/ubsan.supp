@@ -72,7 +72,7 @@ vptr:boost
 
 # Google protobuf - intentional overflows in hash functions
 undefined:protobuf
-unsigned-integer-overflow:google/protobuf/stubs/stringpiece.h
+unsigned-integer-overflow:protobuf
 
 # gRPC intentional overflows in timer calculations
 unsigned-integer-overflow:grpc
@@ -102,47 +102,103 @@ undefined:nudb
 # Snappy compression library intentional overflows
 unsigned-integer-overflow:snappy.cc
 
-# Abseil intentional overflows
-unsigned-integer-overflow:absl/strings/numbers.cc
-unsigned-integer-overflow:absl/strings/internal/cord_rep_flat.h
-unsigned-integer-overflow:absl/base/internal/low_level_alloc.cc
-unsigned-integer-overflow:absl/hash/internal/hash.h
-unsigned-integer-overflow:absl/container/internal/raw_hash_set.h
+# Abseil intentional overflows in hashing, RNG and time arithmetic.
+# Matched at library scope (like boost above): the wraparound is by design
+# across many absl files (hash mixing, raw_hash_set probing, duration math,
+# int128, uniform_int_distribution), so listing individual files just churns.
+unsigned-integer-overflow:absl
 
 # Standard library intentional overflows
 unsigned-integer-overflow:basic_string.h
+unsigned-integer-overflow:bits/align.h
+unsigned-integer-overflow:bits/basic_string.tcc
 unsigned-integer-overflow:bits/chrono.h
 unsigned-integer-overflow:bits/random.h
 unsigned-integer-overflow:bits/random.tcc
 unsigned-integer-overflow:bits/stl_algobase.h
+unsigned-integer-overflow:bits/string_view.tcc
 unsigned-integer-overflow:bits/uniform_int_dist.h
 unsigned-integer-overflow:string_view
 unsigned-integer-overflow:__random/seed_seq.h
 unsigned-integer-overflow:__charconv/traits.h
 unsigned-integer-overflow:__chrono/duration.h
+# libstdc++ <bit> (std::__bit_ceil etc.) negates an unsigned width; <bit> is a
+# distinct header from the bits/ directory so it needs its own entry.
+unsigned-integer-overflow:include/c++/*/bit
 
 # =============================================================================
 # Rippled code suppressions
 # =============================================================================
 
-# Signed integer negation (-value) in amount types.
-# INT64_MIN cannot occur in practice due to domain invariants (mantissa ranges
-# are well within int64_t bounds), but UBSan flags the pattern as potential
-# signed overflow. Narrowed to operator- to avoid suppressing unrelated
-# overflows anywhere in a stack trace containing these type names.
-signed-integer-overflow:operator-*IOUAmount*
-signed-integer-overflow:operator-*XRPAmount*
-signed-integer-overflow:operator-*MPTAmount*
-signed-integer-overflow:operator-*STAmount*
+# These suppressions are keyed by SOURCE FILE, not function name. This UBSan
+# build runs without symbol information, so the runtime only knows the
+# file:line of each report, never the enclosing function — function-name
+# patterns silently never match. Each entry below is therefore scoped to the
+# file whose arithmetic is intentional; the comment names the specific
+# construct.
 
-# STAmount::operator+ signed addition — operands are bounded by total supply
-# (~10^17 for XRP, ~10^18 for MPT) so overflow cannot occur in practice.
-signed-integer-overflow:operator+*STAmount*
+# STAmount amount-type arithmetic. Unary negation of the mantissa in xrp()/
+# iou()/mpt()/canonicalize() and getInt64Value, plus bounded +/- on amounts:
+# INT64_MIN cannot occur because canonicalize() keeps the mantissa well within
+# int64_t, and operands are bounded by total supply (~10^17 XRP, ~10^18 MPT).
+signed-integer-overflow:protocol/STAmount.cpp
 
-# STAmount::getRate uses unsigned shift and addition
-unsigned-integer-overflow:*STAmount*getRate*
-# STAmount::serialize uses unsigned bitwise operations
-unsigned-integer-overflow:*STAmount*serialize*
+# nft::cipheredTaxon uses intentional uint32 wraparound (LCG permutation);
+# the helper lives in the generated protocol header nft.h.
+unsigned-integer-overflow:protocol/nft.h
 
-# nft::cipheredTaxon uses intentional uint32 wraparound (LCG permutation)
-unsigned-integer-overflow:cipheredTaxon
+# STPathElement::getHash multiplies/adds accumulators (non-secure, speed-first).
+unsigned-integer-overflow:protocol/STPathSet.cpp
+
+# beast XorShiftEngine PRNG and murmurhash3 mixing wrap by design.
+unsigned-integer-overflow:beast/xor_shift_engine.h
+
+# Number::normalizeToRange multiplies the mantissa by powers of ten; the result
+# is intentionally allowed to wrap while searching for the in-range value.
+unsigned-integer-overflow:basics/Number.h
+
+# Counter / sequence arithmetic with intentional unsigned wraparound, each
+# guarded by an explicit overflow or domain check at the call site:
+#   base_uint operator++/-- wrap by definition;
+#   ApplyView::insertPage ++page is asserted to wrap to 0 (page exhaustion);
+#   confineOwnerCount documents "overflow is well defined on unsigned";
+#   NFTokenMint checks tokenSeq + 1u == 0u; AmendmentTable does (seq - 1) / 256.
+unsigned-integer-overflow:basics/base_uint.h
+unsigned-integer-overflow:ledger/ApplyView.cpp
+unsigned-integer-overflow:ledger/helpers/AccountRootHelpers.cpp
+unsigned-integer-overflow:tx/transactors/nft/NFTokenMint.cpp
+unsigned-integer-overflow:app/misc/detail/AmendmentTable.cpp
+
+# Sentinel / bounded subtractions that wrap by design (loop counters, reverse
+# iteration, "not found" sentinels, balance math bounded by issuance invariants,
+# base58/base64 codec index math, hash-router and role bit math).
+unsigned-integer-overflow:shamap/SHAMap.cpp
+unsigned-integer-overflow:protocol/Permissions.cpp
+unsigned-integer-overflow:protocol/tokens.cpp
+unsigned-integer-overflow:basics/base64.cpp
+unsigned-integer-overflow:json/json_value.cpp
+unsigned-integer-overflow:app/misc/NetworkOPs.cpp
+unsigned-integer-overflow:rpc/detail/Role.cpp
+unsigned-integer-overflow:tx/transactors/oracle/OracleSet.cpp
+unsigned-integer-overflow:ledger/helpers/MPTokenHelpers.cpp
+unsigned-integer-overflow:crypto/RFC1751.cpp
+unsigned-integer-overflow:tx/paths/detail/StrandFlow.h
+unsigned-integer-overflow:protocol/STObject.h
+
+# GetAggregatePrice negates an unsigned trim count to step a reverse iterator;
+# trimCount is bounded by the price set size.
+unsigned-integer-overflow:rpc/handlers/orderbook/GetAggregatePrice.cpp
+
+# Test-only intentional overflow/underflow in fixture and unit-test arithmetic.
+unsigned-integer-overflow:tests/libxrpl/basics/RangeSet.cpp
+unsigned-integer-overflow:test/app/Batch_test.cpp
+unsigned-integer-overflow:test/app/Invariants_test.cpp
+unsigned-integer-overflow:test/app/Loan_test.cpp
+unsigned-integer-overflow:test/app/NFToken_test.cpp
+unsigned-integer-overflow:test/app/OfferMPT_test.cpp
+unsigned-integer-overflow:test/app/Offer_test.cpp
+unsigned-integer-overflow:test/app/Path_test.cpp
+unsigned-integer-overflow:test/jtx/impl/acctdelete.cpp
+unsigned-integer-overflow:test/ledger/SkipList_test.cpp
+unsigned-integer-overflow:test/rpc/Subscribe_test.cpp
+signed-integer-overflow:test/basics/XRPAmount_test.cpp

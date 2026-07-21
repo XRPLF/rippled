@@ -1,19 +1,12 @@
 {
-  "architecture": [
+  "platform": "windows/amd64",
+  "runner": ["self-hosted", "Windows", "dev-box-windows-2026"],
+  "configs": [
+    { "build_type": "Release", "minimal": true },
     {
-      "platform": "windows/amd64",
-      "runner": ["self-hosted", "Windows", "devbox"]
+      "build_type": "Debug",
+      "build_only": true,
+      "minimal": false
     }
-  ],
-  "os": [
-    {
-      "distro_name": "windows",
-      "distro_version": "",
-      "compiler_name": "",
-      "compiler_version": "",
-      "image_sha": ""
-    }
-  ],
-  "build_type": ["Debug", "Release"],
-  "cmake_args": [""]
+  ]
 }

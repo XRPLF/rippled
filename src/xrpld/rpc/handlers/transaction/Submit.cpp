@@ -4,7 +4,6 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/safe_cast.h>
@@ -21,17 +20,18 @@
 #include <xrpl/tx/apply.h>
 
 #include <exception>
+#include <expected>
 #include <functional>
 #include <memory>
 
 namespace xrpl {
 
-static Expected<NetworkOPs::FailHard, json::Value>
+static std::expected<NetworkOPs::FailHard, json::Value>
 getFailHard(RPC::JsonContext const& context)
 {
     if (context.params.isMember(jss::fail_hard) && !context.params[jss::fail_hard].isBool())
     {
-        return Unexpected(RPC::expectedFieldError(jss::fail_hard, "boolean"));
+        return std::unexpected(RPC::expectedFieldError(jss::fail_hard, "boolean"));
     }
     return NetworkOPs::doFailHard(
         context.params.isMember(jss::fail_hard) && context.params[jss::fail_hard].asBool());

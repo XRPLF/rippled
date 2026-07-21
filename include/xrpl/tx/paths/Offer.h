@@ -1,16 +1,26 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 
+#include <cstdint>
+#include <optional>
+#include <ostream>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace xrpl {
@@ -21,7 +31,7 @@ class TOffer
 private:
     SLE::pointer entry_;
     Quality quality_{};
-    AccountID account_;
+    AccountID accountID_;
     Asset assetIn_;
     Asset assetOut_;
 
@@ -34,38 +44,44 @@ public:
 
     TOffer(SLE::pointer entry, Quality quality);
 
-    /** Returns the quality of the offer.
-        Conceptually, the quality is the ratio of output to input currency.
-        The implementation calculates it as the ratio of input to output
-        currency (so it sorts ascending). The quality is computed at the time
-        the offer is placed, and never changes for the lifetime of the offer.
-        This is an important business rule that maintains accuracy when an
-        offer is partially filled; Subsequent partial fills will use the
-        original quality.
-    */
+    /**
+     * Returns the quality of the offer.
+     * Conceptually, the quality is the ratio of output to input currency.
+     * The implementation calculates it as the ratio of input to output
+     * currency (so it sorts ascending). The quality is computed at the time
+     * the offer is placed, and never changes for the lifetime of the offer.
+     * This is an important business rule that maintains accuracy when an
+     * offer is partially filled; Subsequent partial fills will use the
+     * original quality.
+     */
     [[nodiscard]] Quality
     quality() const noexcept
     {
         return quality_;
     }
 
-    /** Returns the account id of the offer's owner. */
+    /**
+     * Returns the account id of the offer's owner.
+     */
     [[nodiscard]] AccountID const&
     owner() const
     {
-        return account_;
+        return accountID_;
     }
 
-    /** Returns the in and out amounts.
-        Some or all of the out amount may be unfunded.
-    */
+    /**
+     * Returns the in and out amounts.
+     * Some or all of the out amount may be unfunded.
+     */
     [[nodiscard]] TAmounts<TIn, TOut> const&
     amount() const
     {
         return amounts_;
     }
 
-    /** Returns `true` if no more funds can flow through this offer. */
+    /**
+     * Returns `true` if no more funds can flow through this offer.
+     */
     [[nodiscard]] bool
     fullyConsumed() const
     {
@@ -76,7 +92,9 @@ public:
         return false;
     }
 
-    /** Adjusts the offer to indicate that we consumed some (or all) of it. */
+    /**
+     * Adjusts the offer to indicate that we consumed some (or all) of it.
+     */
     void
     consume(ApplyView& view, TAmounts<TIn, TOut> const& consumed)
     {
@@ -122,7 +140,7 @@ public:
     isFunded() const
     {
         // Offer owner is issuer; they have unlimited funds if IOU
-        return account_ == assetOut_.getIssuer() && assetOut_.holds<Issue>();
+        return accountID_ == assetOut_.getIssuer() && assetOut_.holds<Issue>();
     }
 
     static std::pair<std::uint32_t, std::uint32_t>
@@ -132,7 +150,8 @@ public:
         return {ofrInRate, ofrOutRate};
     }
 
-    /** Check any required invariant. Limit order book offer
+    /**
+     * Check any required invariant. Limit order book offer
      * always returns true.
      */
     [[nodiscard]] bool
@@ -159,7 +178,7 @@ public:
 
 template <StepAmount TIn, StepAmount TOut>
 TOffer<TIn, TOut>::TOffer(SLE::pointer entry, Quality quality)
-    : entry_(std::move(entry)), quality_(quality), account_(entry_->getAccountID(sfAccount))
+    : entry_(std::move(entry)), quality_(quality), accountID_(entry_->getAccountID(sfAccount))
 {
     auto const tp = entry_->getFieldAmount(sfTakerPays);
     auto const tg = entry_->getFieldAmount(sfTakerGets);
@@ -224,7 +243,8 @@ template <typename... Args>
 TER
 TOffer<TIn, TOut>::send(Args&&... args)
 {
-    return accountSend(std::forward<Args>(args)..., WaiveTransferFee::No, AllowMPTOverflow::Yes);
+    return accountSend(
+        std::forward<Args>(args)..., SLE::pointer(), WaiveTransferFee::No, AllowMPTOverflow::Yes);
 }
 
 template <StepAmount TIn, StepAmount TOut>

@@ -154,7 +154,7 @@ Change::doApply()
 void
 Change::preCompute()
 {
-    XRPL_ASSERT(account_ == beast::kZero, "xrpl::Change::preCompute : zero account");
+    XRPL_ASSERT(accountID_ == beast::kZero, "xrpl::Change::preCompute : zero account");
 }
 
 TER
@@ -254,7 +254,7 @@ Change::applyAmendment()
 TER
 Change::applyFee()
 {
-    auto const k = keylet::fees();
+    auto const k = keylet::feeSettings();
 
     SLE::pointer feeObject = view().peek(k);
 
@@ -409,10 +409,7 @@ Change::applyUNLModify()
 }
 
 void
-Change::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+Change::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
