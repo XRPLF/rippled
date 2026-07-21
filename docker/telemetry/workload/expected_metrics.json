@@ -71,6 +71,10 @@
     "description": "Phase 9 per-RPC-method counters (MetricsRegistry via OTLP).",
     "metrics": ["rpc_method_started_total"]
   },
+  "rpc_in_flight": {
+    "description": "In-flight RPC gauge via the XRPL_METRIC_UPDOWN_ADD call-site macro (PerfLogImp.cpp, +1 rpcStart / -1 rpcEnd). UpDownCounter: no _total suffix.",
+    "metrics": ["rpc_in_flight_requests"]
+  },
   "phase9_objects": {
     "description": "Phase 9 counted object instances observable gauge (MetricsRegistry via OTLP).",
     "metrics": ["object_count"]
