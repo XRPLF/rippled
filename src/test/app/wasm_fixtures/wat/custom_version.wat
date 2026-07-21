@@ -8,6 +8,6 @@
   )
   (export "finish" (func $finish))
 
-  (@custom "xrpl-escrow-stdlib" "4.5.6")
-  (@custom "xrpl-common-stdlib" "1.2.3")
+  (@custom "xrpl-escrow-stdlib-version" "4.5.6")
+  (@custom "xrpl-common-stdlib-version" "1.2.3")
 )

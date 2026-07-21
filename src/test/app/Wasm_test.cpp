@@ -253,8 +253,10 @@ struct Wasm_test : public beast::unit_test::Suite
             vm.run(kWasmModule, hfs, 10'000'000, "finish", wasmParams(), imports, journal);
 
         auto const logged = sink.messages().str();
-        BEAST_EXPECT(logged.find("Module version: xrpl-escrow-stdlib 4.5.6") != std::string::npos);
-        BEAST_EXPECT(logged.find("Module version: xrpl-common-stdlib 1.2.3") != std::string::npos);
+        BEAST_EXPECT(
+            logged.find("Module version: xrpl-escrow-stdlib-version 4.5.6") != std::string::npos);
+        BEAST_EXPECT(
+            logged.find("Module version: xrpl-common-stdlib-version 1.2.3") != std::string::npos);
     }
 
     void

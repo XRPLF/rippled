@@ -909,8 +909,8 @@ filterCustomSections(Bytes const& wasmCode, Filter&& filter)
 std::vector<Version>
 extractVersionInfo(Bytes const& wasmCode)
 {
-    static constexpr auto kCommonLib = "xrpl-common-stdlib";
-    static constexpr auto kEscrowLib = "xrpl-escrow-stdlib";
+    static constexpr auto kCommonLib = "xrpl-common-stdlib-version";
+    static constexpr auto kEscrowLib = "xrpl-escrow-stdlib-version";
 
     auto versions = std::vector<Version>{};
     filterCustomSections(wasmCode, [&](auto const& section) {
