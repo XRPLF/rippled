@@ -81,26 +81,20 @@ floatEncode(Number const& n)
 
 struct FloatState
 {
-    Number::RoundingMode oldMode;
-    bool good = false;
+    // Set only when the requested mode is valid; sets the rounding mode on
+    // construction and restores the previous mode on destruction.
+    std::optional<NumberRoundModeGuard> guard_;
 
-    FloatState(int32_t mode) : oldMode(Number::getround())
+    explicit FloatState(int32_t mode)
     {
-        if (mode < static_cast<int32_t>(Number::RoundingMode::ToNearest) ||
-            mode > static_cast<int32_t>(Number::RoundingMode::Upward))
-            return;
-        Number::setround(static_cast<Number::RoundingMode>(mode));
-        good = true;
+        if (auto const rm = Number::checkedRoundingMode(mode))
+            guard_.emplace(*rm);
     }
 
-    ~FloatState()
-    {
-        Number::setround(oldMode);
-    }
-
+    explicit
     operator bool() const
     {
-        return good;
+        return guard_.has_value();
     }
 };
 
