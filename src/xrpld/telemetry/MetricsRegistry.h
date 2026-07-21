@@ -204,8 +204,15 @@ namespace telemetry {
  * @note Extending:
  * - Adding a new CountedObject type is auto-picked up by the
  * object_count gauge via iteration.
- * - Adding a new synchronous instrument requires a header field,
- * an initializer in start(), and a record method.
+ * - Adding a new SYNCHRONOUS instrument (counter/histogram): prefer the
+ * XRPL_METRIC_* call-site macros in MetricMacros.h -- no header/cpp
+ * edit needed. Fall back to a dedicated member + init line + record
+ * method (the pattern below) only when the metric needs to be read
+ * back by other code (e.g. ValidationTracker-style accumulation) or
+ * needs a custom histogram bucket View (see MetricMacros.h Limitation
+ * 2 in tasks/metric-macro-plan.md).
+ * - Adding a new OBSERVABLE gauge still requires eager central
+ * registration -- pull-model instruments cannot be lazily created.
  */
 class MetricsRegistry
 {
@@ -337,8 +344,12 @@ public:
 
     /**
      * Increment the ledgers_closed_total counter.
-     * Called from RCLConsensus::Adaptor::doAccept() after a ledger is
-     * accepted by consensus.
+     *
+     * @note Currently has no callers: the ledgers_closed_total counter is
+     * incremented at its consensus call site via the XRPL_METRIC_COUNTER_INC
+     * macro (see MetricMacros.h). This method and its eagerly-created
+     * counter are retained as a fallback and are slated for removal in a
+     * separate cleanup once the macro path has proven out.
      */
     void
     incrementLedgersClosed();
@@ -409,6 +420,22 @@ public:
     {
         return validationTracker_;
     }
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    /**
+     * Access the shared OTel Meter for call-site instrument creation.
+     * Used by the XRPL_METRIC_* macros (MetricMacros.h) so new synchronous
+     * counters/histograms can be declared at their call site instead of as
+     * MetricsRegistry members. Returns an empty (falsy) shared_ptr before
+     * start() has run or when disabled.
+     * @return The shared Meter, or empty if not yet started.
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::Meter>
+    meter() const noexcept
+    {
+        return meter_;
+    }
+#endif
 
 private:
     /**

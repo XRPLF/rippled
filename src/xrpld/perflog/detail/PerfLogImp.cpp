@@ -1,6 +1,7 @@
 #include <xrpld/perflog/detail/PerfLogImp.h>
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/telemetry/MetricMacros.h>
 #include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/Log.h>
@@ -336,6 +337,13 @@ PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
     // Task 9.4: Record RPC start in OTel metrics pipeline.
     if (auto* mr = app_.getMetricsRegistry())
         mr->recordRpcStarted(method);
+
+    // Proof-of-concept for tasks/metric-macro-plan.md Use Case 2: a value
+    // that must be able to decrease (UpDownCounter), added at its call
+    // site with no MetricsRegistry member/init-line/method. Paired with the
+    // matching -1 in rpcEnd(). Runs on the same path as recordRpcStarted
+    // above, i.e. only after a methods-map entry exists for this request.
+    XRPL_METRIC_UPDOWN_ADD(app_, "rpc_in_flight_requests", "RPC requests currently executing", 1);
 }
 
 void
@@ -398,6 +406,11 @@ PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, boo
             mr->recordRpcErrored(method, durationUs.count());
         }
     }
+
+    // Matching -1 for the +1 recorded in rpcStart(). Placed after the early
+    // returns above so it runs only when this request's methods-map entry was
+    // found (i.e. a +1 was recorded for it), keeping the in-flight count balanced.
+    XRPL_METRIC_UPDOWN_ADD(app_, "rpc_in_flight_requests", "RPC requests currently executing", -1);
 }
 
 void
