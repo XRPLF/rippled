@@ -1478,7 +1478,7 @@ protected:
 
         auto const nextDueDate = startDate + *loanParams.payInterval;
 
-        if (env.enabled(fixCleanup3_2_0))
+        if (env.enabled(featureLendingProtocolV1_1))
         {
             // With the amendment, impairment is only allowed when the
             // payment is late. Impair/unimpair cycle is tested in the
@@ -2091,7 +2091,7 @@ protected:
                     auto const paymentDue = tp{d{state.nextPaymentDate}};
                     bool const alreadyLate = env.now() > paymentDue;
 
-                    if (env.enabled(fixCleanup3_2_0) && !alreadyLate)
+                    if (env.enabled(featureLendingProtocolV1_1) && !alreadyLate)
                     {
                         // With the amendment, impairment requires the
                         // payment to be late
@@ -2110,7 +2110,7 @@ protected:
                     if (canImpair)
                     {
                         state.flags |= tfLoanImpair;
-                        if (!env.enabled(fixCleanup3_2_0))
+                        if (!env.enabled(featureLendingProtocolV1_1))
                         {
                             // Without the amendment, impairment moves the
                             // due date to now
@@ -2750,7 +2750,8 @@ protected:
 
                     // With the amendment, on-time payments can't be
                     // preceded by impairment (payment is not late)
-                    if (!env.enabled(fixCleanup3_2_0) && canImpairLoan(env, broker, state))
+                    if (!env.enabled(featureLendingProtocolV1_1) &&
+                        canImpairLoan(env, broker, state))
                     {
                         // Making a payment will unimpair the loan
                         env(manage(lender, loanKeylet.key, tfLoanImpair));
@@ -7200,7 +7201,7 @@ protected:
         BEAST_EXPECT(afterSecondCoverAvailable == 0);
     }
 
-    // Verify that with fixCleanup3_2_0:
+    // Verify that with featureLendingProtocolV1_1:
     // 1. A loan cannot be impaired before its payment is late.
     // 2. Impairing a late loan does not change sfNextPaymentDueDate.
     // 3. The unimpair operation does not change sfNextPaymentDueDate.
@@ -7214,7 +7215,7 @@ protected:
         testcase("Impairment does not change payment due date");
 
         Env env(*this, all_);
-        BEAST_EXPECT(env.enabled(fixCleanup3_2_0));
+        BEAST_EXPECT(env.enabled(featureLendingProtocolV1_1));
 
         Account const lender{"lender"};
         Account const borrower{"borrower"};
@@ -7281,7 +7282,7 @@ protected:
         }
     }
 
-    // Verify that without fixCleanup3_2_0, the pre-amendment
+    // Verify that without featureLendingProtocolV1_1, the pre-amendment
     // impair/unimpair behaviour is preserved:
     // 1. Impairing a loan before its payment is late moves
     //    sfNextPaymentDueDate to "now".
@@ -7298,8 +7299,8 @@ protected:
 
         testcase("Pre-amendment impair/unimpair date restoration");
 
-        Env env(*this, all_ - fixCleanup3_2_0);
-        BEAST_EXPECT(!env.enabled(fixCleanup3_2_0));
+        Env env(*this, all_ - featureLendingProtocolV1_1);
+        BEAST_EXPECT(!env.enabled(featureLendingProtocolV1_1));
 
         Account const lender{"lender"};
         Account const borrower{"borrower"};

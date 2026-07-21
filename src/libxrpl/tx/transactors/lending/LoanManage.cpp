@@ -304,7 +304,7 @@ LoanManage::impairLoan(
     Asset const& vaultAsset,
     beast::Journal j)
 {
-    if (view.rules().enabled(fixCleanup3_2_0) && !isPaymentLate(view, loanSle))
+    if (view.rules().enabled(featureLendingProtocolV1_1) && !isPaymentLate(view, loanSle))
     {
         JLOG(j.warn()) << "Cannot impair a loan that is not late";
         return tecTOO_SOON;
@@ -332,7 +332,7 @@ LoanManage::impairLoan(
     // Update the Loan object
     loanSle->setFlag(lsfLoanImpaired);
 
-    if (!view.rules().enabled(fixCleanup3_2_0))
+    if (!view.rules().enabled(featureLendingProtocolV1_1))
     {
         auto loanNextDueProxy = loanSle->at(sfNextPaymentDueDate);
         if (!isPaymentLate(view, loanSle))
@@ -376,7 +376,7 @@ LoanManage::unimpairLoan(
 
     // Update the Loan object
     loanSle->clearFlag(lsfLoanImpaired);
-    if (!view.rules().enabled(fixCleanup3_2_0))
+    if (!view.rules().enabled(featureLendingProtocolV1_1))
     {
         auto const paymentInterval = loanSle->at(sfPaymentInterval);
         auto const normalPaymentDueDate =
