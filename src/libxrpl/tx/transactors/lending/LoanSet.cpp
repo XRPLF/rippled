@@ -78,14 +78,32 @@ LoanSet::isTwoStepFlow(STTx const& tx)
     // The two-step (Borrower) flow is started when the LoanSet names a
     // Borrower and a StartDate but carries neither a Counterparty nor a
     // CounterpartySignature.
-    return tx.isFieldPresent(sfBorrower) && tx.isFieldPresent(sfStartDate) &&
-        !tx.isFieldPresent(sfCounterparty) && !tx.isFieldPresent(sfCounterpartySignature);
+    return tx.isFieldPresent(sfBorrower) && tx.isFieldPresent(sfStartDate);
 }
 
 bool
 LoanSet::isOneStepFlow(STTx const& tx)
 {
     return tx.isFieldPresent(sfCounterpartySignature);
+}
+
+AccountID
+LoanSet::getCounterparty(STTx const& tx, AccountID const& brokerOwner)
+{
+    return tx[~sfCounterparty].value_or(brokerOwner);
+}
+
+AccountID
+LoanSet::getBorrower(STTx const& tx, AccountID const& brokerOwner, AccountID const& signingAccount)
+{
+    // In the two-step (Borrower) flow the LoanBroker owner proposes the loan on
+    // behalf of the named Borrower. In the immediate flow the Borrower is
+    // whichever of the signer / counterparty is not the LoanBroker owner.
+    if (isTwoStepFlow(tx))
+        return tx[sfBorrower];
+
+    auto const counterparty = getCounterparty(tx, brokerOwner);
+    return counterparty == brokerOwner ? signingAccount : counterparty;
 }
 
 NotTEC
@@ -443,6 +461,18 @@ LoanSet::preclaim(PreclaimContext const& ctx)
 
     if (twoStepFlow)
     {
+        // Reject a pending loan up front if the borrower or broker owner (the
+        // origination-fee recipient) is not authorised to hold the vault asset,
+        // rather than creating a loan that can never be disbursed by LoanAccept.
+        // WeakAuth is used because the holdings need not exist yet; they are
+        // created at disbursement. This is confined to the two-step flow (gated
+        // by featureLendingProtocolV1_1); the immediate flow already fails in
+        // doApply if disbursement is not possible.
+        if (auto const ter = requireAuth(ctx.view, asset, borrower, AuthType::WeakAuth))
+            return ter;
+        if (auto const ter = requireAuth(ctx.view, asset, brokerOwner, AuthType::WeakAuth))
+            return ter;
+
         if (tx[sfStartDate] <= currentLedgerCloseTime(ctx.view))
         {
             JLOG(ctx.j.warn()) << "Start date is in the past.";
@@ -462,45 +492,22 @@ LoanSet::doApply()
 
     auto const brokerID = tx[sfLoanBrokerID];
 
+    // Only the LoanBroker and Vault entries are read here; doApply() validates
+    // the loan against them and computes the plan. The broker owner, borrower,
+    // and broker pseudo-account entries are re-fetched (and their existence
+    // re-verified) by the flow functions that actually mutate them, so they are
+    // not peeked here. Borrower existence is already guaranteed by preclaim().
     auto const brokerSle = view.peek(keylet::loanBroker(brokerID));
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    auto const brokerOwner = brokerSle->at(sfOwner);
-    auto const brokerOwnerSle = view.peek(keylet::account(brokerOwner));
-    if (!brokerOwnerSle)
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    auto const vaultSle = view.peek(keylet ::vault(brokerSle->at(sfVaultID)));
+    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    auto const vaultPseudo = vaultSle->at(sfAccount);
     Asset const vaultAsset = vaultSle->at(sfAsset);
 
-    auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
-    auto const borrower = [&]() {
-        if (twoStepFlow)
-        {
-            return tx[sfBorrower];
-        }
-
-        return counterparty == brokerOwner ? accountID_ : counterparty;
-    }();
-
-    auto const borrowerSle = view.peek(keylet::account(borrower));
-    if (!borrowerSle)
-    {
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    }
-
-    auto const brokerPseudo = brokerSle->at(sfAccount);
-    auto const brokerPseudoSle = view.peek(keylet::account(brokerPseudo));
-    if (!brokerPseudoSle)
-    {
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    }
     auto const principalRequested = tx[sfPrincipalRequested];
 
-    auto vaultAssetReservedProxy = vaultSle->at(sfAssetsReserved);
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
     auto const vaultScale = getAssetsTotalScale(vaultSle);
@@ -530,67 +537,113 @@ LoanSet::doApply()
         principalRequested,
         properties.loanState.managementFeeDue);
 
-    auto const originationFee = tx[~sfLoanOriginationFee].value_or(Number{});
+    auto const vaultMaximum = *vaultSle->at(sfAssetsMaximum);
+    XRPL_ASSERT_PARTS(
+        vaultMaximum == 0 || vaultMaximum > *vaultTotalProxy,
+        "xrpl::LoanSet::doApply",
+        "Vault is below maximum limit");
+    if (vaultMaximum != 0 && state.interestDue > vaultMaximum - vaultTotalProxy)
+    {
+        JLOG(j_.warn()) << "Loan would exceed the maximum assets of the vault";
+        return tecLIMIT_EXCEEDED;
+    }
+    // Check that relevant values won't lose precision. This is mostly only
+    // relevant for IOU assets.
+    for (auto const& field : getValueFields())
+    {
+        if (auto const value = tx[field];
+            value && !isRounded(vaultAsset, *value, properties.loanScale))
+        {
+            JLOG(j_.warn()) << field.f->getName() << " (" << *value
+                            << ") has too much precision. Total loan value is "
+                            << properties.loanState.valueOutstanding << " with a scale of "
+                            << properties.loanScale;
+            return tecPRECISION_LOSS;
+        }
+    }
 
-    auto const loanAssetsToBorrower = principalRequested - originationFee;
-
-    auto const newDebtDelta = principalRequested + state.interestDue;
-
-    if (auto const ter = checkLoanLimits(
-            view,
-            tx,
-            brokerSle,
-            vaultSle,
+    if (auto const ret = checkLoanGuards(
             vaultAsset,
             principalRequested,
-            interestRate,
+            interestRate != beast::kZero,
             paymentTotal,
             properties,
-            state,
-            getValueFields(),
             j_))
-    {
-        return ter;
-    }
-    // In the two-step flow, the LoanBroker.Owner is charged the owner reserve
-    // for the pending loan; the borrower is not charged and receives no funds
-    // until the loan is accepted (see LoanAccept). In the immediate flow, the
-    // borrower is charged the reserve and the funds are disbursed now.
-    if (twoStepFlow)
-    {
-        if (auto const ter =
-                reserveLoanOwner(view, brokerOwner, brokerOwnerSle, accountID_, preFeeBalance_, j_))
-            return ter;
-    }
-    else
-    {
-        if (auto const ter =
-                reserveLoanOwner(view, borrower, borrowerSle, accountID_, preFeeBalance_, j_))
-            return ter;
+        return ret;
 
-        auto applyViewContext = ctx_.getApplyViewContext();
-        if (auto const ter = disburseLoan(
-                applyViewContext,
-                borrower,
-                borrowerSle,
-                brokerOwner,
-                brokerOwnerSle,
-                vaultPseudo,
-                vaultAsset,
-                loanAssetsToBorrower,
-                originationFee,
-                accountID_,
-                counterparty,
-                j_))
-            return ter;
+    // Check that the other computed values are valid
+    if (properties.loanState.managementFeeDue < 0 || properties.loanState.valueOutstanding <= 0 ||
+        properties.periodicPayment <= 0)
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.warn()) << "Computed loan properties are invalid. Does not compute."
+                        << " Management fee: " << properties.loanState.managementFeeDue
+                        << ". Total Value: " << properties.loanState.valueOutstanding
+                        << ". PeriodicPayment: " << properties.periodicPayment;
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
+
+    auto const originationFee = tx[~sfLoanOriginationFee].value_or(Number{});
+
+    auto const newDebtDelta = principalRequested + state.interestDue;
+    auto const newDebtTotal = brokerSle->at(sfDebtTotal) + newDebtDelta;
+    if (auto const debtMaximum = brokerSle->at(sfDebtMaximum);
+        debtMaximum != 0 && debtMaximum < newDebtTotal)
+    {
+        JLOG(j_.warn()) << "Loan would exceed the maximum debt limit of the LoanBroker.";
+        return tecLIMIT_EXCEEDED;
+    }
+    TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
+    {
+        auto const minCover = [&]() {
+            if (ctx_.view().rules().enabled(fixCleanup3_2_0))
+            {
+                return minimumBrokerCover(newDebtTotal, coverRateMinimum, vaultSle);
+            }
+
+            // Round the minimum required cover up to be conservative. This ensures
+            // CoverAvailable never drops below the theoretical minimum, protecting
+            // the broker's solvency.
+            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+            return tenthBipsOfValue(newDebtTotal, coverRateMinimum);
+        }();
+        if (brokerSle->at(sfCoverAvailable) < minCover)
+        {
+            JLOG(j_.warn()) << "Insufficient first-loss capital to cover the loan.";
+            return tecINSUFFICIENT_FUNDS;
+        }
+    }
+    // Bundle the validated and computed values for the flow functions. The
+    // pending (two-step) and immediate flows each own their full sequence of
+    // ledger mutations; nothing below is reordered relative to the prior
+    // implementation.
+    auto const brokerOwner = brokerSle->at(sfOwner);
+    LoanPlan const plan{
+        .brokerID = brokerID,
+        .borrower = getBorrower(tx, brokerOwner, accountID_),
+        .counterparty = getCounterparty(tx, brokerOwner),
+        .principalRequested = principalRequested,
+        .originationFee = originationFee,
+        .interestDue = state.interestDue,
+        .properties = properties,
+        .paymentInterval = paymentInterval,
+        .paymentTotal = paymentTotal};
+
+    return twoStepFlow ? applyPendingLoan(plan) : applyImmediateLoan(plan);
+}
+
+std::shared_ptr<SLE>
+LoanSet::buildLoan(LoanPlan const& plan, SLE::ref brokerSle, bool pending)
+{
+    auto const& tx = ctx_.tx;
 
     // Get shortcuts to the loan property values
-    auto const startDate = getStartDate(view, tx);
-    auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
+    auto const startDate = getStartDate(ctx_.view(), tx);
+    auto const loanSequence = *brokerSle->at(sfLoanSequence);
 
     // Create the loan
-    auto loan = std::make_shared<SLE>(keylet::loan(brokerID, *loanSequenceProxy));
+    auto loan = std::make_shared<SLE>(keylet::loan(plan.brokerID, loanSequence));
 
     // Prevent copy/paste errors
     auto setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
@@ -600,12 +653,12 @@ LoanSet::doApply()
     };
 
     // Set required and fixed tx fields
-    loan->at(sfLoanScale) = properties.loanScale;
+    loan->at(sfLoanScale) = plan.properties.loanScale;
     loan->at(sfStartDate) = startDate;
-    loan->at(sfPaymentInterval) = paymentInterval;
-    loan->at(sfLoanSequence) = *loanSequenceProxy;
-    loan->at(sfLoanBrokerID) = brokerID;
-    loan->at(sfBorrower) = borrower;
+    loan->at(sfPaymentInterval) = plan.paymentInterval;
+    loan->at(sfLoanSequence) = loanSequence;
+    loan->at(sfLoanBrokerID) = plan.brokerID;
+    loan->at(sfBorrower) = plan.borrower;
     // Set all other transaction fields directly from the transaction
     if (tx.isFlag(tfLoanOverpayment))
         loan->setFlag(lsfLoanOverpayment);
@@ -620,27 +673,64 @@ LoanSet::doApply()
     setLoanField(~sfOverpaymentInterestRate);
     setLoanField(~sfGracePeriod, kDefaultGracePeriod);
     // Set dynamic / computed fields to their initial values
-    loan->at(sfPrincipalOutstanding) = principalRequested;
-    loan->at(sfPeriodicPayment) = properties.periodicPayment;
-    loan->at(sfTotalValueOutstanding) = properties.loanState.valueOutstanding;
-    loan->at(sfManagementFeeOutstanding) = properties.loanState.managementFeeDue;
+    loan->at(sfPrincipalOutstanding) = plan.principalRequested;
+    loan->at(sfPeriodicPayment) = plan.properties.periodicPayment;
+    loan->at(sfTotalValueOutstanding) = plan.properties.loanState.valueOutstanding;
+    loan->at(sfManagementFeeOutstanding) = plan.properties.loanState.managementFeeDue;
     loan->at(sfPreviousPaymentDueDate) = 0;
-    loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
-    loan->at(sfPaymentRemaining) = paymentTotal;
-    if (twoStepFlow)
+    loan->at(sfNextPaymentDueDate) = startDate + plan.paymentInterval;
+    loan->at(sfPaymentRemaining) = plan.paymentTotal;
+    if (pending)
         loan->setFlag(lsfLoanPending);
+
+    return loan;
+}
+
+TER
+LoanSet::applyPendingLoan(LoanPlan const& plan)
+{
+    auto& view = ctx_.view();
+
+    // Re-fetch the ledger entries doApply() already verified exist.
+    auto const brokerSle = view.peek(keylet::loanBroker(plan.brokerID));
+    if (!brokerSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    AccountID const brokerOwner = brokerSle->at(sfOwner);
+    auto const brokerOwnerSle = view.peek(keylet::account(brokerOwner));
+    if (!brokerOwnerSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
+    if (!vaultSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    // Values derived from the ledger entries and the plan's scalars.
+    AccountID const brokerPseudo = brokerSle->at(sfAccount);
+    Asset const vaultAsset = vaultSle->at(sfAsset);
+    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const newDebtDelta = plan.principalRequested + plan.interestDue;
+
+    // In the two-step flow, the LoanBroker.Owner is charged the owner reserve
+    // for the pending loan; the borrower is not charged and receives no funds
+    // until the loan is accepted (see LoanAccept).
+    if (auto const ter =
+            reserveLoanOwner(view, brokerOwner, brokerOwnerSle, accountID_, preFeeBalance_, j_))
+        return ter;
+
+    auto loan = buildLoan(plan, brokerSle, /*pending=*/true);
     view.insert(loan);
 
-    // Update the balances in the vault. Both flows decrement the available
-    // assets and accrue the interest due. The two-step flow additionally moves
-    // the principal into the reserved bucket until the borrower accepts.
-    vaultAvailableProxy -= principalRequested;
-    vaultTotalProxy += state.interestDue;
-    if (twoStepFlow)
-        vaultAssetReservedProxy += principalRequested;
+    // Update the balances in the vault. Decrement the available assets, accrue
+    // the interest due, and move the principal into the reserved bucket until
+    // the borrower accepts.
+    auto vaultAssetReservedProxy = vaultSle->at(sfAssetsReserved);
+    auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
+    auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
+    vaultAvailableProxy -= plan.principalRequested;
+    vaultTotalProxy += plan.interestDue;
+    vaultAssetReservedProxy += plan.principalRequested;
     XRPL_ASSERT_PARTS(
         *vaultAvailableProxy <= *vaultTotalProxy,
-        "xrpl::LoanSet::doApply",
+        "xrpl::LoanSet::applyPendingLoan",
         "assets available must not be greater than assets outstanding");
     view.update(vaultSle);
 
@@ -648,16 +738,96 @@ LoanSet::doApply()
             updateLoanBroker(view, brokerSle, newDebtDelta, vaultAsset, vaultScale, j_))
         return ter;
 
-    // Always link the loan into the broker's directory. The borrower directory
-    // link is deferred to LoanAccept for the two-step (pending) flow.
+    // Link the loan into the broker's directory. The borrower directory link is
+    // deferred to LoanAccept for the two-step (pending) flow.
     if (auto const ter = linkLoanBroker(view, brokerPseudo, loan))
         return ter;
 
-    if (!twoStepFlow)
-    {
-        if (auto const ter = linkLoanBorrower(view, borrower, loan))
-            return ter;
-    }
+    associateAsset(*vaultSle, vaultAsset);
+    associateAsset(*brokerSle, vaultAsset);
+    associateAsset(*loan, vaultAsset);
+
+    return tesSUCCESS;
+}
+
+TER
+LoanSet::applyImmediateLoan(LoanPlan const& plan)
+{
+    auto& view = ctx_.view();
+
+    // Re-fetch the ledger entries doApply() already verified exist.
+    auto const brokerSle = view.peek(keylet::loanBroker(plan.brokerID));
+    if (!brokerSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    AccountID const brokerOwner = brokerSle->at(sfOwner);
+    auto const brokerOwnerSle = view.peek(keylet::account(brokerOwner));
+    if (!brokerOwnerSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
+    if (!vaultSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    auto const borrowerSle = view.peek(keylet::account(plan.borrower));
+    if (!borrowerSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    // Values derived from the ledger entries and the plan's scalars.
+    AccountID const brokerPseudo = brokerSle->at(sfAccount);
+    AccountID const vaultPseudo = vaultSle->at(sfAccount);
+    Asset const vaultAsset = vaultSle->at(sfAsset);
+    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    auto const loanAssetsToBorrower = plan.principalRequested - plan.originationFee;
+    auto const newDebtDelta = plan.principalRequested + plan.interestDue;
+
+    // In the immediate flow, the borrower is charged the owner reserve and the
+    // funds are disbursed now.
+    if (auto const ter =
+            reserveLoanOwner(view, plan.borrower, borrowerSle, accountID_, preFeeBalance_, j_))
+        return ter;
+
+    // Disburse the principal to the borrower and the origination fee, if any,
+    // to the broker owner, creating holdings as necessary.
+    auto applyViewContext = ctx_.getApplyViewContext();
+    if (auto const ter = disburseLoan(
+            applyViewContext,
+            plan.borrower,
+            borrowerSle,
+            brokerOwner,
+            brokerOwnerSle,
+            vaultPseudo,
+            vaultAsset,
+            loanAssetsToBorrower,
+            plan.originationFee,
+            accountID_,
+            plan.counterparty,
+            j_))
+        return ter;
+
+    auto loan = buildLoan(plan, brokerSle, /*pending=*/false);
+    view.insert(loan);
+
+    // Update the balances in the vault. Decrement the available assets and
+    // accrue the interest due.
+    auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
+    auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
+    vaultAvailableProxy -= plan.principalRequested;
+    vaultTotalProxy += plan.interestDue;
+    XRPL_ASSERT_PARTS(
+        *vaultAvailableProxy <= *vaultTotalProxy,
+        "xrpl::LoanSet::applyImmediateLoan",
+        "assets available must not be greater than assets outstanding");
+    view.update(vaultSle);
+
+    if (auto const ter =
+            updateLoanBroker(view, brokerSle, newDebtDelta, vaultAsset, vaultScale, j_))
+        return ter;
+
+    // Link the loan into the broker's directory, then make the borrower the
+    // owner of the loan by linking it into the borrower's directory.
+    if (auto const ter = linkLoanBroker(view, brokerPseudo, loan))
+        return ter;
+
+    if (auto const ter = linkLoanBorrower(view, plan.borrower, loan))
+        return ter;
 
     associateAsset(*vaultSle, vaultAsset);
     associateAsset(*brokerSle, vaultAsset);

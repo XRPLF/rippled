@@ -588,27 +588,6 @@ checkLoanFreeze(
     beast::Journal j);
 
 /**
- * Validate a loan against the vault and broker limits.
- *
- * Checks the vault maximum, precision loss, loan guards, the computed loan
- * properties, the broker debt maximum, and the broker's first-loss cover.
- */
-[[nodiscard]] TER
-checkLoanLimits(
-    ApplyView& view,
-    STTx const& tx,
-    SLE::ref brokerSle,
-    SLE::ref vaultSle,
-    Asset const& vaultAsset,
-    Number const& principalRequested,
-    TenthBips32 interestRate,
-    std::uint32_t paymentTotal,
-    LoanProperties const& properties,
-    LoanState const& state,
-    std::vector<OptionaledField<STNumber>> const& valueFields,
-    beast::Journal j);
-
-/**
  * Increment the borrower's owner count for the new loan object and verify the
  * borrower still meets its reserve requirement.
  */
