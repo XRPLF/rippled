@@ -522,10 +522,11 @@ public:
     class ParseFailureGuard final
     {
         Env& self_;
-        bool oldExpected_ = self_.parseFailureExpected_;
+        bool const oldExpected_;
 
     public:
-        ParseFailureGuard(Env& self, bool b) : self_(self)
+        ParseFailureGuard(Env& self, bool b)
+            : self_(self), oldExpected_(self_.parseFailureExpected_)
         {
             self_.setParseFailureExpected(b);
         }
