@@ -1,10 +1,19 @@
-// Tests for SpanGuard::rootSpan() and SpanGuard::detached().
+// Tests for SpanGuard, ScopedSpanGuard and DeterministicIdGenerator.
 //
-// These verify the cross-thread scope-leak fix at the trace level using an
-// in-memory span exporter: rootSpan() must start a fresh trace root (ignoring
-// the ambient active span), and detached() must strip the thread-local Scope
-// on the origin thread so the guard can be moved to and ended on another
-// thread without corrupting the origin thread's context stack.
+// These verify the span-guard split and the deterministic-root fix at the
+// trace level using an in-memory span exporter:
+//  - SpanGuard is unscoped and thread-free: it owns only the span, never the
+//    OTel thread-local context stack, so it may be moved to and ended on any
+//    thread. SpanGuard::freshRoot() starts a brand-new trace root, ignoring
+//    the ambient active span.
+//  - ScopedSpanGuard is scoped and thread-bound: it also pushes an OTel Scope
+//    so the span is the ambient parent on the constructing thread. Its
+//    `operator SpanGuard() &&` pops that Scope eagerly on the origin thread and
+//    yields a thread-free SpanGuard; destroying it on another thread trips an
+//    owner-thread assertion.
+//  - DeterministicIdGenerator (installed by the test TracerProvider) mints a
+//    caller-pinned trace_id for a forced-root span. PendingTraceId pins the id
+//    for one root span; an ambient child under a live parent never adopts it.
 //
 // The whole file is telemetry-only: when XRPL_ENABLE_TELEMETRY is not defined
 // SpanGuard is a no-op stub and the OpenTelemetry SDK headers are unavailable,
@@ -12,11 +21,13 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
+#include <xrpl/telemetry/DeterministicIdGenerator.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <gtest/gtest.h>
 #include <opentelemetry/context/context.h>
+#include <opentelemetry/context/runtime_context.h>
 #include <opentelemetry/exporters/memory/in_memory_span_data.h>
 #include <opentelemetry/exporters/memory/in_memory_span_exporter_factory.h>
 #include <opentelemetry/nostd/shared_ptr.h>
@@ -26,16 +37,20 @@
 #include <opentelemetry/sdk/trace/span_data.h>
 #include <opentelemetry/sdk/trace/tracer_provider.h>
 #include <opentelemetry/sdk/trace/tracer_provider_factory.h>
+#include <opentelemetry/trace/context.h>
 #include <opentelemetry/trace/span.h>
+#include <opentelemetry/trace/span_context.h>
 #include <opentelemetry/trace/span_id.h>
 #include <opentelemetry/trace/span_metadata.h>
 #include <opentelemetry/trace/span_startoptions.h>
 #include <opentelemetry/trace/trace_id.h>
 #include <opentelemetry/trace/tracer.h>
 
+#include <array>
 #include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <memory>
-#include <optional>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -54,7 +69,9 @@ namespace otel_memory = opentelemetry::exporter::memory;
  * Reports every trace category as enabled and creates spans through an SDK
  * TracerProvider whose SimpleSpanProcessor forwards ended spans to an
  * InMemorySpanExporter, so a test can read the exact exported SpanData
- * (trace id, span id, parent id, name).
+ * (trace id, span id, parent id, name). The provider is built with a
+ * DeterministicIdGenerator so PendingTraceId can pin the trace_id of a
+ * forced-root span.
  *
  * Inheritance:
  *
@@ -81,16 +98,19 @@ public:
         // Factory populates spanData_ with the exporter's shared buffer.
         auto exporter = otel_memory::InMemorySpanExporterFactory::Create(spanData_);
         auto processor = otel_sdk_trace::SimpleSpanProcessorFactory::Create(std::move(exporter));
+        // Install the DeterministicIdGenerator (4-arg overload) so a
+        // PendingTraceId can pin a forced-root span's trace_id in tests.
         provider_ = otel_sdk_trace::TracerProviderFactory::Create(
             std::move(processor),
             opentelemetry::sdk::resource::Resource::Create({}),
-            otel_sdk_trace::AlwaysOnSamplerFactory::Create());
+            otel_sdk_trace::AlwaysOnSamplerFactory::Create(),
+            std::make_unique<DeterministicIdGenerator>());
     }
 
     /**
      * @return The exporter's span buffer (drained by GetSpans()).
      */
-    std::shared_ptr<otel_memory::InMemorySpanData>
+    [[nodiscard]] std::shared_ptr<otel_memory::InMemorySpanData>
     spanData() const
     {
         return spanData_;
@@ -227,6 +247,20 @@ countSpans(
 }
 
 /**
+ * Build the 16-byte deterministic trace_id used by the generator tests
+ * (bytes 1..16). Kept out of line so every generator test pins the same id.
+ * @return The fixed 16-byte trace_id {1, 2, ..., 16}.
+ */
+std::array<std::uint8_t, 16>
+makeTraceIdBytes()
+{
+    std::array<std::uint8_t, 16> h{};
+    for (int i = 0; i < 16; ++i)
+        h[i] = static_cast<std::uint8_t>(i + 1);
+    return h;
+}
+
+/**
  * Installs a TestTelemetry as the global instance for each test and clears it
  * afterwards so the singleton never dangles between cases.
  */
@@ -250,7 +284,7 @@ protected:
     /**
      * @return The exporter's span buffer for the active TestTelemetry.
      */
-    std::shared_ptr<otel_memory::InMemorySpanData>
+    [[nodiscard]] std::shared_ptr<otel_memory::InMemorySpanData>
     spanData() const
     {
         return telemetry_->spanData();
@@ -262,18 +296,18 @@ protected:
     std::unique_ptr<TestTelemetry> telemetry_;
 };
 
-// rootSpan() must ignore the ambient active span and start a brand-new trace.
-TEST_F(SpanGuardScopeTest, rootSpan_ignores_ambient_parent)
+// freshRoot() must ignore the ambient active span and start a brand-new trace.
+TEST_F(SpanGuardScopeTest, spanGuard_freshRoot_is_true_root_ignoring_ambient)
 {
     {
         // Ambient span becomes the active span on this thread.
-        auto ambient = SpanGuard::span(TraceCategory::Rpc, "rpc", "command");
+        ScopedSpanGuard const ambient(TraceCategory::Rpc, "rpc", "command");
         ASSERT_TRUE(static_cast<bool>(ambient));
 
-        // rootSpan must NOT inherit the ambient span as its parent.
-        auto root = SpanGuard::rootSpan(TraceCategory::Peer, "peer", "validation.receive");
-        ASSERT_TRUE(static_cast<bool>(root));
-    }  // root ends first, then ambient -- both on this thread.
+        // freshRoot must NOT inherit the ambient span as its parent.
+        auto r = SpanGuard::freshRoot(TraceCategory::Peer, "peer", "validation.receive");
+        ASSERT_TRUE(static_cast<bool>(r));
+    }  // r ends first, then ambient's scope pops and ambient span ends.
 
     auto spans = spanData()->GetSpans();
     auto* ambient = findSpan(spans, "rpc.command");
@@ -285,34 +319,76 @@ TEST_F(SpanGuardScopeTest, rootSpan_ignores_ambient_parent)
     EXPECT_FALSE(ambient->GetParentSpanId().IsValid());
     EXPECT_TRUE(ambient->GetTraceId().IsValid());
 
-    // The rootSpan has NO parent and lives in a DIFFERENT trace than ambient.
+    // The freshRoot span has NO parent and lives in a DIFFERENT trace.
     EXPECT_FALSE(root->GetParentSpanId().IsValid());
     EXPECT_TRUE(root->GetTraceId().IsValid());
     EXPECT_NE(root->GetTraceId(), ambient->GetTraceId());
 }
 
-// detached() pops the Scope on the origin thread, so ending the guard on
-// another thread leaves the origin thread's context stack clean.
-TEST_F(SpanGuardScopeTest, detached_does_not_corrupt_origin_stack)
+// A ScopedSpanGuard is the ambient active span on its thread the moment it is
+// constructed: a child created while it is alive parents to its span.
+TEST_F(SpanGuardScopeTest, scopedGuard_is_ambient_on_construct)
 {
-    // Scoped guard is active on this (origin) thread.
-    auto guard = SpanGuard::span(TraceCategory::Ledger, "ledger", "build");
-    ASSERT_TRUE(static_cast<bool>(guard));
-
-    // Strip the thread-local Scope here on the origin thread.
-    auto detached = std::move(guard).detached();
-    ASSERT_TRUE(static_cast<bool>(detached));
-
-    // End the detached span on a worker thread.
-    std::thread worker([d = std::move(detached)]() mutable {});
-    worker.join();
-
-    // Back on the origin thread: a new span must be a fresh root, proving the
-    // origin stack top was restored by detached() (not left holding
-    // ledger.build).
+    opentelemetry::trace::SpanId activeId;
     {
-        auto after = SpanGuard::span(TraceCategory::Rpc, "rpc", "command");
-        ASSERT_TRUE(static_cast<bool>(after));
+        ScopedSpanGuard const s(TraceCategory::Rpc, "rpc", "process");
+        ASSERT_TRUE(static_cast<bool>(s));
+
+        // While s is alive it is the active span on this thread's context.
+        auto active =
+            opentelemetry::trace::GetSpan(opentelemetry::context::RuntimeContext::GetCurrent())
+                ->GetContext();
+        ASSERT_TRUE(active.IsValid());
+        activeId = active.span_id();
+
+        // A child created here must parent to s's span, proving s is ambient.
+        auto child = s.childSpan("rpc.dispatch");
+        ASSERT_TRUE(static_cast<bool>(child));
+    }  // child ends first, then s pops its scope and ends.
+
+    auto spans = spanData()->GetSpans();
+    auto* parent = findSpan(spans, "rpc.process");
+    auto* child = findSpan(spans, "rpc.dispatch");
+    ASSERT_NE(parent, nullptr);
+    ASSERT_NE(child, nullptr);
+
+    // The active span observed while s was alive WAS s's span.
+    EXPECT_TRUE(activeId.IsValid());
+    EXPECT_EQ(parent->GetSpanId(), activeId);
+
+    // The child nested under s: same trace, parent = s's span.
+    EXPECT_EQ(child->GetParentSpanId(), parent->GetSpanId());
+    EXPECT_EQ(child->GetTraceId(), parent->GetTraceId());
+}
+
+// operator SpanGuard() && pops the Scope eagerly on the origin thread, so the
+// span is no longer ambient here and the resulting thread-free guard can be
+// ended on a worker thread without corrupting this thread's context stack.
+TEST_F(SpanGuardScopeTest, scopedGuard_conversion_pops_scope_on_this_thread)
+{
+    {
+        ScopedSpanGuard s(TraceCategory::Ledger, "ledger", "build");
+        ASSERT_TRUE(static_cast<bool>(s));
+
+        // Convert to a bare SpanGuard: the scope is popped here, on this thread.
+        SpanGuard bare = std::move(s);
+        ASSERT_TRUE(static_cast<bool>(bare));
+
+        // The scope is gone: no span is active on this thread now.
+        auto active =
+            opentelemetry::trace::GetSpan(opentelemetry::context::RuntimeContext::GetCurrent())
+                ->GetContext();
+        EXPECT_FALSE(active.IsValid());
+
+        // A new ambient span here is a fresh root, NOT nested under build.
+        {
+            ScopedSpanGuard const after(TraceCategory::Rpc, "rpc", "command");
+            ASSERT_TRUE(static_cast<bool>(after));
+        }
+
+        // End the thread-free guard on a worker thread -- no crash.
+        std::thread worker([g = std::move(bare)]() mutable {});
+        worker.join();
     }
 
     auto spans = spanData()->GetSpans();
@@ -321,241 +397,184 @@ TEST_F(SpanGuardScopeTest, detached_does_not_corrupt_origin_stack)
     ASSERT_NE(build, nullptr);
     ASSERT_NE(after, nullptr);
 
-    // 'after' is a new root: zero parent and a different trace than
-    // ledger.build.
+    // The span was exported exactly once, by the worker thread.
+    EXPECT_EQ(countSpans(spans, "ledger.build"), 1u);
+
+    // 'after' did NOT nest under build: fresh root, different trace.
     EXPECT_FALSE(after->GetParentSpanId().IsValid());
     EXPECT_NE(after->GetTraceId(), build->GetTraceId());
 }
 
-// A detached span is ended exactly once, by the worker thread that owns it.
-TEST_F(SpanGuardScopeTest, detached_span_ends_once)
-{
-    auto guard = SpanGuard::span(TraceCategory::Ledger, "ledger", "build");
-    auto detached = std::move(guard).detached();
-    ASSERT_TRUE(static_cast<bool>(detached));
-
-    // Before the worker ends it, the span is still open: nothing exported yet.
-    auto before = spanData()->GetSpans();
-    EXPECT_EQ(countSpans(before, "ledger.build"), 0u);
-
-    // Ending happens once, on the worker thread, when the guard is destroyed.
-    {
-        std::thread worker([d = std::move(detached)]() mutable {});
-        worker.join();
-    }
-
-    auto after = spanData()->GetSpans();
-    EXPECT_EQ(countSpans(after, "ledger.build"), 1u);
-}
-
-// rootSpan().detached() is the combination used at RPC coroutine entry points
-// (e.g. RipplePathFind) that hold a span across a coro yield: the span must be
-// a fresh root AND must not leave a Scope on the worker's context stack.
-TEST_F(SpanGuardScopeTest, root_then_detached_is_root_and_leaves_stack_clean)
+// The SpanGuard produced by the conversion ends the span exactly once: the
+// moved-from ScopedSpanGuard must not re-end it on destruction.
+TEST_F(SpanGuardScopeTest, scopedGuard_conversion_result_ends_span_once)
 {
     {
-        // Ambient span active on this (origin) thread.
-        auto ambient = SpanGuard::span(TraceCategory::Rpc, "rpc", "command");
-        ASSERT_TRUE(static_cast<bool>(ambient));
+        ScopedSpanGuard scoped(TraceCategory::Ledger, "ledger", "build");
+        ASSERT_TRUE(static_cast<bool>(scoped));
 
-        // Fresh root, then detach the Scope on the origin thread.
-        auto req = SpanGuard::rootSpan(TraceCategory::Rpc, "pathfind", "request").detached();
-        ASSERT_TRUE(static_cast<bool>(req));
+        SpanGuard const bare = std::move(scoped);
+        ASSERT_TRUE(static_cast<bool>(bare));
 
-        // End the detached root span on a worker thread (mimics coro resume).
-        std::thread worker([r = std::move(req)]() mutable {});
-        worker.join();
+        // Nothing exported yet: the span is still open.
+        EXPECT_EQ(countSpans(spanData()->GetSpans(), "ledger.build"), 0u);
 
-        // Origin stack must be clean: a new span here is still parented by the
-        // ambient span (proving the detached root did not linger on the stack).
-        {
-            auto child = SpanGuard::span(TraceCategory::Rpc, "rpc", "sub");
-            ASSERT_TRUE(static_cast<bool>(child));
-        }
+        // 'bare' ends the span here on destruction; the moved-from 'scoped'
+        // guard is destroyed too but must NOT end it a second time.
     }
 
     auto spans = spanData()->GetSpans();
-    auto* ambient = findSpan(spans, "rpc.command");
-    auto* req = findSpan(spans, "pathfind.request");
-    auto* child = findSpan(spans, "rpc.sub");
-    ASSERT_NE(ambient, nullptr);
-    ASSERT_NE(req, nullptr);
-    ASSERT_NE(child, nullptr);
-
-    // The rooted-then-detached span has NO parent and a DIFFERENT trace.
-    EXPECT_FALSE(req->GetParentSpanId().IsValid());
-    EXPECT_NE(req->GetTraceId(), ambient->GetTraceId());
-
-    // The detached root did not corrupt the origin stack: 'child' still nests
-    // under the ambient span (same trace, parent = ambient), NOT under req.
-    EXPECT_EQ(child->GetParentSpanId(), ambient->GetSpanId());
-    EXPECT_EQ(child->GetTraceId(), ambient->GetTraceId());
+    // Exactly one export: not zero (the guard still owns the span) and not two
+    // (the moved-from scoped guard does not re-end it).
+    EXPECT_EQ(countSpans(spans, "ledger.build"), 1u);
 }
 
-// Death test guarding the cross-thread scope-leak bug.
+// A forced-root span started while a PendingTraceId is active adopts that
+// pinned 16-byte trace_id and remains a true root (no parent).
+TEST_F(SpanGuardScopeTest, deterministicIdGenerator_forced_root_gets_pending_trace_id)
+{
+    auto const h = makeTraceIdBytes();
+    {
+        PendingTraceId const pending{h};
+        auto rootCtx = opentelemetry::context::Context{opentelemetry::trace::kIsRootSpanKey, true};
+        auto span =
+            telemetry_->startSpan("tx.receive", rootCtx, opentelemetry::trace::SpanKind::kInternal);
+        span->End();
+    }  // ~PendingTraceId asserts the id was consumed.
+
+    auto spans = spanData()->GetSpans();
+    ASSERT_EQ(spans.size(), 1u);
+    // trace_id == the pinned hash.
+    EXPECT_EQ(std::memcmp(spans[0]->GetTraceId().Id().data(), h.data(), 16), 0);
+    // TRUE ROOT: no parent.
+    EXPECT_FALSE(spans[0]->GetParentSpanId().IsValid());
+}
+
+// A forced-root span with NO PendingTraceId gets a random (non-zero) trace_id,
+// never the deterministic hash -- the safety property when no id is pinned.
+TEST_F(SpanGuardScopeTest, deterministicIdGenerator_no_pending_gives_random_root)
+{
+    auto const h = makeTraceIdBytes();
+    {
+        auto rootCtx = opentelemetry::context::Context{opentelemetry::trace::kIsRootSpanKey, true};
+        auto span =
+            telemetry_->startSpan("tx.receive", rootCtx, opentelemetry::trace::SpanKind::kInternal);
+        span->End();
+    }
+
+    auto spans = spanData()->GetSpans();
+    ASSERT_EQ(spans.size(), 1u);
+    // Random root: valid (non-zero) trace_id...
+    EXPECT_TRUE(spans[0]->GetTraceId().IsValid());
+    // ...and NOT the deterministic hash (no pending id leaked in).
+    EXPECT_NE(std::memcmp(spans[0]->GetTraceId().Id().data(), h.data(), 16), 0);
+    EXPECT_FALSE(spans[0]->GetParentSpanId().IsValid());
+}
+
+// SAFETY: an ambient child under a live parent never adopts a pending id. The
+// SDK inherits the parent's trace_id and never calls GenerateTraceId() for the
+// child, so the pinned id stays available -- proven here by a trailing
+// forced-root span that DOES adopt it (which also consumes the id so
+// ~PendingTraceId's consumed-assert holds; see the report for this choice).
+TEST_F(SpanGuardScopeTest, deterministicIdGenerator_ambient_child_ignores_pending)
+{
+    auto const h = makeTraceIdBytes();
+    {
+        // Ambient parent (a random-id root) active on this thread FIRST, before
+        // any id is pinned, so the parent itself does not consume it.
+        ScopedSpanGuard const parent(TraceCategory::Rpc, "rpc", "process");
+        ASSERT_TRUE(static_cast<bool>(parent));
+
+        // Pin the id, then start an ambient child under the live parent.
+        PendingTraceId const pending{h};
+
+        // The child has a valid parent, so the SDK inherits the parent's
+        // trace_id and never calls GenerateTraceId(): the pending id is ignored.
+        {
+            auto child = parent.childSpan("rpc.dispatch");
+            ASSERT_TRUE(static_cast<bool>(child));
+        }
+
+        // Consume the pinned id with a real forced-root span (its intended use),
+        // so ~PendingTraceId sees the id as consumed. Its trace_id == h.
+        {
+            auto rootCtx =
+                opentelemetry::context::Context{opentelemetry::trace::kIsRootSpanKey, true};
+            auto root = telemetry_->startSpan(
+                "tx.receive", rootCtx, opentelemetry::trace::SpanKind::kInternal);
+            root->End();
+        }
+    }  // ~PendingTraceId: consumed == true, assert holds; then parent ends.
+
+    auto spans = spanData()->GetSpans();
+    auto* parent = findSpan(spans, "rpc.process");
+    auto* child = findSpan(spans, "rpc.dispatch");
+    auto* root = findSpan(spans, "tx.receive");
+    ASSERT_NE(parent, nullptr);
+    ASSERT_NE(child, nullptr);
+    ASSERT_NE(root, nullptr);
+
+    // The ambient child inherited the parent's trace and did NOT adopt h.
+    EXPECT_EQ(child->GetTraceId(), parent->GetTraceId());
+    EXPECT_EQ(child->GetParentSpanId(), parent->GetSpanId());
+    EXPECT_NE(std::memcmp(child->GetTraceId().Id().data(), h.data(), 16), 0);
+
+    // The forced-root span DID adopt the pinned id: proof the id was available
+    // the whole time -- the ambient child simply never requested it.
+    EXPECT_EQ(std::memcmp(root->GetTraceId().Id().data(), h.data(), 16), 0);
+    EXPECT_FALSE(root->GetParentSpanId().IsValid());
+}
+
+// Death test guarding the cross-thread scope-leak bug, now on ScopedSpanGuard.
 //
-// This used to be a "negative control": a scoped guard was NOT detached, moved
-// to and destroyed on a worker thread (popping the WRONG thread's stack), and
-// the test then asserted that a later span on the origin thread had SILENTLY
-// inherited the stale span -- proving the corruption happened undetected.
+// A ScopedSpanGuard's Scope is bound to the thread that constructed it, so it
+// must be destroyed on that same thread. ScopedSpanGuard is non-movable, so it
+// cannot be moved into a worker directly; instead we own it through a
+// unique_ptr and move only that pointer to a worker thread. Destroying the
+// pointer there runs ~ScopedSpanGuard on the WRONG thread, which pops the Scope
+// on a foreign context stack -- ~ScopedSpanGuard's owner-thread XRPL_ASSERT
+// turns that silent corruption into a loud abort().
 //
-// SpanGuard::Impl::~Impl now enforces thread affinity with an XRPL_ASSERT: a
-// live scope must be destroyed on the thread that created it. In debug/test
-// builds (NDEBUG unset) XRPL_ASSERT expands to assert(), so the exact sequence
-// above now aborts the process inside the worker thread's destructor instead of
-// corrupting the origin stack. The bug therefore moved from "silently wrong" to
-// "loudly crashes early" -- the intended tradeoff, since a crash is far easier
-// to catch than a corrupted trace hierarchy.
-//
-// The death happens on the WORKER thread (the moved-in guard is destroyed when
-// the worker lambda returns, before worker.join() completes). A failed assert()
-// calls abort(), which raises SIGABRT process-wide regardless of which thread
-// hit it, so EXPECT_DEATH -- which runs the statement in a forked child and
-// checks it dies -- observes the crash. The regex matches the assert message
-// substring rather than the whole line, because the file:line/function prefix
-// glibc prints around it is platform and compiler dependent.
+// The death happens on the WORKER thread (the moved-in unique_ptr is destroyed
+// when the worker lambda's captures are torn down, before worker.join()
+// completes). A failed assert() calls abort(), which raises SIGABRT
+// process-wide regardless of thread, so EXPECT_DEATH -- which runs the
+// statement in a forked child and checks it dies -- observes the crash. The
+// regex matches the assert message substring; the assert message is written as
+// two adjacent string literals in SpanGuard.cpp, so the ".*" bridges the gap
+// between "on" and "constructing".
 //
 // The test is skipped where the assertion cannot fire: under NDEBUG (Release
 // builds) XRPL_ASSERT is a no-op, and under ENABLE_VOIDSTAR a failed assert
 // continues instead of aborting -- in both cases the worker would not crash and
 // EXPECT_DEATH would report a spurious failure.
-TEST_F(SpanGuardScopeTest, non_detached_cross_thread_death_asserts_at_wrong_thread_destroy)
+TEST_F(SpanGuardScopeTest, scopedGuard_cross_thread_death_asserts_at_wrong_thread_destroy)
 {
-    // XRPL_ASSERT only aborts when assertions are live. Under NDEBUG (Release
-    // builds) it expands to assert(), which the C standard strips to a no-op,
-    // so the worker thread destroys the guard without crashing. Under
-    // ENABLE_VOIDSTAR (Antithesis fuzzing) a failed XRPL_ASSERT continues
-    // execution instead of aborting. In either case the process does not die
-    // and EXPECT_DEATH would fail, so skip this test there. The two macros are
-    // mutually exclusive (instrumentation.h #errors on ENABLE_VOIDSTAR+NDEBUG),
-    // but both break the death check, so guard against each.
 #ifdef NDEBUG
     GTEST_SKIP() << "XRPL_ASSERT compiles to a no-op under NDEBUG (Release builds), so the "
                     "cross-thread scope-leak assertion this test exercises does not fire.";
-#elif defined(ENABLE_VOIDSTAR)
+#elifdef ENABLE_VOIDSTAR
     GTEST_SKIP() << "ENABLE_VOIDSTAR continues past a failed XRPL_ASSERT instead of aborting, so "
                     "the cross-thread scope-leak assertion this test exercises does not crash.";
 #else
     EXPECT_DEATH(
         {
-            // Scoped guard is active on this (origin) thread; its Scope is
-            // bound to this thread.
-            auto guard = SpanGuard::span(TraceCategory::Ledger, "ledger", "build");
+            // Scoped guard constructed on THIS thread; its Scope binds here.
+            auto scoped =
+                std::make_unique<ScopedSpanGuard>(TraceCategory::Ledger, "ledger", "build");
 
-            // Move the still-scoped guard to a worker thread WITHOUT detaching.
-            // ~SpanGuard::Impl runs on the worker when the lambda returns and
-            // trips the thread-affinity assertion -> abort().
-            std::thread worker([d = std::move(guard)]() mutable {});
+            // Move only the owning pointer to a worker. ~ScopedSpanGuard runs on
+            // the worker when the lambda's captures are destroyed and trips the
+            // owner-thread assertion -> abort().
+            std::thread worker([s = std::move(scoped)]() mutable {});
             worker.join();
         },
         // The assert message is written as two adjacent string literals in
-        // SpanGuard.cpp; glibc's assert() stringifies the expression source via
-        // the preprocessor '#' operator, keeping both quoted literals with the
+        // SpanGuard.cpp; assert() stringifies the expression source via the
+        // preprocessor '#' operator, keeping both quoted literals with the
         // "\" \"" gap between "on" and "constructing". Match across that gap.
-        ".*scoped guard destroyed on.*constructing thread.*");
+        ".*destroyed on.*constructing thread.*");
 #endif
-}
-
-// detachInPlace(optional&) must detach the live guard the same way the
-// hand-rolled emplace(std::move(*opt).detached()) idiom does: after the call
-// the guard can be moved to and ended on a worker thread without leaving the
-// origin thread's context stack holding it.
-TEST_F(SpanGuardScopeTest, detach_in_place_optional_detaches_active_guard)
-{
-    // Scoped optional guard is active on this (origin) thread.
-    std::optional<SpanGuard> opt = SpanGuard::span(TraceCategory::Ledger, "ledger", "build");
-    ASSERT_TRUE(opt.has_value());
-    ASSERT_TRUE(static_cast<bool>(*opt));
-
-    // Strip the thread-local Scope here on the origin thread via the helper.
-    detachInPlace(opt);
-    ASSERT_TRUE(opt.has_value());
-    ASSERT_TRUE(static_cast<bool>(*opt));
-
-    // End the detached span on a worker thread.
-    std::thread worker([d = std::move(*opt)]() mutable {});
-    worker.join();
-
-    // Back on the origin thread: a new span must be a fresh root, proving the
-    // origin stack top was restored by detachInPlace() (not left holding
-    // ledger.build).
-    {
-        auto after = SpanGuard::span(TraceCategory::Rpc, "rpc", "command");
-        ASSERT_TRUE(static_cast<bool>(after));
-    }
-
-    auto spans = spanData()->GetSpans();
-    auto* build = findSpan(spans, "ledger.build");
-    auto* after = findSpan(spans, "rpc.command");
-    ASSERT_NE(build, nullptr);
-    ASSERT_NE(after, nullptr);
-
-    // 'after' is a new root: zero parent and a different trace than
-    // ledger.build.
-    EXPECT_FALSE(after->GetParentSpanId().IsValid());
-    EXPECT_NE(after->GetTraceId(), build->GetTraceId());
-}
-
-// detachInPlace(optional&) on an empty optional is a no-op: it must not crash,
-// must leave the optional empty, and must export nothing.
-TEST_F(SpanGuardScopeTest, detach_in_place_optional_noop_on_empty)
-{
-    std::optional<SpanGuard> opt;
-    ASSERT_FALSE(opt.has_value());
-
-    detachInPlace(opt);
-
-    // Still empty, no span was created or exported.
-    EXPECT_FALSE(opt.has_value());
-    EXPECT_TRUE(spanData()->GetSpans().empty());
-}
-
-// detachInPlace(shared_ptr) must detach the live guard and return it as a new
-// shared_ptr, so the returned guard can be moved to and ended on a worker
-// thread without corrupting the origin thread's context stack.
-TEST_F(SpanGuardScopeTest, detach_in_place_shared_detaches_active_guard)
-{
-    // Scoped shared guard is active on this (origin) thread.
-    auto span =
-        std::make_shared<SpanGuard>(SpanGuard::span(TraceCategory::Ledger, "ledger", "build"));
-    ASSERT_NE(span, nullptr);
-    ASSERT_TRUE(static_cast<bool>(*span));
-
-    // Strip the thread-local Scope here on the origin thread via the helper.
-    span = detachInPlace(std::move(span));
-    ASSERT_NE(span, nullptr);
-    ASSERT_TRUE(static_cast<bool>(*span));
-
-    // End the detached span on a worker thread.
-    std::thread worker([d = std::move(span)]() mutable {});
-    worker.join();
-
-    // Back on the origin thread: a new span must be a fresh root, proving the
-    // origin stack top was restored by detachInPlace() (not left holding
-    // ledger.build).
-    {
-        auto after = SpanGuard::span(TraceCategory::Rpc, "rpc", "command");
-        ASSERT_TRUE(static_cast<bool>(after));
-    }
-
-    auto spans = spanData()->GetSpans();
-    auto* build = findSpan(spans, "ledger.build");
-    auto* after = findSpan(spans, "rpc.command");
-    ASSERT_NE(build, nullptr);
-    ASSERT_NE(after, nullptr);
-
-    // 'after' is a new root: zero parent and a different trace than
-    // ledger.build.
-    EXPECT_FALSE(after->GetParentSpanId().IsValid());
-    EXPECT_NE(after->GetTraceId(), build->GetTraceId());
-}
-
-// detachInPlace(shared_ptr) on a null pointer is a no-op: it must not crash and
-// must return null unchanged.
-TEST_F(SpanGuardScopeTest, detach_in_place_shared_noop_on_null)
-{
-    auto result = detachInPlace(std::shared_ptr<SpanGuard>{});
-    EXPECT_EQ(result, nullptr);
 }
 
 }  // namespace
