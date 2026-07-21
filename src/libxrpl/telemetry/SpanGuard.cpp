@@ -25,6 +25,7 @@
 
 #include <xrpl/telemetry/SpanGuard.h>
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/Telemetry.h>
 
@@ -44,6 +45,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <typeinfo>
 #include <utility>
 
@@ -90,6 +92,16 @@ struct SpanGuard::Impl
     std::optional<otel_trace::Scope> scope;
 
     /**
+     * Thread that constructed this Impl. Meaningful only when `scope`
+     * holds a value: a Scope is bound to the thread-local context stack
+     * of the thread that pushed it, so popping it (via ~Scope, when
+     * ~Impl runs) on a different thread corrupts that thread's stack.
+     * Checked in ~Impl() and detached() to turn a silent cross-thread
+     * corruption into an assertion failure in debug/test/fuzzing builds.
+     */
+    std::thread::id owner{std::this_thread::get_id()};
+
+    /**
      * Construct a scoped guard: the span is pushed onto this thread's
      * active-context stack for the lifetime of the guard.
      * @param s The span to guard.
@@ -118,6 +130,14 @@ struct SpanGuard::Impl
 
     ~Impl()
     {
+        // A live Scope (scope engaged) must be popped on the thread that
+        // pushed it; ending on any other thread corrupts that thread's
+        // context stack. A detached guard (scope == nullopt) carries no
+        // binding and may be destroyed anywhere, so the check is skipped.
+        XRPL_ASSERT(
+            !scope.has_value() || owner == std::this_thread::get_id(),
+            "xrpl::telemetry::SpanGuard::Impl::~Impl : scoped guard destroyed on "
+            "constructing thread");
         if (span)
             span->End();
     }
@@ -316,6 +336,11 @@ SpanGuard::detached() &&
 {
     if (!impl_)
         return {};
+    // Popping the Scope (below, via impl_.reset()) must happen on the thread
+    // that pushed it; calling detached() elsewhere would pop the wrong stack.
+    XRPL_ASSERT(
+        !impl_->scope.has_value() || impl_->owner == std::this_thread::get_id(),
+        "xrpl::telemetry::SpanGuard::detached : called on constructing thread");
     // Take the span out; the old Impl.span is now null so ~Impl won't End().
     auto s = std::move(impl_->span);
     // Resetting the old Impl destroys its Scope HERE, on the origin thread,
