@@ -33,7 +33,8 @@
  *     | + freshRoot(cat, prefix, name)    [static] |
  *     | + childSpan(name) : SpanGuard              |
  *     | + linkedSpan(name) : SpanGuard             |
- *     | + captureContext() : SpanContext           |
+ *     | + spanContext() : SpanContext              |
+ *     | + threadLocalContext()            [static] |
  *     | + setAttribute(key, value)                 |
  *     | + setOk() / setError(desc)                 |
  *     | + addEvent(name)                           |
@@ -89,10 +90,10 @@
  *     #include <xrpld/rpc/detail/RpcSpanNames.h>
  *     using namespace xrpl::telemetry;
  *
- *     // Thread A: create span and capture context
+ *     // Thread A: create span and capture its own context as parent
  *     auto span = SpanGuard::span(
  *         TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
- *     auto ctx = span.captureContext();
+ *     auto ctx = span.spanContext();
  *
  *     // Thread B: create child with captured context
  *     auto child = SpanGuard::childSpan(rpc_span::op::process, ctx);
@@ -155,8 +156,9 @@
  * span (no Scope), so it never binds to a thread-local context stack
  * and may be moved to and destroyed on any thread. To make a span the
  * ambient parent for child spans on a thread, wrap it in a
- * ScopedSpanGuard. Use captureContext() to propagate the trace
- * context across threads explicitly.
+ * ScopedSpanGuard. Use spanContext() to propagate this span's own
+ * context across threads explicitly, or threadLocalContext() to
+ * snapshot the thread's currently-active context.
  *
  * @note Move semantics: Move construction and move assignment both
  * transfer ownership of the pimpl pointer. There is no Scope to
@@ -189,8 +191,10 @@ enum class TraceCategory { Rpc, Transactions, Consensus, Peer, Ledger };
  * Opaque wrapper for an OTel context snapshot.
  *
  * Used to propagate trace context across threads. Created by
- * SpanGuard::captureContext(), consumed by SpanGuard::childSpan()
- * or SpanGuard::linkedSpan() with an explicit parent/link context.
+ * SpanGuard::spanContext() (the guard's own span) or
+ * SpanGuard::threadLocalContext() (the thread's current context),
+ * consumed by SpanGuard::childSpan() or SpanGuard::linkedSpan()
+ * with an explicit parent/link context.
  */
 class SpanContext
 {
@@ -311,7 +315,7 @@ public:
     /**
      * Create a child span parented to an explicit captured context.
      * @param name       Span name for the child.
-     * @param parentCtx  Context captured via captureContext().
+     * @param parentCtx  Context captured via spanContext().
      * @return A new guard, or null if parentCtx is invalid.
      */
     [[nodiscard]] static SpanGuard
@@ -339,11 +343,29 @@ public:
     // --- Context capture -----------------------------------------------
 
     /**
-     * Snapshot the current thread's OTel context for cross-thread use.
-     * @return An opaque SpanContext, or an invalid one if null guard.
+     * Return a SpanContext referring to THIS guard's own span, for use
+     * as an explicit parent in childSpan(name, ctx) across threads.
+     * Independent of the thread's active span (a SpanGuard is unscoped).
+     * Returns an invalid context if this guard is null.
+     * @return A SpanContext holding this guard's own span.
+     * @note This is NOT the thread's ambient context — use
+     * threadLocalContext() for that.
      */
     [[nodiscard]] SpanContext
-    captureContext() const;
+    spanContext() const;
+
+    /**
+     * Snapshot the calling thread's CURRENTLY-ACTIVE OTel context (the
+     * ambient span on this thread's context stack), for cross-thread
+     * propagation. This is the OpenTelemetry "capture current context"
+     * operation: capture -> pass to another thread -> childSpan(name,
+     * ctx). Unlike spanContext() (which refers to a specific guard's own
+     * span), this reflects whatever span is active on THIS thread right
+     * now, or an invalid context if none is active.
+     * @return A SpanContext holding the thread's current context.
+     */
+    [[nodiscard]] static SpanContext
+    threadLocalContext();
 
     // --- Attribute setters (explicit overloads, no OTel types) ---------
 
@@ -453,7 +475,7 @@ public:
  *     | + linkedSpan(name) : ScopedSpanGuard       |
  *     | + operator SpanGuard() &&    (handoff)     |
  *     | + setAttribute / setOk / setError / ...    |
- *     | + captureContext() / discard()             |
+ *     | + spanContext() / discard()                |
  *     | + operator bool()                          |
  *     +--------------------------------------------+
  *                     |  hides (pimpl)
@@ -559,7 +581,7 @@ public:
      * Create a scoped child span parented to an explicit captured
      * context and activate it on this thread.
      * @param name       Span name for the child.
-     * @param parentCtx  Context captured via captureContext().
+     * @param parentCtx  Context captured via spanContext().
      * @return A new scoped guard, or a null one if parentCtx is invalid.
      */
     [[nodiscard]] static ScopedSpanGuard
@@ -597,11 +619,16 @@ public:
     // --- Context capture -----------------------------------------------
 
     /**
-     * Snapshot the current thread's OTel context for cross-thread use.
-     * @return An opaque SpanContext, or an invalid one if null guard.
+     * Return a SpanContext referring to the owned guard's own span, for
+     * use as an explicit parent in childSpan(name, ctx) across threads.
+     * Forwards to the owned SpanGuard's spanContext(). Returns an invalid
+     * context if this guard is null.
+     * @return A SpanContext holding the owned guard's own span.
+     * @note This is NOT the thread's ambient context — use
+     * SpanGuard::threadLocalContext() for that.
      */
     [[nodiscard]] SpanContext
-    captureContext() const;
+    spanContext() const;
 
     // --- Forwarding methods (delegate to the owned SpanGuard) ----------
 
@@ -730,11 +757,17 @@ public:
     }
 
     [[nodiscard]] SpanContext
-    captureContext() const
+    spanContext() const
     {
         return {};
     }
     // NOLINTEND(readability-convert-member-functions-to-static)
+
+    [[nodiscard]] static SpanContext
+    threadLocalContext()
+    {
+        return {};
+    }
 
     void
     setAttribute(std::string_view, std::string_view)
@@ -834,7 +867,7 @@ public:
     }
 
     [[nodiscard]] SpanContext
-    captureContext() const
+    spanContext() const
     {
         return {};
     }
