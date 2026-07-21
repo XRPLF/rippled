@@ -414,6 +414,14 @@ python .github/scripts/otel-naming/check_otel_naming.py
 See [.github/scripts/otel-naming/README.md](.github/scripts/otel-naming/README.md)
 for the full rule list.
 
+## Adding a new OTel metric
+
+See `src/xrpld/telemetry/MetricMacros.h` for the call-site macros covering every
+OTel instrument kind (Counter, UpDownCounter, Histogram, Gauge, and their
+Observable/async counterparts) and the "Adding a New Metric" section in
+[docs/telemetry-runbook.md](docs/telemetry-runbook.md) for the walkthrough and a
+need-to-macro lookup table.
+
 ## Contracts and instrumentation
 
 We are using [Antithesis](https://antithesis.com/) for continuous fuzzing,
