@@ -2,8 +2,9 @@
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -29,6 +30,7 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <exception>
 #include <functional>
 #include <iostream>
@@ -62,15 +64,15 @@ class WSClientImpl : public WSClient
     {
         auto& log = std::cerr;
         ParsedPort common;
-        parsePort(common, cfg["server"], log);
+        parsePort(common, cfg[Sections::kServer], log);
         auto const ps = v2 ? "ws2" : "ws";
-        for (auto const& name : cfg.section("server").values())
+        for (auto const& name : cfg.section(Sections::kServer).values())
         {
             if (!cfg.exists(name))
                 continue;
             ParsedPort pp;
             parsePort(pp, cfg[name], log);
-            if (pp.protocol.count(ps) == 0)
+            if (!pp.protocol.contains(ps))
                 continue;
             using namespace boost::asio::ip;
             if (pp.ip && pp.ip->is_unspecified())
@@ -171,9 +173,9 @@ public:
                     }));
             ws_.handshake(ep.address().to_string() + ":" + std::to_string(ep.port()), "/");
             ws_.async_read(
-                rb_,
-                boost::asio::bind_executor(
-                    strand_, std::bind(&WSClientImpl::onReadMsg, this, std::placeholders::_1)));
+                rb_, boost::asio::bind_executor(strand_, [this](error_code const& ec, std::size_t) {
+                    onReadMsg(ec);
+                }));
         }
         catch (std::exception&)
         {
@@ -309,9 +311,9 @@ private:
             cv_.notify_all();
         }
         ws_.async_read(
-            rb_,
-            boost::asio::bind_executor(
-                strand_, std::bind(&WSClientImpl::onReadMsg, this, std::placeholders::_1)));
+            rb_, boost::asio::bind_executor(strand_, [this](error_code const& ec, std::size_t) {
+                onReadMsg(ec);
+            }));
     }
 
     // Called when the read op terminates

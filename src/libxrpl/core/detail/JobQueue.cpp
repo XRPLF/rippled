@@ -6,13 +6,13 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobTypeInfo.h>
+#include <xrpl/core/JobTypes.h>
 #include <xrpl/core/LoadEvent.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/json/json_value.h>
 
 #include <algorithm>
 #include <chrono>
-#include <functional>
 #include <memory>
 #include <mutex>
 #include <set>
@@ -35,7 +35,7 @@ JobQueue::JobQueue(
 {
     JLOG(journal_.info()) << "Using " << threadCount << "  threads";
 
-    hook_ = collector_->makeHook(std::bind(&JobQueue::collect, this));
+    hook_ = collector_->makeHook([this] { collect(); });
     jobCount_ = collector_->makeGauge("job_count");
 
     {
@@ -121,7 +121,7 @@ JobQueue::getJobCount(JobType t) const
 {
     std::scoped_lock const lock(mutex_);
 
-    JobDataMap::const_iterator const c = jobData_.find(t);
+    auto const c = jobData_.find(t);
 
     return (c == jobData_.end()) ? 0 : c->second.waiting;
 }
@@ -131,7 +131,7 @@ JobQueue::getJobCountTotal(JobType t) const
 {
     std::scoped_lock const lock(mutex_);
 
-    JobDataMap::const_iterator const c = jobData_.find(t);
+    auto const c = jobData_.find(t);
 
     return (c == jobData_.end()) ? 0 : (c->second.waiting + c->second.running);
 }
@@ -156,7 +156,7 @@ JobQueue::getJobCountGE(JobType t) const
 std::unique_ptr<LoadEvent>
 JobQueue::makeLoadEvent(JobType t, std::string const& name)
 {
-    JobDataMap::iterator const iter(jobData_.find(t));
+    auto const iter = jobData_.find(t);
     XRPL_ASSERT(iter != jobData_.end(), "xrpl::JobQueue::makeLoadEvent : valid job type input");
 
     if (iter == jobData_.end())
@@ -171,7 +171,7 @@ JobQueue::addLoadEvents(JobType t, int count, std::chrono::milliseconds elapsed)
     if (isStopped())
         logicError("JobQueue::addLoadEvents() called after JobQueue stopped");
 
-    JobDataMap::iterator const iter(jobData_.find(t));
+    auto const iter = jobData_.find(t);
     XRPL_ASSERT(iter != jobData_.end(), "xrpl::JobQueue::addLoadEvents : valid job type input");
     iter->second.load().addSamples(count, elapsed);
 }
@@ -249,7 +249,7 @@ JobQueue::rendezvous()
 JobTypeData&
 JobQueue::getJobTypeData(JobType type)
 {
-    JobDataMap::iterator const c(jobData_.find(type));
+    auto const c = jobData_.find(type);
     XRPL_ASSERT(c != jobData_.end(), "xrpl::JobQueue::getJobTypeData : valid job type input");
 
     // NIKB: This is ugly and I hate it. We must remove JtInvalid completely

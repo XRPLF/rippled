@@ -5,8 +5,17 @@ on:
     types:
       - checks_requested
   pull_request:
-    types: [opened, edited, reopened, synchronize, ready_for_review]
-    branches: [develop]
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+      - ready_for_review
+    branches:
+      - develop
+      - "release-*"
+      - "release/*"
+      - "staging/*"
 
 jobs:
   check_title:

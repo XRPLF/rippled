@@ -1,17 +1,26 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
 
 /**
-    Price Oracle is a system that acts as a bridge between
-    a blockchain network and the external world, providing off-chain price data
-    to decentralized applications (dApps) on the blockchain. This implementation
-    conforms to the requirements specified in the XLS-47d.
-
-    The OracleDelete transactor implements the deletion of Oracle objects.
-*/
+ * Price Oracle is a system that acts as a bridge between
+ * a blockchain network and the external world, providing off-chain price data
+ * to decentralized applications (dApps) on the blockchain. This implementation
+ * conforms to the requirements specified in the XLS-47d.
+ *
+ * The OracleDelete transactor implements the deletion of Oracle objects.
+ */
 
 class OracleDelete : public Transactor
 {
@@ -32,10 +41,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -46,11 +52,7 @@ public:
         beast::Journal const& j) override;
 
     static TER
-    deleteOracle(
-        ApplyView& view,
-        std::shared_ptr<SLE> const& sle,
-        AccountID const& account,
-        beast::Journal j);
+    deleteOracle(ApplyView& view, SLE::ref sle, AccountID const& account, beast::Journal j);
 };
 
 }  // namespace xrpl

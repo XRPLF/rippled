@@ -43,9 +43,6 @@ pushd "${DIRECTORY}"
 # Rename the files.
 find cmake -type f -name 'Rippled*.cmake' -exec bash -c 'mv "${1}" "${1/Rippled/Xrpl}"' - {} \;
 find cmake -type f -name 'Ripple*.cmake' -exec bash -c 'mv "${1}" "${1/Ripple/Xrpl}"' - {} \;
-if [ -e cmake/xrpl_add_test.cmake ]; then
-    mv cmake/xrpl_add_test.cmake cmake/XrplAddTest.cmake
-fi
 if [ -e include/xrpl/proto/ripple.proto ]; then
     mv include/xrpl/proto/ripple.proto include/xrpl/proto/xrpl.proto
 fi
@@ -60,7 +57,6 @@ find cmake -type f -name '*.cmake' | while read -r FILE; do
 done
 ${SED_COMMAND} -i -E 's/Rippled?/Xrpl/g' CMakeLists.txt
 ${SED_COMMAND} -i 's/ripple/xrpl/g' CMakeLists.txt
-${SED_COMMAND} -i 's/include(xrpl_add_test)/include(XrplAddTest)/' src/tests/libxrpl/CMakeLists.txt
 ${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' include/xrpl/protocol/messages.h
 ${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' BUILD.md
 ${SED_COMMAND} -i 's/ripple.pb.h/xrpl.pb.h/' BUILD.md

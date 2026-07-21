@@ -69,9 +69,7 @@ Results::add(SuiteResults const& r)
             top.begin(),
             top.end(),
             elapsed,
-            [](run_time const& t1, typename clock_type::duration const& t2) {
-                return t1.second > t2;
-            });
+            [](run_time const& t1, clock_type::duration const& t2) { return t1.second > t2; });
 
         if (iter != top.end())
         {
