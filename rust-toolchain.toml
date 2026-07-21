@@ -1,7 +1,9 @@
-# Rust toolchain pin for rustup-based CI runners and local development.
-# rustup reads this file and installs the pinned toolchain (see the
-# prepare-runner action in XRPLF/actions, which runs `rustup toolchain install`).
-# NOTE: the Nix CI image and development shell ignore this file; its rustc comes from flake.lock.
+# Single source of truth for the Rust toolchain across every environment.
+# - rustup-based CI runners and local dev read this file directly (see the
+#   prepare-runner action in XRPLF/actions, which runs `rustup toolchain install`).
+# - The Nix CI image and dev shell also honour it: rust-overlay reads this file
+#   via `rust-bin.fromRustupToolchainFile` (see nix/packages.nix), so the pinned
+#   toolchain is delivered from the Nix store and locked by flake.lock.
 [toolchain]
 channel = "1.95"
 components = ["rustfmt", "clippy"]

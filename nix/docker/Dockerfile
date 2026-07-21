@@ -12,6 +12,9 @@ COPY nix/packages.nix /tmp/build/nix/packages.nix
 COPY nix/utils.nix /tmp/build/nix/utils.nix
 COPY flake.nix /tmp/build/
 COPY flake.lock /tmp/build/
+# Read by packages.nix (via rust-overlay's fromRustupToolchainFile) to pin the
+# Rust toolchain baked into the CI environment.
+COPY rust-toolchain.toml /tmp/build/
 WORKDIR /tmp/build
 
 FROM builder-source AS builder

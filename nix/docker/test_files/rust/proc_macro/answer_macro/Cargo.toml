@@ -1,0 +1,8 @@
+[package]
+name = "answer_macro"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+proc-macro = true

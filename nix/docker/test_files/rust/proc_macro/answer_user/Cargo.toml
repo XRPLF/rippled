@@ -1,0 +1,8 @@
+[package]
+name = "answer_user"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+answer_macro = { path = "../answer_macro" }
