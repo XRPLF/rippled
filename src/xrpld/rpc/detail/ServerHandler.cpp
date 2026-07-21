@@ -228,8 +228,10 @@ ServerHandler::onHandoff(
         if (!isWs)
             return statusRequestResponse(request, http::status::unauthorized);
 
-        auto span =
-            SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsUpgrade);
+        // Fresh root so each WS upgrade is its own trace, not nested under a
+        // leaked ambient span on a reused coro worker.
+        auto span = ScopedSpanGuard::freshRoot(
+            TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsUpgrade);
         std::shared_ptr<WSSession> ws;
         try
         {
@@ -347,8 +349,9 @@ ServerHandler::onWSMessage(
     auto const size = boost::asio::buffer_size(buffers);
     if (size > RPC::Tuning::kMaxRequestSize || !json::Reader{}.parse(jv, buffers) || !jv.isObject())
     {
-        auto span =
-            SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsMessage);
+        // Fresh root so each WS message is its own trace.
+        auto span = ScopedSpanGuard::freshRoot(
+            TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsMessage);
         span.setError(rpc_span::val::invalidJson);
 
         json::Value jvResult(json::ValueType::Object);
@@ -427,7 +430,9 @@ ServerHandler::processSession(
     std::shared_ptr<JobQueue::Coro> const& coro,
     json::Value const& jv)
 {
-    auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsMessage);
+    // Fresh root so each WS message is its own trace.
+    auto span = ScopedSpanGuard::freshRoot(
+        TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsMessage);
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(journal_))
     {
@@ -583,8 +588,10 @@ ServerHandler::processSession(
     std::shared_ptr<Session> const& session,
     std::shared_ptr<JobQueue::Coro> coro)
 {
-    auto span =
-        SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::httpRequest);
+    // Fresh root so each HTTP request is its own trace, not nested under a
+    // leaked ambient span on a reused coro worker.
+    auto span = ScopedSpanGuard::freshRoot(
+        TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::httpRequest);
 
     bool const ok = processRequest(
         session->port(),
@@ -645,7 +652,8 @@ ServerHandler::processRequest(
     std::string_view forwardedFor,
     std::string_view user)
 {
-    auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
+    // Scoped child: nests under the httpRequest span active on this thread.
+    auto span = ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
     auto rpcJ = app_.getJournal("RPC");
 
     // Tracks whether any failure occurred. Set on every error path (early
