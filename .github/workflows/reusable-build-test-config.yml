@@ -223,11 +223,13 @@ jobs:
           BUILD_TYPE: ${{ inputs.build_type }}
           CMAKE_TARGET: ${{ inputs.cmake_target }}
         run: |
+          set -o pipefail
           cmake \
               --build . \
               --config "${BUILD_TYPE}" \
               --parallel "${BUILD_NPROC}" \
-              --target "${CMAKE_TARGET}"
+              --target "${CMAKE_TARGET}" \
+              2>&1 | tee "${GITHUB_WORKSPACE}/build.log"
 
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}
@@ -322,7 +324,7 @@ jobs:
               PRELOAD=""
           fi
 
-          LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee unittest.log
+          LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee "${GITHUB_WORKSPACE}/unittest.log"
 
       # Smoke-run every benchmark module with a single repetition to confirm the
       # benchmarks still build and execute. This is a correctness check, not a
@@ -341,25 +343,27 @@ jobs:
           done < <(find src/benchmarks -type f -perm -u+x -name 'xrpl.bench.*')
           exit "${rc}"
 
-      - name: Show test failure summary
-        if: ${{ failure() && !inputs.build_only }}
-        env:
-          WORKING_DIR: ${{ runner.os == 'Windows' && format('{0}\{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
+      - name: Show build/test failure summary
+        if: ${{ failure() }}
         run: |
-          if [ ! -d "${WORKING_DIR}" ]; then
-              echo "Working directory '${WORKING_DIR}' does not exist."
-              exit 0
-          fi
+          cd "${GITHUB_WORKSPACE}"
 
-          cd "${WORKING_DIR}"
-
-          if [ ! -f unittest.log ]; then
-              echo "unittest.log not found; embedded tests may not have run."
-              exit 0
-          fi
-
-          if ! grep -E "failed" unittest.log; then
-              echo "Log present but no failure lines found in unittest.log."
+          if [ -f unittest.log ]; then
+              if ! grep -E "failed" unittest.log | grep -vE "^I[0-9]|^[0-9]+> (ERR:|FTL:)"; then
+                  echo "unittest.log present but no failure lines found."
+              fi
+          elif [ -f build.log ]; then
+              # GCC/Clang emit "error:" (covers "fatal error:"); MSVC emits
+              # "error C####:", "error LNK####:", and "fatal error LNK####:".
+              # -A6 prints the lines that follow each match (source line, caret,
+              # notes, and the "N errors generated" tally) to capture the whole
+              # diagnostic block.
+              if ! grep -E -A6 "error:|error C[0-9]{4}|error LNK[0-9]{4}|fatal error" build.log; then
+                  echo "build.log present but no compile errors found."
+              fi
+          else
+              echo "unittest.log/build.log not found; something went wrong."
+              exit 1
           fi
       - name: Debug failure (Linux)
         if: ${{ failure() && runner.os == 'Linux' && !inputs.build_only }}
