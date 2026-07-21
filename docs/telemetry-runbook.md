@@ -669,9 +669,10 @@ Use the call-site macros in `src/xrpld/telemetry/MetricMacros.h` -- no
 // Monotonic counter:
 XRPL_METRIC_COUNTER_INC(app_, "my_new_thing_total", "Description of what this counts");
 
-// Value that can go up and down, e.g. in-flight work:
-XRPL_METRIC_UPDOWN_ADD(app_, "my_in_flight_total", "Currently executing", 1);   // on start
-XRPL_METRIC_UPDOWN_ADD(app_, "my_in_flight_total", "Currently executing", -1);  // on finish
+// Value that can go up and down, e.g. in-flight work (no _total suffix -- that
+// is reserved for monotonic counters; an UpDownCounter is a current value):
+XRPL_METRIC_UPDOWN_ADD(app_, "my_in_flight_requests", "Currently executing", 1);   // on start
+XRPL_METRIC_UPDOWN_ADD(app_, "my_in_flight_requests", "Currently executing", -1);  // on finish
 
 // Sampled from your own state, on the OTel export timer (register ONCE, in init code):
 XRPL_METRIC_OBSERVABLE_GAUGE_REGISTER(app_, "my_thing_size", "Current size",
