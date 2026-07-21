@@ -812,6 +812,11 @@ struct Version
 {
     std::string_view name;
     std::string_view version;
+
+    Version(std::string_view theName, std::string_view theVersion)
+        : name{theName}, version{theVersion}
+    {
+    }
 };
 
 uint32_t
@@ -912,9 +917,7 @@ extractVersionInfo(Bytes const& wasmCode)
         if (section.name == kCommonLib || section.name == kEscrowLib)
         {
             versions.emplace_back(
-                Version{
-                    .name = section.name,
-                    .version = std::string_view{section.payload.data(), section.payload.size()}});
+                section.name, std::string_view{section.payload.data(), section.payload.size()});
         }
 
         // Just read until we have found all the information we are looking for.
