@@ -292,17 +292,27 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
 // ===== Context capture =====================================================
 
 SpanContext
-SpanGuard::captureContext() const
+SpanGuard::spanContext() const
 {
     if (!impl_ || !impl_->span)
         return {};
-    // Capture THIS guard's own span, not the thread's ambient span. A
+    // Refer to THIS guard's own span, not the thread's ambient span. A
     // SpanGuard is unscoped (never pushed onto the thread-local stack), so
     // RuntimeContext::GetCurrent() would return an unrelated ambient span.
-    // Building the context from impl_->span makes captureContext() correct
+    // Building the context from impl_->span makes spanContext() correct
     // for every caller regardless of scoping, and lets childSpan(name, ctx)
     // parent explicitly to this span across threads.
     auto ctx = opentelemetry::context::Context{}.SetValue(otel_trace::kSpanKey, impl_->span);
+    return SpanContext(std::make_shared<SpanContext::Impl>(std::move(ctx)));
+}
+
+SpanContext
+SpanGuard::threadLocalContext()
+{
+    // Snapshot whatever span is currently active on THIS thread's context
+    // stack (the ambient context), independent of any guard. This is the
+    // OTel "capture current context" operation used for propagation.
+    auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
     return SpanContext(std::make_shared<SpanContext::Impl>(std::move(ctx)));
 }
 
@@ -520,9 +530,9 @@ operator SpanGuard() &&
 // ===== ScopedSpanGuard context capture =====================================
 
 SpanContext
-ScopedSpanGuard::captureContext() const
+ScopedSpanGuard::spanContext() const
 {
-    return impl_->guard.captureContext();
+    return impl_->guard.spanContext();
 }
 
 // ===== ScopedSpanGuard forwarding methods ==================================

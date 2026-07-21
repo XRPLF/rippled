@@ -58,8 +58,8 @@
  *
  * 3. Cross-thread context propagation:
  * @code
- * // Thread A: capture the active context while span is in scope
- * auto ctx = parentGuard.captureContext();
+ * // Thread A: take a handle to the parent span's own context
+ * auto ctx = parentGuard.spanContext();
  *
  * // Thread B: create child span with explicit parent
  * auto child = SpanGuard::childSpan("async.work", ctx);
