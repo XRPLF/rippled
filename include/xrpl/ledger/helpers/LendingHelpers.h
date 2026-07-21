@@ -263,10 +263,11 @@ constructLoanState(
     Number const& principalOutstanding,
     Number const& managementFeeOutstanding);
 
-// Constructs a valid LoanState object from a Loan object, which always has
-// rounded values
+// Overload of constructLoanState() that reads the three tracked fields
+// directly from a Loan ledger object, which always holds rounded values,
+// rather than taking them as separate Number arguments.
 LoanState
-constructRoundedLoanState(SLE::const_ref loan);
+constructLoanState(SLE::const_ref loan);
 
 Number
 computeManagementFee(
