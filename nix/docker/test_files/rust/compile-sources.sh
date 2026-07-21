@@ -41,21 +41,12 @@ compile panic
 compile overflow "-C overflow-checks=on"
 
 # Build a Cargo workspace whose binary crate (`answer_user`) uses a function-like
-# proc macro defined by a sibling proc-macro crate (`answer_macro`). Compiling
-# the user crate forces rustc to *load* the proc-macro dylib at build time —
-# exactly the step that regresses to "E0463 can't find crate for <proc-macro>"
-# when the toolchain's libstd isn't resolvable for proc-macro dylibs. The plain
-# `rustc` sources above only build executables (static std), so they never
-# exercise this path; the wasmi C-API build does, which is why it broke. The
-# cargo profile is irrelevant to this check — a proc-macro is always built as a
-# host dylib and loaded regardless — so we use the default profile. Depends only
-# on path deps + the built-in `proc_macro` crate, so `--offline` needs no
-# network. Sticks to the tools the other steps already rely on (no sed/mktemp)
-# so it runs on every base image.
+# proc macro from a sibling proc-macro crate (`echo_macro`). Compiling the user
+# crate forces rustc to *load* the proc-macro dylib at build time — the step that
+# regresses to "E0463 can't find crate for <proc-macro>" when the toolchain's
+# libstd isn't resolvable for proc-macro dylibs. Depends only on path deps + the
+# built-in `proc_macro` crate, so `--offline` needs no network.
 function compile_proc_macro() {
-    # `sources` sibling; the proc-macro is built as a host dylib and loaded
-    # during compilation regardless of --target, so we omit it (and the host
-    # triple it would require).
     local proj="${src_dir}/../proc_macro"
 
     echo "=== Building proc-macro workspace (cargo) ==="

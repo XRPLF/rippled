@@ -3,12 +3,12 @@
 version = 4
 
 [[package]]
-name = "answer_macro"
-version = "0.0.0"
-
-[[package]]
 name = "answer_user"
 version = "0.0.0"
 dependencies = [
- "answer_macro",
+ "echo_macro",
 ]
+
+[[package]]
+name = "echo_macro"
+version = "0.0.0"

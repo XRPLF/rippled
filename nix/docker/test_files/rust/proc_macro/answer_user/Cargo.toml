@@ -5,4 +5,4 @@ edition = "2021"
 publish = false
 
 [dependencies]
-answer_macro = { path = "../answer_macro" }
+echo_macro = { path = "../echo_macro" }

@@ -1,4 +1,4 @@
-# Minimal two-crate workspace for the proc-macro smoke test. `answer_macro` is a
+# Minimal two-crate workspace for the proc-macro smoke test. `echo_macro` is a
 # proc-macro crate (a dylib); `answer_user` uses it. Building `answer_user`
 # forces rustc to load that dylib at compile time — the step that fails with
 # "E0463 can't find crate for <proc-macro>" if the toolchain's libstd isn't
@@ -6,4 +6,4 @@
 # the built-in `proc_macro` crate, so `cargo build --offline` needs no network.
 [workspace]
 resolver = "2"
-members = ["answer_macro", "answer_user"]
+members = ["echo_macro", "answer_user"]
