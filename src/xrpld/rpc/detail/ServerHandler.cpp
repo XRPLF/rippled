@@ -665,7 +665,10 @@ ServerHandler::processRequest(
     std::string_view forwardedFor,
     std::string_view user)
 {
-    // Scoped child: nests under the httpRequest span active on this thread.
+    // Scoped child of rpc.http_request. Safe to hold across the coroutine
+    // yield in doRipplePathFind: the coro-aware context storage moves this
+    // scope with the coroutine on resume (it is never stranded on a worker's
+    // thread-local stack), so nesting and log-trace correlation both hold.
     auto span = ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
     auto rpcJ = app_.getJournal("RPC");
 
