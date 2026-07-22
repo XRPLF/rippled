@@ -604,7 +604,7 @@ class CanCvtToNotTEC<TEScodes> : public std::true_type
 {
 };
 
-using NotTEC = TERSubset<CanCvtToNotTEC>;
+using NotTECRaw = TERSubset<CanCvtToNotTEC>;
 
 //------------------------------------------------------------------------------
 
@@ -639,7 +639,7 @@ class CanCvtToTER<TECcodes> : public std::true_type
 {
 };
 template <>
-class CanCvtToTER<NotTEC> : public std::true_type
+class CanCvtToTER<NotTECRaw> : public std::true_type
 {
 };
 
@@ -653,67 +653,90 @@ std::string
 transHuman(TERRaw code);
 
 //------------------------------------------------------------------------------
-// TER: a transaction result code paired with a human-readable reason string.
+// TERBase<RawType, Trait>: shared implementation for TER and NotTEC.
+//
+// RawType – the underlying plain-integer subset (TERRaw or NotTECRaw).
+// Trait   – the trait class restricting which TE*codes values are accepted.
 //
 // When no reason is supplied the standard description from transHuman() is used
-// automatically, so existing "return tesSUCCESS;" and "return tecNO_DST;"
-// call sites continue to compile and gain a default reason for free.
+// automatically, so existing bare return statements compile unchanged:
+//   return tesSUCCESS;   // in a TER-returning function
+//   return temMALFORMED; // in a NotTEC-returning preflight
 //
 // To attach a more specific reason at a particular return site write:
 //   return {tecNO_DST, "destination account has been deleted"};
+//   return {temMALFORMED, "SignerEntries must be present for a non-zero quorum"};
 //
-struct TER
+template <typename RawType, template <typename> class Trait>
+struct TERBase
 {
-    TERRaw code;
+    RawType code;
     std::string reason;
 
-    // Default-construct to tesSUCCESS with its standard description.
-    TER() : code(tesSUCCESS), reason(transHuman(TERRaw{tesSUCCESS}))
+    // Default-construct to tesSUCCESS.
+    TERBase() : code(tesSUCCESS), reason(transHuman(TERRaw{code}))
     {
     }
 
-    TER(TER const&) = default;
-    TER(TER&&) = default;
-    TER&
-    operator=(TER const&) = default;
-    TER&
-    operator=(TER&&) = default;
+    TERBase(TERBase const&) = default;
+    TERBase(TERBase&&) = default;
+    TERBase&
+    operator=(TERBase const&) = default;
+    TERBase&
+    operator=(TERBase&&) = default;
 
-    // --- construction from TERRaw ---
+    // --- construction from RawType ---
 
     // Without explicit reason: populate from transHuman.
-    TER(TERRaw c) : code(c), reason(transHuman(c))  // NOLINT(google-explicit-constructor)
+    TERBase(RawType c)  // NOLINT(google-explicit-constructor)
+        : code(c), reason(transHuman(TERRaw{code}))
     {
     }
 
     // With explicit reason.
-    TER(TERRaw c, std::string r) : code(c), reason(std::move(r))
+    TERBase(RawType c, std::string r) : code(c), reason(std::move(r))
     {
     }
 
-    // --- construction from any TE*codes enum or NotTEC ---
+    // --- construction from any TE*codes enum satisfying Trait ---
 
     // Without explicit reason: populate from transHuman.
     template <typename T>
-    TER(T c)  // NOLINT(google-explicit-constructor)
-        requires(CanCvtToTER<std::remove_cv_t<std::remove_reference_t<T>>>::value)
-        : code(c), reason(transHuman(TERRaw{c}))
+    TERBase(T c)  // NOLINT(google-explicit-constructor)
+        requires(Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value)
+        : code(c), reason(transHuman(TERRaw{code}))
     {
     }
 
     // With explicit reason.
     template <typename T>
-    TER(T c, std::string r)
-        requires(CanCvtToTER<std::remove_cv_t<std::remove_reference_t<T>>>::value)
+    TERBase(T c, std::string r)
+        requires(Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value)
         : code(c), reason(std::move(r))
     {
     }
 
+    // --- cross-construction from a compatible TERBase specialization ---
+    // Carries the reason string across (e.g. NotTEC → TER preserves a
+    // custom reason set during preflight).
+    template <typename OtherRaw, template <typename> class OtherTrait>
+    TERBase(TERBase<OtherRaw, OtherTrait> const& other)  // NOLINT(google-explicit-constructor)
+        requires(Trait<OtherRaw>::value)
+        : code(other.code), reason(other.reason)
+    {
+    }
+
     // Build from a raw integer (used by transCode).
-    static TER
+    static TERBase
     fromInt(int from)
     {
-        return TER(TERRaw::fromInt(from));
+        return TERBase(RawType::fromInt(from));
+    }
+
+    // Implicit conversion to RawType for backward compatibility.
+    operator RawType() const  // NOLINT(google-explicit-constructor)
+    {
+        return code;
     }
 
     // True when the code is anything other than tesSUCCESS.
@@ -729,27 +752,39 @@ struct TER
         return json::Value{TERtoInt(code)};
     }
 
-    // Allow implicit conversion to TERRaw for backward compatibility with
-    // functions that now take TERRaw (like transResultInfo, transToken, etc).
-    operator TERRaw() const  // NOLINT(google-explicit-constructor)
-    {
-        return code;
-    }
-
     friend std::ostream&
-    operator<<(std::ostream& os, TER const& rhs)
+    operator<<(std::ostream& os, TERBase const& rhs)
     {
         return os << TERtoInt(rhs.code);
     }
 };
 
-// Expose the underlying integer so the existing template comparison operators
-// (operator==, !=, <, <=, >, >=) continue to work with TER values.
+// TER    – full result code for apply-phase transactors (all TE*codes).
+using TER = TERBase<TERRaw, CanCvtToTER>;
+
+// NotTEC – result code for preflight functions (tel*, tem*, tef*, ter*, tes*;
+//           excludes tec* to prevent fee charging without a valid signature).
+using NotTEC = TERBase<NotTECRaw, CanCvtToNotTEC>;
+
+// Expose underlying integers for the comparison operator templates.
 inline TERUnderlyingType
 TERtoInt(TER const& v)
 {
     return TERtoInt(v.code);
 }
+
+inline TERUnderlyingType
+TERtoInt(NotTEC const& v)
+{
+    return TERtoInt(v.code);
+}
+
+// Allow TERRaw (and therefore transHuman/transToken/transResultInfo) to accept
+// a NotTEC directly, enabling one-step implicit conversion via TERtoInt(NotTEC).
+template <>
+class CanCvtToTER<NotTEC> : public std::true_type
+{
+};
 
 //------------------------------------------------------------------------------
 
