@@ -763,5 +763,5 @@
   },
   "title": "Overlay Traffic Detail",
   "uid": "overlay-traffic-detail",
-  "refresh": "10s"
+  "refresh": "30s"
 }

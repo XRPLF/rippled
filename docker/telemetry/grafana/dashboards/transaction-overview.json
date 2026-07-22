@@ -1105,6 +1105,6 @@
   },
   "title": "Transaction Overview",
   "uid": "transaction-overview",
-  "refresh": "10s",
+  "refresh": "30s",
   "description": "What this shows: Transaction flow through this node: receipt, processing, results, per-stage timing, and queue behavior.  \u2014  Use it to: Trace transactions from arrival to ledger, and locate stalls in processing or the queue."
 }

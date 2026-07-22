@@ -569,5 +569,5 @@
   },
   "title": "Peer Quality",
   "uid": "peer-quality",
-  "refresh": "10s"
+  "refresh": "30s"
 }

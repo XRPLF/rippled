@@ -1005,5 +1005,5 @@
   },
   "title": "Ledger Data & Sync",
   "uid": "ledger-data-sync",
-  "refresh": "10s"
+  "refresh": "30s"
 }

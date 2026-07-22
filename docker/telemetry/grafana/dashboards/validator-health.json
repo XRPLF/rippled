@@ -1144,5 +1144,5 @@
   },
   "title": "Validator Health",
   "uid": "validator-health",
-  "refresh": "10s"
+  "refresh": "30s"
 }

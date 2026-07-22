@@ -491,5 +491,5 @@
   },
   "title": "Peer Network",
   "uid": "peer-network",
-  "refresh": "10s"
+  "refresh": "30s"
 }

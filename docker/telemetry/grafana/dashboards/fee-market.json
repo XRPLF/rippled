@@ -600,5 +600,5 @@
   "title": "Fee Market & TxQ",
   "uid": "fee-market",
   "version": 1,
-  "refresh": "10s"
+  "refresh": "30s"
 }

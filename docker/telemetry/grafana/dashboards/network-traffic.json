@@ -984,5 +984,5 @@
   },
   "title": "Network Traffic",
   "uid": "network-traffic",
-  "refresh": "10s"
+  "refresh": "30s"
 }

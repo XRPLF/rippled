@@ -790,5 +790,5 @@
   },
   "title": "RPC & Pathfinding",
   "uid": "rpc-pathfinding",
-  "refresh": "10s"
+  "refresh": "30s"
 }

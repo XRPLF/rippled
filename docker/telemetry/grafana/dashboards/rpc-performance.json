@@ -1110,6 +1110,6 @@
   },
   "title": "RPC Performance",
   "uid": "rpc-performance",
-  "refresh": "10s",
+  "refresh": "30s",
   "description": "What this shows: Per-command and per-method RPC performance: call rates, error rates, and latency distributions.  \u2014  Use it to: Identify slow or failing RPC commands and track client-facing request latency."
 }
