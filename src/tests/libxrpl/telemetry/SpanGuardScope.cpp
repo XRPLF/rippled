@@ -6,11 +6,12 @@
 //    OTel thread-local context stack, so it may be moved to and ended on any
 //    thread. SpanGuard::freshRoot() starts a brand-new trace root, ignoring
 //    the ambient active span.
-//  - ScopedSpanGuard is scoped and thread-bound: it also pushes an OTel Scope
-//    so the span is the ambient parent on the constructing thread. Its
-//    `operator SpanGuard() &&` pops that Scope eagerly on the origin thread and
-//    yields a thread-free SpanGuard; destroying it on another thread trips an
-//    owner-thread assertion.
+//  - ScopedSpanGuard is scoped and store-bound: it also pushes an OTel Scope
+//    so the span is the ambient parent on the constructing context store (the
+//    thread's own store, or a coroutine's store). Its `operator SpanGuard() &&`
+//    pops that Scope eagerly on the origin store and yields a thread-free
+//    SpanGuard; destroying it while a different store is active trips an
+//    owner-store assertion.
 //  - DeterministicIdGenerator (installed by the test TracerProvider) mints a
 //    caller-pinned trace_id for a forced-root span. PendingTraceId pins the id
 //    for one root span; an ambient child under a live parent never adopts it.
@@ -21,6 +22,8 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
+#include <xrpl/basics/LocalValue.h>
+#include <xrpl/telemetry/CoroAwareContextStorage.h>
 #include <xrpl/telemetry/DeterministicIdGenerator.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/Telemetry.h>
@@ -263,6 +266,17 @@ makeTraceIdBytes()
 /**
  * Installs a TestTelemetry as the global instance for each test and clears it
  * afterwards so the singleton never dangles between cases.
+ *
+ * The fixture also installs a CoroAwareContextStorage as the process-global
+ * OTel runtime-context storage. That storage backs the ambient-context stack
+ * with an xrpl::LocalValue, which is what makes a ScopedSpanGuard's Scope live
+ * in the ACTIVE store (thread or coroutine) rather than a plain thread_local.
+ * The store-swap and activate() tests depend on this to observe the ambient
+ * context move with the store.
+ *
+ * @note SetRuntimeContextStorage is process-global. Re-installing it in every
+ * SetUp is idempotent (last writer wins) and safe because GTests run serially;
+ * a fresh storage per test keeps the coro/thread context stacks isolated.
  */
 class SpanGuardScopeTest : public ::testing::Test
 {
@@ -272,6 +286,13 @@ protected:
     {
         telemetry_ = std::make_unique<TestTelemetry>();
         Telemetry::setInstance(telemetry_.get());
+
+        // Back the OTel ambient context with an xrpl::LocalValue store so a
+        // scope follows the active store, not a bare thread_local. Installed
+        // before any span is created in the test body (SDK requirement).
+        storage_ = opentelemetry::nostd::shared_ptr<opentelemetry::context::RuntimeContextStorage>(
+            new CoroAwareContextStorage());
+        opentelemetry::context::RuntimeContext::SetRuntimeContextStorage(storage_);
     }
 
     void
@@ -294,6 +315,13 @@ protected:
      * The in-memory Telemetry installed for the duration of a test.
      */
     std::unique_ptr<TestTelemetry> telemetry_;
+
+    /**
+     * The coro-aware runtime-context storage installed for the test. Kept
+     * alive by the fixture so the process-global storage pointer stays valid
+     * for the test body; replaced each SetUp (see class note).
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::context::RuntimeContextStorage> storage_;
 };
 
 // freshRoot() must ignore the ambient active span and start a brand-new trace.
@@ -429,6 +457,115 @@ TEST_F(SpanGuardScopeTest, scopedGuard_conversion_result_ends_span_once)
     EXPECT_EQ(countSpans(spans, "ledger.build"), 1u);
 }
 
+// A ScopedSpanGuard's scope lives in the ACTIVE LocalValue store, and the
+// coro-aware storage makes the ambient context follow that store. This
+// simulates a coroutine that yields (its store swapped out for the worker's
+// own) then resumes on another worker (store swapped back in): the span must be
+// hidden while off-store, visible again on resume, and pop cleanly under the
+// same store it was pushed on -- so the owner-store assertion never trips.
+//
+// Fails without CoroAwareContextStorage: OpenTelemetry's default thread-local
+// stack ignores the LocalValue swap, so the span would stay visible off-store
+// (the EXPECT_NE below would fail). Passes only because the fixture installs the
+// coro-aware storage that binds the ambient stack to the active store.
+TEST_F(SpanGuardScopeTest, scopedGuard_survives_localvalue_store_swap)
+{
+    namespace ctx = opentelemetry::context;
+    namespace trc = opentelemetry::trace;
+
+    // Stand-in stores for the coroutine and a worker thread's own store. Both
+    // are onCoro=true so LocalValues::cleanup() never deletes these stack
+    // objects. Keeping a stack store active across every GetCurrent() call below
+    // stops LocalValue from materializing (then leaking) a heap thread-store.
+    xrpl::detail::LocalValues coroStore;
+    xrpl::detail::LocalValues workerStore;
+
+    // Detach (do NOT delete) the fixture's active store, run on the coro store,
+    // and remember the original so teardown gets it back.
+    auto* saved = xrpl::detail::getLocalValues().release();
+    xrpl::detail::getLocalValues().reset(&coroStore);
+
+    trc::SpanContext captured = trc::SpanContext::GetInvalid();
+    {
+        ScopedSpanGuard const span(TraceCategory::Rpc, "rpc", "process");
+        ASSERT_TRUE(static_cast<bool>(span));
+        auto active = trc::GetSpan(ctx::RuntimeContext::GetCurrent())->GetContext();
+        ASSERT_TRUE(active.IsValid());
+        captured = active;
+
+        // Yield: swap the coro store OUT, the worker's own store IN.
+        xrpl::detail::getLocalValues().release();
+        xrpl::detail::getLocalValues().reset(&workerStore);
+        auto offCoro = trc::GetSpan(ctx::RuntimeContext::GetCurrent())->GetContext();
+        EXPECT_FALSE(offCoro.IsValid());                   // no ambient span off-coro
+        EXPECT_NE(offCoro.span_id(), captured.span_id());  // span NOT visible
+
+        // Resume on another worker: swap the coro store back IN.
+        xrpl::detail::getLocalValues().release();
+        xrpl::detail::getLocalValues().reset(&coroStore);
+        auto resumed = trc::GetSpan(ctx::RuntimeContext::GetCurrent())->GetContext();
+        EXPECT_TRUE(resumed.IsValid());                    // ambient again
+        EXPECT_EQ(resumed.span_id(), captured.span_id());  // same span visible
+    }  // ~ScopedSpanGuard pops from coroStore (its owner store active) -- no assert
+
+    // The scope popped cleanly: the coro store's stack is empty again.
+    auto afterPop = trc::GetSpan(ctx::RuntimeContext::GetCurrent());
+    EXPECT_FALSE(afterPop->GetContext().IsValid());
+
+    // Restore (re-own) the fixture's store for teardown before any stack store
+    // leaves scope, so the thread pointer never dangles.
+    xrpl::detail::getLocalValues().release();
+    xrpl::detail::getLocalValues().reset(saved);
+
+    // The span ended exactly once, when the scope popped on resume.
+    EXPECT_EQ(countSpans(spanData()->GetSpans(), "rpc.process"), 1u);
+}
+
+// SpanGuard::activate() makes an already-owned span the ambient context for the
+// activation's lifetime WITHOUT owning or ending it: before activate() the span
+// is not ambient, during it the span is the current context, and after it the
+// prior (empty) context is restored. ~ScopedActivation must NOT end the span --
+// the owning guard ends it exactly once. Identity is proved by matching the
+// ambient span_id seen during activation to the single exported span.
+TEST_F(SpanGuardScopeTest, activate_sets_ambient_without_owning)
+{
+    namespace ctx = opentelemetry::context;
+    namespace trc = opentelemetry::trace;
+
+    auto guard = SpanGuard::freshRoot(TraceCategory::Transactions, "tx", "process");
+    ASSERT_TRUE(static_cast<bool>(guard));
+
+    // Unscoped: the guard's span is NOT ambient before activate().
+    EXPECT_FALSE(trc::GetSpan(ctx::RuntimeContext::GetCurrent())->GetContext().IsValid());
+
+    trc::SpanId activeId;
+    {
+        auto activation = guard.activate();
+        auto active = trc::GetSpan(ctx::RuntimeContext::GetCurrent())->GetContext();
+        EXPECT_TRUE(active.IsValid());  // now ambient
+        activeId = active.span_id();
+    }  // ~ScopedActivation pops the scope; it does NOT end the span.
+
+    // A valid ambient span was observed while the activation was live.
+    EXPECT_TRUE(activeId.IsValid());
+
+    // Prior context restored: no ambient span after the activation drops.
+    EXPECT_FALSE(trc::GetSpan(ctx::RuntimeContext::GetCurrent())->GetContext().IsValid());
+
+    // Non-owning: the activation did NOT end the span, so nothing is exported.
+    EXPECT_EQ(countSpans(spanData()->GetSpans(), "tx.process"), 0u);
+
+    // Ending the OWNING guard exports the span exactly once.
+    guard = SpanGuard{};
+    auto spans = spanData()->GetSpans();
+    EXPECT_EQ(countSpans(spans, "tx.process"), 1u);
+
+    // The span made ambient during activation WAS the guard's own span.
+    auto* txSpan = findSpan(spans, "tx.process");
+    ASSERT_NE(txSpan, nullptr);
+    EXPECT_EQ(txSpan->GetSpanId(), activeId);
+}
+
 // A forced-root span started while a PendingTraceId is active adopts that
 // pinned 16-byte trace_id and remains a true root (no parent).
 TEST_F(SpanGuardScopeTest, deterministicIdGenerator_forced_root_gets_pending_trace_id)
@@ -525,15 +662,16 @@ TEST_F(SpanGuardScopeTest, deterministicIdGenerator_ambient_child_ignores_pendin
     EXPECT_FALSE(root->GetParentSpanId().IsValid());
 }
 
-// Death test guarding the cross-thread scope-leak bug, now on ScopedSpanGuard.
+// Death test guarding the cross-store scope-leak bug on ScopedSpanGuard.
 //
-// A ScopedSpanGuard's Scope is bound to the thread that constructed it, so it
-// must be destroyed on that same thread. ScopedSpanGuard is non-movable, so it
-// cannot be moved into a worker directly; instead we own it through a
-// unique_ptr and move only that pointer to a worker thread. Destroying the
-// pointer there runs ~ScopedSpanGuard on the WRONG thread, which pops the Scope
-// on a foreign context stack -- ~ScopedSpanGuard's owner-thread XRPL_ASSERT
-// turns that silent corruption into a loud abort().
+// A ScopedSpanGuard's Scope is bound to the LocalValue context store that was
+// active when it was constructed, so it must be destroyed while that same store
+// is active. A different thread has a different LocalValue store, so destroying
+// the guard on another thread pops the Scope against a foreign context stack --
+// ~ScopedSpanGuard's owner-store XRPL_ASSERT turns that silent corruption into a
+// loud abort(). ScopedSpanGuard is non-movable, so it cannot be moved into a
+// worker directly; instead we own it through a unique_ptr and move only that
+// pointer to a worker thread, whose store differs from this thread's.
 //
 // The death happens on the WORKER thread (the moved-in unique_ptr is destroyed
 // when the worker lambda's captures are torn down, before worker.join()
@@ -542,38 +680,40 @@ TEST_F(SpanGuardScopeTest, deterministicIdGenerator_ambient_child_ignores_pendin
 // statement in a forked child and checks it dies -- observes the crash. The
 // regex matches the assert message substring; the assert message is written as
 // two adjacent string literals in SpanGuard.cpp, so the ".*" bridges the gap
-// between "on" and "constructing".
+// between "the" and "constructing".
 //
 // The test is skipped where the assertion cannot fire: under NDEBUG (Release
 // builds) XRPL_ASSERT is a no-op, and under ENABLE_VOIDSTAR a failed assert
 // continues instead of aborting -- in both cases the worker would not crash and
 // EXPECT_DEATH would report a spurious failure.
-TEST_F(SpanGuardScopeTest, scopedGuard_cross_thread_death_asserts_at_wrong_thread_destroy)
+TEST_F(SpanGuardScopeTest, scopedGuard_cross_thread_death_asserts_at_wrong_store_destroy)
 {
 #ifdef NDEBUG
     GTEST_SKIP() << "XRPL_ASSERT compiles to a no-op under NDEBUG (Release builds), so the "
-                    "cross-thread scope-leak assertion this test exercises does not fire.";
+                    "cross-store scope-leak assertion this test exercises does not fire.";
 #elifdef ENABLE_VOIDSTAR
     GTEST_SKIP() << "ENABLE_VOIDSTAR continues past a failed XRPL_ASSERT instead of aborting, so "
-                    "the cross-thread scope-leak assertion this test exercises does not crash.";
+                    "the cross-store scope-leak assertion this test exercises does not crash.";
 #else
     EXPECT_DEATH(
         {
-            // Scoped guard constructed on THIS thread; its Scope binds here.
+            // Scoped guard constructed on THIS thread; its Scope binds to this
+            // thread's LocalValue store.
             auto scoped =
                 std::make_unique<ScopedSpanGuard>(TraceCategory::Ledger, "ledger", "build");
 
             // Move only the owning pointer to a worker. ~ScopedSpanGuard runs on
-            // the worker when the lambda's captures are destroyed and trips the
-            // owner-thread assertion -> abort().
+            // the worker when the lambda's captures are destroyed; the worker's
+            // store differs from the constructing store, tripping the owner-store
+            // assertion -> abort().
             std::thread worker([s = std::move(scoped)]() mutable {});
             worker.join();
         },
         // The assert message is written as two adjacent string literals in
         // SpanGuard.cpp; assert() stringifies the expression source via the
         // preprocessor '#' operator, keeping both quoted literals with the
-        // "\" \"" gap between "on" and "constructing". Match across that gap.
-        ".*destroyed on.*constructing thread.*");
+        // "\" \"" gap between "the" and "constructing". Match across that gap.
+        ".*destroyed on.*constructing context store.*");
 #endif
 }
 

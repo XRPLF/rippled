@@ -1433,6 +1433,10 @@ PeerImp::handleTransaction(
                  batch,
                  stx,
                  sp = std::move(span)]() {
+                    // Activate the tx.receive span so checkTransaction's log
+                    // lines carry its trace_id. Non-owning; sp still owns/ends
+                    // the span. This job body runs to completion on one worker.
+                    auto activation = (sp && *sp) ? sp->activate() : telemetry::ScopedActivation{};
                     if (auto peer = weak.lock())
                         peer->checkTransaction(flags, checkSignature, stx, batch);
                 });

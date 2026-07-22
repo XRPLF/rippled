@@ -20,11 +20,13 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/telemetry/CoroAwareContextStorage.h>
 #include <xrpl/telemetry/DeterministicIdGenerator.h>
 #include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/SpanNames.h>
 
 #include <opentelemetry/context/context.h>
+#include <opentelemetry/context/runtime_context.h>
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_factory.h>
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_options.h>
 #include <opentelemetry/nostd/shared_ptr.h>
@@ -270,6 +272,13 @@ class TelemetryImpl : public Telemetry
      */
     std::shared_ptr<trace_sdk::TracerProvider> sdkProvider_;
 
+    /**
+     * Coroutine-aware runtime-context storage, installed globally so the OTel
+     * ambient context follows JobQueue coroutines. Held for the process
+     * lifetime because it must outlive every span (SDK requirement).
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::context::RuntimeContextStorage> contextStorage_;
+
 public:
     TelemetryImpl(Setup setup, beast::Journal journal) : setup_(std::move(setup)), journal_(journal)
     {
@@ -339,6 +348,18 @@ public:
             resourceAttrs,
             std::move(sampler),
             std::make_unique<DeterministicIdGenerator>());
+
+        // Install coroutine-aware context storage BEFORE any span is created
+        // so the OTel ambient context follows JobQueue coroutines across
+        // yield/resume (fixes wrong-thread scope pop; keeps log-trace
+        // correlation). Must precede SetTracerProvider and the first span.
+        // Not reset in stop(): resetting the storage while spans may still
+        // exist is undefined behaviour (SDK), and by stop() all spans are
+        // gone, so the storage is simply left installed for process lifetime.
+        contextStorage_ =
+            opentelemetry::nostd::shared_ptr<opentelemetry::context::RuntimeContextStorage>(
+                new CoroAwareContextStorage());
+        opentelemetry::context::RuntimeContext::SetRuntimeContextStorage(contextStorage_);
 
         // Set as global provider
         trace_api::Provider::SetTracerProvider(
