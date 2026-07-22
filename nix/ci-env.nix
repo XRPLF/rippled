@@ -7,8 +7,10 @@ let
   inherit (import ./packages.nix { inherit pkgs; })
     commonPackages
     gccPackage
+    gccVersion
     llvmPackages
     llvmVersion
+    mkVersionedToolLinks
     ;
 
   # Underlying compiler toolchains to wrap (versions pinned in packages.nix).
@@ -127,6 +129,25 @@ in
       customGcov
       customClangForCiEnv
       customBinutils
+      (mkVersionedToolLinks {
+        name = "gcc";
+        package = customGcc;
+        version = gccVersion;
+        tools = [
+          "gcc"
+          "g++"
+          "cpp"
+        ];
+      })
+      (mkVersionedToolLinks {
+        name = "clang";
+        package = customClang;
+        version = llvmVersion;
+        tools = [
+          "clang"
+          "clang++"
+        ];
+      })
       # CA certificate bundle so HTTPS clients (git, curl, conan) can verify
       # TLS connections without ca-certificates being installed in the system.
       pkgs.cacert

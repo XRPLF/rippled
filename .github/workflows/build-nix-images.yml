@@ -1,4 +1,4 @@
-name: Build Nix Docker images
+name: Build `nix` Docker images
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
       - ".github/workflows/build-nix-images.yml"
       - "flake.nix"
       - "flake.lock"
+      - "rust-toolchain.toml"
       - "nix/**"
       - "!nix/docker/README.md"
       - "!nix/devshell.nix"
@@ -18,6 +19,7 @@ on:
       - ".github/workflows/build-nix-images.yml"
       - "flake.nix"
       - "flake.lock"
+      - "rust-toolchain.toml"
       - "nix/**"
       - "!nix/docker/README.md"
       - "!nix/devshell.nix"
@@ -36,7 +38,7 @@ defaults:
 
 jobs:
   build-merge:
-    name: Build and push nix-${{ matrix.distro.name }}
+    name: Build and push `nix-${{ matrix.distro.name }}` image
     permissions:
       contents: read
       packages: write
