@@ -73,7 +73,7 @@ namespace xrpl::telemetry {
  * @code
  * // With an active parent span, startSpan() inherits the parent's trace_id
  * // and the SDK does NOT call GenerateTraceId(), so no PendingTraceId is used.
- * // auto child = parentGuard.childSpan("subtask");  // random/parent trace_id
+ * // auto child = parentGuard.childSpan(rpc_span::op::process);  // random/parent trace_id
  * @endcode
  */
 class DeterministicIdGenerator final : public opentelemetry::sdk::trace::IdGenerator
