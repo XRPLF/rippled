@@ -19,7 +19,9 @@ json::Value
 doPathFind(RPC::JsonContext& context)
 {
     using namespace telemetry;
-    auto span = SpanGuard::span(
+    // Scoped so pathfind.compute/discover (created synchronously below on this
+    // thread) nest under it. doPathFind does not yield, so scoping is safe.
+    auto span = ScopedSpanGuard(
         TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::request);
     // Addresses are hashed before emission for privacy.
     if (auto const& src = context.params[jss::source_account]; src.isString())
