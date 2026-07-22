@@ -64,11 +64,11 @@ in
     runClangTidy
     vim
     zip
-    rustToolchain
+    # Rust packages
     cargo-audit
     cargo-llvm-cov
     cargo-nextest
     corrosion
-    rust-analyzer
+    rustToolchain
   ];
 }
