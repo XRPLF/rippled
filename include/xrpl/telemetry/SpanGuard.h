@@ -341,10 +341,19 @@ public:
     // --- Child / linked span creation ----------------------------------
 
     /**
-     * Create a child span parented to the current thread's active
-     * context. This is meaningful when this guard's span is active on
-     * the thread (e.g. wrapped in a ScopedSpanGuard); otherwise the
-     * child inherits whatever context is currently on the stack.
+     * Create a child span parented to the CURRENT ambient context of this
+     * store, not to this guard's own span. It reads the active context via the
+     * runtime context store, so it is meaningful only when a scope is active on
+     * THIS store — a ScopedSpanGuard, a ScopedActivation, or this guard's span
+     * activated some other way. With coroutine-aware storage the ambient
+     * context is the correct parent in scoped and coroutine contexts (a
+     * coroutine keeps its store across a resume on another worker). When no
+     * scope is active the child inherits whatever context happens to be on the
+     * store, which may be unrelated.
+     *
+     * For explicit, store-independent parenting to a specific span (e.g.
+     * across stores or threads), capture spanContext() and use
+     * childSpan(name, ctx) instead.
      * @param name  Span name for the child.
      * @return A new guard, or null if this guard is inactive.
      */
