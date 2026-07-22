@@ -493,7 +493,7 @@ Slots::updateConsideredValidator(PublicKey const& validator, Peer::id_t peer)
     if (it->second.count < reduce_relay::kMaxMessageThreshold)
         return std::nullopt;
 
-    auto const key = it->first;
+    auto key = it->first;
     consideredValidators_.erase(it);
 
     return key;

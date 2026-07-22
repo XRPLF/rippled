@@ -1439,7 +1439,7 @@ OverlayImpl::squelchAll(
     std::uint32_t squelchDuration,
     std::function<void(Peer::id_t)> report)
 {
-    forEach([&](std::shared_ptr<PeerImp>&& p) {
+    forEach([&](std::shared_ptr<PeerImp> const& p) {
         p->send(makeSquelchMessage(validator, true, squelchDuration));
         report(p->id());
     });
@@ -1552,7 +1552,7 @@ OverlayImpl::handleUntrustedSquelch(PublicKey const& validator)
     // to acquire another lock on peers. Instead, count the number of peers in
     // the same loop, as we're already iterating all peers.
     auto total = 0;
-    forEach([&](std::shared_ptr<PeerImp>&& p) {
+    forEach([&](std::shared_ptr<PeerImp> const& p) {
         ++total;
         if (p->isSquelched(validator))
             ++count;

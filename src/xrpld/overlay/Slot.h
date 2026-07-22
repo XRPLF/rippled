@@ -147,11 +147,11 @@ public:
      */
     struct PeerInfo
     {
-        PeerState state;              // peer's state
-        std::size_t count{};          // message count
-        time_point expire;            // squelch expiration time
-        time_point lastMessage;       // time last message received
-        std::size_t timesSelected{};  // number of times the peer was selected
+        PeerState state{PeerState::Counting};  // peer's state
+        std::size_t count{};                   // message count
+        time_point expire;                     // squelch expiration time
+        time_point lastMessage;                // time last message received
+        std::size_t timesSelected{};           // number of times the peer was selected
     };
 
     /**
