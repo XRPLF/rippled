@@ -132,10 +132,13 @@ runEscrowWasm(
     auto const ret =
         vm.run(wasmCode, hfs, gasLimit, funcName, params, createWasmImport(hfs), hfs.getJournal());
 
+    // microseconds is intentional.  The resolution of the StatsD is milliseconds,
+    // but this runs too fast for that.
     hfs.executionTimeEvent("runEscrowWasm")
         .notify(
-            std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::steady_clock::now() - start));
+            std::chrono::milliseconds{std::chrono::duration_cast<std::chrono::microseconds>(
+                                          std::chrono::steady_clock::now() - start)
+                                          .count()});
 
     if (!ret)
     {
@@ -167,10 +170,13 @@ preflightEscrowWasm(
     auto const ret =
         vm.check(wasmCode, hfs, funcName, params, createWasmImport(hfs), hfs.getJournal());
 
+    // microseconds is intentional.  The resolution of the StatsD is milliseconds,
+    // but this runs too fast for that.
     hfs.executionTimeEvent("preflightEscrowWasm")
         .notify(
-            std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::steady_clock::now() - start));
+            std::chrono::milliseconds{std::chrono::duration_cast<std::chrono::microseconds>(
+                                          std::chrono::steady_clock::now() - start)
+                                          .count()});
 
     return ret;
 }

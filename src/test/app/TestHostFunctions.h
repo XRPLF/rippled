@@ -35,12 +35,13 @@ struct RecordingEventImpl : public beast::insight::EventImpl
     value_type min{value_type::max()};
     value_type max{value_type::min()};
     std::vector<value_type> samples;
+    bool printOnDestruction{};
 
     ~RecordingEventImpl() override
     {
-        if (count > 0)
+        if (printOnDestruction && count > 0)
         {
-            std::cout << "Mean (ms): " << meanMs() << "\n";
+            std::cout << "Mean (us): " << meanUs() << "\n";
         }
     }
 
@@ -56,7 +57,7 @@ struct RecordingEventImpl : public beast::insight::EventImpl
     }
 
     [[nodiscard]] double
-    meanMs() const
+    meanUs() const
     {
         return count != 0 ? static_cast<double>(total.count()) / static_cast<double>(count) : 0.0;
     }

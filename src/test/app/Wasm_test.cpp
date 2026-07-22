@@ -1568,6 +1568,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
         Env env{*this};
         auto hfns = TestHostFunctions{env, 0};
+        hfns.execTimeEvent->printOnDestruction = true;
 
         perf(hfns, kRuns, [&] {
             return runEscrowWasm(wasm, hfns, 1'000'000, escrowFunctionName, {}).has_value();
@@ -1586,6 +1587,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
         Env env{*this};
         auto hfns = TestHostFunctions{env, 0};
+        hfns.execTimeEvent->printOnDestruction = true;
 
         perf(hfns, kRuns, [&] { return !preflightEscrowWasm(wasm, hfns, escrowFunctionName); });
     }
