@@ -50,10 +50,6 @@ let
       done
     '';
 
-  # Version-suffixed clang tooling (e.g. run-clang-tidy-22) so probes that
-  # prefer the versioned name (bin/pre-commit/clang_tidy_check.py) resolve the
-  # Nix tools instead of a system install. Environment-independent, so unlike
-  # the compiler links these live in commonPackages.
   clangToolLinks = mkVersionedToolLinks {
     name = "clang-tools";
     package = clangTools;

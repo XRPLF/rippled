@@ -129,9 +129,6 @@ in
       customGcov
       customClangForCiEnv
       customBinutils
-      # Version-suffixed symlinks (e.g. g++-15, clang++-22) pointing at the
-      # custom-glibc compilers above, so tools probing for them resolve the Nix
-      # compiler instead of a system one. See mkVersionedCompilerLinks.
       (mkVersionedToolLinks {
         name = "gcc";
         package = customGcc;

@@ -29,9 +29,6 @@ let
             echo "Compiler: "
             ${compilerName} --version
           '';
-      # Version-suffixed compiler symlinks (e.g. g++-15) so tools probing for
-      # them resolve the Nix compiler instead of a system one. Omitted for the
-      # no-compiler shell, which has no Nix compiler to link.
       versionedLinks = pkgs.lib.optional (version != null) (mkVersionedToolLinks {
         name = compilerName;
         package = stdenv.cc;
