@@ -15,7 +15,6 @@
 #include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/LedgerTiming.h>
 #include <xrpl/telemetry/SpanGuard.h>
-#include <xrpl/telemetry/SpanNames.h>
 
 #include <algorithm>
 #include <chrono>
