@@ -1,32 +1,16 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_SERVER_PLAINWSPEER_H_INCLUDED
-#define RIPPLE_SERVER_PLAINWSPEER_H_INCLUDED
-
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/detail/BaseWSPeer.h>
 
 #include <boost/beast/core/tcp_stream.hpp>
 
+#include <chrono>
 #include <memory>
+#include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 template <class Handler>
 class PlainWSPeer : public BaseWSPeer<Handler, PlainWSPeer<Handler>>,
@@ -48,7 +32,7 @@ public:
     PlainWSPeer(
         Port const& port,
         Handler& handler,
-        endpoint_type remote_address,
+        endpoint_type remoteAddress,
         boost::beast::http::request<Body, Headers>&& request,
         socket_type&& socket,
         beast::Journal journal);
@@ -61,7 +45,7 @@ template <class Body, class Headers>
 PlainWSPeer<Handler>::PlainWSPeer(
     Port const& port,
     Handler& handler,
-    endpoint_type remote_address,
+    endpoint_type remoteAddress,
     boost::beast::http::request<Body, Headers>&& request,
     socket_type&& socket,
     beast::Journal journal)
@@ -70,13 +54,11 @@ PlainWSPeer<Handler>::PlainWSPeer(
           handler,
           socket.get_executor(),
           waitable_timer{socket.get_executor()},
-          remote_address,
+          remoteAddress,
           std::move(request),
           journal)
     , ws_(std::move(socket))
 {
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

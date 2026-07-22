@@ -1,37 +1,37 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2021 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/rdb/PeerFinder.h>
 
-namespace ripple {
+#include <xrpld/peerfinder/detail/Store.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/rdb/SociDB.h>
+
+#include <boost/optional/optional.hpp>  // IWYU pragma: keep
+
+#include <soci/boost-optional.h>  // IWYU pragma: keep
+#include <soci/into.h>
+#include <soci/session.h>
+#include <soci/statement.h>
+#include <soci/transaction.h>
+#include <soci/use.h>
+
+#include <cstddef>
+#include <functional>
+#include <stdexcept>
+#include <vector>
+
+namespace xrpl {
 
 void
-initPeerFinderDB(
-    soci::session& session,
-    BasicConfig const& config,
-    beast::Journal j)
+initPeerFinderDB(soci::session& session, BasicConfig const& config, beast::Journal j)
 {
-    DBConfig m_sociConfig(config, "peerfinder");
-    m_sociConfig.open(session);
+    DBConfig const sociConfig(config, "peerfinder");
+    sociConfig.open(session);
 
-    JLOG(j.info()) << "Opening database at '" << m_sociConfig.connectionString()
-                   << "'";
+    JLOG(j.info()) << "Opening database at '" << sociConfig.connectionString() << "'";
 
     soci::transaction tr(session);
     session << "PRAGMA encoding=\"UTF-8\";";
@@ -58,10 +58,7 @@ initPeerFinderDB(
 }
 
 void
-updatePeerFinderDB(
-    soci::session& session,
-    int currentSchemaVersion,
-    beast::Journal j)
+updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Journal j)
 {
     soci::transaction tr(session);
     // get version
@@ -83,13 +80,11 @@ updatePeerFinderDB(
     {
         if (version < currentSchemaVersion)
         {
-            JLOG(j.info()) << "Updating database to version "
-                           << currentSchemaVersion;
+            JLOG(j.info()) << "Updating database to version " << currentSchemaVersion;
         }
         else if (version > currentSchemaVersion)
         {
-            Throw<std::runtime_error>(
-                "The PeerFinder database version is higher than expected");
+            Throw<std::runtime_error>("The PeerFinder database version is higher than expected");
         }
     }
 
@@ -111,16 +106,15 @@ updatePeerFinderDB(
                    "    PeerFinder_BootstrapCache_Next "
                    "  ( address ); ";
 
-        std::size_t count;
-        session << "SELECT COUNT(*) FROM PeerFinder_BootstrapCache;",
-            soci::into(count);
+        std::size_t count = 0;
+        session << "SELECT COUNT(*) FROM PeerFinder_BootstrapCache;", soci::into(count);
 
         std::vector<PeerFinder::Store::Entry> list;
 
         {
             list.reserve(count);
             std::string s;
-            int valence;
+            int valence = 0;
             soci::statement st =
                 (session.prepare << "SELECT "
                                     " address, "
@@ -133,16 +127,15 @@ updatePeerFinderDB(
             while (st.fetch())
             {
                 PeerFinder::Store::Entry entry;
-                entry.endpoint = beast::IP::Endpoint::from_string(s);
-                if (!is_unspecified(entry.endpoint))
+                entry.endpoint = beast::IP::Endpoint::fromString(s);
+                if (!isUnspecified(entry.endpoint))
                 {
                     entry.valence = valence;
                     list.push_back(entry);
                 }
                 else
                 {
-                    JLOG(j.error()) << "Bad address string '" << s
-                                    << "' in Bootcache table";
+                    JLOG(j.error()) << "Bad address string '" << s << "' in Bootcache table";
                 }
             }
         }
@@ -154,10 +147,10 @@ updatePeerFinderDB(
             s.reserve(list.size());
             valence.reserve(list.size());
 
-            for (auto iter(list.cbegin()); iter != list.cend(); ++iter)
+            for (auto const& entry : list)
             {
-                s.emplace_back(to_string(iter->endpoint));
-                valence.emplace_back(iter->valence);
+                s.emplace_back(to_string(entry.endpoint));
+                valence.emplace_back(entry.valence);
             }
 
             session << "INSERT INTO PeerFinder_BootstrapCache_Next ( "
@@ -214,12 +207,10 @@ updatePeerFinderDB(
 }
 
 void
-readPeerFinderDB(
-    soci::session& session,
-    std::function<void(std::string const&, int)> const& func)
+readPeerFinderDB(soci::session& session, std::function<void(std::string const&, int)> const& func)
 {
     std::string s;
-    int valence;
+    int valence = 0;
     soci::statement st =
         (session.prepare << "SELECT "
                             " address, "
@@ -236,9 +227,7 @@ readPeerFinderDB(
 }
 
 void
-savePeerFinderDB(
-    soci::session& session,
-    std::vector<PeerFinder::Store::Entry> const& v)
+savePeerFinderDB(soci::session& session, std::vector<PeerFinder::Store::Entry> const& v)
 {
     soci::transaction tr(session);
     session << "DELETE FROM PeerFinder_BootstrapCache;";
@@ -268,4 +257,4 @@ savePeerFinderDB(
     tr.commit();
 }
 
-}  // namespace ripple
+}  // namespace xrpl

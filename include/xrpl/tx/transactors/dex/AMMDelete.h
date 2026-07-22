@@ -1,0 +1,54 @@
+#pragma once
+
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+namespace xrpl {
+
+/**
+ * AMMDelete implements AMM delete transactor. This is a mechanism to
+ * delete AMM in an empty state when the number of LP tokens is 0.
+ * AMMDelete deletes the trustlines up to configured maximum. If all
+ * trustlines are deleted then AMM ltAMM and root account are deleted.
+ * Otherwise AMMDelete should be called again.
+ */
+class AMMDelete : public Transactor
+{
+public:
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
+
+    explicit AMMDelete(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
+
+    static bool
+    checkExtraFeatures(PreflightContext const& ctx);
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
+    TER
+    doApply() override;
+
+    void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
+};
+
+}  // namespace xrpl

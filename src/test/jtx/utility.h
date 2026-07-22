@@ -1,79 +1,67 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_JTX_UTILITY_H_INCLUDED
-#define RIPPLE_TEST_JTX_UTILITY_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Account.h>
 
-#include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
-
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STObject.h>
 
 #include <stdexcept>
+#include <string>
+#include <vector>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
-/** Thrown when parse fails. */
-struct parse_error : std::logic_error
+/**
+ * Thrown when parse fails.
+ */
+struct ParseError : std::logic_error
 {
     template <class String>
-    explicit parse_error(String const& s) : logic_error(s)
+    explicit ParseError(String const& s) : logic_error(s)
     {
     }
 };
 
-/** Convert JSON to STObject.
-    This throws on failure, the JSON must be correct.
-    @note Testing malformed JSON is beyond the scope of
-          this set of unit test routines.
-*/
+/**
+ * Convert JSON to STObject.
+ * This throws on failure, the JSON must be correct.
+ * @note Testing malformed JSON is beyond the scope of
+ *       this set of unit test routines.
+ */
 STObject
-parse(Json::Value const& jv);
+parse(json::Value const& jv);
 
-/** Sign automatically.
-    @note This only works on accounts with multi-signing off.
-*/
+/**
+ * Sign automatically into a specific Json field of the jv object.
+ * @note This only works on accounts with multi-signing off.
+ */
 void
-sign(Json::Value& jv, Account const& account);
+sign(json::Value& jv, Account const& account, json::Value& sigObject);
 
-/** Set the fee automatically. */
+/**
+ * Sign automatically.
+ * @note This only works on accounts with multi-signing off.
+ */
 void
-fill_fee(Json::Value& jv, ReadView const& view);
+sign(json::Value& jv, Account const& account);
 
-/** Set the sequence number automatically. */
+/**
+ * Set the fee automatically.
+ */
 void
-fill_seq(Json::Value& jv, ReadView const& view);
+fillFee(json::Value& jv, ReadView const& view);
 
-/** Given a rippled unit test rpc command, return the corresponding JSON. */
-Json::Value
-cmdToJSONRPC(
-    std::vector<std::string> const& args,
-    beast::Journal j,
-    unsigned int apiVersion);
+/**
+ * Set the sequence number automatically.
+ */
+void
+fillSeq(json::Value& jv, ReadView const& view);
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
-
-#endif
+/**
+ * Given an xrpld unit test rpc command, return the corresponding JSON.
+ */
+json::Value
+cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned int apiVersion);
+}  // namespace xrpl::test::jtx

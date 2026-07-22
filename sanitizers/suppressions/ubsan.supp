@@ -1,0 +1,204 @@
+# The idea is to empty this file gradually by fixing the underlying issues and removing suppresions.
+
+# Suppress UBSan errors in external code by source file path
+# This matches any source file under the external/ directory
+alignment:external
+bool:external
+bounds:external
+cfi:external
+enum:external
+float-cast-overflow:external
+float-divide-by-zero:external
+function:external
+implicit-integer-sign-change:external
+implicit-signed-integer-truncation:external
+implicit-unsigned-integer-truncation:external
+integer-divide-by-zero:external
+invalid-builtin-use:external
+invalid-objc-cast:external
+nonnull-attribute:external
+null:external
+nullability-arg:external
+nullability-assign:external
+nullability-return:external
+object-size:external
+pointer-overflow:external
+return:external
+returns-nonnull-attribute:external
+shift-base:external
+shift-exponent:external
+signed-integer-overflow:external
+undefined:external
+unreachable:external
+unsigned-integer-overflow:external
+vla-bound:external
+vptr_check:external
+vptr:external
+
+# Suppress all UBSan errors in Boost libraries
+# This matches any files containing "boost" in its path or name
+alignment:boost
+bool:boost
+bounds:boost
+cfi:boost
+enum:boost
+float-cast-overflow:boost
+float-divide-by-zero:boost
+function:boost
+implicit-integer-sign-change:boost
+implicit-signed-integer-truncation:boost
+implicit-unsigned-integer-truncation:boost
+integer-divide-by-zero:boost
+invalid-builtin-use:boost
+invalid-objc-cast:boost
+nonnull-attribute:boost
+null:boost
+nullability-arg:boost
+nullability-assign:boost
+nullability-return:boost
+object-size:boost
+pointer-overflow:boost
+return:boost
+returns-nonnull-attribute:boost
+shift-base:boost
+shift-exponent:boost
+signed-integer-overflow:boost
+undefined:boost
+unreachable:boost
+unsigned-integer-overflow:boost
+vla-bound:boost
+vptr_check:boost
+vptr:boost
+
+# Google protobuf - intentional overflows in hash functions
+undefined:protobuf
+unsigned-integer-overflow:protobuf
+
+# gRPC intentional overflows in timer calculations
+unsigned-integer-overflow:grpc
+unsigned-integer-overflow:timer_manager.cc
+
+# RocksDB intentional unsigned integer overflows in hash functions and CRC calculations
+unsigned-integer-overflow:rocks*/*/util/xxhash.h
+unsigned-integer-overflow:rocks*/*/util/xxph3.h
+unsigned-integer-overflow:rocks*/*/util/hash.cc
+unsigned-integer-overflow:rocks*/*/util/crc32c.cc
+unsigned-integer-overflow:rocks*/*/util/crc32c.h
+unsigned-integer-overflow:rocks*/*/include/rocksdb/utilities/options_type.h
+unsigned-integer-overflow:rocks*/*/table/format.h
+unsigned-integer-overflow:rocks*/*/table/format.cc
+unsigned-integer-overflow:rocks*/*/table/block_based/block_based_table_builder.cc
+unsigned-integer-overflow:rocks*/*/table/block_based/reader_common.cc
+unsigned-integer-overflow:rocks*/*/db/version_set.cc
+alignment:rocks*/*/util/crc32c_arm64.cc
+undefined:rocks*/*/util/crc32c_arm64.cc
+undefined:rocks*/*/util/xxhash.h
+
+# nudb intentional overflows in hash functions
+unsigned-integer-overflow:nudb/detail/xxhash.hpp
+alignment:nudb/detail/xxhash.hpp
+undefined:nudb
+
+# Snappy compression library intentional overflows
+unsigned-integer-overflow:snappy.cc
+
+# Abseil intentional overflows in hashing, RNG and time arithmetic.
+# Matched at library scope (like boost above): the wraparound is by design
+# across many absl files (hash mixing, raw_hash_set probing, duration math,
+# int128, uniform_int_distribution), so listing individual files just churns.
+unsigned-integer-overflow:absl
+
+# Standard library intentional overflows
+unsigned-integer-overflow:basic_string.h
+unsigned-integer-overflow:bits/align.h
+unsigned-integer-overflow:bits/basic_string.tcc
+unsigned-integer-overflow:bits/chrono.h
+unsigned-integer-overflow:bits/random.h
+unsigned-integer-overflow:bits/random.tcc
+unsigned-integer-overflow:bits/stl_algobase.h
+unsigned-integer-overflow:bits/string_view.tcc
+unsigned-integer-overflow:bits/uniform_int_dist.h
+unsigned-integer-overflow:string_view
+unsigned-integer-overflow:__random/seed_seq.h
+unsigned-integer-overflow:__charconv/traits.h
+unsigned-integer-overflow:__chrono/duration.h
+# libstdc++ <bit> (std::__bit_ceil etc.) negates an unsigned width; <bit> is a
+# distinct header from the bits/ directory so it needs its own entry.
+unsigned-integer-overflow:include/c++/*/bit
+
+# =============================================================================
+# Rippled code suppressions
+# =============================================================================
+
+# These suppressions are keyed by SOURCE FILE, not function name. This UBSan
+# build runs without symbol information, so the runtime only knows the
+# file:line of each report, never the enclosing function — function-name
+# patterns silently never match. Each entry below is therefore scoped to the
+# file whose arithmetic is intentional; the comment names the specific
+# construct.
+
+# STAmount amount-type arithmetic. Unary negation of the mantissa in xrp()/
+# iou()/mpt()/canonicalize() and getInt64Value, plus bounded +/- on amounts:
+# INT64_MIN cannot occur because canonicalize() keeps the mantissa well within
+# int64_t, and operands are bounded by total supply (~10^17 XRP, ~10^18 MPT).
+signed-integer-overflow:protocol/STAmount.cpp
+
+# nft::cipheredTaxon uses intentional uint32 wraparound (LCG permutation);
+# the helper lives in the generated protocol header nft.h.
+unsigned-integer-overflow:protocol/nft.h
+
+# STPathElement::getHash multiplies/adds accumulators (non-secure, speed-first).
+unsigned-integer-overflow:protocol/STPathSet.cpp
+
+# beast XorShiftEngine PRNG and murmurhash3 mixing wrap by design.
+unsigned-integer-overflow:beast/xor_shift_engine.h
+
+# Number::normalizeToRange multiplies the mantissa by powers of ten; the result
+# is intentionally allowed to wrap while searching for the in-range value.
+unsigned-integer-overflow:basics/Number.h
+
+# Counter / sequence arithmetic with intentional unsigned wraparound, each
+# guarded by an explicit overflow or domain check at the call site:
+#   base_uint operator++/-- wrap by definition;
+#   ApplyView::insertPage ++page is asserted to wrap to 0 (page exhaustion);
+#   confineOwnerCount documents "overflow is well defined on unsigned";
+#   NFTokenMint checks tokenSeq + 1u == 0u; AmendmentTable does (seq - 1) / 256.
+unsigned-integer-overflow:basics/base_uint.h
+unsigned-integer-overflow:ledger/ApplyView.cpp
+unsigned-integer-overflow:ledger/helpers/AccountRootHelpers.cpp
+unsigned-integer-overflow:tx/transactors/nft/NFTokenMint.cpp
+unsigned-integer-overflow:app/misc/detail/AmendmentTable.cpp
+
+# Sentinel / bounded subtractions that wrap by design (loop counters, reverse
+# iteration, "not found" sentinels, balance math bounded by issuance invariants,
+# base58/base64 codec index math, hash-router and role bit math).
+unsigned-integer-overflow:shamap/SHAMap.cpp
+unsigned-integer-overflow:protocol/Permissions.cpp
+unsigned-integer-overflow:protocol/tokens.cpp
+unsigned-integer-overflow:basics/base64.cpp
+unsigned-integer-overflow:json/json_value.cpp
+unsigned-integer-overflow:app/misc/NetworkOPs.cpp
+unsigned-integer-overflow:rpc/detail/Role.cpp
+unsigned-integer-overflow:tx/transactors/oracle/OracleSet.cpp
+unsigned-integer-overflow:ledger/helpers/MPTokenHelpers.cpp
+unsigned-integer-overflow:crypto/RFC1751.cpp
+unsigned-integer-overflow:tx/paths/detail/StrandFlow.h
+unsigned-integer-overflow:protocol/STObject.h
+
+# GetAggregatePrice negates an unsigned trim count to step a reverse iterator;
+# trimCount is bounded by the price set size.
+unsigned-integer-overflow:rpc/handlers/orderbook/GetAggregatePrice.cpp
+
+# Test-only intentional overflow/underflow in fixture and unit-test arithmetic.
+unsigned-integer-overflow:tests/libxrpl/basics/RangeSet.cpp
+unsigned-integer-overflow:test/app/Batch_test.cpp
+unsigned-integer-overflow:test/app/Invariants_test.cpp
+unsigned-integer-overflow:test/app/Loan_test.cpp
+unsigned-integer-overflow:test/app/NFToken_test.cpp
+unsigned-integer-overflow:test/app/OfferMPT_test.cpp
+unsigned-integer-overflow:test/app/Offer_test.cpp
+unsigned-integer-overflow:test/app/Path_test.cpp
+unsigned-integer-overflow:test/jtx/impl/acctdelete.cpp
+unsigned-integer-overflow:test/ledger/SkipList_test.cpp
+unsigned-integer-overflow:test/rpc/Subscribe_test.cpp
+signed-integer-overflow:test/basics/XRPAmount_test.cpp

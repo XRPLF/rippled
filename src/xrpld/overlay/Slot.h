@@ -1,44 +1,28 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_OVERLAY_SLOT_H_INCLUDED
-#define RIPPLE_OVERLAY_SLOT_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
 #include <xrpld/overlay/Peer.h>
+#include <xrpld/overlay/ReduceRelayCommon.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/container/aged_unordered_map.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/PublicKey.h>
 
 #include <functional>
 #include <optional>
 #include <string>
 
-namespace ripple {
-namespace reduce_relay {
+namespace xrpl::reduce_relay {
 
-/** Peer's State */
+/**
+ * Peer's State
+ */
 enum class PeerState : uint8_t {
     Counting,   // counting messages
     Selected,   // selected to relay, counting if Slot in Counting
@@ -60,7 +44,9 @@ to_string(PeerState state)
             return "unknown";
     }
 }
-/** Slot's State */
+/**
+ * Slot's State
+ */
 enum class SlotState : uint8_t {
     Counting,  // counting messages
     Selected,  // peers selected, stop counting
@@ -80,26 +66,29 @@ to_string(SlotState state)
     }
 }
 
-/** Abstract class. Declares squelch and unsquelch handlers.
+/**
+ * Abstract class. Declares squelch and unsquelch handlers.
  * OverlayImpl inherits from this class. Motivation is
  * for easier unit tests to facilitate on the fly
- * changing callbacks. */
+ * changing callbacks.
+ */
 class SquelchHandler
 {
 public:
     virtual ~SquelchHandler()
     {
     }
-    /** Squelch handler for a single peer
+    /**
+     * Squelch handler for a single peer
      * @param validator Public key of the source validator
      * @param id Peer's id to squelch
      * @param duration Squelch duration in seconds
      */
     virtual void
-    squelch(PublicKey const& validator, Peer::id_t id, std::uint32_t duration)
-        const = 0;
+    squelch(PublicKey const& validator, Peer::id_t id, std::uint32_t duration) const = 0;
 
-    /** Squelch for all peers, the method must call slots.squelchValidator
+    /**
+     * Squelch for all peers, the method must call slots.squelchValidator
      * to register that a (validator,peer) was squelched
      * @param validator Public key of the source validator
      * @param duration Squelch duration in seconds
@@ -111,7 +100,8 @@ public:
         std::uint32_t duration,
         std::function<void(Peer::id_t)> report) = 0;
 
-    /** Unsquelch handler
+    /**
+     * Unsquelch handler
      * @param validator Public key of the source validator
      * @param id Peer's id to unsquelch
      */
@@ -143,11 +133,13 @@ class Slot final
 
     // a callback to report ignored squelches
     using ignored_squelch_callback = std::function<void()>;
-    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
     using time_point = clock_type::time_point;
 
 public:
-    /** Data maintained for each peer */
+    /**
+     * Data maintained for each peer
+     */
     struct PeerInfo
     {
         PeerState state;            // peer's state
@@ -157,14 +149,18 @@ public:
         std::size_t timesSelected;  // number of times the peer was selected
     };
 
-    /** Get all peers of the slot. */
+    /**
+     * Get all peers of the slot.
+     */
     std::unordered_map<Peer::id_t, PeerInfo> const&
     getPeers() const
     {
         return peers_;
     }
 
-    /** Get the slots state. */
+    /**
+     * Get the slots state.
+     */
     SlotState
     getState() const
     {
@@ -172,7 +168,8 @@ public:
     }
 
 private:
-    /** Constructor
+    /**
+     * Constructor
      * @param journal Journal for logging
      * @param handler Squelch/Unsquelch implementation
      * @param maxSelectedPeers the maximum number of peers to be selected as
@@ -198,8 +195,7 @@ private:
     }
 
     std::string
-    formatLogMessage(PublicKey const& validator, std::optional<Peer::id_t> id)
-        const;
+    formatLogMessage(PublicKey const& validator, std::optional<Peer::id_t> id) const;
 
     /**
      * @brief Processes a message from a peer and updates the slot's state.
@@ -217,9 +213,9 @@ private:
      * 2. Message Counting: If the slot is in the `Counting` state, the
      * message count for the reporting peer is incremented.
      * 3. Peer Consideration: Once a peer's message count exceeds
-     * `MIN_MESSAGE_THRESHOLD`, it is added to a pool of `considered` peers.
+     * `kMinMessageThreshold`, it is added to a pool of `considered` peers.
      * 4. Selection Trigger: When the number of peers reaching
-     * `MAX_MESSAGE_THRESHOLD` equals `maxSelectedPeers_`, the selection
+     * `kMaxMessageThreshold` equals `maxSelectedPeers_`, the selection
      * process is triggered:
      * - A random subset of `maxSelectedPeers_` is chosen from the
      * `considered` pool.
@@ -236,10 +232,7 @@ private:
      * ignored during the process.
      */
     void
-    update(
-        PublicKey const& validator,
-        Peer::id_t id,
-        ignored_squelch_callback report);
+    update(PublicKey const& validator, Peer::id_t id, ignored_squelch_callback report);
 
     /**
      * @brief Handles the removal of a peer from the slot.
@@ -266,7 +259,9 @@ private:
     void
     deletePeer(PublicKey const& validator, Peer::id_t id, bool erase);
 
-    /** Get the time of the last peer selection round */
+    /**
+     * Get the time of the last peer selection round
+     */
     time_point const&
     getLastSelected() const
     {
@@ -302,12 +297,12 @@ private:
      * flood that could occur if many peers were unsquelched simultaneously.
      * The duration is a random value calculated within a dynamic range:
      *
-     * - Lower Bound: A fixed minimum (`MIN_UNSQUELCH_EXPIRE`).
+     * - Lower Bound: A fixed minimum (`kMinUnsquelchExpire`).
      * - Upper Bound: This is calculated adaptively:
-     * - It starts at a default value (`MAX_UNSQUELCH_EXPIRE_DEFAULT`).
+     * - It starts at a default value (`kMaxUnsquelchExpireDefault`).
      * - It increases proportionally with the number of peers being
-     * squelched (`SQUELCH_PER_PEER * npeers`).
-     * - It is capped by an absolute maximum (`MAX_UNSQUELCH_EXPIRE_PEERS`)
+     * squelched (`kSquelchPerPeer * npeers`).
+     * - It is capped by an absolute maximum (`kMaxUnsquelchExpirePeers`)
      * to prevent excessively long squelch times.
      *
      * This ensures that squelch times are longer when more peers are involved,
@@ -321,7 +316,9 @@ private:
     std::chrono::seconds
     getSquelchDuration(std::size_t npeers) const;
 
-    /** Initialize slot to Counting state */
+    /**
+     * Initialize slot to Counting state
+     */
     void
     initCounting();
 
@@ -386,19 +383,19 @@ private:
 class Slots
 {
 public:
-    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
     using time_point = clock_type::time_point;
 
     using messages = beast::aged_unordered_map<
         uint256,
         std::unordered_set<Peer::id_t>,
         clock_type::clock_type,
-        hardened_hash<strong_hash>>;
+        HardenedHash<strong_hash>>;
     using validators = beast::aged_unordered_map<
         PublicKey,
         std::unordered_set<Peer::id_t>,
         clock_type::clock_type,
-        hardened_hash<strong_hash>>;
+        HardenedHash<strong_hash>>;
     using slots_map = hash_map<PublicKey, Slot>;
 
     /**
@@ -416,17 +413,16 @@ public:
      * squelch durations.
      */
     Slots(
-        Logs& logs,
+        ServiceRegistry& registry,
         SquelchHandler& handler,
         Config const& config,
         clock_type& clock)
         : handler_(handler)
-        , logs_(logs)
-        , journal_(logs.journal("Slots"))
-        , baseSquelchEnabled_(config.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
-        , maxSelectedPeers_(config.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS)
-        , enhancedSquelchEnabled_(
-              config.VP_REDUCE_RELAY_ENHANCED_SQUELCH_ENABLE)
+        , logs_(registry.getLogs())
+        , journal_(registry.getJournal("Slots"))
+        , baseSquelchEnabled_(config.vpReduceRelayBaseSquelchEnable)
+        , maxSelectedPeers_(config.vpReduceRelaySquelchMaxSelectedPeers)
+        , enhancedSquelchEnabled_(config.vpReduceRelayEnhancedSquelchEnable)
         , clock_(clock)
         , peersWithMessage_(clock)
         , peersWithSquelchedValidators_(clock)
@@ -473,7 +469,7 @@ public:
      * peers immediately on server startup, allowing time for the node to
      * establish a stable view of the network.
      *
-     * @return `true` if the `reduce_relay::WAIT_ON_BOOTUP` duration has
+     * @return `true` if the `reduce_relay::kWaitOnBootup` duration has
      * elapsed.
      */
     bool
@@ -494,10 +490,7 @@ public:
      * @param id The ID of the peer that relayed the message.
      */
     void
-    updateUntrustedValidatorSlot(
-        uint256 const& key,
-        PublicKey const& validator,
-        Peer::id_t id)
+    updateUntrustedValidatorSlot(uint256 const& key, PublicKey const& validator, Peer::id_t id)
     {
         updateUntrustedValidatorSlot(key, validator, id, []() {});
     }
@@ -541,7 +534,8 @@ public:
         Peer::id_t id,
         typename Slot::ignored_squelch_callback report);
 
-    /** Calls Slot::update of Slot associated with the validator, with a
+    /**
+     * Calls Slot::update of Slot associated with the validator, with a
      * noop callback.
      * @param key Message's hash
      * @param validator Validator's public key
@@ -696,7 +690,7 @@ protected:
      * messages.
      *
      * A validator "graduates" from this consideration pool once its message
-     * count reaches `reduce_relay::MAX_MESSAGE_THRESHOLD`. Upon graduation,
+     * count reaches `reduce_relay::kMaxMessageThreshold`. Upon graduation,
      * it is removed from the pool and its public key is returned to the
      * caller, signaling that it is now eligible to be assigned a `Slot`.
      *
@@ -718,11 +712,11 @@ protected:
      * they have been inactive.
      *
      * - If a validator has been idle for a short duration (greater than
-     * `PEER_IDLED`), its progress is reset, giving it a chance to be
+     * `kIdled`), its progress is reset, giving it a chance to be
      * reconsidered without being fully removed.
      *
      * - If a validator has been idle for a prolonged duration (greater than
-     * `MAX_UNTRUSTED_VALIDATOR_IDLE`), it is deemed stale, removed from the
+     * `kMaxUntrustedValidatorIdle`), it is deemed stale, removed from the
      * consideration pool, and its public key is returned.
      *
      * @return A vector of public keys for validators that were removed due to
@@ -772,9 +766,7 @@ protected:
      * @param peerID The ID of the peer for which the squelch applies.
      */
     void
-    registerSquelchedValidator(
-        PublicKey const& validatorKey,
-        Peer::id_t peerID);
+    registerSquelchedValidator(PublicKey const& validatorKey, Peer::id_t peerID);
 
     /**
      * @brief A flag indicating if the initial boot-up delay has passed.
@@ -795,7 +787,7 @@ protected:
      * @brief A map holding the active monitoring slots for untrusted
      * validators.
      * @details When enhanced squelching is enabled, this map is capped at a
-     * fixed size (`reduce_relay::MAX_UNTRUSTED_SLOTS`). Validators must
+     * fixed size (`reduce_relay::kMaxUntrustedSlots`). Validators must
      * qualify through the `consideredValidators_` pool to be granted a slot.
      */
     slots_map untrustedSlots_;
@@ -889,8 +881,4 @@ protected:
     hash_map<PublicKey, ValidatorInfo> consideredValidators_;
 };
 
-}  // namespace reduce_relay
-
-}  // namespace ripple
-
-#endif  // RIPPLE_OVERLAY_SLOT_H_INCLUDED
+}  // namespace xrpl::reduce_relay

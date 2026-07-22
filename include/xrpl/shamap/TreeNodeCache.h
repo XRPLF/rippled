@@ -1,0 +1,16 @@
+#pragma once
+
+#include <xrpl/basics/IntrusivePointer.h>
+#include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+namespace xrpl {
+
+using TreeNodeCache = TaggedCache<
+    uint256,
+    SHAMapTreeNode,
+    /*IsKeyCache*/ false,
+    intr_ptr::SharedWeakUnionPtr<SHAMapTreeNode>,
+    SHAMapTreeNodePtr>;
+}  // namespace xrpl

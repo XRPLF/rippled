@@ -1,123 +1,132 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2016 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_CONSENSUS_RCLCXLEDGER_H_INCLUDED
-#define RIPPLE_APP_CONSENSUS_RCLCXLEDGER_H_INCLUDED
-
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
-#include <xrpld/ledger/ReadView.h>
 
+#include <xrpl/basics/chrono.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 
-namespace ripple {
+#include <memory>
+#include <utility>
 
-/** Represents a ledger in RCLConsensus.
+namespace xrpl {
 
-    RCLCxLedger is a thin wrapper over `std::shared_ptr<Ledger const>`.
-*/
+/**
+ * Represents a ledger in RCLConsensus.
+ *
+ * RCLCxLedger is a thin wrapper over `std::shared_ptr<Ledger const>`.
+ */
 class RCLCxLedger
 {
 public:
-    //! Unique identifier of a ledger
+    /**
+     * Unique identifier of a ledger
+     */
     using ID = LedgerHash;
-    //! Sequence number of a ledger
+    /**
+     * Sequence number of a ledger
+     */
     using Seq = LedgerIndex;
 
-    /** Default constructor
-
-        TODO: This may not be needed if we ensure RCLConsensus is handed a valid
-        ledger in its constructor.  Its bad now because other members are not
-        checking whether the ledger is valid.
-    */
+    /**
+     * Default constructor
+     *
+     * TODO: This may not be needed if we ensure RCLConsensus is handed a valid
+     * ledger in its constructor.  Its bad now because other members are not
+     * checking whether the ledger is valid.
+     */
     RCLCxLedger() = default;
 
-    /** Constructor
-
-        @param l The ledger to wrap.
-    */
-    RCLCxLedger(std::shared_ptr<Ledger const> const& l) : ledger_{l}
+    /**
+     * Constructor
+     *
+     * @param l The ledger to wrap.
+     */
+    RCLCxLedger(std::shared_ptr<Ledger const> l) : ledger{std::move(l)}
     {
     }
 
-    //! Sequence number of the ledger.
-    Seq const&
+    /**
+     * Sequence number of the ledger.
+     */
+    [[nodiscard]] Seq const&
     seq() const
     {
-        return ledger_->info().seq;
+        return ledger->header().seq;
     }
 
-    //! Unique identifier (hash) of this ledger.
-    ID const&
+    /**
+     * Unique identifier (hash) of this ledger.
+     */
+    [[nodiscard]] ID const&
     id() const
     {
-        return ledger_->info().hash;
+        return ledger->header().hash;
     }
 
-    //! Unique identifier (hash) of this ledger's parent.
-    ID const&
+    /**
+     * Unique identifier (hash) of this ledger's parent.
+     */
+    [[nodiscard]] ID const&
     parentID() const
     {
-        return ledger_->info().parentHash;
+        return ledger->header().parentHash;
     }
 
-    //! Resolution used when calculating this ledger's close time.
-    NetClock::duration
+    /**
+     * Resolution used when calculating this ledger's close time.
+     */
+    [[nodiscard]] NetClock::duration
     closeTimeResolution() const
     {
-        return ledger_->info().closeTimeResolution;
+        return ledger->header().closeTimeResolution;
     }
 
-    //! Whether consensus process agreed on close time of the ledger.
-    bool
+    /**
+     * Whether consensus process agreed on close time of the ledger.
+     */
+    [[nodiscard]] bool
     closeAgree() const
     {
-        return ripple::getCloseAgree(ledger_->info());
+        return xrpl::getCloseAgree(ledger->header());
     }
 
-    //! The close time of this ledger
-    NetClock::time_point
+    /**
+     * The close time of this ledger
+     */
+    [[nodiscard]] NetClock::time_point
     closeTime() const
     {
-        return ledger_->info().closeTime;
+        return ledger->header().closeTime;
     }
 
-    //! The close time of this ledger's parent.
-    NetClock::time_point
+    /**
+     * The close time of this ledger's parent.
+     */
+    [[nodiscard]] NetClock::time_point
     parentCloseTime() const
     {
-        return ledger_->info().parentCloseTime;
+        return ledger->header().parentCloseTime;
     }
 
-    //! JSON representation of this ledger.
-    Json::Value
+    /**
+     * JSON representation of this ledger.
+     */
+    [[nodiscard]] json::Value
     getJson() const
     {
-        return ripple::getJson({*ledger_, {}});
+        return xrpl::getJson({*ledger, {}});
     }
 
-    /** The ledger instance.
-
-        TODO: Make this shared_ptr<ReadView const> .. requires ability to create
-        a new ledger from a readView?
-    */
-    std::shared_ptr<Ledger const> ledger_;
+    /**
+     * The ledger instance.
+     *
+     * TODO: Make this shared_ptr<ReadView const> .. requires ability to create
+     * a new ledger from a readView?
+     */
+    std::shared_ptr<Ledger const> ledger;
 };
-}  // namespace ripple
-#endif
+}  // namespace xrpl

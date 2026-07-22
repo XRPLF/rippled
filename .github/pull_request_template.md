@@ -29,22 +29,6 @@ If a refactor, how is this better than the previous implementation?
 If there is a spec or design document for this feature, please link it here.
 -->
 
-### Type of Change
-
-<!--
-Please check [x] relevant options, delete irrelevant ones.
--->
-
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Refactor (non-breaking change that only restructures code)
-- [ ] Performance (increase or change in throughput and/or latency)
-- [ ] Tests (you added tests for code that already exists, or your new feature included in this PR)
-- [ ] Documentation update
-- [ ] Chore (no impact to binary, e.g. `.gitignore`, formatting, dropping support for older tooling)
-- [ ] Release
-
 ### API Impact
 
 <!--

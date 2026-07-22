@@ -1,32 +1,15 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_SYSTEMPARAMETERS_H_INCLUDED
-#define RIPPLE_PROTOCOL_SYSTEMPARAMETERS_H_INCLUDED
-
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <chrono>
 #include <cstdint>
+#include <ratio>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 // Various protocol and system specific constant globals.
 
@@ -34,60 +17,72 @@ namespace ripple {
 static inline std::string const&
 systemName()
 {
-    static std::string const name = "ripple";
-    return name;
+    static std::string const kName = "xrpld";
+    return kName;
 }
 
-/** Configure the native currency. */
+/**
+ * Configure the native currency.
+ */
 
-/** Number of drops in the genesis account. */
-constexpr XRPAmount INITIAL_XRP{100'000'000'000 * DROPS_PER_XRP};
+/**
+ * Number of drops in the genesis account.
+ */
+constexpr XRPAmount kInitialXrp{100'000'000'000 * kDropsPerXrp};
+static_assert(kInitialXrp.drops() == 100'000'000'000'000'000);
+static_assert(Number::kMaxRep >= kInitialXrp.drops());
 
-/** Returns true if the amount does not exceed the initial XRP in existence. */
+/**
+ * Returns true if the amount does not exceed the initial XRP in existence.
+ */
 inline bool
 isLegalAmount(XRPAmount const& amount)
 {
-    return amount <= INITIAL_XRP;
+    return amount <= kInitialXrp;
 }
 
-/** Returns true if the absolute value of the amount does not exceed the initial
- * XRP in existence. */
+/**
+ * Returns true if the absolute value of the amount does not exceed the initial
+ * XRP in existence.
+ */
 inline bool
 isLegalAmountSigned(XRPAmount const& amount)
 {
-    return amount >= -INITIAL_XRP && amount <= INITIAL_XRP;
+    return amount >= -kInitialXrp && amount <= kInitialXrp;
 }
 
 /* The currency code for the native currency. */
 static inline std::string const&
 systemCurrencyCode()
 {
-    static std::string const code = "XRP";
-    return code;
+    static std::string const kCode = "XRP";
+    return kCode;
 }
 
-/** The XRP ledger network's earliest allowed sequence */
-static constexpr std::uint32_t XRP_LEDGER_EARLIEST_SEQ{32570u};
+/**
+ * The XRP ledger network's earliest allowed sequence
+ */
+static constexpr std::uint32_t kXrpLedgerEarliestSeq{32570u};
 
-/** The XRP Ledger mainnet's earliest ledger with a FeeSettings object. Only
- * used in asserts and tests. */
-static constexpr std::uint32_t XRP_LEDGER_EARLIEST_FEES{562177u};
+/**
+ * The XRP Ledger mainnet's earliest ledger with a FeeSettings object. Only
+ * used in asserts and tests.
+ */
+static constexpr std::uint32_t kXrpLedgerEarliestFees{562177u};
 
-/** The minimum amount of support an amendment should have.
+/**
+ * The minimum amount of support an amendment should have.
+ */
+constexpr std::ratio<80, 100> kAmendmentMajorityCalcThreshold;
 
-    @note This value is used by legacy code and will become obsolete
-          once the fixAmendmentMajorityCalc amendment activates.
-*/
-constexpr std::ratio<204, 256> preFixAmendmentMajorityCalcThreshold;
+/**
+ * The minimum amount of time an amendment must hold a majority
+ */
+constexpr std::chrono::seconds const kDefaultAmendmentMajorityTime = weeks{2};
 
-constexpr std::ratio<80, 100> postFixAmendmentMajorityCalcThreshold;
+}  // namespace xrpl
 
-/** The minimum amount of time an amendment must hold a majority */
-constexpr std::chrono::seconds const defaultAmendmentMajorityTime = weeks{2};
-
-}  // namespace ripple
-
-/** Default peer port (IANA registered) */
-inline std::uint16_t constexpr DEFAULT_PEER_PORT{2459};
-
-#endif
+/**
+ * Default peer port (IANA registered)
+ */
+inline constexpr std::uint16_t kDefaultPeerPort{2459};

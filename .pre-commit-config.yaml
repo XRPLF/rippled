@@ -1,6 +1,141 @@
-# .pre-commit-config.yaml
+# To run pre-commit hooks, first install pre-commit:
+# - `pip install pre-commit==${PRE_COMMIT_VERSION}`
+#
+# Then, run the following command to install the git hook scripts:
+# - `pre-commit install`
+# You can run all configured hooks against all files with:
+# - `pre-commit run --all-files`
+# To manually run a specific hook, use:
+# - `pre-commit run <hook_id> --all-files`
+# To run the hooks against only the staged files, use:
+# - `pre-commit run`
 repos:
-- repo: https://github.com/pre-commit/mirrors-clang-format
-  rev: v18.1.8
-  hooks:
-  - id: clang-format
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: [--maxkb=400, --enforce-all]
+      - id: check-executables-have-shebangs
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+        args: [--assume-in-merge]
+
+  - repo: local
+    hooks:
+      - id: clang-tidy
+        name: "clang-tidy (enable with: TIDY=1)"
+        entry: ./bin/pre-commit/clang_tidy_check.py
+        language: python
+        types_or: [c++, c]
+        # .ipp fragments are included by their owning header rather than compiled
+        # as standalone translation units, so they have no compile_commands.json
+        # entry to lint (verify_headers checks them transitively).
+        exclude: '^include/xrpl/protocol_autogen|\.ipp$'
+        # run-clang-tidy --fix may edit headers included by files it is not run on,
+        # so pre-commit must not split the files across parallel hook invocations.
+        # The script determines the staged files itself and lets run-clang-tidy
+        # handle parallelism internally.
+        pass_filenames: false
+      - id: fix-include-style
+        name: fix include style
+        entry: ./bin/pre-commit/fix_include_style.py
+        language: python
+        types_or: [c++, c]
+        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
+      - id: fix-pragma-once
+        name: fix missing '#pragma once' declarations in header files
+        language: python
+        entry: ./bin/pre-commit/fix_pragma_once.py
+        files: \.(h|hpp)$
+      - id: check-doxygen-style
+        name: check Doxygen comment style
+        entry: ./bin/pre-commit/check_doxygen_style.py
+        language: python
+        types_or: [c++, c]
+
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: f4d7745e17a28aad7eed2f4874ca8d1568c11c4c # frozen: v22.1.8
+    hooks:
+      - id: clang-format
+        args: [--style=file]
+        types_or: [c++, c, proto]
+        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
+
+  - repo: https://github.com/BlankSpruce/gersemi-pre-commit
+    rev: e98930bdc210d3387007f9252d8c1694ea7e410f # frozen: 0.27.7
+    hooks:
+      - id: gersemi
+
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: 9337a74165b178ae2c766f60bee7252a0f06f3e8 # frozen: v3.9.5
+    hooks:
+      - id: prettier
+        args: [--end-of-line=auto]
+
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 4160603246a6b365d4a2af661c6d71b0a0f50478 # frozen: 26.5.1
+    hooks:
+      - id: black
+
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: 05c1426671b9237fb5e1444dd63aa5731bec0dfb # frozen: v3.13.1-1
+    hooks:
+      - id: shfmt
+        args: [--write, --indent=4, --case-indent=true]
+
+  - repo: local
+    hooks:
+      - id: format-inline-bash-workflows
+        name: "format `run:` blocks in workflows/actions"
+        entry: ./.github/scripts/format-inline-bash.py
+        language: python
+        files: ^\.github/(workflows|actions)/.*\.ya?ml$
+      - id: format-inline-bash-markdown
+        name: "format ```bash blocks in markdown"
+        entry: ./.github/scripts/format-inline-bash.py
+        language: python
+        files: \.md$
+
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: ea11f9efc0bec520073405bc30552da887ba71bc # frozen: v10.0.1
+    hooks:
+      - id: cspell
+        name: check changed files spelling
+        exclude: |
+          (?x)^(
+              \.cspell\.config\.yaml|
+              include/xrpl/protocol_autogen/(transactions|ledger_entries)/.*
+          )$
+      - id: cspell
+        name: check commit message spelling
+        args:
+          - --no-must-find-files
+          - --no-progress
+          - --no-summary
+        stages: [commit-msg]
+
+  - repo: local
+    hooks:
+      - id: nix-fmt
+        name: Format Nix files
+        entry: |
+          bash -c '
+            if command -v nix &> /dev/null || [ "$GITHUB_ACTIONS" = "true" ]; then
+              nix --extra-experimental-features "nix-command flakes" fmt "$@"
+            else
+              echo "Skipping nix-fmt: nix not installed and not in GitHub Actions"
+              exit 0
+            fi
+          ' --
+        language: system
+        types:
+          - nix
+        pass_filenames: true
+
+exclude: |
+  (?x)^(
+      external/.*|
+      .github/scripts/levelization/results/.*\.txt|
+      src/tests/libxrpl/protocol_autogen/(transactions|ledger_entries)/.*
+  )$

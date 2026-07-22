@@ -1,45 +1,41 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/rpc/Role.h>
 
+#include <xrpl/beast/net/IPAddress.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/ResourceManager.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Port.h>
+
+#include <boost/asio/ip/impl/network_v4.ipp>
+#include <boost/asio/ip/impl/network_v6.ipp>
+#include <boost/asio/ip/network_v4.hpp>
+#include <boost/asio/ip/network_v6.hpp>
 #include <boost/beast/http/field.hpp>
-#include <boost/utility/string_view.hpp>
 
 #include <algorithm>
+#include <cctype>
+#include <cstddef>
+#include <iterator>
+#include <string_view>
+#include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 bool
-passwordUnrequiredOrSentCorrect(Port const& port, Json::Value const& params)
+passwordUnrequiredOrSentCorrect(Port const& port, json::Value const& params)
 {
     XRPL_ASSERT(
-        !(port.admin_nets_v4.empty() && port.admin_nets_v6.empty()),
-        "ripple::passwordUnrequiredOrSentCorrect : non-empty admin nets");
-    bool const passwordRequired =
-        (!port.admin_user.empty() || !port.admin_password.empty());
+        !(port.adminNetsV4.empty() && port.adminNetsV6.empty()),
+        "xrpl::passwordUnrequiredOrSentCorrect : non-empty admin nets");
+    bool const passwordRequired = (!port.adminUser.empty() || !port.adminPassword.empty());
 
     return !passwordRequired ||
         ((params["admin_password"].isString() &&
-          params["admin_password"].asString() == port.admin_password) &&
-         (params["admin_user"].isString() &&
-          params["admin_user"].asString() == port.admin_user));
+          params["admin_password"].asString() == port.adminPassword) &&
+         (params["admin_user"].isString() && params["admin_user"].asString() == port.adminUser));
 }
 
 bool
@@ -82,12 +78,9 @@ ipAllowed(
 }
 
 bool
-isAdmin(
-    Port const& port,
-    Json::Value const& params,
-    beast::IP::Address const& remoteIp)
+isAdmin(Port const& port, json::Value const& params, beast::IP::Address const& remoteIp)
 {
-    return ipAllowed(remoteIp, port.admin_nets_v4, port.admin_nets_v6) &&
+    return ipAllowed(remoteIp, port.adminNetsV4, port.adminNetsV6) &&
         passwordUnrequiredOrSentCorrect(port, params);
 }
 
@@ -95,7 +88,7 @@ Role
 requestRole(
     Role const& required,
     Port const& port,
-    Json::Value const& params,
+    json::Value const& params,
     beast::IP::Endpoint const& remoteIp,
     std::string_view user)
 {
@@ -105,12 +98,9 @@ requestRole(
     if (required == Role::ADMIN)
         return Role::FORBID;
 
-    if (ipAllowed(
-            remoteIp.address(),
-            port.secure_gateway_nets_v4,
-            port.secure_gateway_nets_v6))
+    if (ipAllowed(remoteIp.address(), port.secureGatewayNetsV4, port.secureGatewayNetsV6))
     {
-        if (user.size())
+        if (!user.empty())
             return Role::IDENTIFIED;
         return Role::PROXY;
     }
@@ -131,7 +121,7 @@ bool
 isUnlimited(
     Role const& required,
     Port const& port,
-    Json::Value const& params,
+    json::Value const& params,
     beast::IP::Endpoint const& remoteIp,
     std::string const& user)
 {
@@ -149,8 +139,7 @@ requestInboundEndpoint(
     if (isUnlimited(role))
         return manager.newUnlimitedEndpoint(remoteAddress);
 
-    return manager.newInboundEndpoint(
-        remoteAddress, role == Role::PROXY, forwardedFor);
+    return manager.newInboundEndpoint(remoteAddress, role == Role::PROXY, forwardedFor);
 }
 
 static std::string_view
@@ -165,9 +154,11 @@ extractIpAddrFromField(std::string_view field)
         {
             std::size_t const firstNonSpace = ret.find_first_not_of(' ');
             if (firstNonSpace == std::string_view::npos)
+            {
                 // We know there's at least one leading space.  So if we got
                 // npos, then it must be all spaces.  Return empty string_view.
                 return {};
+            }
 
             ret = ret.substr(firstNonSpace);
         }
@@ -175,14 +166,15 @@ extractIpAddrFromField(std::string_view field)
         if (!ret.empty())
         {
             // Only do the work if there's at least one trailing space.
-            if (unsigned char const c = ret.back();
-                c == ' ' || c == '\r' || c == '\n')
+            if (unsigned char const c = ret.back(); c == ' ' || c == '\r' || c == '\n')
             {
                 std::size_t const lastNonSpace = ret.find_last_not_of(" \r\n");
                 if (lastNonSpace == std::string_view::npos)
+                {
                     // We know there's at least one leading space.  So if we
                     // got npos, then it must be all spaces.
                     return {};
+                }
 
                 ret = ret.substr(0, lastNonSpace + 1);
             }
@@ -218,10 +210,9 @@ extractIpAddrFromField(std::string_view field)
 
         // We may have an IPv6 address in square brackets.  Scan up to the
         // closing square bracket.
-        auto const closeBracket =
-            std::find_if_not(ret.begin(), ret.end(), [](unsigned char c) {
-                return std::isxdigit(c) || c == ':' || c == '.' || c == ' ';
-            });
+        auto const closeBracket = std::ranges::find_if_not(ret, [](unsigned char c) {
+            return std::isxdigit(c) || c == ':' || c == '.' || c == ' ';
+        });
 
         // If the string does not close with a ']', then it's not valid IPv6
         // or IPv6 (dual).
@@ -239,10 +230,8 @@ extractIpAddrFromField(std::string_view field)
     // then there cannot be an appended port.  In that case we're done.
     {
         // Skip any leading hex digits.
-        auto const colon =
-            std::find_if_not(ret.begin(), ret.end(), [](unsigned char c) {
-                return std::isxdigit(c) || c == ' ';
-            });
+        auto const colon = std::ranges::find_if_not(
+            ret, [](unsigned char c) { return std::isxdigit(c) || c == ' '; });
 
         // If the string starts with optional hex digits followed by a colon
         // it's an IVv6 address.  We're done.
@@ -252,7 +241,7 @@ extractIpAddrFromField(std::string_view field)
 
     // If there's a port appended to the IP address, strip that by
     // terminating at the colon.
-    if (std::size_t colon = ret.find(':'); colon != std::string_view::npos)
+    if (std::size_t const colon = ret.find(':'); colon != std::string_view::npos)
         ret = ret.substr(0, colon);
 
     return ret;
@@ -262,37 +251,48 @@ std::string_view
 forwardedFor(http_request_type const& request)
 {
     // Look for the Forwarded field in the request.
-    if (auto it = request.find(boost::beast::http::field::forwarded);
-        it != request.end())
+    if (auto it = request.find(boost::beast::http::field::forwarded); it != request.end())
     {
-        auto ascii_tolower = [](char c) -> char {
+        auto asciiToLower = [](char c) -> char {
             return ((static_cast<unsigned>(c) - 65U) < 26) ? c + 'a' - 'A' : c;
         };
 
-        // Look for the first (case insensitive) "for="
-        static std::string const forStr{"for="};
-        char const* found = std::search(
-            it->value().begin(),
-            it->value().end(),
-            forStr.begin(),
-            forStr.end(),
-            [&ascii_tolower](char c1, char c2) {
-                return ascii_tolower(c1) == ascii_tolower(c2);
-            });
+        // Look for the first (case insensitive) "for=" at a directive
+        // boundary (start of value, or preceded by , ; or OWS).
+        static constexpr std::string_view kForStr{"for="};
+        auto const atFieldBoundary = [begin = it->value().begin()](auto p) {
+            return p == begin || p[-1] == ';' || p[-1] == ',' || p[-1] == ' ' || p[-1] == '\t';
+        };
+        auto found = it->value().begin();
+        while (true)
+        {
+            found = std::search(
+                found,
+                it->value().end(),
+                kForStr.begin(),
+                kForStr.end(),
+                [&asciiToLower](char c1, char c2) { return asciiToLower(c1) == asciiToLower(c2); });
 
-        if (found == it->value().end())
-            return {};
+            if (found == it->value().end())
+                return {};
 
-        found += forStr.size();
+            if (atFieldBoundary(found))
+                break;
+
+            ++found;
+        }
+
+        std::advance(found, kForStr.size());
 
         // We found a "for=".  Scan for the end of the IP address.
-        std::size_t const pos = [&found, &it]() {
-            std::size_t pos = std::string_view(found, it->value().end() - found)
-                                  .find_first_of(",;");
+        auto const end = it->value().end();
+        std::size_t const pos = [&found, &end]() {
+            std::size_t const pos =
+                std::string_view(found, std::distance(found, end)).find_first_of(",;");
             if (pos != std::string_view::npos)
                 return pos;
 
-            return it->value().size() - forStr.size();
+            return static_cast<std::size_t>(std::distance(found, end));
         }();
 
         return extractIpAddrFromField({found, pos});
@@ -311,4 +311,4 @@ forwardedFor(http_request_type const& request)
     return {};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

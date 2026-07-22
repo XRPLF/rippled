@@ -1,61 +1,42 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2018 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_SEQ_PROXY_H_INCLUDED
-#define RIPPLE_PROTOCOL_SEQ_PROXY_H_INCLUDED
+#pragma once
 
 #include <cstdint>
 #include <ostream>
 
-namespace ripple {
+namespace xrpl {
 
-/** A type that represents either a sequence value or a ticket value.
-
-  We use the value() of a SeqProxy in places where a sequence was used
-  before.  An example of this is the sequence of an Offer stored in the
-  ledger.  We do the same thing with the in-ledger identifier of a
-  Check, Payment Channel, and Escrow.
-
-  Why is this safe?  If we use the SeqProxy::value(), how do we know that
-  each ledger entry will be unique?
-
-  There are two components that make this safe:
-
-  1. A "TicketCreate" transaction carefully avoids creating a ticket
-     that corresponds with an already used Sequence or Ticket value.
-     The transactor does this by referring to the account root's
-     sequence number.  Creating the ticket advances the account root's
-     sequence number so the same ticket (or sequence) value cannot be
-     used again.
-
-  2. When a "TicketCreate" transaction creates a batch of tickets it advances
-     the account root sequence to one past the largest created ticket.
-
-     Therefore all tickets in a batch other than the first may never have
-     the same value as a sequence on that same account.  And since a ticket
-     may only be used once there will never be any duplicates within this
-     account.
-*/
+/**
+ * A type that represents either a sequence value or a ticket value.
+ *
+ * We use the value() of a SeqProxy in places where a sequence was used
+ * before.  An example of this is the sequence of an Offer stored in the
+ * ledger.  We do the same thing with the in-ledger identifier of a
+ * Check, Payment Channel, and Escrow.
+ *
+ * Why is this safe?  If we use the SeqProxy::value(), how do we know that
+ * each ledger entry will be unique?
+ *
+ * There are two components that make this safe:
+ *
+ * 1. A "TicketCreate" transaction carefully avoids creating a ticket
+ *    that corresponds with an already used Sequence or Ticket value.
+ *    The transactor does this by referring to the account root's
+ *    sequence number.  Creating the ticket advances the account root's
+ *    sequence number so the same ticket (or sequence) value cannot be
+ *    used again.
+ *
+ * 2. When a "TicketCreate" transaction creates a batch of tickets it advances
+ *    the account root sequence to one past the largest created ticket.
+ *
+ *    Therefore all tickets in a batch other than the first may never have
+ *    the same value as a sequence on that same account.  And since a ticket
+ *    may only be used once there will never be any duplicates within this
+ *    account.
+ */
 class SeqProxy
 {
 public:
-    enum Type : std::uint8_t { seq = 0, ticket };
+    enum class Type : std::uint8_t { Seq = 0, Ticket };
 
 private:
     std::uint32_t value_;
@@ -71,29 +52,31 @@ public:
     SeqProxy&
     operator=(SeqProxy const& other) = default;
 
-    /** Factory function to return a sequence-based SeqProxy */
+    /**
+     * Factory function to return a sequence-based SeqProxy
+     */
     static constexpr SeqProxy
     sequence(std::uint32_t v)
     {
-        return SeqProxy{Type::seq, v};
+        return SeqProxy{Type::Seq, v};
     }
 
-    constexpr std::uint32_t
+    [[nodiscard]] constexpr std::uint32_t
     value() const
     {
         return value_;
     }
 
-    constexpr bool
+    [[nodiscard]] constexpr bool
     isSeq() const
     {
-        return type_ == seq;
+        return type_ == Type::Seq;
     }
 
-    constexpr bool
+    [[nodiscard]] constexpr bool
     isTicket() const
     {
-        return type_ == ticket;
+        return type_ == Type::Ticket;
     }
 
     // Occasionally it is convenient to be able to increase the value_
@@ -165,6 +148,4 @@ public:
         return os;
     }
 };
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

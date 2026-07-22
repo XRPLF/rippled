@@ -38,7 +38,7 @@ deactivate lr
             loop
               lr -> lda : make_shared(ledgerId, ledgerSeq)
               return delta
-              lr -> lrt : addDelta(delta)              
+              lr -> lrt : addDelta(delta)
                 lrt -> lda : addDataCallback(callback)
                 return
               return
@@ -62,7 +62,7 @@ deactivate peer
     lr -> lda : processData(ledgerHeader, txns)
       lda -> lda : notify()
       note over lda: call the callbacks added by\naddDataCallback(callback).
-        lda -> lrt : callback(ledgerId) 
+        lda -> lrt : callback(ledgerId)
         lrt -> lrt : deltaReady(ledgerId)
           lrt -> lrt : tryAdvance()
             loop as long as child can be built

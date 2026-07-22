@@ -1,30 +1,13 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Serializer.h>
 
+#include <cstdint>
+#include <initializer_list>
 #include <limits>
 
-namespace ripple {
+namespace xrpl {
 
-struct Serializer_test : public beast::unit_test::suite
+struct Serializer_test : public beast::unit_test::Suite
 {
     void
     run() override
@@ -36,7 +19,7 @@ struct Serializer_test : public beast::unit_test::suite
                 0,
                 1,
                 std::numeric_limits<std::int32_t>::max()};
-            for (std::int32_t value : values)
+            for (std::int32_t const value : values)
             {
                 Serializer s;
                 s.add32(value);
@@ -52,7 +35,7 @@ struct Serializer_test : public beast::unit_test::suite
                 0,
                 1,
                 std::numeric_limits<std::int64_t>::max()};
-            for (std::int64_t value : values)
+            for (std::int64_t const value : values)
             {
                 Serializer s;
                 s.add64(value);
@@ -64,6 +47,6 @@ struct Serializer_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Serializer, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(Serializer, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

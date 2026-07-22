@@ -1,0 +1,397 @@
+#include <xrpl/tx/invariants/AMMInvariant.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <string>
+
+namespace xrpl {
+
+void
+ValidAMM::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+{
+    if (isDelete)
+    {
+        if (before && before->getType() == ltAMM)
+        {
+            ammDeleted_ = true;
+            lptAMMBalanceBeforeDeletion_ = before->getFieldAmount(sfLPTokenBalance);
+        }
+        return;
+    }
+
+    if (after)
+    {
+        auto const type = after->getType();
+        // AMM object changed
+        if (type == ltAMM)
+        {
+            ammAccount_ = after->getAccountID(sfAccount);
+            lptAMMBalanceAfter_ = after->getFieldAmount(sfLPTokenBalance);
+        }
+        // AMM pool changed
+        else if (
+            (type == ltRIPPLE_STATE && after->isFlag(lsfAMMNode)) ||
+            (type == ltACCOUNT_ROOT && after->isFieldPresent(sfAMMID)) ||
+            (type == ltMPTOKEN && after->isFlag(lsfMPTAMM)))
+        {
+            ammPoolChanged_ = true;
+        }
+    }
+
+    if (before)
+    {
+        // AMM object changed
+        if (before->getType() == ltAMM)
+        {
+            lptAMMBalanceBefore_ = before->getFieldAmount(sfLPTokenBalance);
+        }
+    }
+}
+
+static bool
+validBalances(
+    STAmount const& amount,
+    STAmount const& amount2,
+    STAmount const& lptAMMBalance,
+    ValidAMM::ZeroAllowed zeroAllowed)
+{
+    bool const positive =
+        amount > beast::kZero && amount2 > beast::kZero && lptAMMBalance > beast::kZero;
+    if (zeroAllowed == ValidAMM::ZeroAllowed::Yes)
+    {
+        return positive ||
+            (amount == beast::kZero && amount2 == beast::kZero && lptAMMBalance == beast::kZero);
+    }
+    return positive;
+}
+
+bool
+ValidAMM::finalizeVote(bool enforce, beast::Journal const& j) const
+{
+    if (lptAMMBalanceAfter_ != lptAMMBalanceBefore_ || ammPoolChanged_)
+    {
+        // LPTokens and the pool can not change on vote
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "Invariant failed: AMMVote failed, "
+                        << lptAMMBalanceBefore_.value_or(STAmount{}) << " "
+                        << lptAMMBalanceAfter_.value_or(STAmount{}) << " " << ammPoolChanged_;
+        if (enforce)
+            return false;
+        // LCOV_EXCL_STOP
+    }
+
+    return true;
+}
+
+bool
+ValidAMM::finalizeBid(bool enforce, beast::Journal const& j) const
+{
+    if (ammPoolChanged_)
+    {
+        // The pool can not change on bid
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "Invariant failed: AMMBid failed, pool changed";
+        if (enforce)
+            return false;
+        // LCOV_EXCL_STOP
+    }
+    // LPTokens are burnt, therefore there should be fewer LPTokens
+    else if (
+        lptAMMBalanceBefore_ && lptAMMBalanceAfter_ &&
+        (*lptAMMBalanceAfter_ > *lptAMMBalanceBefore_ || *lptAMMBalanceAfter_ <= beast::kZero))
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "Invariant failed: AMMBid failed, " << *lptAMMBalanceBefore_ << " "
+                        << *lptAMMBalanceAfter_;
+        if (enforce)
+            return false;
+        // LCOV_EXCL_STOP
+    }
+
+    return true;
+}
+
+bool
+ValidAMM::finalizeCreate(
+    STTx const& tx,
+    ReadView const& view,
+    bool enforce,
+    beast::Journal const& j) const
+{
+    if (!ammAccount_)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "Invariant failed: AMMCreate failed, AMM object is not created";
+        if (enforce)
+            return false;
+        // LCOV_EXCL_STOP
+    }
+    else
+    {
+        auto const [amount, amount2] = ammPoolHolds(
+            view,
+            *ammAccount_,
+            tx[sfAmount].asset(),
+            tx[sfAmount2].asset(),
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
+            j);
+        // Create invariant:
+        // sqrt(amount * amount2) == LPTokens
+        // all balances are greater than zero
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) lptAMMBalanceAfter_ set with ammAccount_
+        // in visitEntry
+        if (!validBalances(amount, amount2, *lptAMMBalanceAfter_, ZeroAllowed::No) ||
+            ammLPTokens(amount, amount2, lptAMMBalanceAfter_->get<Issue>()) != *lptAMMBalanceAfter_)
+        {
+            JLOG(j.error()) << "Invariant failed: AMMCreate failed, " << amount << " " << amount2
+                            << " " << *lptAMMBalanceAfter_;
+            if (enforce)
+                return false;
+        }
+        // NOLINTEND(bugprone-unchecked-optional-access)
+    }
+
+    return true;
+}
+
+bool
+ValidAMM::finalizeDelete(bool enforce, bool enforceAMMDelete, TER res, beast::Journal const& j)
+    const
+{
+    if (ammAccount_)
+    {
+        // LCOV_EXCL_START
+        std::string const msg = (isTesSuccess(res)) ? "AMM object remained on tesSUCCESS"
+                                                    : "AMM object changed on tecINCOMPLETE";
+        JLOG(j.error()) << "Invariant failed: AMMDelete failed, " << msg;
+        if (enforce)
+            return false;
+        // LCOV_EXCL_STOP
+    }
+    if (enforceAMMDelete)
+    {
+        if (isTesSuccess(res))
+        {
+            if (!ammDeleted_)
+            {
+                // LCOV_EXCL_START
+                JLOG(j.error())
+                    << "Invariant failed: AMMDelete failed, AMM object remained on tesSUCCESS";
+                return false;
+                // LCOV_EXCL_STOP
+            }
+            if (!lptAMMBalanceBeforeDeletion_)
+            {
+                // LCOV_EXCL_START
+                JLOG(j.error())
+                    << "Invariant failed: AMMDelete failed, AMM object deleted without LP balance";
+                return false;
+                // LCOV_EXCL_STOP
+            }
+            if (*lptAMMBalanceBeforeDeletion_ != beast::kZero)
+            {
+                // LCOV_EXCL_START
+                JLOG(j.error())
+                    << "Invariant failed: AMMDelete failed, AMM object deleted with non-zero LP "
+                       "balance: "
+                    << *lptAMMBalanceBeforeDeletion_;
+                return false;
+                // LCOV_EXCL_STOP
+            }
+        }
+        else if (ammDeleted_)
+        {
+            // AMM should only be fully deleted when AMMDelete returns tesSUCCESS.
+            // LCOV_EXCL_START
+            JLOG(j.error()) << "Invariant failed: AMMDelete failed, AMM object deleted when result "
+                               "is not tesSUCCESS";
+            return false;
+            // LCOV_EXCL_STOP
+        }
+    }
+
+    return true;
+}
+
+bool
+ValidAMM::finalizeDEX(bool enforce, beast::Journal const& j) const
+{
+    if (ammAccount_)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "Invariant failed: AMM swap failed, AMM object changed";
+        if (enforce)
+            return false;
+        // LCOV_EXCL_STOP
+    }
+
+    return true;
+}
+
+bool
+ValidAMM::generalInvariant(
+    xrpl::STTx const& tx,
+    xrpl::ReadView const& view,
+    ZeroAllowed zeroAllowed,
+    beast::Journal const& j) const
+{
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) ammAccount_ and lptAMMBalanceAfter_ set
+    // together in visitEntry; callers only invoke this inside else-of-if(!ammAccount_)
+    auto const [amount, amount2] = ammPoolHolds(
+        view,
+        *ammAccount_,
+        tx[sfAsset],
+        tx[sfAsset2],
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        j);
+    // Deposit and Withdrawal invariant:
+    // sqrt(amount * amount2) >= LPTokens
+    // all balances are greater than zero
+    // unless on last withdrawal
+    auto const poolProductMean = root2(amount * amount2);
+    bool const nonNegativeBalances =
+        validBalances(amount, amount2, *lptAMMBalanceAfter_, zeroAllowed);
+    auto const precisionLoss = checkAMMPrecisionLoss(poolProductMean, *lptAMMBalanceAfter_);
+    if (!nonNegativeBalances || !isTesSuccess(precisionLoss))
+    {
+        JLOG(j.error()) << "Invariant failed: AMM " << tx.getTxnType() << " "
+                        << tx.getHash(HashPrefix::TransactionId) << " " << ammPoolChanged_ << " "
+                        << amount << " " << amount2 << " " << poolProductMean << " "
+                        << lptAMMBalanceAfter_->getText() << " "
+                        << ((*lptAMMBalanceAfter_ == beast::kZero)
+                                ? Number{1}
+                                : ((*lptAMMBalanceAfter_ - poolProductMean) / poolProductMean));
+        return false;
+    }
+    // NOLINTEND(bugprone-unchecked-optional-access)
+
+    return true;
+}
+
+bool
+ValidAMM::finalizeDeposit(
+    xrpl::STTx const& tx,
+    xrpl::ReadView const& view,
+    bool enforce,
+    beast::Journal const& j) const
+{
+    if (!ammAccount_)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "Invariant failed: AMMDeposit failed, AMM object is deleted";
+        if (enforce)
+            return false;
+        // LCOV_EXCL_STOP
+    }
+    else if (!generalInvariant(tx, view, ZeroAllowed::No, j) && enforce)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool
+ValidAMM::finalizeWithdraw(
+    xrpl::STTx const& tx,
+    xrpl::ReadView const& view,
+    bool enforce,
+    bool enforceAMMDelete,
+    beast::Journal const& j) const
+{
+    if (enforceAMMDelete && ammDeleted_)
+    {
+        // Last Withdraw or Clawback can delete the AMM. We don't have to check
+        // the LPToken balance because a final AMMWithdraw or AMMClawback can
+        // redeem the remaining LP tokens and delete the AMM entry in the same
+        // transaction.
+        return true;
+    }
+    if (ammAccount_ && !generalInvariant(tx, view, ZeroAllowed::Yes, j) && enforce)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool
+ValidAMM::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    // Delete may return tecINCOMPLETE if there are too many
+    // trustlines to delete.
+    if (!isTesSuccess(result) && result != tecINCOMPLETE)
+        return true;
+
+    bool const enforce = view.rules().enabled(fixAMMv1_3);
+    bool const enforceAMMDelete = view.rules().enabled(fixCleanup3_3_0);
+
+    // AMM can only be deleted by AMMWithdraw, AMMClawback, and AMMDelete
+    if (enforceAMMDelete && ammDeleted_)
+    {
+        switch (tx.getTxnType())
+        {
+            case ttAMM_WITHDRAW:
+            case ttAMM_CLAWBACK:
+            case ttAMM_DELETE:
+                break;
+            default:
+                // LCOV_EXCL_START
+                JLOG(j.error()) << "Invariant failed: AMM failed, unexpected AMM deletion by "
+                                << tx.getTxnType();
+                return false;
+                // LCOV_EXCL_STOP
+        }
+    }
+
+    switch (tx.getTxnType())
+    {
+        case ttAMM_CREATE:
+            return finalizeCreate(tx, view, enforce, j);
+        case ttAMM_DEPOSIT:
+            return finalizeDeposit(tx, view, enforce, j);
+        case ttAMM_CLAWBACK:
+        case ttAMM_WITHDRAW:
+            return finalizeWithdraw(tx, view, enforce, enforceAMMDelete, j);
+        case ttAMM_BID:
+            return finalizeBid(enforce, j);
+        case ttAMM_VOTE:
+            return finalizeVote(enforce, j);
+        case ttAMM_DELETE:
+            return finalizeDelete(enforce, enforceAMMDelete, result, j);
+        case ttCHECK_CASH:
+        case ttOFFER_CREATE:
+        case ttPAYMENT:
+            return finalizeDEX(enforce, j);
+        default:
+            break;
+    }
+
+    return true;
+}
+
+}  // namespace xrpl

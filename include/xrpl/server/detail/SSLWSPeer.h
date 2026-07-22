@@ -1,27 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_SERVER_SSLWSPEER_H_INCLUDED
-#define RIPPLE_SERVER_SSLWSPEER_H_INCLUDED
-
-#include <xrpl/server/WSSession.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/detail/BaseHTTPPeer.h>
+#include <xrpl/server/detail/BaseWSPeer.h>
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
@@ -29,10 +11,13 @@
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 #include <boost/beast/websocket/ssl.hpp>
+#include <boost/beast/websocket/stream.hpp>
 
+#include <chrono>
 #include <memory>
+#include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 template <class Handler>
 class SSLWSPeer : public BaseWSPeer<Handler, SSLWSPeer<Handler>>,
@@ -48,7 +33,7 @@ class SSLWSPeer : public BaseWSPeer<Handler, SSLWSPeer<Handler>>,
     using stream_type = boost::beast::ssl_stream<socket_type>;
     using waitable_timer = boost::asio::basic_waitable_timer<clock_type>;
 
-    std::unique_ptr<stream_type> stream_ptr_;
+    std::unique_ptr<stream_type> streamPtr_;
     boost::beast::websocket::stream<stream_type&> ws_;
 
 public:
@@ -56,9 +41,9 @@ public:
     SSLWSPeer(
         Port const& port,
         Handler& handler,
-        endpoint_type remote_endpoint,
+        endpoint_type remoteEndpoint,
         boost::beast::http::request<Body, Headers>&& request,
-        std::unique_ptr<stream_type>&& stream_ptr,
+        std::unique_ptr<stream_type>&& streamPtr,
         beast::Journal journal);
 };
 
@@ -69,23 +54,21 @@ template <class Body, class Headers>
 SSLWSPeer<Handler>::SSLWSPeer(
     Port const& port,
     Handler& handler,
-    endpoint_type remote_endpoint,
+    endpoint_type remoteEndpoint,
     boost::beast::http::request<Body, Headers>&& request,
-    std::unique_ptr<stream_type>&& stream_ptr,
+    std::unique_ptr<stream_type>&& streamPtr,
     beast::Journal journal)
     : BaseWSPeer<Handler, SSLWSPeer>(
           port,
           handler,
-          stream_ptr->get_executor(),
-          waitable_timer{stream_ptr->get_executor()},
-          remote_endpoint,
+          streamPtr->get_executor(),
+          waitable_timer{streamPtr->get_executor()},
+          remoteEndpoint,
           std::move(request),
           journal)
-    , stream_ptr_(std::move(stream_ptr))
-    , ws_(*stream_ptr_)
+    , streamPtr_(std::move(streamPtr))
+    , ws_(*streamPtr_)
 {
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

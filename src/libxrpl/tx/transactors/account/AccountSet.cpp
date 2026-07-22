@@ -1,0 +1,603 @@
+#include <xrpl/tx/transactors/account/AccountSet.h>
+
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <cstdint>
+
+namespace xrpl {
+
+TxConsequences
+AccountSet::makeTxConsequences(PreflightContext const& ctx)
+{
+    // The AccountSet may be a blocker, but only if it sets or clears
+    // specific account flags.
+    auto getTxConsequencesCategory = [](STTx const& tx) {
+        if (std::uint32_t const uTxFlags = tx.getFlags();
+            uTxFlags & (tfRequireAuth | tfOptionalAuth))
+            return TxConsequences::Category::Blocker;
+
+        if (auto const uSetFlag = tx[~sfSetFlag]; uSetFlag &&
+            (*uSetFlag == asfRequireAuth || *uSetFlag == asfDisableMaster ||
+             *uSetFlag == asfAccountTxnID))
+            return TxConsequences::Category::Blocker;
+
+        if (auto const uClearFlag = tx[~sfClearFlag]; uClearFlag &&
+            (*uClearFlag == asfRequireAuth || *uClearFlag == asfDisableMaster ||
+             *uClearFlag == asfAccountTxnID))
+            return TxConsequences::Category::Blocker;
+
+        return TxConsequences::Category::Normal;
+    };
+
+    return TxConsequences{ctx.tx, getTxConsequencesCategory(ctx.tx)};
+}
+
+std::uint32_t
+AccountSet::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfAccountSetMask;
+}
+
+NotTEC
+AccountSet::preflight(PreflightContext const& ctx)
+{
+    auto& tx = ctx.tx;
+    auto& j = ctx.j;
+
+    std::uint32_t const uSetFlag = tx.getFieldU32(sfSetFlag);
+    std::uint32_t const uClearFlag = tx.getFieldU32(sfClearFlag);
+
+    if ((uSetFlag != 0) && (uSetFlag == uClearFlag))
+    {
+        JLOG(j.trace()) << "Malformed transaction: Set and clear same flag.";
+        return temINVALID_FLAG;
+    }
+
+    //
+    // RequireAuth
+    //
+    bool const bSetRequireAuth = tx.isFlag(tfRequireAuth) || (uSetFlag == asfRequireAuth);
+    bool const bClearRequireAuth = tx.isFlag(tfOptionalAuth) || (uClearFlag == asfRequireAuth);
+
+    if (bSetRequireAuth && bClearRequireAuth)
+    {
+        JLOG(j.trace()) << "Malformed transaction: Contradictory flags set.";
+        return temINVALID_FLAG;
+    }
+
+    //
+    // RequireDestTag
+    //
+    bool const bSetRequireDest = tx.isFlag(tfRequireDestTag) || (uSetFlag == asfRequireDest);
+    bool const bClearRequireDest = tx.isFlag(tfOptionalDestTag) || (uClearFlag == asfRequireDest);
+
+    if (bSetRequireDest && bClearRequireDest)
+    {
+        JLOG(j.trace()) << "Malformed transaction: Contradictory flags set.";
+        return temINVALID_FLAG;
+    }
+
+    //
+    // DisallowXRP
+    //
+    bool const bSetDisallowXRP = tx.isFlag(tfDisallowXRP) || (uSetFlag == asfDisallowXRP);
+    bool const bClearDisallowXRP = tx.isFlag(tfAllowXRP) || (uClearFlag == asfDisallowXRP);
+
+    if (bSetDisallowXRP && bClearDisallowXRP)
+    {
+        JLOG(j.trace()) << "Malformed transaction: Contradictory flags set.";
+        return temINVALID_FLAG;
+    }
+
+    // TransferRate
+    if (tx.isFieldPresent(sfTransferRate))
+    {
+        std::uint32_t const uRate = tx.getFieldU32(sfTransferRate);
+
+        if ((uRate != 0u) && (uRate < QUALITY_ONE))
+        {
+            JLOG(j.trace()) << "Malformed transaction: Transfer rate too small.";
+            return temBAD_TRANSFER_RATE;
+        }
+
+        if (uRate > 2 * QUALITY_ONE)
+        {
+            JLOG(j.trace()) << "Malformed transaction: Transfer rate too large.";
+            return temBAD_TRANSFER_RATE;
+        }
+    }
+
+    // TickSize
+    if (tx.isFieldPresent(sfTickSize))
+    {
+        auto uTickSize = tx[sfTickSize];
+        if ((uTickSize != 0u) &&
+            ((uTickSize < Quality::kMinTickSize) || (uTickSize > Quality::kMaxTickSize)))
+        {
+            JLOG(j.trace()) << "Malformed transaction: Bad tick size.";
+            return temBAD_TICK_SIZE;
+        }
+    }
+
+    if (auto const mk = tx[~sfMessageKey])
+    {
+        if (!mk->empty() && !publicKeyType({mk->data(), mk->size()}))
+        {
+            JLOG(j.trace()) << "Invalid message key specified.";
+            return telBAD_PUBLIC_KEY;
+        }
+    }
+
+    if (auto const domain = tx[~sfDomain]; domain && domain->size() > kMaxDomainLength)
+    {
+        JLOG(j.trace()) << "domain too long";
+        return telBAD_DOMAIN;
+    }
+
+    // Configure authorized minting account:
+    if (uSetFlag == asfAuthorizedNFTokenMinter && !tx.isFieldPresent(sfNFTokenMinter))
+        return temMALFORMED;
+
+    if (uClearFlag == asfAuthorizedNFTokenMinter && tx.isFieldPresent(sfNFTokenMinter))
+        return temMALFORMED;
+
+    return tesSUCCESS;
+}
+
+TER
+AccountSet::preclaim(PreclaimContext const& ctx)
+{
+    auto const id = ctx.tx[sfAccount];
+
+    auto const sle = ctx.view.read(keylet::account(id));
+    if (!sle)
+        return terNO_ACCOUNT;
+
+    std::uint32_t const uSetFlag = ctx.tx.getFieldU32(sfSetFlag);
+
+    // legacy AccountSet flags
+    bool const bSetRequireAuth = ctx.tx.isFlag(tfRequireAuth) || (uSetFlag == asfRequireAuth);
+
+    //
+    // RequireAuth
+    //
+    if (bSetRequireAuth && !sle->isFlag(lsfRequireAuth))
+    {
+        if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
+        {
+            JLOG(ctx.j.trace()) << "Retry: Owner directory not empty.";
+            return ((ctx.flags & TapRetry) != 0u) ? TER{terOWNERS} : TER{tecOWNERS};
+        }
+    }
+
+    //
+    // Clawback
+    //
+    if (uSetFlag == asfAllowTrustLineClawback)
+    {
+        if (sle->isFlag(lsfNoFreeze))
+        {
+            JLOG(ctx.j.trace()) << "Can't set Clawback if NoFreeze is set";
+            return tecNO_PERMISSION;
+        }
+
+        if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
+        {
+            JLOG(ctx.j.trace()) << "Owner directory not empty.";
+            return tecOWNERS;
+        }
+    }
+    else if (uSetFlag == asfNoFreeze)
+    {
+        // Cannot set NoFreeze if clawback is enabled
+        if (sle->isFlag(lsfAllowTrustLineClawback))
+        {
+            JLOG(ctx.j.trace()) << "Can't set NoFreeze if clawback is enabled";
+            return tecNO_PERMISSION;
+        }
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+AccountSet::doApply()
+{
+    auto const sle = view().peek(keylet::account(accountID_));
+    if (!sle)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    std::uint32_t const uFlagsIn = sle->getFieldU32(sfFlags);
+    std::uint32_t uFlagsOut = uFlagsIn;
+
+    STTx const& tx{ctx_.tx};
+    std::uint32_t const uSetFlag{tx.getFieldU32(sfSetFlag)};
+    std::uint32_t const uClearFlag{tx.getFieldU32(sfClearFlag)};
+
+    // legacy AccountSet flags
+    bool const bSetRequireDest{tx.isFlag(tfRequireDestTag) || (uSetFlag == asfRequireDest)};
+    bool const bClearRequireDest{tx.isFlag(tfOptionalDestTag) || (uClearFlag == asfRequireDest)};
+    bool const bSetRequireAuth{tx.isFlag(tfRequireAuth) || (uSetFlag == asfRequireAuth)};
+    bool const bClearRequireAuth{tx.isFlag(tfOptionalAuth) || (uClearFlag == asfRequireAuth)};
+    bool const bSetDisallowXRP{tx.isFlag(tfDisallowXRP) || (uSetFlag == asfDisallowXRP)};
+    bool const bClearDisallowXRP{tx.isFlag(tfAllowXRP) || (uClearFlag == asfDisallowXRP)};
+
+    bool const sigWithMaster{[&tx, &acct = accountID_]() {
+        auto const spk = tx.getSigningPubKey();
+
+        if (publicKeyType(makeSlice(spk)))
+        {
+            PublicKey const signingPubKey(makeSlice(spk));
+
+            if (calcAccountID(signingPubKey) == acct)
+                return true;
+        }
+        return false;
+    }()};
+
+    //
+    // RequireAuth
+    //
+    if (bSetRequireAuth && !sle->isFlag(lsfRequireAuth))
+    {
+        JLOG(j_.trace()) << "Set RequireAuth.";
+        uFlagsOut |= lsfRequireAuth;
+    }
+
+    if (bClearRequireAuth && sle->isFlag(lsfRequireAuth))
+    {
+        JLOG(j_.trace()) << "Clear RequireAuth.";
+        uFlagsOut &= ~lsfRequireAuth;
+    }
+
+    //
+    // RequireDestTag
+    //
+    if (bSetRequireDest && !sle->isFlag(lsfRequireDestTag))
+    {
+        JLOG(j_.trace()) << "Set lsfRequireDestTag.";
+        uFlagsOut |= lsfRequireDestTag;
+    }
+
+    if (bClearRequireDest && sle->isFlag(lsfRequireDestTag))
+    {
+        JLOG(j_.trace()) << "Clear lsfRequireDestTag.";
+        uFlagsOut &= ~lsfRequireDestTag;
+    }
+
+    //
+    // DisallowXRP
+    //
+    if (bSetDisallowXRP && !sle->isFlag(lsfDisallowXRP))
+    {
+        JLOG(j_.trace()) << "Set lsfDisallowXRP.";
+        uFlagsOut |= lsfDisallowXRP;
+    }
+
+    if (bClearDisallowXRP && sle->isFlag(lsfDisallowXRP))
+    {
+        JLOG(j_.trace()) << "Clear lsfDisallowXRP.";
+        uFlagsOut &= ~lsfDisallowXRP;
+    }
+
+    //
+    // DisableMaster
+    //
+    if ((uSetFlag == asfDisableMaster) && !sle->isFlag(lsfDisableMaster))
+    {
+        if (!sigWithMaster)
+        {
+            JLOG(j_.trace()) << "Must use master key to disable master key.";
+            return tecNEED_MASTER_KEY;
+        }
+
+        if ((!sle->isFieldPresent(sfRegularKey)) && (!view().peek(keylet::signerList(accountID_))))
+        {
+            // Account has no regular key or multi-signer signer list.
+            return tecNO_ALTERNATIVE_KEY;
+        }
+
+        JLOG(j_.trace()) << "Set lsfDisableMaster.";
+        uFlagsOut |= lsfDisableMaster;
+    }
+
+    if ((uClearFlag == asfDisableMaster) && sle->isFlag(lsfDisableMaster))
+    {
+        JLOG(j_.trace()) << "Clear lsfDisableMaster.";
+        uFlagsOut &= ~lsfDisableMaster;
+    }
+
+    //
+    // DefaultRipple
+    //
+    if (uSetFlag == asfDefaultRipple)
+    {
+        JLOG(j_.trace()) << "Set lsfDefaultRipple.";
+        uFlagsOut |= lsfDefaultRipple;
+    }
+    else if (uClearFlag == asfDefaultRipple)
+    {
+        JLOG(j_.trace()) << "Clear lsfDefaultRipple.";
+        uFlagsOut &= ~lsfDefaultRipple;
+    }
+
+    //
+    // NoFreeze
+    //
+    if (uSetFlag == asfNoFreeze)
+    {
+        if (!sigWithMaster && !sle->isFlag(lsfDisableMaster))
+        {
+            JLOG(j_.trace()) << "Must use master key to set NoFreeze.";
+            return tecNEED_MASTER_KEY;
+        }
+
+        JLOG(j_.trace()) << "Set NoFreeze flag";
+        uFlagsOut |= lsfNoFreeze;
+    }
+
+    // Anyone may set global freeze
+    if (uSetFlag == asfGlobalFreeze)
+    {
+        JLOG(j_.trace()) << "Set GlobalFreeze flag";
+        uFlagsOut |= lsfGlobalFreeze;
+    }
+
+    // If you have set NoFreeze, you may not clear GlobalFreeze
+    // This prevents those who have set NoFreeze from using
+    // GlobalFreeze strategically.
+    if ((uSetFlag != asfGlobalFreeze) && (uClearFlag == asfGlobalFreeze) &&
+        ((uFlagsOut & lsfNoFreeze) == 0))
+    {
+        JLOG(j_.trace()) << "Clear GlobalFreeze flag";
+        uFlagsOut &= ~lsfGlobalFreeze;
+    }
+
+    //
+    // Track transaction IDs signed by this account in its root
+    //
+    if ((uSetFlag == asfAccountTxnID) && !sle->isFieldPresent(sfAccountTxnID))
+    {
+        JLOG(j_.trace()) << "Set AccountTxnID.";
+        sle->makeFieldPresent(sfAccountTxnID);
+    }
+
+    if ((uClearFlag == asfAccountTxnID) && sle->isFieldPresent(sfAccountTxnID))
+    {
+        JLOG(j_.trace()) << "Clear AccountTxnID.";
+        sle->makeFieldAbsent(sfAccountTxnID);
+    }
+
+    //
+    // DepositAuth
+    //
+    if (uSetFlag == asfDepositAuth)
+    {
+        JLOG(j_.trace()) << "Set lsfDepositAuth.";
+        uFlagsOut |= lsfDepositAuth;
+    }
+    else if (uClearFlag == asfDepositAuth)
+    {
+        JLOG(j_.trace()) << "Clear lsfDepositAuth.";
+        uFlagsOut &= ~lsfDepositAuth;
+    }
+
+    //
+    // EmailHash
+    //
+    if (tx.isFieldPresent(sfEmailHash))
+    {
+        uint128 const uHash = tx.getFieldH128(sfEmailHash);
+
+        if (!uHash)
+        {
+            JLOG(j_.trace()) << "unset email hash";
+            sle->makeFieldAbsent(sfEmailHash);
+        }
+        else
+        {
+            JLOG(j_.trace()) << "set email hash";
+            sle->setFieldH128(sfEmailHash, uHash);
+        }
+    }
+
+    //
+    // WalletLocator
+    //
+    if (tx.isFieldPresent(sfWalletLocator))
+    {
+        uint256 const uHash = tx.getFieldH256(sfWalletLocator);
+
+        if (!uHash)
+        {
+            JLOG(j_.trace()) << "unset wallet locator";
+            sle->makeFieldAbsent(sfWalletLocator);
+        }
+        else
+        {
+            JLOG(j_.trace()) << "set wallet locator";
+            sle->setFieldH256(sfWalletLocator, uHash);
+        }
+    }
+
+    //
+    // MessageKey
+    //
+    if (tx.isFieldPresent(sfMessageKey))
+    {
+        Blob const messageKey = tx.getFieldVL(sfMessageKey);
+
+        if (messageKey.empty())
+        {
+            JLOG(j_.debug()) << "clear message key";
+            sle->makeFieldAbsent(sfMessageKey);
+        }
+        else
+        {
+            JLOG(j_.debug()) << "set message key";
+            sle->setFieldVL(sfMessageKey, messageKey);
+        }
+    }
+
+    //
+    // Domain
+    //
+    if (tx.isFieldPresent(sfDomain))
+    {
+        Blob const domain = tx.getFieldVL(sfDomain);
+
+        if (domain.empty())
+        {
+            JLOG(j_.trace()) << "unset domain";
+            sle->makeFieldAbsent(sfDomain);
+        }
+        else
+        {
+            JLOG(j_.trace()) << "set domain";
+            sle->setFieldVL(sfDomain, domain);
+        }
+    }
+
+    //
+    // TransferRate
+    //
+    if (tx.isFieldPresent(sfTransferRate))
+    {
+        std::uint32_t const uRate = tx.getFieldU32(sfTransferRate);
+
+        if (uRate == 0 || uRate == QUALITY_ONE)
+        {
+            JLOG(j_.trace()) << "unset transfer rate";
+            sle->makeFieldAbsent(sfTransferRate);
+        }
+        else
+        {
+            JLOG(j_.trace()) << "set transfer rate";
+            sle->setFieldU32(sfTransferRate, uRate);
+        }
+    }
+
+    //
+    // TickSize
+    //
+    if (tx.isFieldPresent(sfTickSize))
+    {
+        auto uTickSize = tx[sfTickSize];
+        if ((uTickSize == 0) || (uTickSize == Quality::kMaxTickSize))
+        {
+            JLOG(j_.trace()) << "unset tick size";
+            sle->makeFieldAbsent(sfTickSize);
+        }
+        else
+        {
+            JLOG(j_.trace()) << "set tick size";
+            sle->setFieldU8(sfTickSize, uTickSize);
+        }
+    }
+
+    // Configure authorized minting account:
+    if (uSetFlag == asfAuthorizedNFTokenMinter)
+        sle->setAccountID(sfNFTokenMinter, ctx_.tx[sfNFTokenMinter]);
+
+    if (uClearFlag == asfAuthorizedNFTokenMinter && sle->isFieldPresent(sfNFTokenMinter))
+        sle->makeFieldAbsent(sfNFTokenMinter);
+
+    if (uSetFlag == asfDisallowIncomingNFTokenOffer)
+    {
+        uFlagsOut |= lsfDisallowIncomingNFTokenOffer;
+    }
+    else if (uClearFlag == asfDisallowIncomingNFTokenOffer)
+    {
+        uFlagsOut &= ~lsfDisallowIncomingNFTokenOffer;
+    }
+
+    if (uSetFlag == asfDisallowIncomingCheck)
+    {
+        uFlagsOut |= lsfDisallowIncomingCheck;
+    }
+    else if (uClearFlag == asfDisallowIncomingCheck)
+    {
+        uFlagsOut &= ~lsfDisallowIncomingCheck;
+    }
+
+    if (uSetFlag == asfDisallowIncomingPayChan)
+    {
+        uFlagsOut |= lsfDisallowIncomingPayChan;
+    }
+    else if (uClearFlag == asfDisallowIncomingPayChan)
+    {
+        uFlagsOut &= ~lsfDisallowIncomingPayChan;
+    }
+
+    if (uSetFlag == asfDisallowIncomingTrustline)
+    {
+        uFlagsOut |= lsfDisallowIncomingTrustline;
+    }
+    else if (uClearFlag == asfDisallowIncomingTrustline)
+    {
+        uFlagsOut &= ~lsfDisallowIncomingTrustline;
+    }
+
+    // Set or clear flags for disallowing escrow
+    if (ctx_.view().rules().enabled(featureTokenEscrow))
+    {
+        if (uSetFlag == asfAllowTrustLineLocking)
+        {
+            uFlagsOut |= lsfAllowTrustLineLocking;
+        }
+        else if (uClearFlag == asfAllowTrustLineLocking)
+        {
+            uFlagsOut &= ~lsfAllowTrustLineLocking;
+        }
+    }
+
+    // Set flag for clawback
+    if (uSetFlag == asfAllowTrustLineClawback)
+    {
+        JLOG(j_.trace()) << "set allow clawback";
+        uFlagsOut |= lsfAllowTrustLineClawback;
+    }
+
+    if (uFlagsIn != uFlagsOut)
+        sle->setFieldU32(sfFlags, uFlagsOut);
+
+    ctx_.view().update(sle);
+
+    return tesSUCCESS;
+}
+
+void
+AccountSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+AccountSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
+
+}  // namespace xrpl

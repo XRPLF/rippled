@@ -1,36 +1,20 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef BEAST_UTILITY_PROPERTYSTREAM_H_INCLUDED
-#define BEAST_UTILITY_PROPERTYSTREAM_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/core/List.h>
 
 #include <mutex>
+#include <ostream>
 #include <sstream>
 #include <string>
+#include <utility>
 
 namespace beast {
 
 //------------------------------------------------------------------------------
 
-/** Abstract stream with RAII containers that produce a property tree. */
+/**
+ * Abstract stream with RAII containers that produce a property tree.
+ */
 class PropertyStream
 {
 public:
@@ -43,11 +27,11 @@ public:
 
 protected:
     virtual void
-    map_begin() = 0;
+    mapBegin() = 0;
     virtual void
-    map_begin(std::string const& key) = 0;
+    mapBegin(std::string const& key) = 0;
     virtual void
-    map_end() = 0;
+    mapEnd() = 0;
 
     virtual void
     add(std::string const& key, std::string const& value) = 0;
@@ -60,7 +44,7 @@ protected:
 
     template <typename Value>
     void
-    lexical_add(std::string const& key, Value value)
+    lexicalAdd(std::string const& key, Value value)
     {
         std::stringstream ss;
         ss << value;
@@ -99,11 +83,11 @@ protected:
     add(std::string const& key, long double value);
 
     virtual void
-    array_begin() = 0;
+    arrayBegin() = 0;
     virtual void
-    array_begin(std::string const& key) = 0;
+    arrayBegin(std::string const& key) = 0;
     virtual void
-    array_end() = 0;
+    arrayEnd() = 0;
 
     virtual void
     add(std::string const& value) = 0;
@@ -116,7 +100,7 @@ protected:
 
     template <typename Value>
     void
-    lexical_add(Value value)
+    lexicalAdd(Value value)
     {
         std::stringstream ss;
         ss << value;
@@ -169,7 +153,7 @@ class PropertyStream::Item : public List<Item>::Node
 {
 public:
     explicit Item(Source* source);
-    Source&
+    [[nodiscard]] Source&
     source() const;
     Source*
     operator->() const;
@@ -177,7 +161,7 @@ public:
     operator*() const;
 
 private:
-    Source* m_source;
+    Source* source_;
 };
 
 //------------------------------------------------------------------------------
@@ -189,12 +173,12 @@ private:
 class PropertyStream::Proxy
 {
 private:
-    Map const* m_map;
-    std::string m_key;
-    std::ostringstream mutable m_ostream;
+    Map const* map_;
+    std::string key_;
+    std::ostringstream mutable ostream_;
 
 public:
-    Proxy(Map const& map, std::string const& key);
+    Proxy(Map const& map, std::string key);
     Proxy(Proxy const& other);
     ~Proxy();
 
@@ -209,7 +193,7 @@ public:
     std::ostream&
     operator<<(T const& t) const
     {
-        return m_ostream << t;
+        return ostream_ << t;
     }
 };
 
@@ -222,7 +206,7 @@ public:
 class PropertyStream::Map
 {
 private:
-    PropertyStream& m_stream;
+    PropertyStream& stream_;
 
 public:
     explicit Map(PropertyStream& stream);
@@ -237,14 +221,14 @@ public:
 
     PropertyStream&
     stream();
-    PropertyStream const&
+    [[nodiscard]] PropertyStream const&
     stream() const;
 
     template <typename Value>
     void
     add(std::string const& key, Value value) const
     {
-        m_stream.add(key, value);
+        stream_.add(key, value);
     }
 
     template <typename Key, typename Value>
@@ -281,7 +265,7 @@ template <typename Value>
 PropertyStream::Proxy&
 PropertyStream::Proxy::operator=(Value value)
 {
-    m_map->add(m_key, value);
+    map_->add(key_, value);
     return *this;
 }
 
@@ -294,7 +278,7 @@ PropertyStream::Proxy::operator=(Value value)
 class PropertyStream::Set
 {
 private:
-    PropertyStream& m_stream;
+    PropertyStream& stream_;
 
 public:
     Set(std::string const& key, Map& map);
@@ -307,14 +291,14 @@ public:
 
     PropertyStream&
     stream();
-    PropertyStream const&
+    [[nodiscard]] PropertyStream const&
     stream() const;
 
     template <typename Value>
     void
     add(Value value) const
     {
-        m_stream.add(value);
+        stream_.add(value);
     }
 };
 
@@ -324,35 +308,42 @@ public:
 //
 //------------------------------------------------------------------------------
 
-/** Subclasses can be called to write to a stream and have children. */
+/**
+ * Subclasses can be called to write to a stream and have children.
+ */
 class PropertyStream::Source
 {
 private:
-    std::string const m_name;
+    std::string const name_;
     std::recursive_mutex lock_;
     Item item_;
-    Source* parent_;
+    Source* parent_{nullptr};
     List<Item> children_;
 
 public:
-    explicit Source(std::string const& name);
+    explicit Source(std::string name);
     virtual ~Source();
 
     Source(Source const&) = delete;
     Source&
     operator=(Source const&) = delete;
 
-    /** Returns the name of this source. */
-    std::string const&
+    /**
+     * Returns the name of this source.
+     */
+    [[nodiscard]] std::string const&
     name() const;
 
-    /** Add a child source. */
+    /**
+     * Add a child source.
+     */
     void
     add(Source& source);
 
-    /** Add a child source by pointer.
-        The source pointer is returned so it can be used in ctor-initializers.
-    */
+    /**
+     * Add a child source by pointer.
+     * The source pointer is returned so it can be used in ctor-initializers.
+     */
     template <class Derived>
     Derived*
     add(Derived* child)
@@ -361,71 +352,80 @@ public:
         return child;
     }
 
-    /** Remove a child source from this Source. */
+    /**
+     * Remove a child source from this Source.
+     */
     void
     remove(Source& child);
 
-    /** Remove all child sources from this Source. */
+    /**
+     * Remove all child sources from this Source.
+     */
     void
     removeAll();
 
-    /** Write only this Source to the stream. */
+    /**
+     * Write only this Source to the stream.
+     */
     void
-    write_one(PropertyStream& stream);
+    writeOne(PropertyStream& stream);
 
-    /** write this source and all its children recursively to the stream. */
+    /**
+     * write this source and all its children recursively to the stream.
+     */
     void
     write(PropertyStream& stream);
 
-    /** Parse the path and write the corresponding Source and optional children.
-        If the source is found, it is written. If the wildcard character '*'
-        exists as the last character in the path, then all the children are
-        written recursively.
-    */
+    /**
+     * Parse the path and write the corresponding Source and optional children.
+     * If the source is found, it is written. If the wildcard character '*'
+     * exists as the last character in the path, then all the children are
+     * written recursively.
+     */
     void
     write(PropertyStream& stream, std::string const& path);
 
-    /** Parse the dot-delimited Source path and return the result.
-        The first value will be a pointer to the Source object corresponding
-        to the given path. If no Source object exists, then the first value
-        will be nullptr and the second value will be undefined.
-        The second value is a boolean indicating whether or not the path string
-        specifies the wildcard character '*' as the last character.
-
-        print statement examples
-        "parent.child" prints child and all of its children
-        "parent.child." start at the parent and print down to child
-        "parent.grandchild" prints nothing- grandchild not direct discendent
-        "parent.grandchild." starts at the parent and prints down to grandchild
-        "parent.grandchild.*" starts at parent, print through grandchild
-       children
-    */
+    /**
+     * Parse the dot-delimited Source path and return the result.
+     *  The first value will be a pointer to the Source object corresponding
+     *  to the given path. If no Source object exists, then the first value
+     *  will be nullptr and the second value will be undefined.
+     *  The second value is a boolean indicating whether or not the path string
+     *  specifies the wildcard character '*' as the last character.
+     *
+     *  print statement examples
+     *  "parent.child" prints child and all of its children
+     *  "parent.child." start at the parent and print down to child
+     *  "parent.grandchild" prints nothing- grandchild not direct descendent
+     *  "parent.grandchild." starts at the parent and prints down to grandchild
+     *  "parent.grandchild.*" starts at parent, print through grandchild
+     * children
+     */
     std::pair<Source*, bool>
     find(std::string path);
 
     Source*
-    find_one_deep(std::string const& name);
+    findOneDeep(std::string const& name);
     PropertyStream::Source*
-    find_path(std::string path);
+    findPath(std::string path);
     PropertyStream::Source*
-    find_one(std::string const& name);
+    findOne(std::string const& name);
 
     static bool
-    peel_leading_slash(std::string* path);
+    peelLeadingSlash(std::string* path);
     static bool
-    peel_trailing_slashstar(std::string* path);
+    peelTrailingSlashstar(std::string* path);
     static std::string
-    peel_name(std::string* path);
+    peelName(std::string* path);
 
     //--------------------------------------------------------------------------
 
-    /** Subclass override.
-        The default version does nothing.
-    */
+    /**
+     * Subclass override.
+     * The default version does nothing.
+     */
     virtual void
     onWrite(Map&);
 };
 
 }  // namespace beast
-
-#endif

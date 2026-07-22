@@ -1,0 +1,54 @@
+# This workflow builds and tests the binary for various configurations.
+name: Build and test
+
+# This workflow can only be triggered by other workflows. Note that the
+# workflow_call event does not support the 'choice' input type, see
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onworkflow_callinputsinput_idtype,
+# so we use 'string' instead.
+on:
+  workflow_call:
+    inputs:
+      ccache_enabled:
+        description: "Whether to enable ccache."
+        required: false
+        type: boolean
+        default: false
+
+      os:
+        description: 'The operating system to use for the build ("linux", "macos", "windows").'
+        required: true
+        type: string
+
+    secrets:
+      CODECOV_TOKEN:
+        description: "The Codecov token to use for uploading coverage reports."
+        required: true
+
+jobs:
+  # Generate the strategy matrix to be used by the following job.
+  generate-matrix:
+    uses: ./.github/workflows/reusable-strategy-matrix.yml
+    with:
+      os: ${{ inputs.os }}
+
+  # Build and test the binary for each configuration.
+  build-test-config:
+    needs:
+      - generate-matrix
+    uses: ./.github/workflows/reusable-build-test-config.yml
+    strategy:
+      fail-fast: ${{ github.event_name == 'merge_group' }}
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+    with:
+      build_only: ${{ matrix.build_only }}
+      build_type: ${{ matrix.build_type }}
+      ccache_enabled: ${{ inputs.ccache_enabled }}
+      cmake_args: ${{ matrix.cmake_args }}
+      cmake_target: ${{ matrix.cmake_target }}
+      runs_on: ${{ toJSON(matrix.architecture.runner) }}
+      image: ${{ matrix.image || '' }}
+      config_name: ${{ matrix.config_name }}
+      sanitizers: ${{ matrix.sanitizers }}
+      compiler: ${{ matrix.compiler || '' }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

@@ -1,43 +1,36 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright 2016 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/TrustedPublisherServer.h>
+#include <test/jtx/envconfig.h>
 #include <test/unit_test/FileDirGuard.h>
+#include <test/unit_test/SuiteJournal.h>
 
 #include <xrpld/app/misc/ValidatorSite.h>
 
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
-#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/algorithm/string/join.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/asio.hpp>
+#include <boost/filesystem/directory.hpp>
+#include <boost/filesystem/operations.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 
 #include <date/date.h>
 
 #include <chrono>
+#include <fstream>
+#include <memory>
+#include <ostream>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
-namespace ripple {
-namespace test {
+namespace xrpl {
 namespace detail {
 constexpr char const*
 realValidatorContents()
@@ -52,11 +45,12 @@ realValidatorContents()
 )vl";
 }
 
-auto constexpr default_expires = std::chrono::seconds{3600};
-auto constexpr default_effective_overlap = std::chrono::seconds{30};
+constexpr auto kDefaultExpires = std::chrono::seconds{3600};
+constexpr auto kDefaultEffectiveOverlap = std::chrono::seconds{30};
 }  // namespace detail
 
-class ValidatorSite_test : public beast::unit_test::suite
+namespace test {
+class ValidatorSite_test : public beast::unit_test::Suite
 {
 private:
     using Validator = TrustedPublisherServer::Validator;
@@ -68,16 +62,15 @@ private:
 
         using namespace jtx;
 
-        Env env(*this, envconfig(), nullptr, beast::severities::kDisabled);
-        auto trustedSites =
-            std::make_unique<ValidatorSite>(env.app(), env.journal);
+        Env env(*this, envconfig(), nullptr, beast::Severity::Disabled);
+        auto trustedSites = std::make_unique<ValidatorSite>(env.app(), env.journal);
 
         // load should accept empty sites list
-        std::vector<std::string> emptyCfgSites;
+        std::vector<std::string> const emptyCfgSites;
         BEAST_EXPECT(trustedSites->load(emptyCfgSites));
 
         // load should accept valid validator site uris
-        std::vector<std::string> cfgSites(
+        std::vector<std::string> const cfgSites(
             {"http://ripple.com/",
              "http://ripple.com/validators",
              "http://ripple.com:8080/validators",
@@ -85,7 +78,7 @@ private:
              "http://207.261.33.37:8080/validators",
              "https://ripple.com/validators",
              "https://ripple.com:443/validators",
-             "file:///etc/opt/ripple/validators.txt",
+             "file:///etc/xrpld/validators.txt",
              "file:///C:/Lib/validators.txt"
 #if !_MSC_VER
              ,
@@ -136,26 +129,19 @@ private:
         bool failFetch = false;
         bool failApply = false;
         int serverVersion = 1;
-        std::chrono::seconds expiresFromNow = detail::default_expires;
-        std::chrono::seconds effectiveOverlap =
-            detail::default_effective_overlap;
+        std::chrono::seconds expiresFromNow = detail::kDefaultExpires;
+        std::chrono::seconds effectiveOverlap = detail::kDefaultEffectiveOverlap;
         int expectedRefreshMin = 0;
     };
     void
-    testFetchList(
-        detail::DirGuard const& good,
-        std::vector<FetchListConfig> const& paths)
+    testFetchList(detail::DirGuard const& good, std::vector<FetchListConfig> const& paths)
     {
         testcase << "Fetch list - "
                  << boost::algorithm::join(
-                        paths |
-                            boost::adaptors::transformed(
-                                [](FetchListConfig const& cfg) {
-                                    return cfg.path +
-                                        (cfg.ssl ? " [https] v" : " [http] v") +
-                                        std::to_string(cfg.serverVersion) +
-                                        " " + cfg.msg;
-                                }),
+                        paths | boost::adaptors::transformed([](FetchListConfig const& cfg) {
+                            return cfg.path + (cfg.ssl ? " [https] v" : " [http] v") +
+                                std::to_string(cfg.serverVersion) + " " + cfg.msg;
+                        }),
                         ", ");
 
         using namespace jtx;
@@ -166,52 +152,49 @@ private:
             p->legacy("database_path", good.subdir().string());
             return p;
         }());
-        auto& trustedKeys = env.app().validators();
+        auto& trustedKeys = env.app().getValidators();
         env.timeKeeper().set(env.timeKeeper().now() + 30s);
 
         test::StreamSink sink;
         beast::Journal journal{sink};
 
-        std::vector<std::string> emptyCfgKeys;
-        struct publisher
+        std::vector<std::string> const emptyCfgKeys;
+        struct Publisher
         {
-            publisher(FetchListConfig const& c) : cfg{c}
+            Publisher(FetchListConfig const& c) : cfg{c}
             {
             }
             std::shared_ptr<TrustedPublisherServer> server;
             std::vector<Validator> list;
             std::string uri;
             FetchListConfig const& cfg;
-            bool isRetry;
+            bool isRetry{};
         };
-        std::vector<publisher> servers;
+        std::vector<Publisher> servers;
 
-        auto constexpr listSize = 20;
+        static constexpr auto kListSize = 20;
         std::vector<std::string> cfgPublishers;
 
         for (auto const& cfg : paths)
         {
-            servers.push_back(cfg);
+            servers.emplace_back(cfg);
             auto& item = servers.back();
             item.isRetry = cfg.path == "/bad-resource";
-            item.list.reserve(listSize);
-            while (item.list.size() < listSize)
+            item.list.reserve(kListSize);
+            while (item.list.size() < kListSize)
                 item.list.push_back(TrustedPublisherServer::randomValidator());
 
-            NetClock::time_point const expires =
-                env.timeKeeper().now() + cfg.expiresFromNow;
-            NetClock::time_point const effective2 =
-                expires - cfg.effectiveOverlap;
-            NetClock::time_point const expires2 =
-                effective2 + cfg.expiresFromNow;
-            item.server = make_TrustedPublisherServer(
-                env.app().getIOService(),
+            NetClock::time_point const expires = env.timeKeeper().now() + cfg.expiresFromNow;
+            NetClock::time_point const effective2 = expires - cfg.effectiveOverlap;
+            NetClock::time_point const expires2 = effective2 + cfg.expiresFromNow;
+            item.server = makeTrustedPublisherServer(
+                env.app().getIOContext(),
                 item.list,
                 expires,
                 {{effective2, expires2}},
                 cfg.ssl,
                 cfg.serverVersion);
-            std::string pubHex = strHex(item.server->publisherPublic());
+            std::string const pubHex = strHex(item.server->publisherPublic());
             cfgPublishers.push_back(pubHex);
 
             if (item.cfg.failFetch)
@@ -223,8 +206,7 @@ private:
             }
 
             std::stringstream uri;
-            uri << (cfg.ssl ? "https://" : "http://")
-                << item.server->local_endpoint() << cfg.path;
+            uri << (cfg.ssl ? "https://" : "http://") << item.server->localEndpoint() << cfg.path;
             item.uri = uri.str();
         }
 
@@ -250,41 +232,36 @@ private:
         {
             for (auto const& val : u.list)
             {
-                BEAST_EXPECT(
-                    trustedKeys.listed(val.masterPublic) != u.cfg.failApply);
-                BEAST_EXPECT(
-                    trustedKeys.listed(val.signingPublic) != u.cfg.failApply);
+                BEAST_EXPECT(trustedKeys.listed(val.masterPublic) != u.cfg.failApply);
+                BEAST_EXPECT(trustedKeys.listed(val.signingPublic) != u.cfg.failApply);
             }
 
-            Json::Value myStatus;
+            json::Value myStatus;
             for (auto const& vs : jv[jss::validator_sites])
-                if (vs[jss::uri].asString().find(u.uri) != std::string::npos)
+            {
+                if (vs[jss::uri].asString().contains(u.uri))
                     myStatus = vs;
+            }
             BEAST_EXPECTS(
-                myStatus[jss::last_refresh_message].asString().empty() !=
-                    u.cfg.failFetch,
+                myStatus[jss::last_refresh_message].asString().empty() != u.cfg.failFetch,
                 to_string(myStatus) + "\n" + sink.messages().str());
 
             if (!u.cfg.msg.empty())
             {
-                BEAST_EXPECTS(
-                    sink.messages().str().find(u.cfg.msg) != std::string::npos,
-                    sink.messages().str());
+                BEAST_EXPECTS(sink.messages().str().contains(u.cfg.msg), sink.messages().str());
             }
 
-            if (u.cfg.expectedRefreshMin)
+            if (u.cfg.expectedRefreshMin != 0)
             {
                 BEAST_EXPECTS(
-                    myStatus[jss::refresh_interval_min].asInt() ==
-                        u.cfg.expectedRefreshMin,
+                    myStatus[jss::refresh_interval_min].asInt() == u.cfg.expectedRefreshMin,
                     to_string(myStatus));
             }
 
             if (u.cfg.failFetch)
             {
                 using namespace std::chrono;
-                std::stringstream nextRefreshStr{
-                    myStatus[jss::next_refresh_time].asString()};
+                std::stringstream nextRefreshStr{myStatus[jss::next_refresh_time].asString()};
                 system_clock::time_point nextRefresh;
                 date::from_stream(nextRefreshStr, "%Y-%b-%d %T", nextRefresh);
                 BEAST_EXPECT(!nextRefreshStr.fail());
@@ -309,13 +286,13 @@ private:
         test::StreamSink sink;
         beast::Journal journal{sink};
 
-        struct publisher
+        struct Publisher
         {
             std::string uri;
             std::string expectMsg;
             bool shouldFail;
         };
-        std::vector<publisher> servers;
+        std::vector<Publisher> servers;
 
         for (auto const& cfg : paths)
         {
@@ -332,6 +309,7 @@ private:
         auto sites = std::make_unique<ValidatorSite>(env.app(), journal);
 
         std::vector<std::string> uris;
+        uris.reserve(servers.size());
         for (auto const& u : servers)
             uris.push_back(u.uri);
         sites->load(uris);
@@ -341,20 +319,18 @@ private:
         for (auto const& u : servers)
         {
             auto const jv = sites->getJson();
-            Json::Value myStatus;
+            json::Value myStatus;
             for (auto const& vs : jv[jss::validator_sites])
-                if (vs[jss::uri].asString().find(u.uri) != std::string::npos)
+            {
+                if (vs[jss::uri].asString().contains(u.uri))
                     myStatus = vs;
+            }
             BEAST_EXPECTS(
-                myStatus[jss::last_refresh_message].asString().empty() !=
-                    u.shouldFail,
+                myStatus[jss::last_refresh_message].asString().empty() != u.shouldFail,
                 to_string(myStatus));
             if (u.shouldFail)
             {
-                BEAST_EXPECTS(
-                    sink.messages().str().find(u.expectMsg) !=
-                        std::string::npos,
-                    sink.messages().str());
+                BEAST_EXPECTS(sink.messages().str().contains(u.expectMsg), sink.messages().str());
             }
         }
     }
@@ -370,27 +346,21 @@ private:
         };
         {
             // Create a file with a real validator list
-            detail::FileDirGuard good(
+            detail::FileDirGuard const good(
                 *this, "test_val", "vl.txt", detail::realValidatorContents());
             // Create a file with arbitrary content
-            detail::FileDirGuard hello(
-                *this, "test_val", "helloworld.txt", "Hello, world!");
+            detail::FileDirGuard const hello(*this, "test_val", "helloworld.txt", "Hello, world!");
             // Create a file with malformed Json
-            detail::FileDirGuard json(
-                *this,
-                "test_val",
-                "json.txt",
-                R"json({ "version": 2, "extra" : "value" })json");
+            detail::FileDirGuard const json(
+                *this, "test_val", "json.txt", R"json({ "version": 2, "extra" : "value" })json");
             auto const goodPath = fullPath(good);
             auto const helloPath = fullPath(hello);
             auto const jsonPath = fullPath(json);
             auto const missingPath = jsonPath + ".bad";
             testFileList({
                 {goodPath, ""},
-                {helloPath,
-                 "Unable to parse JSON response from  file://" + helloPath},
-                {jsonPath,
-                 "Missing fields in JSON response from  file://" + jsonPath},
+                {helloPath, "Unable to parse JSON response from  file://" + helloPath},
+                {jsonPath, "Missing fields in JSON response from  file://" + jsonPath},
                 {missingPath, "Problem retrieving from file://" + missingPath},
             });
         }
@@ -402,300 +372,337 @@ public:
     {
         testConfigLoad();
 
-        detail::DirGuard good(*this, "test_fetch");
+        detail::DirGuard const good(*this, "test_fetch");
         for (auto ssl : {true, false})
         {
             // fetch single site
-            testFetchList(good, {{"/validators", "", ssl}});
-            testFetchList(good, {{"/validators2", "", ssl}});
+            testFetchList(good, {{.path = "/validators", .msg = "", .ssl = ssl}});
+            testFetchList(good, {{.path = "/validators2", .msg = "", .ssl = ssl}});
             // fetch multiple sites
             testFetchList(
-                good, {{"/validators", "", ssl}, {"/validators", "", ssl}});
+                good,
+                {{.path = "/validators", .msg = "", .ssl = ssl},
+                 {.path = "/validators", .msg = "", .ssl = ssl}});
             testFetchList(
-                good, {{"/validators", "", ssl}, {"/validators2", "", ssl}});
+                good,
+                {{.path = "/validators", .msg = "", .ssl = ssl},
+                 {.path = "/validators2", .msg = "", .ssl = ssl}});
             testFetchList(
-                good, {{"/validators2", "", ssl}, {"/validators", "", ssl}});
+                good,
+                {{.path = "/validators2", .msg = "", .ssl = ssl},
+                 {.path = "/validators", .msg = "", .ssl = ssl}});
             testFetchList(
-                good, {{"/validators2", "", ssl}, {"/validators2", "", ssl}});
+                good,
+                {{.path = "/validators2", .msg = "", .ssl = ssl},
+                 {.path = "/validators2", .msg = "", .ssl = ssl}});
             // fetch single site with single redirects
-            testFetchList(good, {{"/redirect_once/301", "", ssl}});
-            testFetchList(good, {{"/redirect_once/302", "", ssl}});
-            testFetchList(good, {{"/redirect_once/307", "", ssl}});
-            testFetchList(good, {{"/redirect_once/308", "", ssl}});
+            testFetchList(good, {{.path = "/redirect_once/301", .msg = "", .ssl = ssl}});
+            testFetchList(good, {{.path = "/redirect_once/302", .msg = "", .ssl = ssl}});
+            testFetchList(good, {{.path = "/redirect_once/307", .msg = "", .ssl = ssl}});
+            testFetchList(good, {{.path = "/redirect_once/308", .msg = "", .ssl = ssl}});
             // one redirect, one not
             testFetchList(
                 good,
-                {{"/validators", "", ssl}, {"/redirect_once/302", "", ssl}});
+                {{.path = "/validators", .msg = "", .ssl = ssl},
+                 {.path = "/redirect_once/302", .msg = "", .ssl = ssl}});
             testFetchList(
                 good,
-                {{"/validators2", "", ssl}, {"/redirect_once/302", "", ssl}});
+                {{.path = "/validators2", .msg = "", .ssl = ssl},
+                 {.path = "/redirect_once/302", .msg = "", .ssl = ssl}});
             // UNLs with a "gap" between validUntil of one and validFrom of the
             // next
             testFetchList(
                 good,
-                {{"/validators2",
-                  "",
-                  ssl,
-                  false,
-                  false,
-                  1,
-                  detail::default_expires,
-                  std::chrono::seconds{-90}}});
-            // fetch single site with undending redirect (fails to load)
+                {{.path = "/validators2",
+                  .msg = "",
+                  .ssl = ssl,
+                  .failFetch = false,
+                  .failApply = false,
+                  .serverVersion = 1,
+                  .expiresFromNow = detail::kDefaultExpires,
+                  .effectiveOverlap = std::chrono::seconds{-90}}});
+            // fetch single site with unending redirect (fails to load)
             testFetchList(
                 good,
-                {{"/redirect_forever/301",
-                  "Exceeded max redirects",
-                  ssl,
-                  true,
-                  true}});
+                {{.path = "/redirect_forever/301",
+                  .msg = "Exceeded max redirects",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true}});
             // two that redirect forever
             testFetchList(
                 good,
-                {{"/redirect_forever/307",
-                  "Exceeded max redirects",
-                  ssl,
-                  true,
-                  true},
-                 {"/redirect_forever/308",
-                  "Exceeded max redirects",
-                  ssl,
-                  true,
-                  true}});
-            // one undending redirect, one not
+                {{.path = "/redirect_forever/307",
+                  .msg = "Exceeded max redirects",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true},
+                 {.path = "/redirect_forever/308",
+                  .msg = "Exceeded max redirects",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true}});
+            // one unending redirect, one not
             testFetchList(
                 good,
-                {{"/validators", "", ssl},
-                 {"/redirect_forever/302",
-                  "Exceeded max redirects",
-                  ssl,
-                  true,
-                  true}});
-            // one undending redirect, one not
+                {{.path = "/validators", .msg = "", .ssl = ssl},
+                 {.path = "/redirect_forever/302",
+                  .msg = "Exceeded max redirects",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true}});
+            // one unending redirect, one not
             testFetchList(
                 good,
-                {{"/validators2", "", ssl},
-                 {"/redirect_forever/302",
-                  "Exceeded max redirects",
-                  ssl,
-                  true,
-                  true}});
+                {{.path = "/validators2", .msg = "", .ssl = ssl},
+                 {.path = "/redirect_forever/302",
+                  .msg = "Exceeded max redirects",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true}});
             // invalid redir Location
             testFetchList(
                 good,
-                {{"/redirect_to/ftp://invalid-url/302",
-                  "Invalid redirect location",
-                  ssl,
-                  true,
-                  true}});
+                {{.path = "/redirect_to/ftp://invalid-url/302",
+                  .msg = "Invalid redirect location",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true}});
             testFetchList(
                 good,
-                {{"/redirect_to/file://invalid-url/302",
-                  "Invalid redirect location",
-                  ssl,
-                  true,
-                  true}});
+                {{.path = "/redirect_to/file://invalid-url/302",
+                  .msg = "Invalid redirect location",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true}});
             // invalid json
             testFetchList(
                 good,
-                {{"/validators/bad",
-                  "Unable to parse JSON response",
-                  ssl,
-                  true,
-                  true}});
+                {{.path = "/validators/bad",
+                  .msg = "Unable to parse JSON response",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true}});
             testFetchList(
                 good,
-                {{"/validators2/bad",
-                  "Unable to parse JSON response",
-                  ssl,
-                  true,
-                  true}});
+                {{.path = "/validators2/bad",
+                  .msg = "Unable to parse JSON response",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true}});
             // error status returned
             testFetchList(
                 good,
-                {{"/bad-resource", "returned bad status", ssl, true, true}});
+                {{.path = "/bad-resource",
+                  .msg = "returned bad status",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true}});
             // location field missing
             testFetchList(
                 good,
-                {{"/redirect_nolo/308",
-                  "returned a redirect with no Location",
-                  ssl,
-                  true,
-                  true}});
+                {{.path = "/redirect_nolo/308",
+                  .msg = "returned a redirect with no Location",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true}});
             // json fields missing
             testFetchList(
                 good,
-                {{"/validators/missing",
-                  "Missing fields in JSON response",
-                  ssl,
-                  true,
-                  true}});
+                {{.path = "/validators/missing",
+                  .msg = "Missing fields in JSON response",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true}});
             testFetchList(
                 good,
-                {{"/validators2/missing",
-                  "Missing fields in JSON response",
-                  ssl,
-                  true,
-                  true}});
+                {{.path = "/validators2/missing",
+                  .msg = "Missing fields in JSON response",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true}});
             // timeout
             testFetchList(
-                good, {{"/sleep/13", "took too long", ssl, true, true}});
+                good,
+                {{.path = "/sleep/13",
+                  .msg = "took too long",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true}});
             // bad manifest format using known versions
             // * Retrieves a v1 formatted list claiming version 2
             testFetchList(
-                good, {{"/validators", "Missing fields", ssl, true, true, 2}});
+                good,
+                {{.path = "/validators",
+                  .msg = "Missing fields",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true,
+                  .serverVersion = 2}});
             // * Retrieves a v2 formatted list claiming version 1
             testFetchList(
-                good, {{"/validators2", "Missing fields", ssl, true, true, 0}});
+                good,
+                {{.path = "/validators2",
+                  .msg = "Missing fields",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true,
+                  .serverVersion = 0}});
             // bad manifest version
             // Because versions other than 1 are treated as v2, the v1
             // list won't have the blobs_v2 fields, and thus will claim to have
             // missing fields
             testFetchList(
-                good, {{"/validators", "Missing fields", ssl, true, true, 4}});
+                good,
+                {{.path = "/validators",
+                  .msg = "Missing fields",
+                  .ssl = ssl,
+                  .failFetch = true,
+                  .failApply = true,
+                  .serverVersion = 4}});
             testFetchList(
                 good,
-                {{"/validators2",
-                  "1 unsupported version",
-                  ssl,
-                  false,
-                  true,
-                  4}});
+                {{.path = "/validators2",
+                  .msg = "1 unsupported version",
+                  .ssl = ssl,
+                  .failFetch = false,
+                  .failApply = true,
+                  .serverVersion = 4}});
             using namespace std::chrono_literals;
             // get expired validator list
             testFetchList(
                 good,
-                {{"/validators",
-                  "Applied 1 expired validator list(s)",
-                  ssl,
-                  false,
-                  false,
-                  1,
-                  0s}});
+                {{.path = "/validators",
+                  .msg = "Applied 1 expired validator list(s)",
+                  .ssl = ssl,
+                  .failFetch = false,
+                  .failApply = false,
+                  .serverVersion = 1,
+                  .expiresFromNow = 0s}});
             testFetchList(
                 good,
-                {{"/validators2",
-                  "Applied 1 expired validator list(s)",
-                  ssl,
-                  false,
-                  false,
-                  1,
-                  0s,
-                  -1s}});
+                {{.path = "/validators2",
+                  .msg = "Applied 1 expired validator list(s)",
+                  .ssl = ssl,
+                  .failFetch = false,
+                  .failApply = false,
+                  .serverVersion = 1,
+                  .expiresFromNow = 0s,
+                  .effectiveOverlap = -1s}});
             // force an out-of-range validUntil value
             testFetchList(
                 good,
-                {{"/validators",
-                  "1 invalid validator list(s)",
-                  ssl,
-                  false,
-                  true,
-                  1,
-                  std::chrono::seconds{Json::Value::maxInt + 1}}});
+                {{.path = "/validators",
+                  .msg = "1 invalid validator list(s)",
+                  .ssl = ssl,
+                  .failFetch = false,
+                  .failApply = true,
+                  .serverVersion = 1,
+                  .expiresFromNow = std::chrono::seconds{json::Value::kMinInt}}});
             // force an out-of-range validUntil value on the future list
             // The first list is accepted. The second fails. The parser
             // returns the "best" result, so this looks like a success.
             testFetchList(
                 good,
-                {{"/validators2",
-                  "",
-                  ssl,
-                  false,
-                  false,
-                  1,
-                  std::chrono::seconds{Json::Value::maxInt - 300},
-                  299s}});
+                {{.path = "/validators2",
+                  .msg = "",
+                  .ssl = ssl,
+                  .failFetch = false,
+                  .failApply = false,
+                  .serverVersion = 1,
+                  .expiresFromNow = std::chrono::seconds{json::Value::kMaxInt - 300},
+                  .effectiveOverlap = 299s}});
             // force an out-of-range validFrom value
             // The first list is accepted. The second fails. The parser
             // returns the "best" result, so this looks like a success.
             testFetchList(
                 good,
-                {{"/validators2",
-                  "",
-                  ssl,
-                  false,
-                  false,
-                  1,
-                  std::chrono::seconds{Json::Value::maxInt - 300},
-                  301s}});
+                {{.path = "/validators2",
+                  .msg = "",
+                  .ssl = ssl,
+                  .failFetch = false,
+                  .failApply = false,
+                  .serverVersion = 1,
+                  .expiresFromNow = std::chrono::seconds{json::Value::kMaxInt - 300},
+                  .effectiveOverlap = 301s}});
             // force an out-of-range validUntil value on _both_ lists
             testFetchList(
                 good,
-                {{"/validators2",
-                  "2 invalid validator list(s)",
-                  ssl,
-                  false,
-                  true,
-                  1,
-                  std::chrono::seconds{Json::Value::maxInt + 1},
-                  std::chrono::seconds{Json::Value::maxInt - 6000}}});
+                {{.path = "/validators2",
+                  .msg = "2 invalid validator list(s)",
+                  .ssl = ssl,
+                  .failFetch = false,
+                  .failApply = true,
+                  .serverVersion = 1,
+                  .expiresFromNow = std::chrono::seconds{json::Value::kMinInt},
+                  .effectiveOverlap = std::chrono::seconds{json::Value::kMaxInt - 6000}}});
             // verify refresh intervals are properly clamped
             testFetchList(
                 good,
-                {{"/validators/refresh/0",
-                  "",
-                  ssl,
-                  false,
-                  false,
-                  1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
-                  1}});  // minimum of 1 minute
+                {{.path = "/validators/refresh/0",
+                  .msg = "",
+                  .ssl = ssl,
+                  .failFetch = false,
+                  .failApply = false,
+                  .serverVersion = 1,
+                  .expiresFromNow = detail::kDefaultExpires,
+                  .effectiveOverlap = detail::kDefaultEffectiveOverlap,
+                  .expectedRefreshMin = 1}});  // minimum of 1 minute
             testFetchList(
                 good,
-                {{"/validators2/refresh/0",
-                  "",
-                  ssl,
-                  false,
-                  false,
-                  1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
-                  1}});  // minimum of 1 minute
+                {{.path = "/validators2/refresh/0",
+                  .msg = "",
+                  .ssl = ssl,
+                  .failFetch = false,
+                  .failApply = false,
+                  .serverVersion = 1,
+                  .expiresFromNow = detail::kDefaultExpires,
+                  .effectiveOverlap = detail::kDefaultEffectiveOverlap,
+                  .expectedRefreshMin = 1}});  // minimum of 1 minute
             testFetchList(
                 good,
-                {{"/validators/refresh/10",
-                  "",
-                  ssl,
-                  false,
-                  false,
-                  1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
-                  10}});  // 10 minutes is fine
+                {{.path = "/validators/refresh/10",
+                  .msg = "",
+                  .ssl = ssl,
+                  .failFetch = false,
+                  .failApply = false,
+                  .serverVersion = 1,
+                  .expiresFromNow = detail::kDefaultExpires,
+                  .effectiveOverlap = detail::kDefaultEffectiveOverlap,
+                  .expectedRefreshMin = 10}});  // 10 minutes is fine
             testFetchList(
                 good,
-                {{"/validators2/refresh/10",
-                  "",
-                  ssl,
-                  false,
-                  false,
-                  1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
-                  10}});  // 10 minutes is fine
+                {{.path = "/validators2/refresh/10",
+                  .msg = "",
+                  .ssl = ssl,
+                  .failFetch = false,
+                  .failApply = false,
+                  .serverVersion = 1,
+                  .expiresFromNow = detail::kDefaultExpires,
+                  .effectiveOverlap = detail::kDefaultEffectiveOverlap,
+                  .expectedRefreshMin = 10}});  // 10 minutes is fine
             testFetchList(
                 good,
-                {{"/validators/refresh/2000",
-                  "",
-                  ssl,
-                  false,
-                  false,
-                  1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
-                  60 * 24}});  // max of 24 hours
+                {{.path = "/validators/refresh/2000",
+                  .msg = "",
+                  .ssl = ssl,
+                  .failFetch = false,
+                  .failApply = false,
+                  .serverVersion = 1,
+                  .expiresFromNow = detail::kDefaultExpires,
+                  .effectiveOverlap = detail::kDefaultEffectiveOverlap,
+                  .expectedRefreshMin = 60 * 24}});  // max of 24 hours
             testFetchList(
                 good,
-                {{"/validators2/refresh/2000",
-                  "",
-                  ssl,
-                  false,
-                  false,
-                  1,
-                  detail::default_expires,
-                  detail::default_effective_overlap,
-                  60 * 24}});  // max of 24 hours
+                {{.path = "/validators2/refresh/2000",
+                  .msg = "",
+                  .ssl = ssl,
+                  .failFetch = false,
+                  .failApply = false,
+                  .serverVersion = 1,
+                  .expiresFromNow = detail::kDefaultExpires,
+                  .effectiveOverlap = detail::kDefaultEffectiveOverlap,
+                  .expectedRefreshMin = 60 * 24}});  // max of 24 hours
         }
         using namespace boost::filesystem;
         for (auto const& file : directory_iterator(good.subdir()))
@@ -707,7 +714,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(ValidatorSite, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(ValidatorSite, app, xrpl, 2);
 
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

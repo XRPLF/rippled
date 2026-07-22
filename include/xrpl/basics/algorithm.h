@@ -1,28 +1,8 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_ALGORITHM_H_INCLUDED
-#define RIPPLE_ALGORITHM_H_INCLUDED
+#pragma once
 
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 // Requires: [first1, last1) and [first2, last2) are ordered ranges according to
 // comp.
@@ -33,7 +13,7 @@ namespace ripple {
 // Note: This algorithm is evolved from std::set_intersection.
 template <class InputIter1, class InputIter2, class Action, class Comp>
 void
-generalized_set_intersection(
+generalizedSetIntersection(
     InputIter1 first1,
     InputIter1 last1,
     InputIter2 first2,
@@ -43,8 +23,10 @@ generalized_set_intersection(
 {
     while (first1 != last1 && first2 != last2)
     {
-        if (comp(*first1, *first2))  // if *first1 < *first2
-            ++first1;                //     then reduce first range
+        if (comp(*first1, *first2))
+        {              // if *first1 < *first2
+            ++first1;  //     then reduce first range
+        }
         else
         {
             if (!comp(*first2, *first1))   // if *first1 == *first2
@@ -71,7 +53,7 @@ generalized_set_intersection(
 // std::set_intersection.
 template <class FwdIter1, class InputIter2, class Pred, class Comp>
 FwdIter1
-remove_if_intersect_or_match(
+removeIfIntersectOrMatch(
     FwdIter1 first1,
     FwdIter1 last1,
     InputIter2 first2,
@@ -114,6 +96,4 @@ remove_if_intersect_or_match(
     return first1;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

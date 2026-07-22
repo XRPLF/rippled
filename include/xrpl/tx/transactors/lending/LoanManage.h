@@ -1,0 +1,90 @@
+#pragma once
+
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+
+namespace xrpl {
+
+class LoanManage : public Transactor
+{
+public:
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
+
+    explicit LoanManage(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
+
+    static bool
+    checkExtraFeatures(PreflightContext const& ctx);
+
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
+    /**
+     * Helper function that might be needed by other transactors
+     */
+    static TER
+    defaultLoan(
+        ApplyView& view,
+        SLE::ref loanSle,
+        SLE::ref brokerSle,
+        SLE::ref vaultSle,
+        Asset const& vaultAsset,
+        beast::Journal j);
+
+    /**
+     * Helper function that might be needed by other transactors
+     */
+    static TER
+    impairLoan(
+        ApplyView& view,
+        SLE::ref loanSle,
+        SLE::ref vaultSle,
+        Asset const& vaultAsset,
+        beast::Journal j);
+
+    /**
+     * Helper function that might be needed by other transactors
+     */
+    [[nodiscard]] static TER
+    unimpairLoan(
+        ApplyView& view,
+        SLE::ref loanSle,
+        SLE::ref vaultSle,
+        Asset const& vaultAsset,
+        beast::Journal j);
+
+    TER
+    doApply() override;
+
+    void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
+};
+
+//------------------------------------------------------------------------------
+
+}  // namespace xrpl

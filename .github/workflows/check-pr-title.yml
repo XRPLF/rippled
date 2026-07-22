@@ -1,0 +1,23 @@
+name: Check PR title
+
+on:
+  merge_group:
+    types:
+      - checks_requested
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+      - ready_for_review
+    branches:
+      - develop
+      - "release-*"
+      - "release/*"
+      - "staging/*"
+
+jobs:
+  check_title:
+    if: ${{ github.event.pull_request.draft != true }}
+    uses: XRPLF/actions/.github/workflows/check-pr-title.yml@cba1f0891650baf1a9c88624dc2d72573be2eb81

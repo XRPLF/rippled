@@ -1,0 +1,90 @@
+#pragma once
+
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+
+namespace xrpl {
+
+class TicketCreate : public Transactor
+{
+public:
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
+
+    static constexpr std::uint32_t kMinValidCount = 1;
+
+    // A note on how the maxValidCount was determined.  The goal is for
+    // a single TicketCreate transaction to not use more compute power than
+    // a single compute-intensive Payment.
+    //
+    // Timing was performed using a MacBook Pro laptop and a release build
+    // with asserts off.  20 measurements were taken of each of the Payment
+    // and TicketCreate transactions and averaged to get timings.
+    //
+    // For the example compute-intensive Payment a Discrepancy unit test
+    // unit test Payment with 3 paths was chosen.  With all the latest
+    // amendments enabled, that Payment::doApply() operation took, on
+    // average, 1.25 ms.
+    //
+    // Using that same test set up creating 250 Tickets in a single
+    // TicketCreate::doApply() in a unit test took, on average, 1.21 ms.
+    //
+    // So, for the moment, a single transaction creating 250 Tickets takes
+    // about the same compute time as a single compute-intensive payment.
+    //
+    // October 2018.
+    static constexpr std::uint32_t kMaxValidCount = 250;
+
+    // The maximum number of Tickets an account may hold.  If a
+    // TicketCreate would cause an account to own more than this many
+    // tickets, then the TicketCreate will fail.
+    //
+    // The number was chosen arbitrarily and is an effort toward avoiding
+    // ledger-stuffing with Tickets.
+    static constexpr std::uint32_t kMaxTicketThreshold = 250;
+
+    explicit TicketCreate(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
+
+    static TxConsequences
+    makeTxConsequences(PreflightContext const& ctx);
+
+    /**
+     * Enforce constraints beyond those of the Transactor base class.
+     */
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    /**
+     * Enforce constraints beyond those of the Transactor base class.
+     */
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
+    /**
+     * Precondition: fee collection is likely.  Attempt to create ticket(s).
+     */
+    TER
+    doApply() override;
+
+    void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
+};
+
+}  // namespace xrpl

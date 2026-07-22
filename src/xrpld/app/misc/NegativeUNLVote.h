@@ -1,35 +1,21 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2020 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_MISC_NEGATIVEUNLVOTE_H_INCLUDED
-#define RIPPLE_APP_MISC_NEGATIVEUNLVOTE_H_INCLUDED
-
-#include <xrpld/app/ledger/Ledger.h>
-
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <mutex>
 #include <optional>
+#include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 template <class Adaptor>
 class Validations;
@@ -53,35 +39,32 @@ public:
      * An unreliable validator is a candidate to be disabled by the NegativeUNL
      * protocol.
      */
-    static constexpr size_t negativeUNLLowWaterMark =
-        FLAG_LEDGER_INTERVAL * 50 / 100;
+    static constexpr size_t kNegativeUnlLowWaterMark = kFlagLedgerInterval * 50 / 100;
     /**
      * An unreliable validator must have more than negativeUNLHighWaterMark
      * validations in the last flag ledger period to be re-enabled.
      */
-    static constexpr size_t negativeUNLHighWaterMark =
-        FLAG_LEDGER_INTERVAL * 80 / 100;
+    static constexpr size_t kNegativeUnlHighWaterMark = kFlagLedgerInterval * 80 / 100;
     /**
      * The minimum number of validations of the local node for it to
      * participate in the voting.
      */
-    static constexpr size_t negativeUNLMinLocalValsToVote =
-        FLAG_LEDGER_INTERVAL * 90 / 100;
+    static constexpr size_t kNegativeUnlMinLocalValsToVote = kFlagLedgerInterval * 90 / 100;
     /**
      * We don't want to disable new validators immediately after adding them.
      * So we skip voting for disabling them for 2 flag ledgers.
      */
-    static constexpr size_t newValidatorDisableSkip = FLAG_LEDGER_INTERVAL * 2;
+    static constexpr size_t kNewValidatorDisableSkip = kFlagLedgerInterval * 2;
     /**
      * We only want to put 25% of the UNL on the NegativeUNL.
      */
-    static constexpr float negativeUNLMaxListed = 0.25;
+    static constexpr float kNegativeUnlMaxListed = 0.25;
 
     /**
      * A flag indicating whether a UNLModify Tx is to disable or to re-enable
      * a validator.
      */
-    enum NegativeUNLModify {
+    enum class NegativeUNLModify {
         ToDisable,  // UNLModify Tx is to disable a validator
         ToReEnable  // UNLModify Tx is to re-enable a validator
     };
@@ -158,12 +141,12 @@ private:
      * Pick one candidate from a vector of candidates.
      *
      * @param randomPadData the data used for picking a candidate.
-     *        @note Nodes must use the same randomPadData for picking the same
-     *        candidate. The hash of the parent ledger is used.
+     * @note Nodes must use the same randomPadData for picking the same
+     *       candidate. The hash of the parent ledger is used.
      * @param candidates the vector of candidates
      * @return the picked candidate
      */
-    NodeID
+    static NodeID
     choose(uint256 const& randomPadData, std::vector<NodeID> const& candidates);
 
     /**
@@ -195,7 +178,7 @@ private:
      * @param scoreTable the score table
      * @return the candidates to disable and the candidates to re-enable
      */
-    Candidates const
+    Candidates
     findAllCandidates(
         hash_set<NodeID> const& unl,
         hash_set<NodeID> const& negUnl,
@@ -213,6 +196,4 @@ private:
     friend class test::NegativeUNLVoteScoreTable_test;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

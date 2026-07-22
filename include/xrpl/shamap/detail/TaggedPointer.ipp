@@ -1,0 +1,559 @@
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/shamap/SHAMapInnerNode.h>
+#include <xrpl/shamap/detail/TaggedPointer.h>
+
+#include <boost/pool/pool_alloc.hpp>
+
+#include <algorithm>
+#include <array>
+
+namespace xrpl {
+
+namespace {
+// Sparse array size boundaries.
+// Given n children, an array of size `*std::lower_bound(boundaries.begin(),
+// boundaries.end(), n);` is used to store the children. Note that the last
+// element must be the number of children in a dense array.
+constexpr std::array<std::uint8_t, 4> kBoundaries{2, 4, 6, SHAMapInnerNode::kBranchFactor};
+static_assert(
+    kBoundaries.size() <= 4,
+    "The hashesAndChildren member uses a tagged array format with two bits "
+    "reserved for the tag. This supports at most 4 values.");
+static_assert(
+    kBoundaries.back() == SHAMapInnerNode::kBranchFactor,
+    "Last element of boundaries must be number of children in a dense array");
+
+// Terminology: A chunk is the memory being allocated from a block. A block
+// contains multiple chunks. This is the terminology the boost documentation
+// uses. Pools use "Simple Segregated Storage" as their storage format.
+constexpr size_t kElementSizeBytes = sizeof(SHAMapHash) + sizeof(SHAMapTreeNodePtr);
+
+constexpr size_t kBlockSizeBytes = kilobytes(512);
+
+template <std::size_t... I>
+constexpr std::array<size_t, kBoundaries.size()>
+initArrayChunkSizeBytes(std::index_sequence<I...>)
+{
+    return std::array<size_t, kBoundaries.size()>{
+        kBoundaries[I] * kElementSizeBytes...,
+    };
+}
+constexpr auto kArrayChunkSizeBytes =
+    initArrayChunkSizeBytes(std::make_index_sequence<kBoundaries.size()>{});
+
+template <std::size_t... I>
+constexpr std::array<size_t, kBoundaries.size()>
+initArrayChunksPerBlock(std::index_sequence<I...>)
+{
+    return std::array<size_t, kBoundaries.size()>{
+        kBlockSizeBytes / kArrayChunkSizeBytes[I]...,
+    };
+}
+constexpr auto kChunksPerBlock =
+    initArrayChunksPerBlock(std::make_index_sequence<kBoundaries.size()>{});
+
+[[nodiscard]] inline std::uint8_t
+numAllocatedChildren(std::uint8_t n)
+{
+    XRPL_ASSERT(n <= SHAMapInnerNode::kBranchFactor, "xrpl::numAllocatedChildren : valid input");
+    return *std::ranges::lower_bound(kBoundaries, n);
+}
+
+[[nodiscard]] inline std::size_t
+boundariesIndex(std::uint8_t numChildren)
+{
+    XRPL_ASSERT(
+        numChildren <= SHAMapInnerNode::kBranchFactor, "xrpl::boundariesIndex : valid input");
+    return std::distance(kBoundaries.begin(), std::ranges::lower_bound(kBoundaries, numChildren));
+}
+
+template <std::size_t... I>
+std::array<std::function<void*()>, kBoundaries.size()>
+initAllocateArrayFuns(std::index_sequence<I...>)
+{
+    return std::array<std::function<void*()>, kBoundaries.size()>{
+        boost::singleton_pool<
+            boost::fast_pool_allocator_tag,
+            kArrayChunkSizeBytes[I],
+            boost::default_user_allocator_new_delete,
+            std::mutex,
+            kChunksPerBlock[I],
+            kChunksPerBlock[I]>::malloc...,
+    };
+}
+std::array<std::function<void*()>, kBoundaries.size()> const kAllocateArrayFuns =
+    initAllocateArrayFuns(std::make_index_sequence<kBoundaries.size()>{});
+
+template <std::size_t... I>
+std::array<std::function<void(void*)>, kBoundaries.size()>
+initFreeArrayFuns(std::index_sequence<I...>)
+{
+    return std::array<std::function<void(void*)>, kBoundaries.size()>{
+        static_cast<void (*)(void*)>(boost::singleton_pool<
+                                     boost::fast_pool_allocator_tag,
+                                     kArrayChunkSizeBytes[I],
+                                     boost::default_user_allocator_new_delete,
+                                     std::mutex,
+                                     kChunksPerBlock[I],
+                                     kChunksPerBlock[I]>::free)...,
+    };
+}
+std::array<std::function<void(void*)>, kBoundaries.size()> const kFreeArrayFuns =
+    initFreeArrayFuns(std::make_index_sequence<kBoundaries.size()>{});
+
+template <std::size_t... I>
+std::array<std::function<bool(void*)>, kBoundaries.size()>
+initIsFromArrayFuns(std::index_sequence<I...>)
+{
+    return std::array<std::function<bool(void*)>, kBoundaries.size()>{
+        boost::singleton_pool<
+            boost::fast_pool_allocator_tag,
+            kArrayChunkSizeBytes[I],
+            boost::default_user_allocator_new_delete,
+            std::mutex,
+            kChunksPerBlock[I],
+            kChunksPerBlock[I]>::is_from...,
+    };
+}
+std::array<std::function<bool(void*)>, kBoundaries.size()> const kIsFromArrayFuns =
+    initIsFromArrayFuns(std::make_index_sequence<kBoundaries.size()>{});
+
+// This function returns an untagged pointer
+[[nodiscard]] inline std::pair<std::uint8_t, void*>
+allocateArrays(std::uint8_t numChildren)
+{
+    auto const i = boundariesIndex(numChildren);
+    return {i, kAllocateArrayFuns[i]()};
+}
+
+// This function takes an untagged pointer
+inline void
+deallocateArrays(std::uint8_t boundaryIndex, void* p)
+{
+    XRPL_ASSERT(kIsFromArrayFuns[boundaryIndex](p), "xrpl::deallocateArrays : valid inputs");
+    kFreeArrayFuns[boundaryIndex](p);
+}
+
+// Used in `iterChildren` and elsewhere as the hash value for sparse arrays when
+// the hash isn't actually stored in the array.
+SHAMapHash const kZeroShaMapHash;
+
+}  // namespace
+
+template <class F>
+void
+TaggedPointer::iterChildren(std::uint16_t isBranch, F&& f) const
+{
+    auto [numAllocated, hashes, _] = getHashesAndChildren();
+    if (numAllocated == SHAMapInnerNode::kBranchFactor)
+    {
+        // dense case
+        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
+            f(hashes[i]);
+    }
+    else
+    {
+        // sparse case
+        int curHashI = 0;
+        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
+        {
+            if ((1 << i) & isBranch)
+            {
+                f(hashes[curHashI++]);
+            }
+            else
+            {
+                f(kZeroShaMapHash);
+            }
+        }
+    }
+}
+
+template <class F>
+void
+TaggedPointer::iterNonEmptyChildIndexes(std::uint16_t isBranch, F&& f) const
+{
+    if (capacity() == SHAMapInnerNode::kBranchFactor)
+    {
+        // dense case
+        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
+        {
+            if ((1 << i) & isBranch)
+            {
+                f(i, i);
+            }
+        }
+    }
+    else
+    {
+        // sparse case
+        int curHashI = 0;
+        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
+        {
+            if ((1 << i) & isBranch)
+            {
+                f(i, curHashI++);
+            }
+        }
+    }
+}
+
+inline void
+// NOLINTNEXTLINE(readability-make-member-function-const)
+TaggedPointer::destroyHashesAndChildren()
+{
+    if (tp_ == 0u)
+        return;
+
+    auto [numAllocated, hashes, children] = getHashesAndChildren();
+    for (std::size_t i = 0; i < numAllocated; ++i)
+    {
+        hashes[i].~SHAMapHash();
+        std::destroy_at(&children[i]);
+    }
+
+    auto [tag, ptr] = decode();
+    deallocateArrays(tag, ptr);
+}
+
+inline std::optional<int>
+TaggedPointer::getChildIndex(std::uint16_t isBranch, int i) const
+{
+    if (isDense())
+        return i;
+
+    // Sparse case
+    if ((isBranch & (1 << i)) == 0)
+    {
+        // Empty branch. Sparse children do not store empty branches
+        return {};
+    }
+
+    // Sparse children are stored sorted. This means the index
+    // of a child in the array is the number of non-empty children
+    // before it. Since `isBranch_` is a bitset of the stored
+    // children, we simply need to mask out (and set to zero) all
+    // the bits in `isBranch_` equal to higher than `i` and count
+    // the bits.
+
+    // mask sets all the bits >=i to zero and all the bits <i to
+    // one.
+    auto const mask = (1u << i) - 1;
+    return popcnt16(isBranch & mask);
+}
+
+inline TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t numChildren)
+{
+    auto [tag, p] = allocateArrays(numChildren);
+    XRPL_ASSERT(
+        tag < kBoundaries.size(),
+        "xrpl::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
+        "maximum tag");
+    XRPL_ASSERT(
+        (reinterpret_cast<std::uintptr_t>(p) & kPtrMask) == reinterpret_cast<std::uintptr_t>(p),
+        "xrpl::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
+        "valid pointer");
+    tp_ = reinterpret_cast<std::uintptr_t>(p) + tag;
+}
+
+inline TaggedPointer::TaggedPointer(
+    TaggedPointer&& other,
+    std::uint16_t srcBranches,
+    std::uint16_t dstBranches,
+    std::uint8_t toAllocate)
+{
+    XRPL_ASSERT(
+        toAllocate >= popcnt16(dstBranches),
+        "xrpl::TaggedPointer::TaggedPointer(TaggedPointer&& ...) : minimum "
+        "toAllocate input");
+
+    if (other.capacity() == numAllocatedChildren(toAllocate))
+    {
+        // in place
+        *this = std::move(other);
+        auto [srcDstNumAllocated, srcDstHashes, srcDstChildren] = getHashesAndChildren();
+        bool const srcDstIsDense = isDense();
+        int srcDstIndex = 0;
+        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
+        {
+            auto const mask = (1 << i);
+            bool const inSrc = (srcBranches & mask) != 0;
+            bool const inDst = (dstBranches & mask) != 0;
+            if (inSrc && inDst)
+            {
+                // keep
+                ++srcDstIndex;
+            }
+            else if (inSrc && !inDst)
+            {
+                // remove
+                if (srcDstIsDense)
+                {
+                    srcDstHashes[srcDstIndex].zero();
+                    srcDstChildren[srcDstIndex].reset();
+                    ++srcDstIndex;
+                }
+                else
+                {
+                    // sparse
+                    // need to shift all the elements to the left by
+                    // one
+                    for (int c = srcDstIndex; c < srcDstNumAllocated - 1; ++c)
+                    {
+                        srcDstHashes[c] = srcDstHashes[c + 1];
+                        srcDstChildren[c] = std::move(srcDstChildren[c + 1]);
+                    }
+                    srcDstHashes[srcDstNumAllocated - 1].zero();
+                    srcDstChildren[srcDstNumAllocated - 1].reset();
+                    // do not increment the index
+                }
+            }
+            else if (!inSrc && inDst)
+            {
+                // add
+                if (srcDstIsDense)
+                {
+                    // nothing to do, child is already present in the dense rep
+                    ++srcDstIndex;
+                }
+                else
+                {
+                    // sparse
+                    // need to create a hole by shifting all the elements to the
+                    // right by one
+                    for (int c = srcDstNumAllocated - 1; c > srcDstIndex; --c)
+                    {
+                        srcDstHashes[c] = srcDstHashes[c - 1];
+                        srcDstChildren[c] = std::move(srcDstChildren[c - 1]);
+                    }
+                    srcDstHashes[srcDstIndex].zero();
+                    srcDstChildren[srcDstIndex].reset();
+                    ++srcDstIndex;
+                }
+            }
+            else if (!inSrc && !inDst)
+            {
+                // in neither
+                if (srcDstIsDense)
+                {
+                    ++srcDstIndex;
+                }
+            }
+        }
+    }
+    else
+    {
+        // not in place
+        TaggedPointer dst{RawAllocateTag{}, toAllocate};
+        auto [dstNumAllocated, dstHashes, dstChildren] = dst.getHashesAndChildren();
+        // Move `other` into a local var so it's not in a partially moved from
+        // state after this function runs
+        TaggedPointer const src(std::move(other));
+        auto [srcNumAllocated, srcHashes, srcChildren] = src.getHashesAndChildren();
+        bool const srcIsDense = src.isDense();
+        bool const dstIsDense = dst.isDense();
+        int srcIndex = 0, dstIndex = 0;
+        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
+        {
+            auto const mask = (1 << i);
+            bool const inSrc = (srcBranches & mask) != 0;
+            bool const inDst = (dstBranches & mask) != 0;
+            if (inSrc && inDst)
+            {
+                // keep
+                new (&dstHashes[dstIndex]) SHAMapHash{srcHashes[srcIndex]};
+
+                new (&dstChildren[dstIndex]) SHAMapTreeNodePtr{std::move(srcChildren[srcIndex])};
+                ++dstIndex;
+                ++srcIndex;
+            }
+            else if (inSrc && !inDst)
+            {
+                // remove
+                ++srcIndex;
+                if (dstIsDense)
+                {
+                    new (&dstHashes[dstIndex]) SHAMapHash{};
+                    new (&dstChildren[dstIndex]) SHAMapTreeNodePtr{};
+                    ++dstIndex;
+                }
+            }
+            else if (!inSrc && inDst)
+            {
+                // add
+                new (&dstHashes[dstIndex]) SHAMapHash{};
+                new (&dstChildren[dstIndex]) SHAMapTreeNodePtr{};
+                ++dstIndex;
+                if (srcIsDense)
+                {
+                    ++srcIndex;
+                }
+            }
+            else if (!inSrc && !inDst)
+            {
+                // in neither
+                if (dstIsDense)
+                {
+                    new (&dstHashes[dstIndex]) SHAMapHash{};
+                    new (&dstChildren[dstIndex]) SHAMapTreeNodePtr{};
+                    ++dstIndex;
+                }
+                if (srcIsDense)
+                {
+                    ++srcIndex;
+                }
+            }
+        }
+        // If sparse, may need to run additional constructors
+        XRPL_ASSERT(
+            !dstIsDense || dstIndex == dstNumAllocated,
+            "xrpl::TaggedPointer::TaggedPointer(TaggedPointer&& ...) : "
+            "non-sparse or valid sparse");
+        for (int i = dstIndex; i < dstNumAllocated; ++i)
+        {
+            new (&dstHashes[i]) SHAMapHash{};
+            new (&dstChildren[i]) SHAMapTreeNodePtr{};
+        }
+        *this = std::move(dst);
+    }
+}
+
+inline TaggedPointer::TaggedPointer(
+    TaggedPointer&& other,
+    std::uint16_t isBranch,
+    std::uint8_t toAllocate)
+    : TaggedPointer(std::move(other))
+{
+    auto const oldNumAllocated = capacity();
+    toAllocate = numAllocatedChildren(toAllocate);
+    if (toAllocate == oldNumAllocated)
+        return;
+
+    // allocate hashes and children, but do not run constructors
+    TaggedPointer newHashesAndChildren{RawAllocateTag{}, toAllocate};
+    SHAMapHash* newHashes = nullptr;
+    SHAMapHash* oldHashes = nullptr;
+    SHAMapTreeNodePtr* newChildren = nullptr;
+    SHAMapTreeNodePtr* oldChildren = nullptr;
+    std::uint8_t newNumAllocated = 0;
+    // structured bindings can't be captured in c++ 17; use tie instead
+    std::tie(newNumAllocated, newHashes, newChildren) = newHashesAndChildren.getHashesAndChildren();
+    std::tie(std::ignore, oldHashes, oldChildren) = getHashesAndChildren();
+
+    if (newNumAllocated == SHAMapInnerNode::kBranchFactor)
+    {
+        // new arrays are dense, old arrays are sparse
+        iterNonEmptyChildIndexes(isBranch, [&](auto branchNum, auto indexNum) {
+            new (&newHashes[branchNum]) SHAMapHash{oldHashes[indexNum]};
+            new (&newChildren[branchNum]) SHAMapTreeNodePtr{std::move(oldChildren[indexNum])};
+        });
+        // Run the constructors for the remaining elements
+        for (int i = 0; i < SHAMapInnerNode::kBranchFactor; ++i)
+        {
+            if (((1 << i) & isBranch) != 0)
+                continue;
+            new (&newHashes[i]) SHAMapHash{};
+            new (&newChildren[i]) SHAMapTreeNodePtr{};
+        }
+    }
+    else
+    {
+        // new arrays are sparse, old arrays may be sparse or dense
+        int curCompressedIndex = 0;
+        iterNonEmptyChildIndexes(isBranch, [&](auto branchNum, auto indexNum) {
+            new (&newHashes[curCompressedIndex]) SHAMapHash{oldHashes[indexNum]};
+            new (&newChildren[curCompressedIndex])
+                SHAMapTreeNodePtr{std::move(oldChildren[indexNum])};
+            ++curCompressedIndex;
+        });
+        // Run the constructors for the remaining elements
+        for (int i = curCompressedIndex; i < newNumAllocated; ++i)
+        {
+            new (&newHashes[i]) SHAMapHash{};
+            new (&newChildren[i]) SHAMapTreeNodePtr{};
+        }
+    }
+
+    *this = std::move(newHashesAndChildren);
+}
+
+inline TaggedPointer::TaggedPointer(std::uint8_t numChildren)
+    : TaggedPointer(TaggedPointer::RawAllocateTag{}, numChildren)
+{
+    auto [numAllocated, hashes, children] = getHashesAndChildren();
+    for (std::size_t i = 0; i < numAllocated; ++i)
+    {
+        new (&hashes[i]) SHAMapHash{};
+        new (&children[i]) SHAMapTreeNodePtr{};
+    }
+}
+
+inline TaggedPointer::TaggedPointer(TaggedPointer&& other) : tp_{other.tp_}
+{
+    other.tp_ = 0;
+}
+
+inline TaggedPointer&
+TaggedPointer::operator=(TaggedPointer&& other)
+{
+    if (this == &other)
+        return *this;
+    destroyHashesAndChildren();
+    tp_ = other.tp_;
+    other.tp_ = 0;
+    return *this;
+}
+
+[[nodiscard]] inline std::pair<std::uint8_t, void*>
+TaggedPointer::decode() const
+{
+    // tp_ packs a raw pointer together with the tag bits; recovering the
+    // pointer inherently requires an integer-to-pointer cast.
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
+    return {tp_ & kTagMask, reinterpret_cast<void*>(tp_ & kPtrMask)};
+}
+
+[[nodiscard]] inline std::uint8_t
+TaggedPointer::capacity() const
+{
+    return kBoundaries[tp_ & kTagMask];
+}
+
+[[nodiscard]] inline bool
+TaggedPointer::isDense() const
+{
+    return (tp_ & kTagMask) == kBoundaries.size() - 1;
+}
+
+[[nodiscard]] inline std::tuple<std::uint8_t, SHAMapHash*, SHAMapTreeNodePtr*>
+TaggedPointer::getHashesAndChildren() const
+{
+    auto const [tag, ptr] = decode();
+    auto const hashes = reinterpret_cast<SHAMapHash*>(ptr);
+    std::uint8_t const numAllocated = kBoundaries[tag];
+    auto const children = reinterpret_cast<SHAMapTreeNodePtr*>(hashes + numAllocated);
+    return {numAllocated, hashes, children};
+};
+
+[[nodiscard]] inline SHAMapHash*
+TaggedPointer::getHashes() const
+{
+    // tp_ packs a raw pointer together with the tag bits; recovering the
+    // pointer inherently requires an integer-to-pointer cast.
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
+    return reinterpret_cast<SHAMapHash*>(tp_ & kPtrMask);
+};
+
+[[nodiscard]] inline SHAMapTreeNodePtr*
+TaggedPointer::getChildren() const
+{
+    auto [unused1, unused2, result] = getHashesAndChildren();
+    return result;
+};
+
+inline TaggedPointer::~TaggedPointer()
+{
+    destroyHashesAndChildren();
+}
+
+}  // namespace xrpl

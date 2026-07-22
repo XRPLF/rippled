@@ -1,53 +1,46 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/overlay/Message.h>
+
+#include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 
-#include <cstdint>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/PublicKey.h>
 
-namespace ripple {
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <mutex>
+#include <optional>
+#include <vector>
+
+namespace xrpl {
 
 Message::Message(
     ::google::protobuf::Message const& message,
     protocol::MessageType type,
     std::optional<PublicKey> const& validator)
-    : category_(TrafficCount::categorize(message, type, false))
+    : category_(static_cast<std::size_t>(TrafficCount::categorize(message, type, false)))
     , validatorKey_(validator)
 {
-    using namespace ripple::compression;
+    using namespace xrpl::compression;
 
     auto const messageBytes = messageSize(message);
 
-    XRPL_ASSERT(
-        messageBytes, "ripple::Message::Message : non-empty message input");
+    XRPL_ASSERT(messageBytes, "xrpl::Message::Message : non-empty message input");
 
-    buffer_.resize(headerBytes + messageBytes);
+    buffer_.resize(kHeaderBytes + messageBytes);
 
     setHeader(buffer_.data(), messageBytes, type, Algorithm::None, 0);
 
     if (messageBytes != 0)
-        message.SerializeToArray(buffer_.data() + headerBytes, messageBytes);
+        message.SerializeToArray(buffer_.data() + kHeaderBytes, messageBytes);
 
     XRPL_ASSERT(
         getBufferSize() == totalSize(message),
-        "ripple::Message::Message : message size matches the buffer");
+        "xrpl::Message::Message : message size matches the buffer");
 }
 
 // static
@@ -65,20 +58,22 @@ Message::messageSize(::google::protobuf::Message const& message)
 std::size_t
 Message::totalSize(::google::protobuf::Message const& message)
 {
-    return messageSize(message) + compression::headerBytes;
+    return messageSize(message) + compression::kHeaderBytes;
 }
 
 void
 Message::compress()
 {
-    using namespace ripple::compression;
-    auto const messageBytes = buffer_.size() - headerBytes;
+    using namespace xrpl::compression;
+    auto const messageBytes = buffer_.size() - kHeaderBytes;
 
     auto type = getType(buffer_.data());
 
     bool const compressible = [&] {
         if (messageBytes <= 70)
             return false;
+
+        // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
         switch (type)
         {
             case protocol::mtMANIFESTS:
@@ -87,8 +82,8 @@ Message::compress()
             case protocol::mtGET_LEDGER:
             case protocol::mtLEDGER_DATA:
             case protocol::mtGET_OBJECTS:
-            case protocol::mtVALIDATORLIST:
-            case protocol::mtVALIDATORLISTCOLLECTION:
+            case protocol::mtVALIDATOR_LIST:
+            case protocol::mtVALIDATOR_LIST_COLLECTION:
             case protocol::mtREPLAY_DELTA_RESPONSE:
             case protocol::mtTRANSACTIONS:
                 return true;
@@ -109,67 +104,65 @@ Message::compress()
 
     if (compressible)
     {
-        auto payload = static_cast<void const*>(buffer_.data() + headerBytes);
+        auto payload = static_cast<void const*>(buffer_.data() + kHeaderBytes);
 
-        auto compressedSize = ripple::compression::compress(
+        auto compressedSize = xrpl::compression::compress(
             payload,
             messageBytes,
             [&](std::size_t inSize) {  // size of required compressed buffer
-                bufferCompressed_.resize(inSize + headerBytesCompressed);
-                return (bufferCompressed_.data() + headerBytesCompressed);
+                bufferCompressed_.resize(inSize + kHeaderBytesCompressed);
+                return (bufferCompressed_.data() + kHeaderBytesCompressed);
             });
 
-        if (compressedSize <
-            (messageBytes - (headerBytesCompressed - headerBytes)))
+        if (compressedSize < (messageBytes - (kHeaderBytesCompressed - kHeaderBytes)))
         {
-            bufferCompressed_.resize(headerBytesCompressed + compressedSize);
-            setHeader(
-                bufferCompressed_.data(),
-                compressedSize,
-                type,
-                Algorithm::LZ4,
-                messageBytes);
+            bufferCompressed_.resize(kHeaderBytesCompressed + compressedSize);
+            // NOLINTNEXTLINE(readability-suspicious-call-argument)
+            setHeader(bufferCompressed_.data(), compressedSize, type, Algorithm::LZ4, messageBytes);
         }
         else
+        {
             bufferCompressed_.resize(0);
+        }
     }
 }
 
-/** Set payload header
-
-    The header is a variable-sized structure that contains information about
-    the type of the message and the length and encoding of the payload.
-
-    The first bit determines whether a message is compressed or uncompressed;
-    for compressed messages, the next three bits identify the compression
-    algorithm.
-
-    All multi-byte values are represented in big endian.
-
-    For uncompressed messages (6 bytes), numbering bits from left to right:
-
-        - The first 6 bits are set to 0.
-        - The next 26 bits represent the payload size.
-        - The remaining 16 bits represent the message type.
-
-    For compressed messages (10 bytes), numbering bits from left to right:
-
-        - The first 32 bits, together, represent the compression algorithm
-          and payload size:
-            - The first bit is set to 1 to indicate the message is compressed.
-            - The next 3 bits indicate the compression algorithm.
-            - The next 2 bits are reserved at this time and set to 0.
-            - The remaining 26 bits represent the payload size.
-        - The next 16 bits represent the message type.
-        - The remaining 32 bits are the uncompressed message size.
-
-    The maximum size of a message at this time is 64 MB. Messages larger than
-    this will be dropped and the recipient may, at its option, sever the link.
-
-    @note While nominally a part of the wire protocol, the framing is subject
-          to change; future versions of the code may negotiate the use of
-          substantially different framing.
-*/
+/**
+ * Set payload header
+ *
+ * The header is a variable-sized structure that contains information about
+ * the type of the message and the length and encoding of the payload.
+ *
+ * The first bit determines whether a message is compressed or uncompressed;
+ * for compressed messages, the next three bits identify the compression
+ * algorithm.
+ *
+ * All multi-byte values are represented in big endian.
+ *
+ * For uncompressed messages (6 bytes), numbering bits from left to right:
+ *
+ *     - The first 6 bits are set to 0.
+ *     - The next 26 bits represent the payload size.
+ *     - The remaining 16 bits represent the message type.
+ *
+ * For compressed messages (10 bytes), numbering bits from left to right:
+ *
+ *     - The first 32 bits, together, represent the compression algorithm
+ *       and payload size:
+ *         - The first bit is set to 1 to indicate the message is compressed.
+ *         - The next 3 bits indicate the compression algorithm.
+ *         - The next 2 bits are reserved at this time and set to 0.
+ *         - The remaining 26 bits represent the payload size.
+ *     - The next 16 bits represent the message type.
+ *     - The remaining 32 bits are the uncompressed message size.
+ *
+ * The maximum size of a message at this time is 64 MB. Messages larger than
+ * this will be dropped and the recipient may, at its option, sever the link.
+ *
+ * @note While nominally a part of the wire protocol, the framing is subject
+ *       to change; future versions of the code may negotiate the use of
+ *       substantially different framing.
+ */
 void
 Message::setHeader(
     std::uint8_t* in,
@@ -181,8 +174,7 @@ Message::setHeader(
     auto h = in;
 
     auto pack = [](std::uint8_t*& in, std::uint32_t size) {
-        *in++ = static_cast<std::uint8_t>(
-            (size >> 24) & 0x0F);  // leftmost 4 are compression bits
+        *in++ = static_cast<std::uint8_t>((size >> 24) & 0x0F);  // leftmost 4 are compression bits
         *in++ = static_cast<std::uint8_t>((size >> 16) & 0xFF);
         *in++ = static_cast<std::uint8_t>((size >> 8) & 0xFF);
         *in++ = static_cast<std::uint8_t>(size & 0xFF);
@@ -212,19 +204,21 @@ Message::getBuffer(Compressed tryCompressed)
     if (tryCompressed == Compressed::Off)
         return buffer_;
 
-    std::call_once(once_flag_, &Message::compress, this);
+    std::call_once(onceFlag_, &Message::compress, this);
 
-    if (bufferCompressed_.size() > 0)
+    if (!bufferCompressed_.empty())
+    {
         return bufferCompressed_;
-    else
-        return buffer_;
+    }
+
+    return buffer_;
 }
 
 int
-Message::getType(std::uint8_t const* in) const
+Message::getType(std::uint8_t const* in)
 {
-    int type = (static_cast<int>(*(in + 4)) << 8) + *(in + 5);
+    int const type = (static_cast<int>(*(in + 4)) << 8) + *(in + 5);
     return type;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

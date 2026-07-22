@@ -1,39 +1,19 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2020 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED
-#define RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 
 #include <lz4.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <vector>
 
-namespace ripple {
+namespace xrpl::compression_algorithms {
 
-namespace compression_algorithms {
-
-/** LZ4 block compression.
+/**
+ * LZ4 block compression.
  * @tparam BufferFactory Callable object or lambda.
  *     Takes the requested buffer size and returns allocated buffer pointer.
  * @param in Data to compress
@@ -88,17 +68,21 @@ lz4Decompress(
     if (decompressedSize <= 0)
         Throw<std::runtime_error>("lz4Decompress: integer overflow (output)");
 
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     if (LZ4_decompress_safe(
             reinterpret_cast<char const*>(in),
             reinterpret_cast<char*>(decompressed),
             inSize,
             decompressedSize) != decompressedSize)
+    {
         Throw<std::runtime_error>("lz4Decompress: failed");
+    }
 
     return decompressedSize;
 }
 
-/** LZ4 block decompression.
+/**
+ * LZ4 block decompression.
  * @tparam InputStream ZeroCopyInputStream
  * @param in Input source stream
  * @param inSize Size of compressed data
@@ -135,9 +119,7 @@ lz4Decompress(
             compressed.resize(inSize);
         }
 
-        chunkSize = chunkSize < (inSize - copiedInSize)
-            ? chunkSize
-            : (inSize - copiedInSize);
+        chunkSize = chunkSize < (inSize - copiedInSize) ? chunkSize : (inSize - copiedInSize);
 
         std::copy(chunk, chunk + chunkSize, compressed.data() + copiedInSize);
 
@@ -154,15 +136,10 @@ lz4Decompress(
     if (in.ByteCount() > (currentBytes + copiedInSize))
         in.BackUp(in.ByteCount() - currentBytes - copiedInSize);
 
-    if ((copiedInSize == 0 && chunkSize < inSize) ||
-        (copiedInSize > 0 && copiedInSize != inSize))
+    if ((copiedInSize == 0 && chunkSize < inSize) || (copiedInSize > 0 && copiedInSize != inSize))
         Throw<std::runtime_error>("lz4 decompress: insufficient input size");
 
     return lz4Decompress(chunk, inSize, decompressed, decompressedSize);
 }
 
-}  // namespace compression_algorithms
-
-}  // namespace ripple
-
-#endif  // RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED
+}  // namespace xrpl::compression_algorithms

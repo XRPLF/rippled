@@ -1,32 +1,19 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_QUALITYFUNCTION_H_INCLUDED
-#define RIPPLE_PROTOCOL_QUALITYFUNCTION_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Quality.h>
 
-namespace ripple {
+#include <cstdint>
+#include <optional>
+#include <stdexcept>
 
-/** Average quality of a path as a function of `out`: q(out) = m * out + b,
+namespace xrpl {
+
+/**
+ * Average quality of a path as a function of `out`: q(out) = m * out + b,
  * where m = -1 / poolGets, b = poolPays / poolGets. If CLOB offer then
  * `m` is equal to 0 `b` is equal to the offer's quality. The function
  * is derived by substituting `in` in q = out / in with the swap out formula
@@ -57,32 +44,32 @@ public:
     };
     QualityFunction(Quality const& quality, CLOBLikeTag);
     template <typename TIn, typename TOut>
-    QualityFunction(
-        TAmounts<TIn, TOut> const& amounts,
-        std::uint32_t tfee,
-        AMMTag);
+    QualityFunction(TAmounts<TIn, TOut> const& amounts, std::uint32_t tfee, AMMTag);
 
-    /** Combines QF with the next step QF
+    /**
+     * Combines QF with the next step QF
      */
     void
     combine(QualityFunction const& qf);
 
-    /** Find output to produce the requested
+    /**
+     * Find output to produce the requested
      * average quality.
      * @param quality requested average quality (quality limit)
      */
     std::optional<Number>
     outFromAvgQ(Quality const& quality);
 
-    /** Return true if the quality function is constant
+    /**
+     * Return true if the quality function is constant
      */
-    bool
+    [[nodiscard]] bool
     isConst() const
     {
         return quality_.has_value();
     }
 
-    std::optional<Quality> const&
+    [[nodiscard]] std::optional<Quality> const&
     quality() const
     {
         return quality_;
@@ -95,13 +82,11 @@ QualityFunction::QualityFunction(
     std::uint32_t tfee,
     QualityFunction::AMMTag)
 {
-    if (amounts.in <= beast::zero || amounts.out <= beast::zero)
+    if (amounts.in <= beast::kZero || amounts.out <= beast::kZero)
         Throw<std::runtime_error>("QualityFunction amounts are 0.");
     Number const cfee = feeMult(tfee);
     m_ = -cfee / amounts.in;
     b_ = amounts.out * cfee / amounts.in;
 }
 
-}  // namespace ripple
-
-#endif  // RIPPLE_PROTOCOL_QUALITYFUNCTION_H_INCLUDED
+}  // namespace xrpl

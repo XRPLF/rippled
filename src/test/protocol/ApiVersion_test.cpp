@@ -1,36 +1,8 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/XRPLF/rippled/
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/ApiVersion.h>
 
-#include <array>
-#include <cstdint>
-#include <limits>
-#include <optional>
-#include <type_traits>
-#include <utility>
-
-namespace ripple {
-namespace test {
-struct ApiVersion_test : beast::unit_test::suite
+namespace xrpl::test {
+struct ApiVersion_test : beast::unit_test::Suite
 {
     void
     run() override
@@ -38,14 +10,10 @@ struct ApiVersion_test : beast::unit_test::suite
         {
             testcase("API versions invariants");
 
-            static_assert(
-                RPC::apiMinimumSupportedVersion <=
-                RPC::apiMaximumSupportedVersion);
-            static_assert(
-                RPC::apiMinimumSupportedVersion <= RPC::apiMaximumValidVersion);
-            static_assert(
-                RPC::apiMaximumSupportedVersion <= RPC::apiMaximumValidVersion);
-            static_assert(RPC::apiBetaVersion <= RPC::apiMaximumValidVersion);
+            static_assert(RPC::kApiMinimumSupportedVersion <= RPC::kApiMaximumSupportedVersion);
+            static_assert(RPC::kApiMinimumSupportedVersion <= RPC::kApiMaximumValidVersion);
+            static_assert(RPC::kApiMaximumSupportedVersion <= RPC::kApiMaximumValidVersion);
+            static_assert(RPC::kApiBetaVersion <= RPC::kApiMaximumValidVersion);
 
             BEAST_EXPECT(true);
         }
@@ -54,21 +22,20 @@ struct ApiVersion_test : beast::unit_test::suite
             // Update when we change versions
             testcase("API versions");
 
-            static_assert(RPC::apiMinimumSupportedVersion >= 1);
-            static_assert(RPC::apiMinimumSupportedVersion < 2);
-            static_assert(RPC::apiMaximumSupportedVersion >= 2);
-            static_assert(RPC::apiMaximumSupportedVersion < 3);
-            static_assert(RPC::apiMaximumValidVersion >= 3);
-            static_assert(RPC::apiMaximumValidVersion < 4);
-            static_assert(RPC::apiBetaVersion >= 3);
-            static_assert(RPC::apiBetaVersion < 4);
+            static_assert(RPC::kApiMinimumSupportedVersion >= 1);
+            static_assert(RPC::kApiMinimumSupportedVersion < 2);
+            static_assert(RPC::kApiMaximumSupportedVersion >= 2);
+            static_assert(RPC::kApiMaximumSupportedVersion < 3);
+            static_assert(RPC::kApiMaximumValidVersion >= 3);
+            static_assert(RPC::kApiMaximumValidVersion < 4);
+            static_assert(RPC::kApiBetaVersion >= 3);
+            static_assert(RPC::kApiBetaVersion < 4);
 
             BEAST_EXPECT(true);
         }
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ApiVersion, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(ApiVersion, protocol, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

@@ -1,27 +1,7 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_SERVER_BASEPEER_H_INCLUDED
-#define RIPPLE_SERVER_BASEPEER_H_INCLUDED
-
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/server/Port.h>
 #include <xrpl/server/detail/LowestLayer.h>
 #include <xrpl/server/detail/io_list.h>
@@ -29,14 +9,15 @@
 #include <boost/asio.hpp>
 
 #include <atomic>
-#include <functional>
+#include <chrono>
 #include <string>
+#include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 // Common part of all peers
 template <class Handler, class Impl>
-class BasePeer : public io_list::work
+class BasePeer : public IOList::Work
 {
 protected:
     using clock_type = std::chrono::system_clock;
@@ -46,7 +27,7 @@ protected:
 
     Port const& port_;
     Handler& handler_;
-    endpoint_type remote_address_;
+    endpoint_type remoteAddress_;
     beast::WrappedSink sink_;
     beast::Journal const j_;
 
@@ -54,11 +35,12 @@ protected:
     boost::asio::strand<boost::asio::executor> strand_;
 
 public:
+    // NOLINTNEXTLINE(bugprone-crtp-constructor-accessibility)
     BasePeer(
         Port const& port,
         Handler& handler,
         boost::asio::executor const& executor,
-        endpoint_type remote_address,
+        endpoint_type remoteAddress,
         beast::Journal journal);
 
     void
@@ -79,20 +61,20 @@ BasePeer<Handler, Impl>::BasePeer(
     Port const& port,
     Handler& handler,
     boost::asio::executor const& executor,
-    endpoint_type remote_address,
+    endpoint_type remoteAddress,
     beast::Journal journal)
     : port_(port)
     , handler_(handler)
-    , remote_address_(remote_address)
+    , remoteAddress_(std::move(remoteAddress))
     , sink_(
           journal.sink(),
           [] {
-              static std::atomic<unsigned> id{0};
-              return "##" + std::to_string(++id) + " ";
+              static std::atomic<unsigned> kID{0};
+              return "##" + std::to_string(++kID) + " ";
           }())
     , j_(sink_)
-    , work_(executor)
-    , strand_(executor)
+    , work_(boost::asio::make_work_guard(executor))
+    , strand_(boost::asio::make_strand(executor))
 {
 }
 
@@ -101,12 +83,9 @@ void
 BasePeer<Handler, Impl>::close()
 {
     if (!strand_.running_in_this_thread())
-        return post(
-            strand_, std::bind(&BasePeer::close, impl().shared_from_this()));
+        return post(strand_, [self = impl().shared_from_this()] { self->close(); });
     error_code ec;
-    ripple::get_lowest_layer(impl().ws_).socket().close(ec);
+    xrpl::getLowestLayer(impl().ws_).socket().close(ec);
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,0 +1,8 @@
+{% set os = detect_api.detect_os() %}
+include(sanitizers)
+
+[conf]
+{% if os == "Linux" %}
+user.package:libc_version=2.31
+tools.info.package_id:confs+=["user.package:libc_version"]
+{% endif %}

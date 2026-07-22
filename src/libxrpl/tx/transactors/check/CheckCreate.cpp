@@ -1,0 +1,273 @@
+#include <xrpl/tx/transactors/check/CheckCreate.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
+#include <optional>
+
+namespace xrpl {
+
+bool
+CheckCreate::checkExtraFeatures(xrpl::PreflightContext const& ctx)
+{
+    return ctx.rules.enabled(featureMPTokensV2) || !ctx.tx[sfSendMax].holds<MPTIssue>();
+}
+
+NotTEC
+CheckCreate::preflight(PreflightContext const& ctx)
+{
+    if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
+    {
+        // They wrote a check to themselves.
+        JLOG(ctx.j.warn()) << "Malformed transaction: Check to self.";
+        return temREDUNDANT;
+    }
+
+    {
+        STAmount const sendMax{ctx.tx.getFieldAmount(sfSendMax)};
+        if (!isLegalNet(sendMax) || sendMax.signum() <= 0)
+        {
+            JLOG(ctx.j.warn()) << "Malformed transaction: bad sendMax amount: "
+                               << sendMax.getFullText();
+            return temBAD_AMOUNT;
+        }
+
+        if (badAsset() == sendMax.asset())
+        {
+            JLOG(ctx.j.warn()) << "Malformed transaction: Bad currency.";
+            return temBAD_CURRENCY;
+        }
+    }
+
+    if (auto const optExpiry = ctx.tx[~sfExpiration])
+    {
+        if (*optExpiry == 0)
+        {
+            JLOG(ctx.j.warn()) << "Malformed transaction: bad expiration";
+            return temBAD_EXPIRATION;
+        }
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+CheckCreate::preclaim(PreclaimContext const& ctx)
+{
+    AccountID const dstId{ctx.tx[sfDestination]};
+    AccountID const srcId{ctx.tx[sfAccount]};
+    auto const sleDst = ctx.view.read(keylet::account(dstId));
+    if (!sleDst)
+    {
+        JLOG(ctx.j.warn()) << "Destination account does not exist.";
+        return tecNO_DST;
+    }
+
+    // Check if the destination has disallowed incoming checks
+    if (sleDst->isFlag(lsfDisallowIncomingCheck))
+        return tecNO_PERMISSION;
+
+    // Pseudo-accounts cannot cash checks. Note, this is not amendment-gated
+    // because all writes to pseudo-account discriminator fields **are**
+    // amendment gated, hence the behaviour of this check will always match the
+    // currently active amendments.
+    if (isPseudoAccount(sleDst))
+        return tecNO_PERMISSION;
+
+    if (sleDst->isFlag(lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
+    {
+        // The tag is basically account-specific information we don't
+        // understand, but we can require someone to fill it in.
+        JLOG(ctx.j.warn()) << "Malformed transaction: DestinationTag required.";
+        return tecDST_TAG_NEEDED;
+    }
+
+    {
+        STAmount const sendMax{ctx.tx[sfSendMax]};
+        if (!sendMax.native())
+        {
+            // The currency may not be globally frozen
+            AccountID const& issuerId{sendMax.getIssuer()};
+            if (auto const ter = checkGlobalFrozen(ctx.view, sendMax.asset()); !isTesSuccess(ter))
+            {
+                JLOG(ctx.j.warn()) << "Creating a check for frozen or locked asset";
+                return ter;
+            }
+            auto const err = sendMax.asset().visit(
+                [&](Issue const& issue) -> std::optional<TER> {
+                    // If this account has a trustline for the currency,
+                    // that trustline may not be frozen.
+                    //
+                    // Note that we DO allow create check for a currency
+                    // that the account does not yet have a trustline to.
+                    if (issuerId != srcId)
+                    {
+                        // Check if the issuer froze the line
+                        auto const sleTrust =
+                            ctx.view.read(keylet::trustLine(srcId, issuerId, issue.currency));
+                        if (sleTrust &&
+                            sleTrust->isFlag((issuerId > srcId) ? lsfHighFreeze : lsfLowFreeze))
+                        {
+                            JLOG(ctx.j.warn()) << "Creating a check for frozen trustline.";
+                            return tecFROZEN;
+                        }
+                    }
+                    if (issuerId != dstId)
+                    {
+                        // Check if dst froze the line.
+                        auto const sleTrust =
+                            ctx.view.read(keylet::trustLine(issuerId, dstId, issue.currency));
+                        if (sleTrust &&
+                            sleTrust->isFlag((dstId > issuerId) ? lsfHighFreeze : lsfLowFreeze))
+                        {
+                            JLOG(ctx.j.warn()) << "Creating a check for "
+                                                  "destination frozen trustline.";
+                            return tecFROZEN;
+                        }
+                    }
+
+                    return std::nullopt;
+                },
+                [&](MPTIssue const& issue) -> std::optional<TER> {
+                    if (srcId != issuerId && isFrozen(ctx.view, srcId, issue))
+                    {
+                        JLOG(ctx.j.warn()) << "Creating a check for locked MPT.";
+                        return tecLOCKED;
+                    }
+                    if (dstId != issuerId && isFrozen(ctx.view, dstId, issue))
+                    {
+                        JLOG(ctx.j.warn()) << "Creating a check for locked MPT.";
+                        return tecLOCKED;
+                    }
+                    if (auto const ter = canTransfer(ctx.view, issue, srcId, dstId);
+                        !isTesSuccess(ter))
+                    {
+                        JLOG(ctx.j.warn()) << "MPT transfer is disabled.";
+                        return ter;
+                    }
+
+                    return std::nullopt;
+                });
+            if (err)
+                return *err;
+        }
+    }
+    if (hasExpired(ctx.view, ctx.tx[~sfExpiration]))
+    {
+        JLOG(ctx.j.warn()) << "Creating a check that has already expired.";
+        return tecEXPIRED;
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+CheckCreate::doApply()
+{
+    auto const sle = view().peek(keylet::account(accountID_));
+    if (!sle)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    // A check counts against the reserve of the issuing account, but we
+    // check the starting balance because we want to allow dipping into the
+    // reserve to pay fees.
+    if (auto const ret = checkReserve(
+            ctx_.getApplyViewContext(), sle, preFeeBalance_, {.ownerCountDelta = 1}, ctx_.journal);
+        !isTesSuccess(ret))
+        return ret;
+    // Note that we use the value from the sequence or ticket as the
+    // Check sequence.  For more explanation see comments in SeqProxy.h.
+    std::uint32_t const seq = ctx_.tx.getSeqValue();
+    Keylet const checkKeylet = keylet::check(accountID_, seq);
+    auto sleCheck = std::make_shared<SLE>(checkKeylet);
+
+    sleCheck->setAccountID(sfAccount, accountID_);
+    AccountID const dstAccountId = ctx_.tx[sfDestination];
+    sleCheck->setAccountID(sfDestination, dstAccountId);
+    sleCheck->setFieldU32(sfSequence, seq);
+    sleCheck->setFieldAmount(sfSendMax, ctx_.tx[sfSendMax]);
+    if (auto const srcTag = ctx_.tx[~sfSourceTag])
+        sleCheck->setFieldU32(sfSourceTag, *srcTag);
+    if (auto const dstTag = ctx_.tx[~sfDestinationTag])
+        sleCheck->setFieldU32(sfDestinationTag, *dstTag);
+    if (auto const invoiceId = ctx_.tx[~sfInvoiceID])
+        sleCheck->setFieldH256(sfInvoiceID, *invoiceId);
+    if (auto const expiry = ctx_.tx[~sfExpiration])
+        sleCheck->setFieldU32(sfExpiration, *expiry);
+
+    view().insert(sleCheck);
+
+    auto viewJ = ctx_.registry.get().getJournal("View");
+    // If it's not a self-send (and it shouldn't be), add Check to the
+    // destination's owner directory.
+    if (dstAccountId != accountID_)
+    {
+        auto const page = view().dirInsert(
+            keylet::ownerDir(dstAccountId), checkKeylet, describeOwnerDir(dstAccountId));
+
+        JLOG(j_.trace()) << "Adding Check to destination directory " << to_string(checkKeylet.key)
+                         << ": " << (page ? "success" : "failure");
+
+        if (!page)
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+        sleCheck->setFieldU64(sfDestinationNode, *page);
+    }
+
+    {
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), checkKeylet, describeOwnerDir(accountID_));
+
+        JLOG(j_.trace()) << "Adding Check to owner directory " << to_string(checkKeylet.key) << ": "
+                         << (page ? "success" : "failure");
+
+        if (!page)
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+        sleCheck->setFieldU64(sfOwnerNode, *page);
+    }
+    // If we succeeded, the new entry counts against the creator's reserve.
+
+    increaseOwnerCount(ctx_.getApplyViewContext(), sle, 1, viewJ);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCheck);
+    return tesSUCCESS;
+}
+
+void
+CheckCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+CheckCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
+
+}  // namespace xrpl

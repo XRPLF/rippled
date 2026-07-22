@@ -1,31 +1,18 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Group.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <memory>
+#include <string>
 
-#ifndef RIPPLE_APP_MAIN_COLLECTORMANAGER_H_INCLUDED
-#define RIPPLE_APP_MAIN_COLLECTORMANAGER_H_INCLUDED
+namespace xrpl {
 
-#include <xrpl/basics/BasicConfig.h>
-#include <xrpl/beast/insight/Insight.h>
-
-namespace ripple {
-
-/** Provides the beast::insight::Collector service. */
+/**
+ * Provides the beast::insight::Collector service.
+ */
 class CollectorManager
 {
 public:
@@ -39,8 +26,6 @@ public:
 };
 
 std::unique_ptr<CollectorManager>
-make_CollectorManager(Section const& params, beast::Journal journal);
+makeCollectorManager(Section const& params, beast::Journal journal);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

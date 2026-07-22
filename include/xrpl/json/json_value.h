@@ -1,68 +1,52 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_JSON_JSON_VALUE_H_INCLUDED
-#define RIPPLE_JSON_JSON_VALUE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/json/json_forwards.h>
 
 #include <cstring>
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
 
-/** \brief JSON (JavaScript Object Notation).
+/**
+ * @brief JSON (JavaScript Object Notation).
  */
-namespace Json {
+namespace json {
 
-/** \brief Type of the value held by a Value object.
+/**
+ * @brief Type of the value held by a Value object.
  */
-enum ValueType {
-    nullValue = 0,  ///< 'null' value
-    intValue,       ///< signed integer value
-    uintValue,      ///< unsigned integer value
-    realValue,      ///< double value
-    stringValue,    ///< UTF-8 string value
-    booleanValue,   ///< bool value
-    arrayValue,     ///< array value (ordered list)
-    objectValue     ///< object value (collection of name/value pairs).
+enum class ValueType {
+    Null = 0,  ///< 'null' value
+    Int,       ///< signed integer value
+    UInt,      ///< unsigned integer value
+    Real,      ///< double value
+    String,    ///< UTF-8 string value
+    Boolean,   ///< bool value
+    Array,     ///< array value (ordered list)
+    Object     ///< object value (collection of name/value pairs).
 };
 
-/** \brief Lightweight wrapper to tag static string.
+/**
+ * @brief Lightweight wrapper to tag static string.
  *
- * Value constructor and objectValue member assignment takes advantage of the
+ * Value constructor and ValueType::Object member assignment takes advantage of the
  * StaticString and avoid the cost of string duplication when storing the
  * string or the member name.
  *
  * Example of usage:
- * \code
- * Json::Value aValue( StaticString("some text") );
- * Json::Value object;
+ * @code
+ * json::Value aValue( StaticString("some text") );
+ * json::Value object;
  * static const StaticString code("code");
  * object[code] = 1234;
- * \endcode
+ * @endcode
  */
 class StaticString
 {
 public:
-    constexpr explicit StaticString(char const* czstring) : str_(czstring)
+    constexpr explicit StaticString(char const* czString) : str_(czString)
     {
     }
 
@@ -72,8 +56,8 @@ public:
         return str_;
     }
 
-    constexpr char const*
-    c_str() const
+    [[nodiscard]] constexpr char const*
+    cStr() const
     {
         return str_;
     }
@@ -85,7 +69,7 @@ private:
 inline bool
 operator==(StaticString x, StaticString y)
 {
-    return strcmp(x.c_str(), y.c_str()) == 0;
+    return strcmp(x.cStr(), y.cStr()) == 0;
 }
 
 inline bool
@@ -97,7 +81,7 @@ operator!=(StaticString x, StaticString y)
 inline bool
 operator==(std::string const& x, StaticString y)
 {
-    return strcmp(x.c_str(), y.c_str()) == 0;
+    return strcmp(x.c_str(), y.cStr()) == 0;
 }
 
 inline bool
@@ -118,11 +102,12 @@ operator!=(StaticString x, std::string const& y)
     return !(y == x);
 }
 
-/** \brief Represents a <a HREF="http://www.json.org">JSON</a> value.
+/**
+ * @brief Represents a <a HREF="http://www.json.org">JSON</a> value.
  *
  * This class is a discriminated union wrapper that can represent a:
- * - signed integer [range: Value::minInt - Value::maxInt]
- * - unsigned integer (range: 0 - Value::maxUInt)
+ * - signed integer [range: Value::kMinInt - Value::kMaxInt]
+ * - unsigned integer (range: 0 - Value::kMaxUInt)
  * - double
  * - UTF-8 string
  * - boolean
@@ -133,16 +118,16 @@ operator!=(StaticString x, std::string const& y)
  * The type of the held value is represented by a #ValueType and
  * can be obtained using type().
  *
- * values of an #objectValue or #arrayValue can be accessed using operator[]()
- * methods. Non const methods will automatically create the a #nullValue element
+ * values of an ValueType::Object or ValueType::Array can be accessed using operator[]()
+ * methods. Non const methods will automatically create the a ValueType::Null element
  * if it does not exist.
- * The sequence of an #arrayValue will be automatically resize and initialized
- * with #nullValue. resize() can be used to enlarge or truncate an #arrayValue.
+ * The sequence of an ValueType::Array will be automatically resize and initialized
+ * with ValueType::Null. resize() can be used to enlarge or truncate an ValueType::Array.
  *
  * The get() methods can be used to obtain a default value in the case the
  * required element does not exist.
  *
- * It is possible to iterate over the list of a #objectValue values using
+ * It is possible to iterate over the list of a ValueType::Object values using
  * the getMemberNames() method.
  */
 class Value
@@ -153,24 +138,21 @@ public:
     using Members = std::vector<std::string>;
     using iterator = ValueIterator;
     using const_iterator = ValueConstIterator;
-    using UInt = Json::UInt;
-    using Int = Json::Int;
+    using UInt = json::UInt;
+    using Int = json::Int;
     using ArrayIndex = UInt;
 
-    static Value const null;
-    static Int const minInt;
-    static Int const maxInt;
-    static UInt const maxUInt;
+    static Value const kNull;
+    static constexpr Int kMinInt = std::numeric_limits<Int>::min();
+    static constexpr Int kMaxInt = std::numeric_limits<Int>::max();
+    static constexpr UInt kMaxUInt = std::numeric_limits<UInt>::max();
 
 private:
     class CZString
     {
     public:
-        enum DuplicationPolicy {
-            noDuplication = 0,
-            duplicate,
-            duplicateOnCopy
-        };
+        enum class DuplicationPolicy { NoDuplication = 0, Duplicate, DuplicateOnCopy };
+
         CZString(int index);
         CZString(char const* cstr, DuplicationPolicy allocate);
         CZString(CZString const& other);
@@ -181,11 +163,11 @@ private:
         operator<(CZString const& other) const;
         bool
         operator==(CZString const& other) const;
-        int
+        [[nodiscard]] int
         index() const;
-        char const*
-        c_str() const;
-        bool
+        [[nodiscard]] char const*
+        cStr() const;
+        [[nodiscard]] bool
         isStaticString() const;
 
     private:
@@ -197,37 +179,39 @@ public:
     using ObjectValues = std::map<CZString, Value>;
 
 public:
-    /** \brief Create a default Value of the given type.
-
-      This is a very useful constructor.
-      To create an empty array, pass arrayValue.
-      To create an empty object, pass objectValue.
-      Another Value can then be set to this one by assignment.
-    This is useful since clear() and resize() will not alter types.
-
-           Examples:
-    \code
-    Json::Value null_value; // null
-    Json::Value arr_value(Json::arrayValue); // []
-    Json::Value obj_value(Json::objectValue); // {}
-    \endcode
-         */
-    Value(ValueType type = nullValue);
+    /**
+     * @brief Create a default Value of the given type.
+     *
+     *   This is a very useful constructor.
+     *   To create an empty array, pass ValueType::Array.
+     *   To create an empty object, pass ValueType::Object.
+     *   Another Value can then be set to this one by assignment.
+     * This is useful since clear() and resize() will not alter types.
+     *
+     *        Examples:
+     * @code
+     * json::Value null_value; // null
+     * json::Value arr_value(json::ValueType::Array); // []
+     * json::Value obj_value(json::ValueType::Object); // {}
+     * @endcode
+     */
+    Value(ValueType type = ValueType::Null);
     Value(Int value);
     Value(UInt value);
     Value(double value);
     Value(char const* value);
-    Value(ripple::Number const& value);
-    /** \brief Constructs a value from a static string.
-
+    Value(xrpl::Number const& value);
+    /**
+     * @brief Constructs a value from a static string.
+     *
      * Like other value string constructor but do not duplicate the string for
      * internal storage. The given string must remain alive after the call to
-     this
+     * this
      * constructor.
      * Example of usage:
-     * \code
-     * Json::Value aValue( StaticString("some text") );
-     * \endcode
+     * @code
+     * json::Value aValue( StaticString("some text") );
+     * @endcode
      */
     Value(StaticString const& value);
     Value(std::string const& value);
@@ -242,174 +226,230 @@ public:
 
     Value(Value&& other) noexcept;
 
-    /// Swap values.
+    /**
+     * Swap values.
+     */
     void
     swap(Value& other) noexcept;
 
-    ValueType
+    [[nodiscard]] ValueType
     type() const;
 
-    char const*
+    [[nodiscard]] char const*
     asCString() const;
-    /** Returns the unquoted string value. */
-    std::string
+    /**
+     * Returns the unquoted string value.
+     */
+    [[nodiscard]] std::string
     asString() const;
-    Int
+    [[nodiscard]] Int
     asInt() const;
-    UInt
+    [[nodiscard]] UInt
     asUInt() const;
-    double
+    [[nodiscard]] double
     asDouble() const;
-    bool
+    [[nodiscard]] bool
     asBool() const;
 
+    /**
+     * Correct absolute value from int or unsigned int
+     */
+    [[nodiscard]] UInt
+    asAbsUInt() const;
+
     // TODO: What is the "empty()" method this docstring mentions?
-    /** isNull() tests to see if this field is null.  Don't use this method to
-        test for emptiness: use empty(). */
-    bool
+    /**
+     * isNull() tests to see if this field is null.  Don't use this method to
+     * test for emptiness: use empty().
+     */
+    [[nodiscard]] bool
     isNull() const;
-    bool
+    [[nodiscard]] bool
     isBool() const;
-    bool
+    [[nodiscard]] bool
     isInt() const;
-    bool
+    [[nodiscard]] bool
     isUInt() const;
-    bool
+    [[nodiscard]] bool
     isIntegral() const;
-    bool
+    [[nodiscard]] bool
     isDouble() const;
-    bool
+    [[nodiscard]] bool
     isNumeric() const;
-    bool
+    [[nodiscard]] bool
     isString() const;
-    bool
+    [[nodiscard]] bool
     isArray() const;
-    bool
+    [[nodiscard]] bool
     isArrayOrNull() const;
-    bool
+    [[nodiscard]] bool
     isObject() const;
-    bool
+    [[nodiscard]] bool
     isObjectOrNull() const;
 
-    bool
+    [[nodiscard]] bool
     isConvertibleTo(ValueType other) const;
 
-    /// Number of values in array or object
-    UInt
+    /**
+     * Number of values in array or object
+     */
+    [[nodiscard]] UInt
     size() const;
 
-    /** Returns false if this is an empty array, empty object, empty string,
-        or null. */
+    /**
+     * Returns false if this is an empty array, empty object, empty string,
+     * or null.
+     */
     explicit
     operator bool() const;
 
-    /// Remove all object members and array elements.
-    /// \pre type() is arrayValue, objectValue, or nullValue
-    /// \post type() is unchanged
+    /**
+     * Remove all object members and array elements.
+     * @pre type() is ValueType::Array, ValueType::Object, or ValueType::Null
+     * @post type() is unchanged
+     */
     void
     clear();
 
-    /// Access an array element (zero based index ).
-    /// If the array contains less than index element, then null value are
-    /// inserted in the array so that its size is index+1. (You may need to say
-    /// 'value[0u]' to get your compiler to distinguish
-    ///  this from the operator[] which takes a string.)
+    /**
+     * Access an array element (zero based index ).
+     * If the array contains less than index element, then null value are
+     * inserted in the array so that its size is index+1. (You may need to say
+     * 'value[0u]' to get your compiler to distinguish
+     *  this from the operator[] which takes a string.)
+     */
     Value&
     operator[](UInt index);
-    /// Access an array element (zero based index )
-    /// (You may need to say 'value[0u]' to get your compiler to distinguish
-    ///  this from the operator[] which takes a string.)
+    /**
+     * Access an array element (zero based index )
+     * (You may need to say 'value[0u]' to get your compiler to distinguish
+     *  this from the operator[] which takes a string.)
+     */
     Value const&
     operator[](UInt index) const;
-    /// If the array contains at least index+1 elements, returns the element
-    /// value, otherwise returns defaultValue.
-    Value
+    /**
+     * If the array contains at least index+1 elements, returns the element
+     * value, otherwise returns defaultValue.
+     */
+    [[nodiscard]] Value
     get(UInt index, Value const& defaultValue) const;
-    /// Return true if index < size().
-    bool
+    /**
+     * Return true if index < size().
+     */
+    [[nodiscard]] bool
     isValidIndex(UInt index) const;
-    /// \brief Append value to array at the end.
-    ///
-    /// Equivalent to jsonvalue[jsonvalue.size()] = value;
+    /**
+     * @brief Append value to array at the end.
+     *
+     * Equivalent to jsonvalue[jsonvalue.size()] = value;
+     */
     Value&
     append(Value const& value);
     Value&
     append(Value&& value);
 
-    /// Access an object value by name, create a null member if it does not
-    /// exist.
+    /**
+     * Access an object value by name, create a null member if it does not
+     * exist.
+     */
     Value&
     operator[](char const* key);
-    /// Access an object value by name, returns null if there is no member with
-    /// that name.
+    /**
+     * Access an object value by name, returns null if there is no member with
+     * that name.
+     */
     Value const&
     operator[](char const* key) const;
-    /// Access an object value by name, create a null member if it does not
-    /// exist.
+    /**
+     * Access an object value by name, create a null member if it does not
+     * exist.
+     */
     Value&
     operator[](std::string const& key);
-    /// Access an object value by name, returns null if there is no member with
-    /// that name.
+    /**
+     * Access an object value by name, returns null if there is no member with
+     * that name.
+     */
     Value const&
     operator[](std::string const& key) const;
-    /** \brief Access an object value by name, create a null member if it does
-     not exist.
-
+    /**
+     * @brief Access an object value by name, create a null member if it does
+     * not exist.
+     *
      * If the object as no entry for that name, then the member name used to
-     store
+     * store
      * the new entry is not duplicated.
      * Example of use:
-     * \code
-     * Json::Value object;
+     * @code
+     * json::Value object;
      * static const StaticString code("code");
      * object[code] = 1234;
-     * \endcode
+     * @endcode
      */
     Value&
     operator[](StaticString const& key);
     Value const&
     operator[](StaticString const& key) const;
 
-    /// Return the member named key if it exist, defaultValue otherwise.
+    /**
+     * Return the member named key if it exist, defaultValue otherwise.
+     */
     Value
     get(char const* key, Value const& defaultValue) const;
-    /// Return the member named key if it exist, defaultValue otherwise.
-    Value
+    /**
+     * Return the member named key if it exist, defaultValue otherwise.
+     */
+    [[nodiscard]] Value
     get(std::string const& key, Value const& defaultValue) const;
 
-    /// \brief Remove and return the named member.
-    ///
-    /// Do nothing if it did not exist.
-    /// \return the removed Value, or null.
-    /// \pre type() is objectValue or nullValue
-    /// \post type() is unchanged
+    /**
+     * @brief Remove and return the named member.
+     *
+     * Do nothing if it did not exist.
+     * @return the removed Value, or null.
+     * @pre type() is ValueType::Object or ValueType::Null
+     * @post type() is unchanged
+     */
     Value
     removeMember(char const* key);
-    /// Same as removeMember(const char*)
+    /**
+     * Same as removeMember(const char*)
+     */
     Value
     removeMember(std::string const& key);
 
-    /// Return true if the object has a member named key.
+    /**
+     * Return true if the object has a member named key.
+     */
     bool
     isMember(char const* key) const;
-    /// Return true if the object has a member named key.
-    bool
+    /**
+     * Return true if the object has a member named key.
+     */
+    [[nodiscard]] bool
     isMember(std::string const& key) const;
+    /**
+     * Return true if the object has a member named key.
+     */
+    [[nodiscard]] bool
+    isMember(StaticString const& key) const;
 
-    /// \brief Return a list of the member names.
-    ///
-    /// If null, return an empty list.
-    /// \pre type() is objectValue or nullValue
-    /// \post if type() was nullValue, it remains nullValue
-    Members
+    /**
+     * @brief Return a list of the member names.
+     *
+     * If null, return an empty list.
+     * @pre type() is ValueType::Object or ValueType::Null
+     * @post if type() was ValueType::Null, it remains ValueType::Null
+     */
+    [[nodiscard]] Members
     getMemberNames() const;
 
-    std::string
+    [[nodiscard]] std::string
     toStyledString() const;
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const;
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const;
 
     iterator
@@ -429,19 +469,19 @@ private:
 private:
     union ValueHolder
     {
-        Int int_;
-        UInt uint_;
-        double real_;
-        bool bool_;
-        char* string_;
-        ObjectValues* map_{nullptr};
+        Int intVal;
+        UInt uintVal;
+        double realVal;
+        bool boolVal;
+        char* stringVal;
+        ObjectValues* mapVal{nullptr};
     } value_;
     ValueType type_ : 8;
-    int allocated_ : 1;  // Notes: if declared as bool, bitfield is useless.
+    int allocated_ : 1 {};  // Notes: if declared as bool, bitfield is useless.
 };
 
 inline Value
-to_json(ripple::Number const& number)
+toJson(xrpl::Number const& number)
 {
     return to_string(number);
 }
@@ -476,18 +516,19 @@ operator>=(Value const& x, Value const& y)
     return !(x < y);
 }
 
-/** \brief Experimental do not use: Allocator to customize member name and
+/**
+ * @brief Experimental do not use: Allocator to customize member name and
  * string value memory management done by Value.
  *
  * - makeMemberName() and releaseMemberName() are called to respectively
- * duplicate and free an Json::objectValue member name.
+ * duplicate and free an json::ValueType::Object member name.
  * - duplicateStringValue() and releaseStringValue() are called similarly to
- *   duplicate and free a Json::stringValue value.
+ *   duplicate and free a json::ValueType::String value.
  */
 class ValueAllocator
 {
 public:
-    enum { unknown = (unsigned)-1 };
+    static constexpr auto kUnknown = (unsigned)-1;
 
     virtual ~ValueAllocator() = default;
 
@@ -496,13 +537,13 @@ public:
     virtual void
     releaseMemberName(char* memberName) = 0;
     virtual char*
-    duplicateStringValue(char const* value, unsigned int length = unknown) = 0;
+    duplicateStringValue(char const* value, unsigned int length = kUnknown) = 0;
     virtual void
     releaseStringValue(char* value) = 0;
 };
 
-/** \brief base class for Value iterators.
- *
+/**
+ * @brief base class for Value iterators.
  */
 class ValueIteratorBase
 {
@@ -527,22 +568,28 @@ public:
         return !isEqual(other);
     }
 
-    /// Return either the index or the member name of the referenced value as a
-    /// Value.
-    Value
+    /**
+     * Return either the index or the member name of the referenced value as a
+     * Value.
+     */
+    [[nodiscard]] Value
     key() const;
 
-    /// Return the index of the referenced Value. -1 if it is not an arrayValue.
-    UInt
+    /**
+     * Return the index of the referenced Value. -1 if it is not an ValueType::Array.
+     */
+    [[nodiscard]] UInt
     index() const;
 
-    /// Return the member name of the referenced Value. "" if it is not an
-    /// objectValue.
-    char const*
+    /**
+     * Return the member name of the referenced Value. "" if it is not an
+     * ValueType::Object.
+     */
+    [[nodiscard]] char const*
     memberName() const;
 
 protected:
-    Value&
+    [[nodiscard]] Value&
     deref() const;
 
     void
@@ -551,10 +598,10 @@ protected:
     void
     decrement();
 
-    difference_type
+    [[nodiscard]] difference_type
     computeDistance(SelfType const& other) const;
 
-    bool
+    [[nodiscard]] bool
     isEqual(SelfType const& other) const;
 
     void
@@ -566,8 +613,8 @@ private:
     bool isNull_;
 };
 
-/** \brief const iterator for object and array value.
- *
+/**
+ * @brief const iterator for object and array value.
  */
 class ValueConstIterator : public ValueIteratorBase
 {
@@ -581,20 +628,22 @@ public:
     using SelfType = ValueConstIterator;
 
     ValueConstIterator() = default;
+    ValueConstIterator(ValueConstIterator const& other) = default;
 
 private:
-    /*! \internal Use by Value to create an iterator.
+    /**
+     * @internal Use by Value to create an iterator.
      */
     explicit ValueConstIterator(Value::ObjectValues::iterator const& current);
 
 public:
     SelfType&
-    operator=(ValueIteratorBase const& other);
+    operator=(SelfType const& other);
 
     SelfType
     operator++(int)
     {
-        SelfType temp(*this);
+        SelfType const temp(*this);
         ++*this;
         return temp;
     }
@@ -602,7 +651,7 @@ public:
     SelfType
     operator--(int)
     {
-        SelfType temp(*this);
+        SelfType const temp(*this);
         --*this;
         return temp;
     }
@@ -628,7 +677,8 @@ public:
     }
 };
 
-/** \brief Iterator for object and array value.
+/**
+ * @brief Iterator for object and array value.
  */
 class ValueIterator : public ValueIteratorBase
 {
@@ -646,7 +696,8 @@ public:
     ValueIterator(ValueIterator const& other);
 
 private:
-    /*! \internal Use by Value to create an iterator.
+    /**
+     * @internal Use by Value to create an iterator.
      */
     explicit ValueIterator(Value::ObjectValues::iterator const& current);
 
@@ -657,7 +708,7 @@ public:
     SelfType
     operator++(int)
     {
-        SelfType temp(*this);
+        SelfType const temp(*this);
         ++*this;
         return temp;
     }
@@ -665,7 +716,7 @@ public:
     SelfType
     operator--(int)
     {
-        SelfType temp(*this);
+        SelfType const temp(*this);
         --*this;
         return temp;
     }
@@ -691,6 +742,4 @@ public:
     }
 };
 
-}  // namespace Json
-
-#endif  // CPPTL_JSON_H_INCLUDED
+}  // namespace json

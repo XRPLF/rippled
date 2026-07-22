@@ -1,36 +1,32 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/unit_test/multi_runner.h>
 
 #include <xrpl/beast/unit_test/amount.h>
+#include <xrpl/beast/unit_test/suite_info.h>
 
+#include <boost/container/static_vector.hpp>
+#include <boost/interprocess/creation_tags.hpp>
+#include <boost/interprocess/detail/os_file_functions.hpp>
+#include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include <algorithm>
+#include <cassert>
+#include <chrono>
+#include <cstddef>
+#include <cstdlib>
+#include <exception>
 #include <iomanip>
 #include <iostream>
+#include <memory>
+#include <mutex>
 #include <sstream>
+#include <string>
+#include <thread>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
-namespace ripple {
-namespace test {
+namespace xrpl {
 
 namespace detail {
 
@@ -49,7 +45,7 @@ fmtdur(typename clock_type::duration const& d)
 //------------------------------------------------------------------------------
 
 void
-suite_results::add(case_results const& r)
+SuiteResults::add(CaseResults const& r)
 {
     ++cases;
     total += r.total;
@@ -59,7 +55,7 @@ suite_results::add(case_results const& r)
 //------------------------------------------------------------------------------
 
 void
-results::add(suite_results const& r)
+Results::add(SuiteResults const& r)
 {
     ++suites;
     total += r.total;
@@ -68,44 +64,36 @@ results::add(suite_results const& r)
     auto const elapsed = clock_type::now() - r.start;
     if (elapsed >= std::chrono::seconds{1})
     {
+        // NOLINTNEXTLINE(modernize-use-ranges)
         auto const iter = std::lower_bound(
             top.begin(),
             top.end(),
             elapsed,
-            [](run_time const& t1, typename clock_type::duration const& t2) {
-                return t1.second > t2;
-            });
+            [](run_time const& t1, clock_type::duration const& t2) { return t1.second > t2; });
 
         if (iter != top.end())
         {
-            if (top.size() == max_top && iter == top.end() - 1)
+            if (top.size() == kMaxTop && iter == top.end() - 1)
             {
                 // avoid invalidating the iterator
-                *iter = run_time{
-                    static_string{static_string::string_view_type{r.name}},
-                    elapsed};
+                *iter = run_time{static_string{static_string::string_view_type{r.name}}, elapsed};
             }
             else
             {
-                if (top.size() == max_top)
+                if (top.size() == kMaxTop)
                     top.resize(top.size() - 1);
-                top.emplace(
-                    iter,
-                    static_string{static_string::string_view_type{r.name}},
-                    elapsed);
+                top.emplace(iter, static_string{static_string::string_view_type{r.name}}, elapsed);
             }
         }
-        else if (top.size() < max_top)
+        else if (top.size() < kMaxTop)
         {
-            top.emplace_back(
-                static_string{static_string::string_view_type{r.name}},
-                elapsed);
+            top.emplace_back(static_string{static_string::string_view_type{r.name}}, elapsed);
         }
     }
 }
 
 void
-results::merge(results const& r)
+Results::merge(Results const& r)
 {
     suites += r.suites;
     total += r.total;
@@ -113,31 +101,25 @@ results::merge(results const& r)
     failed += r.failed;
 
     // combine the two top collections
-    boost::container::static_vector<run_time, 2 * max_top> top_result;
-    top_result.resize(top.size() + r.top.size());
-    std::merge(
-        top.begin(),
-        top.end(),
-        r.top.begin(),
-        r.top.end(),
-        top_result.begin(),
-        [](run_time const& t1, run_time const& t2) {
-            return t1.second > t2.second;
-        });
+    boost::container::static_vector<run_time, 2 * kMaxTop> topResult;
+    topResult.resize(top.size() + r.top.size());
+    std::ranges::merge(top, r.top, topResult.begin(), [](run_time const& t1, run_time const& t2) {
+        return t1.second > t2.second;
+    });
 
-    if (top_result.size() > max_top)
-        top_result.resize(max_top);
+    if (topResult.size() > kMaxTop)
+        topResult.resize(kMaxTop);
 
-    top = top_result;
+    top = topResult;
 }
 
 template <class S>
 void
-results::print(S& s)
+Results::print(S& s)
 {
     using namespace beast::unit_test;
 
-    if (top.size() > 0)
+    if (!top.empty())
     {
         s << "Longest suite times:\n";
         for (auto const& [name, dur] : top)
@@ -145,261 +127,260 @@ results::print(S& s)
     }
 
     auto const elapsed = clock_type::now() - start;
-    s << fmtdur(elapsed) << ", " << amount{suites, "suite"} << ", "
-      << amount{cases, "case"} << ", " << amount{total, "test"} << " total, "
-      << amount{failed, "failure"} << std::endl;
+    s << fmtdur(elapsed) << ", " << Amount{suites, "suite"} << ", " << Amount{cases, "case"} << ", "
+      << Amount{total, "test"} << " total, " << Amount{failed, "failure"} << std::endl;
 }
 
 //------------------------------------------------------------------------------
 
 template <bool IsParent>
 std::size_t
-multi_runner_base<IsParent>::inner::checkout_job_index()
+MultiRunnerBase<IsParent>::Inner::checkoutJobIndex()
 {
-    return job_index_++;
+    return jobIndex++;
 }
 
 template <bool IsParent>
 std::size_t
-multi_runner_base<IsParent>::inner::checkout_test_index()
+MultiRunnerBase<IsParent>::Inner::checkoutTestIndex()
 {
-    return test_index_++;
+    return testIndex++;
 }
 
 template <bool IsParent>
 bool
-multi_runner_base<IsParent>::inner::any_failed() const
+MultiRunnerBase<IsParent>::Inner::anyFailed() const
 {
-    return any_failed_;
+    return anyFailedFlag;
 }
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::inner::any_failed(bool v)
+MultiRunnerBase<IsParent>::Inner::anyFailed(bool v)
 {
-    any_failed_ = any_failed_ || v;
+    anyFailedFlag = anyFailedFlag || v;
 }
 
 template <bool IsParent>
 std::size_t
-multi_runner_base<IsParent>::inner::tests() const
+MultiRunnerBase<IsParent>::Inner::tests() const
 {
-    std::lock_guard l{m_};
-    return results_.total;
+    std::scoped_lock const l{m};
+    return results.total;
 }
 
 template <bool IsParent>
 std::size_t
-multi_runner_base<IsParent>::inner::suites() const
+MultiRunnerBase<IsParent>::Inner::suites() const
 {
-    std::lock_guard l{m_};
-    return results_.suites;
+    std::scoped_lock const l{m};
+    return results.suites;
 }
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::inner::inc_keep_alive_count()
+MultiRunnerBase<IsParent>::Inner::incKeepAliveCount()
 {
-    ++keep_alive_;
+    ++keepAlive;
 }
 
 template <bool IsParent>
 std::size_t
-multi_runner_base<IsParent>::inner::get_keep_alive_count()
+MultiRunnerBase<IsParent>::Inner::getKeepAliveCount()
 {
-    return keep_alive_;
+    return keepAlive;
 }
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::inner::add(results const& r)
+MultiRunnerBase<IsParent>::Inner::add(Results const& r)
 {
-    std::lock_guard l{m_};
-    results_.merge(r);
+    std::scoped_lock const l{m};
+    results.merge(r);
 }
 
 template <bool IsParent>
 template <class S>
 void
-multi_runner_base<IsParent>::inner::print_results(S& s)
+MultiRunnerBase<IsParent>::Inner::printResults(S& s)
 {
-    std::lock_guard l{m_};
-    results_.print(s);
+    std::scoped_lock const l{m};
+    results.print(s);
 }
 
 template <bool IsParent>
-multi_runner_base<IsParent>::multi_runner_base()
+MultiRunnerBase<IsParent>::MultiRunnerBase()
 {
     try
     {
         if (IsParent)
         {
             // cleanup any leftover state for any previous failed runs
-            boost::interprocess::shared_memory_object::remove(shared_mem_name_);
-            boost::interprocess::message_queue::remove(message_queue_name_);
+            boost::interprocess::shared_memory_object::remove(kSharedMemName);
+            boost::interprocess::message_queue::remove(kMessageQueueName);
         }
 
-        shared_mem_ = boost::interprocess::shared_memory_object{
+        sharedMem_ = boost::interprocess::shared_memory_object{
             std::conditional_t<
                 IsParent,
                 boost::interprocess::create_only_t,
                 boost::interprocess::open_only_t>{},
-            shared_mem_name_,
+            kSharedMemName,
             boost::interprocess::read_write};
 
         if (IsParent)
         {
-            shared_mem_.truncate(sizeof(inner));
-            message_queue_ =
-                std::make_unique<boost::interprocess::message_queue>(
-                    boost::interprocess::create_only,
-                    message_queue_name_,
-                    /*max messages*/ 16,
-                    /*max message size*/ 1 << 20);
+            sharedMem_.truncate(sizeof(Inner));
+            messageQueue_ = std::make_unique<boost::interprocess::message_queue>(
+                boost::interprocess::create_only,
+                kMessageQueueName,
+                /*max messages*/ 16,
+                /*max message size*/ 1 << 20);
         }
         else
         {
-            message_queue_ =
-                std::make_unique<boost::interprocess::message_queue>(
-                    boost::interprocess::open_only, message_queue_name_);
+            messageQueue_ = std::make_unique<boost::interprocess::message_queue>(
+                boost::interprocess::open_only, kMessageQueueName);
         }
 
-        region_ = boost::interprocess::mapped_region{
-            shared_mem_, boost::interprocess::read_write};
+        region_ = boost::interprocess::mapped_region{sharedMem_, boost::interprocess::read_write};
         if (IsParent)
-            inner_ = new (region_.get_address()) inner{};
+        {
+            inner_ = new (region_.get_address()) Inner{};
+        }
         else
-            inner_ = reinterpret_cast<inner*>(region_.get_address());
+        {
+            inner_ = reinterpret_cast<Inner*>(region_.get_address());
+        }
     }
     catch (...)
     {
         if (IsParent)
         {
-            boost::interprocess::shared_memory_object::remove(shared_mem_name_);
-            boost::interprocess::message_queue::remove(message_queue_name_);
+            boost::interprocess::shared_memory_object::remove(kSharedMemName);
+            boost::interprocess::message_queue::remove(kMessageQueueName);
         }
         throw;
     }
 }
 
 template <bool IsParent>
-multi_runner_base<IsParent>::~multi_runner_base()
+MultiRunnerBase<IsParent>::~MultiRunnerBase()
 {
     if (IsParent)
     {
-        inner_->~inner();
-        boost::interprocess::shared_memory_object::remove(shared_mem_name_);
-        boost::interprocess::message_queue::remove(message_queue_name_);
+        inner_->~Inner();
+        boost::interprocess::shared_memory_object::remove(kSharedMemName);
+        boost::interprocess::message_queue::remove(kMessageQueueName);
     }
 }
 
 template <bool IsParent>
 std::size_t
-multi_runner_base<IsParent>::checkout_test_index()
+MultiRunnerBase<IsParent>::checkoutTestIndex()
 {
-    return inner_->checkout_test_index();
+    return inner_->checkoutTestIndex();
 }
 
 template <bool IsParent>
 std::size_t
-multi_runner_base<IsParent>::checkout_job_index()
+MultiRunnerBase<IsParent>::checkoutJobIndex()
 {
-    return inner_->checkout_job_index();
+    return inner_->checkoutJobIndex();
 }
 
 template <bool IsParent>
 bool
-multi_runner_base<IsParent>::any_failed() const
+MultiRunnerBase<IsParent>::anyFailed() const
 {
-    return inner_->any_failed();
+    return inner_->anyFailed();
 }
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::any_failed(bool v)
+MultiRunnerBase<IsParent>::anyFailed(bool v)
 {
-    return inner_->any_failed(v);
+    return inner_->anyFailed(v);
 }
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::add(results const& r)
+MultiRunnerBase<IsParent>::add(Results const& r)
 {
     inner_->add(r);
 }
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::inc_keep_alive_count()
+MultiRunnerBase<IsParent>::incKeepAliveCount()
 {
-    inner_->inc_keep_alive_count();
+    inner_->incKeepAliveCount();
 }
 
 template <bool IsParent>
 std::size_t
-multi_runner_base<IsParent>::get_keep_alive_count()
+MultiRunnerBase<IsParent>::getKeepAliveCount()
 {
-    return inner_->get_keep_alive_count();
+    return inner_->getKeepAliveCount();
 }
 
 template <bool IsParent>
 template <class S>
 void
-multi_runner_base<IsParent>::print_results(S& s)
+MultiRunnerBase<IsParent>::printResults(S& s)
 {
-    inner_->print_results(s);
+    inner_->printResults(s);
 }
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::message_queue_send(
-    MessageType mt,
-    std::string const& s)
+MultiRunnerBase<IsParent>::messageQueueSend(MessageType mt, std::string const& s)
 {
     // must use a mutex since the two "sends" must happen in order
-    std::lock_guard l{inner_->m_};
-    message_queue_->send(&mt, sizeof(mt), /*priority*/ 0);
-    message_queue_->send(s.c_str(), s.size(), /*priority*/ 0);
+    std::scoped_lock const l{inner_->m};
+    messageQueue_->send(&mt, sizeof(mt), /*priority*/ 0);
+    messageQueue_->send(s.c_str(), s.size(), /*priority*/ 0);
 }
 
 template <bool IsParent>
 std::size_t
-multi_runner_base<IsParent>::tests() const
+MultiRunnerBase<IsParent>::tests() const
 {
     return inner_->tests();
 }
 
 template <bool IsParent>
 std::size_t
-multi_runner_base<IsParent>::suites() const
+MultiRunnerBase<IsParent>::suites() const
 {
     return inner_->suites();
 }
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::add_failures(std::size_t failures)
+MultiRunnerBase<IsParent>::addFailures(std::size_t failures)
 {
-    results results;
+    Results results;
     results.failed += failures;
     add(results);
-    any_failed(failures != 0);
+    anyFailed(failures != 0);
 }
 
 }  // namespace detail
 
+namespace test {
+
 //------------------------------------------------------------------------------
 
-multi_runner_parent::multi_runner_parent() : os_(std::cout)
+MultiRunnerParent::MultiRunnerParent() : os_(std::cout)
 {
-    message_queue_thread_ = std::thread([this] {
+    messageQueueThread_ = std::thread([this] {
         std::vector<char> buf(1 << 20);
-        while (this->continue_message_queue_ ||
-               this->message_queue_->get_num_msg())
+        while (this->continueMessageQueue_ || this->messageQueue_->get_num_msg())
         {
             // let children know the parent is still alive
-            this->inc_keep_alive_count();
-            if (!this->message_queue_->get_num_msg())
+            this->incKeepAliveCount();
+            if (!this->messageQueue_->get_num_msg())
             {
                 // If a child does not see the keep alive count incremented,
                 // it will assume the parent has died. This sleep time needs
@@ -410,31 +391,29 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
             }
             try
             {
-                std::size_t recvd_size = 0;
+                std::size_t recvdSize = 0;
                 unsigned int priority = 0;
-                this->message_queue_->receive(
-                    buf.data(), buf.size(), recvd_size, priority);
-                if (!recvd_size)
+                this->messageQueue_->receive(buf.data(), buf.size(), recvdSize, priority);
+                if (!recvdSize)
                     continue;
-                assert(recvd_size == 1);
-                MessageType mt{*reinterpret_cast<MessageType*>(buf.data())};
+                assert(recvdSize == 1);
+                MessageType const mt{*reinterpret_cast<MessageType*>(buf.data())};
 
-                this->message_queue_->receive(
-                    buf.data(), buf.size(), recvd_size, priority);
-                if (recvd_size)
+                this->messageQueue_->receive(buf.data(), buf.size(), recvdSize, priority);
+                if (recvdSize)
                 {
-                    std::string s{buf.data(), recvd_size};
+                    std::string s{buf.data(), recvdSize};
                     switch (mt)
                     {
-                        case MessageType::log:
+                        case MessageType::Log:
                             this->os_ << s;
                             this->os_.flush();
                             break;
-                        case MessageType::test_start:
-                            running_suites_.insert(std::move(s));
+                        case MessageType::TestStart:
+                            runningSuites_.insert(std::move(s));
                             break;
-                        case MessageType::test_end:
-                            running_suites_.erase(s);
+                        case MessageType::TestEnd:
+                            runningSuites_.erase(s);
                             break;
                         default:
                             assert(0);  // unknown message type
@@ -443,8 +422,7 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
             }
             catch (std::exception const& e)
             {
-                std::cerr << "Error: " << e.what()
-                          << " reading unit test message queue.\n";
+                std::cerr << "Error: " << e.what() << " reading unit test message queue.\n";
                 return;
             }
             catch (...)
@@ -456,199 +434,192 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
     });
 }
 
-multi_runner_parent::~multi_runner_parent()
+MultiRunnerParent::~MultiRunnerParent()
 {
     using namespace beast::unit_test;
 
-    continue_message_queue_ = false;
-    message_queue_thread_.join();
+    continueMessageQueue_ = false;
+    messageQueueThread_.join();
 
-    print_results(os_);
+    addFailures(runningSuites_.size());
 
-    for (auto const& s : running_suites_)
+    printResults(os_);
+
+    for (auto const& s : runningSuites_)
     {
-        os_ << "\nSuite: " << s
-            << " failed to complete. The child process may have crashed.\n";
+        os_ << "\nSuite: " << s << " failed to complete. The child process may have crashed.\n";
     }
 }
 
 bool
-multi_runner_parent::any_failed() const
+MultiRunnerParent::anyFailed() const
 {
-    return multi_runner_base<true>::any_failed();
+    return MultiRunnerBase<true>::anyFailed();
 }
 
 std::size_t
-multi_runner_parent::tests() const
+MultiRunnerParent::tests() const
 {
-    return multi_runner_base<true>::tests();
+    return MultiRunnerBase<true>::tests();
 }
 
 std::size_t
-multi_runner_parent::suites() const
+MultiRunnerParent::suites() const
 {
-    return multi_runner_base<true>::suites();
+    return MultiRunnerBase<true>::suites();
 }
 
 void
-multi_runner_parent::add_failures(std::size_t failures)
+MultiRunnerParent::addFailures(std::size_t failures)
 {
-    multi_runner_base<true>::add_failures(failures);
+    MultiRunnerBase<true>::addFailures(failures);
 }
 
 //------------------------------------------------------------------------------
 
-multi_runner_child::multi_runner_child(
-    std::size_t num_jobs,
-    bool quiet,
-    bool print_log)
-    : job_index_{checkout_job_index()}
-    , num_jobs_{num_jobs}
-    , quiet_{quiet}
-    , print_log_{!quiet || print_log}
+MultiRunnerChild::MultiRunnerChild(std::size_t numJobs, bool quiet, bool printLog)
+    : jobIndex_{checkoutJobIndex()}, numJobs_{numJobs}, quiet_{quiet}, printLog_{!quiet || printLog}
 {
-    if (num_jobs_ > 1)
+    if (numJobs_ > 1)
     {
-        keep_alive_thread_ = std::thread([this] {
-            std::size_t last_count = get_keep_alive_count();
-            while (this->continue_keep_alive_)
+        keepAliveThread_ = std::thread([this] {
+            std::size_t lastCount = getKeepAliveCount();
+            while (this->continueKeepAlive_)
             {
                 // Use a small sleep time so in the normal case the child
                 // process may shutdown quickly. However, to protect against
                 // false alarms, use a longer sleep time later on.
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                auto cur_count = this->get_keep_alive_count();
-                if (cur_count == last_count)
+                auto curCount = this->getKeepAliveCount();
+                if (curCount == lastCount)
                 {
                     // longer sleep time to protect against false alarms
                     std::this_thread::sleep_for(std::chrono::seconds(2));
-                    cur_count = this->get_keep_alive_count();
-                    if (cur_count == last_count)
+                    curCount = this->getKeepAliveCount();
+                    if (curCount == lastCount)
                     {
                         // assume parent process is no longer alive
-                        std::cerr << "multi_runner_child " << job_index_
+                        std::cerr << "multi_runner_child " << jobIndex_
                                   << ": Assuming parent died, exiting.\n";
                         std::exit(EXIT_FAILURE);
                     }
                 }
-                last_count = cur_count;
+                lastCount = curCount;
             }
         });
     }
 }
 
-multi_runner_child::~multi_runner_child()
+MultiRunnerChild::~MultiRunnerChild()
 {
-    if (num_jobs_ > 1)
+    if (numJobs_ > 1)
     {
-        continue_keep_alive_ = false;
-        keep_alive_thread_.join();
+        continueKeepAlive_ = false;
+        keepAliveThread_.join();
     }
 
     add(results_);
 }
 
 std::size_t
-multi_runner_child::tests() const
+MultiRunnerChild::tests() const
 {
     return results_.total;
 }
 
 std::size_t
-multi_runner_child::suites() const
+MultiRunnerChild::suites() const
 {
     return results_.suites;
 }
 
 void
-multi_runner_child::add_failures(std::size_t failures)
+MultiRunnerChild::addFailures(std::size_t failures)
 {
     results_.failed += failures;
-    any_failed(failures != 0);
+    anyFailed(failures != 0);
 }
 
 void
-multi_runner_child::on_suite_begin(beast::unit_test::suite_info const& info)
+MultiRunnerChild::onSuiteBegin(beast::unit_test::SuiteInfo const& info)
 {
-    suite_results_ = detail::suite_results{info.full_name()};
-    message_queue_send(MessageType::test_start, suite_results_.name);
+    suiteResults_ = detail::SuiteResults{info.fullName()};
+    messageQueueSend(MessageType::TestStart, suiteResults_.name);
 }
 
 void
-multi_runner_child::on_suite_end()
+MultiRunnerChild::onSuiteEnd()
 {
-    if (print_log_ || suite_results_.failed > 0)
+    if (printLog_ || suiteResults_.failed > 0)
     {
         std::stringstream s;
-        if (num_jobs_ > 1)
-            s << job_index_ << "> ";
-        s << (suite_results_.failed > 0 ? "failed: " : "")
-          << suite_results_.name << " had " << suite_results_.failed
-          << " failures." << std::endl;
-        message_queue_send(MessageType::log, s.str());
+        if (numJobs_ > 1)
+            s << jobIndex_ << "> ";
+        s << (suiteResults_.failed > 0 ? "failed: " : "") << suiteResults_.name << " had "
+          << suiteResults_.failed << " failures." << std::endl;
+        messageQueueSend(MessageType::Log, s.str());
     }
-    results_.add(suite_results_);
-    message_queue_send(MessageType::test_end, suite_results_.name);
+    results_.add(suiteResults_);
+    messageQueueSend(MessageType::TestEnd, suiteResults_.name);
 }
 
 void
-multi_runner_child::on_case_begin(std::string const& name)
+MultiRunnerChild::onCaseBegin(std::string const& name)
 {
-    case_results_ = detail::case_results(name);
+    caseResults_ = detail::CaseResults(name);
 
     if (quiet_)
         return;
 
     std::stringstream s;
-    if (num_jobs_ > 1)
-        s << job_index_ << "> ";
-    s << suite_results_.name
-      << (case_results_.name.empty() ? "" : (" " + case_results_.name)) << '\n';
-    message_queue_send(MessageType::log, s.str());
+    if (numJobs_ > 1)
+        s << jobIndex_ << "> ";
+    s << suiteResults_.name << (caseResults_.name.empty() ? "" : (" " + caseResults_.name)) << '\n';
+    messageQueueSend(MessageType::Log, s.str());
 }
 
 void
-multi_runner_child::on_case_end()
+MultiRunnerChild::onCaseEnd()
 {
-    suite_results_.add(case_results_);
+    suiteResults_.add(caseResults_);
 }
 
 void
-multi_runner_child::on_pass()
+MultiRunnerChild::onPass()
 {
-    ++case_results_.total;
+    ++caseResults_.total;
 }
 
 void
-multi_runner_child::on_fail(std::string const& reason)
+MultiRunnerChild::onFail(std::string const& reason)
 {
-    ++case_results_.failed;
-    ++case_results_.total;
+    ++caseResults_.failed;
+    ++caseResults_.total;
     std::stringstream s;
-    if (num_jobs_ > 1)
-        s << job_index_ << "> ";
-    s << "#" << case_results_.total << " failed" << (reason.empty() ? "" : ": ")
-      << reason << '\n';
-    message_queue_send(MessageType::log, s.str());
+    if (numJobs_ > 1)
+        s << jobIndex_ << "> ";
+    s << "#" << caseResults_.total << " failed" << (reason.empty() ? "" : ": ") << reason << '\n';
+    messageQueueSend(MessageType::Log, s.str());
 }
 
 void
-multi_runner_child::on_log(std::string const& msg)
+MultiRunnerChild::onLog(std::string const& msg)
 {
-    if (!print_log_)
+    if (!printLog_)
         return;
 
     std::stringstream s;
-    if (num_jobs_ > 1)
-        s << job_index_ << "> ";
+    if (numJobs_ > 1)
+        s << jobIndex_ << "> ";
     s << msg;
-    message_queue_send(MessageType::log, s.str());
+    messageQueueSend(MessageType::Log, s.str());
 }
 
+}  // namespace test
+
 namespace detail {
-template class multi_runner_base<true>;
-template class multi_runner_base<false>;
+template class MultiRunnerBase<true>;
+template class MultiRunnerBase<false>;
 }  // namespace detail
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,0 +1,3 @@
+halt_on_error=false
+verbosity=1
+second_deadlock_stack=1

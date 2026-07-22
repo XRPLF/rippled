@@ -1,38 +1,22 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_CRYPTO_RANDOM_H_INCLUDED
-#define RIPPLE_CRYPTO_RANDOM_H_INCLUDED
-
+#include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
-/** A cryptographically secure random number engine
-
-    The engine is thread-safe (it uses a lock to serialize
-    access) and will, automatically, mix in some randomness
-    from std::random_device.
-
-    Meets the requirements of UniformRandomNumberEngine
-*/
-class csprng_engine
+/**
+ * A cryptographically secure random number engine
+ *
+ * The engine is thread-safe (it uses a lock to serialize
+ * access) and will, automatically, mix in some randomness
+ * from std::random_device.
+ *
+ * Meets the requirements of UniformRandomNumberEngine
+ */
+class CsprngEngine
 {
 private:
     std::mutex mutex_;
@@ -40,26 +24,32 @@ private:
 public:
     using result_type = std::uint64_t;
 
-    csprng_engine(csprng_engine const&) = delete;
-    csprng_engine&
-    operator=(csprng_engine const&) = delete;
+    CsprngEngine(CsprngEngine const&) = delete;
+    CsprngEngine&
+    operator=(CsprngEngine const&) = delete;
 
-    csprng_engine(csprng_engine&&) = delete;
-    csprng_engine&
-    operator=(csprng_engine&&) = delete;
+    CsprngEngine(CsprngEngine&&) = delete;
+    CsprngEngine&
+    operator=(CsprngEngine&&) = delete;
 
-    csprng_engine();
-    ~csprng_engine();
+    CsprngEngine();
+    ~CsprngEngine();
 
-    /** Mix entropy into the pool */
+    /**
+     * Mix entropy into the pool
+     */
     void
-    mix_entropy(void* buffer = nullptr, std::size_t count = 0);
+    mixEntropy(void* buffer = nullptr, std::size_t count = 0);
 
-    /** Generate a random integer */
+    /**
+     * Generate a random integer
+     */
     result_type
     operator()();
 
-    /** Fill a buffer with the requested amount of random data */
+    /**
+     * Fill a buffer with the requested amount of random data
+     */
     void
     operator()(void* ptr, std::size_t count);
 
@@ -78,17 +68,16 @@ public:
     }
 };
 
-/** The default cryptographically secure PRNG
+/**
+ * The default cryptographically secure PRNG
+ *
+ * Use this when you need to generate random numbers or
+ * data that will be used for encryption or passed into
+ * cryptographic routines.
+ *
+ * This meets the requirements of UniformRandomNumberEngine
+ */
+CsprngEngine&
+cryptoPrng();
 
-    Use this when you need to generate random numbers or
-    data that will be used for encryption or passed into
-    cryptographic routines.
-
-    This meets the requirements of UniformRandomNumberEngine
-*/
-csprng_engine&
-crypto_prng();
-
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

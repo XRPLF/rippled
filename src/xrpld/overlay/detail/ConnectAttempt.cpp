@@ -1,38 +1,57 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/ConnectAttempt.h>
+
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Cluster.h>
+#include <xrpld/overlay/Peer.h>
+#include <xrpld/overlay/detail/Handshake.h>
+#include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
+#include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/Slot.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/tokens.h>
+#include <xrpl/resource/Consumer.h>
 
-namespace ripple {
+#include <boost/asio/bind_executor.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/error.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/ssl/stream_base.hpp>
+#include <boost/asio/ssl/verify_mode.hpp>
+#include <boost/asio/strand.hpp>
+#include <boost/beast/http/impl/read.hpp>
+#include <boost/beast/http/impl/write.hpp>
+#include <boost/beast/http/status.hpp>
+#include <boost/system/system_error.hpp>
+
+#include <chrono>
+#include <cstddef>
+#include <exception>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace xrpl {
 
 ConnectAttempt::ConnectAttempt(
     Application& app,
-    boost::asio::io_service& io_service,
-    endpoint_type const& remote_endpoint,
+    boost::asio::io_context& ioContext,
+    endpoint_type remoteEndpoint,
     Resource::Consumer usage,
     shared_context const& context,
-    std::uint32_t id,
+    Peer::id_t id,
     std::shared_ptr<PeerFinder::Slot> const& slot,
     beast::Journal journal,
     OverlayImpl& overlay)
@@ -41,24 +60,24 @@ ConnectAttempt::ConnectAttempt(
     , id_(id)
     , sink_(journal, OverlayImpl::makePrefix(id))
     , journal_(sink_)
-    , remote_endpoint_(remote_endpoint)
+    , remoteEndpoint_(std::move(remoteEndpoint))
     , usage_(usage)
-    , strand_(io_service)
-    , timer_(io_service)
-    , stream_ptr_(std::make_unique<stream_type>(
-          socket_type(std::forward<boost::asio::io_service&>(io_service)),
-          *context))
-    , socket_(stream_ptr_->next_layer().socket())
-    , stream_(*stream_ptr_)
+    , strand_(boost::asio::make_strand(ioContext))
+    , timer_(ioContext)
+    , streamPtr_(
+          std::make_unique<stream_type>(
+              socket_type(std::forward<boost::asio::io_context&>(ioContext)),
+              *context))
+    , socket_(streamPtr_->next_layer().socket())
+    , stream_(*streamPtr_)
     , slot_(slot)
 {
-    JLOG(journal_.debug()) << "Connect " << remote_endpoint;
 }
 
 ConnectAttempt::~ConnectAttempt()
 {
     if (slot_ != nullptr)
-        overlay_.peerFinder().on_closed(slot_);
+        overlay_.peerFinder().onClosed(slot_);
     JLOG(journal_.trace()) << "~ConnectAttempt";
 }
 
@@ -66,8 +85,10 @@ void
 ConnectAttempt::stop()
 {
     if (!strand_.running_in_this_thread())
-        return strand_.post(
-            std::bind(&ConnectAttempt::stop, shared_from_this()));
+    {
+        boost::asio::post(strand_, [self = shared_from_this()] { self->stop(); });
+        return;
+    }
     if (socket_.is_open())
     {
         JLOG(journal_.debug()) << "Stop";
@@ -78,12 +99,12 @@ ConnectAttempt::stop()
 void
 ConnectAttempt::run()
 {
+    setTimer();
+
     stream_.next_layer().async_connect(
-        remote_endpoint_,
-        strand_.wrap(std::bind(
-            &ConnectAttempt::onConnect,
-            shared_from_this(),
-            std::placeholders::_1)));
+        remoteEndpoint_,
+        boost::asio::bind_executor(
+            strand_, [self = shared_from_this()](error_code const& ec) { self->onConnect(ec); }));
 }
 
 //------------------------------------------------------------------------------
@@ -92,15 +113,21 @@ void
 ConnectAttempt::close()
 {
     XRPL_ASSERT(
-        strand_.running_in_this_thread(),
-        "ripple::ConnectAttempt::close : strand in this thread");
-    if (socket_.is_open())
+        strand_.running_in_this_thread(), "xrpl::ConnectAttempt::close : strand in this thread");
+    if (!socket_.is_open())
+        return;
+
+    try
     {
-        error_code ec;
-        timer_.cancel(ec);
-        socket_.close(ec);
-        JLOG(journal_.debug()) << "Closed";
+        timer_.cancel();
+        socket_.close();
     }
+    catch (boost::system::system_error const&)  // NOLINT(bugprone-empty-catch)
+    {
+        // ignored
+    }
+
+    JLOG(journal_.debug()) << "Closed";
 }
 
 void
@@ -120,23 +147,32 @@ ConnectAttempt::fail(std::string const& name, error_code ec)
 void
 ConnectAttempt::setTimer()
 {
-    error_code ec;
-    timer_.expires_from_now(std::chrono::seconds(15), ec);
-    if (ec)
+    try
     {
-        JLOG(journal_.error()) << "setTimer: " << ec.message();
+        timer_.expires_after(std::chrono::seconds(15));
+    }
+    catch (boost::system::system_error const& e)
+    {
+        JLOG(journal_.error()) << "setTimer: " << e.code();
         return;
     }
 
-    timer_.async_wait(strand_.wrap(std::bind(
-        &ConnectAttempt::onTimer, shared_from_this(), std::placeholders::_1)));
+    timer_.async_wait(
+        boost::asio::bind_executor(
+            strand_, [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
 }
 
 void
 ConnectAttempt::cancelTimer()
 {
-    error_code ec;
-    timer_.cancel(ec);
+    try
+    {
+        timer_.cancel();
+    }
+    catch (boost::system::system_error const&)  // NOLINT(bugprone-empty-catch)
+    {
+        // ignored
+    }
 }
 
 void
@@ -144,13 +180,17 @@ ConnectAttempt::onTimer(error_code ec)
 {
     if (!socket_.is_open())
         return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
+
     if (ec)
     {
+        // do not initiate shutdown, timers are frequently cancelled
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
         // This should never happen
         JLOG(journal_.error()) << "onTimer: " << ec.message();
-        return close();
+        close();
+        return;
     }
     fail("Timeout");
 }
@@ -160,25 +200,33 @@ ConnectAttempt::onConnect(error_code ec)
 {
     cancelTimer();
 
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-    endpoint_type local_endpoint;
-    if (!ec)
-        local_endpoint = socket_.local_endpoint(ec);
     if (ec)
-        return fail("onConnect", ec);
+    {
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
+        fail("onConnect", ec);
+        return;
+    }
+
     if (!socket_.is_open())
         return;
-    JLOG(journal_.trace()) << "onConnect";
+
+    // check if connection has really been established
+    socket_.local_endpoint(ec);
+    if (ec)
+    {
+        fail("onConnect", ec);
+        return;
+    }
 
     setTimer();
+
     stream_.set_verify_mode(boost::asio::ssl::verify_none);
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
-        strand_.wrap(std::bind(
-            &ConnectAttempt::onHandshake,
-            shared_from_this(),
-            std::placeholders::_1)));
+        boost::asio::bind_executor(
+            strand_, [self = shared_from_this()](error_code const& ec) { self->onHandshake(ec); }));
 }
 
 void
@@ -187,66 +235,85 @@ ConnectAttempt::onHandshake(error_code ec)
     cancelTimer();
     if (!socket_.is_open())
         return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-    endpoint_type local_endpoint;
-    if (!ec)
-        local_endpoint = socket_.local_endpoint(ec);
+
     if (ec)
-        return fail("onHandshake", ec);
-    JLOG(journal_.trace()) << "onHandshake";
+    {
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
+        fail("onHandshake", ec);
+        return;
+    }
+
+    auto const localEndpoint = socket_.local_endpoint(ec);
+    if (ec)
+    {
+        fail("onHandshake", ec);
+        return;
+    }
 
     if (!overlay_.peerFinder().onConnected(
-            slot_, beast::IPAddressConversion::from_asio(local_endpoint)))
-        return fail("Duplicate connection");
+            slot_, beast::IPAddressConversion::fromAsio(localEndpoint)))
+    {
+        fail("Duplicate connection");
+        return;
+    }
 
-    auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
+    auto const sharedValue = makeSharedValue(*streamPtr_, journal_);
     if (!sharedValue)
-        return close();  // makeSharedValue logs
+    {
+        close();  // makeSharedValue logs
+        return;
+    }
 
     req_ = makeRequest(
         !overlay_.peerFinder().config().peerPrivate,
-        app_.config().COMPRESSION,
-        app_.config().LEDGER_REPLAY,
-        app_.config().TX_REDUCE_RELAY_ENABLE,
-        app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE);
+        app_.config().compression,
+        app_.config().ledgerReplay,
+        app_.config().txReduceRelayEnable,
+        app_.config().vpReduceRelayBaseSquelchEnable);
 
     buildHandshake(
         req_,
         *sharedValue,
         overlay_.setup().networkID,
-        overlay_.setup().public_ip,
-        remote_endpoint_.address(),
+        overlay_.setup().publicIp,
+        remoteEndpoint_.address(),
         app_);
 
     setTimer();
     boost::beast::http::async_write(
         stream_,
         req_,
-        strand_.wrap(std::bind(
-            &ConnectAttempt::onWrite,
-            shared_from_this(),
-            std::placeholders::_1)));
+        boost::asio::bind_executor(
+            strand_,
+            [self = shared_from_this()](error_code const& ec, std::size_t) { self->onWrite(ec); }));
 }
 
 void
 ConnectAttempt::onWrite(error_code ec)
 {
     cancelTimer();
+
     if (!socket_.is_open())
         return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
+
     if (ec)
-        return fail("onWrite", ec);
+    {
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
+        fail("onWrite", ec);
+        return;
+    }
+
     boost::beast::http::async_read(
         stream_,
-        read_buf_,
+        readBuf_,
         response_,
-        strand_.wrap(std::bind(
-            &ConnectAttempt::onRead,
-            shared_from_this(),
-            std::placeholders::_1)));
+        boost::asio::bind_executor(
+            strand_,
+            [self = shared_from_this()](error_code const& ec, std::size_t) { self->onRead(ec); }));
 }
 
 void
@@ -256,19 +323,27 @@ ConnectAttempt::onRead(error_code ec)
 
     if (!socket_.is_open())
         return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-    if (ec == boost::asio::error::eof)
-    {
-        JLOG(journal_.info()) << "EOF";
-        setTimer();
-        return stream_.async_shutdown(strand_.wrap(std::bind(
-            &ConnectAttempt::onShutdown,
-            shared_from_this(),
-            std::placeholders::_1)));
-    }
+
     if (ec)
-        return fail("onRead", ec);
+    {
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
+        if (ec == boost::asio::error::eof)
+        {
+            JLOG(journal_.debug()) << "EOF";
+            setTimer();
+            stream_.async_shutdown(
+                boost::asio::bind_executor(
+                    strand_,
+                    [self = shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
+            return;
+        }
+
+        fail("onRead", ec);
+        return;
+    }
+
     processResponse();
 }
 
@@ -278,11 +353,15 @@ ConnectAttempt::onShutdown(error_code ec)
     cancelTimer();
     if (!ec)
     {
-        JLOG(journal_.error()) << "onShutdown: expected error condition";
-        return close();
+        close();
+        return;
     }
+
     if (ec != boost::asio::error::eof)
-        return fail("onShutdown", ec);
+    {
+        fail("onShutdown", ec);
+        return;
+    }
     close();
 }
 
@@ -293,20 +372,20 @@ ConnectAttempt::processResponse()
 {
     if (response_.result() == boost::beast::http::status::service_unavailable)
     {
-        Json::Value json;
-        Json::Reader r;
+        json::Value json;
+        json::Reader r;
         std::string s;
         s.reserve(boost::asio::buffer_size(response_.body().data()));
         for (auto const buffer : response_.body().data())
-            s.append(
-                boost::asio::buffer_cast<char const*>(buffer),
-                boost::asio::buffer_size(buffer));
+        {
+            s.append(static_cast<char const*>(buffer.data()), boost::asio::buffer_size(buffer));
+        }
         auto const success = r.parse(s, json);
         if (success)
         {
             if (json.isObject() && json.isMember("peer-ips"))
             {
-                Json::Value const& ips = json["peer-ips"];
+                json::Value const& ips = json["peer-ips"];
                 if (ips.isArray())
                 {
                     std::vector<boost::asio::ip::tcp::endpoint> eps;
@@ -316,12 +395,12 @@ ConnectAttempt::processResponse()
                         if (v.isString())
                         {
                             error_code ec;
-                            auto const ep = parse_endpoint(v.asString(), ec);
+                            auto const ep = parseEndpoint(v.asString(), ec);
                             if (!ec)
                                 eps.push_back(ep);
                         }
                     }
-                    overlay_.peerFinder().onRedirects(remote_endpoint_, eps);
+                    overlay_.peerFinder().onRedirects(remoteEndpoint_, eps);
                 }
             }
         }
@@ -329,10 +408,10 @@ ConnectAttempt::processResponse()
 
     if (!OverlayImpl::isPeerUpgrade(response_))
     {
-        JLOG(journal_.info())
-            << "Unable to upgrade to peer protocol: " << response_.result()
-            << " (" << response_.reason() << ")";
-        return close();
+        JLOG(journal_.info()) << "Unable to upgrade to peer protocol: " << response_.result()
+                              << " (" << response_.reason() << ")";
+        close();
+        return;
     }
 
     // Just because our peer selected a particular protocol version doesn't
@@ -346,45 +425,53 @@ ConnectAttempt::processResponse()
             negotiatedProtocol = pvs[0];
 
         if (!negotiatedProtocol)
-            return fail(
-                "processResponse: Unable to negotiate protocol version");
+        {
+            fail("processResponse: Unable to negotiate protocol version");
+            return;
+        }
     }
 
-    auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
+    auto const sharedValue = makeSharedValue(*streamPtr_, journal_);
     if (!sharedValue)
-        return close();  // makeSharedValue logs
+    {
+        close();  // makeSharedValue logs
+        return;
+    }
 
     try
     {
-        auto publicKey = verifyHandshake(
+        auto const publicKey = verifyHandshake(
             response_,
             *sharedValue,
             overlay_.setup().networkID,
-            overlay_.setup().public_ip,
-            remote_endpoint_.address(),
+            overlay_.setup().publicIp,
+            remoteEndpoint_.address(),
             app_);
 
-        JLOG(journal_.info())
-            << "Public Key: " << toBase58(TokenType::NodePublic, publicKey);
+        usage_.setPublicKey(publicKey);
 
-        JLOG(journal_.debug())
-            << "Protocol: " << to_string(*negotiatedProtocol);
+        JLOG(journal_.info()) << "Public Key: " << toBase58(TokenType::NodePublic, publicKey);
 
-        auto const member = app_.cluster().member(publicKey);
+        JLOG(journal_.debug()) << "Protocol: " << to_string(*negotiatedProtocol);
+
+        auto const member = app_.getCluster().member(publicKey);
         if (member)
         {
             JLOG(journal_.info()) << "Cluster name: " << *member;
         }
 
-        auto const result = overlay_.peerFinder().activate(
-            slot_, publicKey, static_cast<bool>(member));
-        if (result != PeerFinder::Result::success)
-            return fail("Outbound slots full");
+        auto const result =
+            overlay_.peerFinder().activate(slot_, publicKey, static_cast<bool>(member));
+        if (result != PeerFinder::Result::Success)
+        {
+            fail("Outbound " + std::string(to_string(result)));
+            return;
+        }
 
         auto const peer = std::make_shared<PeerImp>(
             app_,
-            std::move(stream_ptr_),
-            read_buf_.data(),
+            std::move(streamPtr_),
+            readBuf_.data(),
             std::move(slot_),
             std::move(response_),
             usage_,
@@ -393,12 +480,13 @@ ConnectAttempt::processResponse()
             id_,
             overlay_);
 
-        overlay_.add_active(peer);
+        overlay_.addActive(peer);
     }
     catch (std::exception const& e)
     {
-        return fail(std::string("Handshake failure (") + e.what() + ")");
+        fail(std::string("Handshake failure (") + e.what() + ")");
+        return;
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,27 +1,10 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/resource/Consumer.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/resource/Charge.h>
-#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Disposition.h>
 #include <xrpl/resource/detail/Entry.h>
 #include <xrpl/resource/detail/Logic.h>
@@ -29,65 +12,65 @@
 #include <ostream>
 #include <string>
 
-namespace ripple {
-namespace Resource {
+namespace xrpl::Resource {
 
-Consumer::Consumer(Logic& logic, Entry& entry)
-    : m_logic(&logic), m_entry(&entry)
+Consumer::Consumer(Logic& logic, Entry& entry) : logic_(&logic), entry_(&entry)
 {
 }
 
-Consumer::Consumer() : m_logic(nullptr), m_entry(nullptr)
+Consumer::Consumer() : logic_(nullptr), entry_(nullptr)
 {
 }
 
-Consumer::Consumer(Consumer const& other)
-    : m_logic(other.m_logic), m_entry(nullptr)
+Consumer::Consumer(Consumer const& other) : logic_(other.logic_), entry_(nullptr)
 {
-    if (m_logic && other.m_entry)
+    if ((logic_ != nullptr) && (other.entry_ != nullptr))
     {
-        m_entry = other.m_entry;
-        m_logic->acquire(*m_entry);
+        entry_ = other.entry_;
+        logic_->acquire(*entry_);
     }
 }
 
 Consumer::~Consumer()
 {
-    if (m_logic && m_entry)
-        m_logic->release(*m_entry);
+    if ((logic_ != nullptr) && (entry_ != nullptr))
+        logic_->release(*entry_);
 }
 
 Consumer&
 Consumer::operator=(Consumer const& other)
 {
-    // remove old ref
-    if (m_logic && m_entry)
-        m_logic->release(*m_entry);
+    if (this == &other)
+        return *this;
 
-    m_logic = other.m_logic;
-    m_entry = other.m_entry;
+    // remove old ref
+    if ((logic_ != nullptr) && (entry_ != nullptr))
+        logic_->release(*entry_);
+
+    logic_ = other.logic_;
+    entry_ = other.entry_;
 
     // add new ref
-    if (m_logic && m_entry)
-        m_logic->acquire(*m_entry);
+    if ((logic_ != nullptr) && (entry_ != nullptr))
+        logic_->acquire(*entry_);
 
     return *this;
 }
 
 std::string
-Consumer::to_string() const
+Consumer::toString() const
 {
-    if (m_logic == nullptr)
+    if (logic_ == nullptr)
         return "(none)";
 
-    return m_entry->to_string();
+    return entry_->toString();
 }
 
 bool
 Consumer::isUnlimited() const
 {
-    if (m_entry)
-        return m_entry->isUnlimited();
+    if (entry_ != nullptr)
+        return entry_->isUnlimited();
 
     return false;
 }
@@ -95,9 +78,9 @@ Consumer::isUnlimited() const
 Disposition
 Consumer::disposition() const
 {
-    Disposition d = ok;
-    if (m_logic && m_entry)
-        d = m_logic->charge(*m_entry, Charge(0));
+    Disposition d = Disposition::Ok;
+    if ((logic_ != nullptr) && (entry_ != nullptr))
+        d = logic_->charge(*entry_, Charge(0));
 
     return d;
 }
@@ -105,10 +88,10 @@ Consumer::disposition() const
 Disposition
 Consumer::charge(Charge const& what, std::string const& context)
 {
-    Disposition d = ok;
+    Disposition d = Disposition::Ok;
 
-    if (m_logic && m_entry && !m_entry->isUnlimited())
-        d = m_logic->charge(*m_entry, what, context);
+    if ((logic_ != nullptr) && (entry_ != nullptr) && !entry_->isUnlimited())
+        d = logic_->charge(*entry_, what, context);
 
     return d;
 }
@@ -116,19 +99,18 @@ Consumer::charge(Charge const& what, std::string const& context)
 bool
 Consumer::warn()
 {
-    XRPL_ASSERT(m_entry, "ripple::Resource::Consumer::warn : non-null entry");
-    return m_logic->warn(*m_entry);
+    XRPL_ASSERT(entry_, "xrpl::Resource::Consumer::warn : non-null entry");
+    return logic_->warn(*entry_);
 }
 
 bool
 Consumer::disconnect(beast::Journal const& j)
 {
-    XRPL_ASSERT(
-        m_entry, "ripple::Resource::Consumer::disconnect : non-null entry");
-    bool const d = m_logic->disconnect(*m_entry);
+    XRPL_ASSERT(entry_, "xrpl::Resource::Consumer::disconnect : non-null entry");
+    bool const d = logic_->disconnect(*entry_);
     if (d)
     {
-        JLOG(j.debug()) << "disconnecting " << m_entry->to_string();
+        JLOG(j.debug()) << "disconnecting " << entry_->toString();
     }
     return d;
 }
@@ -136,24 +118,28 @@ Consumer::disconnect(beast::Journal const& j)
 int
 Consumer::balance()
 {
-    XRPL_ASSERT(
-        m_entry, "ripple::Resource::Consumer::balance : non-null entry");
-    return m_logic->balance(*m_entry);
+    XRPL_ASSERT(entry_, "xrpl::Resource::Consumer::balance : non-null entry");
+    return logic_->balance(*entry_);
 }
 
 Entry&
 Consumer::entry()
 {
-    XRPL_ASSERT(m_entry, "ripple::Resource::Consumer::entry : non-null entry");
-    return *m_entry;
+    XRPL_ASSERT(entry_, "xrpl::Resource::Consumer::entry : non-null entry");
+    return *entry_;
+}
+
+void
+Consumer::setPublicKey(PublicKey const& publicKey)
+{
+    entry_->publicKey = publicKey;
 }
 
 std::ostream&
 operator<<(std::ostream& os, Consumer const& v)
 {
-    os << v.to_string();
+    os << v.toString();
     return os;
 }
 
-}  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl::Resource

@@ -1,73 +1,69 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_STRINGUTILITIES_H_INCLUDED
-#define RIPPLE_BASICS_STRINGUTILITIES_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Blob.h>
-#include <xrpl/basics/strHex.h>
 
 #include <boost/format.hpp>
 #include <boost/utility/string_view.hpp>
 
 #include <array>
+#include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
+#include <type_traits>
+#include <utility>
 
-namespace ripple {
+namespace xrpl {
 
-/** Format arbitrary binary data as an SQLite "blob literal".
-
-    In SQLite, blob literals must be encoded when used in a query. Per
-    https://sqlite.org/lang_expr.html#literal_values_constants_ they are
-    encoded as string literals containing hexadecimal data and preceded
-    by a single 'X' character.
-
-    @param blob An arbitrary blob of binary data
-    @return The input, encoded as a blob literal.
+/**
+ * Format arbitrary binary data as an SQLite "blob literal".
+ *
+ * In SQLite, blob literals must be encoded when used in a query. Per
+ * https://sqlite.org/lang_expr.html#literal_values_constants_ they are
+ * encoded as string literals containing hexadecimal data and preceded
+ * by a single 'X' character.
+ *
+ * @param blob An arbitrary blob of binary data
+ * @return The input, encoded as a blob literal.
  */
 std::string
 sqlBlobLiteral(Blob const& blob);
+
+namespace detail {
+
+template <typename T>
+concept SomeChar = std::same_as<std::remove_cvref_t<T>, int8_t> ||
+    std::same_as<std::remove_cvref_t<T>, char> || std::same_as<std::remove_cvref_t<T>, uint8_t>;
+
+inline constexpr std::array<std::optional<int>, 256> const kDigitLookupTable = []() {
+    std::array<std::optional<int>, 256> t{};
+
+    for (int i = 0; i < 10; ++i)
+        t['0' + i] = i;
+
+    for (int i = 0; i < 6; ++i)
+    {
+        t['A' + i] = 10 + i;
+        t['a' + i] = 10 + i;
+    }
+
+    return t;
+}();
+
+inline std::optional<int>
+hexCharToInt(SomeChar auto hexChar)
+{
+    return kDigitLookupTable[static_cast<uint8_t>(hexChar)];
+}
+
+}  // namespace detail
 
 template <class Iterator>
 std::optional<Blob>
 strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 {
-    static constexpr std::array<int, 256> const unxtab = []() {
-        std::array<int, 256> t{};
-
-        for (auto& x : t)
-            x = -1;
-
-        for (int i = 0; i < 10; ++i)
-            t['0' + i] = i;
-
-        for (int i = 0; i < 6; ++i)
-        {
-            t['A' + i] = 10 + i;
-            t['a' + i] = 10 + i;
-        }
-
-        return t;
-    }();
-
     Blob out;
 
     out.reserve((strSize + 1) / 2);
@@ -76,47 +72,40 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 
     if (strSize & 1)
     {
-        int c = unxtab[*iter++];
-
-        if (c < 0)
+        auto const c = detail::hexCharToInt(*iter++);
+        if (!c.has_value())
             return {};
 
-        out.push_back(c);
+        out.push_back(static_cast<unsigned char>(*c));
     }
 
     while (iter != end)
     {
-        int cHigh = unxtab[*iter++];
+        auto const cHigh = detail::hexCharToInt(*iter++);
 
-        if (cHigh < 0)
+        if (!cHigh.has_value())
             return {};
 
-        int cLow = unxtab[*iter++];
+        auto const cLow = detail::hexCharToInt(*iter++);
 
-        if (cLow < 0)
+        if (!cLow.has_value())
             return {};
 
-        out.push_back(static_cast<unsigned char>((cHigh << 4) | cLow));
+        out.push_back(static_cast<unsigned char>((*cHigh << 4) | *cLow));
     }
 
     return {std::move(out)};
 }
 
 inline std::optional<Blob>
-strUnHex(std::string const& strSrc)
+strUnHex(std::string_view strSrc)
 {
     return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
 }
 
-inline std::optional<Blob>
-strViewUnHex(std::string_view strSrc)
+struct ParsedUrl
 {
-    return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
-}
-
-struct parsedURL
-{
-    explicit parsedURL() = default;
+    explicit ParsedUrl() = default;
 
     std::string scheme;
     std::string username;
@@ -126,31 +115,30 @@ struct parsedURL
     std::string path;
 
     bool
-    operator==(parsedURL const& other) const
+    operator==(ParsedUrl const& other) const
     {
-        return scheme == other.scheme && domain == other.domain &&
-            port == other.port && path == other.path;
+        return scheme == other.scheme && domain == other.domain && port == other.port &&
+            path == other.path;
     }
 };
 
 bool
-parseUrl(parsedURL& pUrl, std::string const& strUrl);
+parseUrl(ParsedUrl& pUrl, std::string const& strUrl);
 
 std::string
-trim_whitespace(std::string str);
+trimWhitespace(std::string str);
 
 std::optional<std::uint64_t>
-to_uint64(std::string const& s);
+toUInt64(std::string const& s);
 
-/** Determines if the given string looks like a TOML-file hosting domain.
-
-    Do not use this function to determine if a particular string is a valid
-    domain, as this function may reject domains that are otherwise valid and
-    doesn't check whether the TLD is valid.
+/**
+ * Determines if the given string looks like a TOML-file hosting domain.
+ *
+ * Do not use this function to determine if a particular string is a valid
+ * domain, as this function may reject domains that are otherwise valid and
+ * doesn't check whether the TLD is valid.
  */
 bool
 isProperlyFormedTomlDomain(std::string_view domain);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,43 +1,35 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_OVERLAY_CONNECTATTEMPT_H_INCLUDED
-#define RIPPLE_OVERLAY_CONNECTATTEMPT_H_INCLUDED
-
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
+#include <xrpld/peerfinder/Slot.h>
 
-namespace ripple {
+#include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/resource/Consumer.h>
 
-/** Manages an outbound connection attempt. */
+#include <chrono>
+#include <cstdint>
+#include <memory>
+#include <sstream>
+#include <string>
+
+namespace xrpl {
+
+/**
+ * Manages an outbound connection attempt.
+ */
 class ConnectAttempt : public OverlayImpl::Child,
                        public std::enable_shared_from_this<ConnectAttempt>
 {
 private:
     using error_code = boost::system::error_code;
-
     using endpoint_type = boost::asio::ip::tcp::endpoint;
-
-    using request_type =
-        boost::beast::http::request<boost::beast::http::empty_body>;
-
-    using response_type =
-        boost::beast::http::response<boost::beast::http::dynamic_body>;
+    using request_type = boost::beast::http::request<boost::beast::http::empty_body>;
+    using response_type = boost::beast::http::response<boost::beast::http::dynamic_body>;
 
     using socket_type = boost::asio::ip::tcp::socket;
     using middle_type = boost::beast::tcp_stream;
@@ -48,14 +40,14 @@ private:
     std::uint32_t const id_;
     beast::WrappedSink sink_;
     beast::Journal const journal_;
-    endpoint_type remote_endpoint_;
+    endpoint_type remoteEndpoint_;
     Resource::Consumer usage_;
-    boost::asio::io_service::strand strand_;
+    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
-    std::unique_ptr<stream_type> stream_ptr_;
+    std::unique_ptr<stream_type> streamPtr_;
     socket_type& socket_;
     stream_type& stream_;
-    boost::beast::multi_buffer read_buf_;
+    boost::beast::multi_buffer readBuf_;
     response_type response_;
     std::shared_ptr<PeerFinder::Slot> slot_;
     request_type req_;
@@ -63,16 +55,16 @@ private:
 public:
     ConnectAttempt(
         Application& app,
-        boost::asio::io_service& io_service,
-        endpoint_type const& remote_endpoint,
+        boost::asio::io_context& ioContext,
+        endpoint_type remoteEndpoint,
         Resource::Consumer usage,
         shared_context const& context,
-        std::uint32_t id,
+        Peer::id_t id,
         std::shared_ptr<PeerFinder::Slot> const& slot,
         beast::Journal journal,
         OverlayImpl& overlay);
 
-    ~ConnectAttempt();
+    ~ConnectAttempt() override;
 
     void
     stop() override;
@@ -108,22 +100,19 @@ private:
 
     template <class = void>
     static boost::asio::ip::tcp::endpoint
-    parse_endpoint(std::string const& s, boost::system::error_code& ec)
+    parseEndpoint(std::string const& s, boost::system::error_code& ec)
     {
         beast::IP::Endpoint bep;
         std::istringstream is(s);
         is >> bep;
         if (is.fail())
         {
-            ec = boost::system::errc::make_error_code(
-                boost::system::errc::invalid_argument);
+            ec = boost::system::errc::make_error_code(boost::system::errc::invalid_argument);
             return boost::asio::ip::tcp::endpoint{};
         }
 
-        return beast::IPAddressConversion::to_asio_endpoint(bep);
+        return beast::IPAddressConversion::toAsioEndpoint(bep);
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

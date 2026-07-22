@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-This file is part of rippled: https://github.com/ripple/rippled
-Copyright (c) 2024 Ripple Labs Inc.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose  with  or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
-
-THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef BEAST_UTILITY_INSTRUMENTATION_H_INCLUDED
-#define BEAST_UTILITY_INSTRUMENTATION_H_INCLUDED
+#pragma once
 
 #include <cassert>
 
@@ -31,19 +11,36 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 // Macros below are copied from antithesis_sdk.h and slightly simplified
 // The duplication is because Visual Studio 2019 cannot compile that header
 // even with the option -Zc:__cplusplus added.
+// NOTE: cond must not contain bare commas outside () or []. Commas inside {}
+// are not protected by the preprocessor and would be parsed as extra arguments.
 #define ALWAYS(cond, message, ...) assert((message) && (cond))
-#define ALWAYS_OR_UNREACHABLE(cond, message, ...) assert((message) && (cond))
+#define ALWAYS_OR_UNREACHABLE(cond, message) assert((message) && (cond))
 #define SOMETIMES(cond, message, ...)
 #define REACHABLE(message, ...)
-#define UNREACHABLE(message, ...) assert((message) && false)
+#define UNREACHABLE(message, ...) assert((message) && false)  // NOLINT(misc-static-assert)
 #endif
 
 #define XRPL_ASSERT ALWAYS_OR_UNREACHABLE
+#define XRPL_ASSERT_PARTS(cond, function, description, ...) \
+    XRPL_ASSERT(cond, function " : " description)
+
+#define XRPL_ASSERT_IF(guard, cond, message) XRPL_ASSERT(!(guard) || (cond), message)
 
 // How to use the instrumentation macros:
 //
 // * XRPL_ASSERT if cond must be true but the line might not be reached during
 //   fuzzing. Same like `assert` in normal use.
+// * XRPL_ASSERT_PARTS is for convenience, and works like XRPL_ASSERT, but
+//   splits the message param into "function" and "description", then joins
+//   them with " : " before passing to XRPL_ASSERT.
+// * XRPL_ASSERT_IF(guard, cond, message) asserts the implication
+//   `guard => cond`: it can only fail when guard is true (e.g. an amendment
+//   is enabled) and cond is false. Unlike `if (guard) XRPL_ASSERT(...)`, the
+//   assertion site is always evaluated, so the fuzzer registers it
+//   unconditionally; cond itself is short-circuited and only evaluated when
+//   guard is true. NOTE: do not rely on side effects in guard — in release
+//   builds the assertion body is stripped, and the compiler may optimize away
+//   a side-effect-free guard entirely.
 // * ALWAYS if cond must be true _and_ the line must be reached during fuzzing.
 //   Same like `assert` in normal use.
 // * REACHABLE if the line must be reached during fuzzing
@@ -66,5 +63,3 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 // instrumentation macros - its name describes the condition which was _not_
 // meant to happen, while name in other macros describes the condition that is
 // meant to happen (e.g. as in "assert that this happens").
-
-#endif

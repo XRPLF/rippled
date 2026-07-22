@@ -1,37 +1,19 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_MPTAMOUNT_H_INCLUDED
-#define RIPPLE_PROTOCOL_MPTAMOUNT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Zero.h>
 
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/operators.hpp>
 
 #include <cstdint>
+#include <limits>
+#include <ostream>
+#include <stdexcept>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 class MPTAmount : private boost::totally_ordered<MPTAmount>,
                   private boost::additive<MPTAmount>,
@@ -42,11 +24,12 @@ public:
     using value_type = std::int64_t;
 
 protected:
-    value_type value_;
+    value_type value_{};
 
 public:
     MPTAmount() = default;
     constexpr MPTAmount(MPTAmount const& other) = default;
+    constexpr MPTAmount(beast::Zero);
     constexpr MPTAmount&
     operator=(MPTAmount const& other) = default;
 
@@ -77,7 +60,9 @@ public:
     bool
     operator<(MPTAmount const& other) const;
 
-    /** Returns true if the amount is not zero */
+    /**
+     * Returns true if the amount is not zero
+     */
     explicit constexpr
     operator bool() const noexcept;
 
@@ -86,15 +71,18 @@ public:
         return value();
     }
 
-    /** Return the sign of the amount */
-    constexpr int
+    /**
+     * Return the sign of the amount
+     */
+    [[nodiscard]] constexpr int
     signum() const noexcept;
 
-    /** Returns the underlying value. Code SHOULD NOT call this
-        function unless the type has been abstracted away,
-        e.g. in a templated function.
-    */
-    constexpr value_type
+    /**
+     * Returns the underlying value. Code SHOULD NOT call this
+     * function unless the type has been abstracted away,
+     * e.g. in a templated function.
+     */
+    [[nodiscard]] constexpr value_type
     value() const;
 
     static MPTAmount
@@ -105,6 +93,11 @@ constexpr MPTAmount::MPTAmount(value_type value) : value_(value)
 {
 }
 
+constexpr MPTAmount::MPTAmount(beast::Zero)
+{
+    *this = beast::kZero;
+}
+
 constexpr MPTAmount&
 MPTAmount::operator=(beast::Zero)
 {
@@ -112,27 +105,43 @@ MPTAmount::operator=(beast::Zero)
     return *this;
 }
 
-/** Returns true if the amount is not zero */
-constexpr MPTAmount::operator bool() const noexcept
+/**
+ * Returns true if the amount is not zero
+ */
+constexpr MPTAmount::
+operator bool() const noexcept
 {
     return value_ != 0;
 }
 
-/** Return the sign of the amount */
+/**
+ * Return the sign of the amount
+ */
 constexpr int
 MPTAmount::signum() const noexcept
 {
-    return (value_ < 0) ? -1 : (value_ ? 1 : 0);
+    if (value_ < 0)
+        return -1;
+    return (value_ != 0) ? 1 : 0;
 }
 
-/** Returns the underlying value. Code SHOULD NOT call this
-    function unless the type has been abstracted away,
-    e.g. in a templated function.
-*/
+/**
+ * Returns the underlying value. Code SHOULD NOT call this
+ * function unless the type has been abstracted away,
+ * e.g. in a templated function.
+ */
 constexpr MPTAmount::value_type
 MPTAmount::value() const
 {
     return value_;
+}
+
+// Output MPTAmount as just the value.
+template <class Char, class Traits>
+std::basic_ostream<Char, Traits>&
+operator<<(std::basic_ostream<Char, Traits>& os, MPTAmount const& q)
+{
+    return os << q.value();
 }
 
 inline std::string
@@ -142,15 +151,11 @@ to_string(MPTAmount const& amount)
 }
 
 inline MPTAmount
-mulRatio(
-    MPTAmount const& amt,
-    std::uint32_t num,
-    std::uint32_t den,
-    bool roundUp)
+mulRatio(MPTAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundUp)
 {
     using namespace boost::multiprecision;
 
-    if (!den)
+    if (den == 0u)
         Throw<std::runtime_error>("division by zero");
 
     int128_t const amt128(amt.value());
@@ -169,6 +174,4 @@ mulRatio(
     return MPTAmount(r.convert_to<MPTAmount::value_type>());
 }
 
-}  // namespace ripple
-
-#endif  // RIPPLE_BASICS_MPTAMOUNT_H_INCLUDED
+}  // namespace xrpl

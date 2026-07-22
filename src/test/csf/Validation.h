@@ -1,50 +1,32 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_CSF_VALIDATION_H_INCLUDED
-#define RIPPLE_TEST_CSF_VALIDATION_H_INCLUDED
+#pragma once
 
 #include <test/csf/ledgers.h>
 
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/tagged_integer.h>
 
-#include <memory>
+#include <cstdint>
 #include <optional>
+#include <tuple>
 #include <utility>
 
-namespace ripple {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 struct PeerIDTag;
 //< Uniquely identifies a peer
-using PeerID = tagged_integer<std::uint32_t, PeerIDTag>;
+using PeerID = TaggedInteger<std::uint32_t, PeerIDTag>;
 
-/** The current key of a peer
-
-    Eventually, the second entry in the pair can be used to model ephemeral
-    keys. Right now, the convention is to have the second entry 0 as the
-    master key.
-*/
+/**
+ * The current key of a peer
+ *
+ * Eventually, the second entry in the pair can be used to model ephemeral
+ * keys. Right now, the convention is to have the second entry 0 as the
+ * master key.
+ */
 using PeerKey = std::pair<PeerID, std::uint32_t>;
 
-/** Validation of a specific ledger by a specific Peer.
+/**
+ * Validation of a specific ledger by a specific Peer.
  */
 class Validation
 {
@@ -78,7 +60,7 @@ public:
         , seq_{seq}
         , signTime_{sign}
         , seenTime_{seen}
-        , key_{key}
+        , key_{std::move(key)}
         , nodeID_{nodeID}
         , full_{full}
         , loadFee_{loadFee}
@@ -86,88 +68,80 @@ public:
     {
     }
 
-    Ledger::ID
+    [[nodiscard]] Ledger::ID
     ledgerID() const
     {
         return ledgerID_;
     }
 
-    Ledger::Seq
+    [[nodiscard]] Ledger::Seq
     seq() const
     {
         return seq_;
     }
 
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     signTime() const
     {
         return signTime_;
     }
 
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     seenTime() const
     {
         return seenTime_;
     }
 
-    PeerKey const&
+    [[nodiscard]] PeerKey const&
     key() const
     {
         return key_;
     }
 
-    PeerID const&
+    [[nodiscard]] PeerID const&
     nodeID() const
     {
         return nodeID_;
     }
 
-    bool
+    [[nodiscard]] bool
     trusted() const
     {
         return trusted_;
     }
 
-    bool
+    [[nodiscard]] bool
     full() const
     {
         return full_;
     }
 
-    std::uint64_t
+    [[nodiscard]] std::uint64_t
     cookie() const
     {
         return cookie_;
     }
 
-    std::optional<std::uint32_t>
+    [[nodiscard]] std::optional<std::uint32_t>
     loadFee() const
     {
         return loadFee_;
     }
 
-    Validation const&
+    [[nodiscard]] Validation const&
     unwrap() const
     {
-        // For the rippled implementation in which RCLValidation wraps
+        // For the xrpld implementation in which RCLValidation wraps
         // STValidation, the csf::Validation has no more specific type it
         // wraps, so csf::Validation unwraps to itself
         return *this;
     }
 
-    auto
+    [[nodiscard]] auto
     asTie() const
     {
         // trusted is a status set by the receiver, so it is not part of the tie
-        return std::tie(
-            ledgerID_,
-            seq_,
-            signTime_,
-            seenTime_,
-            key_,
-            nodeID_,
-            loadFee_,
-            full_);
+        return std::tie(ledgerID_, seq_, signTime_, seenTime_, key_, nodeID_, loadFee_, full_);
     }
     bool
     operator==(Validation const& o) const
@@ -200,8 +174,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::csf

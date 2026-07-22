@@ -1,71 +1,74 @@
 Our [build instructions][BUILD.md] assume you have a C++ development
 environment complete with Git, Python, Conan, CMake, and a C++ compiler.
-This document exists to help readers set one up on any of the Big Three
-platforms: Linux, macOS, or Windows.
+This document explains how to set one up.
 
 [BUILD.md]: ../../BUILD.md
 
+## Tested compiler versions
 
-## Linux
+`xrpld` is built in the **C++23** dialect by default.
+Make sure your toolchain is recent enough — the compiler versions currently tested in CI are:
 
-Package ecosystems vary across Linux distributions,
-so there is no one set of instructions that will work for every Linux user.
-These instructions are written for Ubuntu 22.04.
-They are largely copied from the [script][1] used to configure our Docker
-container for continuous integration.
-That script handles many more responsibilities.
-These instructions are just the bare minimum to build one configuration of
-rippled.
-You can check that codebase for other Linux distributions and versions.
-If you cannot find yours there,
-then we hope that these instructions can at least guide you in the right
-direction.
+| Compiler    | Version |
+| ----------- | ------- |
+| GCC         | 15.2    |
+| Clang       | 22      |
+| Apple Clang | 17      |
+| MSVC        | 19.44   |
 
-```
-apt update
-apt install --yes curl git libssl-dev pipx python3.10-dev python3-pip make g++-11 libprotobuf-dev protobuf-compiler
+LLVM tools (`clang-tidy` and `clang-format`) are also pinned to version 22.
 
-curl --location --remote-name \
-  "https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1.tar.gz"
-tar -xzf cmake-3.25.1.tar.gz
-rm cmake-3.25.1.tar.gz
-cd cmake-3.25.1
-./bootstrap --parallel=$(nproc)
-make --jobs $(nproc)
-make install
-cd ..
+Older compilers may fail to build the latest `develop` code: the codebase now
+relies on C++23 features and has been adjusted for `clang-tidy`.
+If the latest code doesn't build for you, update your build toolchain first.
 
-pipx install 'conan<2'
-pipx ensurepath
+## Linux and macOS
+
+The **recommended way** to get a development environment on Linux and macOS is
+the Nix development shell. It provides the exact tooling used in CI — `git`,
+`python`, `conan`, `cmake`, `clang-tidy`, `clang-format`, and everything else —
+with a single command and without installing anything system-wide:
+
+```bash
+nix --experimental-features 'nix-command flakes' develop
 ```
 
-[1]: https://github.com/thejohnfreeman/rippled-docker/blob/master/ubuntu-22.04/install.sh
+On **Linux**, Nix also provides the compiler (GCC); on **macOS**, it provides
+Clang. If you instead opt to use your system-wide Apple Clang (via
+`nix develop .#apple-clang`), you need to manage its version yourself (see
+below).
 
+See [Using the Nix development shell](./nix.md) for installation and usage
+details, including how to select a different compiler.
 
-## macOS
+> [!NOTE]
+> Using Nix is not mandatory. Any custom environment (Homebrew packages or
+> anything else) will continue to work, but then it is up to you to keep it in
+> sync with the environment used in CI. Nix unifies the development environment
+> for everyone and synchronizes updates, which is why we recommend it.
 
-Open a Terminal and enter the below command to bring up a dialog to install
-the command line developer tools.
-Once it is finished, this command should return a version greater than the
-minimum required (see [BUILD.md][]).
+### macOS: managing the Apple Clang version
 
-```
+If you use your system-wide Apple Clang on macOS (via `nix develop .#apple-clang`),
+the compiler version is whatever your installed Xcode (or Command Line Tools)
+provides. The following command should return a version greater than or equal to
+the [minimum required](#tested-compiler-versions):
+
+```bash
 clang --version
 ```
 
-### Install Xcode Specific Version (Optional)
-
-If you develop other applications using XCode you might be consistently updating to the newest version of Apple Clang. 
-This will likely cause issues building rippled. You may want to install a specific version of Xcode:
+If you develop other applications using Xcode, you might be consistently
+updating to the newest version of Apple Clang, which will likely cause issues
+building xrpld. You may want to install and pin a specific version of Xcode:
 
 1. **Download Xcode**
-
    - Visit [Apple Developer Downloads](https://developer.apple.com/download/more/)
    - Sign in with your Apple Developer account
-   - Search for an Xcode version that includes **Apple Clang (Expected Version)**
+   - Search for an Xcode version that includes the expected Apple Clang version
    - Download the `.xip` file
 
-2. **Install and Configure Xcode**
+2. **Install and configure Xcode**
 
    ```bash
    # Extract the .xip file and rename for version management
@@ -81,33 +84,28 @@ This will likely cause issues building rippled. You may want to install a specif
    export DEVELOPER_DIR=/Applications/Xcode_16.2.app/Contents/Developer
    ```
 
-The command line developer tools should include Git too:
+## Windows
 
-```
-git --version
-```
+Nix is not available on Windows, so the required tools have to be installed
+manually:
 
-Install [Homebrew][],
-use it to install [pyenv][],
-use it to install Python,
-and use it to install Conan:
+- [Visual Studio 2022](https://visualstudio.microsoft.com/) with the
+  **"Desktop development with C++"** workload — this provides MSVC and the
+  "x64 Native Tools Command Prompt".
+- [Git for Windows](https://git-scm.com/download/win)
+- [Python 3.11](https://www.python.org/downloads/), or higher
+- [Conan 2.17](https://conan.io/downloads.html), or higher
+- [CMake 3.22](https://cmake.org/download/), or higher
 
-[Homebrew]: https://brew.sh/
-[pyenv]: https://github.com/pyenv/pyenv
+> [!NOTE]
+> Windows is used for development only and is not recommended for production.
 
-```
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-brew update
-brew install xz
-brew install pyenv
-pyenv install 3.10-dev
-pyenv global 3.10-dev
-eval "$(pyenv init -)"
-pip install 'conan<2'
-```
+## Clang-tidy
 
-Install CMake with Homebrew too:
+`clang-tidy` is required to run static analysis checks locally (see
+[CONTRIBUTING.md](../../CONTRIBUTING.md)). It is not required to build the
+project. This project currently uses `clang-tidy` version 22.
 
-```
-brew install cmake
-```
+On Linux and macOS, the [Nix development shell](./nix.md) provides `clang-tidy`
+22 out of the box — run it via `run-clang-tidy`. No separate installation is
+needed.

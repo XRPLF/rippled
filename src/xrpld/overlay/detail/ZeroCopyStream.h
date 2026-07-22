@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_OVERLAY_ZEROCOPYSTREAM_H_INCLUDED
-#define RIPPLE_OVERLAY_ZEROCOPYSTREAM_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -26,21 +6,25 @@
 
 #include <google/protobuf/io/zero_copy_stream.h>
 
-namespace ripple {
+#include <cstddef>
+#include <cstdint>
 
-/** Implements ZeroCopyInputStream around a buffer sequence.
-    @tparam Buffers A type meeting the requirements of ConstBufferSequence.
-    @see
-   https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.io.zero_copy_stream
-*/
+namespace xrpl {
+
+/**
+ * Implements ZeroCopyInputStream around a buffer sequence.
+ * @tparam Buffers A type meeting the requirements of ConstBufferSequence.
+ * @see
+ * https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.io.zero_copy_stream
+ */
 template <class Buffers>
 class ZeroCopyInputStream : public ::google::protobuf::io::ZeroCopyInputStream
 {
 private:
-    using iterator = typename Buffers::const_iterator;
+    using iterator = Buffers::const_iterator;
     using const_buffer = boost::asio::const_buffer;
 
-    google::protobuf::int64 count_ = 0;
+    std::int64_t count_ = 0;
     iterator last_;
     iterator first_;    // Where pos_ comes from
     const_buffer pos_;  // What Next() will return
@@ -57,7 +41,7 @@ public:
     bool
     Skip(int count) override;
 
-    google::protobuf::int64
+    [[nodiscard]] std::int64_t
     ByteCount() const override
     {
         return count_;
@@ -78,7 +62,7 @@ template <class Buffers>
 bool
 ZeroCopyInputStream<Buffers>::Next(void const** data, int* size)
 {
-    *data = boost::asio::buffer_cast<void const*>(pos_);
+    *data = pos_.data();
     *size = boost::asio::buffer_size(pos_);
     if (first_ == last_)
         return false;
@@ -122,21 +106,22 @@ ZeroCopyInputStream<Buffers>::Skip(int count)
 
 //------------------------------------------------------------------------------
 
-/** Implements ZeroCopyOutputStream around a Streambuf.
-    Streambuf matches the public interface defined by boost::asio::streambuf.
-    @tparam Streambuf A type meeting the requirements of Streambuf.
-*/
+/**
+ * Implements ZeroCopyOutputStream around a Streambuf.
+ * Streambuf matches the public interface defined by boost::asio::streambuf.
+ * @tparam Streambuf A type meeting the requirements of Streambuf.
+ */
 template <class Streambuf>
 class ZeroCopyOutputStream : public ::google::protobuf::io::ZeroCopyOutputStream
 {
 private:
-    using buffers_type = typename Streambuf::mutable_buffers_type;
-    using iterator = typename buffers_type::const_iterator;
+    using buffers_type = Streambuf::mutable_buffers_type;
+    using iterator = buffers_type::const_iterator;
     using mutable_buffer = boost::asio::mutable_buffer;
 
     Streambuf& streambuf_;
     std::size_t blockSize_;
-    google::protobuf::int64 count_ = 0;
+    std::int64_t count_ = 0;
     std::size_t commit_ = 0;
     buffers_type buffers_;
     iterator pos_;
@@ -144,7 +129,7 @@ private:
 public:
     explicit ZeroCopyOutputStream(Streambuf& streambuf, std::size_t blockSize);
 
-    ~ZeroCopyOutputStream();
+    ~ZeroCopyOutputStream() override;
 
     bool
     Next(void** data, int* size) override;
@@ -152,7 +137,7 @@ public:
     void
     BackUp(int count) override;
 
-    google::protobuf::int64
+    [[nodiscard]] std::int64_t
     ByteCount() const override
     {
         return count_;
@@ -162,9 +147,7 @@ public:
 //------------------------------------------------------------------------------
 
 template <class Streambuf>
-ZeroCopyOutputStream<Streambuf>::ZeroCopyOutputStream(
-    Streambuf& streambuf,
-    std::size_t blockSize)
+ZeroCopyOutputStream<Streambuf>::ZeroCopyOutputStream(Streambuf& streambuf, std::size_t blockSize)
     : streambuf_(streambuf)
     , blockSize_(blockSize)
     , buffers_(streambuf_.prepare(blockSize_))
@@ -195,7 +178,7 @@ ZeroCopyOutputStream<Streambuf>::Next(void** data, int* size)
         pos_ = buffers_.begin();
     }
 
-    *data = boost::asio::buffer_cast<void*>(*pos_);
+    *data = *pos_.data();
     *size = boost::asio::buffer_size(*pos_);
     commit_ = *size;
     ++pos_;
@@ -206,14 +189,11 @@ template <class Streambuf>
 void
 ZeroCopyOutputStream<Streambuf>::BackUp(int count)
 {
-    XRPL_ASSERT(
-        count <= commit_, "ripple::ZeroCopyOutputStream::BackUp : valid input");
+    XRPL_ASSERT(count <= commit_, "xrpl::ZeroCopyOutputStream::BackUp : valid input");
     auto const n = commit_ - count;
     streambuf_.commit(n);
     count_ += n;
     commit_ = 0;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl
