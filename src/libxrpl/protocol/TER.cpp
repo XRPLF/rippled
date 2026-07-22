@@ -233,7 +233,7 @@ transResults()
 }
 
 bool
-transResultInfo(TER code, std::string& token, std::string& text)
+transResultInfo(TERRaw code, std::string& token, std::string& text)
 {
     auto& results = transResults();
 
@@ -248,7 +248,7 @@ transResultInfo(TER code, std::string& token, std::string& text)
 }
 
 std::string
-transToken(TER code)
+transToken(TERRaw code)
 {
     std::string token;
     std::string text;
@@ -257,7 +257,7 @@ transToken(TER code)
 }
 
 std::string
-transHuman(TER code)
+transHuman(TERRaw code)
 {
     std::string token;
     std::string text;

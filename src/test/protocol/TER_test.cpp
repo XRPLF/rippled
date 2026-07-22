@@ -236,11 +236,51 @@ struct TER_test : public beast::unit_test::Suite
     }
 
     void
+    testReason()
+    {
+        testcase("Reason");
+
+        // 1. Implicit conversion from enum uses transHuman
+        {
+            TER t = tecNO_DST;
+            BEAST_EXPECT(t.code == tecNO_DST);
+            BEAST_EXPECT(t.reason == transHuman(TERRaw{tecNO_DST}));
+        }
+
+        // 2. Explicit reason
+        {
+            TER t = {tecNO_DST, "custom reason"};
+            BEAST_EXPECT(t.code == tecNO_DST);
+            BEAST_EXPECT(t.reason == "custom reason");
+        }
+
+        // 3. Default constructor uses tesSUCCESS description
+        {
+            TER t;
+            BEAST_EXPECT(t.code == tesSUCCESS);
+            BEAST_EXPECT(t.reason == transHuman(TERRaw{tesSUCCESS}));
+        }
+
+        // 4. Copy and move
+        {
+            TER t1 = {tecPATH_DRY, "reason 1"};
+            TER t2 = t1;
+            BEAST_EXPECT(t2.code == tecPATH_DRY);
+            BEAST_EXPECT(t2.reason == "reason 1");
+
+            TER t3 = std::move(t1);
+            BEAST_EXPECT(t3.code == tecPATH_DRY);
+            BEAST_EXPECT(t3.reason == "reason 1");
+        }
+    }
+
+    void
     run() override
     {
         testTransResultInfo();
         testConversion();
         testComparison();
+        testReason();
     }
 };
 
