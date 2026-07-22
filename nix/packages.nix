@@ -41,14 +41,12 @@ let
       version,
       tools,
     }:
-    pkgs.runCommand "${name}-${toString version}-versioned-links" { } ''
-      mkdir -p "$out/bin"
-      for tool in ${pkgs.lib.concatStringsSep " " tools}; do
-        if [ -e "${package}/bin/$tool" ]; then
-          ln -s "${package}/bin/$tool" "$out/bin/$tool-${toString version}"
-        fi
-      done
-    '';
+    pkgs.linkFarm "${name}-${toString version}-versioned-links" (
+      map (tool: {
+        name = "bin/${tool}-${toString version}";
+        path = "${package}/bin/${tool}";
+      }) tools
+    );
 
   clangToolLinks = mkVersionedToolLinks {
     name = "clang-tools";
