@@ -634,6 +634,64 @@ operator bool() const
     return impl_ && static_cast<bool>(impl_->guard);
 }
 
+// ===== ScopedActivation ====================================================
+
+struct ScopedActivation::Impl
+{
+    /**
+     * Active OTel Scope binding an externally-owned span to the current
+     * context store. Popped on destruction; never ends the span.
+     */
+    otel_trace::Scope scope;
+
+    /**
+     * Identity of the LocalValue store the Scope was pushed onto. The Scope
+     * must pop while the SAME store is active (see
+     * ScopedSpanGuard::ScopedImpl::owner). Initialized AFTER `scope` in the
+     * member init list: members initialize in declaration order, so the
+     * Scope's push (the first LocalValue touch on a fresh worker, which
+     * materializes the store) runs first, then this captures the
+     * now-materialized store. Capturing before the push would record
+     * nullptr while the destructor sees the materialized store.
+     */
+    void const* owner;
+
+    /**
+     * Push an externally-owned span onto the current context store.
+     * @param span The already-owned span to activate (not owned here).
+     */
+    explicit Impl(opentelemetry::nostd::shared_ptr<otel_trace::Span> const& span)
+        : scope(span), owner(detail::getLocalValues().get())
+    {
+    }
+};
+
+ScopedActivation::ScopedActivation() = default;
+
+ScopedActivation::ScopedActivation(std::unique_ptr<Impl> impl) : impl_(std::move(impl))
+{
+}
+
+ScopedActivation::~ScopedActivation()
+{
+    // A live Scope must be popped while its constructing context store is
+    // active; destroying the activation under a different store corrupts
+    // that store's context stack. A null activation holds no Scope, so the
+    // check is skipped.
+    XRPL_ASSERT(
+        !impl_ || impl_->owner == detail::getLocalValues().get(),
+        "xrpl::telemetry::ScopedActivation::~ScopedActivation : destroyed on the "
+        "constructing context store");
+}
+
+ScopedActivation
+SpanGuard::activate() const
+{
+    if (!impl_ || !impl_->span)
+        return {};
+    return ScopedActivation(std::make_unique<ScopedActivation::Impl>(impl_->span));
+}
+
 }  // namespace xrpl::telemetry
 
 #endif  // XRPL_ENABLE_TELEMETRY

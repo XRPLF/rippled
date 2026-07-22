@@ -42,6 +42,7 @@
  *     | + addEvent(name)                           |
  *     | + recordException(e)                       |
  *     | + discard()                                |
+ *     | + activate() : ScopedActivation            |
  *     | + operator bool()                          |
  *     +--------------------------------------------+
  *                     |  hides (pimpl)
@@ -232,6 +233,11 @@ public:
 // Real implementation (pimpl, compiled in SpanGuard.cpp)
 // ---------------------------------------------------------------------------
 #ifdef XRPL_ENABLE_TELEMETRY
+
+// SpanGuard::activate() returns a ScopedActivation by value; the full class is
+// defined after ScopedSpanGuard below. Forward-declared here so the return type
+// is named before its definition.
+class ScopedActivation;
 
 /**
  * RAII owner of an OTel span (unscoped, thread-free).
@@ -439,6 +445,17 @@ public:
      */
     void
     discard();
+
+    // --- Activation (non-owning) ---------------------------------------
+
+    /**
+     * Activate this guard's span as the current context for the returned
+     * activation's lifetime, without transferring ownership. Returns a no-op
+     * activation if this guard is null. See ScopedActivation.
+     * @return an RAII activation; drop it to restore the prior context.
+     */
+    [[nodiscard]] ScopedActivation
+    activate() const;
 
     /**
      * @return true if this guard holds an active span.
@@ -712,10 +729,105 @@ public:
     operator bool() const;
 };
 
+/**
+ * RAII activation of an already-owned span as the current context, WITHOUT
+ * taking ownership. Use to give a thread-free SpanGuard (e.g. one handed into
+ * a JobQueue job) ambient status for the duration of a synchronous, non-yielding
+ * worker body, so log lines emitted there carry the span's trace_id. The span
+ * is neither owned nor ended here — its owning SpanGuard still controls its
+ * lifetime. Non-copyable, non-movable; must be created and destroyed while the
+ * same context store is active (see ScopedSpanGuard).
+ *
+ * Dependency diagram:
+ *
+ *     +---------------------------------------------+
+ *     |              ScopedActivation               |
+ *     |     (non-owning RAII span activation)       |
+ *     +---------------------------------------------+
+ *     | - impl_ : unique_ptr<Impl>                  |
+ *     |     Impl { scope : otel::Scope; owner }     |
+ *     +---------------------------------------------+
+ *     | + (ctor) pushes span onto current store     |
+ *     | + (dtor) pops; does NOT end the span        |
+ *     +---------------------------------------------+
+ *              | activates (borrows, no ownership)
+ *        +-----------+       ends the span
+ *        | SpanGuard |----------------------------> (owner)
+ *        +-----------+
+ *
+ * @note Thread-safety: like ScopedSpanGuard, it pushes/pops the current
+ * LocalValue context store; construct and destroy it while the same store is
+ * active (asserted in debug). Must NOT outlive the SpanGuard whose span it
+ * activates. Intended as a short-lived stack local inside a worker body that
+ * runs to completion on one thread (no coro yield inside the activation).
+ *
+ * Example 1 — correlate a handed-off span's worker logs (primary use):
+ * @code
+ *   // span is std::shared_ptr<SpanGuard> handed into this job body:
+ *   auto activation = (span && *span) ? span->activate() : ScopedActivation{};
+ *   JLOG(j.info()) << "applied";   // carries span's trace_id
+ *   // span is still owned/ended elsewhere; activation only pops here.
+ * @endcode
+ *
+ * Example 2 — edge case: a null guard yields a no-op activation:
+ * @code
+ *   SpanGuard g;                 // null (telemetry off, or disabled category)
+ *   auto a = g.activate();       // no-op; GetCurrent() unchanged
+ * @endcode
+ */
+class ScopedActivation
+{
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+    friend class SpanGuard;
+    explicit ScopedActivation(std::unique_ptr<Impl> impl);
+
+public:
+    /**
+     * Construct a null / no-op activation. Its destructor does nothing and
+     * leaves the current context unchanged. Returned by SpanGuard::activate()
+     * for a null guard.
+     */
+    ScopedActivation();
+
+    /**
+     * Pop the activated span off the current context store, restoring the
+     * prior context. Does NOT end the span (the owning SpanGuard does that).
+     * A null activation is a no-op.
+     */
+    ~ScopedActivation();
+
+    ScopedActivation(ScopedActivation&&) = delete;
+    ScopedActivation&
+    operator=(ScopedActivation&&) = delete;
+    ScopedActivation(ScopedActivation const&) = delete;
+    ScopedActivation&
+    operator=(ScopedActivation const&) = delete;
+};
+
 // ---------------------------------------------------------------------------
 // No-op stub (all inline, zero overhead, no OTel dependency)
 // ---------------------------------------------------------------------------
 #else  // XRPL_ENABLE_TELEMETRY not defined
+
+/**
+ * No-op activation used when telemetry is disabled at compile time. Holds no
+ * state and does nothing on construction or destruction. Declared before
+ * SpanGuard so its inline activate() can return one by value. Non-copyable and
+ * non-movable to match the real ScopedActivation.
+ */
+class ScopedActivation
+{
+public:
+    ScopedActivation() = default;
+    ~ScopedActivation() = default;
+    ScopedActivation(ScopedActivation&&) = delete;
+    ScopedActivation&
+    operator=(ScopedActivation&&) = delete;
+    ScopedActivation(ScopedActivation const&) = delete;
+    ScopedActivation&
+    operator=(ScopedActivation const&) = delete;
+};
 
 class SpanGuard
 {
@@ -817,6 +929,14 @@ public:
     discard()
     {
     }
+
+    // NOLINTBEGIN(readability-convert-member-functions-to-static)
+    [[nodiscard]] ScopedActivation
+    activate() const
+    {
+        return {};
+    }
+    // NOLINTEND(readability-convert-member-functions-to-static)
 
     explicit
     operator bool() const
