@@ -11,9 +11,11 @@
  *                 to and destroyed on any thread. Movable AND
  *                 move-assignable.
  * - ScopedSpanGuard — owns a SpanGuard plus an active OTel Scope that
- *                 pushes the span onto the constructing thread's
- *                 context stack. Thread-bound: it must be created and
- *                 destroyed on the same thread. Non-copyable and
+ *                 pushes the span onto the constructing context store's
+ *                 stack. Store-bound: it must be created and destroyed
+ *                 while the same LocalValue context store is active (the
+ *                 same thread, or the same JobQueue coroutine even if it
+ *                 resumes on another worker). Non-copyable and
  *                 non-movable.
  *
  * Both wrap all OpenTelemetry types behind the pimpl idiom so no
@@ -40,6 +42,7 @@
  *     | + addEvent(name)                           |
  *     | + recordException(e)                       |
  *     | + discard()                                |
+ *     | + activate() : ScopedActivation            |
  *     | + operator bool()                          |
  *     +--------------------------------------------+
  *                     |  hides (pimpl)
@@ -261,6 +264,11 @@ public:
 // Real implementation (pimpl, compiled in SpanGuard.cpp)
 // ---------------------------------------------------------------------------
 #ifdef XRPL_ENABLE_TELEMETRY
+
+// SpanGuard::activate() returns a ScopedActivation by value; the full class is
+// defined after ScopedSpanGuard below. Forward-declared here so the return type
+// is named before its definition.
+class ScopedActivation;
 
 /**
  * RAII owner of an OTel span (unscoped, thread-free).
@@ -553,6 +561,17 @@ public:
     void
     discard();
 
+    // --- Activation (non-owning) ---------------------------------------
+
+    /**
+     * Activate this guard's span as the current context for the returned
+     * activation's lifetime, without transferring ownership. Returns a no-op
+     * activation if this guard is null. See ScopedActivation.
+     * @return an RAII activation; drop it to restore the prior context.
+     */
+    [[nodiscard]] ScopedActivation
+    activate() const;
+
     /**
      * @return true if this guard holds an active span.
      */
@@ -561,26 +580,26 @@ public:
 };
 
 /**
- * RAII guard that activates a span on the current thread (scoped).
+ * RAII guard that activates a span on the current context store (scoped).
  *
  * Wraps a SpanGuard (which owns the span) plus an OTel Scope that
- * pushes the span onto this thread's thread-local context stack for
- * the guard's lifetime, so child spans created on the thread inherit
+ * pushes the span onto the active context store's stack for the
+ * guard's lifetime, so child spans created under that store inherit
  * it as parent. On destruction the Scope pops BEFORE the span ends
  * (member order: guard first, scope second). Non-copyable and
  * non-movable — factories return unnamed temporaries, so guaranteed
  * copy elision (C++17) covers `auto s = ScopedSpanGuard::freshRoot(...)`.
  *
- * When the span must outlive the current thread (e.g. handed to a job
+ * When the span must outlive the current store (e.g. handed to a job
  * queue), convert to a plain SpanGuard with `operator SpanGuard() &&`:
- * that pops the Scope eagerly on the origin thread and yields a
+ * that pops the Scope eagerly under the constructing store and yields a
  * thread-free guard.
  *
  * ScopedSpanGuard dependency diagram:
  *
  *     +--------------------------------------------+
  *     |              ScopedSpanGuard               |
- *     |            (scoped, thread-bound)          |
+ *     |            (scoped, store-bound)           |
  *     +--------------------------------------------+
  *     | - impl_ : unique_ptr<ScopedImpl>  (pimpl)  |
  *     +--------------------------------------------+
@@ -598,7 +617,7 @@ public:
  *              |                           |
  *         +----------+     +-----------------------------+
  *         | SpanGuard|     |     optional<Scope>         |
- *         |  (span)  |     | (OTel, thread-bound;        |
+ *         |  (span)  |     | (OTel, store-bound;         |
  *         |          |     |  present : span active)     |
  *         +----------+     +-----------------------------+
  *
@@ -628,11 +647,14 @@ public:
  * @endcode
  *
  * @note Thread safety: A ScopedSpanGuard must be constructed AND
- * destroyed on the same thread — its Scope binds to that thread's
- * context stack. `operator SpanGuard() &&` and the destructor must
- * both run on the owning thread; both check this with an XRPL_ASSERT
- * in debug/test/fuzzing builds. `operator SpanGuard() &&` pops the
- * scope eagerly, so the resulting SpanGuard is thread-free.
+ * destroyed while the same LocalValue context store is active — its
+ * Scope binds to that store's context stack. This means the same
+ * thread, or the same JobQueue coroutine even if it resumes on another
+ * worker (coroutine-aware storage keeps the same store across the
+ * resume). `operator SpanGuard() &&` and the destructor must both run
+ * under the constructing store; both check this with an XRPL_ASSERT in
+ * debug/test/fuzzing builds. `operator SpanGuard() &&` pops the scope
+ * eagerly, so the resulting SpanGuard is thread-free.
  *
  * @note Known limitations:
  * - Non-movable: cannot be stored in a container that relocates, and
@@ -724,9 +746,10 @@ public:
     // --- Handoff bridge -------------------------------------------------
 
     /**
-     * Pop the active Scope on the origin thread and yield the span as a
-     * thread-free SpanGuard. Use to move a span into a job or onto
-     * another thread. Must be called on the constructing thread.
+     * Pop the active Scope under the constructing context store and yield
+     * the span as a thread-free SpanGuard. Use to move a span into a job or
+     * onto another thread. Must be called while the constructing context
+     * store is active.
      * @return The unscoped SpanGuard that now owns the span.
      */
     operator SpanGuard() &&;
@@ -807,8 +830,9 @@ public:
 
     /**
      * Mark this span for discard and end it immediately. discard() pops the
-     * thread-local scope right away (on the owning thread) and discards the
-     * span. After discard() the guard is inert and its destructor is a no-op.
+     * scope right away (under the constructing context store) and discards
+     * the span. After discard() the guard is inert and its destructor is a
+     * no-op.
      */
     void
     discard();
@@ -820,10 +844,105 @@ public:
     operator bool() const;
 };
 
+/**
+ * RAII activation of an already-owned span as the current context, WITHOUT
+ * taking ownership. Use to give a thread-free SpanGuard (e.g. one handed into
+ * a JobQueue job) ambient status for the duration of a synchronous, non-yielding
+ * worker body, so log lines emitted there carry the span's trace_id. The span
+ * is neither owned nor ended here — its owning SpanGuard still controls its
+ * lifetime. Non-copyable, non-movable; must be created and destroyed while the
+ * same context store is active (see ScopedSpanGuard).
+ *
+ * Dependency diagram:
+ *
+ *     +---------------------------------------------+
+ *     |              ScopedActivation               |
+ *     |     (non-owning RAII span activation)       |
+ *     +---------------------------------------------+
+ *     | - impl_ : unique_ptr<Impl>                  |
+ *     |     Impl { scope : otel::Scope; owner }     |
+ *     +---------------------------------------------+
+ *     | + (ctor) pushes span onto current store     |
+ *     | + (dtor) pops; does NOT end the span        |
+ *     +---------------------------------------------+
+ *              | activates (borrows, no ownership)
+ *        +-----------+       ends the span
+ *        | SpanGuard |----------------------------> (owner)
+ *        +-----------+
+ *
+ * @note Thread-safety: like ScopedSpanGuard, it pushes/pops the current
+ * LocalValue context store; construct and destroy it while the same store is
+ * active (asserted in debug). Must NOT outlive the SpanGuard whose span it
+ * activates. Intended as a short-lived stack local inside a worker body that
+ * runs to completion on one thread (no coro yield inside the activation).
+ *
+ * Example 1 — correlate a handed-off span's worker logs (primary use):
+ * @code
+ *   // span is std::shared_ptr<SpanGuard> handed into this job body:
+ *   auto activation = (span && *span) ? span->activate() : ScopedActivation{};
+ *   JLOG(j.info()) << "applied";   // carries span's trace_id
+ *   // span is still owned/ended elsewhere; activation only pops here.
+ * @endcode
+ *
+ * Example 2 — edge case: a null guard yields a no-op activation:
+ * @code
+ *   SpanGuard g;                 // null (telemetry off, or disabled category)
+ *   auto a = g.activate();       // no-op; GetCurrent() unchanged
+ * @endcode
+ */
+class ScopedActivation
+{
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+    friend class SpanGuard;
+    explicit ScopedActivation(std::unique_ptr<Impl> impl);
+
+public:
+    /**
+     * Construct a null / no-op activation. Its destructor does nothing and
+     * leaves the current context unchanged. Returned by SpanGuard::activate()
+     * for a null guard.
+     */
+    ScopedActivation();
+
+    /**
+     * Pop the activated span off the current context store, restoring the
+     * prior context. Does NOT end the span (the owning SpanGuard does that).
+     * A null activation is a no-op.
+     */
+    ~ScopedActivation();
+
+    ScopedActivation(ScopedActivation&&) = delete;
+    ScopedActivation&
+    operator=(ScopedActivation&&) = delete;
+    ScopedActivation(ScopedActivation const&) = delete;
+    ScopedActivation&
+    operator=(ScopedActivation const&) = delete;
+};
+
 // ---------------------------------------------------------------------------
 // No-op stub (all inline, zero overhead, no OTel dependency)
 // ---------------------------------------------------------------------------
 #else  // XRPL_ENABLE_TELEMETRY not defined
+
+/**
+ * No-op activation used when telemetry is disabled at compile time. Holds no
+ * state and does nothing on construction or destruction. Declared before
+ * SpanGuard so its inline activate() can return one by value. Non-copyable and
+ * non-movable to match the real ScopedActivation.
+ */
+class ScopedActivation
+{
+public:
+    ScopedActivation() = default;
+    ~ScopedActivation() = default;
+    ScopedActivation(ScopedActivation&&) = delete;
+    ScopedActivation&
+    operator=(ScopedActivation&&) = delete;
+    ScopedActivation(ScopedActivation const&) = delete;
+    ScopedActivation&
+    operator=(ScopedActivation const&) = delete;
+};
 
 class SpanGuard
 {
@@ -962,6 +1081,14 @@ public:
     discard()
     {
     }
+
+    // NOLINTBEGIN(readability-convert-member-functions-to-static)
+    [[nodiscard]] ScopedActivation
+    activate() const
+    {
+        return {};
+    }
+    // NOLINTEND(readability-convert-member-functions-to-static)
 
     explicit
     operator bool() const

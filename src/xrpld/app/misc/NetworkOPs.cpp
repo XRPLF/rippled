@@ -1644,6 +1644,14 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
         auto newOL = registry_.get().getOpenLedger().current();
         for (TransactionStatus const& e : transactions)
         {
+            // Make this transaction's span ambient for the duration of its
+            // apply so the per-tx log lines below carry its trace_id.
+            // Non-owning: the span is still owned/ended by e.span. Scoped to
+            // one loop iteration, so each tx's span is ambient only for its
+            // own processing. No yield in this loop.
+            auto txActivation =
+                (e.span && *e.span) ? e.span->activate() : telemetry::ScopedActivation{};
+
             if (e.span && *e.span)
             {
                 e.span->setAttribute(
