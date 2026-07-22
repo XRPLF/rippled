@@ -324,7 +324,6 @@ constexpr std::uint8_t kVaultMaximumIouScale = 18;
  */
 enum class VaultVersion : uint8_t {
     Legacy = 0,
-    Invalid,
     CashBasis,
 };
 

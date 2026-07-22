@@ -149,10 +149,13 @@ getVaultVersion(SLE::const_ref vault)
     {
         case 0:
             return VaultVersion::Legacy;
-        case 2:
+        case 1:
             return VaultVersion::CashBasis;
         default:
-            return VaultVersion::Invalid;
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::getVaultVersion : invalid vault version");
+            return VaultVersion::Legacy;
+            // LCOV_EXCL_STOP
     }
 }
 
