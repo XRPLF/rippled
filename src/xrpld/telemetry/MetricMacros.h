@@ -101,14 +101,14 @@
  * tasks/metric-macro-plan.md.
  */
 
-#include <xrpld/telemetry/MetricsRegistry.h>
+#include <xrpld/telemetry/MetricsRegistry.h>  // IWYU pragma: keep
 
-#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/core/ServiceRegistry.h>  // IWYU pragma: keep
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
-#include <functional>
-#include <mutex>
+#include <functional>  // IWYU pragma: keep
+#include <mutex>       // IWYU pragma: keep
 
 #define XRPL_METRIC_COUNTER_INC(app, name, description)                                        \
     do                                                                                         \
