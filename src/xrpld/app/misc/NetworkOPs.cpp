@@ -3321,6 +3321,7 @@ NetworkOPsImp::transJson(
     jvObj[jss::engine_result] = sToken;
     jvObj[jss::engine_result_code] = result;
     jvObj[jss::engine_result_message] = sHuman;
+    jvObj[jss::engine_result_reason] = result.reason;
 
     if (transaction->getTxnType() == ttOFFER_CREATE)
     {

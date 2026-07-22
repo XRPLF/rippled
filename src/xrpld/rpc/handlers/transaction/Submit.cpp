@@ -154,6 +154,7 @@ doSubmit(RPC::JsonContext& context)
             jvResult[jss::engine_result] = sToken;
             jvResult[jss::engine_result_code] = transaction->getResult();
             jvResult[jss::engine_result_message] = sHuman;
+            jvResult[jss::engine_result_reason] = transaction->getResult().reason;
 
             auto const submitResult = transaction->getSubmitResult();
 

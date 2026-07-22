@@ -804,6 +804,7 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
             jvResult[jss::engine_result] = sToken;
             jvResult[jss::engine_result_code] = tpTrans->getResult();
             jvResult[jss::engine_result_message] = sHuman;
+            jvResult[jss::engine_result_reason] = tpTrans->getResult().reason;
         }
     }
     catch (std::exception&)

@@ -264,6 +264,7 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
         jvResult[jss::engine_result] = token;
         jvResult[jss::engine_result_code] = result.ter;
         jvResult[jss::engine_result_message] = message;
+        jvResult[jss::engine_result_reason] = result.ter.reason;
     }
     else
     {
@@ -272,6 +273,7 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
         jvResult[jss::engine_result] = "unknown";
         jvResult[jss::engine_result_code] = result.ter;
         jvResult[jss::engine_result_message] = "unknown";
+        jvResult[jss::engine_result_reason] = "unknown";
         // LCOV_EXCL_STOP
     }
 
