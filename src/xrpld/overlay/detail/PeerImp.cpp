@@ -1315,10 +1315,9 @@ PeerImp::handleTransaction(
         uint256 const txID = stx->getTransactionID();
 
         using namespace telemetry;
-        // Detached: this span is handed to a job-queue worker and must not
-        // leave its Scope bound to this peer thread's context stack (that
-        // leak would adopt later peer messages into this transaction's trace).
-        auto span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m).detached());
+        // SpanGuard is thread-free (holds no Scope), so it is safe to hand to
+        // a job-queue worker and end on that thread — no detach step is needed.
+        auto span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
         span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
         span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
         if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
@@ -1859,10 +1858,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 
     // Create a receive span that links to the sender's trace context
     // (if propagated). shared_ptr keeps it alive across the job boundary.
-    // Detach the guard's Scope on this peer thread so it is not popped on the
-    // job worker thread (which would leak this thread's context stack).
-    auto consSpan =
-        std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set).detached());
+    // The receive span is a thread-free SpanGuard handed to the job worker;
+    // no scope to strip.
+    auto consSpan = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
     consSpan->setAttribute(telemetry::consensus::span::attr::proposalTrusted, isTrusted);
     consSpan->setAttribute(
         telemetry::consensus::span::attr::round, static_cast<int64_t>(set.proposeseq()));
@@ -2467,10 +2465,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 
         // Create a receive span that links to the sender's trace context
         // (if propagated). shared_ptr keeps it alive across the job boundary.
-        // Detach the guard's Scope on this peer thread so it is not popped on
-        // the job worker thread (which would leak this thread's context stack).
+        // The receive span is a thread-free SpanGuard handed to the job worker;
+        // no scope to strip.
         auto consSpan =
-            std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m).detached());
+            std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
         consSpan->setAttribute(telemetry::consensus::span::attr::validationTrusted, isTrusted);
         if (val->isFieldPresent(sfLedgerSequence))
         {

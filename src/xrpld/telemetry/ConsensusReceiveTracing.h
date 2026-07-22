@@ -19,7 +19,7 @@
  *               +--- has trace_context? ----+
  *               |          yes              |  no
  *               v                           v
- *      SpanGuard::hashSpan() with      SpanGuard::rootSpan()
+ *      SpanGuard::hashSpan() with      SpanGuard::freshRoot()
  *      extracted parent context       (fresh trace root)
  *
  *  When XRPL_ENABLE_TELEMETRY is not defined, the functions return
@@ -85,7 +85,7 @@ proposalReceiveSpan([[maybe_unused]] protocol::TMProposeSet const& msg)
     }
 #endif
     // No propagated context — start a fresh trace root (not an ambient child).
-    return SpanGuard::rootSpan(
+    return SpanGuard::freshRoot(
         TraceCategory::Consensus, seg::consensus, consensus::span::op::proposalReceive);
 }
 
@@ -123,7 +123,7 @@ validationReceiveSpan([[maybe_unused]] protocol::TMValidation const& msg)
     }
 #endif
     // No propagated context — start a fresh trace root (not an ambient child).
-    return SpanGuard::rootSpan(
+    return SpanGuard::freshRoot(
         TraceCategory::Consensus, seg::consensus, consensus::span::op::validationReceive);
 }
 
