@@ -101,6 +101,18 @@
  * tasks/metric-macro-plan.md.
  */
 
+// On Windows, OTel's spin_lock_mutex.h (transitively included from
+// MetricsRegistry.h) defines _WINSOCKAPI_ and includes <windows.h>, which
+// pulls in WinSock 1. ServiceRegistry.h below then includes <boost/asio.hpp>,
+// whose socket_types.hpp requires winsock2.h first and errors out if WinSock 1
+// arrived earlier. Pre-including boost's socket types header here gets
+// winsock2.h in before the OTel headers, so any translation unit that includes
+// MetricMacros.h first (e.g. the telemetry unit tests) still compiles. The
+// production MetricsRegistry.cpp carries the same guard.
+#ifdef _MSC_VER
+#include <boost/asio/detail/socket_types.hpp>
+#endif
+
 #include <xrpld/telemetry/MetricsRegistry.h>  // IWYU pragma: keep
 
 #include <xrpl/core/ServiceRegistry.h>  // IWYU pragma: keep
