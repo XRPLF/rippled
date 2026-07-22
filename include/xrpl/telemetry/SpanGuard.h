@@ -572,7 +572,7 @@ public:
  *         TraceCategory::Rpc, rpc_span::prefix::command, commandName);
  *     span.setAttribute(rpc_span::attr::command, commandName);
  *     // childSpan parents to `span` because it is active on this thread
- *     auto child = span.childSpan(rpc_span::op::dispatch);
+ *     auto child = span.childSpan(rpc_span::op::process);
  * @endcode
  *
  * 2. Capture on this thread, hand off to another (edge case):
