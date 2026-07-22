@@ -1,6 +1,6 @@
 #include <xrpl/tx/transactors/vault/VaultSet.h>
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>

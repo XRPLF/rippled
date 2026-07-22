@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/did/DIDDelete.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>

@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTConvert.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>

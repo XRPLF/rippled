@@ -505,7 +505,7 @@ class FlowException : public std::runtime_error
 public:
     TER ter;
 
-    FlowException(TER t, std::string const& msg) : std::runtime_error(msg), ter(t)
+    FlowException(TER t, std::string const& msg) : std::runtime_error(msg), ter(std::move(t))
     {
     }
 

@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/escrow/EscrowFinish.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/conditions/Condition.h>

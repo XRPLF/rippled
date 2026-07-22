@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/lending/LoanDelete.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>  // IWYU pragma: keep
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>

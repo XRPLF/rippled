@@ -28,7 +28,7 @@ struct ApplyResult
     std::optional<TxMeta> metadata;
 
     ApplyResult(TER t, bool a, std::optional<TxMeta> m = std::nullopt)
-        : ter(t), applied(a), metadata(std::move(m))
+        : ter(std::move(t)), applied(a), metadata(std::move(m))
     {
     }
 };

@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/sponsor/SponsorshipTransfer.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>

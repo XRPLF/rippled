@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>

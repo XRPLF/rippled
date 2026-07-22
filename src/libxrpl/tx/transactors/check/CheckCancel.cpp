@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/check/CheckCancel.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>

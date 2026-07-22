@@ -834,9 +834,6 @@ transResultInfo(TERRaw code, std::string& token, std::string& text);
 std::string
 transToken(TERRaw code);
 
-std::string
-transHuman(TERRaw code);
-
 std::optional<TER>
 transCode(std::string const& token);
 

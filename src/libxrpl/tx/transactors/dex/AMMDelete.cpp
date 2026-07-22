@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/dex/AMMDelete.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>

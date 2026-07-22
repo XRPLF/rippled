@@ -1,6 +1,6 @@
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>

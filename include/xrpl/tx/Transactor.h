@@ -100,7 +100,7 @@ public:
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : registry(registry)
         , view(view)
-        , preflightResult(preflightResult)
+        , preflightResult(std::move(preflightResult))
         , flags(flags)
         , tx(tx)
         , parentBatchId(parentBatchId)
