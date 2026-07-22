@@ -70,8 +70,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     //   tfLimitLPToken: Amount and EPrice
     if (std::popcount(flags & tfDepositSubTx) != 1)
     {
-        JLOG(ctx.j.debug()) << "AMM Deposit: invalid flags.";
-        return temMALFORMED;
+        return {temMALFORMED, "AMM Deposit: invalid flags."};
     }
     if (ctx.tx.isFlag(tfLPToken))
     {
@@ -124,8 +123,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
 
     if (lpTokens && *lpTokens <= beast::kZero)
     {
-        JLOG(ctx.j.debug()) << "AMM Deposit: invalid LPTokens";
-        return temBAD_AMM_TOKENS;
+        return {temBAD_AMM_TOKENS, "AMM Deposit: invalid LPTokens"};
     }
 
     if (amount)
@@ -166,8 +164,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
 
     if (tradingFee > kTradingFeeThreshold)
     {
-        JLOG(ctx.j.debug()) << "AMM Deposit: invalid trading fee.";
-        return temBAD_FEE;
+        return {temBAD_FEE, "AMM Deposit: invalid trading fee."};
     }
 
     return tesSUCCESS;
@@ -378,8 +375,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     if (auto const lpTokens = ctx.tx[~sfLPTokenOut];
         lpTokens && lpTokens->asset() != lptAMMBalance.asset())
     {
-        JLOG(ctx.j.debug()) << "AMM Deposit: invalid LPTokens.";
-        return temBAD_AMM_TOKENS;
+        return {temBAD_AMM_TOKENS, "AMM Deposit: invalid LPTokens."};
     }
 
     // Check the reserve for LPToken trustline if not LP.

@@ -52,9 +52,10 @@ LoanManage::preflight(PreflightContext const& ctx)
         auto const flags = *flagField & tfUniversalMask;
         if ((flags & (flags - 1)) != 0)
         {
-            JLOG(ctx.j.warn()) << "LoanManage: Only one of tfLoanDefault, tfLoanImpair, or "
-                                  "tfLoanUnimpair can be set.";
-            return temINVALID_FLAG;
+            return {
+                temINVALID_FLAG,
+                "LoanManage: Only one of tfLoanDefault, tfLoanImpair, or tfLoanUnimpair can be "
+                "set."};
         }
     }
 

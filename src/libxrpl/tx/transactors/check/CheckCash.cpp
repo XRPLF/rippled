@@ -61,9 +61,9 @@ CheckCash::preflight(PreflightContext const& ctx)
 
     if (static_cast<bool>(optAmount) == static_cast<bool>(optDeliverMin))
     {
-        JLOG(ctx.j.warn()) << "Malformed transaction: "
-                              "does not specify exactly one of Amount and DeliverMin.";
-        return temMALFORMED;
+        return {
+            temMALFORMED,
+            "Malformed transaction: does not specify exactly one of Amount and DeliverMin."};
     }
 
     // Make sure the amount is valid.
@@ -76,8 +76,7 @@ CheckCash::preflight(PreflightContext const& ctx)
 
     if (badAsset() == value.asset())
     {
-        JLOG(ctx.j.warn()) << "Malformed transaction: Bad currency.";
-        return temBAD_CURRENCY;
+        return {temBAD_CURRENCY, "Malformed transaction: Bad currency."};
     }
 
     return tesSUCCESS;
@@ -145,14 +144,12 @@ CheckCash::preclaim(PreclaimContext const& ctx)
 
         if (!equalTokens(value.asset(), sendMax.asset()))
         {
-            JLOG(ctx.j.warn()) << "Check cash does not match check currency.";
-            return temMALFORMED;
+            return {temMALFORMED, "Check cash does not match check currency."};
         }
         AccountID const issuerId{value.getIssuer()};
         if (issuerId != sendMax.getIssuer())
         {
-            JLOG(ctx.j.warn()) << "Check cash does not match check issuer.";
-            return temMALFORMED;
+            return {temMALFORMED, "Check cash does not match check issuer."};
         }
         if (value > sendMax)
         {

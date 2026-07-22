@@ -338,8 +338,7 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
 {
     if (!acc_)
     {
-        JLOG(j_.debug()) << "XRPEndpointStep: specified bad account.";
-        return temBAD_PATH;
+        return {temBAD_PATH, "XRPEndpointStep: specified bad account."};
     }
 
     auto sleAcc = ctx.view.read(keylet::account(acc_));

@@ -102,8 +102,7 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
         tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd;
     if (std::popcount(ctx.tx.getFlags() & transferFlags) != 1)
     {
-        JLOG(ctx.j.debug()) << "preflight: Only one SponsorshipTransfer flag can be set per tx.";
-        return temINVALID_FLAG;
+        return {temINVALID_FLAG, "preflight: Only one SponsorshipTransfer flag can be set per tx."};
     }
 
     if (ctx.tx.isFlag(tfSponsorshipCreate))
@@ -112,22 +111,20 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
         // to a reserve sponsor identified by sfSponsor + spfSponsorReserve.
         if (!ctx.tx.isFieldPresent(sfSponsor))
         {
-            JLOG(ctx.j.debug()) << "preflight: sfSponsor must be present when creating sponsorship";
-            return temMALFORMED;
+            return {temMALFORMED, "preflight: sfSponsor must be present when creating sponsorship"};
         }
 
         if (!isReserveSponsored(ctx.tx))
         {
-            JLOG(ctx.j.debug())
-                << "preflight: spfSponsorReserve must be set when creating sponsorship";
-            return temINVALID_FLAG;
+            return {
+                temINVALID_FLAG,
+                "preflight: spfSponsorReserve must be set when creating sponsorship"};
         }
 
         if (ctx.tx.isFieldPresent(sfSponsee))
         {
-            JLOG(ctx.j.debug())
-                << "preflight: sfSponsee must not be present when creating sponsorship";
-            return temMALFORMED;
+            return {
+                temMALFORMED, "preflight: sfSponsee must not be present when creating sponsorship"};
         }
     }
 
@@ -138,22 +135,21 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
         // spfSponsorReserve.
         if (!ctx.tx.isFieldPresent(sfSponsor))
         {
-            JLOG(ctx.j.debug())
-                << "preflight: sfSponsor must be present when reassigning sponsorship";
-            return temMALFORMED;
+            return {
+                temMALFORMED, "preflight: sfSponsor must be present when reassigning sponsorship"};
         }
 
         if (!isReserveSponsored(ctx.tx))
         {
-            JLOG(ctx.j.debug())
-                << "preflight: spfSponsorReserve must be set when reassigning sponsorship";
-            return temINVALID_FLAG;
+            return {
+                temINVALID_FLAG,
+                "preflight: spfSponsorReserve must be set when reassigning sponsorship"};
         }
         if (ctx.tx.isFieldPresent(sfSponsee))
         {
-            JLOG(ctx.j.debug())
-                << "preflight: sfSponsee must not be present when reassigning sponsorship";
-            return temMALFORMED;
+            return {
+                temMALFORMED,
+                "preflight: sfSponsee must not be present when reassigning sponsorship"};
         }
     }
 
@@ -163,9 +159,8 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
         // The target is sfSponsee when provided; otherwise it is sfAccount.
         if (ctx.tx.isFieldPresent(sfSponsor))
         {
-            JLOG(ctx.j.debug())
-                << "preflight: sfSponsor must not be present when ending sponsorship";
-            return temMALFORMED;
+            return {
+                temMALFORMED, "preflight: sfSponsor must not be present when ending sponsorship"};
         }
 
         // sfSponsorFlags should not be present if it is ending sponsorship.
@@ -185,8 +180,7 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
         if (ctx.tx.isFieldPresent(sfSponsee) &&
             ctx.tx.getAccountID(sfSponsee) == ctx.tx.getAccountID(sfAccount))
         {
-            JLOG(ctx.j.debug()) << "preflight: sfSponsee should not be the same as the account";
-            return temMALFORMED;
+            return {temMALFORMED, "preflight: sfSponsee should not be the same as the account"};
         }
     }
 
@@ -201,8 +195,7 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
 
     if (isAccountReserveSponsorship && !ctx.tx.isFieldPresent(sfSponsorSignature))
     {
-        JLOG(ctx.j.debug()) << "preflight: account sponsorship requires sfSponsorSignature";
-        return temMALFORMED;
+        return {temMALFORMED, "preflight: account sponsorship requires sfSponsorSignature"};
     }
 
     return tesSUCCESS;

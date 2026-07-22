@@ -100,14 +100,12 @@ TrustSet::preflight(PreflightContext const& ctx)
 
     if (badCurrency() == saLimitAmount.get<Issue>().currency)
     {
-        JLOG(j.trace()) << "Malformed transaction: specifies XRP as IOU";
-        return temBAD_CURRENCY;
+        return {temBAD_CURRENCY, "Malformed transaction: specifies XRP as IOU"};
     }
 
     if (saLimitAmount < beast::kZero)
     {
-        JLOG(j.trace()) << "Malformed transaction: Negative credit limit.";
-        return temBAD_LIMIT;
+        return {temBAD_LIMIT, "Malformed transaction: Negative credit limit."};
     }
 
     // Check if destination makes sense.
@@ -115,8 +113,7 @@ TrustSet::preflight(PreflightContext const& ctx)
 
     if (!issuer || issuer == noAccount())
     {
-        JLOG(j.trace()) << "Malformed transaction: no destination account.";
-        return temDST_NEEDED;
+        return {temDST_NEEDED, "Malformed transaction: no destination account."};
     }
 
     return tesSUCCESS;

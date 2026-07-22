@@ -179,9 +179,7 @@ Payment::preflight(PreflightContext const& ctx)
 
     if (!dstAccountID)
     {
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "Payment destination account not specified.";
-        return temDST_NEEDED;
+        return {temDST_NEEDED, "Malformed transaction: Payment destination account not specified."};
     }
     if (hasMax && maxSourceAmount <= beast::kZero)
     {
@@ -201,8 +199,7 @@ Payment::preflight(PreflightContext const& ctx)
     };
     if (bad(srcAsset) || bad(dstAsset))
     {
-        JLOG(j.trace()) << "Malformed transaction: Bad currency.";
-        return temBAD_CURRENCY;
+        return {temBAD_CURRENCY, "Malformed transaction: Bad currency."};
     }
     if (account == dstAccountID && equalTokens(srcAsset, dstAsset) && !hasPaths)
     {
@@ -216,37 +213,35 @@ Payment::preflight(PreflightContext const& ctx)
     if (xrpDirect && hasMax)
     {
         // Consistent but redundant transaction.
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "SendMax specified for XRP to XRP.";
-        return temBAD_SEND_XRP_MAX;
+        return {temBAD_SEND_XRP_MAX, "Malformed transaction: SendMax specified for XRP to XRP."};
     }
     if ((xrpDirect || (!mpTokensV2 && isDstMPT)) && hasPaths)
     {
         // XRP is sent without paths.
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "Paths specified for XRP to XRP or MPT to MPT.";
-        return temBAD_SEND_XRP_PATHS;
+        return {
+            temBAD_SEND_XRP_PATHS,
+            "Malformed transaction: Paths specified for XRP to XRP or MPT to MPT."};
     }
     if (xrpDirect && partialPaymentAllowed)
     {
         // Consistent but redundant transaction.
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "Partial payment specified for XRP to XRP.";
-        return temBAD_SEND_XRP_PARTIAL;
+        return {
+            temBAD_SEND_XRP_PARTIAL,
+            "Malformed transaction: Partial payment specified for XRP to XRP."};
     }
     if ((xrpDirect || (!mpTokensV2 && isDstMPT)) && limitQuality)
     {
         // Consistent but redundant transaction.
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "Limit quality specified for XRP to XRP or MPT to MPT.";
-        return temBAD_SEND_XRP_LIMIT;
+        return {
+            temBAD_SEND_XRP_LIMIT,
+            "Malformed transaction: Limit quality specified for XRP to XRP or MPT to MPT."};
     }
     if ((xrpDirect || (!mpTokensV2 && isDstMPT)) && !defaultPathsAllowed)
     {
         // Consistent but redundant transaction.
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "No ripple direct specified for XRP to XRP or MPT to MPT.";
-        return temBAD_SEND_XRP_NO_DIRECT;
+        return {
+            temBAD_SEND_XRP_NO_DIRECT,
+            "Malformed transaction: No ripple direct specified for XRP to XRP or MPT to MPT."};
     }
 
     if (deliverMin)
@@ -387,9 +382,9 @@ Payment::preclaim(PreclaimContext const& ctx)
             if (ctx.view.open())
             {
                 // Make retry work smaller, by rejecting this.
-                JLOG(ctx.j.trace()) << "Delay transaction: Partial payment not "
-                                       "allowed to create account.";
-                return telNO_DST_PARTIAL;
+                return {
+                    telNO_DST_PARTIAL,
+                    "Delay transaction: Partial payment not allowed to create account."};
             }
             // Inner batch txns are claimed on a closed view, where a tel is
             // invalid, so use the tef.

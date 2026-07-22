@@ -59,8 +59,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
 
     if (amount.asset() == amount2.asset())
     {
-        JLOG(ctx.j.debug()) << "AMM Instance: tokens can not have the same asset.";
-        return temBAD_AMM_TOKENS;
+        return {temBAD_AMM_TOKENS, "AMM Instance: tokens can not have the same asset."};
     }
 
     if (auto const err = invalidAMMAmount(amount))
@@ -77,8 +76,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
 
     if (ctx.tx[sfTradingFee] > kTradingFeeThreshold)
     {
-        JLOG(ctx.j.debug()) << "AMM Instance: invalid trading fee.";
-        return temBAD_FEE;
+        return {temBAD_FEE, "AMM Instance: invalid trading fee."};
     }
 
     return tesSUCCESS;

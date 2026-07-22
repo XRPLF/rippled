@@ -28,16 +28,14 @@ VaultSet::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfVaultID] == beast::kZero)
     {
-        JLOG(ctx.j.debug()) << "VaultSet: zero/empty vault ID.";
-        return temMALFORMED;
+        return {temMALFORMED, "VaultSet: zero/empty vault ID."};
     }
 
     if (auto const data = ctx.tx[~sfData])
     {
         if (data->empty() || data->length() > kMaxDataPayloadLength)
         {
-            JLOG(ctx.j.debug()) << "VaultSet: invalid data payload size.";
-            return temMALFORMED;
+            return {temMALFORMED, "VaultSet: invalid data payload size."};
         }
     }
 
@@ -45,16 +43,14 @@ VaultSet::preflight(PreflightContext const& ctx)
     {
         if (*assetMax < beast::kZero)
         {
-            JLOG(ctx.j.debug()) << "VaultSet: invalid max assets.";
-            return temMALFORMED;
+            return {temMALFORMED, "VaultSet: invalid max assets."};
         }
     }
 
     if (!ctx.tx.isFieldPresent(sfDomainID) && !ctx.tx.isFieldPresent(sfAssetsMaximum) &&
         !ctx.tx.isFieldPresent(sfData))
     {
-        JLOG(ctx.j.debug()) << "VaultSet: nothing is being updated.";
-        return temMALFORMED;
+        return {temMALFORMED, "VaultSet: nothing is being updated."};
     }
 
     return tesSUCCESS;

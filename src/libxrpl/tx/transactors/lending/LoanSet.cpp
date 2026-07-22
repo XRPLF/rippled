@@ -59,8 +59,7 @@ LoanSet::preflight(PreflightContext const& ctx)
 
     if (tx.isFieldPresent(sfSponsorFlags) && isReserveSponsored(tx))
     {
-        JLOG(ctx.j.debug()) << "LoanSet: reserve sponsorship is not allowed.";
-        return temINVALID_FLAG;
+        return {temINVALID_FLAG, "LoanSet: reserve sponsorship is not allowed."};
     }
 
     // Special case for Batch inner transactions
@@ -81,8 +80,7 @@ LoanSet::preflight(PreflightContext const& ctx)
     }();
     if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig)
     {
-        JLOG(ctx.j.warn()) << "LoanSet transaction must have a CounterpartySignature.";
-        return temBAD_SIGNER;
+        return {temBAD_SIGNER, "LoanSet transaction must have a CounterpartySignature."};
     }
 
     if (counterPartySig)

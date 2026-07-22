@@ -51,8 +51,7 @@ VaultDeposit::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfVaultID] == beast::kZero)
     {
-        JLOG(ctx.j.debug()) << "VaultDeposit: zero/empty vault ID.";
-        return temMALFORMED;
+        return {temMALFORMED, "VaultDeposit: zero/empty vault ID."};
     }
 
     if (ctx.tx[sfAmount] <= beast::kZero)

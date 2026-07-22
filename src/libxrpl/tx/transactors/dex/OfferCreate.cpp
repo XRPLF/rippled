@@ -90,7 +90,6 @@ NotTEC
 OfferCreate::preflight(PreflightContext const& ctx)
 {
     auto& tx = ctx.tx;
-    auto& j = ctx.j;
 
     if (tx.isFlag(tfHybrid) && !tx.isFieldPresent(sfDomainID))
         return temINVALID_FLAG;
@@ -106,22 +105,19 @@ OfferCreate::preflight(PreflightContext const& ctx)
 
     if (bImmediateOrCancel && bFillOrKill)
     {
-        JLOG(j.debug()) << "Malformed transaction: both IoC and FoK set.";
-        return temINVALID_FLAG;
+        return {temINVALID_FLAG, "Malformed transaction: both IoC and FoK set."};
     }
 
     bool const bHaveExpiration(tx.isFieldPresent(sfExpiration));
 
     if (bHaveExpiration && (tx.getFieldU32(sfExpiration) == 0))
     {
-        JLOG(j.debug()) << "Malformed offer: bad expiration";
-        return temBAD_EXPIRATION;
+        return {temBAD_EXPIRATION, "Malformed offer: bad expiration"};
     }
 
     if (auto const cancelSequence = tx[~sfOfferSequence]; cancelSequence && *cancelSequence == 0)
     {
-        JLOG(j.debug()) << "Malformed offer: bad cancel sequence";
-        return temBAD_SEQUENCE;
+        return {temBAD_SEQUENCE, "Malformed offer: bad cancel sequence"};
     }
 
     STAmount const saTakerPays = tx[sfTakerPays];
@@ -132,13 +128,11 @@ OfferCreate::preflight(PreflightContext const& ctx)
 
     if (saTakerPays.native() && saTakerGets.native())
     {
-        JLOG(j.debug()) << "Malformed offer: redundant (XRP for XRP)";
-        return temBAD_OFFER;
+        return {temBAD_OFFER, "Malformed offer: redundant (XRP for XRP)"};
     }
     if (saTakerPays <= beast::kZero || saTakerGets <= beast::kZero)
     {
-        JLOG(j.debug()) << "Malformed offer: bad amount";
-        return temBAD_OFFER;
+        return {temBAD_OFFER, "Malformed offer: bad amount"};
     }
 
     auto const& uPaysIssuerID = saTakerPays.getIssuer();
@@ -149,20 +143,17 @@ OfferCreate::preflight(PreflightContext const& ctx)
 
     if (uPaysAsset == uGetsAsset)
     {
-        JLOG(j.debug()) << "Malformed offer: redundant (IOU for IOU)";
-        return temREDUNDANT;
+        return {temREDUNDANT, "Malformed offer: redundant (IOU for IOU)"};
     }
     // We don't allow a non-native currency to use the currency code XRP.
     if (badAsset() == uPaysAsset || badAsset() == uGetsAsset)
     {
-        JLOG(j.debug()) << "Malformed offer: bad currency";
-        return temBAD_CURRENCY;
+        return {temBAD_CURRENCY, "Malformed offer: bad currency"};
     }
 
     if (saTakerPays.native() != !uPaysIssuerID || saTakerGets.native() != !uGetsIssuerID)
     {
-        JLOG(j.debug()) << "Malformed offer: bad issuer";
-        return temBAD_ISSUER;
+        return {temBAD_ISSUER, "Malformed offer: bad issuer"};
     }
 
     return tesSUCCESS;

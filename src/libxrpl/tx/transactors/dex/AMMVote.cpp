@@ -48,8 +48,7 @@ AMMVote::preflight(PreflightContext const& ctx)
 
     if (ctx.tx[sfTradingFee] > kTradingFeeThreshold)
     {
-        JLOG(ctx.j.debug()) << "AMM Vote: invalid trading fee.";
-        return temBAD_FEE;
+        return {temBAD_FEE, "AMM Vote: invalid trading fee."};
     }
 
     return tesSUCCESS;

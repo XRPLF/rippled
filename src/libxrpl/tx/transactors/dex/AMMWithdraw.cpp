@@ -78,8 +78,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     //   Amount and EPrice
     if (std::popcount(flags & tfWithdrawSubTx) != 1)
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags.";
-        return temMALFORMED;
+        return {temMALFORMED, "AMM Withdraw: invalid flags."};
     }
     if (ctx.tx.isFlag(tfLPToken))
     {
@@ -129,8 +128,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
 
     if (lpTokens && *lpTokens <= beast::kZero)
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens.";
-        return temBAD_AMM_TOKENS;
+        return {temBAD_AMM_TOKENS, "AMM Withdraw: invalid tokens."};
     }
 
     if (amount)
@@ -283,8 +281,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 
     if (lpTokensWithdraw && lpTokensWithdraw->asset() != lpTokens.asset())
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid LPTokens.";
-        return temBAD_AMM_TOKENS;
+        return {temBAD_AMM_TOKENS, "AMM Withdraw: invalid LPTokens."};
     }
 
     if (lpTokensWithdraw && *lpTokensWithdraw > lpTokens)
@@ -294,8 +291,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 
     if (auto const ePrice = ctx.tx[~sfEPrice]; ePrice && ePrice->asset() != lpTokens.asset())
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid EPrice.";
-        return temBAD_AMM_TOKENS;
+        return {temBAD_AMM_TOKENS, "AMM Withdraw: invalid EPrice."};
     }
 
     if ((ctx.tx.getFlags() & (tfLPToken | tfWithdrawAll)) != 0u)

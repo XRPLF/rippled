@@ -26,8 +26,7 @@ VaultDelete::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfVaultID] == beast::kZero)
     {
-        JLOG(ctx.j.debug()) << "VaultDelete: zero/empty vault ID.";
-        return temMALFORMED;
+        return {temMALFORMED, "VaultDelete: zero/empty vault ID."};
     }
 
     if (ctx.tx.isFieldPresent(sfMemoData) && !ctx.rules.enabled(featureLendingProtocolV1_1))

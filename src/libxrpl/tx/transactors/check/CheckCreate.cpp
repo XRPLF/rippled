@@ -43,8 +43,7 @@ CheckCreate::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
     {
         // They wrote a check to themselves.
-        JLOG(ctx.j.warn()) << "Malformed transaction: Check to self.";
-        return temREDUNDANT;
+        return {temREDUNDANT, "Malformed transaction: Check to self."};
     }
 
     {
@@ -58,8 +57,7 @@ CheckCreate::preflight(PreflightContext const& ctx)
 
         if (badAsset() == sendMax.asset())
         {
-            JLOG(ctx.j.warn()) << "Malformed transaction: Bad currency.";
-            return temBAD_CURRENCY;
+            return {temBAD_CURRENCY, "Malformed transaction: Bad currency."};
         }
     }
 
@@ -67,8 +65,7 @@ CheckCreate::preflight(PreflightContext const& ctx)
     {
         if (*optExpiry == 0)
         {
-            JLOG(ctx.j.warn()) << "Malformed transaction: bad expiration";
-            return temBAD_EXPIRATION;
+            return {temBAD_EXPIRATION, "Malformed transaction: bad expiration"};
         }
     }
 

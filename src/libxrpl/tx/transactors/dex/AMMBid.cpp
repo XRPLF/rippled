@@ -78,8 +78,7 @@ AMMBid::preflight(PreflightContext const& ctx)
         auto const authAccounts = ctx.tx.getFieldArray(sfAuthAccounts);
         if (authAccounts.size() > kAuctionSlotMaxAuthAccounts)
         {
-            JLOG(ctx.j.debug()) << "AMM Bid: Invalid number of AuthAccounts.";
-            return temMALFORMED;
+            return {temMALFORMED, "AMM Bid: Invalid number of AuthAccounts."};
         }
         if (ctx.rules.enabled(fixAMMv1_3))
         {
@@ -90,8 +89,7 @@ AMMBid::preflight(PreflightContext const& ctx)
                 auto authAccount = obj[sfAccount];
                 if (authAccount == account || unique.contains(authAccount))
                 {
-                    JLOG(ctx.j.debug()) << "AMM Bid: Invalid auth.account.";
-                    return temMALFORMED;
+                    return {temMALFORMED, "AMM Bid: Invalid auth.account."};
                 }
                 unique.insert(authAccount);
             }
@@ -138,8 +136,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     {
         if (bidMin->asset() != lpTokens.asset())
         {
-            JLOG(ctx.j.debug()) << "AMM Bid: Invalid LPToken.";
-            return temBAD_AMM_TOKENS;
+            return {temBAD_AMM_TOKENS, "AMM Bid: Invalid LPToken."};
         }
         if (*bidMin > lpTokens || *bidMin >= lpTokensBalance)
         {
@@ -152,8 +149,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     {
         if (bidMax->asset() != lpTokens.asset())
         {
-            JLOG(ctx.j.debug()) << "AMM Bid: Invalid LPToken.";
-            return temBAD_AMM_TOKENS;
+            return {temBAD_AMM_TOKENS, "AMM Bid: Invalid LPToken."};
         }
         if (*bidMax > lpTokens || *bidMax >= lpTokensBalance)
         {

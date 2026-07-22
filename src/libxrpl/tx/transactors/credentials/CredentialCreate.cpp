@@ -53,26 +53,22 @@ NotTEC
 CredentialCreate::preflight(PreflightContext const& ctx)
 {
     auto const& tx = ctx.tx;
-    auto& j = ctx.j;
 
     if (!tx[sfSubject])
     {
-        JLOG(j.trace()) << "Malformed transaction: Invalid Subject";
-        return temMALFORMED;
+        return {temMALFORMED, "Malformed transaction: Invalid Subject"};
     }
 
     auto const uri = tx[~sfURI];
     if (uri && (uri->empty() || (uri->size() > kMaxCredentialUriLength)))
     {
-        JLOG(j.trace()) << "Malformed transaction: invalid size of URI.";
-        return temMALFORMED;
+        return {temMALFORMED, "Malformed transaction: invalid size of URI."};
     }
 
     auto const credType = tx[sfCredentialType];
     if (credType.empty() || (credType.size() > kMaxCredentialTypeLength))
     {
-        JLOG(j.trace()) << "Malformed transaction: invalid size of CredentialType.";
-        return temMALFORMED;
+        return {temMALFORMED, "Malformed transaction: invalid size of CredentialType."};
     }
 
     return tesSUCCESS;

@@ -64,9 +64,7 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 {
     if (isPseudoTx(ctx.tx) && ctx.tx.isFlag(tfInnerBatchTxn))
     {
-        JLOG(ctx.j.warn()) << "Pseudo transactions cannot contain the "
-                              "tfInnerBatchTxn flag.";
-        return temINVALID_FLAG;
+        return {temINVALID_FLAG, "Pseudo transactions cannot contain the tfInnerBatchTxn flag."};
     }
 
     if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
@@ -97,8 +95,7 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 
     if (txID == beast::kZero)
     {
-        JLOG(ctx.j.warn()) << "applyTransaction: transaction id may not be zero";
-        return temINVALID;
+        return {temINVALID, "applyTransaction: transaction id may not be zero"};
     }
 
     if ((ctx.tx.getFlags() & flagMask) != 0u)
@@ -124,8 +121,7 @@ preflightCheckSigningKey(STObject const& sigObject, beast::Journal j)
     if (auto const spk = sigObject.getFieldVL(sfSigningPubKey);
         !spk.empty() && !publicKeyType(makeSlice(spk)))
     {
-        JLOG(j.debug()) << "preflightCheckSigningKey: invalid signing key";
-        return temBAD_SIGNATURE;
+        return {temBAD_SIGNATURE, "preflightCheckSigningKey: invalid signing key"};
     }
     return tesSUCCESS;
 }
@@ -184,13 +180,11 @@ preflight1Sponsor(PreflightContext const& ctx)
 
     if (hasSponsor != hasSponsorFlags)
     {
-        JLOG(ctx.j.debug()) << "preflight1: sponsor and sponsor flags mismatch";
-        return temINVALID_FLAG;
+        return {temINVALID_FLAG, "preflight1: sponsor and sponsor flags mismatch"};
     }
     if (hasSponsorSig && (!hasSponsor || !hasSponsorFlags))
     {
-        JLOG(ctx.j.debug()) << "preflight1: sponsor signature without sponsor definition";
-        return temMALFORMED;
+        return {temMALFORMED, "preflight1: sponsor signature without sponsor definition"};
     }
 
     if (hasSponsorFlags)
@@ -198,8 +192,7 @@ preflight1Sponsor(PreflightContext const& ctx)
         auto const sponsorFlags = ctx.tx.getFieldU32(sfSponsorFlags);
         if (((sponsorFlags & spfSponsorFlagMask) != 0u) || sponsorFlags == 0)
         {
-            JLOG(ctx.j.debug()) << "preflight1: invalid sponsor flags";
-            return temINVALID_FLAG;
+            return {temINVALID_FLAG, "preflight1: invalid sponsor flags"};
         }
 
         // Reserve sponsorship is only permitted for an explicit allow-list of
@@ -208,17 +201,16 @@ preflight1Sponsor(PreflightContext const& ctx)
         {
             if (!isReserveSponsorAllowed(ctx.tx.getTxnType()))
             {
-                JLOG(ctx.j.debug())
-                    << "preflight1: spfSponsorReserve not allowed for this transaction type";
-                return temINVALID_FLAG;
+                return {
+                    temINVALID_FLAG,
+                    "preflight1: spfSponsorReserve not allowed for this transaction type"};
             }
         }
     }
 
     if (hasSponsor && ctx.tx.getAccountID(sfSponsor) == ctx.tx.getAccountID(sfAccount))
     {
-        JLOG(ctx.j.debug()) << "preflight1: Sponsor account cannot be the same as the account";
-        return temMALFORMED;
+        return {temMALFORMED, "preflight1: Sponsor account cannot be the same as the account"};
     }
 
     return tesSUCCESS;
@@ -255,16 +247,14 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     auto const id = ctx.tx.getAccountID(sfAccount);
     if (id == beast::kZero)
     {
-        JLOG(ctx.j.warn()) << "preflight1: bad account id";
-        return temBAD_SRC_ACCOUNT;
+        return {temBAD_SRC_ACCOUNT, "preflight1: bad account id"};
     }
 
     // No point in going any further if the transaction fee is malformed.
     auto const fee = ctx.tx.getFieldAmount(sfFee);
     if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
     {
-        JLOG(ctx.j.debug()) << "preflight1: invalid fee";
-        return temBAD_FEE;
+        return {temBAD_FEE, "preflight1: invalid fee"};
     }
 
     if (auto const ret = detail::preflightCheckSigningKey(ctx.tx, ctx.j))
@@ -525,8 +515,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         if (feePaid == beast::kZero)
             return tesSUCCESS;
 
-        JLOG(ctx.j.trace()) << "Batch: Fee must be zero.";
-        return temBAD_FEE;  // LCOV_EXCL_LINE
+        return {temBAD_FEE, "Batch: Fee must be zero."};  // LCOV_EXCL_LINE
     }
 
     if (!isLegalAmount(feePaid) || feePaid < beast::kZero)
@@ -715,9 +704,9 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
     {
         if (tx.isFieldPresent(sfTicketSequence))
         {
-            JLOG(j.trace()) << "applyTransaction: has both a TicketSequence "
-                               "and a non-zero Sequence number";
-            return temSEQ_AND_TICKET;
+            return {
+                temSEQ_AND_TICKET,
+                "applyTransaction: has both a TicketSequence and a non-zero Sequence number"};
         }
         if (tSeqProx != aSeq)
         {
@@ -979,8 +968,9 @@ Transactor::checkSign(
 
     if (!publicKeyType(makeSlice(pkSigner)))
     {
-        JLOG(j.trace()) << "checkSign: signing public key type is unknown";
-        return tefBAD_AUTH;  // FIXME: should be better error!
+        return {
+            tefBAD_AUTH,
+            "checkSign: signing public key type is unknown"};  // FIXME: should be better error!
     }
 
     // Look up the account.
@@ -1054,8 +1044,7 @@ Transactor::checkMultiSign(
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
-        JLOG(j.trace()) << "applyTransaction: Invalid: Not a multi-signing account.";
-        return tefNOT_MULTI_SIGNING;
+        return {tefNOT_MULTI_SIGNING, "applyTransaction: Invalid: Not a multi-signing account."};
     }
 
     // We have plans to support multiple SignerLists in the future.  The
@@ -1091,15 +1080,13 @@ Transactor::checkMultiSign(
         {
             if (++iter == accountSigners->end())
             {
-                JLOG(j.trace()) << "applyTransaction: Invalid SigningAccount.Account.";
-                return tefBAD_SIGNATURE;
+                return {tefBAD_SIGNATURE, "applyTransaction: Invalid SigningAccount.Account."};
             }
         }
         if (iter->account != txSignerAcctID)
         {
             // The SigningAccount is not in the SignerEntries.
-            JLOG(j.trace()) << "applyTransaction: Invalid SigningAccount.Account.";
-            return tefBAD_SIGNATURE;
+            return {tefBAD_SIGNATURE, "applyTransaction: Invalid SigningAccount.Account."};
         }
 
         // We found the SigningAccount in the list of valid signers.  Now we
@@ -1111,8 +1098,7 @@ Transactor::checkMultiSign(
         // STTx::checkMultiSign
         if (!spk.empty() && !publicKeyType(makeSlice(spk)))
         {
-            JLOG(j.trace()) << "checkMultiSign: signing public key type is unknown";
-            return tefBAD_SIGNATURE;
+            return {tefBAD_SIGNATURE, "checkMultiSign: signing public key type is unknown"};
         }
 
         XRPL_ASSERT(
@@ -1159,8 +1145,8 @@ Transactor::checkMultiSign(
 
                 if ((signerAccountFlags & lsfDisableMaster) != 0u)
                 {
-                    JLOG(j.trace()) << "applyTransaction: Signer:Account lsfDisableMaster.";
-                    return tefMASTER_DISABLED;
+                    return {
+                        tefMASTER_DISABLED, "applyTransaction: Signer:Account lsfDisableMaster."};
                 }
             }
         }
@@ -1170,20 +1156,17 @@ Transactor::checkMultiSign(
             // Public key must hash to the account's regular key.
             if (!sleTxSignerRoot)
             {
-                JLOG(j.trace()) << "applyTransaction: Non-phantom signer "
-                                   "lacks account root.";
-                return tefBAD_SIGNATURE;
+                return {
+                    tefBAD_SIGNATURE, "applyTransaction: Non-phantom signer lacks account root."};
             }
 
             if (!sleTxSignerRoot->isFieldPresent(sfRegularKey))
             {
-                JLOG(j.trace()) << "applyTransaction: Account lacks RegularKey.";
-                return tefBAD_SIGNATURE;
+                return {tefBAD_SIGNATURE, "applyTransaction: Account lacks RegularKey."};
             }
             if (signingAcctIDFromPubKey != sleTxSignerRoot->getAccountID(sfRegularKey))
             {
-                JLOG(j.trace()) << "applyTransaction: Account doesn't match RegularKey.";
-                return tefBAD_SIGNATURE;
+                return {tefBAD_SIGNATURE, "applyTransaction: Account doesn't match RegularKey."};
             }
         }
         // The signer is legitimate.  Add their weight toward the quorum.
@@ -1193,8 +1176,7 @@ Transactor::checkMultiSign(
     // Cannot perform transaction if quorum is not met.
     if (weightSum < sleAccountSigners->getFieldU32(sfSignerQuorum))
     {
-        JLOG(j.trace()) << "applyTransaction: Signers failed to meet quorum.";
-        return tefBAD_QUORUM;
+        return {tefBAD_QUORUM, "applyTransaction: Signers failed to meet quorum."};
     }
 
     // Met the quorum.  Continue.

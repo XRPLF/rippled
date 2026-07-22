@@ -36,8 +36,7 @@ VaultClawback::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfVaultID] == beast::kZero)
     {
-        JLOG(ctx.j.debug()) << "VaultClawback: zero/empty vault ID.";
-        return temMALFORMED;
+        return {temMALFORMED, "VaultClawback: zero/empty vault ID."};
     }
 
     auto const amount = ctx.tx[~sfAmount];
@@ -50,8 +49,7 @@ VaultClawback::preflight(PreflightContext const& ctx)
         }
         if (isXRP(amount->asset()))
         {
-            JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback XRP.";
-            return temMALFORMED;
+            return {temMALFORMED, "VaultClawback: cannot clawback XRP."};
         }
     }
 

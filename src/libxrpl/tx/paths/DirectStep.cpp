@@ -825,14 +825,12 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
     // The following checks apply for both payments and offer crossing.
     if (!src_ || !dst_)
     {
-        JLOG(j_.debug()) << "DirectStepI: specified bad account.";
-        return temBAD_PATH;
+        return {temBAD_PATH, "DirectStepI: specified bad account."};
     }
 
     if (src_ == dst_)
     {
-        JLOG(j_.debug()) << "DirectStepI: same src and dst.";
-        return temBAD_PATH;
+        return {temBAD_PATH, "DirectStepI: same src and dst."};
     }
 
     auto const sleSrc = ctx.view.read(keylet::account(src_));

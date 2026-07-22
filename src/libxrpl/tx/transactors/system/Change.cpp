@@ -44,29 +44,25 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
     auto account = ctx.tx.getAccountID(sfAccount);
     if (account != beast::kZero)
     {
-        JLOG(ctx.j.warn()) << "Change: Bad source id";
-        return temBAD_SRC_ACCOUNT;
+        return {temBAD_SRC_ACCOUNT, "Change: Bad source id"};
     }
 
     // No point in going any further if the transaction fee is malformed.
     auto const fee = ctx.tx.getFieldAmount(sfFee);
     if (!fee.native() || fee != beast::kZero)
     {
-        JLOG(ctx.j.warn()) << "Change: invalid fee";
-        return temBAD_FEE;
+        return {temBAD_FEE, "Change: invalid fee"};
     }
 
     if (!ctx.tx.getSigningPubKey().empty() || !ctx.tx.getSignature().empty() ||
         ctx.tx.isFieldPresent(sfSigners))
     {
-        JLOG(ctx.j.warn()) << "Change: Bad signature";
-        return temBAD_SIGNATURE;
+        return {temBAD_SIGNATURE, "Change: Bad signature"};
     }
 
     if (ctx.tx.getFieldU32(sfSequence) != 0 || ctx.tx.isFieldPresent(sfPreviousTxnID))
     {
-        JLOG(ctx.j.warn()) << "Change: Bad sequence";
-        return temBAD_SEQUENCE;
+        return {temBAD_SEQUENCE, "Change: Bad sequence"};
     }
 
     return tesSUCCESS;
@@ -79,8 +75,7 @@ Change::preclaim(PreclaimContext const& ctx)
     // this block can be moved to preflight.
     if (ctx.view.open())
     {
-        JLOG(ctx.j.warn()) << "Change transaction against open ledger";
-        return temINVALID;
+        return {temINVALID, "Change transaction against open ledger"};
     }
 
     switch (ctx.tx.getTxnType())

@@ -63,15 +63,13 @@ NotTEC
 AccountSet::preflight(PreflightContext const& ctx)
 {
     auto& tx = ctx.tx;
-    auto& j = ctx.j;
 
     std::uint32_t const uSetFlag = tx.getFieldU32(sfSetFlag);
     std::uint32_t const uClearFlag = tx.getFieldU32(sfClearFlag);
 
     if ((uSetFlag != 0) && (uSetFlag == uClearFlag))
     {
-        JLOG(j.trace()) << "Malformed transaction: Set and clear same flag.";
-        return temINVALID_FLAG;
+        return {temINVALID_FLAG, "Malformed transaction: Set and clear same flag."};
     }
 
     //
@@ -82,8 +80,7 @@ AccountSet::preflight(PreflightContext const& ctx)
 
     if (bSetRequireAuth && bClearRequireAuth)
     {
-        JLOG(j.trace()) << "Malformed transaction: Contradictory flags set.";
-        return temINVALID_FLAG;
+        return {temINVALID_FLAG, "Malformed transaction: Contradictory flags set."};
     }
 
     //
@@ -94,8 +91,7 @@ AccountSet::preflight(PreflightContext const& ctx)
 
     if (bSetRequireDest && bClearRequireDest)
     {
-        JLOG(j.trace()) << "Malformed transaction: Contradictory flags set.";
-        return temINVALID_FLAG;
+        return {temINVALID_FLAG, "Malformed transaction: Contradictory flags set."};
     }
 
     //
@@ -106,8 +102,7 @@ AccountSet::preflight(PreflightContext const& ctx)
 
     if (bSetDisallowXRP && bClearDisallowXRP)
     {
-        JLOG(j.trace()) << "Malformed transaction: Contradictory flags set.";
-        return temINVALID_FLAG;
+        return {temINVALID_FLAG, "Malformed transaction: Contradictory flags set."};
     }
 
     // TransferRate
@@ -117,14 +112,12 @@ AccountSet::preflight(PreflightContext const& ctx)
 
         if ((uRate != 0u) && (uRate < QUALITY_ONE))
         {
-            JLOG(j.trace()) << "Malformed transaction: Transfer rate too small.";
-            return temBAD_TRANSFER_RATE;
+            return {temBAD_TRANSFER_RATE, "Malformed transaction: Transfer rate too small."};
         }
 
         if (uRate > 2 * QUALITY_ONE)
         {
-            JLOG(j.trace()) << "Malformed transaction: Transfer rate too large.";
-            return temBAD_TRANSFER_RATE;
+            return {temBAD_TRANSFER_RATE, "Malformed transaction: Transfer rate too large."};
         }
     }
 
@@ -135,8 +128,7 @@ AccountSet::preflight(PreflightContext const& ctx)
         if ((uTickSize != 0u) &&
             ((uTickSize < Quality::kMinTickSize) || (uTickSize > Quality::kMaxTickSize)))
         {
-            JLOG(j.trace()) << "Malformed transaction: Bad tick size.";
-            return temBAD_TICK_SIZE;
+            return {temBAD_TICK_SIZE, "Malformed transaction: Bad tick size."};
         }
     }
 
@@ -144,15 +136,13 @@ AccountSet::preflight(PreflightContext const& ctx)
     {
         if (!mk->empty() && !publicKeyType({mk->data(), mk->size()}))
         {
-            JLOG(j.trace()) << "Invalid message key specified.";
-            return telBAD_PUBLIC_KEY;
+            return {telBAD_PUBLIC_KEY, "Invalid message key specified."};
         }
     }
 
     if (auto const domain = tx[~sfDomain]; domain && domain->size() > kMaxDomainLength)
     {
-        JLOG(j.trace()) << "domain too long";
-        return telBAD_DOMAIN;
+        return {telBAD_DOMAIN, "domain too long"};
     }
 
     // Configure authorized minting account:
