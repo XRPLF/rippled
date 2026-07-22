@@ -3780,7 +3780,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
     int const normalExp = 18;
 
-    Bytes const floatIntMin        =  {0xF3, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x00, 0x00, 0x00, 0x01};  // -2^63
+    Bytes const floatIntMin        =  {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00};  // -2^63 (rounds to nearest: -(2^63-1))
     Bytes const floatIntZero       =  {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00};  // 0
     Bytes const floatIntMax        =  {0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00};  // 2^63-1
     Bytes const floatUIntMax       =  {0x19, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x9A, 0x00, 0x00, 0x00, 0x01};  // 2^64-1
@@ -4490,7 +4490,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
         {
             // hfs.floatAdd(makeSlice(floatIntMax), makeSlice(floatIntMin), 0);//
-            //  Number can't hold int64.min, it is rounded and we get -3, not -1
+            //  int64.min is rounded to nearest: -(2^63-1), so max + min == 0
             WasmValVec params(7), result(1);
             vrt.setBytes(0, floatIntMax.data(), floatIntMax.size());
             vrt.setBytes(floatSize, floatIntMin.data(), floatIntMin.size());
@@ -4509,7 +4509,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 4);
-            BEAST_EXPECT(resultBytes == floatMinus3);
+            BEAST_EXPECT(resultBytes == floatIntZero);
         }
     }
 
@@ -5762,17 +5762,20 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            // Number can't hold int64.min, it is rounded and we get int64_t.min - 3, which doesn't
-            // fit into int64
+            // int64.min is rounded to nearest: -(2^63-1), which fits into int64
             // hfs.floatToInt(makeSlice(floatIntMin), 0);
             vrt.setBytes(0, floatIntMin.data(), floatIntMin.size());
             WasmValVec params(5), result(1);
             auto* trap = ww(&import.at("float_to_int"), params, result, 0, floatSize, 256, 8, 0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(
-                    result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FloatComputationError));
+                BEAST_EXPECT(result[0].of.i32 == 8);
+            auto const resultVal = vrt.getInt64(params, 2);
+            BEAST_EXPECT(resultVal == -std::numeric_limits<int64_t>::max());
+
+            // roundtrip
+            auto const result2 = hfs.floatFromInt(resultVal, 0);
+            BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntMin);
         }
 
         {
@@ -5992,8 +5995,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                 BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const mantissa = vrt.getInt64(params, 2);
             auto const exponent = vrt.getInt32(params, 4);
-            BEAST_EXPECT(mantissa == (std::numeric_limits<int64_t>::min() / 10) - 1) &&
-                BEAST_EXPECT(exponent == 1);
+            BEAST_EXPECT(mantissa == -std::numeric_limits<int64_t>::max()) &&
+                BEAST_EXPECT(exponent == 0);
 
             // roundtrip
             auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
