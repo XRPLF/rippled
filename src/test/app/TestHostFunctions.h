@@ -29,7 +29,7 @@ namespace xrpl::test {
  */
 struct RecordingEventImpl : public beast::insight::EventImpl
 {
-    std::size_t count = 0;
+    std::size_t count{};
     value_type last{};
     value_type total{};
     value_type min{value_type::max()};
