@@ -40,21 +40,15 @@ compile hello
 compile panic
 compile overflow "-C overflow-checks=on"
 
-# Build a Cargo workspace whose binary crate (`answer_user`) uses a function-like
-# proc macro from a sibling proc-macro crate (`echo_macro`). Compiling the user
-# crate forces rustc to *load* the proc-macro dylib at build time — the step that
-# regresses to "E0463 can't find crate for <proc-macro>" when the toolchain's
-# libstd isn't resolvable for proc-macro dylibs. Depends only on path deps + the
-# built-in `proc_macro` crate, so `--offline` needs no network.
 function compile_proc_macro() {
     local proj="${src_dir}/../proc_macro"
 
     echo "=== Building proc-macro workspace (cargo) ==="
     cargo build --manifest-path "${proj}/Cargo.toml" --offline
 
-    local built="${proj}/target/debug/answer_user"
+    local built="${proj}/target/debug/test_macro"
     if [ ! -f "${built}" ]; then
-        echo "ERROR: built answer_user binary not found at ${built}" >&2
+        echo "ERROR: built test_macro binary not found at ${built}" >&2
         exit 1
     fi
 
@@ -64,8 +58,6 @@ function compile_proc_macro() {
     echo "=== Patching ${binary} to use ${loader} as PT_INTERP ==="
     patchelf --set-interpreter "${loader}" --remove-rpath "${binary}"
 
-    # The build tree only exists to produce that binary; drop it so it doesn't
-    # bloat this RUN layer in the final image.
     rm -rf "${proj}/target"
 }
 

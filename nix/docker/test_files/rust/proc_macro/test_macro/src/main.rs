@@ -1,7 +1,5 @@
 use echo_macro::define_echo;
 
-// Expands to `fn echo() -> u32 { 42 }`. Reaching this point at all means the
-// proc-macro dylib was loaded and expanded successfully during compilation.
 define_echo!(42);
 
 fn main() {

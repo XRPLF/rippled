@@ -16,14 +16,6 @@ let
     exec ${pkgs.python3}/bin/python3 ${llvmPackages.clang-unwrapped}/bin/run-clang-tidy "$@"
   '';
 
-  # Single pinned Rust toolchain (rustc, cargo, + the components/targets listed
-  # in rust-toolchain.toml), sourced from rust-overlay so it lives in the Nix
-  # store closure and is locked by flake.lock. This is the same file the
-  # rustup-based non-Nix runners read, so there is one source of truth for the
-  # Rust version across every environment. Unlike the plain nixpkgs `rustc`,
-  # this is the upstream toolchain, so proc-macro dylibs resolve `libstd` even
-  # when cargo runs outside a Nix stdenv (e.g. the wasmi C-API build driven by
-  # Conan/CMake), avoiding the "can't find crate for <proc-macro>" load failure.
   rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ../rust-toolchain.toml;
 in
 {
@@ -72,8 +64,6 @@ in
     runClangTidy
     vim
     zip
-    # Rust packages. rustc/cargo/clippy/rustfmt come from the pinned
-    # `rustToolchain` (below); the rest are standalone tools that layer on top.
     rustToolchain
     cargo-audit
     cargo-llvm-cov

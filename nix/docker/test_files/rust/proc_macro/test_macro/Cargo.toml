@@ -1,7 +1,7 @@
 [package]
-name = "answer_user"
+name = "test_macro"
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 publish = false
 
 [dependencies]
