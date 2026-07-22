@@ -1758,7 +1758,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     using namespace telemetry;
     // root: inbound peer message entry point (kConsumer); must not inherit
     // any span left active on this peer thread.
-    auto span = SpanGuard::rootSpan(TraceCategory::Peer, seg::peer, peer_span::op::proposalReceive);
+    auto span =
+        ScopedSpanGuard::freshRoot(TraceCategory::Peer, seg::peer, peer_span::op::proposalReceive);
     span.setAttribute(peer_span::attr::peerId, static_cast<int64_t>(id_));
 
     protocol::TMProposeSet const& set = *m;
@@ -2381,8 +2382,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
     using namespace telemetry;
     // root: inbound peer message entry point (kConsumer); must not inherit
     // any span left active on this peer thread.
-    auto valSpan =
-        SpanGuard::rootSpan(TraceCategory::Peer, seg::peer, peer_span::op::validationReceive);
+    auto valSpan = ScopedSpanGuard::freshRoot(
+        TraceCategory::Peer, seg::peer, peer_span::op::validationReceive);
     valSpan.setAttribute(peer_span::attr::peerId, static_cast<int64_t>(id_));
 
     if (m->validation().size() < 50)
