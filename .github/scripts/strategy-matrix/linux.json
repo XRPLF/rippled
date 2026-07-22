@@ -1,7 +1,7 @@
 {
-  "image_tag": "sha-2e25435",
+  "image_tag": "sha-7edf39e",
   "configs": {
-    "ubuntu": [
+    "debian": [
       {
         "compiler": ["clang"],
         "build_type": ["Release"],
@@ -60,15 +60,6 @@
         "minimal": false,
         "suffix": "unity",
         "extra_cmake_args": "-Dunity=ON"
-      }
-    ],
-
-    "debian": [
-      {
-        "compiler": ["gcc"],
-        "build_type": ["Release"],
-        "arch": ["amd64"],
-        "minimal": false
       }
     ],
 

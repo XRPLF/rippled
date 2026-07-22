@@ -40,7 +40,7 @@ defaults:
 jobs:
   upload:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-2e25435
+    container: ghcr.io/xrplf/xrpld/nix-debian:sha-7edf39e
     env:
       REMOTE_NAME: ${{ inputs.remote_name }}
       CONAN_LOGIN_USERNAME_XRPLF: ${{ secrets.remote_username }}
