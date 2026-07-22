@@ -7156,11 +7156,9 @@ private:
         // 9.22e18) and the conversion to an integral STAmount throws out of
         // doApply - which applySteps would surface as tefEXCEPTION.
         //
-        // featureMPTokensV2 is required for MPT AMMs to exist and also gates
-        // the equalDepositLimit overflow guard, so there is no pre-amendment
-        // case to compare against here - the pool cannot be created without
-        // the amendment. This verifies the guarded path: the deposit fails
-        // cleanly with a tec and no overflow escapes.
+        // The default amendments include fixCleanup3_4_0, under which applyGuts
+        // guards the overflow and fails cleanly with tecAMM_FAILED. This
+        // verifies the guarded path: no overflow escapes.
 
         // XRP/MPT - the exact pool the report (Antithesis) calls out. A tiny
         // mpt(1) balance and a huge MPT Amount drive frac; the XRP leg is what
@@ -7190,7 +7188,7 @@ private:
                     .account = alice_,
                     .asset1In = mpt(10'000'000'000'000),  // 1e13
                     .asset2In = XRP(1),
-                    .err = Ter(tecAMM_INVALID_TOKENS)});
+                    .err = Ter(tecAMM_FAILED)});
         }
 
         // IOU/MPT - the MPT leg is the one that overflows. A classic IOU
@@ -7215,7 +7213,7 @@ private:
                     .account = alice_,
                     .asset1In = STAmount{USD, 1, 16},
                     .asset2In = mpt(1),
-                    .err = Ter(tecAMM_INVALID_TOKENS)});
+                    .err = Ter(tecAMM_FAILED)});
         }
     }
 

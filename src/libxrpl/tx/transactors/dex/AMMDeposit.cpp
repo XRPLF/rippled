@@ -438,11 +438,10 @@ AMMDeposit::applyGuts(Sandbox& sb)
 
     auto const subTxType = ctx_.tx.getFlags() & tfDepositSubTx;
 
-    auto const [result, newLPTokenBalance] = [&,
-                                              &amountBalance = amountBalance,
-                                              &amount2Balance = amount2Balance,
-                                              &lptAMMBalance =
-                                                  lptAMMBalance]() -> std::pair<TER, STAmount> {
+    auto dispatchToDeposit = [&,
+                              &amountBalance = amountBalance,
+                              &amount2Balance = amount2Balance,
+                              &lptAMMBalance = lptAMMBalance]() -> std::pair<TER, STAmount> {
         if (subTxType & tfTwoAsset)
         {
             return equalDepositLimit(
@@ -494,6 +493,27 @@ AMMDeposit::applyGuts(Sandbox& sb)
         JLOG(j_.error()) << "AMM Deposit: invalid options.";
         return std::make_pair(tecINTERNAL, STAmount{});
         // LCOV_EXCL_STOP
+    };
+
+    auto const [result, newLPTokenBalance] = [&]() -> std::pair<TER, STAmount> {
+        try
+        {
+            return dispatchToDeposit();
+        }
+        catch (std::runtime_error const& e)
+        {
+            // A deposit whose solved amount exceeds the integral asset's range
+            // throws while converting to STAmount: past int64max
+            // Number::operator rep() throws std::overflow_error; above the asset
+            // maximum STAmount::canonicalize throws std::runtime_error. Fail
+            // cleanly with a tec rather than letting it escape doApply as
+            // tefEXCEPTION. Any other exception is left to propagate.
+            // Gated by fixCleanup3_4_0 to preserve the legacy result pre-amendment.
+            if (!sb.rules().enabled(fixCleanup3_4_0))
+                throw;  // LCOV_EXCL_LINE - preserve legacy tefEXCEPTION
+            JLOG(j_.error()) << "AMMDeposit: deposit amount out of range " << e.what();
+            return std::make_pair(tecAMM_FAILED, STAmount{});
+        }
     }();
 
     if (isTesSuccess(result))
@@ -771,96 +791,65 @@ AMMDeposit::equalDepositLimit(
     std::optional<STAmount> const& lpTokensDepositMin,
     std::uint16_t tfee)
 {
-    try
+    auto frac = Number{amount} / amountBalance;
+    auto tokensAdj = getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::Yes);
+    if (tokensAdj == beast::kZero)
     {
-        auto frac = Number{amount} / amountBalance;
-        auto tokensAdj = getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::Yes);
-        if (tokensAdj == beast::kZero)
+        if (!view.rules().enabled(fixAMMv1_3))
         {
-            if (!view.rules().enabled(fixAMMv1_3))
-            {
-                return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
-            }
+            return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
+        }
 
-            return {tecAMM_INVALID_TOKENS, STAmount{}};
-        }
-        // factor in the adjusted tokens
-        frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
-        auto const amount2Deposit =
-            getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::Yes);
-        if (amount2Deposit <= amount2)
-        {
-            return deposit(
-                view,
-                ammAccount,
-                amountBalance,
-                amount,
-                amount2Deposit,
-                lptAMMBalance,
-                tokensAdj,
-                std::nullopt,
-                std::nullopt,
-                lpTokensDepositMin,
-                tfee);
-        }
-        frac = Number{amount2} / amount2Balance;
-        tokensAdj = getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::Yes);
-        if (tokensAdj == beast::kZero)
-        {
-            if (!view.rules().enabled(fixAMMv1_3))
-            {
-                return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
-            }
-
-            return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
-        }
-        // factor in the adjusted tokens
-        frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
-        auto const amountDeposit =
-            getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::Yes);
-        if (amountDeposit <= amount)
-        {
-            return deposit(
-                view,
-                ammAccount,
-                amountBalance,
-                amountDeposit,
-                amount2,
-                lptAMMBalance,
-                tokensAdj,
-                std::nullopt,
-                std::nullopt,
-                lpTokensDepositMin,
-                tfee);
-        }
-        return {tecAMM_FAILED, STAmount{}};
-    }
-    catch (std::runtime_error const& e)
-    {
-        // A huge Amount against a tiny integral (XRP/MPT) pool leg makes
-        // frac = Amount / balance enormous, so the computed pool-side deposit
-        // exceeds the integral asset's range and converting it to an STAmount
-        // throws. This happens two ways, both handled here since
-        // std::overflow_error derives from std::runtime_error:
-        //   - value beyond int64 range: the Number -> int64 conversion throws
-        //     std::overflow_error (Number::operator rep()); and
-        //   - value within int64 but above the asset maximum (kMaxNativeN /
-        //     kMaxMpTokenAmount): STAmount::canonicalize throws
-        //     std::runtime_error.
-        // Both are user-triggered out-of-range conditions, so fail cleanly with
-        // a tec instead of letting the exception escape doApply as
-        // tefEXCEPTION. Any other (non-runtime_error) exception is left to
-        // propagate and is surfaced as tefEXCEPTION by the outer applySteps
-        // layer, consistent with treating it as an unexpected/internal error.
-        //
-        // Gated by fixCleanup3_4_0: without the amendment we must preserve
-        // the pre-existing (tefEXCEPTION) behavior so that upgraded and
-        // non-upgraded nodes agree on the transaction result.
-        if (!view.rules().enabled(fixCleanup3_4_0))
-            throw;  // LCOV_EXCL_LINE - preserve legacy tefEXCEPTION
-        JLOG(j_.error()) << "AMMDeposit::equalDepositLimit out of range " << e.what();
         return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
+    // factor in the adjusted tokens
+    frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
+    auto const amount2Deposit = getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::Yes);
+    if (amount2Deposit <= amount2)
+    {
+        return deposit(
+            view,
+            ammAccount,
+            amountBalance,
+            amount,
+            amount2Deposit,
+            lptAMMBalance,
+            tokensAdj,
+            std::nullopt,
+            std::nullopt,
+            lpTokensDepositMin,
+            tfee);
+    }
+    frac = Number{amount2} / amount2Balance;
+    tokensAdj = getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::Yes);
+    if (tokensAdj == beast::kZero)
+    {
+        if (!view.rules().enabled(fixAMMv1_3))
+        {
+            return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
+        }
+
+        return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
+    }
+    // factor in the adjusted tokens
+    frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
+    auto const amountDeposit = getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::Yes);
+    if (amountDeposit <= amount)
+    {
+        return deposit(
+            view,
+            ammAccount,
+            amountBalance,
+            amountDeposit,
+            amount2,
+            lptAMMBalance,
+            tokensAdj,
+            std::nullopt,
+            std::nullopt,
+            lpTokensDepositMin,
+            tfee);
+    }
+    return {tecAMM_FAILED, STAmount{}};
 }
 
 /**
