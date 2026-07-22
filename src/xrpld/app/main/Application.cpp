@@ -1163,6 +1163,29 @@ private:
     void
     startGenesisLedger();
 
+    /**
+     * Start the tracing and metrics pipelines.
+     *
+     * Called once from setup(), just before the [rpc_startup] loop. Starting
+     * here (rather than in start()) guarantees the OTel MeterProvider is live
+     * before any metric-emitting code runs — including startup RPCs, whose
+     * PerfLog instrumentation records a call-site metric. A call-site metric
+     * macro caches its instrument on first use via std::call_once; if that
+     * first use happens while the meter is still empty, the instrument latches
+     * null for the process lifetime and the metric silently never records.
+     *
+     * The call site sits after overlay_ and the other subsystems are
+     * constructed, because the metrics reader thread starts here and its
+     * observable-gauge callbacks read that state (e.g. getOverlay()); starting
+     * earlier would let the reader observe a half-built application.
+     *
+     * @pre nodeIdentity_ is populated (needed for the service_instance_id
+     * fallback), metricsRegistry_ is constructed, and overlay_ (and the other
+     * subsystems read by observable-gauge callbacks) are constructed.
+     */
+    void
+    startTelemetry();
+
     std::shared_ptr<Ledger>
     getLastFullLedger();
 
@@ -1347,7 +1370,8 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         telemetry_->setServiceInstanceId(toBase58(TokenType::NodePublic, nodeIdentity_->first));
 
     // Create the OTel MetricsRegistry for gap-fill metrics (counters,
-    // histograms, observable gauges).  It is started later in start().
+    // histograms, observable gauges).  It is started later, just before the
+    // [rpc_startup] loop (see startTelemetry()).
     metricsRegistry_ = std::make_unique<telemetry::MetricsRegistry>(
         telemetry_->isEnabled(), *this, logs_->journal("MetricsRegistry"));
 
@@ -1492,6 +1516,16 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         JLOG(journal_.warn()) << "*** standalone signing solution as soon as possible.";
     }
 
+    // Start telemetry and metrics now — before the [rpc_startup] loop below —
+    // so the OTel meter is live before any metric-emitting code runs. Startup
+    // RPCs invoke PerfLog instrumentation that records a call-site metric; a
+    // metric macro caches its instrument on first use, so a first use before
+    // the meter exists would latch null for the process lifetime. Placed here,
+    // after overlay_ and the other subsystems the observable-gauge callbacks
+    // read are constructed, so the metrics reader thread never observes a
+    // half-built application.
+    startTelemetry();
+
     //
     // Execute start up rpc commands.
     //
@@ -1551,16 +1585,28 @@ ApplicationImp::start(bool withTimers)
         setEntropyTimer();
     }
 
-    // Start telemetry before the other services so the tracer is live and
-    // their startup/early activity can be traced. (The metrics MeterProvider
-    // is already published in the Telemetry constructor — before subsystems
-    // create their beast::insight instruments during ApplicationImp init — so
-    // start() ordering does not affect metrics; only tracing benefits here.)
+    io_latency_sampler_.start();
+    resolver_->start();
+    loadManager_->start();
+    shaMapStore_->start();
+    if (overlay_)
+        overlay_->start();
+
+    if (grpcServer_->start())
+        fixConfigPorts(*config_, {{Sections::kPortGrpc, grpcServer_->getEndpoint()}});
+
+    ledgerCleaner_->start();
+    perfLog_->start();
+}
+
+void
+ApplicationImp::startTelemetry()
+{
+    // Start tracing first so subsequent startup/early activity can be traced.
     telemetry_->start();
 
-    // Start the metrics pipeline right after telemetry, before subsystems
-    // begin recording; the endpoint uses the same base URL with the
-    // /v1/metrics path.
+    // Start the metrics pipeline after telemetry; the endpoint uses the
+    // same base URL but the /v1/metrics path.
     if (metricsRegistry_)
     {
         auto const& section = config_->section("telemetry");
@@ -1576,19 +1622,6 @@ ApplicationImp::start(bool withTimers)
 
         metricsRegistry_->start(endpoint, instanceId);
     }
-
-    io_latency_sampler_.start();
-    resolver_->start();
-    loadManager_->start();
-    shaMapStore_->start();
-    if (overlay_)
-        overlay_->start();
-
-    if (grpcServer_->start())
-        fixConfigPorts(*config_, {{Sections::kPortGrpc, grpcServer_->getEndpoint()}});
-
-    ledgerCleaner_->start();
-    perfLog_->start();
 }
 
 void
