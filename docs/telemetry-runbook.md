@@ -41,7 +41,9 @@ xrpld supports OpenTelemetry distributed tracing to provide visibility into RPC 
 
 This runbook covers operating a running node and querying its traces. For
 building xrpld with telemetry support and the internal architecture, see
-[build/telemetry.md](build/telemetry.md).
+[build/telemetry.md](build/telemetry.md). For plain-language definitions of the
+XRP Ledger terms used in the dashboards, see the
+[telemetry glossary](telemetry-glossary.md).
 
 ## Quick Start
 
