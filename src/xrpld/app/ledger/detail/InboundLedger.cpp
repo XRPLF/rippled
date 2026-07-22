@@ -453,25 +453,37 @@ InboundLedger::done()
     touch();
 
     // Finalize the acquire span with the outcome, timeout count, and peer
-    // count, then end it (reset) so its duration is exported.
-    if (acquireSpan_ && *acquireSpan_)
+    // count. Keep it active as the ambient context across the finalize and
+    // the outcome log below so that log line carries the span's trace_id.
+    // The activation is non-owning; acquireSpan_ still owns the span. The
+    // activation pops at the end of this block (restoring the prior context)
+    // while acquireSpan_ is still alive, then reset() ends the span.
     {
-        using namespace telemetry;
-        acquireSpan_->setAttribute(
-            ledger_span::attr::outcome,
-            failed_ ? std::string_view(ledger_span::val::failed)
-                    : std::string_view(ledger_span::val::complete));
-        acquireSpan_->setAttribute(ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
-        acquireSpan_->setAttribute(
-            ledger_span::attr::peerCount, static_cast<int64_t>(getPeerCount()));
-    }
-    acquireSpan_.reset();
+        auto acquireActivation = (acquireSpan_ && *acquireSpan_) ? acquireSpan_->activate()
+                                                                 : telemetry::ScopedActivation{};
+        if (acquireSpan_ && *acquireSpan_)
+        {
+            using namespace telemetry;
+            acquireSpan_->setAttribute(
+                ledger_span::attr::outcome,
+                failed_ ? std::string_view(ledger_span::val::failed)
+                        : std::string_view(ledger_span::val::complete));
+            acquireSpan_->setAttribute(
+                ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
+            acquireSpan_->setAttribute(
+                ledger_span::attr::peerCount, static_cast<int64_t>(getPeerCount()));
+        }
 
-    JLOG(journal_.debug()) << "Acquire " << hash_ << (failed_ ? " fail " : " ")
-                           << ((timeouts_ == 0)
-                                   ? std::string()
-                                   : (std::string("timeouts:") + std::to_string(timeouts_) + " "))
-                           << stats_.get();
+        JLOG(journal_.debug()) << "Acquire " << hash_ << (failed_ ? " fail " : " ")
+                               << ((timeouts_ == 0) ? std::string()
+                                                    : (std::string("timeouts:") +
+                                                       std::to_string(timeouts_) + " "))
+                               << stats_.get();
+        // acquireActivation pops here, before the span is ended below.
+    }
+    // End the acquire span after its outcome log. Unconditional so the span
+    // never leaks even when it was inactive.
+    acquireSpan_.reset();
 
     XRPL_ASSERT(complete_ || failed_, "xrpl::InboundLedger::done : complete or failed");
 

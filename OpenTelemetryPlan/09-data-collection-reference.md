@@ -152,9 +152,9 @@ later spans — the `stage` attribute identifies where it stopped.
 > coroutine across `yield()` and resumes on whatever thread the scheduler picks.
 > RPC, consensus, and transaction spans therefore keep per-line log-trace
 > correlation, and their scopes are safe across coroutine yields. Job-handoff
-> spans — transaction apply and receive, and consensus accept — are activated
-> inside their worker bodies rather than at enqueue, so each worker's log lines
-> carry the span's trace context.
+> spans — transaction apply and receive, consensus accept, and ledger acquire —
+> are activated inside their worker bodies rather than at enqueue, so each
+> worker's log lines carry the span's trace context.
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"tx.process|tx.receive"}`
 or, for the apply pipeline: `{resource.service.name="xrpld" && name=~"tx.preflight|tx.preclaim|tx.transactor"}`
