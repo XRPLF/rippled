@@ -1409,11 +1409,10 @@ NetworkOPsImp::processTransaction(
     FailHard failType)
 {
     using namespace telemetry;
-    // Detached: this span is stored in TransactionStatus and applied on a
-    // batch worker thread, so it must not leave its Scope bound to this
-    // thread's context stack (that leak would adopt later work into this
-    // transaction's trace).
-    auto span = std::make_shared<SpanGuard>(txProcessSpan(transaction->getID()).detached());
+    // SpanGuard is thread-free (holds no Scope), so it is safe to store here
+    // and end on the batch worker thread that later applies this transaction —
+    // no detach step is needed.
+    auto span = std::make_shared<SpanGuard>(txProcessSpan(transaction->getID()));
     span->setAttribute(tx_span::attr::txHash, to_string(transaction->getID()).c_str());
     span->setAttribute(tx_span::attr::local, bLocal);
     if (auto const& stx = transaction->getSTransaction())
