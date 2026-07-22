@@ -56,6 +56,7 @@ class Simulate_test : public beast::unit_test::Suite
         BEAST_EXPECT(result.isMember(jss::engine_result));
         BEAST_EXPECT(result.isMember(jss::engine_result_code));
         BEAST_EXPECT(result.isMember(jss::engine_result_message));
+        BEAST_EXPECT(result.isMember(jss::engine_result_reason));
         BEAST_EXPECT(result.isMember(jss::tx_json) || result.isMember(jss::tx_blob));
 
         json::Value txJson;
@@ -681,6 +682,8 @@ class Simulate_test : public beast::unit_test::Suite
                     BEAST_EXPECT(result[jss::engine_result] == "temBAD_AMOUNT");
                     BEAST_EXPECT(result[jss::engine_result_code] == -298);
                     BEAST_EXPECT(result[jss::engine_result_message] == "Malformed: Bad amount.");
+                    // No custom reason was set; reason falls back to the default transHuman string.
+                    BEAST_EXPECT(result[jss::engine_result_reason] == "Malformed: Bad amount.");
 
                     BEAST_EXPECT(!result.isMember(jss::meta) && !result.isMember(jss::meta_blob));
                 };
@@ -727,6 +730,10 @@ class Simulate_test : public beast::unit_test::Suite
                         "Destination does not exist. Too little XRP sent to "
                         "create "
                         "it.");
+                    // No custom reason was set; reason falls back to the default transHuman string.
+                    BEAST_EXPECT(
+                        result[jss::engine_result_reason] ==
+                        "Destination does not exist. Too little XRP sent to create it.");
 
                     if (BEAST_EXPECT(result.isMember(jss::meta) || result.isMember(jss::meta_blob)))
                     {
@@ -770,6 +777,39 @@ class Simulate_test : public beast::unit_test::Suite
             tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
 
             // test without autofill
+            testTx(env, tx, testSimulation);
+        }
+
+        // tecDST_TAG_NEEDED: custom reason set by transactor differs from
+        // the static transHuman message ("A destination tag is required.").
+        {
+            env.fund(XRP(10000), alice);
+            env(fset(alice, asfRequireDest));
+            env.close();
+
+            std::function<void(json::Value const&, json::Value const&)> const& testSimulation =
+                [&](json::Value const& resp, json::Value const& tx) {
+                    auto result = resp[jss::result];
+                    checkBasicReturnValidity(
+                        result, tx, env.seq(env.master), env.current()->fees().base);
+
+                    BEAST_EXPECT(result[jss::engine_result] == "tecDST_TAG_NEEDED");
+                    BEAST_EXPECT(result[jss::engine_result_code] == 143);
+                    // engine_result_message is the static transHuman string.
+                    BEAST_EXPECT(
+                        result[jss::engine_result_message] == "A destination tag is required.");
+                    // engine_result_reason carries the custom string from the transactor.
+                    BEAST_EXPECT(
+                        result[jss::engine_result_reason] ==
+                        "Malformed transaction: DestinationTag required.");
+                };
+
+            json::Value tx;
+            tx[jss::Account] = env.master.human();
+            tx[jss::TransactionType] = jss::Payment;
+            tx[sfDestination] = alice.human();
+            tx[sfAmount] = "100000000";  // 100 XRP in drops
+
             testTx(env, tx, testSimulation);
         }
     }
