@@ -347,7 +347,7 @@ concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::u
  * (SingleAssetVault and LendingProtocol), and/or check if either of those
  * amendments are enabled to determine which result to expect.
  */
-class Number
+class Number final
 {
     using rep = std::int64_t;
     using internalrep = MantissaRange::rep;
@@ -549,8 +549,21 @@ public:
     setround(RoundingMode inMode);
 
     /**
-     * Returns which mantissa scale is currently in use for normalization.
+     * Convert an integer to a RoundingMode, validating that it is in range.
      *
+     * Returns std::nullopt if the value does not correspond to a valid
+     * RoundingMode.
+     */
+    static std::optional<RoundingMode>
+    checkedRoundingMode(int mode) noexcept
+    {
+        if (mode < static_cast<int>(RoundingMode::ToNearest) ||
+            mode > static_cast<int>(RoundingMode::Upward))
+            return std::nullopt;
+        return static_cast<RoundingMode>(mode);
+    }
+
+    /**
      * If you think you need to call this outside of unit tests, no you don't.
      */
     static MantissaRange::MantissaScale
