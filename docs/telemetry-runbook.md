@@ -976,18 +976,18 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ### Consensus Health (`consensus-health`)
 
-| Panel                         | Type       | PromQL                                                                      | Labels Used      |
-| ----------------------------- | ---------- | --------------------------------------------------------------------------- | ---------------- |
-| Consensus Round Duration      | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept"})`       | —                |
-| Consensus Proposals Sent Rate | timeseries | `rate(span_calls_total{span_name="consensus.proposal.send"}[5m])`           | —                |
-| Ledger Close Duration         | timeseries | `histogram_quantile(0.95, ... {span_name="consensus.ledger_close"})`        | —                |
-| Validation Send Rate          | stat       | `rate(span_calls_total{span_name="consensus.validation.send"}[5m])`         | —                |
-| Ledger Apply Duration         | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept.apply"})` | —                |
-| Close Time Agreement          | timeseries | `rate(span_calls_total{span_name="consensus.accept.apply"}[5m])`            | —                |
-| Consensus Mode Over Time      | timeseries | `consensus.ledger_close` by `consensus_mode`                                | `consensus_mode` |
-| Accept vs Close Rate          | timeseries | `consensus.accept` vs `consensus.ledger_close` rate                         | —                |
-| Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                     | —                |
-| Accept Duration Heatmap       | heatmap    | `consensus.accept` histogram buckets                                        | `le`             |
+| Panel                         | Type       | PromQL                                                                                                                                             | Labels Used      |
+| ----------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| Consensus Round Duration      | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept"})`                                                                              | —                |
+| Consensus Proposals Sent Rate | timeseries | `rate(span_calls_total{span_name="consensus.proposal.send"}[5m])`                                                                                  | —                |
+| Ledger Close Duration         | timeseries | `histogram_quantile(0.95, ... {span_name="consensus.round"})` (full round, not `consensus.ledger_close` which is only the sub-ms onClose prologue) | `consensus_mode` |
+| Validation Send Rate          | stat       | `rate(span_calls_total{span_name="consensus.validation.send"}[5m])`                                                                                | —                |
+| Ledger Apply Duration         | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept.apply"})`                                                                        | —                |
+| Close Time Agreement          | timeseries | `rate(span_calls_total{span_name="consensus.accept.apply"}[5m])`                                                                                   | —                |
+| Consensus Mode Over Time      | timeseries | `consensus.ledger_close` by `consensus_mode`                                                                                                       | `consensus_mode` |
+| Accept vs Close Rate          | timeseries | `consensus.accept` vs `consensus.ledger_close` rate                                                                                                | —                |
+| Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                                                                                            | —                |
+| Accept Duration Heatmap       | heatmap    | `consensus.accept` histogram buckets                                                                                                               | `le`             |
 
 ### Ledger Operations (`ledger-operations`)
 
