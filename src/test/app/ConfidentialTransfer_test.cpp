@@ -5495,7 +5495,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         uint64_t const aliceBalance = 100;
         uint64_t const aliceAmount = amt;
-        uint64_t const aliceRemaining = aliceBalance - aliceAmount;  // (uint64_t)-1
+        uint64_t const aliceRemaining = aliceBalance - aliceAmount;
 
         // Setup: Alice has 100 tokens converted to confidential
         ConfidentialEnv confEnv{
@@ -5573,14 +5573,20 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         // Parse all public keys and ciphertexts
         secp256k1_pubkey c1, c2Alice, c2Bob, c2Issuer;
-        // Parse sender's ciphertext C1 (first 33 bytes)
-        auto x = secp256k1_ec_pubkey_parse(ctx, &c1, aliceEncAmt.data(), 33);
+        // Parse sender's ciphertext C1 (first 33(kCompressedEcPointLength) bytes)
+        auto x = secp256k1_ec_pubkey_parse(ctx, &c1, aliceEncAmt.data(), kCompressedEcPointLength);
         if (!BEAST_EXPECTS(x == 1, "Failed to parse C1"))
             return;
         // Parse C2 components for all recipients
-        x = secp256k1_ec_pubkey_parse(ctx, &c2Alice, aliceEncAmt.data() + 33, 33);
-        auto y = secp256k1_ec_pubkey_parse(ctx, &c2Bob, bobEncAmt.data() + 33, 33);
-        auto z = secp256k1_ec_pubkey_parse(ctx, &c2Issuer, issuerEncAmt.data() + 33, 33);
+        x = secp256k1_ec_pubkey_parse(
+            ctx, &c2Alice, aliceEncAmt.data() + kCompressedEcPointLength, kCompressedEcPointLength);
+        auto y = secp256k1_ec_pubkey_parse(
+            ctx, &c2Bob, bobEncAmt.data() + kCompressedEcPointLength, kCompressedEcPointLength);
+        auto z = secp256k1_ec_pubkey_parse(
+            ctx,
+            &c2Issuer,
+            issuerEncAmt.data() + kCompressedEcPointLength,
+            kCompressedEcPointLength);
         if (!BEAST_EXPECTS(x == 1 && y == 1 && z == 1, "Failed to parse C2 components"))
             return;
         secp256k1_pubkey c2Vec[] = {c2Alice, c2Bob, c2Issuer};
@@ -5590,22 +5596,25 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         auto alicePubKey = requireOptional(mptIssuer.getPubKey(alice), "Missing alice pubkey");
         auto bobPubKey = requireOptional(mptIssuer.getPubKey(bob), "Missing bob pubkey");
         auto issuerPubKey = requireOptional(mptIssuer.getPubKey(issuer), "Missing issuer pubkey");
-        x = secp256k1_ec_pubkey_parse(ctx, &pkAlice, alicePubKey.data(), 33);
-        y = secp256k1_ec_pubkey_parse(ctx, &pkBob, bobPubKey.data(), 33);
-        z = secp256k1_ec_pubkey_parse(ctx, &pkIssuer, issuerPubKey.data(), 33);
+        x = secp256k1_ec_pubkey_parse(ctx, &pkAlice, alicePubKey.data(), kCompressedEcPointLength);
+        y = secp256k1_ec_pubkey_parse(ctx, &pkBob, bobPubKey.data(), kCompressedEcPointLength);
+        z = secp256k1_ec_pubkey_parse(
+            ctx, &pkIssuer, issuerPubKey.data(), kCompressedEcPointLength);
         if (!BEAST_EXPECTS(x == 1 && y == 1 && z == 1, "Failed to parse public keys"))
             return;
         secp256k1_pubkey pkVec[] = {pkAlice, pkBob, pkIssuer};
 
         // Parse commitments
         secp256k1_pubkey pcAmount, pcBalance, b1, b2;
-        x = secp256k1_ec_pubkey_parse(ctx, &pcAmount, amtCommit.data(), 33);
-        y = secp256k1_ec_pubkey_parse(ctx, &pcBalance, balanceCommit.data(), 33);
+        x = secp256k1_ec_pubkey_parse(ctx, &pcAmount, amtCommit.data(), kCompressedEcPointLength);
+        y = secp256k1_ec_pubkey_parse(
+            ctx, &pcBalance, balanceCommit.data(), kCompressedEcPointLength);
         if (!BEAST_EXPECTS(x == 1 && y == 1, "Failed to parse commitments"))
             return;
         // Parse balance ciphertext
-        x = secp256k1_ec_pubkey_parse(ctx, &b1, aliceEncBalance.data(), 33);
-        y = secp256k1_ec_pubkey_parse(ctx, &b2, aliceEncBalance.data() + 33, 33);
+        x = secp256k1_ec_pubkey_parse(ctx, &b1, aliceEncBalance.data(), kCompressedEcPointLength);
+        y = secp256k1_ec_pubkey_parse(
+            ctx, &b2, aliceEncBalance.data() + kCompressedEcPointLength, kCompressedEcPointLength);
         if (!BEAST_EXPECTS(x == 1 && y == 1, "Failed to parse balance ciphertext"))
             return;
 
@@ -5617,12 +5626,12 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         x = secp256k1_compact_standard_prove(
             ctx,
             sigmaProof.data(),
-            aliceAmount,   // amount (120)
-            aliceBalance,  // balance (100)
+            aliceAmount,
+            aliceBalance,
             randomElgamal.data(),
             alicePrivKey.data(),
             randomBalance.data(),
-            numParticipants,  // n_participants
+            numParticipants,
             &c1,
             c2Vec,
             pkVec,
@@ -5663,9 +5672,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         // Now forge the bulletproof claiming
         auto const forgedBulletproof = getForgedBulletproof(
-            {aliceAmount, aliceRemaining},  // [101, -1]
-            {randomElgamal, randomRemaining},
-            ctxHash);
+            {aliceAmount, aliceRemaining}, {randomElgamal, randomRemaining}, ctxHash);
 
         // Combine sigma proof + forged bulletproof
         Buffer combinedProof(SECP256K1_COMPACT_STANDARD_PROOF_SIZE + kEcDoubleBulletproofLength);
