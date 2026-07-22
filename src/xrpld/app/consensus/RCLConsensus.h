@@ -96,9 +96,9 @@ class RCLConsensus
          *  the trace_id is derived from previousLedger.id() so that all
          *  validators in the same round share the same trace_id.
          *
-         *  Stored detached: its Scope is stripped right after roundSpanContext_
-         *  is captured, because it is emplaced and reset on different job
-         *  workers. Child spans link via roundSpanContext_, not the ambient span.
+         *  Thread-free: a SpanGuard owns no thread-local Scope, so it can be
+         *  emplaced and reset on different job workers safely. Child spans link
+         *  via roundSpanContext_ (captured once), not an ambient parent span.
          */
         std::optional<telemetry::SpanGuard> roundSpan_;
 
@@ -290,10 +290,10 @@ class RCLConsensus
          *
          * The generic engine uses this to parent the phase spans it owns
          * (consensus.phase.open, consensus.establish) under the round span
-         * without touching roundSpan_ across threads. roundSpan_ is detached
-         * after this context is captured, so it is no longer the thread's
-         * ambient parent; child spans must link via this context. Returns an
-         * invalid context before the round span is created.
+         * without touching roundSpan_ across threads. roundSpan_ is a
+         * thread-free SpanGuard (never an ambient parent), so child spans must
+         * link via this captured context. Returns an invalid context before the
+         * round span is created.
          *
          * @return The round span's captured context, or an invalid context.
          */
