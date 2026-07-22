@@ -63,14 +63,14 @@ setCommonHostFunctions(HostFunctions& hfs, ImportVec& i)
     WASM_IMPORT_FUNC2(i, didKeylet, "did_id", hfs,                                                            350);
     WASM_IMPORT_FUNC2(i, escrowKeylet, "escrow_id", hfs,                                                      350);
     WASM_IMPORT_FUNC2(i, trustLineKeylet, "trustline_id", hfs,                                                     400);
-    WASM_IMPORT_FUNC2(i, mptokenIssuanceKeylet, "mptoken_issuance_id", hfs,                                           350);
+    WASM_IMPORT_FUNC2(i, mptokenIssuanceKeylet, "mpt_issuance_id", hfs,                                       350);
     WASM_IMPORT_FUNC2(i, mptokenKeylet, "mptoken_id", hfs,                                                    500);
     WASM_IMPORT_FUNC2(i, nftokenOfferKeylet, "nft_offer_id", hfs,                                                 350);
     WASM_IMPORT_FUNC2(i, offerKeylet, "offer_id", hfs,                                                        350);
     WASM_IMPORT_FUNC2(i, oracleKeylet, "oracle_id", hfs,                                                      350);
-    WASM_IMPORT_FUNC2(i, paychannelKeylet, "paychannel_id", hfs,                                                    350);
+    WASM_IMPORT_FUNC2(i, paychannelKeylet, "paychan_id", hfs,                                                 350);
     WASM_IMPORT_FUNC2(i, permissionedDomainKeylet, "permissioned_domain_id", hfs,                             350);
-    WASM_IMPORT_FUNC2(i, signerListKeylet, "signer_list_id", hfs,                                                    350);
+    WASM_IMPORT_FUNC2(i, signerListKeylet, "signers_id", hfs,                                                 350);
     WASM_IMPORT_FUNC2(i, ticketKeylet, "ticket_id", hfs,                                                      350);
     WASM_IMPORT_FUNC2(i, vaultKeylet, "vault_id", hfs,                                                        350);
 
@@ -79,7 +79,7 @@ setCommonHostFunctions(HostFunctions& hfs, ImportVec& i)
     WASM_IMPORT_FUNC2(i, getNFTTaxon, "nft_taxon", hfs,                                                        60);
     WASM_IMPORT_FUNC2(i, getNFTFlags, "nft_flags", hfs,                                                        60);
     WASM_IMPORT_FUNC2(i, getNFTTransferFee, "nft_xfer_fee", hfs,                                               60);
-    WASM_IMPORT_FUNC2(i, getNFTSequence, "nft_seq", hfs,                                                       60);
+    WASM_IMPORT_FUNC2(i, getNFTSequence, "nft_serial", hfs,                                                   60);
 
     WASM_IMPORT_FUNC (i, trace, hfs,                                                                          500);
     WASM_IMPORT_FUNC2(i, traceNum, "trace_num", hfs,                                                          500);
