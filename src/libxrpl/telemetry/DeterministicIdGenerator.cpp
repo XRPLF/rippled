@@ -22,6 +22,7 @@
 #include <opentelemetry/trace/trace_id.h>
 
 #include <array>
+#include <atomic>
 #include <cstdint>
 #include <optional>
 
@@ -41,6 +42,14 @@ thread_local std::optional<std::array<std::uint8_t, 16>> gTlsPendingTraceId;
  * branch.
  */
 thread_local bool gTlsPendingConsumed = false;
+
+/**
+ * Process-wide count of deterministic trace_ids dropped without being consumed.
+ * Bumped in ~PendingTraceId when the pending id was never taken by a root span.
+ * Atomic because it is summed across all threads; relaxed ordering is enough
+ * for a diagnostic tally. Exposed via unconsumedDeterministicIdDrops().
+ */
+std::atomic<std::uint64_t> gUnconsumedDeterministicIdDrops{0};
 
 }  // namespace
 
@@ -84,8 +93,21 @@ PendingTraceId::~PendingTraceId() noexcept
     XRPL_ASSERT(
         gTlsPendingConsumed,
         "xrpl::telemetry::PendingTraceId : deterministic trace_id was not consumed");
+    if (!gTlsPendingConsumed)
+    {
+        // The assert above is stripped in release, so bump a counter too: a
+        // dropped deterministic trace root stays observable via
+        // unconsumedDeterministicIdDrops(). Relaxed: this is a diagnostic tally.
+        gUnconsumedDeterministicIdDrops.fetch_add(1, std::memory_order_relaxed);
+    }
     gTlsPendingTraceId.reset();  // never leak, even in release
     gTlsPendingConsumed = false;
+}
+
+std::uint64_t
+unconsumedDeterministicIdDrops() noexcept
+{
+    return gUnconsumedDeterministicIdDrops.load(std::memory_order_relaxed);
 }
 
 }  // namespace xrpl::telemetry
