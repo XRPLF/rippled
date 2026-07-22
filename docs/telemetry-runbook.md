@@ -761,28 +761,29 @@ The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTe
 
 These gauges are exported via the OTel Metrics SDK `PeriodicMetricReader` (10s interval), NOT through beast::insight.
 
-| Prometheus Metric                                   | Source              | Description                                      |
-| --------------------------------------------------- | ------------------- | ------------------------------------------------ |
-| `server_info{metric="server_state"}`                | MetricsRegistry.cpp | Operating mode (0=DISCONNECTED .. 4=FULL)        |
-| `server_info{metric="uptime"}`                      | MetricsRegistry.cpp | Seconds since server start                       |
-| `server_info{metric="peers"}`                       | MetricsRegistry.cpp | Total connected peers                            |
-| `server_info{metric="validated_ledger_seq"}`        | MetricsRegistry.cpp | Validated ledger sequence number                 |
-| `server_info{metric="ledger_current_index"}`        | MetricsRegistry.cpp | Current open ledger sequence                     |
-| `server_info{metric="peer_disconnects_resources"}`  | MetricsRegistry.cpp | Cumulative resource-related peer disconnects     |
-| `server_info{metric="last_close_proposers"}`        | MetricsRegistry.cpp | Proposers in last closed round                   |
-| `server_info{metric="last_close_converge_time_ms"}` | MetricsRegistry.cpp | Last close convergence time (ms)                 |
-| `build_info{version="<ver>"}`                       | MetricsRegistry.cpp | Info-style metric (always 1)                     |
-| `complete_ledgers{bound="start\|end",index="<N>"}`  | MetricsRegistry.cpp | Complete ledger range start/end pairs            |
-| `db_metrics{metric="db_kb_total"}`                  | MetricsRegistry.cpp | Total database size (KB)                         |
-| `db_metrics{metric="db_kb_ledger"}`                 | MetricsRegistry.cpp | Ledger database size (KB)                        |
-| `db_metrics{metric="db_kb_transaction"}`            | MetricsRegistry.cpp | Transaction database size (KB)                   |
-| `db_metrics{metric="historical_perminute"}`         | MetricsRegistry.cpp | Historical ledger fetches per minute             |
-| `cache_metrics{metric="AL_size"}`                   | MetricsRegistry.cpp | AcceptedLedger cache size                        |
-| `nodestore_state{metric="node_reads_duration_us"}`  | MetricsRegistry.cpp | Cumulative read time (microseconds)              |
-| `nodestore_state{metric="read_request_bundle"}`     | MetricsRegistry.cpp | Read request bundle count                        |
-| `nodestore_state{metric="read_threads_running"}`    | MetricsRegistry.cpp | Active read threads                              |
-| `nodestore_state{metric="read_threads_total"}`      | MetricsRegistry.cpp | Total read threads configured                    |
-| `rpc_in_flight_requests`                            | PerfLogImp.cpp      | RPC requests currently executing (UpDownCounter) |
+| Prometheus Metric                                   | Source              | Description                                                                                                                                                                           |
+| --------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `server_info{metric="server_state"}`                | MetricsRegistry.cpp | Operating mode (0=DISCONNECTED .. 4=FULL)                                                                                                                                             |
+| `server_info{metric="uptime"}`                      | MetricsRegistry.cpp | Seconds since server start                                                                                                                                                            |
+| `server_info{metric="peers"}`                       | MetricsRegistry.cpp | Total connected peers                                                                                                                                                                 |
+| `server_info{metric="validated_ledger_seq"}`        | MetricsRegistry.cpp | Validated ledger sequence number                                                                                                                                                      |
+| `server_info{metric="ledger_current_index"}`        | MetricsRegistry.cpp | Current open ledger sequence                                                                                                                                                          |
+| `server_info{metric="peer_disconnects_resources"}`  | MetricsRegistry.cpp | Cumulative resource-related peer disconnects                                                                                                                                          |
+| `server_info{metric="last_close_proposers"}`        | MetricsRegistry.cpp | Proposers in last closed round                                                                                                                                                        |
+| `server_info{metric="last_close_converge_time_ms"}` | MetricsRegistry.cpp | Last close convergence time (ms)                                                                                                                                                      |
+| `server_info{metric="last_close_time"}`             | MetricsRegistry.cpp | Network close time of last closed ledger (NetClock secs since Ripple epoch). Age = `time() - (value + 946684800)`; close interval = `1/rate(ledgers_closed_total)`, not a gauge delta |
+| `build_info{version="<ver>"}`                       | MetricsRegistry.cpp | Info-style metric (always 1)                                                                                                                                                          |
+| `complete_ledgers{bound="start\|end",index="<N>"}`  | MetricsRegistry.cpp | Complete ledger range start/end pairs                                                                                                                                                 |
+| `db_metrics{metric="db_kb_total"}`                  | MetricsRegistry.cpp | Total database size (KB)                                                                                                                                                              |
+| `db_metrics{metric="db_kb_ledger"}`                 | MetricsRegistry.cpp | Ledger database size (KB)                                                                                                                                                             |
+| `db_metrics{metric="db_kb_transaction"}`            | MetricsRegistry.cpp | Transaction database size (KB)                                                                                                                                                        |
+| `db_metrics{metric="historical_perminute"}`         | MetricsRegistry.cpp | Historical ledger fetches per minute                                                                                                                                                  |
+| `cache_metrics{metric="AL_size"}`                   | MetricsRegistry.cpp | AcceptedLedger cache size                                                                                                                                                             |
+| `nodestore_state{metric="node_reads_duration_us"}`  | MetricsRegistry.cpp | Cumulative read time (microseconds)                                                                                                                                                   |
+| `nodestore_state{metric="read_request_bundle"}`     | MetricsRegistry.cpp | Read request bundle count                                                                                                                                                             |
+| `nodestore_state{metric="read_threads_running"}`    | MetricsRegistry.cpp | Active read threads                                                                                                                                                                   |
+| `nodestore_state{metric="read_threads_total"}`      | MetricsRegistry.cpp | Total read threads configured                                                                                                                                                         |
+| `rpc_in_flight_requests`                            | PerfLogImp.cpp      | RPC requests currently executing (UpDownCounter)                                                                                                                                      |
 
 #### Counters
 
@@ -990,16 +991,17 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ### Ledger Operations (`ledger-operations`)
 
-| Panel                   | Type       | PromQL                                         | Labels Used |
-| ----------------------- | ---------- | ---------------------------------------------- | ----------- |
-| Ledger Build Rate       | stat       | `ledger.build` call rate                       | —           |
-| Ledger Build Duration   | timeseries | p95/p50 of `ledger.build`                      | —           |
-| Ledger Validation Rate  | stat       | `ledger.validate` call rate                    | —           |
-| Build Duration Heatmap  | heatmap    | `ledger.build` histogram buckets               | `le`        |
-| TX Apply Duration       | timeseries | p95/p50 of `tx.apply`                          | —           |
-| TX Apply Rate           | timeseries | `tx.apply` call rate                           | —           |
-| Ledger Store Rate       | stat       | `ledger.store` call rate                       | —           |
-| Build vs Close Duration | timeseries | p95 `ledger.build` vs `consensus.ledger_close` | —           |
+| Panel                       | Type       | PromQL                                                                                                                       | Labels Used |
+| --------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| Ledger Build Rate           | stat       | `ledger.build` call rate                                                                                                     | —           |
+| Ledger Build Duration       | timeseries | p95/p50 of `ledger.build`                                                                                                    | —           |
+| Ledger Validation Rate      | stat       | `ledger.validate` call rate                                                                                                  | —           |
+| Build Duration Heatmap      | heatmap    | `ledger.build` histogram buckets                                                                                             | `le`        |
+| TX Apply Duration           | timeseries | p95/p50 of `tx.apply`                                                                                                        | —           |
+| TX Apply Rate               | timeseries | `tx.apply` call rate                                                                                                         | —           |
+| Ledger Store Rate           | stat       | `ledger.store` call rate                                                                                                     | —           |
+| Build vs Close Duration     | timeseries | p95 `ledger.build` vs `consensus.round` (full round, not `consensus.ledger_close` which is only the sub-ms onClose prologue) | —           |
+| Ledger Close Interval & Age | timeseries | Interval: `1/rate(ledgers_closed_total)`; Age: `time() - (server_info{metric="last_close_time"} + 946684800)`                | —           |
 
 ### Peer Network (`peer-network`)
 

@@ -848,6 +848,22 @@ MetricsRegistry::registerServerInfoGauge()
                         "last_close_converge_time_ms",
                         static_cast<int64_t>(consensusInfo["previous_mseconds"].asUInt()));
                 }
+
+                // Network close time of the last closed ledger, as NetClock
+                // seconds since the Ripple epoch (2000-01-01). Unlike a span
+                // timestamp, a gauge value survives as a queryable time series,
+                // so dashboards can show last-close age (staleness) via
+                // now - value. The close interval comes from the
+                // ledgers_closed_total counter, not a delta of this gauge
+                // (a timestamp gauge's delta aliases to the scrape period).
+                // Skip until a ledger has closed.
+                if (auto const closed = app.getLedgerMaster().getClosedLedger())
+                {
+                    observe(
+                        "last_close_time",
+                        static_cast<int64_t>(
+                            closed->header().closeTime.time_since_epoch().count()));
+                }
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {

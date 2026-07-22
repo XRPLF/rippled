@@ -150,6 +150,12 @@ connectors:
       - name: command
       - name: rpc_status
       - name: consensus_mode
+      # Only the boolean close_time_correct is promoted, never the close_time
+      # value itself: close_time is a monotonic NetClock timestamp, so a
+      # dimension on it would mint a new metric series every ledger (unbounded
+      # cardinality). The close-time value is exposed as the server_info
+      # last_close_time gauge instead (for last-close age); the close interval
+      # comes from the ledgers_closed_total counter.
       - name: close_time_correct
       - name: consensus_state
       - name: local
