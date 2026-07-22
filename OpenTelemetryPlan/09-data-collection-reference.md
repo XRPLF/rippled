@@ -137,6 +137,14 @@ under a single trace even though they run sequentially and often on different
 threads. A transaction that hard-fails preflight or preclaim never reaches the
 later spans — the `stage` attribute identifies where it stopped.
 
+> **Deterministic roots are true roots.** Spans with a deterministic `trace_id`
+> (the `tx.*` apply pipeline, `tx.process`, `tx.receive`, and `consensus.round`)
+> are emitted as genuine trace roots with an empty `parent_span_id`. The chosen
+> `trace_id` is injected through a custom `DeterministicIdGenerator` on the SDK's
+> no-parent branch, so there is no synthetic placeholder parent — Tempo shows a
+> clean root, not a "root span not yet received" warning. Cross-node correlation
+> still works because every node derives the same `trace_id` from the shared hash.
+
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"tx.process|tx.receive"}`
 or, for the apply pipeline: `{resource.service.name="xrpld" && name=~"tx.preflight|tx.preclaim|tx.transactor"}`
 
@@ -211,7 +219,7 @@ Controlled by `trace_peer` in `[telemetry]` config. **Enabled by default** (high
 | `peer.validation.receive` | —      | PeerImp.cpp | Validation message received from peer |
 
 A `—` parent means the span is a fresh trace root (`kConsumer`): it is started
-via `SpanGuard::rootSpan()` at the inbound-message entry point and never
+via `ScopedSpanGuard::freshRoot()` at the inbound-message entry point and never
 inherits an ambient span left active on the peer thread, so it does not nest
 under an unrelated transaction's trace.
 

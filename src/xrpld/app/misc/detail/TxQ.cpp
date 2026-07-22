@@ -545,7 +545,7 @@ TxQ::tryClearAccountQueueUpThruTx(
     beast::Journal j)
 {
     using namespace telemetry;
-    [[maybe_unused]] auto span = SpanGuard::span(
+    [[maybe_unused]] ScopedSpanGuard span(
         TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::batchClear);
 
     SeqProxy const tSeqProx{tx.getSeqProxy()};
@@ -752,8 +752,7 @@ TxQ::apply(
     beast::Journal j)
 {
     using namespace telemetry;
-    auto span =
-        SpanGuard::span(TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::enqueue);
+    ScopedSpanGuard span(TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::enqueue);
     span.setAttribute(txq_span::attr::txHash, to_string(tx->getTransactionID()).c_str());
     if (auto const* fmt = TxFormats::getInstance().findByType(tx->getTxnType()))
         span.setAttribute(txq_span::attr::txType, fmt->getName().c_str());
@@ -1374,8 +1373,7 @@ void
 TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
 {
     using namespace telemetry;
-    auto span =
-        SpanGuard::span(TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::cleanup);
+    ScopedSpanGuard span(TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::cleanup);
     span.setAttribute(txq_span::attr::ledgerSeq, static_cast<int64_t>(view.header().seq));
 
     std::scoped_lock const lock(mutex_);
@@ -1466,8 +1464,7 @@ TxQ::accept(Application& app, OpenView& view)
 
     // Create the span and read byFee_.size() only after taking the lock, since
     // byFee_ is guarded by mutex_.
-    auto span =
-        SpanGuard::span(TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::accept);
+    ScopedSpanGuard span(TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::accept);
     span.setAttribute(txq_span::attr::queueSize, static_cast<int64_t>(byFee_.size()));
 
     auto const metricsSnapshot = feeMetrics_.getSnapshot();
@@ -1497,7 +1494,7 @@ TxQ::accept(Application& app, OpenView& view)
             JLOG(j_.trace()) << "Applying queued transaction " << candidateIter->txID
                              << " to open ledger.";
 
-            auto txSpan = SpanGuard::span(
+            ScopedSpanGuard txSpan(
                 TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::acceptTx);
             txSpan.setAttribute(txq_span::attr::txHash, to_string(candidateIter->txID).c_str());
             txSpan.setAttribute(
@@ -1718,7 +1715,7 @@ TxQ::tryDirectApply(
     beast::Journal j)
 {
     using namespace telemetry;
-    [[maybe_unused]] auto span = SpanGuard::span(
+    [[maybe_unused]] ScopedSpanGuard const span(
         TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::applyDirect);
 
     auto const account = (*tx)[sfAccount];

@@ -650,24 +650,21 @@ private:
     /**
      * Span for the establish phase of consensus.
      *  Created when the ledger closes and we enter phaseEstablish;
-     *  cleared (ended) when consensus is reached. Stored detached (its Scope
-     *  is stripped right after its context is captured) because it is emplaced
-     *  and reset on different job workers.
+     *  cleared (ended) when consensus is reached. A thread-free SpanGuard,
+     *  emplaced and reset() on different job workers.
      */
     std::optional<xrpl::telemetry::SpanGuard> establishSpan_;
 
     /**
-     * Captured context of establishSpan_, snapshotted while it was still
-     *  scoped. Same-thread children (update_positions, check) build from this
-     *  explicit context instead of the (now detached) ambient establish span.
+     * Captured context of establishSpan_ (its own span context). Children
+     *  (update_positions, check) build from this explicit context.
      */
     xrpl::telemetry::SpanContext establishSpanContext_;
 
     /**
      * Span for the open phase of consensus.
      *  Created in startRoundInternal(); cleared (ended) in closeLedger().
-     *  Stored detached: emplaced and reset on different job workers;
-     *  detached() prevents wrong-thread Scope pop.
+     *  A thread-free SpanGuard, emplaced and reset() on different job workers.
      */
     std::optional<xrpl::telemetry::SpanGuard> openSpan_;
 
@@ -779,17 +776,14 @@ Consensus<Adaptor>::startRoundInternal(
     // early-returns when establishSpan_ is populated).
     establishSpan_.reset();
     establishSpanContext_ = telemetry::SpanContext{};
-    // Child of the round span via its captured context: the round span is
-    // detached (no longer the thread's ambient parent), so parent phase.open
-    // explicitly under roundSpanContext_ rather than the ambient stack. An
-    // invalid round context (round span not yet created) yields a null guard.
-    // Detached in turn: emplaced here on one job worker and reset() on
-    // another, so strip the thread-local Scope to avoid a wrong-thread pop.
-    // No same-thread child span nests under openSpan_.
+    // Child of the round span via its captured context: parent phase.open
+    // explicitly under roundSpanContext_. An invalid round context (round span
+    // not yet created) yields a null guard. openSpan_ is a thread-free
+    // SpanGuard emplaced here on one job worker and reset() on another; no
+    // scope to strip.
     openSpan_.emplace(
         telemetry::SpanGuard::childSpan(
-            telemetry::consensus::span::phaseOpen, adaptor_.roundSpanContext())
-            .detached());
+            telemetry::consensus::span::phaseOpen, adaptor_.roundSpanContext()));
     // On the Recovered path, fire phase.open here because startRoundTracing
     // (which fires it for the Initial path) is not called on re-entry. On
     // the Initial path this is a no-op because the round span hasn't been
@@ -1631,8 +1625,8 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
     using namespace telemetry;
     // Child of the establish span via its captured context (establishSpan_ is
-    // detached, so it is no longer the thread's ambient parent). Null context
-    // (establish not started) yields a null guard, same as before.
+    // a thread-free SpanGuard, so parent explicitly via its context). Null
+    // context (establish not started) yields a null guard, same as before.
     auto span = SpanGuard::childSpan(consensus::span::updatePositions, establishSpanContext_);
     span.setAttribute(
         consensus::span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
@@ -1841,7 +1835,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
     using namespace telemetry;
     // Child of the establish span via its captured context (establishSpan_ is
-    // detached, so it is no longer the thread's ambient parent).
+    // a thread-free SpanGuard, so parent explicitly via its context).
     auto span = SpanGuard::childSpan(consensus::span::check, establishSpanContext_);
 
     // CHECKME: should possibly count unacquired TX sets as disagreeing
@@ -2101,22 +2095,19 @@ Consensus<Adaptor>::startEstablishTracing()
 {
     if (establishSpan_)
         return;
-    // Child of the round span via its captured context: the round span is
-    // detached (no longer the thread's ambient parent), so parent establish
+    // Child of the round span via its captured context: parent establish
     // explicitly under roundSpanContext_. An invalid round context (round span
     // not yet created) yields a null guard.
     establishSpan_.emplace(
         telemetry::SpanGuard::childSpan(
             telemetry::consensus::span::establish, adaptor_.roundSpanContext()));
-    // Capture the establish context while the guard is still scoped, then
-    // detach. Same-thread children (update_positions, check) link to this
-    // captured context explicitly instead of relying on establishSpan_ being
-    // the ambient parent -- the guard is reset() on a different worker than it
-    // is emplaced on, so it must not keep a thread-local Scope.
+    // Capture the establish context; children (update_positions, check) parent
+    // to it explicitly via establishSpanContext_. establishSpan_ is a
+    // thread-free SpanGuard reset() on a different worker than it is emplaced
+    // on -- no scope work.
     if (*establishSpan_)
     {
-        establishSpanContext_ = establishSpan_->captureContext();
-        telemetry::detachInPlace(establishSpan_);
+        establishSpanContext_ = establishSpan_->spanContext();
     }
 }
 
