@@ -244,6 +244,7 @@ xrpl.server > xrpl.resource
 xrpl.shamap > xrpl.basics
 xrpl.shamap > xrpl.nodestore
 xrpl.shamap > xrpl.protocol
+xrpl.telemetry > xrpl.basics
 xrpl.telemetry > xrpl.config
 xrpl.tx > xrpl.basics
 xrpl.tx > xrpl.core

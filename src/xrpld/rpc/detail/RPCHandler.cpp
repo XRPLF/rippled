@@ -162,7 +162,10 @@ template <class Object, class Method>
 Status
 callMethod(JsonContext& context, Method method, std::string const& name, Object& result)
 {
-    auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::command, name);
+    // Scoped so this command nests under rpc.process and becomes the ambient
+    // parent of any command-internal spans (e.g. pathfind.request). Coro-aware
+    // storage keeps the scope correct across doRipplePathFind's yield.
+    auto span = ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::command, name);
     span.setAttribute(rpc_span::attr::command, name.c_str());
     span.setAttribute(rpc_span::attr::version, static_cast<int64_t>(context.apiVersion));
     span.setAttribute(
@@ -257,7 +260,7 @@ doCommand(RPC::JsonContext& context, json::Value& result)
         // registered handler names (plus "unknown") — see the helper for why
         // raw request input must not reach the telemetry pipeline.
         auto const cmdName = resolveCommandSpanName(context);
-        auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
+        auto span = ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
         span.setAttribute(rpc_span::attr::command, cmdName);
         span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
         span.setError(getErrorInfo(error).token.cStr());
