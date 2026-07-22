@@ -167,6 +167,22 @@ public:
     operator=(PendingTraceId&&) = delete;
 };
 
+/**
+ * Running count of deterministic trace_ids that were pinned by a
+ * PendingTraceId but never consumed by a forced-root span before the guard was
+ * destroyed. Bumped once per silent drop.
+ *
+ * ~PendingTraceId also asserts on this condition, but the assert is a no-op in
+ * release builds, so this monotonic counter is the only signal that a
+ * deterministic trace root was lost there. It is process-wide (summed across
+ * all threads) and intended for a future diagnostic metric or debugger
+ * inspection; reading it has no side effects.
+ *
+ * @return the total number of unconsumed deterministic trace_id drops so far.
+ */
+[[nodiscard]] std::uint64_t
+unconsumedDeterministicIdDrops() noexcept;
+
 }  // namespace xrpl::telemetry
 
 #endif  // XRPL_ENABLE_TELEMETRY
