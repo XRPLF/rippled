@@ -30,6 +30,8 @@ if(tests)
     endif()
 endif()
 
+option(benchmark "Build benchmarks" ON)
+
 # Enabled by default so every header is compiled on its own as the main file of
 # its own compile_commands.json entry - this is what lets clang-tidy (and clangd
 # and IDEs) analyse a header's own includes directly. The per-header objects are

@@ -141,8 +141,8 @@ private:
      * Pick one candidate from a vector of candidates.
      *
      * @param randomPadData the data used for picking a candidate.
-     *        @note Nodes must use the same randomPadData for picking the same
-     *        candidate. The hash of the parent ledger is used.
+     * @note Nodes must use the same randomPadData for picking the same
+     *       candidate. The hash of the parent ledger is used.
      * @param candidates the vector of candidates
      * @return the picked candidate
      */
