@@ -100,9 +100,7 @@ ConfidentialMPTMergeInbox::doApply()
     if (!sum)
     {
         // LCOV_EXCL_START
-        JLOG(ctx_.journal.error())
-            << "ConfidentialMPTMergeInbox failed homomorphic add for inbox merge.";
-        return tecINTERNAL;
+        return {tecINTERNAL, "ConfidentialMPTMergeInbox failed homomorphic add for inbox merge."};
         // LCOV_EXCL_STOP
     }
 

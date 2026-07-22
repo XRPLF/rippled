@@ -165,8 +165,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     if (bSetAuth && !sle->isFlag(lsfRequireAuth))
     {
-        JLOG(ctx.j.trace()) << "Retry: Auth not required.";
-        return tefNO_AUTH_REQUIRED;
+        return {tefNO_AUTH_REQUIRED, "Retry: Auth not required."};
     }
 
     auto const saLimitAmount = ctx.tx[sfLimitAmount];
@@ -354,8 +353,7 @@ TrustSet::doApply()
 
     if (!sleDst)
     {
-        JLOG(j_.trace()) << "Delay transaction: Destination account does not exist.";
-        return tecNO_DST;
+        return {tecNO_DST, "Delay transaction: Destination account does not exist."};
     }
 
     STAmount saLimitAllow = saLimitAmount;
@@ -683,8 +681,7 @@ TrustSet::doApply()
                                                   // setting default quality out.
         (!bSetAuth))
     {
-        JLOG(j_.trace()) << "Redundant: Setting non-existent ripple line to defaults.";
-        return tecNO_LINE_REDUNDANT;
+        return {tecNO_LINE_REDUNDANT, "Redundant: Setting non-existent ripple line to defaults."};
     }
     // reserve is not scaled by load
     else if (!view().rules().enabled(featureSponsor) && preFeeBalance_ < reserveCreate)

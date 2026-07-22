@@ -33,8 +33,7 @@ CheckCancel::preclaim(PreclaimContext const& ctx)
     auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
     if (!sleCheck)
     {
-        JLOG(ctx.j.warn()) << "Check does not exist.";
-        return tecNO_ENTRY;
+        return {tecNO_ENTRY, "Check does not exist."};
     }
 
     // Expiration is defined in terms of the close time of the parent
@@ -48,9 +47,9 @@ CheckCancel::preclaim(PreclaimContext const& ctx)
         AccountID const acctId{ctx.tx[sfAccount]};
         if (acctId != (*sleCheck)[sfAccount] && acctId != (*sleCheck)[sfDestination])
         {
-            JLOG(ctx.j.warn()) << "Check is not expired and canceler is "
-                                  "neither check source nor destination.";
-            return tecNO_PERMISSION;
+            return {
+                tecNO_PERMISSION,
+                "Check is not expired and canceler is neither check source nor destination."};
         }
     }
     return tesSUCCESS;
@@ -63,8 +62,7 @@ CheckCancel::doApply()
     if (!sleCheck)
     {
         // Error should have been caught in preclaim.
-        JLOG(j_.warn()) << "Check does not exist.";
-        return tecNO_ENTRY;
+        return {tecNO_ENTRY, "Check does not exist."};
     }
 
     AccountID const srcId{sleCheck->getAccountID(sfAccount)};
@@ -79,8 +77,7 @@ CheckCancel::doApply()
         if (!view().dirRemove(keylet::ownerDir(dstId), page, sleCheck->key(), true))
         {
             // LCOV_EXCL_START
-            JLOG(j_.fatal()) << "Unable to delete check from destination.";
-            return tefBAD_LEDGER;
+            return {tefBAD_LEDGER, "Unable to delete check from destination."};
             // LCOV_EXCL_STOP
         }
     }
@@ -89,8 +86,7 @@ CheckCancel::doApply()
         if (!view().dirRemove(keylet::ownerDir(srcId), page, sleCheck->key(), true))
         {
             // LCOV_EXCL_START
-            JLOG(j_.fatal()) << "Unable to delete check from owner.";
-            return tefBAD_LEDGER;
+            return {tefBAD_LEDGER, "Unable to delete check from owner."};
             // LCOV_EXCL_STOP
         }
     }

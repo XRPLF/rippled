@@ -86,14 +86,12 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
 
     if (!ctx.view.exists(keylet::account(subject)))
     {
-        JLOG(ctx.j.trace()) << "Subject doesn't exist.";
-        return tecNO_TARGET;
+        return {tecNO_TARGET, "Subject doesn't exist."};
     }
 
     if (ctx.view.exists(keylet::credential(subject, ctx.tx[sfAccount], credType)))
     {
-        JLOG(ctx.j.trace()) << "Credential already exists.";
-        return tecDUPLICATE;
+        return {tecDUPLICATE, "Credential already exists."};
     }
 
     return tesSUCCESS;
@@ -118,9 +116,7 @@ CredentialCreate::doApply()
 
         if (closeTime > *optExp)
         {
-            JLOG(j_.trace()) << "Malformed transaction: "
-                                "Expiration time is in the past.";
-            return tecEXPIRED;
+            return {tecEXPIRED, "Malformed transaction: Expiration time is in the past."};
         }
 
         sleCred->setFieldU32(sfExpiration, *optExp);

@@ -145,8 +145,7 @@ EscrowCancel::doApply()
         if (!ctx_.view().dirRemove(keylet::ownerDir(account), page, k.key, true))
         {
             // LCOV_EXCL_START
-            JLOG(j_.fatal()) << "Unable to delete Escrow from owner.";
-            return tefBAD_LEDGER;
+            return {tefBAD_LEDGER, "Unable to delete Escrow from owner."};
             // LCOV_EXCL_STOP
         }
     }
@@ -157,8 +156,7 @@ EscrowCancel::doApply()
         if (!ctx_.view().dirRemove(keylet::ownerDir((*slep)[sfDestination]), *optPage, k.key, true))
         {
             // LCOV_EXCL_START
-            JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
-            return tefBAD_LEDGER;
+            return {tefBAD_LEDGER, "Unable to delete Escrow from recipient."};
             // LCOV_EXCL_STOP
         }
     }
@@ -202,8 +200,7 @@ EscrowCancel::doApply()
             if (!ctx_.view().dirRemove(keylet::ownerDir(issuer), *optPage, k.key, true))
             {
                 // LCOV_EXCL_START
-                JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
-                return tefBAD_LEDGER;
+                return {tefBAD_LEDGER, "Unable to delete Escrow from recipient."};
                 // LCOV_EXCL_STOP
             }
         }

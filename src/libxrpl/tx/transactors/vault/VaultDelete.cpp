@@ -48,20 +48,17 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
 
     if (vault->at(sfOwner) != ctx.tx[sfAccount])
     {
-        JLOG(ctx.j.debug()) << "VaultDelete: account is not an owner.";
-        return tecNO_PERMISSION;
+        return {tecNO_PERMISSION, "VaultDelete: account is not an owner."};
     }
 
     if (vault->at(sfAssetsAvailable) != 0)
     {
-        JLOG(ctx.j.debug()) << "VaultDelete: nonzero assets available.";
-        return tecHAS_OBLIGATIONS;
+        return {tecHAS_OBLIGATIONS, "VaultDelete: nonzero assets available."};
     }
 
     if (vault->at(sfAssetsTotal) != 0)
     {
-        JLOG(ctx.j.debug()) << "VaultDelete: nonzero assets total.";
-        return tecHAS_OBLIGATIONS;
+        return {tecHAS_OBLIGATIONS, "VaultDelete: nonzero assets total."};
     }
 
     // Verify we can destroy MPTokenIssuance
@@ -70,23 +67,20 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     if (!sleMPT)
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultDelete: missing issuance of vault shares.";
-        return tecOBJECT_NOT_FOUND;
+        return {tecOBJECT_NOT_FOUND, "VaultDelete: missing issuance of vault shares."};
         // LCOV_EXCL_STOP
     }
 
     if (sleMPT->at(sfIssuer) != vault->getAccountID(sfAccount))
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultDelete: invalid owner of vault shares.";
-        return tecNO_PERMISSION;
+        return {tecNO_PERMISSION, "VaultDelete: invalid owner of vault shares."};
         // LCOV_EXCL_STOP
     }
 
     if (sleMPT->at(sfOutstandingAmount) != 0)
     {
-        JLOG(ctx.j.debug()) << "VaultDelete: nonzero outstanding shares.";
-        return tecHAS_OBLIGATIONS;
+        return {tecHAS_OBLIGATIONS, "VaultDelete: nonzero outstanding shares."};
     }
 
     return tesSUCCESS;
@@ -112,8 +106,7 @@ VaultDelete::doApply()
     if (!pseudoAcct)
     {
         // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultDelete: missing vault pseudo-account.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "VaultDelete: missing vault pseudo-account."};
         // LCOV_EXCL_STOP
     }
 
@@ -124,8 +117,7 @@ VaultDelete::doApply()
     if (!mpt)
     {
         // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultDelete: missing issuance of vault shares.";
-        return tefINTERNAL;
+        return {tefINTERNAL, "VaultDelete: missing issuance of vault shares."};
         // LCOV_EXCL_STOP
     }
 
@@ -150,8 +142,7 @@ VaultDelete::doApply()
     if (!view().dirRemove(keylet::ownerDir(pseudoID), (*mpt)[sfOwnerNode], mpt->key(), false))
     {
         // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultDelete: failed to delete issuance object.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "VaultDelete: failed to delete issuance object."};
         // LCOV_EXCL_STOP
     }
     decreaseOwnerCountForObject(view(), pseudoAcct, mpt, 1, j_);
@@ -172,22 +163,19 @@ VaultDelete::doApply()
     if (*vaultPseudoSLE->at(sfBalance))
     {
         // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultDelete: pseudo-account has a balance";
-        return tecHAS_OBLIGATIONS;
+        return {tecHAS_OBLIGATIONS, "VaultDelete: pseudo-account has a balance"};
         // LCOV_EXCL_STOP
     }
     if (vaultPseudoSLE->at(sfOwnerCount) != 0)
     {
         // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultDelete: pseudo-account still owns objects";
-        return tecHAS_OBLIGATIONS;
+        return {tecHAS_OBLIGATIONS, "VaultDelete: pseudo-account still owns objects"};
         // LCOV_EXCL_STOP
     }
     if (view().exists(keylet::ownerDir(pseudoID)))
     {
         // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultDelete: pseudo-account has a directory";
-        return tecHAS_OBLIGATIONS;
+        return {tecHAS_OBLIGATIONS, "VaultDelete: pseudo-account has a directory"};
         // LCOV_EXCL_STOP
     }
 
@@ -198,8 +186,7 @@ VaultDelete::doApply()
     if (!view().dirRemove(keylet::ownerDir(ownerID), vault->at(sfOwnerNode), vault->key(), false))
     {
         // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultDelete: failed to delete vault object.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "VaultDelete: failed to delete vault object."};
         // LCOV_EXCL_STOP
     }
 
@@ -207,8 +194,7 @@ VaultDelete::doApply()
     if (!owner)
     {
         // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultDelete: missing vault owner account.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "VaultDelete: missing vault owner account."};
         // LCOV_EXCL_STOP
     }
 

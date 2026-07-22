@@ -99,15 +99,13 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     auto const sleVault = ctx.view.read(keylet::vault(vaultID));
     if (!sleVault)
     {
-        JLOG(ctx.j.warn()) << "Vault does not exist.";
-        return tecNO_ENTRY;
+        return {tecNO_ENTRY, "Vault does not exist."};
     }
     Asset const asset = sleVault->at(sfAsset);
 
     if (account != sleVault->at(sfOwner))
     {
-        JLOG(ctx.j.warn()) << "Account is not the owner of the Vault.";
-        return tecNO_PERMISSION;
+        return {tecNO_PERMISSION, "Account is not the owner of the Vault."};
     }
 
     if (auto const brokerID = tx[~sfLoanBrokerID])
@@ -117,18 +115,15 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
         auto const sleBroker = ctx.view.read(keylet::loanBroker(*brokerID));
         if (!sleBroker)
         {
-            JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
-            return tecNO_ENTRY;
+            return {tecNO_ENTRY, "LoanBroker does not exist."};
         }
         if (vaultID != sleBroker->at(sfVaultID))
         {
-            JLOG(ctx.j.warn()) << "Can not change VaultID on an existing LoanBroker.";
-            return tecNO_PERMISSION;
+            return {tecNO_PERMISSION, "Can not change VaultID on an existing LoanBroker."};
         }
         if (account != sleBroker->at(sfOwner))
         {
-            JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
-            return tecNO_PERMISSION;
+            return {tecNO_PERMISSION, "Account is not the owner of the LoanBroker."};
         }
 
         if (auto const debtMax = tx[~sfDebtMaximum])
@@ -137,8 +132,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
             auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
             if (*debtMax != 0 && *debtMax < currentDebtTotal)
             {
-                JLOG(ctx.j.warn()) << "Cannot reduce DebtMaximum below current DebtTotal.";
-                return tecLIMIT_EXCEEDED;
+                return {tecLIMIT_EXCEEDED, "Cannot reduce DebtMaximum below current DebtTotal."};
             }
         }
     }
@@ -149,8 +143,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
 
         if (auto const ter = checkFrozen(ctx.view, sleVault->at(sfAccount), sleVault->at(sfAsset)))
         {
-            JLOG(ctx.j.warn()) << "Vault pseudo-account is frozen.";
-            return ter;
+            return {ter, "Vault pseudo-account is frozen."};
         }
     }
 
@@ -183,8 +176,7 @@ LoanBrokerSet::doApply()
         {
             // This should be impossible
             // LCOV_EXCL_START
-            JLOG(j_.fatal()) << "LoanBroker does not exist.";
-            return tefBAD_LEDGER;
+            return {tefBAD_LEDGER, "LoanBroker does not exist."};
             // LCOV_EXCL_STOP
         }
 
@@ -212,8 +204,7 @@ LoanBrokerSet::doApply()
         {
             // This should be impossible
             // LCOV_EXCL_START
-            JLOG(j_.fatal()) << "Vault does not exist.";
-            return tefBAD_LEDGER;
+            return {tefBAD_LEDGER, "Vault does not exist."};
             // LCOV_EXCL_STOP
         }
         auto const vaultPseudoID = sleVault->at(sfAccount);
@@ -225,8 +216,7 @@ LoanBrokerSet::doApply()
         {
             // This should be impossible
             // LCOV_EXCL_START
-            JLOG(j_.fatal()) << "Account does not exist.";
-            return tefBAD_LEDGER;
+            return {tefBAD_LEDGER, "Account does not exist."};
             // LCOV_EXCL_STOP
         }
         auto broker = std::make_shared<SLE>(keylet::loanBroker(accountID_, sequence));

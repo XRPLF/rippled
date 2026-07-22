@@ -244,10 +244,10 @@ ConfidentialMPTConvertBack::doApply()
         if (!res)
         {
             // LCOV_EXCL_START
-            JLOG(ctx_.journal.error())
-                << "ConfidentialMPTConvertBack failed homomorphic subtract for holder spending "
-                   "balance.";
-            return tecINTERNAL;
+            return {
+                tecINTERNAL,
+                "ConfidentialMPTConvertBack failed homomorphic subtract for holder spending "
+                "balance."};
             // LCOV_EXCL_STOP
         }
 
@@ -261,9 +261,9 @@ ConfidentialMPTConvertBack::doApply()
         if (!res)
         {
             // LCOV_EXCL_START
-            JLOG(ctx_.journal.error())
-                << "ConfidentialMPTConvertBack failed homomorphic subtract for issuer balance.";
-            return tecINTERNAL;
+            return {
+                tecINTERNAL,
+                "ConfidentialMPTConvertBack failed homomorphic subtract for issuer balance."};
             // LCOV_EXCL_STOP
         }
 
@@ -277,9 +277,9 @@ ConfidentialMPTConvertBack::doApply()
         if (!res)
         {
             // LCOV_EXCL_START
-            JLOG(ctx_.journal.error())
-                << "ConfidentialMPTConvertBack failed homomorphic subtract for auditor balance.";
-            return tecINTERNAL;
+            return {
+                tecINTERNAL,
+                "ConfidentialMPTConvertBack failed homomorphic subtract for auditor balance."};
             // LCOV_EXCL_STOP
         }
 

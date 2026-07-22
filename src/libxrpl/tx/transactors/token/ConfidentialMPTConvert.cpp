@@ -245,9 +245,8 @@ ConfidentialMPTConvert::doApply()
             if (!sum)
             {
                 // LCOV_EXCL_START
-                JLOG(ctx_.journal.error())
-                    << "ConfidentialMPTConvert failed homomorphic add for holder inbox.";
-                return tecINTERNAL;
+                return {
+                    tecINTERNAL, "ConfidentialMPTConvert failed homomorphic add for holder inbox."};
                 // LCOV_EXCL_STOP
             }
 
@@ -260,9 +259,9 @@ ConfidentialMPTConvert::doApply()
             if (!sum)
             {
                 // LCOV_EXCL_START
-                JLOG(ctx_.journal.error())
-                    << "ConfidentialMPTConvert failed homomorphic add for issuer balance.";
-                return tecINTERNAL;
+                return {
+                    tecINTERNAL,
+                    "ConfidentialMPTConvert failed homomorphic add for issuer balance."};
                 // LCOV_EXCL_STOP
             }
 
@@ -279,9 +278,9 @@ ConfidentialMPTConvert::doApply()
             if (!sum)
             {
                 // LCOV_EXCL_START
-                JLOG(ctx_.journal.error())
-                    << "ConfidentialMPTConvert failed homomorphic add for auditor balance.";
-                return tecINTERNAL;
+                return {
+                    tecINTERNAL,
+                    "ConfidentialMPTConvert failed homomorphic add for auditor balance."};
                 // LCOV_EXCL_STOP
             }
 

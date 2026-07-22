@@ -152,8 +152,7 @@ DelegateSet::deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j)
     if (!view.dirRemove(keylet::ownerDir(delegator), (*sle)[sfOwnerNode], sle->key(), false))
     {
         // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete Delegate from owner.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Unable to delete Delegate from owner."};
         // LCOV_EXCL_STOP
     }
 
@@ -163,8 +162,7 @@ DelegateSet::deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j)
         if (!view.dirRemove(keylet::ownerDir(delegatee), *optPage, sle->key(), false))
         {
             // LCOV_EXCL_START
-            JLOG(j.fatal()) << "Unable to delete Delegate from authorized account.";
-            return tefBAD_LEDGER;
+            return {tefBAD_LEDGER, "Unable to delete Delegate from authorized account."};
             // LCOV_EXCL_STOP
         }
     }

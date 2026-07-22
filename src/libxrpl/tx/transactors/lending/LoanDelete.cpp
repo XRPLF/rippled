@@ -44,13 +44,11 @@ LoanDelete::preclaim(PreclaimContext const& ctx)
     auto const loanSle = ctx.view.read(keylet::loan(loanID));
     if (!loanSle)
     {
-        JLOG(ctx.j.warn()) << "Loan does not exist.";
-        return tecNO_ENTRY;
+        return {tecNO_ENTRY, "Loan does not exist."};
     }
     if (loanSle->at(sfPaymentRemaining) > 0)
     {
-        JLOG(ctx.j.warn()) << "Active loan can not be deleted.";
-        return tecHAS_OBLIGATIONS;
+        return {tecHAS_OBLIGATIONS, "Active loan can not be deleted."};
     }
 
     auto const loanBrokerID = loanSle->at(sfLoanBrokerID);
@@ -62,8 +60,7 @@ LoanDelete::preclaim(PreclaimContext const& ctx)
     }
     if (loanBrokerSle->at(sfOwner) != account && loanSle->at(sfBorrower) != account)
     {
-        JLOG(ctx.j.warn()) << "Account is not Loan Broker Owner or Loan Borrower.";
-        return tecNO_PERMISSION;
+        return {tecNO_PERMISSION, "Account is not Loan Broker Owner or Loan Borrower."};
     }
 
     return tesSUCCESS;

@@ -817,8 +817,7 @@ Transactor::ticketDelete(
     if (!sleTicket)
     {
         // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Ticket disappeared from ledger.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Ticket disappeared from ledger."};
         // LCOV_EXCL_STOP
     }
 
@@ -826,8 +825,7 @@ Transactor::ticketDelete(
     if (!view.dirRemove(keylet::ownerDir(account), page, ticketIndex, true))
     {
         // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete Ticket from owner.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Unable to delete Ticket from owner."};
         // LCOV_EXCL_STOP
     }
 
@@ -837,8 +835,7 @@ Transactor::ticketDelete(
     if (!sleAccount)
     {
         // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Could not find Ticket owner account root.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Could not find Ticket owner account root."};
         // LCOV_EXCL_STOP
     }
 
@@ -856,8 +853,7 @@ Transactor::ticketDelete(
     else
     {
         // LCOV_EXCL_START
-        JLOG(j.fatal()) << "TicketCount field missing from account root.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "TicketCount field missing from account root."};
         // LCOV_EXCL_STOP
     }
 

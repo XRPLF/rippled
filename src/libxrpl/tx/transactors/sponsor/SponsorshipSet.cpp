@@ -182,15 +182,13 @@ deleteSponsorship(ApplyView& view, SLE::ref sle, beast::Journal j)
     if (!view.dirRemove(keylet::ownerDir(sponsorID), (*sle)[sfOwnerNode], sle->key(), false))
     {
         // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete Sponsorship from sponsor.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Unable to delete Sponsorship from sponsor."};
         // LCOV_EXCL_STOP
     }
     if (!view.dirRemove(keylet::ownerDir(sponseeID), (*sle)[sfSponseeNode], sle->key(), false))
     {
         // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete Sponsorship from sponsee.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Unable to delete Sponsorship from sponsee."};
         // LCOV_EXCL_STOP
     }
 

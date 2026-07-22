@@ -61,8 +61,7 @@ AMMVote::preclaim(PreclaimContext const& ctx)
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
     {
-        JLOG(ctx.j.debug()) << "AMM Vote: Invalid asset pair.";
-        return terNO_AMM;
+        return {terNO_AMM, "AMM Vote: Invalid asset pair."};
     }
     if (ammSle->getFieldAmount(sfLPTokenBalance) == beast::kZero)
     {
@@ -71,8 +70,7 @@ AMMVote::preclaim(PreclaimContext const& ctx)
     if (auto const lpTokensNew = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
         lpTokensNew == beast::kZero)
     {
-        JLOG(ctx.j.debug()) << "AMM Vote: account is not LP.";
-        return tecAMM_INVALID_TOKENS;
+        return {tecAMM_INVALID_TOKENS, "AMM Vote: account is not LP."};
     }
 
     return tesSUCCESS;

@@ -190,13 +190,11 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
 
     if (auto const ter = checkGlobalFrozen(ctx.view, saTakerPays.asset()); !isTesSuccess(ter))
     {
-        JLOG(ctx.j.debug()) << "Offer involves frozen or locked asset";
-        return ter;
+        return {ter, "Offer involves frozen or locked asset"};
     }
     if (auto const ter = checkGlobalFrozen(ctx.view, saTakerGets.asset()); !isTesSuccess(ter))
     {
-        JLOG(ctx.j.debug()) << "Offer involves frozen or locked asset";
-        return ter;
+        return {ter, "Offer involves frozen or locked asset"};
     }
 
     // Allow unfunded MPT for issuer (OutstandingAmount >= MaximumAmount)
@@ -209,8 +207,7 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
             AuthHandling::ZeroIfUnauthorized,
             viewJ) <= beast::kZero)
     {
-        JLOG(ctx.j.debug()) << "delay: Offers must be at least partially funded.";
-        return tecUNFUNDED_OFFER;
+        return {tecUNFUNDED_OFFER, "delay: Offers must be at least partially funded."};
     }
 
     // This can probably be simplified to make sure that you cancel sequences
@@ -587,8 +584,9 @@ OfferCreate::applyHybrid(
 
     if (!bookNode)
     {
-        JLOG(j_.debug()) << "final result: failed to add hybrid offer to open book";
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
+        return {
+            tecDIR_FULL,
+            "final result: failed to add hybrid offer to open book"};  // LCOV_EXCL_LINE
     }
 
     STArray bookArr(sfAdditionalBooks, 1);

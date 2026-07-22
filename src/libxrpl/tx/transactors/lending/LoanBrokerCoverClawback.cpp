@@ -248,8 +248,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     auto const sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
     if (!sleBroker)
     {
-        JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
-        return tecNO_ENTRY;
+        return {tecNO_ENTRY, "LoanBroker does not exist."};
     }
 
     auto const brokerPseudoAccountID = sleBroker->at(sfAccount);
@@ -267,16 +266,14 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
 
     if (vaultAsset.native())
     {
-        JLOG(ctx.j.warn()) << "Cannot clawback native asset.";
-        return tecNO_PERMISSION;
+        return {tecNO_PERMISSION, "Cannot clawback native asset."};
     }
 
     // Only the issuer of the vault asset can claw it back from the broker's
     // cover funds.
     if (vaultAsset.getIssuer() != account)
     {
-        JLOG(ctx.j.warn()) << "Account is not the issuer of the vault asset.";
-        return tecNO_PERMISSION;
+        return {tecNO_PERMISSION, "Account is not the issuer of the vault asset."};
     }
 
     if (amount)
@@ -287,9 +284,10 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
         auto const txAsset = *findAsset;
         if (txAsset != vaultAsset)
         {
-            JLOG(ctx.j.warn()) << "Account is the correct issuer, but trying "
-                                  "to clawback the wrong asset from LoanBroker";
-            return tecWRONG_ASSET;
+            return {
+                tecWRONG_ASSET,
+                "Account is the correct issuer, but trying to clawback the wrong asset from "
+                "LoanBroker"};
         }
     }
 
@@ -323,8 +321,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     if (!sleIssuer)
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.fatal()) << "Issuer account does not exist.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Issuer account does not exist."};
         // LCOV_EXCL_STOP
     }
 

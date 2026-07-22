@@ -39,8 +39,7 @@ AMMDelete::preclaim(PreclaimContext const& ctx)
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
     {
-        JLOG(ctx.j.debug()) << "AMM Delete: Invalid asset pair.";
-        return terNO_AMM;
+        return {terNO_AMM, "AMM Delete: Invalid asset pair."};
     }
 
     auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];

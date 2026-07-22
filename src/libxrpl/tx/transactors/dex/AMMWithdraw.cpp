@@ -186,8 +186,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid asset pair.";
-        return terNO_AMM;
+        return {terNO_AMM, "AMM Withdraw: Invalid asset pair."};
     }
 
     auto const amount = ctx.tx[~sfAmount];
@@ -210,8 +209,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         lptAMMBalance < beast::kZero)
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.debug()) << "AMM Withdraw: reserves or tokens balance is zero.";
-        return tecINTERNAL;
+        return {tecINTERNAL, "AMM Withdraw: reserves or tokens balance is zero."};
         // LCOV_EXCL_STOP
     }
 
@@ -280,8 +278,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 
     if (lpTokens <= beast::kZero)
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: tokens balance is zero.";
-        return tecAMM_BALANCE;
+        return {tecAMM_BALANCE, "AMM Withdraw: tokens balance is zero."};
     }
 
     if (lpTokensWithdraw && lpTokensWithdraw->asset() != lpTokens.asset())
@@ -292,8 +289,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 
     if (lpTokensWithdraw && *lpTokensWithdraw > lpTokens)
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens.";
-        return tecAMM_INVALID_TOKENS;
+        return {tecAMM_INVALID_TOKENS, "AMM Withdraw: invalid tokens."};
     }
 
     if (auto const ePrice = ctx.tx[~sfEPrice]; ePrice && ePrice->asset() != lpTokens.asset())

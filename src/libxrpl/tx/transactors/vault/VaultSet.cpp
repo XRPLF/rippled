@@ -70,8 +70,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     // Assert that submitter is the Owner.
     if (ctx.tx[sfAccount] != vault->at(sfOwner))
     {
-        JLOG(ctx.j.debug()) << "VaultSet: account is not an owner.";
-        return tecNO_PERMISSION;
+        return {tecNO_PERMISSION, "VaultSet: account is not an owner."};
     }
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
@@ -79,8 +78,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultSet: missing issuance of vault shares.";
-        return tefINTERNAL;
+        return {tefINTERNAL, "VaultSet: missing issuance of vault shares."};
         // LCOV_EXCL_STOP
     }
 
@@ -89,8 +87,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         // We can only set domain if private flag was originally set
         if (!vault->isFlag(lsfVaultPrivate))
         {
-            JLOG(ctx.j.debug()) << "VaultSet: vault is not private";
-            return tecNO_PERMISSION;
+            return {tecNO_PERMISSION, "VaultSet: vault is not private"};
         }
 
         if (*domain != beast::kZero)
@@ -104,8 +101,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         if (!sleIssuance->isFlag(lsfMPTRequireAuth))
         {
             // LCOV_EXCL_START
-            JLOG(ctx.j.error()) << "VaultSet: issuance of vault shares is not private.";
-            return tefINTERNAL;
+            return {tefINTERNAL, "VaultSet: issuance of vault shares is not private."};
             // LCOV_EXCL_STOP
         }
     }
@@ -134,8 +130,7 @@ VaultSet::doApply()
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultSet: missing issuance of vault shares.";
-        return tefINTERNAL;
+        return {tefINTERNAL, "VaultSet: missing issuance of vault shares."};
         // LCOV_EXCL_STOP
     }
 

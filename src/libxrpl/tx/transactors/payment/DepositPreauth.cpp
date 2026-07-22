@@ -267,8 +267,7 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
     auto const slePreauth{view.peek(keylet::depositPreauth(preauthIndex))};
     if (!slePreauth)
     {
-        JLOG(j.warn()) << "Selected DepositPreauth does not exist.";
-        return tecNO_ENTRY;
+        return {tecNO_ENTRY, "Selected DepositPreauth does not exist."};
     }
 
     AccountID const account{(*slePreauth)[sfAccount]};
@@ -276,8 +275,7 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
     if (!view.dirRemove(keylet::ownerDir(account), page, preauthIndex, false))
     {
         // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete DepositPreauth from owner.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Unable to delete DepositPreauth from owner."};
         // LCOV_EXCL_STOP
     }
 

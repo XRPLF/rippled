@@ -429,9 +429,7 @@ Payment::preclaim(PreclaimContext const& ctx)
 
         // We didn't make this test for a newly-formed account because there's
         // no way for this field to be set.
-        JLOG(ctx.j.trace()) << "Malformed transaction: DestinationTag required.";
-
-        return tecDST_TAG_NEEDED;
+        return {tecDST_TAG_NEEDED, "Malformed transaction: DestinationTag required."};
     }
 
     // Payment with at least one intermediate step and uses transitive balances.

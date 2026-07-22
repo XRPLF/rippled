@@ -90,16 +90,14 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto ter = canTransfer(ctx.view, vaultAsset, vaultAccount, dstAcct, waive);
         !isTesSuccess(ter))
     {
-        JLOG(ctx.j.debug()) << "VaultWithdraw: vault assets are non-transferable.";
-        return ter;
+        return {ter, "VaultWithdraw: vault assets are non-transferable."};
     }
 
     // Enforce valid withdrawal policy
     if (vault->at(sfWithdrawalPolicy) != kVaultStrategyFirstComeFirstServe)
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultWithdraw: invalid withdrawal policy.";
-        return tefINTERNAL;
+        return {tefINTERNAL, "VaultWithdraw: invalid withdrawal policy."};
         // LCOV_EXCL_STOP
     }
 
@@ -113,8 +111,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         if (!sleIssuance)
         {
             // LCOV_EXCL_START
-            JLOG(ctx.j.error()) << "VaultWithdraw: missing issuance of vault shares.";
-            return tefINTERNAL;
+            return {tefINTERNAL, "VaultWithdraw: missing issuance of vault shares."};
             // LCOV_EXCL_STOP
         }
 
@@ -203,8 +200,7 @@ VaultWithdraw::doApply()
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultWithdraw: missing issuance of vault shares.";
-        return tefINTERNAL;
+        return {tefINTERNAL, "VaultWithdraw: missing issuance of vault shares."};
         // LCOV_EXCL_STOP
     }
 
@@ -283,8 +279,7 @@ VaultWithdraw::doApply()
     if (accountHolds(view(), accountID_, share, freezeHandling, AuthHandling::IgnoreAuth, j_) <
         sharesRedeemed)
     {
-        JLOG(j_.debug()) << "VaultWithdraw: account doesn't hold enough shares";
-        return tecINSUFFICIENT_FUNDS;
+        return {tecINSUFFICIENT_FUNDS, "VaultWithdraw: account doesn't hold enough shares"};
     }
 
     auto assetsAvailable = vault->at(sfAssetsAvailable);
@@ -297,8 +292,7 @@ VaultWithdraw::doApply()
     // The vault must have enough assets on hand.
     if (*assetsAvailable < assetsWithdrawn)
     {
-        JLOG(j_.debug()) << "VaultWithdraw: vault doesn't hold enough assets";
-        return tecINSUFFICIENT_FUNDS;
+        return {tecINSUFFICIENT_FUNDS, "VaultWithdraw: vault doesn't hold enough assets"};
     }
 
     // Post-fixCleanup3_2_0 "final withdrawal" rule:

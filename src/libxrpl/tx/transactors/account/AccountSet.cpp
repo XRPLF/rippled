@@ -198,14 +198,12 @@ AccountSet::preclaim(PreclaimContext const& ctx)
     {
         if (sle->isFlag(lsfNoFreeze))
         {
-            JLOG(ctx.j.trace()) << "Can't set Clawback if NoFreeze is set";
-            return tecNO_PERMISSION;
+            return {tecNO_PERMISSION, "Can't set Clawback if NoFreeze is set"};
         }
 
         if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
         {
-            JLOG(ctx.j.trace()) << "Owner directory not empty.";
-            return tecOWNERS;
+            return {tecOWNERS, "Owner directory not empty."};
         }
     }
     else if (uSetFlag == asfNoFreeze)
@@ -213,8 +211,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
         // Cannot set NoFreeze if clawback is enabled
         if (sle->isFlag(lsfAllowTrustLineClawback))
         {
-            JLOG(ctx.j.trace()) << "Can't set NoFreeze if clawback is enabled";
-            return tecNO_PERMISSION;
+            return {tecNO_PERMISSION, "Can't set NoFreeze if clawback is enabled"};
         }
     }
 
@@ -308,8 +305,7 @@ AccountSet::doApply()
     {
         if (!sigWithMaster)
         {
-            JLOG(j_.trace()) << "Must use master key to disable master key.";
-            return tecNEED_MASTER_KEY;
+            return {tecNEED_MASTER_KEY, "Must use master key to disable master key."};
         }
 
         if ((!sle->isFieldPresent(sfRegularKey)) && (!view().peek(keylet::signerList(accountID_))))
@@ -349,8 +345,7 @@ AccountSet::doApply()
     {
         if (!sigWithMaster && !sle->isFlag(lsfDisableMaster))
         {
-            JLOG(j_.trace()) << "Must use master key to set NoFreeze.";
-            return tecNEED_MASTER_KEY;
+            return {tecNEED_MASTER_KEY, "Must use master key to set NoFreeze."};
         }
 
         JLOG(j_.trace()) << "Set NoFreeze flag";

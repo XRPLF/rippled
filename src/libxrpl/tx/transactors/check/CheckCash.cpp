@@ -89,16 +89,14 @@ CheckCash::preclaim(PreclaimContext const& ctx)
     auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
     if (!sleCheck)
     {
-        JLOG(ctx.j.warn()) << "Check does not exist.";
-        return tecNO_ENTRY;
+        return {tecNO_ENTRY, "Check does not exist."};
     }
 
     // Only cash a check with this account as the destination.
     AccountID const dstId = sleCheck->at(sfDestination);
     if (ctx.tx[sfAccount] != dstId)
     {
-        JLOG(ctx.j.warn()) << "Cashing a check with wrong Destination.";
-        return tecNO_PERMISSION;
+        return {tecNO_PERMISSION, "Cashing a check with wrong Destination."};
     }
     AccountID const srcId = sleCheck->at(sfAccount);
     if (srcId == dstId)
@@ -106,8 +104,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         // They wrote a check to themselves.  This should be caught when
         // the check is created, but better late than never.
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "Malformed transaction: Cashing check to self.";
-        return tecINTERNAL;
+        return {tecINTERNAL, "Malformed transaction: Cashing check to self."};
         // LCOV_EXCL_STOP
     }
     {
@@ -116,23 +113,20 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         if (!sleSrc || !sleDst)
         {
             // If the check exists this should never occur.
-            JLOG(ctx.j.warn()) << "Malformed transaction: source or destination not in ledger";
-            return tecNO_ENTRY;
+            return {tecNO_ENTRY, "Malformed transaction: source or destination not in ledger"};
         }
 
         if (sleDst->isFlag(lsfRequireDestTag) && !sleCheck->isFieldPresent(sfDestinationTag))
         {
             // The tag is basically account-specific information we don't
             // understand, but we can require someone to fill it in.
-            JLOG(ctx.j.warn()) << "Malformed transaction: DestinationTag required in check.";
-            return tecDST_TAG_NEEDED;
+            return {tecDST_TAG_NEEDED, "Malformed transaction: DestinationTag required in check."};
         }
     }
 
     if (hasExpired(ctx.view, sleCheck->at(~sfExpiration)))
     {
-        JLOG(ctx.j.warn()) << "Cashing a check that has already expired.";
-        return tecEXPIRED;
+        return {tecEXPIRED, "Cashing a check that has already expired."};
     }
 
     {
@@ -162,8 +156,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         }
         if (value > sendMax)
         {
-            JLOG(ctx.j.warn()) << "Check cashed for more than check sendMax.";
-            return tecPATH_PARTIAL;
+            return {tecPATH_PARTIAL, "Check cashed for more than check sendMax."};
         }
 
         // Make sure the check owner holds at least value.  If they have
@@ -186,8 +179,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
 
             if (value > availableFunds)
             {
-                JLOG(ctx.j.warn()) << "Check cashed for more than owner's balance.";
-                return tecPATH_PARTIAL;
+                return {tecPATH_PARTIAL, "Check cashed for more than owner's balance."};
             }
         }
 
@@ -230,9 +222,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
 
                         if (!isAuthorized)
                         {
-                            JLOG(ctx.j.warn()) << "Can't receive IOUs from "
-                                                  "issuer without auth.";
-                            return tecNO_AUTH;
+                            return {tecNO_AUTH, "Can't receive IOUs from issuer without auth."};
                         }
                     }
 
@@ -245,8 +235,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                     // not be frozen.
                     if (isFrozen(ctx.view, dstId, currency, issuerId))
                     {
-                        JLOG(ctx.j.warn()) << "Cashing a check to a frozen trustline.";
-                        return tecFROZEN;
+                        return {tecFROZEN, "Cashing a check to a frozen trustline."};
                     }
 
                     return tesSUCCESS;
@@ -270,8 +259,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
 
                     if (isFrozen(ctx.view, dstId, issue))
                     {
-                        JLOG(ctx.j.warn()) << "Cashing a check to a frozen MPT.";
-                        return tecLOCKED;
+                        return {tecLOCKED, "Cashing a check to a frozen MPT."};
                     }
 
                     if (auto const err = canTransfer(ctx.view, issue, srcId, dstId);
@@ -299,8 +287,7 @@ CheckCash::doApply()
     if (!sleCheck)
     {
         // LCOV_EXCL_START
-        JLOG(j_.fatal()) << "Precheck did not verify check's existence.";
-        return tecFAILED_PROCESSING;
+        return {tecFAILED_PROCESSING, "Precheck did not verify check's existence."};
         // LCOV_EXCL_STOP
     }
 
@@ -308,8 +295,7 @@ CheckCash::doApply()
     if (!psb.exists(keylet::account(srcId)) || !psb.exists(keylet::account(accountID_)))
     {
         // LCOV_EXCL_START
-        JLOG(ctx_.journal.fatal()) << "Precheck did not verify source or destination's existence.";
-        return tecFAILED_PROCESSING;
+        return {tecFAILED_PROCESSING, "Precheck did not verify source or destination's existence."};
         // LCOV_EXCL_STOP
     }
 
@@ -566,8 +552,7 @@ CheckCash::doApply()
             {
                 if (result.actualAmountOut < *optDeliverMin)
                 {
-                    JLOG(ctx_.journal.warn()) << "flow did not produce DeliverMin.";
-                    return tecPATH_PARTIAL;
+                    return {tecPATH_PARTIAL, "flow did not produce DeliverMin."};
                 }
                 ctx_.deliver(result.actualAmountOut);
             }
@@ -587,8 +572,7 @@ CheckCash::doApply()
             keylet::ownerDir(accountID_), sleCheck->at(sfDestinationNode), sleCheck->key(), true))
     {
         // LCOV_EXCL_START
-        JLOG(j_.fatal()) << "Unable to delete check from destination.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Unable to delete check from destination."};
         // LCOV_EXCL_STOP
     }
 
@@ -596,8 +580,7 @@ CheckCash::doApply()
     if (!psb.dirRemove(keylet::ownerDir(srcId), sleCheck->at(sfOwnerNode), sleCheck->key(), true))
     {
         // LCOV_EXCL_START
-        JLOG(j_.fatal()) << "Unable to delete check from owner.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Unable to delete check from owner."};
         // LCOV_EXCL_STOP
     }
 

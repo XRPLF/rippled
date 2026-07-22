@@ -34,16 +34,14 @@ OracleDelete::preclaim(PreclaimContext const& ctx)
         ctx.view.read(keylet::oracle(ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
     if (!sle)
     {
-        JLOG(ctx.j.debug()) << "Oracle Delete: Oracle does not exist.";
-        return tecNO_ENTRY;
+        return {tecNO_ENTRY, "Oracle Delete: Oracle does not exist."};
     }
 
     if (ctx.tx.getAccountID(sfAccount) != sle->getAccountID(sfOwner))
     {
         // this can't happen because of the above check
         // LCOV_EXCL_START
-        JLOG(ctx.j.debug()) << "Oracle Delete: invalid account.";
-        return tecINTERNAL;
+        return {tecINTERNAL, "Oracle Delete: invalid account."};
         // LCOV_EXCL_STOP
     }
     return tesSUCCESS;
@@ -62,8 +60,7 @@ OracleDelete::deleteOracle(
     if (!view.dirRemove(keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), true))
     {
         // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete Oracle from owner.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Unable to delete Oracle from owner."};
         // LCOV_EXCL_STOP
     }
 

@@ -41,8 +41,7 @@ DIDDelete::deleteSLE(ApplyView& view, SLE::pointer sle, AccountID const owner, b
     if (!view.dirRemove(keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))
     {
         // LCOV_EXCL_START
-        JLOG(j.fatal()) << "Unable to delete DID from owner.";
-        return tefBAD_LEDGER;
+        return {tefBAD_LEDGER, "Unable to delete DID from owner."};
         // LCOV_EXCL_STOP
     }
 

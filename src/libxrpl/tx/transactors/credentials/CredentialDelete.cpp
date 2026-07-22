@@ -87,8 +87,7 @@ CredentialDelete::doApply()
     if ((subject != accountID_) && (issuer != accountID_) &&
         !checkExpired(*sleCred, ctx_.view().header().parentCloseTime))
     {
-        JLOG(j_.trace()) << "Can't delete non-expired credential.";
-        return tecNO_PERMISSION;
+        return {tecNO_PERMISSION, "Can't delete non-expired credential."};
     }
 
     return deleteSLE(view(), sleCred, j_);

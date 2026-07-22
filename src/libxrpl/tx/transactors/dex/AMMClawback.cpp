@@ -112,8 +112,7 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
     auto const ammSle = ctx.view.read(keylet::amm(asset, asset2));
     if (!ammSle)
     {
-        JLOG(ctx.j.debug()) << "AMM Clawback: Invalid asset pair.";
-        return terNO_AMM;
+        return {terNO_AMM, "AMM Clawback: Invalid asset pair."};
     }
 
     if (!ctx.view.rules().enabled(featureMPTokensV2))
