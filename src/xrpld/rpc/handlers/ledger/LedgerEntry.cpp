@@ -667,7 +667,7 @@ parsePayChannel(
         return std::unexpected(account.error());
 
     auto const destination =
-        LedgerEntryHelpers::requiredAccountID(params, jss::destination, "malformedDestination");
+        LedgerEntryHelpers::requiredAccountID(params, jss::destination, "malformedAddress");
     if (!destination)
         return std::unexpected(destination.error());
 

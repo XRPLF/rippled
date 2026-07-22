@@ -1831,7 +1831,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 jss::payment_channel,
                 {
                     {.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
-                    {.fieldName = jss::destination, .malformedErrorMsg = "malformedDestination"},
+                    {.fieldName = jss::destination, .malformedErrorMsg = "malformedAddress"},
                     {.fieldName = jss::seq, .malformedErrorMsg = "malformedRequest"},
                 });
         }
