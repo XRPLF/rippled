@@ -107,7 +107,7 @@ After a ledger is validated the node publishes it to internal subscribers and cl
 
 ### Transaction apply phase
 
-During a ledger close the server executes each transaction in the agreed set, in canonical order, updating ledger state. This apply phase (rippled's doAccept path) is typically the largest single component of ledger-build time and scales with the number and cost of transactions in the ledger.
+During a ledger close the server executes each transaction in the agreed set, in canonical order, updating ledger state. This apply phase (xrpld's doAccept path) is typically the largest single component of ledger-build time and scales with the number and cost of transactions in the ledger.
 
 **Scope:** per node — measured on and specific to this individual server.
 

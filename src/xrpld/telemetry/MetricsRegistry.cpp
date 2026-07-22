@@ -850,7 +850,7 @@ MetricsRegistry::registerServerInfoGauge()
                 }
 
                 // Network close time of the last closed ledger, as NetClock
-                // seconds since the Ripple epoch (2000-01-01). Unlike a span
+                // seconds since the XRPL epoch (2000-01-01). Unlike a span
                 // timestamp, a gauge value survives as a queryable time series,
                 // so dashboards can show last-close age (staleness) via
                 // now - value. The close interval comes from the
