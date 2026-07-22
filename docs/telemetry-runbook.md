@@ -717,11 +717,19 @@ does not apply to these dimensions.
 
 ### Histogram Buckets
 
-Configured in `otel-collector-config.yaml`:
+Configured in `otel-collector-config.yaml` (spanmetrics connector, `unit: ms`):
 
 ```
-1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s
+1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2s, 3s, 4s, 5s, 10s, 30s
 ```
+
+Sub-second boundaries cover RPC/tx/ledger spans; 2s-4s resolve second-scale
+consensus spans (`consensus.round`, `consensus.establish`) that would otherwise
+pile into one 1s-5s bucket and make `histogram_quantile` a meaningless
+interpolation; 10s/30s give the `ledger.acquire` catch-up tail a measurable home.
+Boundaries must stay strictly ascending. The native beast::insight histograms
+(ms-scale RPC/IO timers) keep the original 1ms-5s buckets in
+`Telemetry.cpp` — they never exceed 5s, so they need no high-range buckets.
 
 ## System Metrics (OTel native -- beast::insight)
 
