@@ -208,6 +208,7 @@ TransactionAcquire::takeNodes(
                 {
                     JLOG(journal_.warn()) << "TX acquire got bad root node for TX set " << hash_
                                           << " from peer " << peer->id();
+                    return SHAMapAddNode::invalid();
                 }
                 else
                 {

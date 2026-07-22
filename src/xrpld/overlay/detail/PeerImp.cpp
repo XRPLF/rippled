@@ -1718,15 +1718,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
             // of the nodes is consistent - either all use the legacy format or the new format.
             auto const peerSupportsNodeDepth =
                 peer->supportsFeature(ProtocolFeature::LedgerNodeDepth);
-            enum class MessageType { unknown, legacy, nodeDepth };
-            MessageType messageType = MessageType::unknown;
+            enum class MessageType { Unknown, Legacy, NodeDepth };
+            MessageType messageType = MessageType::Unknown;
             for (int i = 0; i < m->nodes_size(); ++i)
             {
                 auto* ledgerNode = m->mutable_nodes(i);
 
                 MessageType const msgType =
-                    ledgerNode->has_nodeid() ? MessageType::legacy : MessageType::nodeDepth;
-                if (messageType != MessageType::unknown && messageType != msgType)
+                    ledgerNode->has_nodeid() ? MessageType::Legacy : MessageType::NodeDepth;
+                if (messageType != MessageType::Unknown && messageType != msgType)
                 {
                     badData(
                         "Received mixed mode message while relaying ledger data for " +
@@ -1736,7 +1736,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
                 }
                 messageType = msgType;
 
-                if (peerSupportsNodeDepth || msgType == MessageType::legacy)
+                if (peerSupportsNodeDepth || msgType == MessageType::Legacy)
                     continue;
 
                 switch (ledgerNode->reference_case())
