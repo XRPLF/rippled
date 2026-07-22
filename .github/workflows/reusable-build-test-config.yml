@@ -107,13 +107,13 @@ jobs:
     steps:
       - name: Cleanup workspace (macOS and Windows)
         if: ${{ runner.os == 'macOS' || runner.os == 'Windows' }}
-        uses: XRPLF/actions/cleanup-workspace@c7d9ce5ebb03c752a354889ecd870cadfc2b1cd4
+        uses: XRPLF/actions/cleanup-workspace@d7c65e49225a38f6d8010eacf017bb5a98d7476c
 
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@ad188deb3dae79dc39816e16ddfdad1e06c6fab2
+        uses: XRPLF/actions/prepare-runner@d7c65e49225a38f6d8010eacf017bb5a98d7476c
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
 
@@ -127,10 +127,10 @@ jobs:
         run: ./bin/check-tools.sh || true
 
       - name: Print build environment
-        uses: XRPLF/actions/print-build-env@59dec886e4afb05a1724443af08baccbc045b574
+        uses: XRPLF/actions/print-build-env@d7c65e49225a38f6d8010eacf017bb5a98d7476c
 
       - name: Get number of processors
-        uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
+        uses: XRPLF/actions/get-nproc@d7c65e49225a38f6d8010eacf017bb5a98d7476c
         id: nproc
         with:
           subtract: ${{ inputs.nproc_subtract }}
