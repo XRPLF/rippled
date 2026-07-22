@@ -8548,6 +8548,107 @@ protected:
     }
 
     void
+    testLoanPayFundsConservedPayeeBelowReserve(FeatureBitset features)
+    {
+        // Regression test: LoanPay::doApply's fund-conservation check used to
+        // read XRP balances via accountHolds(..., SpendableHandling::
+        // FullBalance), which for XRP always defers to xrpLiquid (balance
+        // minus reserve, clamped at zero). When the broker fee landed on a
+        // payee sitting below its own reserve, that payee's clamped balance
+        // stayed zero and the fee vanished from the conservation sum,
+        // tripping "funds are conserved (with rounding)".
+        testcase << "LoanPay funds conserved: broker fee payee below reserve";
+
+        using namespace jtx;
+
+        Env env(*this, features);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        // Broker defaults match the fuzz workload: ManagementFeeRate = 100
+        // tenth-bips. The service fee guarantees feePaid > 0 on the first
+        // regular payment.
+        BrokerParameters const brokerParams;
+        Number const serviceFeeValue{2};
+        LoanParameters const loanParams{
+            .account = borrower,
+            .counter = lender,
+            .principalRequest = 1000,
+            .serviceFee = serviceFeeValue,
+            .interest = TenthBips32{percentageToTenthBips(12)},
+            .payTotal = 12,
+            .payInterval = 3600};
+
+        auto const loanOpt =
+            createLoan(env, AssetType::XRP, brokerParams, loanParams, issuer, lender, borrower);
+        if (!BEAST_EXPECT(loanOpt))
+            return;
+        auto const& [broker, loanKeylet, brokerPseudo] = *loanOpt;
+
+        auto const vaultPseudo = [&]() {
+            auto const vaultSle = env.le(keylet::vault(broker.vaultID));
+            BEAST_EXPECT(vaultSle);
+            return vaultSle ? vaultSle->at(sfAccount) : AccountID{};
+        }();
+
+        // Raw AccountRoot balance, matching LoanPay::doApply's conservation
+        // check (not the reserve-clamped accountHolds()/xrpLiquid() value).
+        auto rawBalance = [&](AccountID const& id) -> STAmount {
+            auto const sle = env.le(keylet::account(id));
+            return sle ? sle->getFieldAmount(sfBalance) : STAmount{};
+        };
+        auto lenderReserve = [&] {
+            return env.current()->fees().accountReserve(ownerCount(env, lender), 1);
+        };
+
+        STAmount const baseFee{env.current()->fees().base};
+
+        // Park the lender (broker owner, fee payee) exactly at its reserve,
+        // then burn part of the reserve with an oversized transaction fee.
+        // Fees are exempt from the reserve check, so the balance ends up
+        // below the reserve.
+        env(pay(lender, issuer, rawBalance(lender.id()) - lenderReserve() - baseFee));
+        env(noop(lender), Fee(XRP(100)));
+        env.close();
+        BEAST_EXPECT(env.balance(lender) < lenderReserve());
+
+        // First regular payment, exactly the amount due.
+        auto const state = getCurrentState(env, broker, loanKeylet);
+        STAmount const serviceFee = broker.asset(serviceFeeValue);
+        STAmount const roundedPeriodicPayment{
+            broker.asset,
+            roundPeriodicPayment(broker.asset, state.periodicPayment, state.loanScale)};
+        STAmount const totalDue = roundToScale(
+            roundedPeriodicPayment + serviceFee, state.loanScale, Number::RoundingMode::Upward);
+
+        auto const borrowerBefore = rawBalance(borrower.id());
+        auto const vaultBefore = rawBalance(vaultPseudo);
+        auto const lenderBefore = rawBalance(lender.id());
+
+        // Before the fix, this aborted inside LoanPay::doApply on
+        // XRPL_ASSERT_PARTS(goodRounding, "xrpl::LoanPay::doApply", "funds
+        // are conserved (with rounding)").
+        env(loan::pay(borrower, loanKeylet.key, totalDue));
+        env.close();
+
+        auto const borrowerAfter = rawBalance(borrower.id());
+        auto const vaultAfter = rawBalance(vaultPseudo);
+        auto const lenderAfter = rawBalance(lender.id());
+
+        // The broker fee reached the lender's AccountRoot, even though the
+        // lender's balance remains below its reserve.
+        BEAST_EXPECT(lenderAfter > lenderBefore);
+        BEAST_EXPECT(lenderAfter < lenderReserve());
+
+        // Total funds conserved across the payer, vault, and fee payee.
+        BEAST_EXPECT(
+            borrowerBefore - baseFee + vaultBefore + lenderBefore ==
+            borrowerAfter + vaultAfter + lenderAfter);
+    }
+
+    void
     runAmendmentIndependent()
     {
         testDisabled();
@@ -8580,6 +8681,8 @@ protected:
         testLoanPayLateFullPaymentBypassesPenalties(features);
         testLoanCoverMinimumRoundingExploit(features);
 #endif
+        testLoanPayFundsConservedPayeeBelowReserve(features);
+
         // Lifecycle
         testLifecycle(features);
         testLoanSet(features);

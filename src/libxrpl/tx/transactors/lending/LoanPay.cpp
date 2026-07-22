@@ -33,6 +33,34 @@
 
 namespace xrpl {
 
+namespace {
+// Returns the account's true, unclamped balance in `asset`, for use only in
+// fund-conservation checks. accountHolds(..., SpendableHandling::FullBalance)
+// cannot be used for this: for XRP it always defers to xrpLiquid, which
+// subtracts the account's reserve, so a payee sitting below its own reserve
+// would appear to receive nothing even though its raw ledger balance grew.
+// That mismatch is exactly what a conservation check must not see.
+STAmount
+conservationBalance(ReadView const& view, AccountID const& id, Asset const& asset, beast::Journal j)
+{
+    if (isXRP(asset))
+    {
+        auto const sle = view.read(keylet::account(id));
+        if (!sle)
+            return STAmount{};
+        return view.balanceHookIOU(id, xrpAccount(), sle->getFieldAmount(sfBalance));
+    }
+    return accountHolds(
+        view,
+        id,
+        asset,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        j,
+        SpendableHandling::FullBalance);
+}
+}  // namespace
+
 bool
 LoanPay::checkExtraFeatures(PreflightContext const& ctx)
 {
@@ -584,34 +612,13 @@ LoanPay::doApply()
     }
 
     // These three values are used to check that funds are conserved after the transfers
-    auto const accountBalanceBefore = accountHolds(
-        view,
-        accountID_,
-        asset,
-        FreezeHandling::IgnoreFreeze,
-        AuthHandling::IgnoreAuth,
-        j_,
-        SpendableHandling::FullBalance);
+    auto const accountBalanceBefore = conservationBalance(view, accountID_, asset, j_);
     auto const vaultBalanceBefore = accountID_ == vaultPseudoAccount
         ? STAmount{asset, 0}
-        : accountHolds(
-              view,
-              vaultPseudoAccount,
-              asset,
-              FreezeHandling::IgnoreFreeze,
-              AuthHandling::IgnoreAuth,
-              j_,
-              SpendableHandling::FullBalance);
+        : conservationBalance(view, vaultPseudoAccount, asset, j_);
     auto const brokerBalanceBefore = accountID_ == brokerPayee
         ? STAmount{asset, 0}
-        : accountHolds(
-              view,
-              brokerPayee,
-              asset,
-              FreezeHandling::IgnoreFreeze,
-              AuthHandling::IgnoreAuth,
-              j_,
-              SpendableHandling::FullBalance);
+        : conservationBalance(view, brokerPayee, asset, j_);
 
     if (totalPaidToVaultRounded != beast::kZero)
     {
@@ -667,33 +674,13 @@ LoanPay::doApply()
 #endif
 
     // Check that funds are conserved
-    auto const accountBalanceAfter = accountHolds(
-        view,
-        accountID_,
-        asset,
-        FreezeHandling::IgnoreFreeze,
-        AuthHandling::IgnoreAuth,
-        j_,
-        SpendableHandling::FullBalance);
+    auto const accountBalanceAfter = conservationBalance(view, accountID_, asset, j_);
     auto const vaultBalanceAfter = accountID_ == vaultPseudoAccount
         ? STAmount{asset, 0}
-        : accountHolds(
-              view,
-              vaultPseudoAccount,
-              asset,
-              FreezeHandling::IgnoreFreeze,
-              AuthHandling::IgnoreAuth,
-              j_,
-              SpendableHandling::FullBalance);
-    auto const brokerBalanceAfter = accountID_ == brokerPayee ? STAmount{asset, 0}
-                                                              : accountHolds(
-                                                                    view,
-                                                                    brokerPayee,
-                                                                    asset,
-                                                                    FreezeHandling::IgnoreFreeze,
-                                                                    AuthHandling::IgnoreAuth,
-                                                                    j_,
-                                                                    SpendableHandling::FullBalance);
+        : conservationBalance(view, vaultPseudoAccount, asset, j_);
+    auto const brokerBalanceAfter = accountID_ == brokerPayee
+        ? STAmount{asset, 0}
+        : conservationBalance(view, brokerPayee, asset, j_);
     auto const balanceScale = [&]() {
         // Find a reasonable scale to use for the balance comparisons.
         //
