@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 TEST(NodeStoreBasics, predictable_batches)
 {
@@ -38,4 +38,4 @@ TEST(NodeStoreBasics, blob_encoding)
     }
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-using namespace xrpl::NodeStore;
+using namespace xrpl::node_store;
 
 TEST(varint, encode_decode)
 {

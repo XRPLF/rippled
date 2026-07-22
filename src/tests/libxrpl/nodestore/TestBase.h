@@ -19,7 +19,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 constexpr std::size_t kMinPayloadBytes = 1;
 constexpr std::size_t kMaxPayloadBytes = 2000;
@@ -156,14 +156,14 @@ fetchMissing(Database& db, Batch const& batch)
     }
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store
 
 namespace xrpl {
 
 [[nodiscard]] inline bool
-operator==(NodeStore::Batch const& lhs, NodeStore::Batch const& rhs)
+operator==(node_store::Batch const& lhs, node_store::Batch const& rhs)
 {
-    return std::ranges::equal(lhs, rhs, NodeStore::isSame);
+    return std::ranges::equal(lhs, rhs, node_store::isSame);
 }
 
 }  // namespace xrpl

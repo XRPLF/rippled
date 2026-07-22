@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 namespace {
 
@@ -245,4 +245,4 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::ValuesIn(importBackends()),
     [](::testing::TestParamInfo<std::string> const& info) { return info.param; });
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

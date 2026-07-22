@@ -11,7 +11,7 @@
 #include <memory>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 class DatabaseConfig_test : public beast::unit_test::Suite
 {
@@ -508,4 +508,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(DatabaseConfig, nodestore, xrpl);
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

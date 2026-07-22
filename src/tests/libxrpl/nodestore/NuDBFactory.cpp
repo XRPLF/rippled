@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 namespace {
 
@@ -65,7 +65,7 @@ TEST(NuDBFactory, default_block_size)
 
 TEST(NuDBFactory, valid_block_sizes)
 {
-    std::array<std::size_t, 4> const kValidSizes{4096, 8192, 16384, 32768};
+    auto const kValidSizes = std::to_array<std::size_t>({4096, 8192, 16384, 32768});
     for (auto const size : kValidSizes)
     {
         SCOPED_TRACE("size=" + std::to_string(size));
@@ -294,4 +294,4 @@ TEST(NuDBFactory, data_persistence)
     }
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store
