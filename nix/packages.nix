@@ -15,6 +15,8 @@ let
   runClangTidy = pkgs.writeShellScriptBin "run-clang-tidy" ''
     exec ${pkgs.python3}/bin/python3 ${llvmPackages.clang-unwrapped}/bin/run-clang-tidy "$@"
   '';
+
+  rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ../rust-toolchain.toml;
 in
 {
   inherit
@@ -63,14 +65,10 @@ in
     vim
     zip
     # Rust packages
-    cargo
     cargo-audit
     cargo-llvm-cov
     cargo-nextest
-    clippy
     corrosion
-    rust-analyzer
-    rustc
-    rustfmt
+    rustToolchain
   ];
 }

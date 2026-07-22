@@ -12,6 +12,7 @@ COPY nix/packages.nix /tmp/build/nix/packages.nix
 COPY nix/utils.nix /tmp/build/nix/utils.nix
 COPY flake.nix /tmp/build/
 COPY flake.lock /tmp/build/
+COPY rust-toolchain.toml /tmp/build/
 WORKDIR /tmp/build
 
 FROM builder-source AS builder
