@@ -309,7 +309,7 @@ public:
     static EnginePtr
     init();
 
-    Expected<WasmResult<int32_t>, WasmTER>
+    std::expected<WasmResult<int32_t>, WasmTER>
     run(Bytes const& wasmCode,
         HostFunctions& hfs,
         int64_t gas,
@@ -360,7 +360,7 @@ private:
         return moduleWrap_ ? moduleWrap_->getMem() : Wmem();
     }
 
-    Expected<WasmResult<int32_t>, WasmTER>
+    std::expected<WasmResult<int32_t>, WasmTER>
     runHlp(
         Bytes const& wasmCode,
         HostFunctions& hfs,

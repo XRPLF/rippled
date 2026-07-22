@@ -1,10 +1,19 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
+
+#include <compare>
+#include <cstddef>
+#include <stdexcept>
+#include <string>
 
 namespace xrpl {
 

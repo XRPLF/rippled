@@ -1,6 +1,5 @@
 #include <xrpl/tx/wasm/WasmVM.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/HostFuncWrapper.h>  // IWYU pragma: keep
@@ -115,7 +114,7 @@ createWasmImport(HostFunctions& hfs)
     return i;
 }
 
-Expected<EscrowResult, WasmTER>
+std::expected<EscrowResult, WasmTER>
 runEscrowWasm(
     Bytes const& wasmCode,
     HostFunctions& hfs,
@@ -138,7 +137,7 @@ runEscrowWasm(
         // Carries the TER (tecOUT_OF_GAS / tecFAILED_PROCESSING / tecINTERNAL /
         // temBAD_AMOUNT) and, when meaningful, the gas consumed. The caller is
         // responsible for writing that gas to tx metadata.
-        return Unexpected(ret.error());
+        return std::unexpected(ret.error());
     }
 
 #ifdef DEBUG_OUTPUT
@@ -177,7 +176,7 @@ WasmEngine::instance()
     return e;
 }
 
-Expected<WasmResult<int32_t>, WasmTER>
+std::expected<WasmResult<int32_t>, WasmTER>
 WasmEngine::run(
     Bytes const& wasmCode,
     HostFunctions& hfs,

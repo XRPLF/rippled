@@ -4,12 +4,14 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -21,10 +23,21 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
 #include <stdexcept>
 
 namespace xrpl {
+
+static WaiveUnrealizedLoss
+shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
+{
+    XRPL_ASSERT(
+        issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::shouldWaiveWithdrawal : valid issuance sle");
+
+    return view.rules().enabled(fixCleanup3_2_0) && isSoleShareholder(view, account, issuance)
+        ? WaiveUnrealizedLoss::Yes
+        : WaiveUnrealizedLoss::No;
+}
 
 NotTEC
 VaultWithdraw::preflight(PreflightContext const& ctx)
@@ -52,6 +65,10 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
 TER
 VaultWithdraw::preclaim(PreclaimContext const& ctx)
 {
+    auto const fix313Enabled = ctx.view.rules().enabled(fixCleanup3_1_3);
+    auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
+    auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
+
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecNO_ENTRY;
@@ -65,7 +82,13 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     auto const& vaultAccount = vault->at(sfAccount);
     auto const& account = ctx.tx[sfAccount];
     auto const& dstAcct = ctx.tx[~sfDestination].value_or(account);
-    if (auto ter = canTransfer(ctx.view, vaultAsset, vaultAccount, dstAcct); !isTesSuccess(ter))
+    // Post-fixCleanup3_2_0: withdraw is a recovery path that bypasses the
+    // lsfMPTCanTransfer flag check, so an issuer cannot trap depositor funds.
+    // Other transferability checks (IOU NoRipple, freeze, requireAuth) still
+    // apply.
+    auto const waive = fix320Enabled ? WaiveMPTCanTransfer::Yes : WaiveMPTCanTransfer::No;
+    if (auto ter = canTransfer(ctx.view, vaultAsset, vaultAccount, dstAcct, waive);
+        !isTesSuccess(ter))
     {
         JLOG(ctx.j.debug()) << "VaultWithdraw: vault assets are non-transferable.";
         return ter;
@@ -80,13 +103,13 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (ctx.view.rules().enabled(fixCleanup3_1_3) && amount.asset() == vaultShare)
+    if (fix313Enabled && amount.asset() == vaultShare)
     {
         // Post-fixCleanup3_1_3: if the user specified shares, convert
         // to the equivalent asset amount before checking withdrawal
         // limits. Pre-amendment the limit check was skipped for
         // share-denominated withdrawals.
-        auto const sleIssuance = ctx.view.read(keylet::mptIssuance(vaultShare));
+        auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(vaultShare));
         if (!sleIssuance)
         {
             // LCOV_EXCL_START
@@ -95,9 +118,14 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
             // LCOV_EXCL_STOP
         }
 
+        // When the user is the sole shareholder they own both the available and future value.
+        // We waive the unrealized-loss subtraction in this case to avoid user withdrawing all of
+        // their shares but keeping future value in the vault.
+        auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(ctx.view, account, sleIssuance);
         try
         {
-            auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, amount);
+            auto const maybeAssets =
+                sharesToAssetsWithdraw(vault, sleIssuance, amount, waiveUnrealizedLoss);
             if (!maybeAssets)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -135,15 +163,30 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType); !isTesSuccess(ter))
         return ter;
 
-    // Cannot withdraw from a Vault an Asset frozen for the destination account
-    if (auto const ret = checkFrozen(ctx.view, dstAcct, vaultAsset))
-        return ret;
+    if (fix330Enabled)
+    {
+        // checkWithdrawFreeze checks the underlying asset on the source
+        // (vault pseudo-account), the submitter, and the destination.
+        // A separate share-level freeze check is unnecessary: vault shares
+        // are issued by the vault pseudo-account, which cannot submit
+        // MPTokenIssuanceSet to individually lock a holder's MPToken.
+        // The only way shares become locked is transitively via the
+        // underlying asset, which checkWithdrawFreeze covers.
+        if (auto const ret =
+                checkWithdrawFreeze(ctx.view, vaultAccount, account, dstAcct, vaultAsset))
+            return ret;
+    }
+    else
+    {
+        // Cannot withdraw from a Vault an Asset frozen for the destination account
+        if (auto const ret = checkFrozen(ctx.view, dstAcct, vaultAsset))
+            return ret;
 
-    // Cannot return shares to the vault, if the underlying asset was frozen for
-    // the submitter
-    if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
-        return ret;
-
+        // Cannot return shares to the vault, if the underlying asset was frozen for
+        // the submitter
+        if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
+            return ret;
+    }
     return tesSUCCESS;
 }
 
@@ -151,11 +194,12 @@ TER
 VaultWithdraw::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
-    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -175,13 +219,19 @@ VaultWithdraw::doApply()
     MPTIssue const share{mptIssuanceID};
     STAmount sharesRedeemed = {share};
     STAmount assetsWithdrawn;
+
+    // When the user is the sole shareholder they own both the available and future value.
+    // We waive the unrealized-loss subtraction in this case to avoid user withdrawing all of their
+    // shares but keeping future value in the vault.
+    auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(view(), accountID_, sleIssuance);
     try
     {
         if (amount.asset() == vaultAsset)
         {
             // Fixed assets, variable shares.
             {
-                auto const maybeShares = assetsToSharesWithdraw(vault, sleIssuance, amount);
+                auto const maybeShares = assetsToSharesWithdraw(
+                    vault, sleIssuance, amount, TruncateShares::No, waiveUnrealizedLoss);
                 if (!maybeShares)
                     return tecINTERNAL;  // LCOV_EXCL_LINE
                 sharesRedeemed = *maybeShares;
@@ -189,7 +239,8 @@ VaultWithdraw::doApply()
 
             if (sharesRedeemed == beast::kZero)
                 return tecPRECISION_LOSS;
-            auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
+            auto const maybeAssets =
+                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
@@ -198,7 +249,8 @@ VaultWithdraw::doApply()
         {
             // Fixed shares, variable assets.
             sharesRedeemed = amount;
-            auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
+            auto const maybeAssets =
+                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
@@ -221,8 +273,14 @@ VaultWithdraw::doApply()
         return tecPATH_DRY;
     }
 
-    if (accountHolds(
-            view(), accountID_, share, FreezeHandling::ZeroIfFrozen, AuthHandling::IgnoreAuth, j_) <
+    // Post-fixCleanup3_3_0: preclaim already validated all freeze conditions
+    // (checkWithdrawFreeze), so IgnoreFreeze avoids a redundant check that
+    // would incorrectly return zero for vault pseudo-accounts whose shares
+    // are frozen via a transitively frozen underlying asset.
+    auto const freezeHandling = view().rules().enabled(fixCleanup3_3_0)
+        ? FreezeHandling::IgnoreFreeze
+        : FreezeHandling::ZeroIfFrozen;
+    if (accountHolds(view(), accountID_, share, freezeHandling, AuthHandling::IgnoreAuth, j_) <
         sharesRedeemed)
     {
         JLOG(j_.debug()) << "VaultWithdraw: account doesn't hold enough shares";
@@ -231,28 +289,71 @@ VaultWithdraw::doApply()
 
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
-    [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
+    auto const lossUnrealized = vault->at(sfLossUnrealized);
     XRPL_ASSERT(
         lossUnrealized <= (assetsTotal - assetsAvailable),
         "xrpl::VaultWithdraw::doApply : loss and assets do balance");
 
-    // The vault must have enough assets on hand. The vault may hold assets
-    // that it has already pledged. That is why we look at AssetAvailable
-    // instead of the pseudo-account balance.
+    // The vault must have enough assets on hand.
     if (*assetsAvailable < assetsWithdrawn)
     {
         JLOG(j_.debug()) << "VaultWithdraw: vault doesn't hold enough assets";
         return tecINSUFFICIENT_FUNDS;
     }
 
-    assetsTotal -= assetsWithdrawn;
-    assetsAvailable -= assetsWithdrawn;
+    // Post-fixCleanup3_2_0 "final withdrawal" rule:
+    // a transaction that would burn every outstanding share is only permitted when the vault is in
+    // a clean state — no outstanding receivables and no unrealized loss. Otherwise the resulting
+    // (shares == 0, assetsTotal > 0) state would violate the zero-sized-vault invariant.
+    //
+    // When the rule applies, the payout is the remaining sfAssetsAvailable; in a clean vault
+    // the helper result should already equal that value, and any mismatch is a rounding artifact
+    // worth logging.
+    bool const isFinalWithdrawal =
+        sharesRedeemed == STAmount{share, sleIssuance->at(sfOutstandingAmount)};
+    if (view().rules().enabled(fixCleanup3_2_0) && isFinalWithdrawal)
+    {
+        // Unreachable: a final withdrawal with lossUnrealized > 0 has
+        // assetsWithdrawn == assetsTotal > assetsAvailable, which the
+        // insufficient-funds guard above already rejected.
+        if (*lossUnrealized != beast::kZero)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE(
+                "xrpl::VaultWithdraw::doApply : final withdrawal with non-zero unrealized loss");
+            JLOG(j_.fatal())
+                << "VaultWithdraw: "  //
+                   "Cannot burn all outstanding shares while unrealized loss is non-zero";
+            return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+
+        STAmount const allAvailable{vaultAsset, *assetsAvailable};
+        if (assetsWithdrawn != allAvailable)
+        {
+            JLOG(j_.error())  //
+                << "VaultWithdraw: final withdrawal share-value mismatch;"
+                << " computed=" << assetsWithdrawn.getText()
+                << " assetsAvailable=" << allAvailable.getText();
+        }
+        assetsWithdrawn = allAvailable;
+
+        // Do not let dust accumulate in the Vault.
+        assetsTotal = 0;
+        assetsAvailable = 0;
+    }
+    else
+    {
+        assetsTotal -= assetsWithdrawn;
+        assetsAvailable -= assetsWithdrawn;
+    }
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);
+
     // Transfer shares from depositor to vault.
     if (auto const ter = accountSend(
-            view(), accountID_, vaultAccount, sharesRedeemed, j_, WaiveTransferFee::Yes);
+            view(), accountID_, vaultAccount, sharesRedeemed, j_, {}, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 
@@ -261,7 +362,8 @@ VaultWithdraw::doApply()
     // Keep MPToken if holder is the vault owner.
     if (accountID_ != vault->at(sfOwner))
     {
-        if (auto const ter = removeEmptyHolding(view(), accountID_, sharesRedeemed.asset(), j_);
+        if (auto const ter =
+                removeEmptyHolding(applyViewContext, accountID_, sharesRedeemed.asset(), j_);
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
@@ -283,19 +385,15 @@ VaultWithdraw::doApply()
         // else quietly ignore, account balance is not zero
     }
 
-    auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
-
     associateAsset(*vault, vaultAsset);
 
+    auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
     return doWithdraw(
-        view(), ctx_.tx, accountID_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
+        applyViewContext, accountID_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
 }
 
 void
-VaultWithdraw::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+VaultWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -1,4 +1,3 @@
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/protocol/SField.h>
@@ -25,10 +24,16 @@ namespace wasm_float {
 
 namespace detail {
 
-class WasmNumber : public Number
+// Number is marked `final`, so WasmNumber wraps one by composition instead of
+// inheriting. An implicit conversion to Number lets it flow into the
+// namespace-scope arithmetic helpers (operator+/-/*//, to_string, root, power);
+// the comparison operators are hidden friends of Number found only by ADL, so
+// call sites that compare two WasmNumbers wrap them in Number(...) explicitly.
+class WasmNumber
 {
 protected:
     static unsigned constexpr encodedFloatSize = 12;
+    Number num_{};
     bool good_ = false;
 
 public:
@@ -39,8 +44,7 @@ public:
         try
         {
             SerialIter it(data);
-            Number const x = STNumber(it, sfNumber).value();
-            *static_cast<Number*>(this) = x;
+            num_ = STNumber(it, sfNumber).value();
         }
         catch (...)
         {
@@ -59,16 +63,14 @@ public:
     {
         try
         {
-            Number n;
             if constexpr (std::is_signed_v<T>)
             {
-                n = Number(static_cast<int64_t>(mantissa), exponent);
+                num_ = Number(static_cast<int64_t>(mantissa), exponent);
             }
             else
             {
-                n = Number(static_cast<uint64_t>(mantissa), exponent, Number::Normalized{});
+                num_ = Number(static_cast<uint64_t>(mantissa), exponent, Number::Normalized{});
             }
-            *static_cast<Number*>(this) = n;
         }
         catch (...)
         {
@@ -80,6 +82,23 @@ public:
     WasmNumber&
     operator=(WasmNumber const&) = default;
 
+    operator Number() const
+    {
+        return num_;
+    }
+
+    [[nodiscard]] auto
+    mantissa() const noexcept
+    {
+        return num_.mantissa();
+    }
+
+    [[nodiscard]] auto
+    exponent() const noexcept
+    {
+        return num_.exponent();
+    }
+
     explicit
     operator bool() const
     {
@@ -89,14 +108,14 @@ public:
     explicit
     operator int64_t() const
     {
-        return Number::operator int64_t();
+        return static_cast<int64_t>(num_);
     }
 
-    Expected<Bytes, HostFunctionError>
+    [[nodiscard]] std::expected<Bytes, HostFunctionError>
     toBytes() const
     {
         Serializer msg;
-        STNumber(sfNumber, *this).add(msg);
+        STNumber(sfNumber, num_).add(msg);
         auto data = msg.getData();
 
 #ifdef DEBUG_OUTPUT
@@ -107,7 +126,7 @@ public:
             std::cout << std::setw(2) << (unsigned)c << " ";
         std::cout << std::dec << std::setfill(' ') << std::endl;
 #endif
-        return Expected<Bytes, HostFunctionError>(std::move(data));
+        return std::expected<Bytes, HostFunctionError>(std::move(data));
     }
 };
 
@@ -155,164 +174,164 @@ floatToString(Slice const& data)
     return s;
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatFromIntImpl(int64_t x, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
         detail::WasmNumber const num(x);
         if (!num)
-            return Unexpected(HostFunctionError::FloatInputMalformed);  // LCOV_EXCL_LINE
+            return std::unexpected(HostFunctionError::FloatInputMalformed);  // LCOV_EXCL_LINE
         auto const r = num.toBytes();
         return r;
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FloatComputationError);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
     // LCOV_EXCL_STOP
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatFromUintImpl(uint64_t x, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
         detail::WasmNumber const num(x);
         if (!num)
-            return Unexpected(HostFunctionError::FloatInputMalformed);  // LCOV_EXCL_LINE
+            return std::unexpected(HostFunctionError::FloatInputMalformed);  // LCOV_EXCL_LINE
         auto const r = num.toBytes();
         return r;
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FloatComputationError);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
     // LCOV_EXCL_STOP
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatFromSTAmountImpl(STAmount const& x, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
         detail::WasmNumber const num(static_cast<Number>(x));
         if (!num)
-            return Unexpected(HostFunctionError::FloatInputMalformed);  // LCOV_EXCL_LINE
+            return std::unexpected(HostFunctionError::FloatInputMalformed);  // LCOV_EXCL_LINE
         auto const r = num.toBytes();
         return r;
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FloatComputationError);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
     // LCOV_EXCL_STOP
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatFromSTNumberImpl(STNumber const& x, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
         detail::WasmNumber const num(x.value());
         if (!num)
-            return Unexpected(HostFunctionError::FloatInputMalformed);  // LCOV_EXCL_LINE
+            return std::unexpected(HostFunctionError::FloatInputMalformed);  // LCOV_EXCL_LINE
         auto const r = num.toBytes();
         return r;
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FloatComputationError);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
     // LCOV_EXCL_STOP
 }
 
-Expected<int64_t, HostFunctionError>
+std::expected<int64_t, HostFunctionError>
 floatToIntImpl(Slice const& x, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
         detail::WasmNumber const num(x);
         if (!num)
-            return Unexpected(HostFunctionError::FloatInputMalformed);  // LCOV_EXCL_LINE
+            return std::unexpected(HostFunctionError::FloatInputMalformed);  // LCOV_EXCL_LINE
         int64_t const r(num);
         return r;
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FloatComputationError);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
     // LCOV_EXCL_STOP
 }
 
-Expected<FloatPair, HostFunctionError>
+std::expected<FloatPair, HostFunctionError>
 floatToMantExpImpl(Slice const& x)
 {
     try
     {
         detail::FloatState const rm(static_cast<int32_t>(Number::RoundingMode::ToNearest));
         if (!rm)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
         detail::WasmNumber const num(x);
         if (!num)
-            return Unexpected(HostFunctionError::FloatInputMalformed);  // LCOV_EXCL_LINE
+            return std::unexpected(HostFunctionError::FloatInputMalformed);  // LCOV_EXCL_LINE
 
         return FloatPair(num.mantissa(), num.exponent());
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FloatComputationError);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
     // LCOV_EXCL_STOP
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatFromMantExpImpl(int64_t mantissa, int32_t exponent, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
         detail::WasmNumber const num(mantissa, exponent);
         if (!num)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
         return num.toBytes();
     }
     catch (...)
     {
-        return Unexpected(HostFunctionError::FloatComputationError);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
 }
 
-Expected<int32_t, HostFunctionError>
+std::expected<int32_t, HostFunctionError>
 floatCompareImpl(Slice const& x, Slice const& y)
 {
     try
@@ -322,39 +341,39 @@ floatCompareImpl(Slice const& x, Slice const& y)
 
         detail::WasmNumber const xx(x);
         if (!xx)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
         detail::WasmNumber const yy(y);
         if (!yy)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
-        if (xx < yy)
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
+        if (Number(xx) < Number(yy))
             return 2;
-        if (xx == yy)
+        if (Number(xx) == Number(yy))
             return 0;
         return 1;
     }
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FloatComputationError);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
     // LCOV_EXCL_STOP
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatAddImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
         detail::WasmNumber const xx(x);
         if (!xx)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
         detail::WasmNumber const yy(y);
         if (!yy)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
         detail::WasmNumber const res = xx + yy;
 
         return res.toBytes();
@@ -362,25 +381,25 @@ floatAddImpl(Slice const& x, Slice const& y, int32_t mode)
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FloatComputationError);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
     // LCOV_EXCL_STOP
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatSubtractImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
         detail::WasmNumber const xx(x);
         if (!xx)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
         detail::WasmNumber const yy(y);
         if (!yy)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
         detail::WasmNumber const res = xx - yy;
 
         return res.toBytes();
@@ -388,25 +407,25 @@ floatSubtractImpl(Slice const& x, Slice const& y, int32_t mode)
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FloatComputationError);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
     // LCOV_EXCL_STOP
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatMultiplyImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
         detail::WasmNumber const xx(x);
         if (!xx)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
         detail::WasmNumber const yy(y);
         if (!yy)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
         detail::WasmNumber const res = xx * yy;
 
         return res.toBytes();
@@ -414,50 +433,50 @@ floatMultiplyImpl(Slice const& x, Slice const& y, int32_t mode)
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FloatComputationError);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
     // LCOV_EXCL_STOP
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatDivideImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
         detail::WasmNumber const xx(x);
         if (!xx)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
         detail::WasmNumber const yy(y);
         if (!yy)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
         detail::WasmNumber const res = xx / yy;
 
         return res.toBytes();
     }
     catch (...)
     {
-        return Unexpected(HostFunctionError::FloatComputationError);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatRootImpl(Slice const& x, int32_t n, int32_t mode)
 {
     try
     {
         if (n < 1)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
         detail::WasmNumber const xx(x);
         if (!xx)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
         detail::WasmNumber const res(root(xx, n));
 
@@ -466,28 +485,28 @@ floatRootImpl(Slice const& x, int32_t n, int32_t mode)
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FloatComputationError);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
     // LCOV_EXCL_STOP
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
 {
     try
     {
         if ((n < 0) || (n > Number::kMaxExponent))
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
         detail::FloatState const rm(mode);
         if (!rm)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
 
         detail::WasmNumber const xx(x);
         if (!xx)
-            return Unexpected(HostFunctionError::FloatInputMalformed);
+            return std::unexpected(HostFunctionError::FloatInputMalformed);
         if (xx == Number() && (n == 0))
-            return Unexpected(HostFunctionError::InvalidParams);
+            return std::unexpected(HostFunctionError::InvalidParams);
 
         detail::WasmNumber const res(power(xx, n, 1));
 
@@ -496,7 +515,7 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
     // LCOV_EXCL_START
     catch (...)
     {
-        return Unexpected(HostFunctionError::FloatComputationError);
+        return std::unexpected(HostFunctionError::FloatComputationError);
     }
     // LCOV_EXCL_STOP
 }
@@ -507,85 +526,85 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
 // ACTUAL HOST FUNCTIONS
 // =========================================================
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatFromInt(int64_t x, int32_t mode) const
 {
     return wasm_float::floatFromIntImpl(x, mode);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatFromUint(uint64_t x, int32_t mode) const
 {
     return wasm_float::floatFromUintImpl(x, mode);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatFromSTAmount(STAmount const& x, int32_t mode) const
 {
     return wasm_float::floatFromSTAmountImpl(x, mode);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatFromSTNumber(STNumber const& x, int32_t mode) const
 {
     return wasm_float::floatFromSTNumberImpl(x, mode);
 }
 
-Expected<int64_t, HostFunctionError>
+std::expected<int64_t, HostFunctionError>
 WasmHostFunctionsImpl::floatToInt(Slice const& x, int32_t mode) const
 {
     return wasm_float::floatToIntImpl(x, mode);
 }
 
-Expected<FloatPair, HostFunctionError>
+std::expected<FloatPair, HostFunctionError>
 WasmHostFunctionsImpl::floatToMantExp(Slice const& x) const
 {
     return wasm_float::floatToMantExpImpl(x);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatFromMantExp(int64_t mantissa, int32_t exponent, int32_t mode) const
 {
     return wasm_float::floatFromMantExpImpl(mantissa, exponent, mode);
 }
 
-Expected<int32_t, HostFunctionError>
+std::expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::floatCompare(Slice const& x, Slice const& y) const
 {
     return wasm_float::floatCompareImpl(x, y);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatAdd(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatAddImpl(x, y, mode);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatSubtract(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatSubtractImpl(x, y, mode);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatMultiply(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatMultiplyImpl(x, y, mode);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatDivide(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatDivideImpl(x, y, mode);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatRoot(Slice const& x, int32_t n, int32_t mode) const
 {
     return wasm_float::floatRootImpl(x, n, mode);
 }
 
-Expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::floatPower(Slice const& x, int32_t n, int32_t mode) const
 {
     return wasm_float::floatPowerImpl(x, n, mode);

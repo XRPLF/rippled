@@ -1,29 +1,32 @@
 #pragma once
 
 #include <xrpl/basics/Blob.h>
-#include <xrpl/basics/strHex.h>
 
 #include <boost/format.hpp>
 #include <boost/utility/string_view.hpp>
 
 #include <array>
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <type_traits>
+#include <utility>
 
 namespace xrpl {
 
-/** Format arbitrary binary data as an SQLite "blob literal".
-
-    In SQLite, blob literals must be encoded when used in a query. Per
-    https://sqlite.org/lang_expr.html#literal_values_constants_ they are
-    encoded as string literals containing hexadecimal data and preceded
-    by a single 'X' character.
-
-    @param blob An arbitrary blob of binary data
-    @return The input, encoded as a blob literal.
+/**
+ * Format arbitrary binary data as an SQLite "blob literal".
+ *
+ * In SQLite, blob literals must be encoded when used in a query. Per
+ * https://sqlite.org/lang_expr.html#literal_values_constants_ they are
+ * encoded as string literals containing hexadecimal data and preceded
+ * by a single 'X' character.
+ *
+ * @param blob An arbitrary blob of binary data
+ * @return The input, encoded as a blob literal.
  */
 std::string
 sqlBlobLiteral(Blob const& blob);
@@ -95,13 +98,7 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 }
 
 inline std::optional<Blob>
-strUnHex(std::string const& strSrc)
-{
-    return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
-}
-
-inline std::optional<Blob>
-strViewUnHex(std::string_view strSrc)
+strUnHex(std::string_view strSrc)
 {
     return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
 }
@@ -134,11 +131,12 @@ trimWhitespace(std::string str);
 std::optional<std::uint64_t>
 toUInt64(std::string const& s);
 
-/** Determines if the given string looks like a TOML-file hosting domain.
-
-    Do not use this function to determine if a particular string is a valid
-    domain, as this function may reject domains that are otherwise valid and
-    doesn't check whether the TLD is valid.
+/**
+ * Determines if the given string looks like a TOML-file hosting domain.
+ *
+ * Do not use this function to determine if a particular string is a valid
+ * domain, as this function may reject domains that are otherwise valid and
+ * doesn't check whether the TLD is valid.
  */
 bool
 isProperlyFormedTomlDomain(std::string_view domain);

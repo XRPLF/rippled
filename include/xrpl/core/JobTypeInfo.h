@@ -2,23 +2,32 @@
 
 #include <xrpl/core/Job.h>
 
+#include <chrono>
+#include <string>
+#include <utility>
+
 namespace xrpl {
 
-/** Holds all the 'static' information about a job, which does not change */
+/**
+ * Holds all the 'static' information about a job, which does not change
+ */
 class JobTypeInfo
 {
 private:
     JobType const type_;
     std::string const name_;
 
-    /** The limit on the number of running jobs for this job type.
-
-        A limit of 0 marks this as a "special job" which is not
-        dispatched via the job queue.
+    /**
+     * The limit on the number of running jobs for this job type.
+     *
+     * A limit of 0 marks this as a "special job" which is not
+     * dispatched via the job queue.
      */
     int const limit_;
 
-    /** Average and peak latencies for this job type. 0 is none specified */
+    /**
+     * Average and peak latencies for this job type. 0 is none specified
+     */
     std::chrono::milliseconds const avgLatency_;
     std::chrono::milliseconds const peakLatency_;
 

@@ -7,7 +7,7 @@
 
 namespace xrpl::test {
 
-Account const Account::master{"masterpassphrase"};
+Account const Account::kMaster{"masterpassphrase"};
 
 Account::Account(std::string_view name, KeyType type)
     : name_(name)

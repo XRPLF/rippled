@@ -796,22 +796,22 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                     std::to_string(result[0].of.i32));
             }
 
-            // hfs.getTxField(kSfInvalid);
+            // hfs.getTxField(sfInvalid);
             {
                 WasmValVec params(3), result(1);
                 auto* trap =
-                    ww(&import.at("tx_field"), params, result, kSfInvalid.getCode(), 0, 256);
+                    ww(&import.at("tx_field"), params, result, sfInvalid.getCode(), 0, 256);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
                         result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FieldNotFound));
             }
 
-            // hfs.getTxField(kSfGeneric);
+            // hfs.getTxField(sfGeneric);
             {
                 WasmValVec params(3), result(1);
                 auto* trap =
-                    ww(&import.at("tx_field"), params, result, kSfGeneric.getCode(), 0, 256);
+                    ww(&import.at("tx_field"), params, result, sfGeneric.getCode(), 0, 256);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
@@ -1355,17 +1355,17 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             HostFunctionError::InvalidField);
 
         // hfs.getTxNestedField(locator);
-        // Locator for negative base sfield code (-1 = kSfInvalid, exists in map but not in tx)
+        // Locator for negative base sfield code (-1 = sfInvalid, exists in map but not in tx)
         expectError(
-            {-1,  // kSfInvalid's field code
+            {-1,  // sfInvalid's field code
              0,
              sfAccount.getCode()},
             HostFunctionError::FieldNotFound);
 
         // hfs.getTxNestedField(locator);
-        // Locator for zero base sfield code (0 = kSfGeneric, exists in map but not in tx)
+        // Locator for zero base sfield code (0 = sfGeneric, exists in map but not in tx)
         expectError(
-            {0,  // kSfGeneric's field code
+            {0,  // sfGeneric's field code
              0,
              sfAccount.getCode()},
             HostFunctionError::FieldNotFound);
@@ -1380,7 +1380,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         // Locator for negative nested sfield code in STObject context
         // (sfMemos[0] is an STObject, then -1 is looked up as SField)
         expectError(
-            {sfMemos.getCode(), 0, -1},  // -1 = kSfInvalid, exists in map but not in memo object
+            {sfMemos.getCode(), 0, -1},  // -1 = sfInvalid, exists in map but not in memo object
             HostFunctionError::FieldNotFound);
 
         // hfs.getTxNestedField(locator);
@@ -1434,7 +1434,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         ApplyContext ac = createApplyContext(env, ov);
 
         // Find the signer ledger object
-        auto const signerKeylet = keylet::signers(env.master.id());
+        auto const signerKeylet = keylet::signerList(env.master.id());
         BEAST_EXPECT(env.le(signerKeylet));
 
         VirtualRuntime vrt;
@@ -1581,7 +1581,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         hfs.setRT(vrt);
 
         // Cache the SignerList ledger object in slot 1
-        auto const signerListKeylet = keylet::signers(env.master.id());
+        auto const signerListKeylet = keylet::signerList(env.master.id());
         // hfs.cacheLedgerObj(signerListKeylet.key, 1);
         {
             WasmValVec params(3), result(1);
@@ -1884,7 +1884,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const signerKeylet = keylet::signers(env.master.id());
+        auto const signerKeylet = keylet::signerList(env.master.id());
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, signerKeylet);
 
@@ -1963,7 +1963,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         auto import = xrpl::createWasmImport(hfs);
         hfs.setRT(vrt);
 
-        auto const signerListKeylet = keylet::signers(env.master.id());
+        auto const signerListKeylet = keylet::signerList(env.master.id());
         // hfs.cacheLedgerObj(signerListKeylet.key, 1);
         {
             WasmValVec params(3), result(1);
@@ -2109,7 +2109,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const signerKeylet = keylet::signers(env.master.id());
+        auto const signerKeylet = keylet::signerList(env.master.id());
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, signerKeylet);
 
@@ -2205,7 +2205,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         auto import = xrpl::createWasmImport(hfs);
         hfs.setRT(vrt);
 
-        auto const signerListKeylet = keylet::signers(env.master.id());
+        auto const signerListKeylet = keylet::signerList(env.master.id());
         // hfs.cacheLedgerObj(signerListKeylet.key, 1);
         {
             WasmValVec params(3), result(1);
@@ -2760,7 +2760,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
         Currency const usd = toCurrency("USD");
         {
-            auto const expected = keylet::line(masterID, alice.id(), usd);
+            auto const expected = keylet::trustLine(masterID, alice.id(), usd);
             WasmValVec params(8), result(1);
             auto* trap =
                 ww(&imp.at("trustline_id"), params, result, masterID, alice.id(), usd, 1024, 32);
@@ -2803,7 +2803,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::mptIssuance(1u, masterID);
+            auto const expected = keylet::mptokenIssuance(1u, masterID);
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(&imp.at("mpt_issuance_id"), params, result, masterID, toBytes(1u), 1024, 32);
@@ -2843,7 +2843,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::nftoffer(masterID, 1u);
+            auto const expected = keylet::nftokenOffer(masterID, 1u);
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(&imp.at("nft_offer_id"), params, result, masterID, toBytes(1u), 1024, 32);
@@ -2895,7 +2895,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::payChan(masterID, alice.id(), 1u);
+            auto const expected = keylet::payChannel(masterID, alice.id(), 1u);
             WasmValVec params(8), result(1);
             auto* trap = ww(
                 &imp.at("paychan_id"), params, result, masterID, alice.id(), toBytes(1u), 1024, 32);
@@ -2963,7 +2963,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::signers(masterID);
+            auto const expected = keylet::signerList(masterID);
             WasmValVec params(4), result(1);
             auto* trap = ww(&imp.at("signers_id"), params, result, masterID, 1024, 32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
@@ -2979,7 +2979,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::kTicket(masterID, 1u);
+            auto const expected = keylet::ticket(masterID, 1u);
             WasmValVec params(6), result(1);
             auto* trap = ww(&imp.at("ticket_id"), params, result, masterID, toBytes(1u), 1024, 32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
