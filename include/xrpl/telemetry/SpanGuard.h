@@ -11,9 +11,11 @@
  *                 to and destroyed on any thread. Movable AND
  *                 move-assignable.
  * - ScopedSpanGuard — owns a SpanGuard plus an active OTel Scope that
- *                 pushes the span onto the constructing thread's
- *                 context stack. Thread-bound: it must be created and
- *                 destroyed on the same thread. Non-copyable and
+ *                 pushes the span onto the constructing context store's
+ *                 stack. Store-bound: it must be created and destroyed
+ *                 while the same LocalValue context store is active (the
+ *                 same thread, or the same JobQueue coroutine even if it
+ *                 resumes on another worker). Non-copyable and
  *                 non-movable.
  *
  * Both wrap all OpenTelemetry types behind the pimpl idiom so no
@@ -446,26 +448,26 @@ public:
 };
 
 /**
- * RAII guard that activates a span on the current thread (scoped).
+ * RAII guard that activates a span on the current context store (scoped).
  *
  * Wraps a SpanGuard (which owns the span) plus an OTel Scope that
- * pushes the span onto this thread's thread-local context stack for
- * the guard's lifetime, so child spans created on the thread inherit
+ * pushes the span onto the active context store's stack for the
+ * guard's lifetime, so child spans created under that store inherit
  * it as parent. On destruction the Scope pops BEFORE the span ends
  * (member order: guard first, scope second). Non-copyable and
  * non-movable — factories return unnamed temporaries, so guaranteed
  * copy elision (C++17) covers `auto s = ScopedSpanGuard::freshRoot(...)`.
  *
- * When the span must outlive the current thread (e.g. handed to a job
+ * When the span must outlive the current store (e.g. handed to a job
  * queue), convert to a plain SpanGuard with `operator SpanGuard() &&`:
- * that pops the Scope eagerly on the origin thread and yields a
+ * that pops the Scope eagerly under the constructing store and yields a
  * thread-free guard.
  *
  * ScopedSpanGuard dependency diagram:
  *
  *     +--------------------------------------------+
  *     |              ScopedSpanGuard               |
- *     |            (scoped, thread-bound)          |
+ *     |            (scoped, store-bound)           |
  *     +--------------------------------------------+
  *     | - impl_ : unique_ptr<ScopedImpl>  (pimpl)  |
  *     +--------------------------------------------+
@@ -483,7 +485,7 @@ public:
  *              |                           |
  *         +----------+     +-----------------------------+
  *         | SpanGuard|     |     optional<Scope>         |
- *         |  (span)  |     | (OTel, thread-bound;        |
+ *         |  (span)  |     | (OTel, store-bound;         |
  *         |          |     |  present : span active)     |
  *         +----------+     +-----------------------------+
  *
@@ -513,11 +515,14 @@ public:
  * @endcode
  *
  * @note Thread safety: A ScopedSpanGuard must be constructed AND
- * destroyed on the same thread — its Scope binds to that thread's
- * context stack. `operator SpanGuard() &&` and the destructor must
- * both run on the owning thread; both check this with an XRPL_ASSERT
- * in debug/test/fuzzing builds. `operator SpanGuard() &&` pops the
- * scope eagerly, so the resulting SpanGuard is thread-free.
+ * destroyed while the same LocalValue context store is active — its
+ * Scope binds to that store's context stack. This means the same
+ * thread, or the same JobQueue coroutine even if it resumes on another
+ * worker (coroutine-aware storage keeps the same store across the
+ * resume). `operator SpanGuard() &&` and the destructor must both run
+ * under the constructing store; both check this with an XRPL_ASSERT in
+ * debug/test/fuzzing builds. `operator SpanGuard() &&` pops the scope
+ * eagerly, so the resulting SpanGuard is thread-free.
  *
  * @note Known limitations:
  * - Non-movable: cannot be stored in a container that relocates, and
@@ -609,9 +614,10 @@ public:
     // --- Handoff bridge -------------------------------------------------
 
     /**
-     * Pop the active Scope on the origin thread and yield the span as a
-     * thread-free SpanGuard. Use to move a span into a job or onto
-     * another thread. Must be called on the constructing thread.
+     * Pop the active Scope under the constructing context store and yield
+     * the span as a thread-free SpanGuard. Use to move a span into a job or
+     * onto another thread. Must be called while the constructing context
+     * store is active.
      * @return The unscoped SpanGuard that now owns the span.
      */
     operator SpanGuard() &&;
@@ -692,8 +698,9 @@ public:
 
     /**
      * Mark this span for discard and end it immediately. discard() pops the
-     * thread-local scope right away (on the owning thread) and discards the
-     * span. After discard() the guard is inert and its destructor is a no-op.
+     * scope right away (under the constructing context store) and discards
+     * the span. After discard() the guard is inert and its destructor is a
+     * no-op.
      */
     void
     discard();
