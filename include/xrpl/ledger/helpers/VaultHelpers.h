@@ -112,11 +112,13 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
  * Resolves a Vault's LEVersion, the single point every accounting touch
  * point should call to determine which recognition model (accrual vs.
  * cash-basis) a Vault uses. Vaults created before featureLendingProtocolV1_1
- * activated never have sfLEVersion set, which resolves here to 0 (legacy).
+ * activated never have sfLEVersion set, which resolves here to
+ * VaultVersion::Legacy.
  *
  * @param vault The vault SLE.
  *
- * @return The Vault's LEVersion, or 0 if the field is absent.
+ * @return The Vault's LEVersion, or VaultVersion::Legacy if the field is
+ * absent.
  */
 [[nodiscard]] VaultVersion
 getVaultVersion(SLE::const_ref vault);

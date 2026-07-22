@@ -552,7 +552,7 @@ LoanPay::doApply()
             << "LoanPay: Vault assets expected change, but unchanged after rounding: "  //
             << "Before: " << assetsTotalBefore                                          //
             << ", After: " << assetsTotalAfter                                          //
-            << ", ValueChange: " << assetsTotalDelta;
+            << ", AssetsTotalDelta: " << assetsTotalDelta;
         return tecPRECISION_LOSS;
         // LCOV_EXCL_STOP
     }
@@ -566,7 +566,7 @@ LoanPay::doApply()
         JLOG(j_.fatal()) << "LoanPay: Vault assets changed unexpectedly after rounding: "  //
                          << "Before: " << assetsTotalBefore                                //
                          << ", After: " << assetsTotalAfter                                //
-                         << ", ValueChange: " << assetsTotalDelta;
+                         << ", AssetsTotalDelta: " << assetsTotalDelta;
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }

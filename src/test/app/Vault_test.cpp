@@ -7672,7 +7672,9 @@ class Vault_test : public beast::unit_test::Suite
         }
 
         {
-            testcase("VaultCreate LEVersion: featureLendingProtocolV1_1 enabled, LEVersion == 2");
+            testcase(
+                "VaultCreate LEVersion: featureLendingProtocolV1_1 enabled, LEVersion == "
+                "VaultVersion::CashBasis");
             Env env{*this};
             env.fund(XRP(1'000'000), owner);
             env.close();
