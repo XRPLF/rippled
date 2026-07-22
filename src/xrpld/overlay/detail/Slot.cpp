@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/overlay/Slot.h>
 
 #include <xrpld/overlay/Peer.h>
@@ -24,18 +5,23 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
-#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/container/aged_unordered_map.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/tokens.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
+#include <iterator>
 #include <optional>
 #include <sstream>
 #include <string>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace xrpl::reduce_relay {
@@ -73,14 +59,13 @@ Slot::update(PublicKey const& validator, Peer::id_t id, ignored_squelch_callback
     {
         JLOG(journal_.trace()) << "update: adding new slot" << formatLogMessage(validator, id);
         peers_.emplace(
-            std::make_pair(
-                id,
-                PeerInfo{
-                    .state = PeerState::Counting,
-                    .count = 0,
-                    .expire = now,
-                    .lastMessage = now,
-                    .timesSelected = 0}));
+            id,
+            PeerInfo{
+                .state = PeerState::Counting,
+                .count = 0,
+                .expire = now,
+                .lastMessage = now,
+                .timesSelected = 0});
         initCounting();
         return;
     }
@@ -129,7 +114,7 @@ Slot::update(PublicKey const& validator, Peer::id_t id, ignored_squelch_callback
         // idled peers.
         std::unordered_set<Peer::id_t> selected;
         std::stringstream str;
-        while (selected.size() != maxSelectedPeers_ && considered_.size() != 0)
+        while (selected.size() != maxSelectedPeers_ && !considered_.empty())
         {
             auto const i = considered_.size() == 1 ? 0 : randInt(considered_.size() - 1);
             auto const it = std::next(considered_.begin(), i);
@@ -176,7 +161,7 @@ Slot::update(PublicKey const& validator, Peer::id_t id, ignored_squelch_callback
         {
             v.count = 0;
 
-            if (selected.find(k) != selected.end())
+            if (selected.contains(k))
             {
                 v.state = PeerState::Selected;
                 ++v.timesSelected;
@@ -187,7 +172,7 @@ Slot::update(PublicKey const& validator, Peer::id_t id, ignored_squelch_callback
                 if (journal_.trace())
                     str << k << " ";
                 v.state = PeerState::Squelched;
-                std::chrono::seconds duration =
+                std::chrono::seconds const duration =
                     getSquelchDuration(peers_.size() - maxSelectedPeers_);
                 v.expire = now + duration;
                 handler_.squelch(validator, k, duration.count());
@@ -230,7 +215,7 @@ Slot::deletePeer(PublicKey const& validator, Peer::id_t id, bool erase)
         JLOG(journal_.debug()) << "deletePeer: unsquelching selected peer "
                                << formatLogMessage(validator, id)
                                << " peer_state: " << to_string(it->second.state)
-                               << " considered: " << (considered_.find(id) != considered_.end())
+                               << " considered: " << (considered_.contains(id))
                                << " erase: " << erase;
 
         for (auto& [k, v] : peers_)
@@ -320,8 +305,10 @@ bool
 Slots::reduceRelayReady()
 {
     if (!reduceRelayReady_)
+    {
         reduceRelayReady_ = std::chrono::duration_cast<std::chrono::minutes>(
                                 clock_.now().time_since_epoch()) > reduce_relay::kWaitOnBootup;
+    }
 
     return reduceRelayReady_;
 }
@@ -352,7 +339,7 @@ Slots::expireAndIsPeerSquelched(PublicKey const& validatorKey, Peer::id_t peerID
         return false;
 
     // if a peer is found the squelch for it has not expired
-    return it->second.find(peerID) != it->second.end();
+    return it->second.contains(peerID);
 }
 
 bool
@@ -372,7 +359,7 @@ Slots::updateSlotAndSquelch(
     uint256 const& key,
     PublicKey const& validator,
     Peer::id_t id,
-    typename Slot::ignored_squelch_callback report,
+    Slot::ignored_squelch_callback report,
     bool isTrusted)
 {
     if (expireAndIsPeerMessageCached(key, id))
@@ -414,11 +401,11 @@ Slots::updateUntrustedValidatorSlot(
     uint256 const& key,
     PublicKey const& validator,
     Peer::id_t id,
-    typename Slot::ignored_squelch_callback report)
+    Slot::ignored_squelch_callback report)
 {
     // We received a message from an already selected validator
     // we can ignore this message
-    if (untrustedSlots_.find(validator) != untrustedSlots_.end())
+    if (untrustedSlots_.contains(validator))
         return;
 
     // Did we receive a message from an already squelched validator?
@@ -567,15 +554,21 @@ Slots::deleteIdlePeers()
                 // if an untrusted validator slot idled - peers stopped
                 // sending messages for this validator squelch it
                 if (!it->second.isTrusted_)
+                {
                     handler_.squelchAll(
                         it->first,
                         reduce_relay::kMaxUnsquelchExpireDefault.count(),
                         [&](Peer::id_t id) { registerSquelchedValidator(it->first, id); });
+                }
 
                 it = slots.erase(it);
             }
             else
-                ++it;
+            {
+                {
+                    ++it;
+                }
+            }
         }
     };
 
@@ -586,10 +579,12 @@ Slots::deleteIdlePeers()
     // there might be some good validators in this set that "lapsed".
     // However, since these are untrusted validators we're not concerned
     for (auto const& validator : cleanConsideredValidators())
+    {
         handler_.squelchAll(
             validator, reduce_relay::kMaxUnsquelchExpireDefault.count(), [&](Peer::id_t id) {
                 registerSquelchedValidator(validator, id);
             });
+    }
 }
 
 std::vector<PublicKey>
@@ -614,10 +609,14 @@ Slots::cleanConsideredValidators()
             ++it;
         }
         else
-            ++it;
+        {
+            {
+                ++it;
+            }
+        }
     }
 
-    if (keys.size() > 0)
+    if (!keys.empty())
     {
         JLOG(journal_.info()) << "cleanConsideredValidators: removed considered validators "
                               << ss.str();

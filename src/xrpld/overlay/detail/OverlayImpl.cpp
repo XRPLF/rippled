@@ -1543,7 +1543,7 @@ OverlayImpl::handleUntrustedSquelch(PublicKey const& validator)
 {
     if (!strand_.running_in_this_thread())
     {
-        post(strand_, std::bind(&OverlayImpl::handleUntrustedSquelch, this, validator));
+        post(strand_, [this, validator] { handleUntrustedSquelch(validator); });
         return;
     }
 

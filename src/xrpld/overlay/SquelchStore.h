@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -23,7 +22,7 @@ namespace xrpl::reduce_relay {
 class SquelchStore
 {
     using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
-    using time_point = typename clock_type::time_point;
+    using time_point = clock_type::time_point;
 
 public:
     explicit SquelchStore(beast::Journal journal, clock_type& clock)

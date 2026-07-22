@@ -14,7 +14,6 @@
 
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/basics/UnorderedContainers.h>
-#include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Gauge.h>

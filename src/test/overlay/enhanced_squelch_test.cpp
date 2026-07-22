@@ -1,29 +1,17 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/Env.h>
 
+#include <xrpld/core/Config.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/ReduceRelayCommon.h>
 #include <xrpld/overlay/Slot.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/digest.h>
 
@@ -31,6 +19,8 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {
@@ -47,19 +37,18 @@ public:
     squelchAll_method squelchAll_f_;
     unsquelch_method unsquelch_f_;
 
-    TestHandler(
-        squelch_method const& squelch_f,
-        squelchAll_method const& squelchAll_f,
-        unsquelch_method const& unsquelch_f)
-        : squelch_f_(squelch_f), squelchAll_f_(squelchAll_f), unsquelch_f_(unsquelch_f)
+    TestHandler(squelch_method squelchF, squelchAll_method squelchAllF, unsquelch_method unsquelchF)
+        : squelch_f_(std::move(squelchF))
+        , squelchAll_f_(std::move(squelchAllF))
+        , unsquelch_f_(std::move(unsquelchF))
     {
     }
 
     TestHandler(TestHandler& copy)
+        : squelch_f_(copy.squelch_f_)
+        , squelchAll_f_(copy.squelchAll_f_)
+        , unsquelch_f_(copy.unsquelch_f_)
     {
-        squelch_f_ = copy.squelch_f_;
-        squelchAll_f_ = copy.squelchAll_f_;
-        unsquelch_f_ = copy.unsquelch_f_;
     }
 
     void
@@ -141,31 +130,31 @@ public:
 class enhanced_squelch_test : public beast::unit_test::Suite
 {
 public:
-    TestHandler::squelch_method noop_squelch = [&](PublicKey const&, Peer::id_t, std::uint32_t) {
+    TestHandler::squelch_method noopSquelch = [&](PublicKey const&, Peer::id_t, std::uint32_t) {
         BEAST_EXPECTS(false, "unexpected call to squelch handler");
     };
 
-    TestHandler::squelchAll_method noop_squelchAll =
+    TestHandler::squelchAll_method noopSquelchAll =
         [&](PublicKey const&, std::uint32_t, std::function<void(Peer::id_t)>) {
             BEAST_EXPECTS(false, "unexpected call to squelchAll handler");
         };
 
-    TestHandler::unsquelch_method noop_unsquelch = [&](PublicKey const&, Peer::id_t) {
+    TestHandler::unsquelch_method noopUnsquelch = [&](PublicKey const&, Peer::id_t) {
         BEAST_EXPECTS(false, "unexpected call to unsquelch handler");
     };
 
     // noop_handler is passed as a place holder Handler to slots
-    TestHandler noop_handler = {
-        noop_squelch,
-        noop_squelchAll,
-        noop_unsquelch,
+    TestHandler noopHandler = {
+        noopSquelch,
+        noopSquelchAll,
+        noopUnsquelch,
     };
 
-    jtx::Env env_;
+    jtx::Env env;
 
-    enhanced_squelch_test() : env_(*this)
+    enhanced_squelch_test() : env(*this)
     {
-        env_.app().config().vpReduceRelayEnhancedSquelchEnable = true;
+        env.app().config().vpReduceRelayEnhancedSquelchEnable = true;
     }
 
     void
@@ -208,7 +197,7 @@ vp_enhanced_squelch_enable=0
         Peer::id_t const squelchedPeerID = 0;
         Peer::id_t const newPeerID = 1;
         TestStopwatch stopwatch;
-        EnhancedSquelchingTestSlots slots(env_.app(), noop_handler, env_.app().config(), stopwatch);
+        EnhancedSquelchingTestSlots slots(env.app(), noopHandler, env.app().config(), stopwatch);
         auto const publicKey = randomKeyPair(KeyType::Ed25519).first;
 
         // a new key should not be squelched
@@ -237,11 +226,11 @@ vp_enhanced_squelch_enable=0
     }
 
     void
-    testUpdateValidatorSlot_newValidator()
+    testUpdateValidatorSlotNewValidator()
     {
         testcase("updateValidatorSlot_newValidator");
         TestStopwatch stopwatch;
-        EnhancedSquelchingTestSlots slots(env_.app(), noop_handler, env_.app().config(), stopwatch);
+        EnhancedSquelchingTestSlots slots(env.app(), noopHandler, env.app().config(), stopwatch);
 
         Peer::id_t const peerID = 1;
         auto const validator = randomKeyPair(KeyType::Ed25519).first;
@@ -250,10 +239,10 @@ vp_enhanced_squelch_enable=0
         slots.updateUntrustedValidatorSlot(message, validator, peerID);
 
         // adding untrusted slot does not effect trusted slots
-        BEAST_EXPECTS(slots.getSlots(true).size() == 0, "trusted slots changed");
+        BEAST_EXPECTS(slots.getSlots(true).empty(), "trusted slots changed");
 
         // we expect that the validator was not added to untrusted slots
-        BEAST_EXPECTS(slots.getSlots(false).size() == 0, "untrusted slot changed");
+        BEAST_EXPECTS(slots.getSlots(false).empty(), "untrusted slot changed");
 
         // we expect that the validator was added to th consideration list
         BEAST_EXPECTS(
@@ -262,7 +251,7 @@ vp_enhanced_squelch_enable=0
     }
 
     void
-    testUpdateValidatorSlot_squelchedValidator()
+    testUpdateValidatorSlotSquelchedValidator()
     {
         testcase("testUpdateValidatorSlot_squelchedValidator");
 
@@ -270,17 +259,17 @@ vp_enhanced_squelch_enable=0
         Peer::id_t const newPeerID = 1;
         auto const validator = randomKeyPair(KeyType::Ed25519).first;
 
-        TestHandler::squelch_method const squelch_f =
+        TestHandler::squelch_method const squelchF =
             [&](PublicKey const& key, Peer::id_t id, std::uint32_t duration) {
                 BEAST_EXPECTS(key == validator, "squelch called for unknown validator key");
 
                 BEAST_EXPECTS(id == newPeerID, "squelch called for the wrong peer");
             };
 
-        TestHandler handler{squelch_f, noop_squelchAll, noop_unsquelch};
+        TestHandler handler{squelchF, noopSquelchAll, noopUnsquelch};
 
         TestStopwatch stopwatch;
-        EnhancedSquelchingTestSlots slots(env_.app(), handler, env_.app().config(), stopwatch);
+        EnhancedSquelchingTestSlots slots(env.app(), handler, env.app().config(), stopwatch);
 
         slots.squelchValidator(validator, squelchedPeerID);
 
@@ -302,29 +291,33 @@ vp_enhanced_squelch_enable=0
     }
 
     void
-    testUpdateValidatorSlot_slotsFull()
+    testUpdateValidatorSlotSlotsFull()
     {
         testcase("updateValidatorSlot_slotsFull");
         Peer::id_t const peerID = 1;
 
         // while there are open untrusted slots, no calls should be made to
         // squelch any validators
-        TestHandler handler{noop_handler};
+        TestHandler handler{noopHandler};
 
         TestStopwatch stopwatch;
-        EnhancedSquelchingTestSlots slots(env_.app(), handler, env_.app().config(), stopwatch);
+        EnhancedSquelchingTestSlots slots(env.app(), handler, env.app().config(), stopwatch);
 
         // saturate validator slots
         auto const validators = fillUntrustedSlots(slots);
 
         // adding untrusted slot does not effect trusted slots
-        BEAST_EXPECTS(slots.getSlots(true).size() == 0, "trusted slots changed");
+        BEAST_EXPECTS(slots.getSlots(true).empty(), "trusted slots changed");
 
         // simulate additional messages from already selected validators
         for (auto const& validator : validators)
+        {
             for (int i = 0; i < reduce_relay::kMaxMessageThreshold; ++i)
+            {
                 slots.updateUntrustedValidatorSlot(
                     sha512Half(validator) + static_cast<uint256>(i), validator, peerID);
+            }
+        }
 
         // an untrusted slot was added for each validator
         BEAST_EXPECT(slots.getSlots(false).size() == reduce_relay::kMaxUntrustedSlots);
@@ -352,13 +345,13 @@ vp_enhanced_squelch_enable=0
     }
 
     void
-    testDeleteIdlePeers_deleteIdleSlots()
+    testDeleteIdlePeersDeleteIdleSlots()
     {
         testcase("deleteIdlePeers");
-        TestHandler handler{noop_handler};
+        TestHandler handler{noopHandler};
         TestStopwatch stopwatch;
 
-        EnhancedSquelchingTestSlots slots(env_.app(), handler, env_.app().config(), stopwatch);
+        EnhancedSquelchingTestSlots slots(env.app(), handler, env.app().config(), stopwatch);
         auto keys = fillUntrustedSlots(slots);
 
         //  verify that squelchAll is called for each idled slot validator
@@ -385,20 +378,20 @@ vp_enhanced_squelch_enable=0
 
         slots.deleteIdlePeers();
 
-        BEAST_EXPECTS(slots.getSlots(false).size() == 0, "unexpected number of untrusted slots");
+        BEAST_EXPECTS(slots.getSlots(false).empty(), "unexpected number of untrusted slots");
 
         BEAST_EXPECTS(keys.empty(), "not all validators were squelched");
     }
 
     void
-    testDeleteIdlePeers_deleteIdleUntrustedPeer()
+    testDeleteIdlePeersDeleteIdleUntrustedPeer()
     {
         testcase("deleteIdleUntrustedPeer");
         Peer::id_t const peerID = 1;
         Peer::id_t const peerID2 = 2;
         TestStopwatch stopwatch;
 
-        EnhancedSquelchingTestSlots slots(env_.app(), noop_handler, env_.app().config(), stopwatch);
+        EnhancedSquelchingTestSlots slots(env.app(), noopHandler, env.app().config(), stopwatch);
 
         // fill one untrusted validator slot
         auto const validator = fillUntrustedSlots(slots, 1)[0];
@@ -426,21 +419,22 @@ vp_enhanced_squelch_enable=0
      * updateSlotAndSquelch
      */
     void
-    testUpdateSlotAndSquelch_untrustedValidator()
+    testUpdateSlotAndSquelchUntrustedValidator()
     {
         testcase("updateUntrsutedValidatorSlot");
-        TestHandler handler{noop_handler};
+        TestHandler handler{noopHandler};
 
         handler.squelch_f_ = [](PublicKey const&, Peer::id_t, std::uint32_t) {};
 
         TestStopwatch stopwatch;
-        EnhancedSquelchingTestSlots slots(env_.app(), handler, env_.app().config(), stopwatch);
+        EnhancedSquelchingTestSlots slots(env.app(), handler, env.app().config(), stopwatch);
 
         // peers that will be source of validator messages
         std::vector<Peer::id_t> peers = {};
 
         // prepare n+1 peers, we expect the n+1st peer will be squelched
-        for (int i = 0; i < env_.app().config().vpReduceRelaySquelchMaxSelectedPeers + 1; ++i)
+        peers.reserve(env_.app().config().vpReduceRelaySquelchMaxSelectedPeers + 1);
+        for (int i = 0; i < env.app().config().vpReduceRelaySquelchMaxSelectedPeers + 1; ++i)
             peers.push_back(i);
 
         auto const validator = fillUntrustedSlots(slots, 1)[0];
@@ -462,6 +456,7 @@ vp_enhanced_squelch_enable=0
 
         // simulate new, unique validator messages sent by peers
         for (auto const& peer : peers)
+        {
             for (int i = 0; i < reduce_relay::kMaxMessageThreshold + 1; ++i)
             {
                 auto const now = stopwatch.now();
@@ -473,10 +468,11 @@ vp_enhanced_squelch_enable=0
 
                 stopwatch.advance(std::chrono::milliseconds{10});
             }
+        }
 
         auto const slotPeers = getUntrustedSlotPeers(validator, slots);
         BEAST_EXPECTS(
-            slotPeers.size() == env_.app().config().vpReduceRelaySquelchMaxSelectedPeers + 1,
+            slotPeers.size() == env.app().config().vpReduceRelaySquelchMaxSelectedPeers + 1,
             "untrusted validator slot is missing");
 
         int selected = 0;
@@ -498,16 +494,16 @@ vp_enhanced_squelch_enable=0
 
         BEAST_EXPECTS(squelched == 1, "expected one squelched peer");
         BEAST_EXPECTS(
-            selected == env_.app().config().vpReduceRelaySquelchMaxSelectedPeers,
+            selected == env.app().config().vpReduceRelaySquelchMaxSelectedPeers,
             "wrong number of peers selected");
     }
 
     void
-    testUpdateConsideredValidator_new()
+    testUpdateConsideredValidatorNew()
     {
         testcase("testUpdateConsideredValidator_new");
         TestStopwatch stopwatch;
-        EnhancedSquelchingTestSlots slots(env_.app(), noop_handler, env_.app().config(), stopwatch);
+        EnhancedSquelchingTestSlots slots(env.app(), noopHandler, env.app().config(), stopwatch);
 
         // insert some random validator key
         auto const validator = randomKeyPair(KeyType::Ed25519).first;
@@ -542,15 +538,15 @@ vp_enhanced_squelch_enable=0
     }
 
     void
-    testUpdateConsideredValidator_idle()
+    testUpdateConsideredValidatorIdle()
     {
         testcase("testUpdateConsideredValidator_idle");
         TestStopwatch stopwatch;
-        EnhancedSquelchingTestSlots slots(env_.app(), noop_handler, env_.app().config(), stopwatch);
+        EnhancedSquelchingTestSlots slots(env.app(), noopHandler, env.app().config(), stopwatch);
 
         // insert some random validator key
         auto const validator = randomKeyPair(KeyType::Ed25519).first;
-        Peer::id_t peerID = 0;
+        Peer::id_t const peerID = 0;
 
         BEAST_EXPECTS(
             !slots.updateConsideredValidator(validator, peerID),
@@ -581,16 +577,16 @@ vp_enhanced_squelch_enable=0
     }
 
     void
-    testUpdateConsideredValidator_selectQualifying()
+    testUpdateConsideredValidatorSelectQualifying()
     {
         testcase("testUpdateConsideredValidator_selectQualifying");
 
         TestStopwatch stopwatch;
-        EnhancedSquelchingTestSlots slots(env_.app(), noop_handler, env_.app().config(), stopwatch);
+        EnhancedSquelchingTestSlots slots(env.app(), noopHandler, env.app().config(), stopwatch);
 
         // insert some random validator key
         auto const validator = randomKeyPair(KeyType::Ed25519).first;
-        Peer::id_t peerID = 0;
+        Peer::id_t const peerID = 0;
 
         for (int i = 0; i < reduce_relay::kMaxMessageThreshold - 1; ++i)
         {
@@ -613,27 +609,31 @@ vp_enhanced_squelch_enable=0
     }
 
     void
-    testCleanConsideredValidators_resetIdle()
+    testCleanConsideredValidatorsResetIdle()
     {
         testcase("testCleanConsideredValidators_resetIdle");
         auto const validator = randomKeyPair(KeyType::Ed25519).first;
 
         TestStopwatch stopwatch;
 
-        EnhancedSquelchingTestSlots slots(env_.app(), noop_handler, env_.app().config(), stopwatch);
+        EnhancedSquelchingTestSlots slots(env.app(), noopHandler, env.app().config(), stopwatch);
 
         // send enough messages for a slot to meet peer requirements
-        for (int i = 0; i < env_.app().config().vpReduceRelaySquelchMaxSelectedPeers; ++i)
+        for (int i = 0; i < env.app().config().vpReduceRelaySquelchMaxSelectedPeers; ++i)
+        {
             slots.updateUntrustedValidatorSlot(
                 sha512Half(validator) + static_cast<uint256>(i), validator, i);
+        }
 
         // send enough messages from some peer to be one message away from
         // meeting the selection criteria
         for (int i = 0; i < reduce_relay::kMaxMessageThreshold -
-                 (env_.app().config().vpReduceRelaySquelchMaxSelectedPeers + 1);
+                 (env.app().config().vpReduceRelaySquelchMaxSelectedPeers + 1);
              ++i)
+        {
             slots.updateUntrustedValidatorSlot(
                 sha512Half(validator) + static_cast<uint256>(i), validator, 0);
+        }
 
         BEAST_EXPECTS(
             slots.getConsideredValidators().at(validator).count ==
@@ -642,7 +642,7 @@ vp_enhanced_squelch_enable=0
 
         BEAST_EXPECTS(
             slots.getConsideredValidators().at(validator).peers.size() ==
-                env_.app().config().vpReduceRelaySquelchMaxSelectedPeers,
+                env.app().config().vpReduceRelaySquelchMaxSelectedPeers,
             "considered validator information is in an invalid state");
 
         stopwatch.advance(reduce_relay::kIdled + std::chrono::seconds{1});
@@ -654,7 +654,7 @@ vp_enhanced_squelch_enable=0
             sha512Half(validator) + static_cast<uint256>(1), validator, 0);
 
         // we expect that the validator was not selected
-        BEAST_EXPECTS(slots.getSlots(false).size() == 0, "untrusted slot was created");
+        BEAST_EXPECTS(slots.getSlots(false).empty(), "untrusted slot was created");
 
         BEAST_EXPECTS(
             slots.getConsideredValidators().at(validator).count == 1,
@@ -666,12 +666,12 @@ vp_enhanced_squelch_enable=0
     }
 
     void
-    testCleanConsideredValidators_deletePoorlyConnected()
+    testCleanConsideredValidatorsDeletePoorlyConnected()
     {
         testcase("cleanConsideredValidators_deletePoorlyConnected");
         auto const validator = randomKeyPair(KeyType::Ed25519).first;
         Peer::id_t const peerID = 0;
-        TestHandler handler{noop_handler};
+        TestHandler handler{noopHandler};
 
         //  verify that squelchAll is called for poorly connected validator
         handler.squelchAll_f_ = [&](PublicKey const& actualKey,
@@ -683,12 +683,14 @@ vp_enhanced_squelch_enable=0
 
         TestStopwatch stopwatch;
 
-        EnhancedSquelchingTestSlots slots(env_.app(), handler, env_.app().config(), stopwatch);
+        EnhancedSquelchingTestSlots slots(env.app(), handler, env.app().config(), stopwatch);
 
         // send enough messages from a single peer
-        for (int i = 0; i < 2 * reduce_relay::kMaxMessageThreshold + 1; ++i)
+        for (int i = 0; i < (2 * reduce_relay::kMaxMessageThreshold) + 1; ++i)
+        {
             slots.updateUntrustedValidatorSlot(
                 sha512Half(validator) + static_cast<uint256>(i), validator, peerID);
+        }
 
         stopwatch.advance(reduce_relay::kIdled + std::chrono::seconds{1});
 
@@ -697,12 +699,11 @@ vp_enhanced_squelch_enable=0
         slots.deleteIdlePeers();
 
         BEAST_EXPECTS(
-            slots.getConsideredValidators().size() == 0,
-            "poorly connected validator was not deleted");
+            slots.getConsideredValidators().empty(), "poorly connected validator was not deleted");
     }
 
     void
-    testCleanConsideredValidators_deleteSilent()
+    testCleanConsideredValidatorsDeleteSilent()
     {
         testcase("cleanConsideredValidators_deleteSilent");
         // insert some random validator key
@@ -710,7 +711,7 @@ vp_enhanced_squelch_enable=0
         auto const validator = randomKeyPair(KeyType::Ed25519).first;
         Peer::id_t const peerID = 0;
 
-        TestHandler handler{noop_handler};
+        TestHandler handler{noopHandler};
 
         //  verify that squelchAll is called for idle validator
         handler.squelchAll_f_ = [&](PublicKey const& actualKey,
@@ -722,7 +723,7 @@ vp_enhanced_squelch_enable=0
 
         TestStopwatch stopwatch;
 
-        EnhancedSquelchingTestSlots slots(env_.app(), handler, env_.app().config(), stopwatch);
+        EnhancedSquelchingTestSlots slots(env.app(), handler, env.app().config(), stopwatch);
 
         BEAST_EXPECTS(
             !slots.updateConsideredValidator(idleValidator, peerID),
@@ -748,14 +749,14 @@ vp_enhanced_squelch_enable=0
     }
 
     void
-    testSquelchUntrustedValidator_consideredListCleared()
+    testSquelchUntrustedValidatorConsideredListCleared()
     {
         testcase("testSquelchUntrustedValidator");
 
         auto const validator = randomKeyPair(KeyType::Ed25519).first;
         Peer::id_t const peerID = 0;
 
-        TestHandler handler{noop_handler};
+        TestHandler handler{noopHandler};
         //  verify that squelchAll is called for idle validator
         handler.squelchAll_f_ = [&](PublicKey const& actualKey,
                                     std::uint32_t duration,
@@ -764,7 +765,7 @@ vp_enhanced_squelch_enable=0
         };
 
         TestStopwatch stopwatch;
-        EnhancedSquelchingTestSlots slots(env_.app(), handler, env_.app().config(), stopwatch);
+        EnhancedSquelchingTestSlots slots(env.app(), handler, env.app().config(), stopwatch);
 
         // add the validator to the considered list
         slots.updateUntrustedValidatorSlot(sha512Half(validator), validator, peerID);
@@ -781,13 +782,13 @@ vp_enhanced_squelch_enable=0
     }
 
     void
-    testSquelchUntrustedValidator_slotEvicted()
+    testSquelchUntrustedValidatorSlotEvicted()
     {
         testcase("testSquelchUntrustedValidator_slotEvicted");
 
-        TestHandler handler{noop_handler};
+        TestHandler handler{noopHandler};
         TestStopwatch stopwatch;
-        EnhancedSquelchingTestSlots slots(env_.app(), handler, env_.app().config(), stopwatch);
+        EnhancedSquelchingTestSlots slots(env.app(), handler, env.app().config(), stopwatch);
 
         // assign a slot to the untrusted validator
         auto const validators = fillUntrustedSlots(slots, 1);
@@ -823,17 +824,21 @@ private:
         {
             auto const validator = randomKeyPair(KeyType::Ed25519).first;
             keys.push_back(validator);
-            for (int j = 0; j < env_.app().config().vpReduceRelaySquelchMaxSelectedPeers; ++j)
+            for (int j = 0; j < env.app().config().vpReduceRelaySquelchMaxSelectedPeers; ++j)
+            {
                 // send enough messages so that a validator slot is selected
                 for (int k = 0; k < reduce_relay::kMaxMessageThreshold; ++k)
+                {
                     slots.updateUntrustedValidatorSlot(
                         sha512Half(validator) + static_cast<uint256>(k), validator, j);
+                }
+            }
         }
 
         return keys;
     }
 
-    std::unordered_map<Peer::id_t, reduce_relay::Slot::PeerInfo>
+    static std::unordered_map<Peer::id_t, reduce_relay::Slot::PeerInfo>
     getUntrustedSlotPeers(PublicKey const& validator, EnhancedSquelchingTestSlots const& slots)
     {
         auto const& it = slots.getSlots(false).find(validator);
@@ -843,7 +848,7 @@ private:
         auto r = std::unordered_map<Peer::id_t, reduce_relay::Slot::PeerInfo>();
 
         for (auto const& [id, info] : it->second.getPeers())
-            r.emplace(std::make_pair(id, info));
+            r.emplace(id, info);
 
         return r;
     }
@@ -853,20 +858,20 @@ private:
     {
         testConfig();
         testSquelchTracking();
-        testUpdateValidatorSlot_newValidator();
-        testUpdateValidatorSlot_slotsFull();
-        testUpdateValidatorSlot_squelchedValidator();
-        testDeleteIdlePeers_deleteIdleSlots();
-        testDeleteIdlePeers_deleteIdleUntrustedPeer();
-        testUpdateSlotAndSquelch_untrustedValidator();
-        testUpdateConsideredValidator_new();
-        testUpdateConsideredValidator_idle();
-        testUpdateConsideredValidator_selectQualifying();
-        testCleanConsideredValidators_deleteSilent();
-        testCleanConsideredValidators_resetIdle();
-        testCleanConsideredValidators_deletePoorlyConnected();
-        testSquelchUntrustedValidator_consideredListCleared();
-        testSquelchUntrustedValidator_slotEvicted();
+        testUpdateValidatorSlotNewValidator();
+        testUpdateValidatorSlotSlotsFull();
+        testUpdateValidatorSlotSquelchedValidator();
+        testDeleteIdlePeersDeleteIdleSlots();
+        testDeleteIdlePeersDeleteIdleUntrustedPeer();
+        testUpdateSlotAndSquelchUntrustedValidator();
+        testUpdateConsideredValidatorNew();
+        testUpdateConsideredValidatorIdle();
+        testUpdateConsideredValidatorSelectQualifying();
+        testCleanConsideredValidatorsDeleteSilent();
+        testCleanConsideredValidatorsResetIdle();
+        testCleanConsideredValidatorsDeletePoorlyConnected();
+        testSquelchUntrustedValidatorConsideredListCleared();
+        testSquelchUntrustedValidatorSlotEvicted();
     }
 };
 

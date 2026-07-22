@@ -2,11 +2,11 @@
 
 #include <xrpld/core/Config.h>
 #include <xrpld/overlay/Peer.h>
-#include <xrpld/overlay/ReduceRelayCommon.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
-#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/container/aged_unordered_map.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -14,9 +14,16 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/PublicKey.h>
 
+#include <atomic>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 namespace xrpl::reduce_relay {
 
@@ -75,9 +82,7 @@ to_string(SlotState state)
 class SquelchHandler
 {
 public:
-    virtual ~SquelchHandler()
-    {
-    }
+    virtual ~SquelchHandler() = default;
     /**
      * Squelch handler for a single peer
      * @param validator Public key of the source validator
@@ -142,11 +147,11 @@ public:
      */
     struct PeerInfo
     {
-        PeerState state;            // peer's state
-        std::size_t count;          // message count
-        time_point expire;          // squelch expiration time
-        time_point lastMessage;     // time last message received
-        std::size_t timesSelected;  // number of times the peer was selected
+        PeerState state;              // peer's state
+        std::size_t count{};          // message count
+        time_point expire;            // squelch expiration time
+        time_point lastMessage;       // time last message received
+        std::size_t timesSelected{};  // number of times the peer was selected
     };
 
     /**
@@ -183,9 +188,7 @@ private:
         uint16_t maxSelectedPeers,
         bool isTrusted,
         clock_type& clock)
-        : reachedThreshold_(0)
-        , lastSelected_(clock.now())
-        , state_(SlotState::Counting)
+        : lastSelected_(clock.now())
         , handler_(handler)
         , journal_(journal)
         , maxSelectedPeers_(maxSelectedPeers)
@@ -333,14 +336,14 @@ private:
     std::unordered_set<Peer::id_t> considered_;
 
     // A counter of peers that have reached the max message threshold.
-    std::uint16_t reachedThreshold_;
+    std::uint16_t reachedThreshold_{0};
 
     // The timestamp of the last peer selection, used to determine when the
     // current selection has become stale.
     time_point lastSelected_;
 
     // The current state of the slot.
-    SlotState state_;
+    SlotState state_{SlotState::Counting};
 
     // A reference to an external handler that executes squelch/unsquelch
     // operations on peers.
@@ -532,7 +535,7 @@ public:
         uint256 const& key,
         PublicKey const& validator,
         Peer::id_t id,
-        typename Slot::ignored_squelch_callback report);
+        Slot::ignored_squelch_callback report);
 
     /**
      * Calls Slot::update of Slot associated with the validator, with a
@@ -586,7 +589,7 @@ public:
         uint256 const& key,
         PublicKey const& validator,
         Peer::id_t id,
-        typename Slot::ignored_squelch_callback report,
+        Slot::ignored_squelch_callback report,
         bool isTrusted);
 
     /**
@@ -611,8 +614,7 @@ public:
     squelchUntrustedValidator(PublicKey const& validatorKey);
 
     /**
-     * @brief Performs cleanup of idle peers, stale slots, and unviable
-     * validator candidates.
+     * @brief Performs cleanup of idle peers, stale slots, and inviable validator candidates.
      *
      * @details This function is responsible for the health of the entire slot
      * system. It executes three distinct cleanup phases:
