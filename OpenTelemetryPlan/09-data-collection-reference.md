@@ -136,11 +136,18 @@ Controlled by `trace_rpc=1` in `[telemetry]` config (pathfinding spans fire with
 
 | Span Name             | Parent             | Source File      | Description                                              |
 | --------------------- | ------------------ | ---------------- | -------------------------------------------------------- |
-| `pathfind.request`    | `rpc.command.*`    | PathRequests.cpp | RPC entry for path_find / ripple_path_find               |
+| `pathfind.request`    | `rpc.process`      | PathFind.cpp     | RPC entry for path_find (doPathFind)                     |
 | `pathfind.compute`    | `pathfind.request` | PathRequest.cpp  | Single path computation (doUpdate)                       |
 | `pathfind.update_all` | —                  | PathRequests.cpp | Async recomputation of all active path requests on close |
 | `pathfind.discover`   | `pathfind.compute` | Pathfinder.cpp   | Graph exploration phase (Pathfinder::find)               |
 | `pathfind.rank`       | `pathfind.compute` | Pathfinder.cpp   | Path ranking and selection phase                         |
+
+> **Note**: `pathfind.request` parents to `rpc.process`, not `rpc.command.*`.
+> `rpc.command.*` is intentionally unscoped: its generic dispatch (`callMethod`)
+> also wraps `doRipplePathFind`, whose span is held across a coroutine
+> `yield()` — scoping it would risk a wrong-thread scope pop on resume. The
+> `pathfind.request → compute → discover` sub-tree nests correctly because those
+> handlers run synchronously (no yield) and use `ScopedSpanGuard`.
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"pathfind.*"}`
 
