@@ -15,10 +15,10 @@ TEST(NodeStoreBasics, predictable_batches)
 {
     auto const batch1 = createPredictableBatch(kNumObjectsToTest, kSeedValue);
     auto const batch2 = createPredictableBatch(kNumObjectsToTest, kSeedValue);
-    EXPECT_TRUE(areBatchesEqual(batch1, batch2));
+    EXPECT_EQ(batch1, batch2);
 
     auto const batch3 = createPredictableBatch(kNumObjectsToTest, kSeedValue + 1);
-    EXPECT_FALSE(areBatchesEqual(batch1, batch3));
+    EXPECT_NE(batch1, batch3);
 }
 
 TEST(NodeStoreBasics, blob_encoding)

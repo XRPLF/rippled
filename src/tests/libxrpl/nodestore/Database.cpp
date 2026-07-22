@@ -104,7 +104,7 @@ TEST_P(NodeStoreDatabaseTest, store_and_fetch)
     {
         SCOPED_TRACE("read in original order");
         auto const copy = fetchCopyOfBatch(*db, batch_);
-        EXPECT_TRUE(areBatchesEqual(batch_, copy));
+        EXPECT_EQ(batch_, copy);
     }
 
     {
@@ -112,7 +112,7 @@ TEST_P(NodeStoreDatabaseTest, store_and_fetch)
         beast::xor_shift_engine rng(kSeedValue);
         std::shuffle(batch_.begin(), batch_.end(), rng);
         auto const copy = fetchCopyOfBatch(*db, batch_);
-        EXPECT_TRUE(areBatchesEqual(batch_, copy));
+        EXPECT_EQ(batch_, copy);
     }
 }
 
@@ -129,7 +129,7 @@ TEST_P(NodeStoreDatabasePersistenceTest, round_trip)
     auto copy = fetchCopyOfBatch(*db, batch_);
     std::ranges::sort(batch_, LessThan{});
     std::ranges::sort(copy, LessThan{});
-    EXPECT_TRUE(areBatchesEqual(batch_, copy));
+    EXPECT_EQ(batch_, copy);
 }
 
 // missing-key path at the Database layer. Mirrors Backend's fetch_missing —
@@ -236,7 +236,7 @@ TEST_P(DatabaseImportTest, same_backend)
 
     std::ranges::sort(batch, LessThan{});
     std::ranges::sort(copy, LessThan{});
-    EXPECT_TRUE(areBatchesEqual(batch, copy));
+    EXPECT_EQ(batch, copy);
 }
 
 INSTANTIATE_TEST_SUITE_P(

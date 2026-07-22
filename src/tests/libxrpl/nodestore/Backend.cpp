@@ -18,6 +18,7 @@
 #include <atomic>
 #include <cstddef>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <thread>
 #include <vector>
@@ -47,17 +48,16 @@ void
 parallelFor(std::size_t n, std::size_t numThreads, Work work)
 {
     std::atomic<std::size_t> next{0};
-    std::vector<std::thread> threads;
-    threads.reserve(numThreads);
-    for (std::size_t t = 0; t < numThreads; ++t)
-    {
-        threads.emplace_back([&] {
-            for (std::size_t i = next++; i < n; i = next++)
-                work(i);
-        });
-    }
-    for (auto& thread : threads)
-        thread.join();
+    auto const runner = [&] {
+        for (std::size_t i = next++; i < n; i = next++)
+            work(i);
+    };
+
+    auto threads = std::views::iota(std::size_t{0}, numThreads) |
+        std::views::transform([&](std::size_t) { return std::thread{runner}; }) |
+        std::ranges::to<std::vector>();
+
+    std::ranges::for_each(threads, &std::thread::join);
 }
 
 }  // namespace
@@ -98,7 +98,7 @@ TEST_P(BackendTypeTest, store_and_fetch)
     {
         SCOPED_TRACE("read in original order");
         auto const copy = fetchCopyOfBatch(*backend, batch_);
-        EXPECT_TRUE(areBatchesEqual(batch_, copy));
+        EXPECT_EQ(batch_, copy);
     }
 
     {
@@ -106,7 +106,7 @@ TEST_P(BackendTypeTest, store_and_fetch)
         beast::xor_shift_engine rng(kSeedValue);
         std::shuffle(batch_.begin(), batch_.end(), rng);
         auto const copy = fetchCopyOfBatch(*backend, batch_);
-        EXPECT_TRUE(areBatchesEqual(batch_, copy));
+        EXPECT_EQ(batch_, copy);
     }
 }
 
@@ -122,7 +122,7 @@ TEST_P(BackendTypeTest, persists_after_reopen)
     auto copy = fetchCopyOfBatch(*backend, batch_);
     std::ranges::sort(batch_, LessThan{});
     std::ranges::sort(copy, LessThan{});
-    EXPECT_TRUE(areBatchesEqual(batch_, copy));
+    EXPECT_EQ(batch_, copy);
 }
 
 // missing-key path. Replaces the correctness half of Timing_test::doMissing
@@ -146,7 +146,7 @@ TEST_P(BackendTypeTest, concurrent_store_and_fetch)
     if (GetParam() == "sqlite")
         GTEST_SKIP() << "sqlite backend is not exercised under concurrency";
 
-    for (std::size_t const numThreads : {4uz, 8uz})
+    for (auto const numThreads : {4uz, 8uz})
     {
         SCOPED_TRACE("threads=" + std::to_string(numThreads));
 

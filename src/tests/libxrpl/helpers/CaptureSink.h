@@ -30,19 +30,18 @@ public:
     void
     writeAlways(beast::Severity /*level*/, std::string const& text) override
     {
-        // Journal sinks may be written to concurrently (e.g. from a backend's
-        // background workers), so serialize access to strm_. write() funnels
-        // into writeAlways(), so the lock lives here only: locking in both
-        // would self-deadlock on this non-recursive mutex.
+        // Journal sinks may be written to concurrently (e.g. from a backend's background workers),
+        // so serialize access to strm_. write() funnels into writeAlways(), so the lock lives here
+        // only: locking in both would self-deadlock on this non-recursive mutex.
         std::scoped_lock const lock(mutex_);
         strm_ << text << '\n';
     }
 
-    /// Returns a snapshot of the captured output. Takes the lock so the read is
-    /// safe even if a writer is still active.
     [[nodiscard]] std::string
     messages() const
     {
+        // Returns a snapshot of the captured output. Takes the lock so the read is safe even if a
+        // writer is still active.
         std::scoped_lock const lock(mutex_);
         return strm_.str();
     }

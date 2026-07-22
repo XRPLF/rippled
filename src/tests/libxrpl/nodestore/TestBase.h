@@ -12,6 +12,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -78,19 +79,6 @@ createPredictableBatch(std::size_t numObjects, std::uint64_t seed)
     }
 
     return batch;
-}
-
-[[nodiscard]] inline bool
-areBatchesEqual(Batch const& lhs, Batch const& rhs)
-{
-    if (lhs.size() != rhs.size())
-        return false;
-    for (auto i = 0uz; i < lhs.size(); ++i)
-    {
-        if (!isSame(lhs[i], rhs[i]))
-            return false;
-    }
-    return true;
 }
 
 inline void
@@ -169,3 +157,13 @@ fetchMissing(Database& db, Batch const& batch)
 }
 
 }  // namespace xrpl::NodeStore
+
+namespace xrpl {
+
+[[nodiscard]] inline bool
+operator==(NodeStore::Batch const& lhs, NodeStore::Batch const& rhs)
+{
+    return std::ranges::equal(lhs, rhs, NodeStore::isSame);
+}
+
+}  // namespace xrpl

@@ -51,7 +51,7 @@ runRoundTrip(Section const& params, std::size_t expectedBlocksize)
     auto const copy = fetchCopyOfBatch(*backend, batch);
 
     backend->close();
-    EXPECT_TRUE(areBatchesEqual(batch, copy));
+    EXPECT_EQ(batch, copy);
 }
 
 }  // namespace
@@ -288,7 +288,7 @@ TEST(NuDBFactory, data_persistence)
                 Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
             backend->open();
             auto const copy = fetchCopyOfBatch(*backend, batch);
-            EXPECT_TRUE(areBatchesEqual(batch, copy));
+            EXPECT_EQ(batch, copy);
             backend->close();
         }
     }
