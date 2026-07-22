@@ -1713,21 +1713,42 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
 
             // If the original requester doesn't support the new depth-based format, rewrite any
             // nodes that use it back to the legacy nodeid format before relaying. Once all nodes
-            // have upgraded, the old protocol version and this code can be removed.
-            if (!peer->supportsFeature(ProtocolFeature::LedgerNodeDepth))
+            // have upgraded, the old protocol version and this code can be removed. To add some
+            // protection against malicious peers sending arbitrary data, we check that the format
+            // of the nodes is consistent - either all use the legacy format or the new format.
+            auto const peerSupportsNodeDepth =
+                peer->supportsFeature(ProtocolFeature::LedgerNodeDepth);
+            enum class MessageType { unknown, legacy, nodeDepth };
+            MessageType messageType = MessageType::unknown;
+            for (int i = 0; i < m->nodes_size(); ++i)
             {
-                for (int i = 0; i < m->nodes_size(); ++i)
+                auto* ledgerNode = m->mutable_nodes(i);
+
+                MessageType const msgType =
+                    ledgerNode->has_nodeid() ? MessageType::legacy : MessageType::nodeDepth;
+                if (messageType != MessageType::unknown && messageType != msgType)
                 {
-                    auto* ledgerNode = m->mutable_nodes(i);
-                    if (ledgerNode->has_id())
-                    {
-                        // We can directly copy the `id` field, because it uses the wire format as
-                        // the legacy `nodeid` field.
+                    badData(
+                        "Received mixed mode message while relaying ledger data for " +
+                        to_string(uint256::fromRaw(m->ledgerhash())) + " to peer " +
+                        std::to_string(peer->id()));
+                    return;
+                }
+                messageType = msgType;
+
+                if (peerSupportsNodeDepth || msgType == MessageType::legacy)
+                    continue;
+
+                switch (ledgerNode->reference_case())
+                {
+                    case protocol::TMLedgerNode::kId: {
+                        // We can directly copy the `id` field, because it uses the same wire format
+                        // as the legacy `nodeid` field.
                         ledgerNode->set_nodeid(ledgerNode->id());
                         ledgerNode->clear_id();
+                        break;
                     }
-                    else if (ledgerNode->has_depth())
-                    {
+                    case protocol::TMLedgerNode::kDepth: {
                         // We need to regenerate the node ID from the node data and depth.
                         auto treeNode = getTreeNode(ledgerNode->nodedata());
                         if (!treeNode)
@@ -1751,6 +1772,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
 
                         ledgerNode->set_nodeid(nodeID->getRawString());
                         ledgerNode->clear_depth();
+                        break;
+                    }
+                    default: {
+                        badData(
+                            "Empty node reference while relaying ledger data for " +
+                            to_string(uint256::fromRaw(m->ledgerhash())) + " to peer " +
+                            std::to_string(peer->id()));
+                        return;
                     }
                 }
             }
