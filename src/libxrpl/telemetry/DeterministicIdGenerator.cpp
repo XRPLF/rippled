@@ -16,6 +16,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <opentelemetry/nostd/span.h>
+#include <opentelemetry/sdk/trace/id_generator.h>
 #include <opentelemetry/sdk/trace/random_id_generator_factory.h>
 #include <opentelemetry/trace/span_id.h>
 #include <opentelemetry/trace/trace_id.h>
@@ -32,14 +33,14 @@ namespace {
  * Trace_id pinned by PendingTraceId, consumed by GenerateTraceId(). File-local
  * and thread-local, so it is set and read on the same thread with no locking.
  */
-thread_local std::optional<std::array<std::uint8_t, 16>> tlsPendingTraceId;
+thread_local std::optional<std::array<std::uint8_t, 16>> gTlsPendingTraceId;
 
 /**
  * True once GenerateTraceId() has consumed the pending id. ~PendingTraceId
  * asserts on it to catch a forced-root span that never reached the SDK root
  * branch.
  */
-thread_local bool tlsPendingConsumed = false;
+thread_local bool gTlsPendingConsumed = false;
 
 }  // namespace
 
@@ -52,11 +53,11 @@ DeterministicIdGenerator::DeterministicIdGenerator()
 opentelemetry::trace::TraceId
 DeterministicIdGenerator::GenerateTraceId() noexcept
 {
-    if (tlsPendingTraceId)
+    if (gTlsPendingTraceId)
     {
-        auto const id = *tlsPendingTraceId;
-        tlsPendingTraceId.reset();
-        tlsPendingConsumed = true;
+        auto const id = *gTlsPendingTraceId;
+        gTlsPendingTraceId.reset();
+        gTlsPendingConsumed = true;
         return opentelemetry::trace::TraceId(
             opentelemetry::nostd::span<std::uint8_t const, 16>(id.data(), 16));
     }
@@ -71,8 +72,8 @@ DeterministicIdGenerator::GenerateSpanId() noexcept
 
 PendingTraceId::PendingTraceId(std::array<std::uint8_t, 16> const& id) noexcept
 {
-    tlsPendingTraceId = id;
-    tlsPendingConsumed = false;
+    gTlsPendingTraceId = id;
+    gTlsPendingConsumed = false;
 }
 
 PendingTraceId::~PendingTraceId() noexcept
@@ -81,10 +82,10 @@ PendingTraceId::~PendingTraceId() noexcept
     // via GenerateTraceId(). If not, the SDK took a different branch than the
     // caller forced — a bug — so fail loudly in debug/test builds.
     XRPL_ASSERT(
-        tlsPendingConsumed,
+        gTlsPendingConsumed,
         "xrpl::telemetry::PendingTraceId : deterministic trace_id was not consumed");
-    tlsPendingTraceId.reset();  // never leak, even in release
-    tlsPendingConsumed = false;
+    gTlsPendingTraceId.reset();  // never leak, even in release
+    gTlsPendingConsumed = false;
 }
 
 }  // namespace xrpl::telemetry

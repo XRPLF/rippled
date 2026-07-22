@@ -3,6 +3,8 @@
 #ifdef XRPL_ENABLE_TELEMETRY
 
 #include <opentelemetry/sdk/trace/id_generator.h>
+#include <opentelemetry/trace/span_id.h>
+#include <opentelemetry/trace/trace_id.h>
 
 #include <array>
 #include <cstdint>
