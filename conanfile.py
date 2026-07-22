@@ -23,6 +23,7 @@ class Xrpl(ConanFile):
         "static": [True, False],
         "tests": [True, False],
         "unity": [True, False],
+        "wasm": [True, False],
         "xrpld": [True, False],
     }
 
@@ -34,7 +35,6 @@ class Xrpl(ConanFile):
         "openssl/3.6.2",
         "secp256k1/0.7.1",
         "soci/4.0.3",
-        "wasmi/1.0.9",
         "zlib/1.3.2",
     ]
 
@@ -56,6 +56,7 @@ class Xrpl(ConanFile):
         "static": True,
         "tests": False,
         "unity": False,
+        "wasm": False,
         "xrpld": False,
         "boost/*:without_cobalt": True,
         "boost/*:without_context": False,
@@ -140,6 +141,8 @@ class Xrpl(ConanFile):
             self.requires("jemalloc/5.3.1")
         if self.options.rocksdb:
             self.requires("rocksdb/10.5.1")
+        if self.options.wasm:
+            self.requires("wasmi/1.0.9")
         self.requires("xxhash/0.8.3", transitive_headers=True)
 
     exports_sources = (
@@ -169,6 +172,7 @@ class Xrpl(ConanFile):
         tc.variables["BUILD_SHARED_LIBS"] = self.options.shared
         tc.variables["static"] = self.options.static
         tc.variables["unity"] = self.options.unity
+        tc.variables["wasm"] = self.options.wasm
         tc.variables["xrpld"] = self.options.xrpld
         tc.generate()
 
@@ -215,9 +219,10 @@ class Xrpl(ConanFile):
             "soci::soci",
             "secp256k1::secp256k1",
             "sqlite3::sqlite",
-            "wasmi::wasmi",
             "xxhash::xxhash",
             "zlib::zlib",
         ]
         if self.options.rocksdb:
             libxrpl.requires.append("rocksdb::librocksdb")
+        if self.options.wasm:
+            libxrpl.requires.append("wasmi::wasmi")

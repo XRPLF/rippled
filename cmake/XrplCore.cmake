@@ -67,9 +67,9 @@ target_link_libraries(
         Xrpl::opts
         Xrpl::syslibs
         secp256k1::secp256k1
-        wasmi::wasmi
         xrpl.libpb
         xxHash::xxhash
+        $<$<BOOL:${wasm}>:wasmi::wasmi>
         $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>
 )
 
@@ -192,6 +192,14 @@ target_link_libraries(
 
 add_module(xrpl tx)
 target_link_libraries(xrpl.libxrpl.tx PUBLIC xrpl.libxrpl.ledger)
+if(NOT wasm)
+    # The WASM host functions (programmable escrows) are only compiled when the
+    # `wasm` option is enabled. add_module globs the tx sources recursively, so
+    # drop the tx/wasm sources here otherwise.
+    get_target_property(tx_sources xrpl.libxrpl.tx SOURCES)
+    list(FILTER tx_sources EXCLUDE REGEX "/tx/wasm/")
+    set_target_properties(xrpl.libxrpl.tx PROPERTIES SOURCES "${tx_sources}")
+endif()
 
 add_library(xrpl.libxrpl)
 set_target_properties(xrpl.libxrpl PROPERTIES OUTPUT_NAME xrpl)
@@ -263,6 +271,16 @@ if(xrpld)
             CONFIGURE_DEPENDS
             "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
         )
+        if(NOT wasm)
+            # Drop the WASM host-function tests and their fixtures when the
+            # `wasm` option is disabled (they include <xrpl/tx/wasm/*> which
+            # pulls in wasmi).
+            list(
+                FILTER sources
+                EXCLUDE
+                REGEX "/(wasm_fixtures/.*|Wasm_test|HostFuncImpl_test)\\.cpp$"
+            )
+        endif()
         target_sources(xrpld PRIVATE ${sources})
     endif()
 
