@@ -125,6 +125,15 @@ later spans — the `stage` attribute identifies where it stopped.
 > clean root, not a "root span not yet received" warning. Cross-node correlation
 > still works because every node derives the same `trace_id` from the shared hash.
 
+> **Log-trace correlation is retained across coroutines.** OTel context storage
+> is coroutine-aware (backed by `LocalValue`), so the active span travels with a
+> coroutine across `yield()` and resumes on whatever thread the scheduler picks.
+> RPC, consensus, and transaction spans therefore keep per-line log-trace
+> correlation, and their scopes are safe across coroutine yields. Job-handoff
+> spans — transaction apply and receive, and consensus accept — are activated
+> inside their worker bodies rather than at enqueue, so each worker's log lines
+> carry the span's trace context.
+
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"tx.process|tx.receive"}`
 or, for the apply pipeline: `{resource.service.name="xrpld" && name=~"tx.preflight|tx.preclaim|tx.transactor"}`
 
@@ -134,20 +143,22 @@ or, for the apply pipeline: `{resource.service.name="xrpld" && name=~"tx.preflig
 
 Controlled by `trace_rpc=1` in `[telemetry]` config (pathfinding spans fire within RPC request handling).
 
-| Span Name             | Parent             | Source File      | Description                                              |
-| --------------------- | ------------------ | ---------------- | -------------------------------------------------------- |
-| `pathfind.request`    | `rpc.process`      | PathFind.cpp     | RPC entry for path_find (doPathFind)                     |
-| `pathfind.compute`    | `pathfind.request` | PathRequest.cpp  | Single path computation (doUpdate)                       |
-| `pathfind.update_all` | —                  | PathRequests.cpp | Async recomputation of all active path requests on close |
-| `pathfind.discover`   | `pathfind.compute` | Pathfinder.cpp   | Graph exploration phase (Pathfinder::find)               |
-| `pathfind.rank`       | `pathfind.compute` | Pathfinder.cpp   | Path ranking and selection phase                         |
+| Span Name             | Parent               | Source File      | Description                                              |
+| --------------------- | -------------------- | ---------------- | -------------------------------------------------------- |
+| `pathfind.request`    | `rpc.command.<name>` | PathFind.cpp     | RPC entry for path_find (doPathFind)                     |
+| `pathfind.compute`    | `pathfind.request`   | PathRequest.cpp  | Single path computation (doUpdate)                       |
+| `pathfind.update_all` | —                    | PathRequests.cpp | Async recomputation of all active path requests on close |
+| `pathfind.discover`   | `pathfind.compute`   | Pathfinder.cpp   | Graph exploration phase (Pathfinder::find)               |
+| `pathfind.rank`       | `pathfind.compute`   | Pathfinder.cpp   | Path ranking and selection phase                         |
 
-> **Note**: `pathfind.request` parents to `rpc.process`, not `rpc.command.*`.
-> `rpc.command.*` is intentionally unscoped: its generic dispatch (`callMethod`)
-> also wraps `doRipplePathFind`, whose span is held across a coroutine
-> `yield()` — scoping it would risk a wrong-thread scope pop on resume. The
-> `pathfind.request → compute → discover` sub-tree nests correctly because those
-> handlers run synchronously (no yield) and use `ScopedSpanGuard`.
+> **Note**: `pathfind.request` nests under the active `rpc.command.<name>` span.
+> Because OTel context storage is coroutine-aware (backed by `LocalValue`), the
+> `rpc.command.*` scope stays correct even though its generic dispatch
+> (`callMethod`) also wraps handlers such as `doRipplePathFind` whose span is held
+> across a coroutine `yield()` — the ambient context travels with the coroutine
+> when it resumes, so there is no wrong-thread scope pop. The
+> `pathfind.request → compute → discover` sub-tree therefore parents to
+> `rpc.command.<name>`, giving an exact request-to-pathfind nesting.
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"pathfind.*"}`
 
