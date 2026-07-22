@@ -50,7 +50,9 @@ buildLedgerImpl(
     ApplyTxs&& applyTxs)
 {
     using namespace telemetry;
-    auto buildSpan = SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::build);
+    // Scoped so tx.apply (created synchronously below during applyTxs on this
+    // thread) nests under it. buildLedgerImpl runs synchronously with no yield.
+    auto buildSpan = ScopedSpanGuard(TraceCategory::Ledger, seg::ledger, ledger_span::op::build);
 
     auto built = std::make_shared<Ledger>(*parent, closeTime);
 
