@@ -459,8 +459,7 @@ InboundLedger::done()
     // activation pops at the end of this block (restoring the prior context)
     // while acquireSpan_ is still alive, then reset() ends the span.
     {
-        auto acquireActivation = (acquireSpan_ && *acquireSpan_) ? acquireSpan_->activate()
-                                                                 : telemetry::ScopedActivation{};
+        auto acquireActivation = telemetry::activateIfLive(acquireSpan_);
         if (acquireSpan_ && *acquireSpan_)
         {
             using namespace telemetry;
