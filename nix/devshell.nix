@@ -58,7 +58,7 @@ let
       warningHook ? "",
     }:
     let
-      compilerVersion =
+      compilerVersionHook =
         if compilerName == null then
           ''echo "No compiler specified - using system compiler"''
         else
@@ -77,7 +77,7 @@ let
       packages = commonPackages ++ versionedLinks ++ extraPackages;
       shellHook = ''
         echo "Welcome to xrpld development shell";
-        ${compilerVersion}
+        ${compilerVersionHook}
         ${warningHook}
       '';
     };
