@@ -1,4 +1,4 @@
-#include <xrpl/tx/invariants/CheckInvariants.h>
+#include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -9,6 +9,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/invariants/InvariantCheck.h>
 
 #include <algorithm>
@@ -38,7 +39,7 @@ checkInvariantsHelper(
     ApplyContext& ctx,
     TER const result,
     XRPAmount const fee,
-    std::optional<std::reference_wrapper<InvariantCheck>> txCheck,
+    std::optional<std::reference_wrapper<Transactor>> txCheck,
     std::index_sequence<Is...>)
 {
     auto checkers = getInvariantChecks();
@@ -48,13 +49,13 @@ checkInvariantsHelper(
     {
         ctx.visit([&](uint256 const&, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
             if (txCheck)
-                txCheck->get().visitEntry(isDelete, before, after);
+                txCheck->get().visitInvariantEntry(isDelete, before, after);
             (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
         });
 
         if (txCheck)
         {
-            if (!txCheck->get().finalize(ctx.tx, result, fee, ctx.view(), ctx.journal))
+            if (!txCheck->get().finalizeInvariants(ctx.tx, result, fee, ctx.view(), ctx.journal))
             {
                 JLOG(ctx.journal.fatal())
                     << "Transaction has failed one or more transaction invariants: "
@@ -100,7 +101,7 @@ checkInvariants(
     ApplyContext& ctx,
     TER const result,
     XRPAmount const fee,
-    std::optional<std::reference_wrapper<InvariantCheck>> txCheck)
+    std::optional<std::reference_wrapper<Transactor>> txCheck)
 {
     XRPL_ASSERT(
         isTesSuccess(result) || isTecClaim(result),

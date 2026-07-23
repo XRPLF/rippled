@@ -41,7 +41,7 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
-#include <xrpl/tx/invariants/CheckInvariants.h>
+#include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -1426,17 +1426,6 @@ Transactor::trapTransaction(uint256 txHash) const
     JLOG(j_.debug()) << "Transaction trapped: " << txHash;
 }
 
-[[nodiscard]] bool
-Transactor::InvariantCheckAdapter::finalize(
-    STTx const& tx,
-    TER const result,
-    XRPAmount const fee,
-    ReadView const& view,
-    beast::Journal const& j) const
-{
-    return self_.finalizeInvariants(tx, result, fee, view, j);
-}
-
 std::tuple<TER, XRPAmount, bool>
 Transactor::processPersistentChanges(TER result, XRPAmount fee)
 {
@@ -1555,7 +1544,7 @@ Transactor::checkInvariants(TER result, XRPAmount fee, CheckTxInvariants check)
     if (check == CheckTxInvariants::No)
         return xrpl::checkInvariants(ctx_, result, fee);
 
-    return xrpl::checkInvariants(ctx_, result, fee, std::ref(invariantCheck_));
+    return xrpl::checkInvariants(ctx_, result, fee, std::ref(*this));
 }
 
 //------------------------------------------------------------------------------

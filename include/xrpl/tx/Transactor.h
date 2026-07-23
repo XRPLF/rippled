@@ -20,7 +20,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
-#include <xrpl/tx/invariants/CheckInvariants.h>
+#include <xrpl/tx/invariants/InvariantRunner.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -197,8 +197,8 @@ public:
      * Check all invariants for the current transaction.
      *
      * Delegates to the free @c xrpl::checkInvariants runner.  When @p check is
-     * @c CheckTxInvariants::Yes, the transaction-specific adapter is passed so
-     * both layers share a single walk of the modified ledger entries.
+     * @c CheckTxInvariants::Yes, this transactor is passed so both layers
+     * share a single walk of the modified ledger entries.
      * Protocol faults (tefINVARIANT_FAILED) take priority over transaction
      * faults (tecINVARIANT_FAILED).
      *
@@ -210,6 +210,51 @@ public:
      */
     [[nodiscard]] TER
     checkInvariants(TER result, XRPAmount fee, CheckTxInvariants check);
+
+    /**
+     * Inspect a single ledger entry modified by this transaction.
+     *
+     * Called once for every SLE created, modified, or deleted by the
+     * transaction, before finalizeInvariants.  Implementations should
+     * accumulate whatever state they need to verify transaction-specific
+     * post-conditions.
+     *
+     * @param isDelete  true if the entry was erased from the ledger.
+     * @param before    the entry's state before the transaction (nullptr
+     *                  for newly created entries).
+     * @param after     the entry's state as supplied by the apply logic
+     *                  for this transaction. For deletions, this is the
+     *                  SLE being erased and is not guaranteed to be null;
+     *                  callers must use isDelete rather than after == nullptr
+     *                  to detect deletions.
+     */
+    virtual void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) = 0;
+
+    /**
+     * Check transaction-specific post-conditions after all entries have
+     * been visited.
+     *
+     * Called once after every modified ledger entry has been passed to
+     * visitInvariantEntry.  Returns true if all transaction-specific
+     * invariants hold, or false to fail the transaction with
+     * tecINVARIANT_FAILED.
+     *
+     * @param tx    the transaction being applied.
+     * @param result the tentative TER result so far.
+     * @param fee   the fee consumed by the transaction.
+     * @param view  read-only view of the ledger after the transaction.
+     * @param j     journal for logging invariant failures.
+     *
+     * @return true if all invariants pass; false otherwise.
+     */
+    [[nodiscard]] virtual bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) = 0;
 
     /////////////////////////////////////////////////////
     /*
@@ -362,51 +407,6 @@ protected:
     doApply() = 0;
 
     /**
-     * Inspect a single ledger entry modified by this transaction.
-     *
-     * Called once for every SLE created, modified, or deleted by the
-     * transaction, before finalizeInvariants.  Implementations should
-     * accumulate whatever state they need to verify transaction-specific
-     * post-conditions.
-     *
-     * @param isDelete  true if the entry was erased from the ledger.
-     * @param before    the entry's state before the transaction (nullptr
-     *                  for newly created entries).
-     * @param after     the entry's state as supplied by the apply logic
-     *                  for this transaction. For deletions, this is the
-     *                  SLE being erased and is not guaranteed to be null;
-     *                  callers must use isDelete rather than after == nullptr
-     *                  to detect deletions.
-     */
-    virtual void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) = 0;
-
-    /**
-     * Check transaction-specific post-conditions after all entries have
-     * been visited.
-     *
-     * Called once after every modified ledger entry has been passed to
-     * visitInvariantEntry.  Returns true if all transaction-specific
-     * invariants hold, or false to fail the transaction with
-     * tecINVARIANT_FAILED.
-     *
-     * @param tx    the transaction being applied.
-     * @param result the tentative TER result so far.
-     * @param fee   the fee consumed by the transaction.
-     * @param view  read-only view of the ledger after the transaction.
-     * @param j     journal for logging invariant failures.
-     *
-     * @return true if all invariants pass; false otherwise.
-     */
-    [[nodiscard]] virtual bool
-    finalizeInvariants(
-        STTx const& tx,
-        TER result,
-        XRPAmount fee,
-        ReadView const& view,
-        beast::Journal const& j) = 0;
-
-    /**
      * Compute the minimum fee required to process a transaction
      * with a given baseFee based on the current server load.
      *
@@ -549,37 +549,6 @@ private:
      */
     static NotTEC
     preflightUniversal(PreflightContext const& ctx);
-
-    /**
-     * Bridges the transaction-specific two-phase invariant hooks
-     * (visitInvariantEntry + finalizeInvariants) into the InvariantCheck
-     * interface consumed by the free xrpl::checkInvariants runner.
-     */
-    class InvariantCheckAdapter : public InvariantCheck
-    {
-        Transactor& self_;
-
-    public:
-        explicit InvariantCheckAdapter(Transactor& self) : self_(self)
-        {
-        }
-
-        void
-        visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override
-        {
-            self_.visitInvariantEntry(isDelete, before, after);
-        }
-
-        [[nodiscard]] bool
-        finalize(
-            STTx const& tx,
-            TER result,
-            XRPAmount fee,
-            ReadView const& view,
-            beast::Journal const& j) const override;
-    };
-
-    InvariantCheckAdapter invariantCheck_{*this};
 };
 
 inline bool
