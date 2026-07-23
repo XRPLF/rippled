@@ -538,7 +538,7 @@ struct Wasm_test : public beast::unit_test::Suite
             TestHostFunctionsSink hfs(env);
             std::string const funcName("finish");
             auto re = runEscrowWasm(deepWasm, hfs, 1'000'000'000, funcName, {});
-            BEAST_EXPECT(!re && re.error());
+            BEAST_EXPECT(!re && re.error().ter);
             // std::cout << "bad case (deep recursion) result " << re.error()
             //             << std::endl;
 
@@ -569,7 +569,7 @@ struct Wasm_test : public beast::unit_test::Suite
             auto const re = runEscrowWasm(infiniteLoopWasm, hfs, 1'000'000, funcName, {});
             if (BEAST_EXPECT(!re.has_value()))
             {
-                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+                BEAST_EXPECT(re.error().ter == tecFAILED_PROCESSING);
             }
         }
 
@@ -682,7 +682,7 @@ struct Wasm_test : public beast::unit_test::Suite
             auto const re = runEscrowWasm(disabledFloatWasm, hfs, 1'000'000, funcName, {});
             if (BEAST_EXPECT(!re.has_value()))
             {
-                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+                BEAST_EXPECT(re.error().ter == tecFAILED_PROCESSING);
             }
         }
 
@@ -692,7 +692,7 @@ struct Wasm_test : public beast::unit_test::Suite
             auto const re = runEscrowWasm(disabledFloatWasm, hfs, 1'000'000, funcName, {});
             if (BEAST_EXPECT(!re.has_value()))
             {
-                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+                BEAST_EXPECT(re.error().ter == tecFAILED_PROCESSING);
             }
         }
     }
@@ -795,9 +795,10 @@ struct Wasm_test : public beast::unit_test::Suite
         auto checkRes = engine.check(startLoopWasm, hfs, "finish", {}, imports, env.journal);
         BEAST_EXPECTS(checkRes == tesSUCCESS, std::to_string(TERtoInt(checkRes)));
 
-        auto re =
+        auto result =
             engine.run(startLoopWasm, hfs, 1'000'000, escrowFunctionName, {}, imports, env.journal);
-        BEAST_EXPECTS(re.error() == tecFAILED_PROCESSING, std::to_string(TERtoInt(re.error())));
+        auto resultTer = result.error().ter;
+        BEAST_EXPECTS(resultTer == tecFAILED_PROCESSING, std::to_string(TERtoInt(resultTer)));
     }
 
     void
@@ -1067,7 +1068,8 @@ struct Wasm_test : public beast::unit_test::Suite
                 auto const lineStr = " (" + std::to_string(location.line()) + ")";
                 auto re =
                     engine.run(code, hfs, 1'000'000, "all_instructions", {}, imports, env.journal);
-                if (BEAST_EXPECTS(re.has_value() == good, transToken(re.error()) + lineStr) && good)
+                if (BEAST_EXPECTS(re.has_value() == good, transToken(re.error().ter) + lineStr) &&
+                    good)
                     BEAST_EXPECTS(re->cost == cost, std::to_string(re->cost) + lineStr);
             };
 
