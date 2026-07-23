@@ -45,11 +45,7 @@ WasmImpArgs(WasmImportFunc& e)
     if constexpr (N < C)
     {
         using at = boost::mpl::at_c<Mpl, N>::type;
-        if constexpr (std::is_pointer_v<at>)
-        {
-            e.params.push_back(WasmTypes::WtI32);
-        }
-        else if constexpr (std::is_same_v<at, std::int32_t>)
+        if constexpr (std::is_pointer_v<at> || std::is_same_v<at, std::int32_t>)
         {
             e.params.push_back(WasmTypes::WtI32);
         }
@@ -73,11 +69,7 @@ template <typename Rt>
 void
 WasmImpRet(WasmImportFunc& e)
 {
-    if constexpr (std::is_pointer_v<Rt>)
-    {
-        e.result = WasmTypes::WtI32;
-    }
-    else if constexpr (std::is_same_v<Rt, std::int32_t>)
+    if constexpr (std::is_pointer_v<Rt> || std::is_same_v<Rt, std::int32_t>)
     {
         e.result = WasmTypes::WtI32;
     }

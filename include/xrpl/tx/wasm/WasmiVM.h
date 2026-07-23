@@ -264,7 +264,7 @@ public:
         return instanceWrap_.getFunc(funcName, exportTypes_);
     }
 
-    wasm_functype_t*
+    wasm_functype_t const*
     getFuncType(std::string_view funcName) const;
 
     Wmem
