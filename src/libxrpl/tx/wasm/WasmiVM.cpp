@@ -1,6 +1,5 @@
 #include <xrpl/tx/wasm/WasmiVM.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/TER.h>
@@ -19,6 +18,7 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
+#include <expected>
 #include <limits>
 #include <memory>
 #include <mutex>
@@ -311,7 +311,10 @@ InstanceWrapper::setTransferLimit(std::int64_t x)
 ModulePtr
 ModuleWrapper::init(StorePtr& s, Bytes const& wasmBin, beast::Journal j)
 {
-    wasm_byte_vec_t const code{.size = wasmBin.size(), .data = (char*)(wasmBin.data())};
+    wasm_byte_vec_t const code{
+        .size = wasmBin.size(),
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+        .data = const_cast<char*>(reinterpret_cast<char const*>(wasmBin.data()))};
     ModulePtr m = ModulePtr(wasm_module_new(s.get(), &code), &wasm_module_delete);
     if (!m)
         throw std::runtime_error("can't create module");
@@ -428,7 +431,7 @@ ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports) const
         auto fieldName = std::string_view(fn->data, fn->size);
 
         wasm_externkind_t const itype = wasm_externtype_kind(wasm_importtype_type(importType));
-        if ((itype) != WASM_EXTERN_FUNC)
+        if (itype != WASM_EXTERN_FUNC)
         {
             Throw<std::runtime_error>(
                 "Invalid import type " + std::to_string(itype));  // LCOV_EXCL_LINE
@@ -482,7 +485,7 @@ ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports) const
     return wimports;
 }
 
-wasm_functype_t*
+wasm_functype_t const*
 ModuleWrapper::getFuncType(std::string_view funcName) const
 {
     for (size_t i = 0; i < exportTypes_.size(); i++)
@@ -493,7 +496,7 @@ ModuleWrapper::getFuncType(std::string_view funcName) const
         if (wasm_externtype_kind(exnType) == WASM_EXTERN_FUNC &&
             funcName == std::string_view(name->data, name->size))
         {
-            return wasm_externtype_as_functype(const_cast<wasm_externtype_t*>(exnType));
+            return wasm_externtype_as_functype_const(exnType);
         }
     }
 
@@ -703,9 +706,7 @@ WasmiEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in)
         // Classify the trap into a TER by matching tokens as substrings of the
         // message (see the trap-signal constants in WasmCommon.h for why).
         std::string const msg = trapMessage(trap);
-        auto const has = [&msg](std::string_view token) {
-            return msg.find(token) != std::string::npos;
-        };
+        auto const has = [&msg](std::string_view token) { return msg.contains(token); };
         if (has(hfErrInternal))
         {
             ret.ter = tecINTERNAL;
@@ -757,7 +758,7 @@ checkImports(ImportVec const& imports, HostFunctions* hfs)
     }
 }
 
-Expected<WasmResult<int32_t>, WasmTER>
+std::expected<WasmResult<int32_t>, WasmTER>
 WasmiEngine::run(
     Bytes const& wasmCode,
     HostFunctions& hfs,
@@ -768,7 +769,7 @@ WasmiEngine::run(
     beast::Journal j)
 {
     if (gas <= 0)
-        return Unexpected(WasmTER{.ter = temBAD_AMOUNT, .cost = std::nullopt});
+        return std::unexpected(WasmTER{.ter = temBAD_AMOUNT, .cost = std::nullopt});
 
     try
     {
@@ -787,10 +788,10 @@ WasmiEngine::run(
     // LCOV_EXCL_STOP
     // An exception escaping the engine is an xrpld-side fault -> tecINTERNAL,
     // no gas. Genuine wasm faults don't throw; they surface as traps in runHlp.
-    return Unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
+    return std::unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
 }
 
-Expected<WasmResult<int32_t>, WasmTER>
+std::expected<WasmResult<int32_t>, WasmTER>
 WasmiEngine::runHlp(
     Bytes const& wasmCode,
     HostFunctions& hfs,
@@ -841,7 +842,7 @@ WasmiEngine::runHlp(
         // call() already classified the trap (see WasmiEngine::call).
         // tecINTERNAL is an xrpld-side bug: report no gas.
         if (*res.ter == tecINTERNAL)
-            return Unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
+            return std::unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
 
         // Out-of-gas / wasm faults report gas (caller writes it to metadata).
         // Force fuel to 0 on out-of-gas so cost is the full limit (wasmi leaves
@@ -849,7 +850,7 @@ WasmiEngine::runHlp(
         if (*res.ter == tecOUT_OF_GAS)
             iw.setGas(0);
 
-        return Unexpected(WasmTER{.ter = *res.ter, .cost = gas - moduleWrap_->getGas()});
+        return std::unexpected(WasmTER{.ter = *res.ter, .cost = gas - moduleWrap_->getGas()});
     }
 
     if (res.r.empty())

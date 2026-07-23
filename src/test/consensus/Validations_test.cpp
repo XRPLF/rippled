@@ -324,15 +324,15 @@ class Validations_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(
                 ValStatus::Stale ==
-                harness.add(n.validate(ledgerA, -harness.parms().validationCURRENT_EARLY, 0s)));
+                harness.add(n.validate(ledgerA, -harness.parms().validationCurrentEarly, 0s)));
 
             BEAST_EXPECT(
                 ValStatus::Stale ==
-                harness.add(n.validate(ledgerA, harness.parms().validationCURRENT_WALL, 0s)));
+                harness.add(n.validate(ledgerA, harness.parms().validationCurrentWall, 0s)));
 
             BEAST_EXPECT(
                 ValStatus::Stale ==
-                harness.add(n.validate(ledgerA, 0s, harness.parms().validationCURRENT_LOCAL)));
+                harness.add(n.validate(ledgerA, 0s, harness.parms().validationCurrentLocal)));
         }
 
         {
@@ -357,7 +357,7 @@ class Validations_test : public beast::unit_test::Suite
                 // If we advance far enough for AB to expire, we can fully
                 // validate or partially validate that sequence number again
                 BEAST_EXPECT(ValStatus::Conflicting == process(ledgerAZ));
-                harness.clock().advance(harness.parms().validationSET_EXPIRES + 1ms);
+                harness.clock().advance(harness.parms().validationSetExpires + 1ms);
                 BEAST_EXPECT(ValStatus::Current == process(ledgerAZ));
             }
         }
@@ -392,7 +392,7 @@ class Validations_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 harness.vals().getPreferred(genesisLedger_) ==
                 std::make_pair(ledgerAB.seq(), ledgerAB.id()));
-            harness.clock().advance(harness.parms().validationCURRENT_LOCAL);
+            harness.clock().advance(harness.parms().validationCurrentLocal);
 
             // trigger check for stale
             trigger(harness.vals());
@@ -487,7 +487,7 @@ class Validations_test : public beast::unit_test::Suite
         BEAST_EXPECT(harness.vals().currentTrusted()[0].seq() == ledgerAC.seq());
 
         // Pass enough time for it to go stale
-        harness.clock().advance(harness.parms().validationCURRENT_LOCAL);
+        harness.clock().advance(harness.parms().validationCurrentLocal);
         BEAST_EXPECT(harness.vals().currentTrusted().empty());
     }
 
@@ -528,7 +528,7 @@ class Validations_test : public beast::unit_test::Suite
         }
 
         // Pass enough time for them to go stale
-        harness.clock().advance(harness.parms().validationCURRENT_LOCAL);
+        harness.clock().advance(harness.parms().validationCurrentLocal);
         BEAST_EXPECT(harness.vals().getCurrentNodeIDs().empty());
     }
 
@@ -657,7 +657,7 @@ class Validations_test : public beast::unit_test::Suite
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerA.id()) == 1);
         harness.vals().expire(j);
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerA.id()) == 1);
-        harness.clock().advance(harness.parms().validationSET_EXPIRES);
+        harness.clock().advance(harness.parms().validationSetExpires);
         harness.vals().expire(j);
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerA.id()) == 0);
 
@@ -666,14 +666,14 @@ class Validations_test : public beast::unit_test::Suite
         BEAST_EXPECT(ValStatus::Current == harness.add(a.validate(ledgerB)));
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerB.id()) == 1);
         harness.vals().setSeqToKeep(ledgerB.seq(), ledgerB.seq() + kOne);
-        harness.clock().advance(harness.parms().validationSET_EXPIRES);
+        harness.clock().advance(harness.parms().validationSetExpires);
         harness.vals().expire(j);
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerB.id()) == 1);
         // change toKeep
         harness.vals().setSeqToKeep(ledgerB.seq() + kOne, ledgerB.seq() + kTwo);
         // advance clock slowly
         int const loops =
-            harness.parms().validationSET_EXPIRES / harness.parms().validationFRESHNESS + 1;
+            harness.parms().validationSetExpires / harness.parms().validationFRESHNESS + 1;
         for (int i = 0; i < loops; ++i)
         {
             harness.clock().advance(harness.parms().validationFRESHNESS);
@@ -686,7 +686,7 @@ class Validations_test : public beast::unit_test::Suite
         BEAST_EXPECT(ValStatus::Current == harness.add(a.validate(ledgerC)));
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerC.id()) == 1);
         harness.vals().setSeqToKeep(ledgerC.seq() - kOne, ledgerC.seq());
-        harness.clock().advance(harness.parms().validationSET_EXPIRES);
+        harness.clock().advance(harness.parms().validationSetExpires);
         harness.vals().expire(j);
         BEAST_EXPECT(harness.vals().numTrustedForLedger(ledgerC.id()) == 0);
     }
@@ -934,7 +934,7 @@ class Validations_test : public beast::unit_test::Suite
         BEAST_EXPECT(enforcer(clock.now(), Seq{10}, p));
         BEAST_EXPECT(!enforcer(clock.now(), Seq{5}, p));
         BEAST_EXPECT(!enforcer(clock.now(), Seq{9}, p));
-        clock.advance(p.validationSET_EXPIRES - 1ms);
+        clock.advance(p.validationSetExpires - 1ms);
         BEAST_EXPECT(!enforcer(clock.now(), Seq{1}, p));
         clock.advance(2ms);
         BEAST_EXPECT(enforcer(clock.now(), Seq{1}, p));

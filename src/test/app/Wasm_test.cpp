@@ -1,3 +1,4 @@
+#include <expected>
 #ifdef _DEBUG
 // #define DEBUG_OUTPUT 1
 #endif
@@ -6,7 +7,6 @@
 #include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx/Env.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
@@ -53,7 +53,7 @@ struct Wasm_test : public beast::unit_test::Suite
 {
     void
     checkResult(
-        Expected<WasmResult<int32_t>, WasmTER> re,
+        std::expected<WasmResult<int32_t>, WasmTER> re,
         int32_t expectedResult,
         int64_t expectedCost,
         std::source_location const location = std::source_location::current())
@@ -313,10 +313,10 @@ struct Wasm_test : public beast::unit_test::Suite
                 explicit FieldNotFoundHostFunctions(Env& env) : TestHostFunctions(env)
                 {
                 }
-                Expected<Bytes, HostFunctionError>
+                [[nodiscard]] std::expected<Bytes, HostFunctionError>
                 getTxField(SField const& fname) const override
                 {
-                    return Unexpected(HostFunctionError::FieldNotFound);
+                    return std::unexpected(HostFunctionError::FieldNotFound);
                 }
             };
 
@@ -331,7 +331,7 @@ struct Wasm_test : public beast::unit_test::Suite
                 explicit OversizedFieldHostFunctions(Env& env) : TestHostFunctions(env)
                 {
                 }
-                Expected<Bytes, HostFunctionError>
+                [[nodiscard]] std::expected<Bytes, HostFunctionError>
                 getTxField(SField const& fname) const override
                 {
                     return Bytes((128 + 1) * 64 * 1024, 1);

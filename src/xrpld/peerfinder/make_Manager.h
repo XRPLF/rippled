@@ -2,13 +2,19 @@
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
+
 #include <boost/asio/io_context.hpp>
 
 #include <memory>
 
 namespace xrpl::PeerFinder {
 
-/** Create a new Manager. */
+/**
+ * Create a new Manager.
+ */
 std::unique_ptr<Manager>
 makeManager(
     boost::asio::io_context& ioContext,

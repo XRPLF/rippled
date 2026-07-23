@@ -796,22 +796,22 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                     std::to_string(result[0].of.i32));
             }
 
-            // hfs.getTxField(kSfInvalid);
+            // hfs.getTxField(sfInvalid);
             {
                 WasmValVec params(3), result(1);
                 auto* trap =
-                    ww(&import.at("tx_field"), params, result, kSfInvalid.getCode(), 0, 256);
+                    ww(&import.at("tx_field"), params, result, sfInvalid.getCode(), 0, 256);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
                         result[0].of.i32 == static_cast<int32_t>(HostFunctionError::FieldNotFound));
             }
 
-            // hfs.getTxField(kSfGeneric);
+            // hfs.getTxField(sfGeneric);
             {
                 WasmValVec params(3), result(1);
                 auto* trap =
-                    ww(&import.at("tx_field"), params, result, kSfGeneric.getCode(), 0, 256);
+                    ww(&import.at("tx_field"), params, result, sfGeneric.getCode(), 0, 256);
 
                 BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                     BEAST_EXPECT(
@@ -1355,17 +1355,17 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             HostFunctionError::InvalidField);
 
         // hfs.getTxNestedField(locator);
-        // Locator for negative base sfield code (-1 = kSfInvalid, exists in map but not in tx)
+        // Locator for negative base sfield code (-1 = sfInvalid, exists in map but not in tx)
         expectError(
-            {-1,  // kSfInvalid's field code
+            {-1,  // sfInvalid's field code
              0,
              sfAccount.getCode()},
             HostFunctionError::FieldNotFound);
 
         // hfs.getTxNestedField(locator);
-        // Locator for zero base sfield code (0 = kSfGeneric, exists in map but not in tx)
+        // Locator for zero base sfield code (0 = sfGeneric, exists in map but not in tx)
         expectError(
-            {0,  // kSfGeneric's field code
+            {0,  // sfGeneric's field code
              0,
              sfAccount.getCode()},
             HostFunctionError::FieldNotFound);
@@ -1380,7 +1380,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         // Locator for negative nested sfield code in STObject context
         // (sfMemos[0] is an STObject, then -1 is looked up as SField)
         expectError(
-            {sfMemos.getCode(), 0, -1},  // -1 = kSfInvalid, exists in map but not in memo object
+            {sfMemos.getCode(), 0, -1},  // -1 = sfInvalid, exists in map but not in memo object
             HostFunctionError::FieldNotFound);
 
         // hfs.getTxNestedField(locator);
@@ -1434,7 +1434,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         ApplyContext ac = createApplyContext(env, ov);
 
         // Find the signer ledger object
-        auto const signerKeylet = keylet::signers(env.master.id());
+        auto const signerKeylet = keylet::signerList(env.master.id());
         BEAST_EXPECT(env.le(signerKeylet));
 
         VirtualRuntime vrt;
@@ -1581,7 +1581,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         hfs.setRT(vrt);
 
         // Cache the SignerList ledger object in slot 1
-        auto const signerListKeylet = keylet::signers(env.master.id());
+        auto const signerListKeylet = keylet::signerList(env.master.id());
         // hfs.cacheLedgerObj(signerListKeylet.key, 1);
         {
             WasmValVec params(3), result(1);
@@ -1884,7 +1884,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const signerKeylet = keylet::signers(env.master.id());
+        auto const signerKeylet = keylet::signerList(env.master.id());
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, signerKeylet);
 
@@ -1963,7 +1963,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         auto import = xrpl::createWasmImport(hfs);
         hfs.setRT(vrt);
 
-        auto const signerListKeylet = keylet::signers(env.master.id());
+        auto const signerListKeylet = keylet::signerList(env.master.id());
         // hfs.cacheLedgerObj(signerListKeylet.key, 1);
         {
             WasmValVec params(3), result(1);
@@ -2109,7 +2109,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const signerKeylet = keylet::signers(env.master.id());
+        auto const signerKeylet = keylet::signerList(env.master.id());
         VirtualRuntime vrt;
         WasmHostFunctionsImpl hfs(ac, signerKeylet);
 
@@ -2205,7 +2205,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         auto import = xrpl::createWasmImport(hfs);
         hfs.setRT(vrt);
 
-        auto const signerListKeylet = keylet::signers(env.master.id());
+        auto const signerListKeylet = keylet::signerList(env.master.id());
         // hfs.cacheLedgerObj(signerListKeylet.key, 1);
         {
             WasmValVec params(3), result(1);
@@ -2760,7 +2760,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
         Currency const usd = toCurrency("USD");
         {
-            auto const expected = keylet::line(masterID, alice.id(), usd);
+            auto const expected = keylet::trustLine(masterID, alice.id(), usd);
             WasmValVec params(8), result(1);
             auto* trap =
                 ww(&imp.at("trustline_id"), params, result, masterID, alice.id(), usd, 1024, 32);
@@ -2803,7 +2803,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::mptIssuance(1u, masterID);
+            auto const expected = keylet::mptokenIssuance(1u, masterID);
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(&imp.at("mpt_issuance_id"), params, result, masterID, toBytes(1u), 1024, 32);
@@ -2843,7 +2843,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::nftoffer(masterID, 1u);
+            auto const expected = keylet::nftokenOffer(masterID, 1u);
             WasmValVec params(6), result(1);
             auto* trap =
                 ww(&imp.at("nft_offer_id"), params, result, masterID, toBytes(1u), 1024, 32);
@@ -2895,7 +2895,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::payChan(masterID, alice.id(), 1u);
+            auto const expected = keylet::payChannel(masterID, alice.id(), 1u);
             WasmValVec params(8), result(1);
             auto* trap = ww(
                 &imp.at("paychan_id"), params, result, masterID, alice.id(), toBytes(1u), 1024, 32);
@@ -2963,7 +2963,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::signers(masterID);
+            auto const expected = keylet::signerList(masterID);
             WasmValVec params(4), result(1);
             auto* trap = ww(&imp.at("signers_id"), params, result, masterID, 1024, 32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
@@ -2979,7 +2979,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            auto const expected = keylet::kTicket(masterID, 1u);
+            auto const expected = keylet::ticket(masterID, 1u);
             WasmValVec params(6), result(1);
             auto* trap = ww(&imp.at("ticket_id"), params, result, masterID, toBytes(1u), 1024, 32);
             if (BEAST_EXPECT(!trap && result[0].kind == WASM_I32 && result[0].of.i32 == 32))
@@ -3352,7 +3352,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
     void
     testGetNFTSerial()
     {
-        testcase("getNFTSerial");
+        testcase("getNFTSequence");
         using namespace test::jtx;
 
         Env env{*this};
@@ -3374,7 +3374,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         hfs.setRT(vrt);
 
         {
-            // hfs.getNFTSerial(nftId);
+            // hfs.getNFTSequence(nftId);
             vrt.setBytes(0, nftId.data(), uint256::size());
             WasmValVec params(4), result(1);
             auto* trap =
@@ -3395,7 +3395,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
         // Should return 0 for zero NFT id
         {
-            // hfs.getNFTSerial(uint256());
+            // hfs.getNFTSequence(uint256());
             uint256 zeroId;
             vrt.setBytes(0, zeroId.data(), uint256::size());
             WasmValVec params(4), result(1);
@@ -3452,7 +3452,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                     BEAST_EXPECT(result[0].of.i32 == 0))
                 {
                     auto const messages = sink.messages().str();
-                    BEAST_EXPECT(messages.find(msg) != std::string::npos);
+                    BEAST_EXPECT(messages.contains(msg));
                 }
             }
 
@@ -3471,8 +3471,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                     std::string hex;
                     hex.reserve(data.size() * 2);
                     boost::algorithm::hex(data.begin(), data.end(), std::back_inserter(hex));
-                    BEAST_EXPECT(messages.find(msg) != std::string::npos);
-                    BEAST_EXPECT(messages.find(hex) != std::string::npos);
+                    BEAST_EXPECT(messages.contains(msg));
+                    BEAST_EXPECT(messages.contains(hex));
                 }
             }
         }
@@ -3542,8 +3542,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                 BEAST_EXPECT(result[0].of.i32 == 0))
             {
                 auto const messages = sink.messages().str();
-                BEAST_EXPECT(messages.find(msg) != std::string::npos);
-                BEAST_EXPECT(messages.find(std::to_string(num)) != std::string::npos);
+                BEAST_EXPECT(messages.contains(msg));
+                BEAST_EXPECT(messages.contains(std::to_string(num)));
             }
         }
 
@@ -3611,8 +3611,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                 BEAST_EXPECT(result[0].of.i32 == 0))
             {
                 auto const messages = sink.messages().str();
-                BEAST_EXPECT(messages.find(msg) != std::string::npos);
-                BEAST_EXPECT(messages.find(env.master.human()) != std::string::npos);
+                BEAST_EXPECT(messages.contains(msg));
+                BEAST_EXPECT(messages.contains(env.master.human()));
             }
         }
 
@@ -3689,8 +3689,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                     BEAST_EXPECT(result[0].of.i32 == 0))
                 {
                     auto const messages = sink.messages().str();
-                    BEAST_EXPECT(messages.find(msg) != std::string::npos);
-                    BEAST_EXPECT(messages.find(amount.getFullText()) != std::string::npos);
+                    BEAST_EXPECT(messages.contains(msg));
+                    BEAST_EXPECT(messages.contains(amount.getFullText()));
                 }
             }
 
@@ -3780,7 +3780,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
     int const normalExp = 18;
 
-    Bytes const floatIntMin        =  {0xF3, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x00, 0x00, 0x00, 0x01};  // -2^63
+    Bytes const floatIntMin        =  {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00};  // -2^63 (rounds to nearest: -(2^63-1))
     Bytes const floatIntZero       =  {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00};  // 0
     Bytes const floatIntMax        =  {0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00};  // 2^63-1
     Bytes const floatUIntMax       =  {0x19, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x9A, 0x00, 0x00, 0x00, 0x01};  // 2^64-1
@@ -3859,7 +3859,6 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         printFloats("ten", 10, 0);
         printFloats("pi", 3141592653589793, -15);
         printFloats("-three", -3, 0);
-        return;
     }
 
     void
@@ -4491,7 +4490,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
         {
             // hfs.floatAdd(makeSlice(floatIntMax), makeSlice(floatIntMin), 0);//
-            //  Number can't hold int64.min, it is rounded and we get -3, not -1
+            //  int64.min is rounded to nearest: -(2^63-1), so max + min == 0
             WasmValVec params(7), result(1);
             vrt.setBytes(0, floatIntMax.data(), floatIntMax.size());
             vrt.setBytes(floatSize, floatIntMin.data(), floatIntMin.size());
@@ -4510,7 +4509,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const resultBytes = vrt.getBytes(params, 4);
-            BEAST_EXPECT(resultBytes == floatMinus3);
+            BEAST_EXPECT(resultBytes == floatIntZero);
         }
     }
 
@@ -5763,17 +5762,20 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         {
-            // Number can't hold int64.min, it is rounded and we get int64_t.min - 3, which doesn't
-            // fit into int64
+            // int64.min is rounded to nearest: -(2^63-1), which fits into int64
             // hfs.floatToInt(makeSlice(floatIntMin), 0);
             vrt.setBytes(0, floatIntMin.data(), floatIntMin.size());
             WasmValVec params(5), result(1);
             auto* trap = ww(&import.at("float_to_int"), params, result, 0, floatSize, 256, 8, 0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(
-                    result[0].of.i32 ==
-                    static_cast<int32_t>(HostFunctionError::FloatComputationError));
+                BEAST_EXPECT(result[0].of.i32 == 8);
+            auto const resultVal = vrt.getInt64(params, 2);
+            BEAST_EXPECT(resultVal == -std::numeric_limits<int64_t>::max());
+
+            // roundtrip
+            auto const result2 = hfs.floatFromInt(resultVal, 0);
+            BEAST_EXPECT(result2) && BEAST_EXPECT(*result2 == floatIntMin);
         }
 
         {
@@ -5993,8 +5995,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                 BEAST_EXPECT(result[0].of.i32 == floatSize);
             auto const mantissa = vrt.getInt64(params, 2);
             auto const exponent = vrt.getInt32(params, 4);
-            BEAST_EXPECT(mantissa == (std::numeric_limits<int64_t>::min() / 10) - 1) &&
-                BEAST_EXPECT(exponent == 1);
+            BEAST_EXPECT(mantissa == -std::numeric_limits<int64_t>::max()) &&
+                BEAST_EXPECT(exponent == 0);
 
             // roundtrip
             auto const result2 = hfs.floatFromMantExp(mantissa, exponent, 0);
@@ -6174,7 +6176,10 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         // trace() uses getDataString() -> getDataSlice() which does NOT check transfer limit
         std::string testMsg = "This message is longer than 10 bytes to prove slices don't count";
         vrt.setBytes(0, testMsg.data(), testMsg.size());
-        vrt.setBytes(100, (uint8_t const*)"dummy", 5);  // Empty data slice for trace
+        vrt.setBytes(
+            100,
+            reinterpret_cast<uint8_t const*>("dummy"),
+            5);  // Empty data slice for trace
         {
             WasmValVec params(5), result(1);
             // trace(msg_ptr, msg_len, data_ptr, data_len, asHex)
