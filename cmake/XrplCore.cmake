@@ -201,6 +201,16 @@ target_link_libraries(
 add_module(xrpl tx)
 target_link_libraries(xrpl.libxrpl.tx PUBLIC xrpl.libxrpl.ledger)
 
+add_module(xrpl consensus)
+target_link_libraries(
+    xrpl.libxrpl.consensus
+    PUBLIC
+        xrpl.libxrpl.basics
+        xrpl.libxrpl.json
+        xrpl.libxrpl.protocol
+        xrpl.libxrpl.ledger
+)
+
 add_library(xrpl.libxrpl)
 set_target_properties(xrpl.libxrpl PROPERTIES OUTPUT_NAME xrpl)
 
@@ -220,6 +230,7 @@ target_link_modules(
     beast
     conditions
     config
+    consensus
     core
     crypto
     git

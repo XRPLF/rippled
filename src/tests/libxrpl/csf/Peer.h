@@ -1,16 +1,15 @@
 #pragma once
 
-#include <xrpld/consensus/Consensus.h>
-#include <xrpld/consensus/ConsensusParms.h>
-#include <xrpld/consensus/ConsensusTypes.h>
-#include <xrpld/consensus/Validations.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/tagged_integer.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/consensus/Consensus.h>
+#include <xrpl/consensus/ConsensusParms.h>
+#include <xrpl/consensus/ConsensusTypes.h>
+#include <xrpl/consensus/Validations.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 

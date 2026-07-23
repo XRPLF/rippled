@@ -1,11 +1,10 @@
 #pragma once
 
-#include <xrpld/consensus/ConsensusProposal.h>
-#include <xrpld/consensus/DisputedTx.h>
-
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/consensus/ConsensusProposal.h>
+#include <xrpl/consensus/DisputedTx.h>
 
 #include <chrono>
 #include <cstddef>

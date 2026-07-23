@@ -1,9 +1,8 @@
 #pragma once
 
-#include <xrpld/consensus/ConsensusParms.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/consensus/ConsensusParms.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 

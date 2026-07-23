@@ -58,20 +58,15 @@ foreach(module IN LISTS test_modules)
     )
 endforeach()
 
-# The consensus tests use the CSF (Consensus Simulation Framework) helpers and
-# exercise server-side consensus code that is not part of libxrpl, so compile
-# the CSF sources (its own tests and impl) into the test binary and expose the
-# xrpld headers.
+# The consensus tests use the CSF (Consensus Simulation Framework) helpers, so
+# compile the CSF sources into the test binary. The consensus engine itself now
+# lives in libxrpl, so no xrpld sources or include paths are needed here.
 file(
     GLOB_RECURSE csf_sources
     CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/csf/*.cpp"
 )
-target_sources(
-    xrpl_tests
-    PRIVATE ${csf_sources} ${CMAKE_SOURCE_DIR}/src/xrpld/consensus/Consensus.cpp
-)
-target_include_directories(xrpl_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_sources(xrpl_tests PRIVATE ${csf_sources})
 
 # The test helpers and per-module test headers are not built with add_module,
 # so verify them against the test binary's own compile environment.

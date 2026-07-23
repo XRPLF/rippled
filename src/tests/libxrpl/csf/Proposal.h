@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpld/consensus/ConsensusProposal.h>
+#include <xrpl/consensus/ConsensusProposal.h>
 
 #include <csf/Tx.h>
 #include <csf/Validation.h>

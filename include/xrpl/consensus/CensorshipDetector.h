@@ -10,7 +10,7 @@
 namespace xrpl {
 
 template <class TxID, class Sequence>
-class RCLCensorshipDetector
+class CensorshipDetector
 {
 public:
     struct TxIDSeq
@@ -49,7 +49,7 @@ private:
     TxIDSeqVec tracker_;
 
 public:
-    RCLCensorshipDetector() = default;
+    CensorshipDetector() = default;
 
     /**
      * Add transactions being proposed for the current consensus round.

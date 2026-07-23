@@ -1,4 +1,4 @@
-#include <xrpld/app/consensus/RCLCensorshipDetector.h>
+#include <xrpl/consensus/CensorshipDetector.h>
 
 #include <gtest/gtest.h>
 
@@ -12,7 +12,7 @@ namespace {
 
 void
 runRound(
-    RCLCensorshipDetector<int, int>& cdet,
+    CensorshipDetector<int, int>& cdet,
     int round,
     std::vector<int> proposed,
     std::vector<int> accepted,
@@ -20,7 +20,7 @@ runRound(
     std::vector<int> remove)
 {
     // Begin tracking what we're proposing this round
-    RCLCensorshipDetector<int, int>::TxIDSeqVec proposal;
+    CensorshipDetector<int, int>::TxIDSeqVec proposal;
     for (auto const& i : proposed)
         proposal.emplace_back(i, round);
     cdet.propose(std::move(proposal));
@@ -50,11 +50,11 @@ runRound(
 
 }  // namespace
 
-TEST(RclCensorshipDetectorTest, rcl_censorship_detector)
+TEST(CensorshipDetectorTest, censorship_detector)
 {
     SCOPED_TRACE("Censorship Detector");
 
-    RCLCensorshipDetector<int, int> cdet;
+    CensorshipDetector<int, int> cdet;
     int round = 0;
     // proposed            accepted    remain          remove
     runRound(cdet, ++round, {}, {}, {}, {});
