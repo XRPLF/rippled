@@ -389,7 +389,7 @@ fn test_any_ledger_object_functions() -> i32 {
     let escrow_finish = EscrowFinish;
     let account_id = escrow_finish.get_account().unwrap();
 
-    // Test 4.1: cache_ledger_obj() - Cache a ledger object
+    // Test 4.1: cache_le() - Cache a ledger object
     let mut keylet_buffer = [0u8; 32];
     let keylet_result = unsafe {
         host::accountroot_id(
@@ -412,7 +412,7 @@ fn test_any_ledger_object_functions() -> i32 {
 
     if cache_result <= 0 {
         let _ = trace_num(
-            "INFO: cache_ledger_obj failed (expected with test fixtures):",
+            "INFO: cache_le failed (expected with test fixtures):",
             cache_result as i64,
         );
         // Test fixtures may not contain the account object - this is expected
@@ -421,7 +421,7 @@ fn test_any_ledger_object_functions() -> i32 {
         // Test 4.2-4.5 with invalid slot (should fail gracefully)
         let mut test_buffer = [0u8; 32];
 
-        // Test get_ledger_obj_field with invalid slot
+        // Test le_field with invalid slot
         let field_result = unsafe {
             host::le_field(
                 1,
@@ -432,12 +432,12 @@ fn test_any_ledger_object_functions() -> i32 {
         };
         if field_result < 0 {
             let _ = trace_num(
-                "INFO: get_ledger_obj_field failed as expected (no cached object):",
+                "INFO: le_field failed as expected (no cached object):",
                 field_result as i64,
             );
         }
 
-        // Test get_ledger_obj_nested_field with invalid slot
+        // Test le_inner_field with invalid slot
         let locator = [
             0x01_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
         ]; // Two int32s in little-endian: [1, 0]
@@ -452,16 +452,16 @@ fn test_any_ledger_object_functions() -> i32 {
         };
         if nested_result < 0 {
             let _ = trace_num(
-                "INFO: get_ledger_obj_nested_field failed as expected:",
+                "INFO: le_inner_field failed as expected:",
                 nested_result as i64,
             );
         }
 
-        // Test get_ledger_obj_array_len with invalid slot
+        // Test le_inner_arr_len with invalid slot
         let array_result = unsafe { host::le_arr_len(1, sfield::Signers.into()) };
         if array_result < 0 {
             let _ = trace_num(
-                "INFO: get_ledger_obj_array_len failed as expected:",
+                "INFO: le_inner_arr_len failed as expected:",
                 array_result as i64,
             );
         }
@@ -484,7 +484,7 @@ fn test_any_ledger_object_functions() -> i32 {
     let slot = cache_result;
     let _ = trace_num("Successfully cached object in slot:", slot as i64);
 
-    // Test 4.2: get_ledger_obj_field() - Access field from cached object
+    // Test 4.2: le_field() - Access field from cached object
     let mut cached_balance_buffer = [0u8; 8];
     let cached_balance_result = unsafe {
         host::le_field(
@@ -497,7 +497,7 @@ fn test_any_ledger_object_functions() -> i32 {
 
     if cached_balance_result <= 0 {
         let _ = trace_num(
-            "INFO: get_ledger_obj_field(Balance) failed:",
+            "INFO: le_field(Balance) failed:",
             cached_balance_result as i64,
         );
     } else if cached_balance_result == 8 {
@@ -522,7 +522,7 @@ fn test_any_ledger_object_functions() -> i32 {
         );
     }
 
-    // Test 4.3: get_ledger_obj_nested_field() - Nested field from cached object
+    // Test 4.3: le_inner_field() - Nested field from cached object
     let locator = [
         0x01_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
     ]; // Two int32s in little-endian: [1, 0]
@@ -539,7 +539,7 @@ fn test_any_ledger_object_functions() -> i32 {
 
     if cached_nested_result < 0 {
         let _ = trace_num(
-            "INFO: get_ledger_obj_nested_field not applicable:",
+            "INFO: le_inner_field not applicable:",
             cached_nested_result as i64,
         );
     } else {
@@ -551,7 +551,7 @@ fn test_any_ledger_object_functions() -> i32 {
         );
     }
 
-    // Test 4.4: get_ledger_obj_array_len() - Array length from cached object
+    // Test 4.4: le_inner_arr_len() - Array length from cached object
     let cached_array_len = unsafe { host::le_arr_len(slot, sfield::Signers.into()) };
     let _ = trace_num(
         "Cached object Signers array length:",

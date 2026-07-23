@@ -25,5 +25,5 @@
     i32.const 1
   )
 
-  (export "finish" (func $try_grow_beyond_limit))
+  (export "escrow_finish" (func $try_grow_beyond_limit))
 )

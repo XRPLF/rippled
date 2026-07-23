@@ -5,7 +5,7 @@
     i32.const 20
   )
 
-  (func $finish (result i32)
+  (func $escrow_finish (result i32)
     ;; Call pushes [10, 20] onto the stack
     call $get_numbers
 
@@ -18,5 +18,5 @@
     end
   )
 
-  (export "finish" (func $finish))
+  (export "escrow_finish" (func $escrow_finish))
 )

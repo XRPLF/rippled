@@ -18,8 +18,8 @@
     $dummy ;; 65 (The one that breaks the camel's back)
   )
 
-  (func $finish (result i32)
+  (func $escrow_finish (result i32)
     i32.const 1
   )
-  (export "finish" (func $finish))
+  (export "escrow_finish" (func $escrow_finish))
 )

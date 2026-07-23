@@ -8,7 +8,7 @@
   (memory 1)
   (export "memory" (memory 0))
 
-  (func $finish (result i32)
+  (func $escrow_finish (result i32)
     ;; We will store the timestamp (a 64-bit integer) at address 0.
     ;; No setup required in memory beforehand!
 
@@ -34,5 +34,5 @@
     end
   )
 
-  (export "finish" (func $finish))
+  (export "escrow_finish" (func $escrow_finish))
 )
