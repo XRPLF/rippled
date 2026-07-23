@@ -41,7 +41,9 @@ xrpld supports OpenTelemetry distributed tracing to provide visibility into RPC 
 
 This runbook covers operating a running node and querying its traces. For
 building xrpld with telemetry support and the internal architecture, see
-[build/telemetry.md](build/telemetry.md).
+[build/telemetry.md](build/telemetry.md). For plain-language definitions of the
+XRP Ledger terms used in the dashboards, see the
+[telemetry glossary](telemetry-glossary.md).
 
 ## Quick Start
 
@@ -336,6 +338,12 @@ Span attributes are filtered with `span.<attr>` inside `{}`. Combine conditions 
 | ------------------------- | ---------------- | ------------------------------- | ----------------------------- |
 | `peer.proposal.receive`   | PeerImp.cpp:1667 | `peer_id`, `proposal_trusted`   | Proposal received from peer   |
 | `peer.validation.receive` | PeerImp.cpp:2264 | `peer_id`, `validation_trusted` | Validation received from peer |
+
+Both peer receive spans are `kConsumer` inbound entry points started as fresh
+trace roots. They never inherit an ambient span left active on the peer thread,
+so they do not nest under an unrelated transaction's trace. The distributed
+child span that links back to the sending node is the separate
+`consensus.*.receive` / `tx.receive` span (see Cross-Node Trace Propagation).
 
 ---
 
@@ -709,11 +717,19 @@ does not apply to these dimensions.
 
 ### Histogram Buckets
 
-Configured in `otel-collector-config.yaml`:
+Configured in `otel-collector-config.yaml` (spanmetrics connector, `unit: ms`):
 
 ```
-1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s
+1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2s, 3s, 4s, 5s, 10s, 30s
 ```
+
+Sub-second boundaries cover RPC/tx/ledger spans; 2s-4s resolve second-scale
+consensus spans (`consensus.round`, `consensus.establish`) that would otherwise
+pile into one 1s-5s bucket and make `histogram_quantile` a meaningless
+interpolation; 10s/30s give the `ledger.acquire` catch-up tail a measurable home.
+Boundaries must stay strictly ascending. The native beast::insight histograms
+(ms-scale RPC/IO timers) keep the original 1ms-5s buckets in
+`Telemetry.cpp` — they never exceed 5s, so they need no high-range buckets.
 
 ## System Metrics (OTel native -- beast::insight)
 
@@ -755,27 +771,29 @@ The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTe
 
 These gauges are exported via the OTel Metrics SDK `PeriodicMetricReader` (10s interval), NOT through beast::insight.
 
-| Prometheus Metric                                   | Source              | Description                                  |
-| --------------------------------------------------- | ------------------- | -------------------------------------------- |
-| `server_info{metric="server_state"}`                | MetricsRegistry.cpp | Operating mode (0=DISCONNECTED .. 4=FULL)    |
-| `server_info{metric="uptime"}`                      | MetricsRegistry.cpp | Seconds since server start                   |
-| `server_info{metric="peers"}`                       | MetricsRegistry.cpp | Total connected peers                        |
-| `server_info{metric="validated_ledger_seq"}`        | MetricsRegistry.cpp | Validated ledger sequence number             |
-| `server_info{metric="ledger_current_index"}`        | MetricsRegistry.cpp | Current open ledger sequence                 |
-| `server_info{metric="peer_disconnects_resources"}`  | MetricsRegistry.cpp | Cumulative resource-related peer disconnects |
-| `server_info{metric="last_close_proposers"}`        | MetricsRegistry.cpp | Proposers in last closed round               |
-| `server_info{metric="last_close_converge_time_ms"}` | MetricsRegistry.cpp | Last close convergence time (ms)             |
-| `build_info{version="<ver>"}`                       | MetricsRegistry.cpp | Info-style metric (always 1)                 |
-| `complete_ledgers{bound="start\|end",index="<N>"}`  | MetricsRegistry.cpp | Complete ledger range start/end pairs        |
-| `db_metrics{metric="db_kb_total"}`                  | MetricsRegistry.cpp | Total database size (KB)                     |
-| `db_metrics{metric="db_kb_ledger"}`                 | MetricsRegistry.cpp | Ledger database size (KB)                    |
-| `db_metrics{metric="db_kb_transaction"}`            | MetricsRegistry.cpp | Transaction database size (KB)               |
-| `db_metrics{metric="historical_perminute"}`         | MetricsRegistry.cpp | Historical ledger fetches per minute         |
-| `cache_metrics{metric="AL_size"}`                   | MetricsRegistry.cpp | AcceptedLedger cache size                    |
-| `nodestore_state{metric="node_reads_duration_us"}`  | MetricsRegistry.cpp | Cumulative read time (microseconds)          |
-| `nodestore_state{metric="read_request_bundle"}`     | MetricsRegistry.cpp | Read request bundle count                    |
-| `nodestore_state{metric="read_threads_running"}`    | MetricsRegistry.cpp | Active read threads                          |
-| `nodestore_state{metric="read_threads_total"}`      | MetricsRegistry.cpp | Total read threads configured                |
+| Prometheus Metric                                   | Source              | Description                                                                                                                                                                         |
+| --------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `server_info{metric="server_state"}`                | MetricsRegistry.cpp | Operating mode (0=DISCONNECTED .. 4=FULL)                                                                                                                                           |
+| `server_info{metric="uptime"}`                      | MetricsRegistry.cpp | Seconds since server start                                                                                                                                                          |
+| `server_info{metric="peers"}`                       | MetricsRegistry.cpp | Total connected peers                                                                                                                                                               |
+| `server_info{metric="validated_ledger_seq"}`        | MetricsRegistry.cpp | Validated ledger sequence number                                                                                                                                                    |
+| `server_info{metric="ledger_current_index"}`        | MetricsRegistry.cpp | Current open ledger sequence                                                                                                                                                        |
+| `server_info{metric="peer_disconnects_resources"}`  | MetricsRegistry.cpp | Cumulative resource-related peer disconnects                                                                                                                                        |
+| `server_info{metric="last_close_proposers"}`        | MetricsRegistry.cpp | Proposers in last closed round                                                                                                                                                      |
+| `server_info{metric="last_close_converge_time_ms"}` | MetricsRegistry.cpp | Last close convergence time (ms)                                                                                                                                                    |
+| `server_info{metric="last_close_time"}`             | MetricsRegistry.cpp | Network close time of last closed ledger (NetClock secs since XRPL epoch). Age = `time() - (value + 946684800)`; close interval = `1/rate(ledgers_closed_total)`, not a gauge delta |
+| `build_info{version="<ver>"}`                       | MetricsRegistry.cpp | Info-style metric (always 1)                                                                                                                                                        |
+| `complete_ledgers{bound="start\|end",index="<N>"}`  | MetricsRegistry.cpp | Complete ledger range start/end pairs                                                                                                                                               |
+| `db_metrics{metric="db_kb_total"}`                  | MetricsRegistry.cpp | Total database size (KB)                                                                                                                                                            |
+| `db_metrics{metric="db_kb_ledger"}`                 | MetricsRegistry.cpp | Ledger database size (KB)                                                                                                                                                           |
+| `db_metrics{metric="db_kb_transaction"}`            | MetricsRegistry.cpp | Transaction database size (KB)                                                                                                                                                      |
+| `db_metrics{metric="historical_perminute"}`         | MetricsRegistry.cpp | Historical ledger fetches per minute                                                                                                                                                |
+| `cache_metrics{metric="AL_size"}`                   | MetricsRegistry.cpp | AcceptedLedger cache size                                                                                                                                                           |
+| `nodestore_state{metric="node_reads_duration_us"}`  | MetricsRegistry.cpp | Cumulative read time (microseconds)                                                                                                                                                 |
+| `nodestore_state{metric="read_request_bundle"}`     | MetricsRegistry.cpp | Read request bundle count                                                                                                                                                           |
+| `nodestore_state{metric="read_threads_running"}`    | MetricsRegistry.cpp | Active read threads                                                                                                                                                                 |
+| `nodestore_state{metric="read_threads_total"}`      | MetricsRegistry.cpp | Total read threads configured                                                                                                                                                       |
+| `rpc_in_flight_requests`                            | PerfLogImp.cpp      | RPC requests currently executing (UpDownCounter)                                                                                                                                    |
 
 #### Counters
 
@@ -796,6 +814,49 @@ These gauges are exported via the OTel Metrics SDK `PeriodicMetricReader` (10s i
 | `ios_latency`     | Application.cpp:438   | I/O service loop latency (ms)  |
 | `pathfind_fast`   | PathRequests.h:23     | Fast pathfinding duration (ms) |
 | `pathfind_full`   | PathRequests.h:24     | Full pathfinding duration (ms) |
+
+#### Adding a New Metric
+
+<!-- cspell:ignore ISTOGRAM -->
+<!-- The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
+     compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here. -->
+
+Use the call-site macros in `src/xrpld/telemetry/MetricMacros.h` -- no
+`MetricsRegistry.h`/`.cpp` edit is needed for any of these:
+
+| Need                                                   | Macro                                                                                                                                                                     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Monotonic tally (never decreases)                      | `XRPL_METRIC_COUNTER_INC` / `_ADD` [+ `_LABELED`]                                                                                                                         |
+| Running total that can decrease                        | `XRPL_METRIC_UPDOWN_ADD` [+ `_LABELED`]                                                                                                                                   |
+| Distribution of values (latency, size)                 | `XRPL_METRIC_HISTOGRAM_RECORD` [+ `_LABELED`]                                                                                                                             |
+| Last-value snapshot (not a distribution)               | `XRPL_METRIC_GAUGE_RECORD` [+ `_LABELED`] -- requires an ABI v2 opentelemetry-cpp build; this repo currently builds ABI v1, so use the observable-gauge row below instead |
+| Value your own code already tracks, sampled on a timer | `XRPL_METRIC_OBSERVABLE_GAUGE_REGISTER` / `_COUNTER_REGISTER` / `_UPDOWN_REGISTER`                                                                                        |
+
+```cpp
+#include <xrpld/telemetry/MetricMacros.h>
+
+// Monotonic counter:
+XRPL_METRIC_COUNTER_INC(app_, "my_new_thing_total", "Description of what this counts");
+
+// Value that can go up and down, e.g. in-flight work (no _total suffix -- that
+// is reserved for monotonic counters; an UpDownCounter is a current value):
+XRPL_METRIC_UPDOWN_ADD(app_, "my_in_flight_requests", "Currently executing", 1);   // on start
+XRPL_METRIC_UPDOWN_ADD(app_, "my_in_flight_requests", "Currently executing", -1);  // on finish
+
+// Sampled from your own state, on the OTel export timer (register ONCE, in init code):
+XRPL_METRIC_OBSERVABLE_GAUGE_REGISTER(app_, "my_thing_size", "Current size",
+    [this] { return static_cast<int64_t>(myThing_.size()); });
+```
+
+Counters use a `_total` suffix by convention. A histogram whose values can
+exceed ~10,000 units (e.g. a microsecond duration beyond 10ms) still needs one
+line added to `addMicrosecondHistogramView()` in `MetricsRegistry.cpp` -- the
+only case that still touches a central file. There is no way to read a metric's
+current value back from application code -- OTel's API is write-only by design;
+keep your own state if your logic needs to both record and read a running value
+(see the Doxygen header in `MetricMacros.h` and "Use Case 4" in
+`tasks/metric-macro-plan.md` for the full explanation and the `prometheus-cpp`
+contrast rationale).
 
 ## Deployment Tiers
 
@@ -925,31 +986,32 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ### Consensus Health (`consensus-health`)
 
-| Panel                         | Type       | PromQL                                                                      | Labels Used      |
-| ----------------------------- | ---------- | --------------------------------------------------------------------------- | ---------------- |
-| Consensus Round Duration      | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept"})`       | —                |
-| Consensus Proposals Sent Rate | timeseries | `rate(span_calls_total{span_name="consensus.proposal.send"}[5m])`           | —                |
-| Ledger Close Duration         | timeseries | `histogram_quantile(0.95, ... {span_name="consensus.ledger_close"})`        | —                |
-| Validation Send Rate          | stat       | `rate(span_calls_total{span_name="consensus.validation.send"}[5m])`         | —                |
-| Ledger Apply Duration         | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept.apply"})` | —                |
-| Close Time Agreement          | timeseries | `rate(span_calls_total{span_name="consensus.accept.apply"}[5m])`            | —                |
-| Consensus Mode Over Time      | timeseries | `consensus.ledger_close` by `consensus_mode`                                | `consensus_mode` |
-| Accept vs Close Rate          | timeseries | `consensus.accept` vs `consensus.ledger_close` rate                         | —                |
-| Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                     | —                |
-| Accept Duration Heatmap       | heatmap    | `consensus.accept` histogram buckets                                        | `le`             |
+| Panel                         | Type       | PromQL                                                                                                                                             | Labels Used      |
+| ----------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| Consensus Round Duration      | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept"})`                                                                              | —                |
+| Consensus Proposals Sent Rate | timeseries | `rate(span_calls_total{span_name="consensus.proposal.send"}[5m])`                                                                                  | —                |
+| Ledger Close Duration         | timeseries | `histogram_quantile(0.95, ... {span_name="consensus.round"})` (full round, not `consensus.ledger_close` which is only the sub-ms onClose prologue) | `consensus_mode` |
+| Validation Send Rate          | stat       | `rate(span_calls_total{span_name="consensus.validation.send"}[5m])`                                                                                | —                |
+| Ledger Apply Duration         | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept.apply"})`                                                                        | —                |
+| Close Time Agreement          | timeseries | `rate(span_calls_total{span_name="consensus.accept.apply"}[5m])`                                                                                   | —                |
+| Consensus Mode Over Time      | timeseries | `consensus.ledger_close` by `consensus_mode`                                                                                                       | `consensus_mode` |
+| Accept vs Close Rate          | timeseries | `consensus.accept` vs `consensus.ledger_close` rate                                                                                                | —                |
+| Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                                                                                            | —                |
+| Accept Duration Heatmap       | heatmap    | `consensus.accept` histogram buckets                                                                                                               | `le`             |
 
 ### Ledger Operations (`ledger-operations`)
 
-| Panel                   | Type       | PromQL                                         | Labels Used |
-| ----------------------- | ---------- | ---------------------------------------------- | ----------- |
-| Ledger Build Rate       | stat       | `ledger.build` call rate                       | —           |
-| Ledger Build Duration   | timeseries | p95/p50 of `ledger.build`                      | —           |
-| Ledger Validation Rate  | stat       | `ledger.validate` call rate                    | —           |
-| Build Duration Heatmap  | heatmap    | `ledger.build` histogram buckets               | `le`        |
-| TX Apply Duration       | timeseries | p95/p50 of `tx.apply`                          | —           |
-| TX Apply Rate           | timeseries | `tx.apply` call rate                           | —           |
-| Ledger Store Rate       | stat       | `ledger.store` call rate                       | —           |
-| Build vs Close Duration | timeseries | p95 `ledger.build` vs `consensus.ledger_close` | —           |
+| Panel                       | Type       | PromQL                                                                                                                       | Labels Used |
+| --------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| Ledger Build Rate           | stat       | `ledger.build` call rate                                                                                                     | —           |
+| Ledger Build Duration       | timeseries | p95/p50 of `ledger.build`                                                                                                    | —           |
+| Ledger Validation Rate      | stat       | `ledger.validate` call rate                                                                                                  | —           |
+| Build Duration Heatmap      | heatmap    | `ledger.build` histogram buckets                                                                                             | `le`        |
+| TX Apply Duration           | timeseries | p95/p50 of `tx.apply`                                                                                                        | —           |
+| TX Apply Rate               | timeseries | `tx.apply` call rate                                                                                                         | —           |
+| Ledger Store Rate           | stat       | `ledger.store` call rate                                                                                                     | —           |
+| Build vs Close Duration     | timeseries | p95 `ledger.build` vs `consensus.round` (full round, not `consensus.ledger_close` which is only the sub-ms onClose prologue) | —           |
+| Ledger Close Interval & Age | timeseries | Interval: `1/rate(ledgers_closed_total)`; Age: `time() - (server_info{metric="last_close_time"} + 946684800)`                | —           |
 
 ### Peer Network (`peer-network`)
 

@@ -1,28 +1,38 @@
-/** Pimpl implementation for SpanGuard and SpanContext.
-
-    All OpenTelemetry SDK types are confined to this translation unit.
-    The public SpanGuard.h header contains only standard-library types
-    and forward-declares the Impl struct.
-
-    Static factory methods access the global Telemetry instance via
-    Telemetry::getInstance(), check whether the requested TraceCategory
-    is enabled, and return either an active guard with a real Span+Scope
-    or a null guard whose methods are all no-ops.
-
-    The Impl struct holds the OTel Span (shared_ptr) and Scope.
-    Scope is non-movable, but since Impl lives behind a unique_ptr,
-    SpanGuard's move constructor simply transfers the pointer — no
-    double-Scope issues.
-
-    @see SpanGuard (SpanGuard.h), Telemetry (Telemetry.h),
-         FilteringSpanProcessor (Telemetry.cpp)
-*/
+/**
+ * Pimpl implementation for SpanGuard, ScopedSpanGuard and SpanContext.
+ *
+ * All OpenTelemetry SDK types are confined to this translation unit.
+ * The public SpanGuard.h header contains only standard-library types
+ * and forward-declares the Impl / ScopedImpl structs.
+ *
+ * Two guards with split responsibilities live here:
+ * - SpanGuard::Impl holds ONLY the OTel Span (shared_ptr). It never
+ *   touches the thread-local context stack, so a SpanGuard is
+ *   thread-free and may be moved to and destroyed on any thread.
+ * - ScopedSpanGuard::ScopedImpl holds a SpanGuard plus an optional
+ *   Scope. The Scope pushes the span onto the constructing context
+ *   store's stack; member order (guard first, scope second) ensures
+ *   the Scope pops BEFORE the span ends on destruction. It is
+ *   store-bound: construct and destroy while the same LocalValue
+ *   context store is active (the same thread, or the same JobQueue
+ *   coroutine even if it resumes on another worker).
+ *
+ * Static factory methods access the global Telemetry instance via
+ * Telemetry::getInstance(), check whether the requested TraceCategory
+ * is enabled, and return either an active guard with a real Span or a
+ * null guard whose methods are all no-ops.
+ *
+ * @see SpanGuard, ScopedSpanGuard (SpanGuard.h), Telemetry (Telemetry.h),
+ * FilteringSpanProcessor (Telemetry.cpp)
+ */
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
 #include <xrpl/telemetry/SpanGuard.h>
 
-#include <xrpl/basics/random.h>
+#include <xrpl/basics/LocalValue.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/telemetry/DeterministicIdGenerator.h>
 #include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/Telemetry.h>
 #include <xrpl/telemetry/TraceContextPropagator.h>
@@ -43,11 +53,13 @@
 #include <opentelemetry/trace/trace_flags.h>
 #include <opentelemetry/trace/trace_id.h>
 
+#include <array>
 #include <cstdint>
 #include <cstring>
 #include <exception>
 #include <initializer_list>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <typeinfo>
@@ -83,14 +95,18 @@ SpanContext::isValid() const
 
 struct SpanGuard::Impl
 {
-    /** The OTel span being guarded. Set to nullptr after discard(). */
+    /**
+     * The OTel span being guarded. Set to nullptr after discard() so
+     * ~Impl skips End().
+     */
     opentelemetry::nostd::shared_ptr<otel_trace::Span> span;
 
-    /** Scope that activates span on the current thread's context stack. */
-    otel_trace::Scope scope;
-
-    explicit Impl(opentelemetry::nostd::shared_ptr<otel_trace::Span> s)
-        : span(std::move(s)), scope(span)
+    /**
+     * Construct an unscoped guard: the span is owned but NOT pushed
+     * onto any thread's context stack. The guard is thread-free.
+     * @param s The span to guard.
+     */
+    explicit Impl(opentelemetry::nostd::shared_ptr<otel_trace::Span> s) : span(std::move(s))
     {
     }
 
@@ -113,6 +129,8 @@ struct SpanGuard::Impl
 SpanGuard::SpanGuard() = default;
 SpanGuard::~SpanGuard() = default;
 SpanGuard::SpanGuard(SpanGuard&&) noexcept = default;
+SpanGuard&
+SpanGuard::operator=(SpanGuard&&) noexcept = default;
 
 SpanGuard::SpanGuard(std::unique_ptr<Impl> impl) : impl_(std::move(impl))
 {
@@ -126,9 +144,10 @@ operator bool() const
 
 // ===== Static factory methods ==============================================
 
-/** Check whether the given TraceCategory is enabled on the Telemetry instance.
-    @return true if the category's shouldTrace*() flag is on.
-*/
+/**
+ * Check whether the given TraceCategory is enabled on the Telemetry instance.
+ * @return true if the category's shouldTrace*() flag is on.
+ */
 static bool
 isCategoryEnabled(Telemetry const& tel, TraceCategory cat)
 {
@@ -191,6 +210,21 @@ SpanGuard::span(TraceCategory cat, std::string_view prefix, std::string_view nam
     fullName.reserve(prefix.size() + 1 + name.size());
     fullName.append(prefix).append(1, '.').append(name);
     return SpanGuard(std::make_unique<Impl>(tel->startSpan(fullName, categoryToSpanKind(cat))));
+}
+
+SpanGuard
+SpanGuard::freshRoot(TraceCategory cat, std::string_view prefix, std::string_view name)
+{
+    auto* tel = Telemetry::getInstance();
+    if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
+        return {};
+    std::string fullName;
+    fullName.reserve(prefix.size() + 1 + name.size());
+    fullName.append(prefix).append(1, '.').append(name);
+    // Force a fresh trace root: do NOT inherit this thread's active span.
+    auto rootCtx = opentelemetry::context::Context{otel_trace::kIsRootSpanKey, true};
+    return SpanGuard(
+        std::make_unique<Impl>(tel->startSpan(fullName, rootCtx, categoryToSpanKind(cat))));
 }
 
 // ===== Child / linked span creation ========================================
@@ -275,6 +309,7 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
 
 // ===== Hash-derived span (category-gated) ==================================
 
+// Standalone hash-derived span: a TRUE root whose trace_id == hashData[0:16].
 SpanGuard
 SpanGuard::hashSpan(
     TraceCategory const cat,
@@ -289,23 +324,19 @@ SpanGuard::hashSpan(
     if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
         return {};
 
-    otel_trace::TraceId const traceId(
-        opentelemetry::nostd::span<std::uint8_t const, 16>(hashData, 16));
+    // Force the deterministic trace_id via the DeterministicIdGenerator, on the
+    // SDK root branch, so the span is a TRUE root (empty parent_span_id) whose
+    // trace_id == hashData[0:16]. The kIsRootSpanKey context forces the SDK's
+    // no-valid-parent branch, where GenerateTraceId() is called and returns the
+    // pending id. The PendingTraceId guard scopes that id to this one startSpan.
+    std::array<std::uint8_t, 16> tid{};
+    std::memcpy(tid.data(), hashData, 16);
+    auto rootCtx = opentelemetry::context::Context{otel_trace::kIsRootSpanKey, true};
+    PendingTraceId const pending{tid};
 
-    auto const rval = defaultPrng()();
-    std::uint8_t spanIdBytes[8];
-    std::memcpy(spanIdBytes, &rval, sizeof(spanIdBytes));
-    otel_trace::SpanId const spanId(
-        opentelemetry::nostd::span<std::uint8_t const, 8>(spanIdBytes, 8));
-
-    otel_trace::SpanContext const syntheticCtx(
-        traceId, spanId, otel_trace::TraceFlags(1), /* remote = */ false);
-
-    auto parentCtx = opentelemetry::context::Context{}.SetValue(
-        otel_trace::kSpanKey,
-        opentelemetry::nostd::shared_ptr<otel_trace::Span>(
-            new otel_trace::DefaultSpan(syntheticCtx)));
-
+    // When a prior context is supplied, attach it as a follows-from LINK (not a
+    // parent) so consecutive roots (e.g. consensus rounds) stay navigable while
+    // this span remains a true root under its deterministic trace_id.
     if (followsFrom != nullptr && followsFrom->isValid())
     {
         auto linkSpan = otel_trace::GetSpan(followsFrom->impl_->ctx);
@@ -313,7 +344,7 @@ SpanGuard::hashSpan(
         {
             auto tracer = tel->getTracer("xrpld");
             otel_trace::StartSpanOptions opts;
-            opts.parent = parentCtx;
+            opts.parent = rootCtx;  // root marker → forces GenerateTraceId()
             opts.kind = categoryToSpanKind(cat);
             return SpanGuard(
                 std::make_unique<Impl>(tracer->StartSpan(
@@ -324,9 +355,13 @@ SpanGuard::hashSpan(
         }
     }
 
-    return SpanGuard(std::make_unique<Impl>(tel->startSpan(std::string(name), parentCtx)));
+    return SpanGuard(
+        std::make_unique<Impl>(
+            tel->startSpan(std::string(name), rootCtx, categoryToSpanKind(cat))));
 }
 
+// Cross-node hash-derived span: a CHILD of the sender's real remote span
+// (remote=true), not a root — so it must NOT use PendingTraceId / rootCtx.
 SpanGuard
 SpanGuard::hashSpan(
     TraceCategory const cat,
@@ -366,10 +401,26 @@ SpanGuard::hashSpan(
 // ===== Context capture =====================================================
 
 SpanContext
-SpanGuard::captureContext() const
+SpanGuard::spanContext() const
 {
-    if (!impl_)
+    if (!impl_ || !impl_->span)
         return {};
+    // Refer to THIS guard's own span, not the thread's ambient span. A
+    // SpanGuard is unscoped (never pushed onto the thread-local stack), so
+    // RuntimeContext::GetCurrent() would return an unrelated ambient span.
+    // Building the context from impl_->span makes spanContext() correct
+    // for every caller regardless of scoping, and lets childSpan(name, ctx)
+    // parent explicitly to this span across threads.
+    auto ctx = opentelemetry::context::Context{}.SetValue(otel_trace::kSpanKey, impl_->span);
+    return SpanContext(std::make_shared<SpanContext::Impl>(std::move(ctx)));
+}
+
+SpanContext
+SpanGuard::threadLocalContext()
+{
+    // Snapshot whatever span is currently active on THIS thread's context
+    // stack (the ambient context), independent of any guard. This is the
+    // OTel "capture current context" operation used for propagation.
     auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
     return SpanContext(std::make_shared<SpanContext::Impl>(std::move(ctx)));
 }
@@ -526,6 +577,279 @@ SpanGuard::discard()
         impl_->span = nullptr;  // prevent ~Impl from calling End() again
         impl_.reset();
     }
+}
+
+// ===== ScopedSpanGuard::ScopedImpl =========================================
+
+struct ScopedSpanGuard::ScopedImpl
+{
+    /**
+     * The unscoped guard that owns the span. Declared FIRST so it is
+     * destroyed AFTER `scope`: the Scope must pop before the span ends.
+     */
+    SpanGuard guard;
+
+    /**
+     * Active OTel Scope binding the span to the active context store's
+     * stack. Present while the guard is active; reset() (via operator
+     * SpanGuard) pops it eagerly under the constructing store. Declared
+     * AFTER `guard` so destruction order pops the scope before the span
+     * ends.
+     */
+    std::optional<otel_trace::Scope> scope;
+
+    /**
+     * Identity of the LocalValue store the Scope was pushed onto (the
+     * coroutine's store on a coro, else the thread's own store). Popping
+     * the Scope (via ~Scope or reset()) must happen while the SAME store
+     * is active, else a different stack is corrupted. Coroutine-aware
+     * storage lets a coro legitimately resume on another worker while
+     * keeping the same store, so store-identity — not thread-id — is the
+     * correct invariant. Checked in the destructor and operator
+     * SpanGuard() to turn a silent cross-store pop into an assertion
+     * failure in debug/test/fuzzing builds.
+     *
+     * Assigned in the constructor body AFTER the Scope push, not as a
+     * member initializer: the push is the first LocalValue touch on a
+     * fresh thread for a root or explicit-parent span (the OTel SDK skips
+     * the ambient-context read in those cases), so it materializes the
+     * store. Capturing before the push would record nullptr while the
+     * destructor sees the now-materialized store. For a null guard no
+     * Scope is pushed and the assertions short-circuit, so this holds
+     * whatever store is active then.
+     */
+    void const* owner = nullptr;
+
+    /**
+     * Wrap a SpanGuard and activate its span on this thread. If the
+     * guard is active, push its span onto the thread-local context
+     * stack; a null guard leaves `scope` empty.
+     * @param g The span-owning guard to activate.
+     */
+    explicit ScopedImpl(SpanGuard g) : guard(std::move(g))
+    {
+        if (guard)
+            scope.emplace(guard.impl_->span);
+        // Capture after the push so `owner` names the store the Scope
+        // actually lives on, even when the push materialized it.
+        owner = detail::getLocalValues().get();
+    }
+};
+
+// ===== ScopedSpanGuard core lifecycle ======================================
+
+ScopedSpanGuard::ScopedSpanGuard(SpanGuard&& guard)
+    : impl_(std::make_unique<ScopedImpl>(std::move(guard)))
+{
+}
+
+ScopedSpanGuard::~ScopedSpanGuard()
+{
+    // A live Scope must be popped while its constructing context store is
+    // active; destroying the guard under a different store corrupts that
+    // store's context stack. A null guard holds no Scope, so the check is
+    // skipped.
+    XRPL_ASSERT(
+        !impl_ || !impl_->scope.has_value() || impl_->owner == detail::getLocalValues().get(),
+        "xrpl::telemetry::ScopedSpanGuard::~ScopedSpanGuard : destroyed on the "
+        "constructing context store");
+}
+
+// ===== ScopedSpanGuard factory methods =====================================
+
+ScopedSpanGuard::ScopedSpanGuard(TraceCategory cat, std::string_view prefix, std::string_view name)
+    : ScopedSpanGuard(SpanGuard::span(cat, prefix, name))
+{
+}
+
+ScopedSpanGuard
+ScopedSpanGuard::freshRoot(TraceCategory cat, std::string_view prefix, std::string_view name)
+{
+    return ScopedSpanGuard(SpanGuard::freshRoot(cat, prefix, name));
+}
+
+ScopedSpanGuard
+ScopedSpanGuard::childSpan(std::string_view name) const
+{
+    return ScopedSpanGuard(impl_->guard.childSpan(name));
+}
+
+ScopedSpanGuard
+ScopedSpanGuard::childSpan(std::string_view name, SpanContext const& parentCtx)
+{
+    return ScopedSpanGuard(SpanGuard::childSpan(name, parentCtx));
+}
+
+ScopedSpanGuard
+ScopedSpanGuard::linkedSpan(std::string_view name) const
+{
+    return ScopedSpanGuard(impl_->guard.linkedSpan(name));
+}
+
+ScopedSpanGuard
+ScopedSpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
+{
+    return ScopedSpanGuard(SpanGuard::linkedSpan(name, linkCtx));
+}
+
+// ===== ScopedSpanGuard handoff bridge ======================================
+
+ScopedSpanGuard::
+operator SpanGuard() &&
+{
+    // The scope must be popped while its constructing context store is
+    // active; handing off under a different store would pop the wrong stack.
+    // A null guard holds no Scope, so the check is skipped.
+    XRPL_ASSERT(
+        !impl_->scope.has_value() || impl_->owner == detail::getLocalValues().get(),
+        "xrpl::telemetry::ScopedSpanGuard::operator SpanGuard : handoff on the "
+        "constructing context store");
+    impl_->scope.reset();  // eager pop, on the origin store
+    return std::move(impl_->guard);
+}
+
+// ===== ScopedSpanGuard context capture =====================================
+
+SpanContext
+ScopedSpanGuard::spanContext() const
+{
+    return impl_->guard.spanContext();
+}
+
+// ===== ScopedSpanGuard forwarding methods ==================================
+
+void
+ScopedSpanGuard::setAttribute(std::string_view key, std::string_view value)
+{
+    impl_->guard.setAttribute(key, value);
+}
+
+void
+ScopedSpanGuard::setAttribute(std::string_view key, char const* value)
+{
+    impl_->guard.setAttribute(key, value);
+}
+
+void
+ScopedSpanGuard::setAttribute(std::string_view key, std::int64_t value)
+{
+    impl_->guard.setAttribute(key, value);
+}
+
+void
+ScopedSpanGuard::setAttribute(std::string_view key, double value)
+{
+    impl_->guard.setAttribute(key, value);
+}
+
+void
+ScopedSpanGuard::setAttribute(std::string_view key, bool value)
+{
+    impl_->guard.setAttribute(key, value);
+}
+
+void
+ScopedSpanGuard::setOk()
+{
+    impl_->guard.setOk();
+}
+
+void
+ScopedSpanGuard::setError(std::string_view description)
+{
+    impl_->guard.setError(description);
+}
+
+void
+ScopedSpanGuard::addEvent(std::string_view name)
+{
+    impl_->guard.addEvent(name);
+}
+
+void
+ScopedSpanGuard::recordException(std::exception const& e)
+{
+    impl_->guard.recordException(e);
+}
+
+void
+ScopedSpanGuard::discard()
+{
+    // A live Scope must be popped while its constructing context store is
+    // active; discarding under a different store corrupts that store's
+    // context stack. A null guard holds no Scope, so the check is skipped.
+    XRPL_ASSERT(
+        !impl_ || !impl_->scope.has_value() || impl_->owner == detail::getLocalValues().get(),
+        "xrpl::telemetry::ScopedSpanGuard::discard : discarded on the "
+        "constructing context store");
+    // Pop the scope first (under the constructing store) so no span stays
+    // active on the stack, then discard the span via the owned guard.
+    impl_->scope.reset();
+    impl_->guard.discard();
+}
+
+ScopedSpanGuard::
+operator bool() const
+{
+    return impl_ && static_cast<bool>(impl_->guard);
+}
+
+// ===== ScopedActivation ====================================================
+
+struct ScopedActivation::Impl
+{
+    /**
+     * Active OTel Scope binding an externally-owned span to the current
+     * context store. Popped on destruction; never ends the span.
+     */
+    otel_trace::Scope scope;
+
+    /**
+     * Identity of the LocalValue store the Scope was pushed onto. The Scope
+     * must pop while the SAME store is active (see
+     * ScopedSpanGuard::ScopedImpl::owner). Initialized AFTER `scope` in the
+     * member init list: members initialize in declaration order, so the
+     * Scope's push (the first LocalValue touch on a fresh worker, which
+     * materializes the store) runs first, then this captures the
+     * now-materialized store. Capturing before the push would record
+     * nullptr while the destructor sees the materialized store.
+     */
+    void const* owner;
+
+    /**
+     * Push an externally-owned span onto the current context store.
+     * @param span The already-owned span to activate (not owned here).
+     */
+    explicit Impl(opentelemetry::nostd::shared_ptr<otel_trace::Span> const& span)
+        : scope(span), owner(detail::getLocalValues().get())
+    {
+    }
+};
+
+ScopedActivation::ScopedActivation() = default;
+
+ScopedActivation::ScopedActivation(std::unique_ptr<Impl> impl) : impl_(std::move(impl))
+{
+}
+
+ScopedActivation::~ScopedActivation()
+{
+    // A live Scope must be popped while its constructing context store is
+    // active; destroying the activation under a different store corrupts
+    // that store's context stack. A null activation holds no Scope, so the
+    // check is skipped.
+    XRPL_ASSERT(
+        !impl_ || impl_->owner == detail::getLocalValues().get(),
+        "xrpl::telemetry::ScopedActivation::~ScopedActivation : destroyed on the "
+        "constructing context store");
+}
+
+ScopedActivation
+SpanGuard::activate() const
+{
+    if (!impl_ || !impl_->span)
+        return {};
+    return ScopedActivation(std::make_unique<ScopedActivation::Impl>(impl_->span));
 }
 
 }  // namespace xrpl::telemetry

@@ -1,3 +1,6 @@
+benchmarks.libxrpl > xrpl.basics
+benchmarks.libxrpl > xrpl.config
+benchmarks.libxrpl > xrpl.nodestore
 libxrpl.basics > xrpl.basics
 libxrpl.conditions > xrpl.basics
 libxrpl.conditions > xrpl.conditions
@@ -165,6 +168,7 @@ test.peerfinder > xrpl.protocol
 test.protocol > test.jtx
 test.protocol > test.unit_test
 test.protocol > xrpl.basics
+test.protocol > xrpld.core
 test.protocol > xrpl.json
 test.protocol > xrpl.protocol
 test.rpc > test.jtx
@@ -243,6 +247,7 @@ xrpl.server > xrpl.resource
 xrpl.shamap > xrpl.basics
 xrpl.shamap > xrpl.nodestore
 xrpl.shamap > xrpl.protocol
+xrpl.telemetry > xrpl.basics
 xrpl.telemetry > xrpl.config
 xrpl.tx > xrpl.basics
 xrpl.tx > xrpl.core
@@ -318,6 +323,7 @@ xrpld.rpc > xrpl.rdb
 xrpld.rpc > xrpl.resource
 xrpld.rpc > xrpl.server
 xrpld.rpc > xrpl.shamap
+xrpld.rpc > xrpl.telemetry
 xrpld.rpc > xrpl.tx
 xrpld.shamap > xrpl.basics
 xrpld.shamap > xrpld.core

@@ -1,6 +1,7 @@
 #pragma once
 
-/** Helper functions for creating consensus receive trace spans.
+/**
+ * Helper functions for creating consensus receive trace spans.
  *
  *  Encapsulates the logic for creating SpanGuard instances for incoming
  *  proposal and validation messages with optional protobuf parent
@@ -18,8 +19,8 @@
  *               +--- has trace_context? ----+
  *               |          yes              |  no
  *               v                           v
- *      SpanGuard::span() with          SpanGuard::span()
- *      extracted parent context       (standalone span)
+ *      SpanGuard::hashSpan() with      SpanGuard::freshRoot()
+ *      extracted parent context       (fresh trace root)
  *
  *  When XRPL_ENABLE_TELEMETRY is not defined, the functions return
  *  no-op SpanGuard instances (zero overhead, zero dependencies).
@@ -31,7 +32,7 @@
  *      span.setAttribute(...);
  *  @endcode
  *
- *  @note Span names come from the canonical constants in
+ * @note Span names come from the canonical constants in
  *  ConsensusSpanNames.h (consensus::span::proposalReceive /
  *  validationReceive) so they stay in sync with the rest of Phase 4.
  */
@@ -47,14 +48,15 @@
 
 namespace xrpl::telemetry {
 
-/** Create a "consensus.proposal.receive" span for an incoming proposal.
+/**
+ * Create a "consensus.proposal.receive" span for an incoming proposal.
  *
  *  If the message carries a TraceContext with a valid span_id, the
  *  receive span is created with the sender's context as parent.
  *  Otherwise a standalone span is created.
  *
- *  @param msg The incoming TMProposeSet protobuf message.
- *  @return An active SpanGuard, or a null guard if tracing is disabled.
+ * @param msg The incoming TMProposeSet protobuf message.
+ * @return An active SpanGuard, or a null guard if tracing is disabled.
  */
 inline SpanGuard
 proposalReceiveSpan([[maybe_unused]] protocol::TMProposeSet const& msg)
@@ -82,19 +84,20 @@ proposalReceiveSpan([[maybe_unused]] protocol::TMProposeSet const& msg)
         }
     }
 #endif
-    // No propagated context — create a standalone span.
-    return SpanGuard::span(
+    // No propagated context — start a fresh trace root (not an ambient child).
+    return SpanGuard::freshRoot(
         TraceCategory::Consensus, seg::consensus, consensus::span::op::proposalReceive);
 }
 
-/** Create a "consensus.validation.receive" span for an incoming validation.
+/**
+ * Create a "consensus.validation.receive" span for an incoming validation.
  *
  *  If the message carries a TraceContext with a valid span_id, the
  *  receive span is created with the sender's context as parent.
  *  Otherwise a standalone span is created.
  *
- *  @param msg The incoming TMValidation protobuf message.
- *  @return An active SpanGuard, or a null guard if tracing is disabled.
+ * @param msg The incoming TMValidation protobuf message.
+ * @return An active SpanGuard, or a null guard if tracing is disabled.
  */
 inline SpanGuard
 validationReceiveSpan([[maybe_unused]] protocol::TMValidation const& msg)
@@ -119,8 +122,8 @@ validationReceiveSpan([[maybe_unused]] protocol::TMValidation const& msg)
         }
     }
 #endif
-    // No propagated context — create a standalone span.
-    return SpanGuard::span(
+    // No propagated context — start a fresh trace root (not an ambient child).
+    return SpanGuard::freshRoot(
         TraceCategory::Consensus, seg::consensus, consensus::span::op::validationReceive);
 }
 

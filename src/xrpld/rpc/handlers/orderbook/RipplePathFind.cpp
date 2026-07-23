@@ -27,7 +27,12 @@ json::Value
 doRipplePathFind(RPC::JsonContext& context)
 {
     using namespace telemetry;
-    auto span = SpanGuard::span(
+    // pathfind.request nests under rpc.command. This scope is held across
+    // context.coro->yield() below; the coro-aware OTel context storage moves it
+    // with the coroutine on resume (it is never stranded on a worker's
+    // thread-local stack), so the scope pops on the correct store and the
+    // span's log lines stay trace-correlated.
+    auto span = ScopedSpanGuard(
         TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::request);
     // Addresses are hashed before emission for privacy.
     if (auto const& src = context.params[jss::source_account]; src.isString())

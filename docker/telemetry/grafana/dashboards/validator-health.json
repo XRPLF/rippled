@@ -1,8 +1,38 @@
 {
   "annotations": {
-    "list": []
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(70, 70, 70)",
+        "name": "Annotate perf-iac runs",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac"],
+          "type": "tags"
+        },
+        "type": "tags"
+      }
+    ]
   },
-  "description": "What this shows: Validator agreement rates, validation counts, amendment and UNL status, server state tracking, and ledger close rate.\nUse it to: Confirm the validator is participating, agreeing with the network, and closing ledgers at the expected cadence.",
+  "description": "What this shows: Validator agreement rates, validation counts, amendment and UNL status, server state tracking, and ledger close rate.  \u2014  Use it to: Confirm the validator is participating, agreeing with the network, and closing ledgers at the expected cadence.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -23,7 +53,7 @@
     },
     {
       "title": "Agreement % (1h)",
-      "description": "###### What this is:\n*Share of ledgers over the last hour where this validator agreed with the network consensus.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the 1-hour agreement percentage.*\n\n###### Reading it:\n*Higher is better; green at 95%+, yellow from 80%, red below.*\n\n###### Healthy range:\n*95-100%.*\n\n###### Watch for:\n*Values below 80%, meaning the validator frequently disagrees with consensus.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`",
+      "description": "###### What this is:\n*Share of ledgers over the last hour where this validator agreed with the network consensus.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the 1-hour agreement percentage.*\n\n###### Reading it:\n*Higher is better; green at 95%+, yellow from 80%, red below.*\n\n###### Healthy range:\n*95-100%.*\n\n###### Watch for:\n*Values below 80%, meaning the validator frequently disagrees with consensus.*\n\n###### Keywords:\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n- **Validation agreement** *(per node)* \u2014 the share of ledgers where this validator's validation matched network consensus versus was missed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`\n\n###### References:\n[Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Validation agreement](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -44,12 +74,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(validation_agreement{metric=\"agreement_pct_1h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Agreement 1h\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(validation_agreement{metric=\"agreement_pct_1h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Agreement 1h\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "percent",
           "min": 0,
           "max": 100,
@@ -76,7 +106,7 @@
     },
     {
       "title": "Agreement % (24h)",
-      "description": "###### What this is:\n*Share of ledgers over the last 24 hours where this validator agreed with consensus.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the 24-hour agreement percentage.*\n\n###### Reading it:\n*Higher is better; a smoother, longer-term view than the 1h stat.*\n\n###### Healthy range:\n*95-100%.*\n\n###### Watch for:\n*A sustained dip below 90%, which can indicate configuration drift or a network partition.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`",
+      "description": "###### What this is:\n*Share of ledgers over the last 24 hours where this validator agreed with consensus.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the 24-hour agreement percentage.*\n\n###### Reading it:\n*Higher is better; a smoother, longer-term view than the 1h stat.*\n\n###### Healthy range:\n*95-100%.*\n\n###### Watch for:\n*A sustained dip below 90%, which can indicate configuration drift or a network partition.*\n\n###### Keywords:\n- **Validation agreement** *(per node)* \u2014 the share of ledgers where this validator's validation matched network consensus versus was missed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`\n\n###### References:\n[Validation agreement](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validation-agreement)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -97,12 +127,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(validation_agreement{metric=\"agreement_pct_24h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Agreement 24h\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(validation_agreement{metric=\"agreement_pct_24h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Agreement 24h\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "percent",
           "min": 0,
           "max": 100,
@@ -129,7 +159,7 @@
     },
     {
       "title": "Agreements vs Missed (1h)",
-      "description": "###### What this is:\n*Counts of agreed versus missed validations over the last hour.*\n\n###### How it's computed:\n*Instantaneous gauge readings of the 1-hour agreed and missed counts.*\n\n###### Reading it:\n*Agreements should dominate; missed should be small.*\n\n###### Healthy range:\n*Missed near 0.*\n\n###### Watch for:\n*A high missed count, meaning the validator is skipping consensus rounds.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`",
+      "description": "###### What this is:\n*Counts of agreed versus missed validations over the last hour.*\n\n###### How it's computed:\n*Instantaneous gauge readings of the 1-hour agreed and missed counts.*\n\n###### Reading it:\n*Agreements should dominate; missed should be small.*\n\n###### Healthy range:\n*Missed near 0.*\n\n###### Watch for:\n*A high missed count, meaning the validator is skipping consensus rounds.*\n\n###### Keywords:\n- **Validation agreement** *(per node)* \u2014 the share of ledgers where this validator's validation matched network consensus versus was missed.\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`\n\n###### References:\n[Validation agreement](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validation-agreement)",
       "type": "bargauge",
       "gridPos": {
         "h": 8,
@@ -152,19 +182,19 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(validation_agreement{metric=\"agreements_1h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Agreements 1h\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(validation_agreement{metric=\"agreements_1h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Agreements 1h\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(validation_agreement{metric=\"missed_1h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Missed 1h\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(validation_agreement{metric=\"missed_1h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Missed 1h\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "short",
           "thresholds": {
             "steps": [
@@ -197,7 +227,7 @@
     },
     {
       "title": "Agreements vs Missed (24h)",
-      "description": "###### What this is:\n*Counts of agreed versus missed validations over the last 24 hours.*\n\n###### How it's computed:\n*Instantaneous gauge readings of the 24-hour agreed and missed counts.*\n\n###### Reading it:\n*Agreements should dominate over the full day.*\n\n###### Healthy range:\n*Missed a small fraction of agreements.*\n\n###### Watch for:\n*A growing missed share, signalling longer-term reliability problems.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`",
+      "description": "###### What this is:\n*Counts of agreed versus missed validations over the last 24 hours.*\n\n###### How it's computed:\n*Instantaneous gauge readings of the 24-hour agreed and missed counts.*\n\n###### Reading it:\n*Agreements should dominate over the full day.*\n\n###### Healthy range:\n*Missed a small fraction of agreements.*\n\n###### Watch for:\n*A growing missed share, signalling longer-term reliability problems.*\n\n###### Keywords:\n- **Validation agreement** *(per node)* \u2014 the share of ledgers where this validator's validation matched network consensus versus was missed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`\n\n###### References:\n[Validation agreement](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validation-agreement)",
       "type": "bargauge",
       "gridPos": {
         "h": 8,
@@ -220,19 +250,19 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(validation_agreement{metric=\"agreements_24h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Agreements 24h\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(validation_agreement{metric=\"agreements_24h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Agreements 24h\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(validation_agreement{metric=\"missed_24h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Missed 24h\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(validation_agreement{metric=\"missed_24h\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Missed 24h\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "short",
           "thresholds": {
             "steps": [
@@ -277,7 +307,7 @@
     },
     {
       "title": "Validation Rate",
-      "description": "###### What this is:\n*Validations this node sends per minute.*\n\n###### How it's computed:\n*Per-second rate of the sent-validations counter over 5 minutes, scaled to per minute.*\n\n###### Reading it:\n*Should track the ledger close cadence; roughly one validation per closed ledger.*\n\n###### Healthy range:\n*About 12-20 per minute (one per closed ledger, ~3-5s close).*\n\n###### Watch for:\n*A drop toward zero, meaning the validator has stopped participating.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementValidationsSent (caller RCLConsensus.cpp)`",
+      "description": "###### What this is:\n*Validations this node sends per minute.*\n\n###### How it's computed:\n*Per-second rate of the sent-validations counter over 5 minutes, scaled to per minute.*\n\n###### Reading it:\n*Should track the ledger close cadence; roughly one validation per closed ledger.*\n\n###### Healthy range:\n*About 12-20 per minute (one per closed ledger, ~3-5s close).*\n\n###### Watch for:\n*A drop toward zero, meaning the validator has stopped participating.*\n\n###### Keywords:\n- **Validations checked vs sent** *(per node)* \u2014 validations this node received from peers and checked, versus validations it issued itself.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementValidationsSent (caller RCLConsensus.cpp)`\n\n###### References:\n[Validations checked vs sent](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validations-checked-vs-sent)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -298,12 +328,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(rate(validations_sent_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) * 60, \"series\", \"Sent/min\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(rate(validations_sent_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) * 60, \"series\", \"Sent/min\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "cpm",
           "thresholds": {
             "steps": [
@@ -328,7 +358,7 @@
     },
     {
       "title": "Validations Checked Rate",
-      "description": "###### What this is:\n*Validations received from peers and checked per minute.*\n\n###### How it's computed:\n*Per-second rate of the checked-validations counter over 5 minutes, scaled to per minute.*\n\n###### Reading it:\n*Reflects how much validation traffic the network is delivering to this node.*\n\n###### Healthy range:\n*Workload-dependent; scales with trusted validator count.*\n\n###### Watch for:\n*A sudden collapse, which suggests peer connectivity loss or network isolation.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementValidationsChecked (caller NetworkOPs.cpp)`",
+      "description": "###### What this is:\n*Validations received from peers and checked per minute.*\n\n###### How it's computed:\n*Per-second rate of the checked-validations counter over 5 minutes, scaled to per minute.*\n\n###### Reading it:\n*Reflects how much validation traffic the network is delivering to this node.*\n\n###### Healthy range:\n*Workload-dependent; scales with trusted validator count.*\n\n###### Watch for:\n*A sudden collapse, which suggests peer connectivity loss or network isolation.*\n\n###### Keywords:\n- **Validations checked vs sent** *(per node)* \u2014 validations this node received from peers and checked, versus validations it issued itself.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementValidationsChecked (caller NetworkOPs.cpp)`\n\n###### References:\n[Validations checked vs sent](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validations-checked-vs-sent)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -349,12 +379,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(rate(validations_checked_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) * 60, \"series\", \"Checked/min\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(rate(validations_checked_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) * 60, \"series\", \"Checked/min\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "cpm",
           "custom": {}
         },
@@ -363,7 +393,7 @@
     },
     {
       "title": "Amendment Blocked",
-      "description": "###### What this is:\n*Whether the node is amendment-blocked (OK/BLOCKED).*\n\n###### How it's computed:\n*Instantaneous gauge reading of the amendment-blocked flag.*\n\n###### Reading it:\n*OK is healthy; BLOCKED means an enabled amendment is unsupported by this build.*\n\n###### Healthy range:\n*OK.*\n\n###### Watch for:\n*A BLOCKED state, which halts validation and requires a software upgrade.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidatorHealthGauge`",
+      "description": "###### What this is:\n*Whether the node is amendment-blocked (OK/BLOCKED).*\n\n###### How it's computed:\n*Instantaneous gauge reading of the amendment-blocked flag.*\n\n###### Reading it:\n*OK is healthy; BLOCKED means an enabled amendment is unsupported by this build.*\n\n###### Healthy range:\n*OK.*\n\n###### Watch for:\n*A BLOCKED state, which halts validation and requires a software upgrade.*\n\n###### Keywords:\n- **Amendment blocked** *(per node)* \u2014 the node has halted because the network enabled an amendment its software version does not support.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidatorHealthGauge`\n\n###### References:\n[Amendment blocked](https://xrpl.org/docs/concepts/networks-and-servers/amendments) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#amendment-blocked)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -384,12 +414,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(validator_health{metric=\"amendment_blocked\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Blocked\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(validator_health{metric=\"amendment_blocked\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Blocked\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "none",
           "mappings": [
             {
@@ -430,7 +460,7 @@
     },
     {
       "title": "UNL Expiry (days)",
-      "description": "###### What this is:\n*Days remaining until the current UNL (trusted validator list) expires.*\n\n###### How it's computed:\n*Instantaneous gauge reading of days-to-expiry.*\n\n###### Reading it:\n*Higher is safer; green at 30+, yellow under 7, red at expiry.*\n\n###### Healthy range:\n*30+ days.*\n\n###### Watch for:\n*Fewer than 7 days, after which the node loses its trusted validator set if not renewed.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidatorHealthGauge`",
+      "description": "###### What this is:\n*Days remaining until the current UNL (trusted validator list) expires.*\n\n###### How it's computed:\n*Instantaneous gauge reading of days-to-expiry.*\n\n###### Reading it:\n*Higher is safer; green at 30+, yellow under 7, red at expiry.*\n\n###### Healthy range:\n*30+ days.*\n\n###### Watch for:\n*Fewer than 7 days, after which the node loses its trusted validator set if not renewed.*\n\n###### Keywords:\n- **UNL (Unique Node List)** *(per node)* \u2014 the list of validators a node trusts not to collude; the basis for its consensus and quorum.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidatorHealthGauge`\n\n###### References:\n[UNL (Unique Node List)](https://xrpl.org/docs/concepts/consensus-protocol/unl) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#unl-unique-node-list)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -451,12 +481,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(validator_health{metric=\"unl_expiry_days\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"UNL Expiry\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(validator_health{metric=\"unl_expiry_days\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"UNL Expiry\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "d",
           "thresholds": {
             "steps": [
@@ -481,7 +511,7 @@
     },
     {
       "title": "UNL Blocked",
-      "description": "###### What this is:\n*Whether the node's UNL is blocked (OK/BLOCKED).*\n\n###### How it's computed:\n*Instantaneous gauge reading of the UNL-blocked flag.*\n\n###### Reading it:\n*OK is healthy; BLOCKED means validator trust cannot be established.*\n\n###### Healthy range:\n*OK.*\n\n###### Watch for:\n*A BLOCKED state, which can stop the node participating in consensus.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidatorHealthGauge`",
+      "description": "###### What this is:\n*Whether the node's UNL is blocked (OK/BLOCKED).*\n\n###### How it's computed:\n*Instantaneous gauge reading of the UNL-blocked flag.*\n\n###### Reading it:\n*OK is healthy; BLOCKED means validator trust cannot be established.*\n\n###### Healthy range:\n*OK.*\n\n###### Watch for:\n*A BLOCKED state, which can stop the node participating in consensus.*\n\n###### Keywords:\n- **UNL (Unique Node List)** *(per node)* \u2014 the list of validators a node trusts not to collude; the basis for its consensus and quorum.\n- **UNL blocked** *(per node)* \u2014 the node cannot establish a usable trusted validator list, so it cannot safely validate.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidatorHealthGauge`\n\n###### References:\n[UNL (Unique Node List)](https://xrpl.org/docs/concepts/consensus-protocol/unl) \u00b7 [UNL blocked](https://xrpl.org/docs/concepts/consensus-protocol) \u00b7 [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#unl-unique-node-list)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -502,12 +532,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(validator_health{metric=\"unl_blocked\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"UNL Blocked\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(validator_health{metric=\"unl_blocked\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"UNL Blocked\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "none",
           "mappings": [
             {
@@ -548,7 +578,7 @@
     },
     {
       "title": "Agreement/Missed Counters (Rate)",
-      "description": "###### What this is:\n*Rate of cumulative agreement and missed-validation counters per minute.*\n\n###### How it's computed:\n*Per-second rate of each monotonic counter over 5 minutes, scaled to per minute.*\n\n###### Reading it:\n*Agreements should dominate; the missed line should stay low.*\n\n###### Healthy range:\n*Missed rate near 0.*\n\n###### Watch for:\n*A rising missed rate, complementing the windowed agreement percentages above.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationTotalsCounters`",
+      "description": "###### What this is:\n*Rate of cumulative agreement and missed-validation counters per minute.*\n\n###### How it's computed:\n*Per-second rate of each monotonic counter over 5 minutes, scaled to per minute.*\n\n###### Reading it:\n*Agreements should dominate; the missed line should stay low.*\n\n###### Healthy range:\n*Missed rate near 0.*\n\n###### Watch for:\n*A rising missed rate, complementing the windowed agreement percentages above.*\n\n###### Keywords:\n- **Validation agreement** *(per node)* \u2014 the share of ledgers where this validator's validation matched network consensus versus was missed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationTotalsCounters`\n\n###### References:\n[Validation agreement](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validation-agreement)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -569,19 +599,19 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(rate(validation_agreements_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) * 60, \"series\", \"Agreements/min\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(rate(validation_agreements_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) * 60, \"series\", \"Agreements/min\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(rate(validation_missed_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) * 60, \"series\", \"Missed/min\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(rate(validation_missed_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) * 60, \"series\", \"Missed/min\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "cpm",
           "custom": {
             "axisLabel": "Per Minute",
@@ -630,7 +660,7 @@
     },
     {
       "title": "Validation Quorum",
-      "description": "###### What this is:\n*Minimum number of trusted validations required to declare a ledger fully validated.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the current quorum requirement.*\n\n###### Reading it:\n*Tracks the quorum derived from the active validator list; changes when the list changes.*\n\n###### Healthy range:\n*Stable at the network-appropriate value.*\n\n###### Watch for:\n*An unexpected drop, which can weaken consensus safety guarantees.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidatorHealthGauge`",
+      "description": "###### What this is:\n*Minimum number of trusted validations required to declare a ledger fully validated.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the current quorum requirement.*\n\n###### Reading it:\n*Tracks the quorum derived from the active validator list; changes when the list changes.*\n\n###### Healthy range:\n*Stable at the network-appropriate value.*\n\n###### Watch for:\n*An unexpected drop, which can weaken consensus safety guarantees.*\n\n###### Keywords:\n- **Validation quorum** *(network-wide)* \u2014 the minimum number of agreeing trusted validations needed to declare a ledger fully validated.\n- **Validator list** *(network-wide)* \u2014 signed lists of recommended validators (UNLs) that peers distribute to each other.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidatorHealthGauge`\n\n###### References:\n[Validation quorum](https://xrpl.org/docs/concepts/consensus-protocol/negative-unl) \u00b7 [Validator list](https://xrpl.org/docs/concepts/consensus-protocol/unl) \u00b7 [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validation-quorum)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -651,12 +681,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(validator_health{metric=\"validation_quorum\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Quorum\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(validator_health{metric=\"validation_quorum\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Quorum\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "none",
           "custom": {}
         },
@@ -665,7 +695,7 @@
     },
     {
       "title": "State Value Timeline",
-      "description": "###### What this is:\n*Numeric encoding of the server operating state (disconnected, connected, syncing, tracking, full, validating, proposing) over time.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the encoded state value.*\n\n###### Reading it:\n*A flat line at the full-operation state is healthy; steps show transitions.*\n\n###### Healthy range:\n*Steady at the highest (full) state.*\n\n###### Watch for:\n*Frequent transitions, useful for correlating state flapping with other metrics.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerStateTrackingGauge`",
+      "description": "###### What this is:\n*Numeric encoding of the server operating state (disconnected, connected, syncing, tracking, full, validating, proposing) over time.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the encoded state value.*\n\n###### Reading it:\n*A flat line at the full-operation state is healthy; steps show transitions.*\n\n###### Healthy range:\n*Steady at the highest (full) state.*\n\n###### Watch for:\n*Frequent transitions, useful for correlating state flapping with other metrics.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n- **Consensus mode** *(per node)* \u2014 the node's role/health in the current round: Proposing, Observing, Wrong Ledger, or Switched Ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerStateTrackingGauge`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Consensus mode](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -686,12 +716,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(state_tracking{metric=\"state_value\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"State\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(state_tracking{metric=\"state_value\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"State\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "short",
           "custom": {
             "axisLabel": "State",
@@ -712,7 +742,7 @@
     },
     {
       "title": "Time in Current State",
-      "description": "###### What this is:\n*How long the server has held its current operating state, in seconds.*\n\n###### How it's computed:\n*Current value of the time-in-state gauge.*\n\n###### Reading it:\n*Not yet wired in the code; the value currently always reads 0.*\n\n###### Healthy range:\n*Not applicable; the value is always 0 today.*\n\n###### Watch for:\n*n/a until implemented.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerStateTrackingGauge`",
+      "description": "###### What this is:\n*How long the server has held its current operating state, in seconds.*\n\n###### How it's computed:\n*Current value of the time-in-state gauge.*\n\n###### Reading it:\n*Not yet wired in the code; the value currently always reads 0.*\n\n###### Healthy range:\n*Not applicable; the value is always 0 today.*\n\n###### Watch for:\n*n/a until implemented.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerStateTrackingGauge`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -733,12 +763,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(state_tracking{metric=\"time_in_current_state_seconds\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Time in State\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(state_tracking{metric=\"time_in_current_state_seconds\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Time in State\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "s",
           "custom": {}
         },
@@ -747,7 +777,7 @@
     },
     {
       "title": "State Changes Rate",
-      "description": "###### What this is:\n*Rate of server operating-state changes per hour.*\n\n###### How it's computed:\n*Per-hour rate of the state-change counter, averaged over a 1-hour window.*\n\n###### Reading it:\n*Near zero is healthy; each increment is one state transition.*\n\n###### Healthy range:\n*Near 0 changes per hour.*\n\n###### Watch for:\n*Frequent transitions, which point to network instability or configuration problems.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementStateChanges (caller NetworkOPs.cpp)`",
+      "description": "###### What this is:\n*Rate of server operating-state changes per hour.*\n\n###### How it's computed:\n*Per-hour rate of the state-change counter, averaged over a 1-hour window.*\n\n###### Reading it:\n*Near zero is healthy; each increment is one state transition.*\n\n###### Healthy range:\n*Near 0 changes per hour.*\n\n###### Watch for:\n*Frequent transitions, which point to network instability or configuration problems.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 the node's sync level: Disconnected, Connected, Syncing, Tracking, Full (and Validating/Proposing).\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementStateChanges (caller NetworkOPs.cpp)`\n\n###### References:\n[Operating mode / server state](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -768,12 +798,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(3600 * sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(state_changes_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"Changes/hr\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(3600 * sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(state_changes_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"Changes/hr\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "suffix:/hr",
           "thresholds": {
             "steps": [
@@ -798,7 +828,7 @@
     },
     {
       "title": "Ledgers Closed Rate",
-      "description": "###### What this is:\n*Ledgers closed per minute by this node.*\n\n###### How it's computed:\n*Per-second rate of the ledgers-closed counter over 5 minutes, scaled to per minute.*\n\n###### Reading it:\n*Should match the network's steady close cadence.*\n\n###### Healthy range:\n*About 12-20 per minute (one per closed ledger, ~3-5s close).*\n\n###### Watch for:\n*Deviation from the expected cadence, which indicates consensus timing trouble or the node falling behind.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementLedgersClosed (caller RCLConsensus.cpp)`",
+      "description": "###### What this is:\n*Ledgers closed per minute by this node.*\n\n###### How it's computed:\n*Per-second rate of the ledgers-closed counter over 5 minutes, scaled to per minute.*\n\n###### Reading it:\n*Should match the network's steady close cadence.*\n\n###### Healthy range:\n*About 12-20 per minute (one per closed ledger, ~3-5s close).*\n\n###### Watch for:\n*Deviation from the expected cadence, which indicates consensus timing trouble or the node falling behind.*\n\n###### Keywords:\n- **Ledgers closed rate** *(per node)* \u2014 how many ledgers this node closed per minute; should match the network close cadence.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`incrementLedgersClosed (caller RCLConsensus.cpp)`\n\n###### References:\n[Ledgers closed rate](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledgers-closed-rate)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -819,12 +849,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(rate(ledgers_closed_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) * 60, \"series\", \"Closed/min\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(rate(ledgers_closed_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]) * 60, \"series\", \"Closed/min\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "cpm",
           "thresholds": {
             "steps": [
@@ -849,7 +879,7 @@
     },
     {
       "title": "Agreement % (7d)",
-      "description": "###### What this is:\n*Share of ledgers over the trailing 7 days where this validator agreed with consensus.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the 7-day agreement percentage.*\n\n###### Reading it:\n*The long-term reliability window; higher is better.*\n\n###### Healthy range:\n*95-100%.*\n\n###### Watch for:\n*A gradual decline, which reflects chronic rather than transient disagreement.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`",
+      "description": "###### What this is:\n*Share of ledgers over the trailing 7 days where this validator agreed with consensus.*\n\n###### How it's computed:\n*Instantaneous gauge reading of the 7-day agreement percentage.*\n\n###### Reading it:\n*The long-term reliability window; higher is better.*\n\n###### Healthy range:\n*95-100%.*\n\n###### Watch for:\n*A gradual decline, which reflects chronic rather than transient disagreement.*\n\n###### Keywords:\n- **Validation agreement** *(per node)* \u2014 the share of ledgers where this validator's validation matched network consensus versus was missed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`\n\n###### References:\n[Validation agreement](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validation-agreement)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -870,12 +900,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(validation_agreement{metric=\"agreement_pct_7d\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Agreement 7d\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(validation_agreement{metric=\"agreement_pct_7d\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Agreement 7d\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "percent",
           "min": 0,
           "max": 100,
@@ -902,7 +932,7 @@
     },
     {
       "title": "Agreements vs Missed (7d)",
-      "description": "###### What this is:\n*Agreed versus missed validation counts over the trailing 7 days.*\n\n###### How it's computed:\n*Instantaneous gauge readings of the 7-day agreed and missed counts.*\n\n###### Reading it:\n*Agreements should dominate across the week.*\n\n###### Healthy range:\n*Missed a small fraction of agreements.*\n\n###### Watch for:\n*A rising missed trend, signalling sustained validator unreliability.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`",
+      "description": "###### What this is:\n*Agreed versus missed validation counts over the trailing 7 days.*\n\n###### How it's computed:\n*Instantaneous gauge readings of the 7-day agreed and missed counts.*\n\n###### Reading it:\n*Agreements should dominate across the week.*\n\n###### Healthy range:\n*Missed a small fraction of agreements.*\n\n###### Watch for:\n*A rising missed trend, signalling sustained validator unreliability.*\n\n###### Keywords:\n- **Validation agreement** *(per node)* \u2014 the share of ledgers where this validator's validation matched network consensus versus was missed.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerValidationAgreementGauge`\n\n###### References:\n[Validation agreement](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validation-agreement)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -923,19 +953,19 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(validation_agreement{metric=\"agreements_7d\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Agreements 7d\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(validation_agreement{metric=\"agreements_7d\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Agreements 7d\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(validation_agreement{metric=\"missed_7d\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Missed 7d\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(validation_agreement{metric=\"missed_7d\",service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}, \"series\", \"Missed 7d\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "short",
           "custom": {
             "axisLabel": "Count",
@@ -1114,5 +1144,5 @@
   },
   "title": "Validator Health",
   "uid": "validator-health",
-  "refresh": "10s"
+  "refresh": "30s"
 }

@@ -96,18 +96,19 @@ sliceToHex(Slice const& slice)
     return s;
 }
 
-/** Determine whether a signature is canonical.
-    Canonical signatures are important to protect against signature morphing
-    attacks.
-    @param vSig the signature data
-    @param sigLen the length of the signature
-    @param strict_param whether to enforce strictly canonical semantics
-
-    @note For more details please see:
-    https://xrpl.org/transaction-malleability.html
-    https://bitcointalk.org/index.php?topic=8392.msg127623#msg127623
-    https://github.com/sipa/bitcoin/commit/58bc86e37fda1aec270bccb3df6c20fbd2a6591c
-*/
+/**
+ * Determine whether a signature is canonical.
+ * Canonical signatures are important to protect against signature morphing
+ * attacks.
+ * @param vSig the signature data
+ * @param sigLen the length of the signature
+ * @param strict_param whether to enforce strictly canonical semantics
+ *
+ * @note For more details please see:
+ * https://xrpl.org/transaction-malleability.html
+ * https://bitcointalk.org/index.php?topic=8392.msg127623#msg127623
+ * https://github.com/sipa/bitcoin/commit/58bc86e37fda1aec270bccb3df6c20fbd2a6591c
+ */
 std::optional<ECDSACanonicality>
 ecdsaCanonicality(Slice const& sig)
 {

@@ -1,6 +1,6 @@
 {
   "_description": "Per-metric regression thresholds. A metric regresses when current - baseline exceeds BOTH the percentage and absolute bounds (AND, not OR — this tolerates small-value noise). Defaults apply unless a per-metric override exists.",
-  "_bucket_note": "SpanMetrics latency histograms use explicit buckets [1,5,10,25,50,100,250,500,1000,5000]ms. A quantile sitting near a low-end boundary can jump a full bucket (e.g. 1ms->5ms) between runs with no real change, so absolute span bounds are set to ~2 low-end bucket widths (10ms) to tolerate that quantization noise while still catching genuine multi-bucket regressions. The job_queue running bound is widened similarly — per-ledger apply work scales with TxQ burst load.",
+  "_bucket_note": "SpanMetrics latency histograms use explicit buckets [1,5,10,25,50,100,250,500,1000,2000,3000,4000,5000,10000,30000]ms. A quantile sitting near a low-end boundary can jump a full bucket (e.g. 1ms->5ms) between runs with no real change, so absolute span bounds are set to ~2 low-end bucket widths (10ms) to tolerate that quantization noise while still catching genuine multi-bucket regressions. Second-scale consensus spans now have 2s/3s/4s boundaries (previously all fell in one 1s-5s bucket); their quantiles quantize to ~1s widths there. The job_queue running bound is widened similarly — per-ledger apply work scales with TxQ burst load.",
   "defaults": {
     "span": {
       "p50": { "max_pct_increase": 50.0, "max_abs_increase_ms": 10.0 },

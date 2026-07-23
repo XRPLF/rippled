@@ -1,8 +1,9 @@
 #pragma once
 
-/** @file ValidationTracker.h
-    Standalone validation agreement tracker for telemetry.
-*/
+/**
+ * @file ValidationTracker.h
+ * Standalone validation agreement tracker for telemetry.
+ */
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
@@ -93,10 +94,14 @@ namespace xrpl::telemetry {
 class ValidationTracker
 {
 public:
-    /// Monotonic clock used for all internal timestamps.
+    /**
+     * Monotonic clock used for all internal timestamps.
+     */
     using Clock = std::chrono::steady_clock;
 
-    /// Time point type from the monotonic clock.
+    /**
+     * Time point type from the monotonic clock.
+     */
     using TimePoint = Clock::time_point;
 
     /**
@@ -124,94 +129,127 @@ public:
     void
     reconcile();
 
-    /** @name Rolling-window percentage getters */
+    /**
+     * @name Rolling-window percentage getters
+     */
     /** @{ */
 
-    /** Agreement percentage over the last 1 hour.
-     *  @return Percentage [0.0, 100.0], or 0.0 if no data.
+    /**
+     * Agreement percentage over the last 1 hour.
+     * @return Percentage [0.0, 100.0], or 0.0 if no data.
      */
     double
     agreementPct1h() const;
 
-    /** Agreement percentage over the last 24 hours.
-     *  @return Percentage [0.0, 100.0], or 0.0 if no data.
+    /**
+     * Agreement percentage over the last 24 hours.
+     * @return Percentage [0.0, 100.0], or 0.0 if no data.
      */
     double
     agreementPct24h() const;
 
-    /** Agreement percentage over the last 7 days.
-     *  @return Percentage [0.0, 100.0], or 0.0 if no data.
+    /**
+     * Agreement percentage over the last 7 days.
+     * @return Percentage [0.0, 100.0], or 0.0 if no data.
      */
     double
     agreementPct7d() const;
 
     /** @} */
 
-    /** @name Rolling-window count getters */
+    /**
+     * @name Rolling-window count getters
+     */
     /** @{ */
 
-    /** Number of agreements in the 1-hour window. */
+    /**
+     * Number of agreements in the 1-hour window.
+     */
     uint64_t
     agreements1h() const;
 
-    /** Number of misses in the 1-hour window. */
+    /**
+     * Number of misses in the 1-hour window.
+     */
     uint64_t
     missed1h() const;
 
-    /** Number of agreements in the 24-hour window. */
+    /**
+     * Number of agreements in the 24-hour window.
+     */
     uint64_t
     agreements24h() const;
 
-    /** Number of misses in the 24-hour window. */
+    /**
+     * Number of misses in the 24-hour window.
+     */
     uint64_t
     missed24h() const;
 
-    /** Number of agreements in the 7-day window. */
+    /**
+     * Number of agreements in the 7-day window.
+     */
     uint64_t
     agreements7d() const;
 
-    /** Number of misses in the 7-day window. */
+    /**
+     * Number of misses in the 7-day window.
+     */
     uint64_t
     missed7d() const;
 
     /** @} */
 
-    /** @name Lifetime totals (atomic, lock-free reads) */
+    /**
+     * @name Lifetime totals (atomic, lock-free reads)
+     */
     /** @{ */
 
-    /** Total agreements since process start. */
+    /**
+     * Total agreements since process start.
+     */
     uint64_t
     totalAgreements() const;
 
-    /** Total misses since process start. */
+    /**
+     * Total misses since process start.
+     */
     uint64_t
     totalMissed() const;
 
-    /** Lifetime agreements counted at first classification only.
-     *  @note Unlike totalAgreements(), this is strictly monotonic: it is
-     *  incremented only when a ledger is first reconciled as an agreement and
-     *  is never adjusted by a late repair. It backs the monotonic Prometheus
-     *  counter validation_agreements_total. See the counting-semantics
-     *  note in detail/ValidationTracker.cpp.
+    /**
+     * Lifetime agreements counted at first classification only.
+     *
+     * @note Unlike totalAgreements(), this is strictly monotonic: it is
+     * incremented only when a ledger is first reconciled as an agreement and
+     * is never adjusted by a late repair. It backs the monotonic Prometheus
+     * counter validation_agreements_total. See the counting-semantics
+     * note in detail/ValidationTracker.cpp.
      */
     uint64_t
     totalAgreementsEver() const;
 
-    /** Lifetime misses counted at first classification only.
-     *  @note Unlike totalMissed(), this is strictly monotonic: it is
-     *  incremented only when a ledger is first reconciled as a miss and is
-     *  never decremented by a late repair. It backs the monotonic Prometheus
-     *  counter validation_missed_total. See the counting-semantics note
-     *  in detail/ValidationTracker.cpp.
+    /**
+     * Lifetime misses counted at first classification only.
+     *
+     * @note Unlike totalMissed(), this is strictly monotonic: it is
+     * incremented only when a ledger is first reconciled as a miss and is
+     * never decremented by a late repair. It backs the monotonic Prometheus
+     * counter validation_missed_total. See the counting-semantics note
+     * in detail/ValidationTracker.cpp.
      */
     uint64_t
     totalMissedEver() const;
 
-    /** Total validations this node sent. */
+    /**
+     * Total validations this node sent.
+     */
     uint64_t
     totalValidationsSent() const;
 
-    /** Total network validations observed for comparison. */
+    /**
+     * Total network validations observed for comparison.
+     */
     uint64_t
     totalValidationsChecked() const;
 
@@ -242,70 +280,106 @@ private:
         bool agreed{false};  ///< Whether this was an agreement.
     };
 
-    /// Grace period before reconciling a ledger event.
+    /**
+     * Grace period before reconciling a ledger event.
+     */
     static constexpr auto kGracePeriod = std::chrono::seconds(8);
 
-    /// Window during which a missed event can be repaired.
+    /**
+     * Window during which a missed event can be repaired.
+     */
     static constexpr auto kLateRepairWindow = std::chrono::minutes(5);
 
-    /// Maximum number of pending (unreconciled + recently reconciled) events.
+    /**
+     * Maximum number of pending (unreconciled + recently reconciled) events.
+     */
     static constexpr std::size_t kMaxPendingEvents = 1000;
 
-    /// Duration of the short rolling window.
+    /**
+     * Duration of the short rolling window.
+     */
     static constexpr auto kWindow1h = std::chrono::hours(1);
 
-    /// Duration of the long rolling window.
+    /**
+     * Duration of the long rolling window.
+     */
     static constexpr auto kWindow24h = std::chrono::hours(24);
 
-    /// Duration of the extended rolling window (7 days).
+    /**
+     * Duration of the extended rolling window (7 days).
+     */
     static constexpr auto kWindow7d = std::chrono::hours(168);
 
-    /// Protects pending_, window1h_, window24h_, and window7d_.
+    /**
+     * Protects pending_, window1h_, window24h_, and window7d_.
+     */
     mutable std::mutex mutex_;
 
-    /// Pending ledger events indexed by ledger hash.
+    /**
+     * Pending ledger events indexed by ledger hash.
+     */
     hash_map<uint256, LedgerEvent> pending_;
 
-    /// Sliding window of reconciled events (last 1 hour).
+    /**
+     * Sliding window of reconciled events (last 1 hour).
+     */
     std::deque<WindowEvent> window1h_;
 
-    /// Sliding window of reconciled events (last 24 hours).
+    /**
+     * Sliding window of reconciled events (last 24 hours).
+     */
     std::deque<WindowEvent> window24h_;
 
-    /// Sliding window of reconciled events (last 7 days).
+    /**
+     * Sliding window of reconciled events (last 7 days).
+     */
     std::deque<WindowEvent> window7d_;
 
-    /// Lifetime count of agreements (net: incremented on agree, also on
-    /// repair). May be read via totalAgreements(); feeds the windowed gauge.
+    /**
+     * Lifetime count of agreements (net: incremented on agree, also on
+     * repair). May be read via totalAgreements(); feeds the windowed gauge.
+     */
     std::atomic<uint64_t> totalAgreements_{0};
 
-    /// Lifetime count of misses (net: incremented on miss, decremented on
-    /// repair). NON-monotonic. May be read via totalMissed().
+    /**
+     * Lifetime count of misses (net: incremented on miss, decremented on
+     * repair). NON-monotonic. May be read via totalMissed().
+     */
     std::atomic<uint64_t> totalMissed_{0};
 
-    // Monotonic "gross" lifetime tallies for the Prometheus _total counters.
-    //
-    // Counting decision (initial-classification only): each reconciled ledger
-    // is counted exactly once, at its first classification, into exactly one
-    // of the two tallies below. A later late-repair (miss -> agreement) does
-    // NOT move either tally. This keeps both strictly monotonic (a Prometheus
-    // _total must never decrease) and additive:
-    //     totalAgreementsGross_ + totalMissedGross_ == ledgers reconciled.
-    // The repaired/agreement view is still available from the windowed gauge
-    // (validation_agreement) and the net totals above.
+    /**
+     * Monotonic "gross" lifetime tallies for the Prometheus _total counters.
+     *
+     * Counting decision (initial-classification only): each reconciled
+     * ledger is counted exactly once, at its first classification, into
+     * exactly one of the two tallies below. A later late-repair
+     * (miss -> agreement) does NOT move either tally. This keeps both
+     * strictly monotonic (a Prometheus _total must never decrease) and
+     * additive: totalAgreementsGross_ + totalMissedGross_ == ledgers
+     * reconciled. The repaired/agreement view is still available from the
+     * windowed gauge (validation_agreement) and the net totals above.
+     */
 
-    /// Monotonic lifetime initial agreements; backs
-    /// validation_agreements_total. Never adjusted on repair.
+    /**
+     * Monotonic lifetime initial agreements; backs
+     * validation_agreements_total. Never adjusted on repair.
+     */
     std::atomic<uint64_t> totalAgreementsGross_{0};
 
-    /// Monotonic lifetime initial misses; backs validation_missed_total.
-    /// Never decremented on repair.
+    /**
+     * Monotonic lifetime initial misses; backs validation_missed_total.
+     * Never decremented on repair.
+     */
     std::atomic<uint64_t> totalMissedGross_{0};
 
-    /// Lifetime count of validations this node sent.
+    /**
+     * Lifetime count of validations this node sent.
+     */
     std::atomic<uint64_t> totalValidationsSent_{0};
 
-    /// Lifetime count of network validations observed.
+    /**
+     * Lifetime count of network validations observed.
+     */
     std::atomic<uint64_t> totalValidationsChecked_{0};
 
     /**

@@ -34,83 +34,82 @@ namespace RPC {
 namespace {
 
 /**
-   This code is called from both the HTTP RPC handler and Websockets.
-
-   The form of the Json returned is somewhat different between the two services.
-
-   HTML:
-     Success:
-        {
-           "result" : {
-              "ledger" : {
-                 "accepted" : false,
-                 "transaction_hash" : "..."
-              },
-              "ledger_index" : 10300865,
-              "validated" : false,
-              "status" : "success"  # Status is inside the result.
-           }
-        }
-
-     Failure:
-        {
-           "result" : {
-              // api_version == 1
-              "error" : "noNetwork",
-              "error_code" : 17,
-              "error_message" : "Not synced to the network.",
-
-              // api_version == 2
-              "error" : "notSynced",
-              "error_code" : 18,
-              "error_message" : "Not synced to the network.",
-
-              "request" : {
-                 "command" : "ledger",
-                 "ledger_index" : 10300865
-              },
-              "status" : "error"
-           }
-        }
-
-   Websocket:
-     Success:
-        {
-           "result" : {
-              "ledger" : {
-                 "accepted" : false,
-                 "transaction_hash" : "..."
-              },
-              "ledger_index" : 10300865,
-              "validated" : false
-           }
-           "type": "response",
-           "status": "success",   # Status is OUTside the result!
-           "id": "client's ID",   # Optional
-           "warning": 3.14        # Optional
-        }
-
-     Failure:
-        {
-          // api_version == 1
-          "error" : "noNetwork",
-          "error_code" : 17,
-          "error_message" : "Not synced to the network.",
-
-          // api_version == 2
-          "error" : "notSynced",
-          "error_code" : 18,
-          "error_message" : "Not synced to the network.",
-
-          "request" : {
-             "command" : "ledger",
-             "ledger_index" : 10300865
-          },
-          "type": "response",
-          "status" : "error",
-          "id": "client's ID"   # Optional
-        }
-
+ * This code is called from both the HTTP RPC handler and Websockets.
+ *
+ * The form of the Json returned is somewhat different between the two services.
+ *
+ * HTML:
+ *   Success:
+ *      {
+ *         "result" : {
+ *            "ledger" : {
+ *               "accepted" : false,
+ *               "transaction_hash" : "..."
+ *            },
+ *            "ledger_index" : 10300865,
+ *            "validated" : false,
+ *            "status" : "success"  # Status is inside the result.
+ *         }
+ *      }
+ *
+ *   Failure:
+ *      {
+ *         "result" : {
+ *            // api_version == 1
+ *            "error" : "noNetwork",
+ *            "error_code" : 17,
+ *            "error_message" : "Not synced to the network.",
+ *
+ *            // api_version == 2
+ *            "error" : "notSynced",
+ *            "error_code" : 18,
+ *            "error_message" : "Not synced to the network.",
+ *
+ *            "request" : {
+ *               "command" : "ledger",
+ *               "ledger_index" : 10300865
+ *            },
+ *            "status" : "error"
+ *         }
+ *      }
+ *
+ * Websocket:
+ *   Success:
+ *      {
+ *         "result" : {
+ *            "ledger" : {
+ *               "accepted" : false,
+ *               "transaction_hash" : "..."
+ *            },
+ *            "ledger_index" : 10300865,
+ *            "validated" : false
+ *         }
+ *         "type": "response",
+ *         "status": "success",   # Status is OUTside the result!
+ *         "id": "client's ID",   # Optional
+ *         "warning": 3.14        # Optional
+ *      }
+ *
+ *   Failure:
+ *      {
+ *        // api_version == 1
+ *        "error" : "noNetwork",
+ *        "error_code" : 17,
+ *        "error_message" : "Not synced to the network.",
+ *
+ *        // api_version == 2
+ *        "error" : "notSynced",
+ *        "error_code" : 18,
+ *        "error_message" : "Not synced to the network.",
+ *
+ *        "request" : {
+ *           "command" : "ledger",
+ *           "ledger_index" : 10300865
+ *        },
+ *        "type": "response",
+ *        "status" : "error",
+ *        "id": "client's ID"   # Optional
+ *      }
  */
 
 ErrorCodeI
@@ -163,7 +162,10 @@ template <class Object, class Method>
 Status
 callMethod(JsonContext& context, Method method, std::string const& name, Object& result)
 {
-    auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::command, name);
+    // Scoped so this command nests under rpc.process and becomes the ambient
+    // parent of any command-internal spans (e.g. pathfind.request). Coro-aware
+    // storage keeps the scope correct across doRipplePathFind's yield.
+    auto span = ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::command, name);
     span.setAttribute(rpc_span::attr::command, name.c_str());
     span.setAttribute(rpc_span::attr::version, static_cast<int64_t>(context.apiVersion));
     span.setAttribute(
@@ -258,7 +260,7 @@ doCommand(RPC::JsonContext& context, json::Value& result)
         // registered handler names (plus "unknown") — see the helper for why
         // raw request input must not reach the telemetry pipeline.
         auto const cmdName = resolveCommandSpanName(context);
-        auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
+        auto span = ScopedSpanGuard(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
         span.setAttribute(rpc_span::attr::command, cmdName);
         span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
         span.setError(getErrorInfo(error).token.cStr());

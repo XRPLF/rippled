@@ -67,9 +67,23 @@ endif()
 # The telemetry test module exercises SpanGuard/Telemetry, which link against
 # the OpenTelemetry SDK when the telemetry build option is enabled.
 if(telemetry)
+    # The SpanGuardScope tests drive an InMemorySpanExporter to read exported
+    # spans (test-only; production never uses it). The Conan package ships
+    # libopentelemetry_exporter_in_memory.a but declares the component with no
+    # libs, so neither the umbrella target nor opentelemetry-cpp::exporter_in_memory
+    # puts the archive on the link line. Locate it by path and link it BEFORE
+    # the umbrella so its undefined SDK references resolve against the umbrella.
+    find_library(
+        OTEL_IN_MEMORY_EXPORTER_LIB
+        NAMES opentelemetry_exporter_in_memory
+        HINTS "${opentelemetry-cpp_PACKAGE_FOLDER_RELEASE}/lib"
+        REQUIRED
+    )
     target_link_libraries(
         xrpl_tests
-        PRIVATE opentelemetry-cpp::opentelemetry-cpp
+        PRIVATE
+            "${OTEL_IN_MEMORY_EXPORTER_LIB}"
+            opentelemetry-cpp::opentelemetry-cpp
     )
     # ValidationTracker lives in src/xrpld/ (not libxrpl), so we compile its
     # implementation directly into the test binary and put src/ on the include

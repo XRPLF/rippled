@@ -113,10 +113,14 @@ using namespace std::chrono_literals;
 namespace xrpl {
 
 namespace {
-/** The threshold above which we treat a peer connection as high latency */
+/**
+ * The threshold above which we treat a peer connection as high latency
+ */
 constexpr std::chrono::milliseconds kPeerHighLatency{300};
 
-/** How often we PING the peer to check for latency and sendq probe */
+/**
+ * How often we PING the peer to check for latency and sendq probe
+ */
 constexpr std::chrono::seconds kPeerTimerInterval{60};
 
 }  // namespace
@@ -1311,6 +1315,8 @@ PeerImp::handleTransaction(
         uint256 const txID = stx->getTransactionID();
 
         using namespace telemetry;
+        // SpanGuard is thread-free (holds no Scope), so it is safe to hand to
+        // a job-queue worker and end on that thread — no detach step is needed.
         auto span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
         span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
         span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
@@ -1429,6 +1435,10 @@ PeerImp::handleTransaction(
                  batch,
                  stx,
                  sp = std::move(span)]() {
+                    // Activate the tx.receive span so checkTransaction's log
+                    // lines carry its trace_id. Non-owning; sp still owns/ends
+                    // the span. This job body runs to completion on one worker.
+                    auto activation = telemetry::activateIfLive(sp);
                     if (auto peer = weak.lock())
                         peer->checkTransaction(flags, checkSignature, stx, batch);
                 });
@@ -1750,7 +1760,10 @@ void
 PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 {
     using namespace telemetry;
-    auto span = SpanGuard::span(TraceCategory::Peer, seg::peer, peer_span::op::proposalReceive);
+    // root: inbound peer message entry point (kConsumer); must not inherit
+    // any span left active on this peer thread.
+    auto span =
+        ScopedSpanGuard::freshRoot(TraceCategory::Peer, seg::peer, peer_span::op::proposalReceive);
     span.setAttribute(peer_span::attr::peerId, static_cast<int64_t>(id_));
 
     protocol::TMProposeSet const& set = *m;
@@ -1848,6 +1861,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             app_.getTimeKeeper().closeTime(),
             calcNodeID(app_.getValidatorManifests().getMasterKey(publicKey))});
 
+    // Create a receive span that links to the sender's trace context
+    // (if propagated). shared_ptr keeps it alive across the job boundary.
+    // The receive span is a thread-free SpanGuard handed to the job worker;
+    // no scope to strip.
     auto consSpan = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
     consSpan->setAttribute(telemetry::consensus::span::attr::proposalTrusted, isTrusted);
     consSpan->setAttribute(
@@ -2367,8 +2384,10 @@ void
 PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 {
     using namespace telemetry;
-    auto valSpan =
-        SpanGuard::span(TraceCategory::Peer, seg::peer, peer_span::op::validationReceive);
+    // root: inbound peer message entry point (kConsumer); must not inherit
+    // any span left active on this peer thread.
+    auto valSpan = ScopedSpanGuard::freshRoot(
+        TraceCategory::Peer, seg::peer, peer_span::op::validationReceive);
     valSpan.setAttribute(peer_span::attr::peerId, static_cast<int64_t>(id_));
 
     if (m->validation().size() < 50)
@@ -2449,6 +2468,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             return;
         }
 
+        // Create a receive span that links to the sender's trace context
+        // (if propagated). shared_ptr keeps it alive across the job boundary.
+        // The receive span is a thread-free SpanGuard handed to the job worker;
+        // no scope to strip.
         auto consSpan =
             std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
         consSpan->setAttribute(telemetry::consensus::span::attr::validationTrusted, isTrusted);

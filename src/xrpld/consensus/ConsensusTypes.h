@@ -14,41 +14,50 @@
 
 namespace xrpl {
 
-/** Represents how a node currently participates in Consensus.
-
-    A node participates in consensus in varying modes, depending on how
-    the node was configured by its operator and how well it stays in sync
-    with the network during consensus.
-
-    @code
-      proposing               observing
-         \                       /
-          \---> wrongLedger <---/
-                     ^
-                     |
-                     |
-                     v
-                switchedLedger
-   @endcode
-
-   We enter the round proposing or observing. If we detect we are working
-   on the wrong prior ledger, we go to wrongLedger and attempt to acquire
-   the right one. Once we acquire the right one, we go to the switchedLedger
-   mode.  It is possible we fall behind again and find there is a new better
-   ledger, moving back and forth between wrongLedger and switchLedger as
-   we attempt to catch up.
-*/
+/**
+ * Represents how a node currently participates in Consensus.
+ *
+ *  A node participates in consensus in varying modes, depending on how
+ *  the node was configured by its operator and how well it stays in sync
+ *  with the network during consensus.
+ *
+ *  @code
+ *    proposing               observing
+ *       \                       /
+ *        \---> wrongLedger <---/
+ *                   ^
+ *                   |
+ *                   |
+ *                   v
+ *              switchedLedger
+ * @endcode
+ *
+ * We enter the round proposing or observing. If we detect we are working
+ * on the wrong prior ledger, we go to wrongLedger and attempt to acquire
+ * the right one. Once we acquire the right one, we go to the switchedLedger
+ * mode.  It is possible we fall behind again and find there is a new better
+ * ledger, moving back and forth between wrongLedger and switchLedger as
+ * we attempt to catch up.
+ */
 enum class ConsensusMode {
-    //! We are normal participant in consensus and propose our position
+    /**
+     * We are normal participant in consensus and propose our position
+     */
     Proposing,
-    //! We are observing peer positions, but not proposing our position
+    /**
+     * We are observing peer positions, but not proposing our position
+     */
     Observing,
-    //! We have the wrong ledger and are attempting to acquire it
+    /**
+     * We have the wrong ledger and are attempting to acquire it
+     */
     WrongLedger,
-    //! We switched ledgers since we started this consensus round but are now
-    //! running on what we believe is the correct ledger.  This mode is as
-    //! if we entered the round observing, but is used to indicate we did
-    //! have the wrongLedger at some point.
+    /**
+     * We switched ledgers since we started this consensus round but are now
+     * running on what we believe is the correct ledger.  This mode is as
+     * if we entered the round observing, but is used to indicate we did
+     * have the wrongLedger at some point.
+     */
     SwitchedLedger
 };
 
@@ -70,8 +79,10 @@ to_string(ConsensusMode m)
     }
 }
 
-/// Title Case display name for telemetry attributes and dashboards.
-/// Separate from to_string() which is used in logs and must remain stable.
+/**
+ * Title Case display name for telemetry attributes and dashboards.
+ * Separate from to_string() which is used in logs and must remain stable.
+ */
 inline std::string
 toDisplayString(ConsensusMode m)
 {
@@ -90,32 +101,39 @@ toDisplayString(ConsensusMode m)
     }
 }
 
-/** Phases of consensus for a single ledger round.
-
-    @code
-          "close"             "accept"
-     open ------- > establish ---------> accepted
-       ^               |                    |
-       |---------------|                    |
-       ^                     "startRound"   |
-       |------------------------------------|
-   @endcode
-
-   The typical transition goes from open to establish to accepted and
-   then a call to startRound begins the process anew. However, if a wrong prior
-   ledger is detected and recovered during the establish or accept phase,
-   consensus will internally go back to open (see Consensus::handleWrongLedger).
-*/
+/**
+ * Phases of consensus for a single ledger round.
+ *
+ * @code
+ *        "close"             "accept"
+ *   open ------- > establish ---------> accepted
+ *     ^               |                    |
+ *     |---------------|                    |
+ *     ^                     "startRound"   |
+ *     |------------------------------------|
+ * @endcode
+ *
+ * The typical transition goes from open to establish to accepted and
+ * then a call to startRound begins the process anew. However, if a wrong prior
+ * ledger is detected and recovered during the establish or accept phase,
+ * consensus will internally go back to open (see Consensus::handleWrongLedger).
+ */
 enum class ConsensusPhase {
-    //! We haven't closed our ledger yet, but others might have
+    /**
+     * We haven't closed our ledger yet, but others might have
+     */
     Open,
 
-    //! Establishing consensus by exchanging proposals with our peers
+    /**
+     * Establishing consensus by exchanging proposals with our peers
+     */
     Establish,
 
-    //! We have accepted a new last closed ledger and are waiting on a call
-    //! to startRound to begin the next consensus round.  No changes
-    //! to consensus phase occur while in this phase.
+    /**
+     * We have accepted a new last closed ledger and are waiting on a call
+     * to startRound to begin the next consensus round.  No changes
+     * to consensus phase occur while in this phase.
+     */
     Accepted,
 };
 
@@ -135,7 +153,8 @@ to_string(ConsensusPhase p)
     }
 }
 
-/** Measures the duration of phases of consensus
+/**
+ * Measures the duration of phases of consensus
  */
 class ConsensusTimer
 {
@@ -171,39 +190,47 @@ public:
     }
 };
 
-/** Stores the set of initial close times
-
-    The initial consensus proposal from each peer has that peer's view of
-    when the ledger closed.  This object stores all those close times for
-    analysis of clock drift between peers.
-*/
+/**
+ * Stores the set of initial close times
+ *
+ * The initial consensus proposal from each peer has that peer's view of
+ * when the ledger closed.  This object stores all those close times for
+ * analysis of clock drift between peers.
+ */
 struct ConsensusCloseTimes
 {
     explicit ConsensusCloseTimes() = default;
 
-    //! Close time estimates, keep ordered for predictable traverse
+    /**
+     * Close time estimates, keep ordered for predictable traverse
+     */
     std::map<NetClock::time_point, int> peers;
 
-    //! Our close time estimate
+    /**
+     * Our close time estimate
+     */
     NetClock::time_point self;
 };
 
-/** Whether we have or don't have a consensus */
+/**
+ * Whether we have or don't have a consensus
+ */
 enum class ConsensusState {
-    No,       //!< We do not have consensus
-    MovedOn,  //!< The network has consensus without us
-    Expired,  //!< Consensus time limit has hard-expired
-    Yes       //!< We have consensus along with the network
+    No,       ///< We do not have consensus
+    MovedOn,  ///< The network has consensus without us
+    Expired,  ///< Consensus time limit has hard-expired
+    Yes       ///< We have consensus along with the network
 };
 
-/** Encapsulates the result of consensus.
-
-    Stores all relevant data for the outcome of consensus on a single
-   ledger.
-
-    @tparam Traits Traits class defining the concrete consensus types used
-                   by the application.
-*/
+/**
+ * Encapsulates the result of consensus.
+ *
+ * Stores all relevant data for the outcome of consensus on a single
+ * ledger.
+ *
+ * @tparam Traits Traits class defining the concrete consensus types used
+ *                by the application.
+ */
 template <class Traits>
 struct ConsensusResult
 {
@@ -220,13 +247,19 @@ struct ConsensusResult
         XRPL_ASSERT(txns.id() == position.position(), "xrpl::ConsensusResult : valid inputs");
     }
 
-    //! The set of transactions consensus agrees go in the ledger
+    /**
+     * The set of transactions consensus agrees go in the ledger
+     */
     TxSet_t txns;
 
-    //! Our proposed position on transactions/close time
+    /**
+     * Our proposed position on transactions/close time
+     */
     Proposal_t position;
 
-    //! Transactions which are under dispute with our peers
+    /**
+     * Transactions which are under dispute with our peers
+     */
     hash_map<typename Tx_t::ID, Dispute_t> disputes;
 
     // Set of TxSet ids we have already compared/created disputes

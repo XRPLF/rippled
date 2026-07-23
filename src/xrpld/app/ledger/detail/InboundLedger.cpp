@@ -103,6 +103,9 @@ InboundLedger::init(ScopedLockType& collectionLock)
     // observable. Finalized in done() with the outcome and timeout count.
     {
         using namespace telemetry;
+        // acquireSpan_ is emplaced here but reset() on a JtLedgerData worker
+        // thread. A SpanGuard is thread-free (owns no thread-local Scope), so it
+        // can be created here and destroyed on the worker with no scope to strip.
         acquireSpan_.emplace(
             SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::acquire));
         if (*acquireSpan_)
@@ -367,7 +370,8 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
     }
 }
 
-/** Called with a lock by the PeerSet when the timer expires
+/**
+ * Called with a lock by the PeerSet when the timer expires
  */
 void
 InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
@@ -416,7 +420,9 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
     }
 }
 
-/** Add more peers to the set, if possible */
+/**
+ * Add more peers to the set, if possible
+ */
 void
 InboundLedger::addPeers()
 {
@@ -447,25 +453,36 @@ InboundLedger::done()
     touch();
 
     // Finalize the acquire span with the outcome, timeout count, and peer
-    // count, then end it (reset) so its duration is exported.
-    if (acquireSpan_ && *acquireSpan_)
+    // count. Keep it active as the ambient context across the finalize and
+    // the outcome log below so that log line carries the span's trace_id.
+    // The activation is non-owning; acquireSpan_ still owns the span. The
+    // activation pops at the end of this block (restoring the prior context)
+    // while acquireSpan_ is still alive, then reset() ends the span.
     {
-        using namespace telemetry;
-        acquireSpan_->setAttribute(
-            ledger_span::attr::outcome,
-            failed_ ? std::string_view(ledger_span::val::failed)
-                    : std::string_view(ledger_span::val::complete));
-        acquireSpan_->setAttribute(ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
-        acquireSpan_->setAttribute(
-            ledger_span::attr::peerCount, static_cast<int64_t>(getPeerCount()));
-    }
-    acquireSpan_.reset();
+        auto acquireActivation = telemetry::activateIfLive(acquireSpan_);
+        if (acquireSpan_ && *acquireSpan_)
+        {
+            using namespace telemetry;
+            acquireSpan_->setAttribute(
+                ledger_span::attr::outcome,
+                failed_ ? std::string_view(ledger_span::val::failed)
+                        : std::string_view(ledger_span::val::complete));
+            acquireSpan_->setAttribute(
+                ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
+            acquireSpan_->setAttribute(
+                ledger_span::attr::peerCount, static_cast<int64_t>(getPeerCount()));
+        }
 
-    JLOG(journal_.debug()) << "Acquire " << hash_ << (failed_ ? " fail " : " ")
-                           << ((timeouts_ == 0)
-                                   ? std::string()
-                                   : (std::string("timeouts:") + std::to_string(timeouts_) + " "))
-                           << stats_.get();
+        JLOG(journal_.debug()) << "Acquire " << hash_ << (failed_ ? " fail " : " ")
+                               << ((timeouts_ == 0) ? std::string()
+                                                    : (std::string("timeouts:") +
+                                                       std::to_string(timeouts_) + " "))
+                               << stats_.get();
+        // acquireActivation pops here, before the span is ended below.
+    }
+    // End the acquire span after its outcome log. Unconditional so the span
+    // never leaks even when it was inactive.
+    acquireSpan_.reset();
 
     XRPL_ASSERT(complete_ || failed_, "xrpl::InboundLedger::done : complete or failed");
 
@@ -500,7 +517,8 @@ InboundLedger::done()
     });
 }
 
-/** Request more nodes, perhaps from a specific peer
+/**
+ * Request more nodes, perhaps from a specific peer
  */
 void
 InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
@@ -815,9 +833,10 @@ InboundLedger::filterNodes(
         recentNodes_.insert(n.second);
 }
 
-/** Take ledger header data
-    Call with a lock
-*/
+/**
+ * Take ledger header data
+ * Call with a lock
+ */
 // data must not have hash prefix
 bool
 InboundLedger::takeHeader(std::string const& data)
@@ -861,9 +880,10 @@ InboundLedger::takeHeader(std::string const& data)
     return true;
 }
 
-/** Process node data received from a peer
-    Call with a lock
-*/
+/**
+ * Process node data received from a peer
+ * Call with a lock
+ */
 void
 InboundLedger::receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode& san)
 {
@@ -957,9 +977,10 @@ InboundLedger::receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode& 
     }
 }
 
-/** Process AS root node received from a peer
-    Call with a lock
-*/
+/**
+ * Process AS root node received from a peer
+ * Call with a lock
+ */
 bool
 InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
 {
@@ -983,9 +1004,10 @@ InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
     return san.isGood();
 }
 
-/** Process AS root node received from a peer
-    Call with a lock
-*/
+/**
+ * Process AS root node received from a peer
+ * Call with a lock
+ */
 bool
 InboundLedger::takeTxRootNode(Slice const& data, SHAMapAddNode& san)
 {
@@ -1040,9 +1062,10 @@ InboundLedger::getNeededHashes()
     return ret;
 }
 
-/** Stash a TMLedgerData received from a peer for later processing
-    Returns 'true' if we need to dispatch
-*/
+/**
+ * Stash a TMLedgerData received from a peer for later processing
+ * Returns 'true' if we need to dispatch
+ */
 bool
 InboundLedger::gotData(
     std::weak_ptr<Peer> peer,
@@ -1062,9 +1085,10 @@ InboundLedger::gotData(
     return true;
 }
 
-/** Process one TMLedgerData
-    Returns the number of useful nodes
-*/
+/**
+ * Process one TMLedgerData
+ * Returns the number of useful nodes
+ */
 // VFALCO NOTE, it is not necessary to pass the entire Peer,
 //              we can get away with just a Resource::Consumer endpoint.
 //
@@ -1239,9 +1263,10 @@ struct PeerDataCounts
 };
 }  // namespace detail
 
-/** Process pending TMLedgerData
-    Query the a random sample of the 'best' peers
-*/
+/**
+ * Process pending TMLedgerData
+ * Query the a random sample of the 'best' peers
+ */
 void
 InboundLedger::runData()
 {

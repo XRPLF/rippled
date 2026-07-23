@@ -119,7 +119,8 @@ public:
         return {};
     }
 
-    /** We received a TMLedgerData from a peer.
+    /**
+     * We received a TMLedgerData from a peer.
      */
     void
     gotData(

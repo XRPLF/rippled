@@ -20,11 +20,12 @@ namespace detail {
 struct FlowDebugInfo;
 }  // namespace detail
 
-/** RippleCalc calculates the quality of a payment path.
-
-    Quality is the amount of input required to produce a given output along a
-    specified path - another name for this is exchange rate.
-*/
+/**
+ * RippleCalc calculates the quality of a payment path.
+ *
+ * Quality is the amount of input required to produce a given output along a
+ * specified path - another name for this is exchange rate.
+ */
 class RippleCalc
 {
 public:

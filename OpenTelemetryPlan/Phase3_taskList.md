@@ -100,6 +100,10 @@
 - Use `SpanGuard::span(TraceCategory::Transactions, "tx", "receive")` factory
   (Phase 1c replaced macros with the SpanGuard factory pattern)
 
+> **Note**: The `tx.receive` guard is `.detached()` before being moved into the
+> `RcvCheckTx` job so its Scope is popped on the peer thread, not leaked to the
+> worker (else later peer messages would inherit this transaction's trace).
+
 **Key modified files**:
 
 - `src/xrpld/overlay/detail/PeerImp.cpp`
@@ -123,6 +127,9 @@
     - Create `tx.process` span
     - Set attributes: `tx_hash`, `tx_type`, `local` (whether from RPC or peer)
     - Record whether sync or async path is taken
+    - `.detached()` the guard before storing it in `TransactionStatus::span`,
+      since it is applied on a batch worker thread — this pops the Scope on the
+      origin thread and stops later work inheriting this transaction's trace
 
   - In `doTransactionAsync()`:
     - Capture parent context before queuing

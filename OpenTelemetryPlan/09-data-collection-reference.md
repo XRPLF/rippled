@@ -139,6 +139,23 @@ under a single trace even though they run sequentially and often on different
 threads. A transaction that hard-fails preflight or preclaim never reaches the
 later spans — the `stage` attribute identifies where it stopped.
 
+> **Deterministic roots are true roots.** Spans with a deterministic `trace_id`
+> (the `tx.*` apply pipeline, `tx.process`, `tx.receive`, and `consensus.round`)
+> are emitted as genuine trace roots with an empty `parent_span_id`. The chosen
+> `trace_id` is injected through a custom `DeterministicIdGenerator` on the SDK's
+> no-parent branch, so there is no synthetic placeholder parent — Tempo shows a
+> clean root, not a "root span not yet received" warning. Cross-node correlation
+> still works because every node derives the same `trace_id` from the shared hash.
+
+> **Log-trace correlation is retained across coroutines.** OTel context storage
+> is coroutine-aware (backed by `LocalValue`), so the active span travels with a
+> coroutine across `yield()` and resumes on whatever thread the scheduler picks.
+> RPC, consensus, and transaction spans therefore keep per-line log-trace
+> correlation, and their scopes are safe across coroutine yields. Job-handoff
+> spans — transaction apply and receive, consensus accept, and ledger acquire —
+> are activated inside their worker bodies rather than at enqueue, so each
+> worker's log lines carry the span's trace context.
+
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"tx.process|tx.receive"}`
 or, for the apply pipeline: `{resource.service.name="xrpld" && name=~"tx.preflight|tx.preclaim|tx.transactor"}`
 
@@ -213,6 +230,11 @@ Controlled by `trace_peer` in `[telemetry]` config. **Enabled by default** (high
 | `peer.proposal.receive`   | —      | PeerImp.cpp | Consensus proposal received from peer |
 | `peer.validation.receive` | —      | PeerImp.cpp | Validation message received from peer |
 
+A `—` parent means the span is a fresh trace root (`kConsumer`): it is started
+via `ScopedSpanGuard::freshRoot()` at the inbound-message entry point and never
+inherits an ambient span left active on the peer thread, so it does not nest
+under an unrelated transaction's trace.
+
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"peer.*"}`
 
 **Grafana dashboard**: _Peer Network_ (`peer-network`)
@@ -221,12 +243,21 @@ Controlled by `trace_peer` in `[telemetry]` config. **Enabled by default** (high
 
 Controlled by `trace_rpc=1` in `[telemetry]` config.
 
-| Span Name             | Parent             | Source File     | Description                                                |
-| --------------------- | ------------------ | --------------- | ---------------------------------------------------------- |
-| `pathfind.request`    | `rpc.command.*`    | PathRequest.cpp | `path_find` / `ripple_path_find` RPC entry                 |
-| `pathfind.compute`    | `pathfind.request` | PathRequest.cpp | Path computation for one request (`PathRequest::doUpdate`) |
-| `pathfind.discover`   | `pathfind.compute` | Pathfinder.cpp  | Graph exploration (one per RPC call)                       |
-| `pathfind.update_all` | —                  | PathRequest.cpp | Async recomputation of all active requests at ledger close |
+| Span Name             | Parent               | Source File     | Description                                                |
+| --------------------- | -------------------- | --------------- | ---------------------------------------------------------- |
+| `pathfind.request`    | `rpc.command.<name>` | PathFind.cpp    | `path_find` RPC entry (`doPathFind`)                       |
+| `pathfind.compute`    | `pathfind.request`   | PathRequest.cpp | Path computation for one request (`PathRequest::doUpdate`) |
+| `pathfind.discover`   | `pathfind.compute`   | Pathfinder.cpp  | Graph exploration (one per RPC call)                       |
+| `pathfind.update_all` | —                    | PathRequest.cpp | Async recomputation of all active requests at ledger close |
+
+> **Note**: `pathfind.request` nests under the active `rpc.command.<name>` span.
+> Because OTel context storage is coroutine-aware (backed by `LocalValue`), the
+> `rpc.command.*` scope stays correct even though its generic dispatch
+> (`callMethod`) also wraps handlers such as `doRipplePathFind` whose span is held
+> across a coroutine `yield()` — the ambient context travels with the coroutine
+> when it resumes, so there is no wrong-thread scope pop. The
+> `pathfind.request → compute → discover` sub-tree therefore parents to
+> `rpc.command.<name>`, giving an exact request-to-pathfind nesting.
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"pathfind.*"}`
 
@@ -840,16 +871,17 @@ async callbacks for new categories.
 
 #### Server Info (via OTel MetricsRegistry)
 
-| Prometheus Metric                                   | Type  | Labels   | Description                                  |
-| --------------------------------------------------- | ----- | -------- | -------------------------------------------- |
-| `server_info{metric="server_state"}`                | Gauge | `metric` | Operating mode (0=DISCONNECTED .. 4=FULL)    |
-| `server_info{metric="uptime"}`                      | Gauge | `metric` | Seconds since server start                   |
-| `server_info{metric="peers"}`                       | Gauge | `metric` | Total connected peers                        |
-| `server_info{metric="validated_ledger_seq"}`        | Gauge | `metric` | Validated ledger sequence number             |
-| `server_info{metric="ledger_current_index"}`        | Gauge | `metric` | Current open ledger sequence                 |
-| `server_info{metric="peer_disconnects_resources"}`  | Gauge | `metric` | Cumulative resource-related peer disconnects |
-| `server_info{metric="last_close_proposers"}`        | Gauge | `metric` | Proposers in last closed round               |
-| `server_info{metric="last_close_converge_time_ms"}` | Gauge | `metric` | Last close convergence time (milliseconds)   |
+| Prometheus Metric                                   | Type  | Labels   | Description                                                                                                                                                                                                                     |
+| --------------------------------------------------- | ----- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `server_info{metric="server_state"}`                | Gauge | `metric` | Operating mode (0=DISCONNECTED .. 4=FULL)                                                                                                                                                                                       |
+| `server_info{metric="uptime"}`                      | Gauge | `metric` | Seconds since server start                                                                                                                                                                                                      |
+| `server_info{metric="peers"}`                       | Gauge | `metric` | Total connected peers                                                                                                                                                                                                           |
+| `server_info{metric="validated_ledger_seq"}`        | Gauge | `metric` | Validated ledger sequence number                                                                                                                                                                                                |
+| `server_info{metric="ledger_current_index"}`        | Gauge | `metric` | Current open ledger sequence                                                                                                                                                                                                    |
+| `server_info{metric="peer_disconnects_resources"}`  | Gauge | `metric` | Cumulative resource-related peer disconnects                                                                                                                                                                                    |
+| `server_info{metric="last_close_proposers"}`        | Gauge | `metric` | Proposers in last closed round                                                                                                                                                                                                  |
+| `server_info{metric="last_close_converge_time_ms"}` | Gauge | `metric` | Last close convergence time (milliseconds)                                                                                                                                                                                      |
+| `server_info{metric="last_close_time"}`             | Gauge | `metric` | Network close time of last closed ledger (NetClock secs since XRPL epoch). Query `time() - (value + 946684800)` for last-close age (staleness). Use `1/rate(ledgers_closed_total)` — not a gauge delta — for the close interval |
 
 #### Build Info (via OTel MetricsRegistry)
 
@@ -1062,12 +1094,18 @@ via OTLP/HTTP to the OTel Collector and scraped by Prometheus.
 
 #### Per-RPC Method Metrics (Synchronous Counters/Histogram)
 
-| Prometheus Metric           | Type      | Labels            | Description                      |
-| --------------------------- | --------- | ----------------- | -------------------------------- |
-| `rpc_method_started_total`  | Counter   | `method="<name>"` | RPC calls started                |
-| `rpc_method_finished_total` | Counter   | `method="<name>"` | RPC calls completed successfully |
-| `rpc_method_errored_total`  | Counter   | `method="<name>"` | RPC calls that errored           |
-| `rpc_method_us`             | Histogram | `method="<name>"` | Execution time distribution (us) |
+| Prometheus Metric           | Type          | Labels            | Description                                            |
+| --------------------------- | ------------- | ----------------- | ------------------------------------------------------ |
+| `rpc_method_started_total`  | Counter       | `method="<name>"` | RPC calls started                                      |
+| `rpc_method_finished_total` | Counter       | `method="<name>"` | RPC calls completed successfully                       |
+| `rpc_method_errored_total`  | Counter       | `method="<name>"` | RPC calls that errored                                 |
+| `rpc_method_us`             | Histogram     | `method="<name>"` | Execution time distribution (us)                       |
+| `rpc_in_flight_requests`    | UpDownCounter | (none)            | RPC calls currently executing (+1 rpcStart, -1 rpcEnd) |
+
+`rpc_in_flight_requests` is emitted at its call site via the `XRPL_METRIC_UPDOWN_ADD`
+macro (see `src/xrpld/telemetry/MetricMacros.h` and `PerfLogImp.cpp`), not through a
+`MetricsRegistry` member. As an UpDownCounter it carries no `_total` suffix (that is
+reserved for monotonic counters).
 
 #### Per-Job-Type Metrics (Synchronous Counters/Histogram)
 

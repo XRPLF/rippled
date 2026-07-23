@@ -1,6 +1,36 @@
 {
   "annotations": {
-    "list": []
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "rgb(70, 70, 70)",
+        "name": "Annotate perf-iac runs",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": ["perf-iac"],
+          "type": "tags"
+        },
+        "type": "tags"
+      }
+    ]
   },
   "editable": true,
   "fiscalYearStartMonth": 0,
@@ -10,7 +40,7 @@
   "panels": [
     {
       "title": "Ledger Build Rate",
-      "description": "###### What this is:\n*How many new ledgers this node finishes building per second.*\n\n###### How it's computed:\n*Per-second rate of completed ledger-build operations, averaged over 5 minutes and split by node.*\n\n###### Reading it:\n*A steady flat line; the value should track the network close cadence.*\n\n###### Healthy range:\n*About 0.2-0.3 ledgers/sec on mainnet (roughly one every 3-5s); workload-dependent on test networks.*\n\n###### Watch for:\n*A drop toward zero (node fell out of sync or stalled) or a value well above the network rate (rebuilding history).*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`buildLedgerImpl`",
+      "description": "###### What this is:\n*How many new ledgers this node finishes building per second.*\n\n###### How it's computed:\n*Per-second rate of completed ledger-build operations, averaged over 5 minutes and split by node.*\n\n###### Reading it:\n*A steady flat line; the value should track the network close cadence.*\n\n###### Healthy range:\n*About 0.2-0.3 ledgers/sec on mainnet (roughly one every 3-5s); workload-dependent on test networks.*\n\n###### Watch for:\n*A drop toward zero (node fell out of sync or stalled) or a value well above the network rate (rebuilding history).*\n\n###### Keywords:\n- **Ledger build** *(per node)* \u2014 constructing the new ledger by applying the agreed transaction set to the prior ledger.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`buildLedgerImpl`\n\n###### References:\n[Ledger build](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-build)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -31,12 +61,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"ledger.build\"}[$__rate_interval])), \"series\", \"Builds / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"ledger.build\"}[$__rate_interval])), \"series\", \"Builds / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops"
         },
         "overrides": []
@@ -44,7 +74,7 @@
     },
     {
       "title": "Ledger Build Duration",
-      "description": "###### What this is:\n*The time taken to build a single ledger, at the 95th percentile.*\n\n###### How it's computed:\n*95th-percentile of ledger-build durations over a 5-minute window, per node.*\n\n###### Reading it:\n*Lower is better; the line should stay well under the ledger interval.*\n\n###### Healthy range:\n*Typically tens to low hundreds of milliseconds; workload-dependent.*\n\n###### Watch for:\n*Sustained rises approaching the close interval, which indicate heavy transaction sets or disk/I/O pressure.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`buildLedgerImpl`",
+      "description": "###### What this is:\n*The time taken to build a single ledger, at the 95th percentile.*\n\n###### How it's computed:\n*95th-percentile of ledger-build durations over a 5-minute window, per node.*\n\n###### Reading it:\n*Lower is better; the line should stay well under the ledger interval.*\n\n###### Healthy range:\n*Typically tens to low hundreds of milliseconds; workload-dependent.*\n\n###### Watch for:\n*Sustained rises approaching the close interval, which indicate heavy transaction sets or disk/I/O pressure.*\n\n###### Keywords:\n- **Ledger build** *(per node)* \u2014 constructing the new ledger by applying the agreed transaction set to the prior ledger.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`buildLedgerImpl`\n\n###### References:\n[Ledger build](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-build)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -65,12 +95,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"ledger.build\"}[5m]))), \"series\", \"P95 Build Duration\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"ledger.build\"}[5m]))), \"series\", \"P95 Build Duration\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -85,7 +115,7 @@
     },
     {
       "title": "Ledger Validation Rate",
-      "description": "###### What this is:\n*How often ledgers reach full validation (accepted by the trusted validator quorum) per second.*\n\n###### How it's computed:\n*Per-second rate of ledger-validation events over 5 minutes, per node.*\n\n###### Reading it:\n*Should closely match the build rate under normal, in-sync operation.*\n\n###### Healthy range:\n*About 0.2-0.3/sec on mainnet; workload-dependent elsewhere.*\n\n###### Watch for:\n*A validation rate that lags the build rate, signalling the node is building ahead of the network consensus it trusts.*\n\n###### Source:\n[LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::checkAccept`",
+      "description": "###### What this is:\n*How often ledgers reach full validation (accepted by the trusted validator quorum) per second.*\n\n###### How it's computed:\n*Per-second rate of ledger-validation events over 5 minutes, per node.*\n\n###### Reading it:\n*Should closely match the build rate under normal, in-sync operation.*\n\n###### Healthy range:\n*About 0.2-0.3/sec on mainnet; workload-dependent elsewhere.*\n\n###### Watch for:\n*A validation rate that lags the build rate, signalling the node is building ahead of the network consensus it trusts.*\n\n###### Keywords:\n- **Ledger validation** *(network event)* \u2014 the second consensus stage where the node confirms a built ledger matches the trusted validator quorum and marks it final.\n- **Validation quorum** *(network-wide)* \u2014 the minimum number of agreeing trusted validations needed to declare a ledger fully validated.\n- **Ledger build** *(per node)* \u2014 constructing the new ledger by applying the agreed transaction set to the prior ledger.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::checkAccept`\n\n###### References:\n[Ledger validation](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure#validation) \u00b7 [Validation quorum](https://xrpl.org/docs/concepts/consensus-protocol/negative-unl) \u00b7 [Ledger build](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-validation)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -106,12 +136,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"ledger.validate\"}[$__rate_interval])), \"series\", \"Validations / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"ledger.validate\"}[$__rate_interval])), \"series\", \"Validations / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops"
         },
         "overrides": []
@@ -119,7 +149,7 @@
     },
     {
       "title": "Ledger Build Duration Heatmap",
-      "description": "###### What this is:\n*The full distribution of ledger-build times over the window, not just a single percentile.*\n\n###### How it's computed:\n*Counts of ledger builds falling in each duration band per 5-minute window, shown as color density.*\n\n###### Reading it:\n*A tight low band is healthy; scattered high cells mean occasional slow builds.*\n\n###### Healthy range:\n*Most mass concentrated in the low-millisecond bands; workload-dependent.*\n\n###### Watch for:\n*A second cluster of hot cells at high durations (bimodal build times) hidden by percentile charts.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`buildLedgerImpl`",
+      "description": "###### What this is:\n*The full distribution of ledger-build times over the window, not just a single percentile.*\n\n###### How it's computed:\n*Counts of ledger builds falling in each duration band per 5-minute window, shown as color density.*\n\n###### Reading it:\n*A tight low band is healthy; scattered high cells mean occasional slow builds.*\n\n###### Healthy range:\n*Most mass concentrated in the low-millisecond bands; workload-dependent.*\n\n###### Watch for:\n*A second cluster of hot cells at high durations (bimodal build times) hidden by percentile charts.*\n\n###### Keywords:\n- **Ledger build** *(per node)* \u2014 constructing the new ledger by applying the agreed transaction set to the prior ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`buildLedgerImpl`\n\n###### References:\n[Ledger build](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-build)",
       "type": "heatmap",
       "gridPos": {
         "h": 8,
@@ -156,7 +186,7 @@
     },
     {
       "title": "Transaction Apply Duration",
-      "description": "###### What this is:\n*The time spent applying the agreed transaction set into the new ledger, at the 95th percentile.*\n\n###### How it's computed:\n*95th-percentile of transaction-apply durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; this is a large share of total build time.*\n\n###### Healthy range:\n*A few to tens of milliseconds; scales with transaction volume per ledger.*\n\n###### Watch for:\n*Spikes during large or expensive transaction sets, which push out overall ledger build time.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`applyTransactions`",
+      "description": "###### What this is:\n*The time spent applying the agreed transaction set into the new ledger, at the 95th percentile.*\n\n###### How it's computed:\n*95th-percentile of transaction-apply durations over 5 minutes, per node.*\n\n###### Reading it:\n*Lower is better; this is a large share of total build time.*\n\n###### Healthy range:\n*A few to tens of milliseconds; scales with transaction volume per ledger.*\n\n###### Watch for:\n*Spikes during large or expensive transaction sets, which push out overall ledger build time.*\n\n###### Keywords:\n- **Transaction apply phase** *(per node)* \u2014 the step that executes the agreed transaction set into the new ledger during a close.\n- **Ledger build** *(per node)* \u2014 constructing the new ledger by applying the agreed transaction set to the prior ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`applyTransactions`\n\n###### References:\n[Transaction apply phase](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-apply-phase)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -177,12 +207,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.apply\"}[5m]))), \"series\", \"P95 tx.apply\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.apply\"}[5m]))), \"series\", \"P95 tx.apply\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
@@ -197,7 +227,7 @@
     },
     {
       "title": "Transaction Apply Rate",
-      "description": "###### What this is:\n*How often the transaction-apply phase runs per second (once per ledger build).*\n\n###### How it's computed:\n*Per-second rate of transaction-apply operations over 5 minutes, per node.*\n\n###### Reading it:\n*Should track the ledger build rate almost exactly.*\n\n###### Healthy range:\n*About 0.2-0.3/sec on mainnet; workload-dependent.*\n\n###### Watch for:\n*Divergence from the build rate, which would indicate a metric or pipeline anomaly.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`applyTransactions`",
+      "description": "###### What this is:\n*How often the transaction-apply phase runs per second (once per ledger build).*\n\n###### How it's computed:\n*Per-second rate of transaction-apply operations over 5 minutes, per node.*\n\n###### Reading it:\n*Should track the ledger build rate almost exactly.*\n\n###### Healthy range:\n*About 0.2-0.3/sec on mainnet; workload-dependent.*\n\n###### Watch for:\n*Divergence from the build rate, which would indicate a metric or pipeline anomaly.*\n\n###### Keywords:\n- **Transaction apply phase** *(per node)* \u2014 the step that executes the agreed transaction set into the new ledger during a close.\n- **Ledger build** *(per node)* \u2014 constructing the new ledger by applying the agreed transaction set to the prior ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp)\n\n###### Function:\n`applyTransactions`\n\n###### References:\n[Transaction apply phase](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#transaction-apply-phase)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -218,12 +248,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.apply\"}[$__rate_interval])), \"series\", \"tx.apply / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"tx.apply\"}[$__rate_interval])), \"series\", \"tx.apply / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops",
           "custom": {
             "axisLabel": "Operations / Sec",
@@ -238,7 +268,7 @@
     },
     {
       "title": "Ledger Store Rate",
-      "description": "###### What this is:\n*How often completed ledgers are written into ledger history per second.*\n\n###### How it's computed:\n*Per-second rate of ledger-store operations over 5 minutes, per node.*\n\n###### Reading it:\n*Should match the build rate during normal operation.*\n\n###### Healthy range:\n*About 0.2-0.3/sec on mainnet; can burst higher while backfilling history.*\n\n###### Watch for:\n*A store rate below the build rate (storage falling behind) or a stall at zero.*\n\n###### Source:\n[LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::storeLedger`",
+      "description": "###### What this is:\n*How often completed ledgers are written into ledger history per second.*\n\n###### How it's computed:\n*Per-second rate of ledger-store operations over 5 minutes, per node.*\n\n###### Reading it:\n*Should match the build rate during normal operation.*\n\n###### Healthy range:\n*About 0.2-0.3/sec on mainnet; can burst higher while backfilling history.*\n\n###### Watch for:\n*A store rate below the build rate (storage falling behind) or a stall at zero.*\n\n###### Keywords:\n- **Ledger store** *(per node)* \u2014 writing a completed ledger into the node's ledger history on disk.\n- **Ledger build** *(per node)* \u2014 constructing the new ledger by applying the agreed transaction set to the prior ledger.\n- **Back-fill / catch-up** *(per node)* \u2014 fetching missing historical ledgers from peers to fill gaps or reach the network tip.\n- **Consensus stall** *(per node)* \u2014 a health check reporting that consensus is not making forward progress.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[LedgerMaster.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/LedgerMaster.cpp)\n\n###### Function:\n`LedgerMaster::storeLedger`\n\n###### References:\n[Ledger build](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Consensus stall](https://xrpl.org/docs/concepts/consensus-protocol/consensus-principles-and-rules) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-store)",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -259,12 +289,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"ledger.store\"}[$__rate_interval])), \"series\", \"Stores / Sec\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_calls_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"ledger.store\"}[$__rate_interval])), \"series\", \"Stores / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ops"
         },
         "overrides": []
@@ -272,7 +302,7 @@
     },
     {
       "title": "Build vs Close Duration",
-      "description": "###### What this is:\n*Ledger build time compared with the total consensus ledger-close time, both at the 95th percentile.*\n\n###### How it's computed:\n*Two 95th-percentile duration series over 5 minutes: ledger construction and the full consensus close, per node.*\n\n###### Reading it:\n*Build should sit below close; the gap is consensus overhead outside construction.*\n\n###### Healthy range:\n*Close a bit above build; both workload-dependent and under the round interval.*\n\n###### Watch for:\n*A widening gap (consensus-pipeline overhead growing) or build time approaching close time.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp) \u00b7 [RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`buildLedgerImpl ; RCLConsensus::Adaptor::onClose`",
+      "description": "###### What this is:\n*Ledger build time compared with the full consensus round duration, both at the 95th percentile.*\n\n###### How it's computed:\n*Two 95th-percentile duration series over 5 minutes: ledger construction (ledger.build span) and the whole consensus round from open to accept (consensus.round span), per node.*\n\n###### Reading it:\n*Build should sit well below the round; the gap is consensus wait time (proposing, converging, validating) outside construction.*\n\n###### Healthy range:\n*Round tracks the network close interval (~3-5s on mainnet); build is a fraction of it (tens to hundreds of ms).*\n\n###### Watch for:\n*Build time approaching the round duration \u2014 construction is dominating the close and leaving little slack.*\n\n###### Note:\n*The close series uses consensus.round, not consensus.ledger_close: the latter span only wraps the onClose() prologue (sub-millisecond) and is not the ledger close time.*\n\n###### Keywords:\n- **Consensus round** *(network event)* \u2014 one propose-and-revise iteration of consensus; several may run before validators converge on a ledger.\n- **Ledger build** *(per node)* \u2014 constructing the new ledger by applying the agreed transaction set to the prior ledger.\n- **Consensus** *(network event)* \u2014 the protocol by which validators agree on the next ledger's transaction set and close time.\n- **Consensus mode** *(per node)* \u2014 the node's role/health in the current round: Proposing, Observing, Wrong Ledger, or Switched Ledger.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n- **Ledger close** *(network event)* \u2014 the current open ledger is closed and a new closed ledger is built from the agreed transaction set.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in code as a trace span, turned into a metric by the collector (SpanMetrics connector), then aggregated by the Grafana query.*\n\n###### Source:\n[BuildLedger.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/detail/BuildLedger.cpp) \u00b7 [RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`buildLedgerImpl ; RCLConsensus::Adaptor::onClose (round span)`\n\n###### References:\n[Consensus round](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) \u00b7 [Ledger build](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#consensus-round)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -293,22 +323,70 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"ledger.build\"}[5m]))), \"series\", \"P95 ledger.build\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"ledger.build\"}[5m]))), \"series\", \"P95 ledger.build\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.ledger_close\"}[5m]))), \"series\", \"P95 consensus.ledger_close\", \"\", \"\")"
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(span_duration_milliseconds_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", span_name=\"consensus.round\"}[5m]))), \"series\", \"P95 Close (consensus.round)\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "ms",
           "custom": {
             "axisLabel": "Duration (ms)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Ledger Close Interval & Age",
+      "description": "###### What this is:\n*The wall-clock time between consecutive ledger closes — the network close cadence.*\n\n###### How it's computed:\n*Close Interval: 1 / rate(ledgers_closed_total), the average seconds between closes from the monotonic close counter (scrape-independent, unlike a gauge delta which would alias to the scrape period). Last-Close Age: time() minus the last-close network time (server_info last_close_time gauge + Ripple-epoch offset), i.e. seconds since the last ledger closed.*\n\n###### Reading it:\n*A steady line near the network's target close interval.*\n\n###### Healthy range:\n*About 3-5s on mainnet; workload-dependent on test networks.*\n\n###### Watch for:\n*A rising interval (consensus slowing or the node lagging) or a flat line at zero (ledgers no longer closing).*\n\n###### Keywords:\n- **Ledger close** *(network event)* — the current open ledger is closed and a new closed ledger is built from the agreed transaction set.\n- **Ledger close interval** *(network-wide)* — the network's steady ledger rhythm — roughly one closed ledger every 3-5 seconds on Mainnet.\n- **Consensus** *(network event)* — the protocol by which validators agree on the next ledger's transaction set and close time.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp) · [RCLConsensus.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/consensus/RCLConsensus.cpp)\n\n###### Function:\n`registerServerInfoGauge (last_close_time) ; ledgers_closed_total`\n\n###### References:\n[Ledger close](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) · [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) · [Consensus](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledger-close)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(time() - (server_info{metric=\"last_close_time\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"} + 946684800), \"series\", \"Last-Close Age (s)\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(1 / sum by (service_instance_id, xrpl_branch, xrpl_node_role) (rate(ledgers_closed_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"Close Interval\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "s",
+          "custom": {
+            "axisLabel": "Seconds",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
@@ -484,6 +562,6 @@
   },
   "title": "Ledger Operations",
   "uid": "ledger-operations",
-  "refresh": "10s",
-  "description": "What this shows: Ledger construction, validation, and storage activity and timing for this node.\nUse it to: Confirm ledgers are being built, validated, and stored on schedule and find the slow stage when they are not."
+  "refresh": "30s",
+  "description": "What this shows: Ledger construction, validation, and storage activity and timing for this node.  \u2014  Use it to: Confirm ledgers are being built, validated, and stored on schedule and find the slow stage when they are not."
 }

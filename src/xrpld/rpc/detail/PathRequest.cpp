@@ -739,7 +739,9 @@ PathRequest::doUpdate(
 {
     using namespace std::chrono;
     using namespace telemetry;
-    auto span = SpanGuard::span(
+    // Scoped so pathfind.discover (created synchronously below via findPaths)
+    // nests under it. doUpdate does not yield, so scoping is safe.
+    auto span = ScopedSpanGuard(
         TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::compute);
     span.setAttribute(pathfind_span::attr::fast, fast);
     span.setAttribute(pathfind_span::attr::destCurrency, to_string(saDstAmount_.asset()).c_str());

@@ -144,12 +144,46 @@ connectors:
       - deployment.environment
       - xrpl.network.type
     histogram:
+      # Pin unit=ms so the metric stays span_duration_milliseconds_* and le
+      # labels stay in ms even if a future collector flips the default to
+      # seconds (connector.spanmetrics.useSecondAsDefaultMetricsUnit gate).
+      unit: ms
       explicit:
-        buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s]
+        # Buckets MUST stay strictly ascending (the connector binary-searches
+        # them and silently misbuckets otherwise). Sub-second boundaries cover
+        # RPC/tx/ledger spans; the 2s-4s boundaries resolve second-scale
+        # consensus spans (consensus.round ~3.9s, consensus.establish ~1.9s)
+        # that used to pile into a single 1s-5s bucket; 10s/30s give the
+        # ledger.acquire tail (~17% exceeds 5s during catch-up) a measurable
+        # home so its p95/p99 stop reading as +Inf.
+        buckets:
+          [
+            1ms,
+            5ms,
+            10ms,
+            25ms,
+            50ms,
+            100ms,
+            250ms,
+            500ms,
+            1s,
+            2s,
+            3s,
+            4s,
+            5s,
+            10s,
+            30s,
+          ]
     dimensions:
       - name: command
       - name: rpc_status
       - name: consensus_mode
+      # Only the boolean close_time_correct is promoted, never the close_time
+      # value itself: close_time is a monotonic NetClock timestamp, so a
+      # dimension on it would mint a new metric series every ledger (unbounded
+      # cardinality). The close-time value is exposed as the server_info
+      # last_close_time gauge instead (for last-close age); the close interval
+      # comes from the ledgers_closed_total counter.
       - name: close_time_correct
       - name: consensus_state
       - name: local

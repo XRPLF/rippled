@@ -1,13 +1,14 @@
-/** MetricsRegistry implementation — OpenTelemetry metric instruments for xrpld.
-
-    This file contains:
-    - Construction / destruction logic for the OTel MeterProvider pipeline.
-    - Synchronous instrument creation (counters, histograms) for RPC, job
-      queue, and NodeStore I/O metrics.
-    - Observable gauge callback registration for cache hit rates, TxQ state,
-      CountedObject instances, load factors, and NodeStore queue depth.
-    - No-op stubs when XRPL_ENABLE_TELEMETRY is not defined.
-*/
+/**
+ * MetricsRegistry implementation — OpenTelemetry metric instruments for xrpld.
+ *
+ * This file contains:
+ * - Construction / destruction logic for the OTel MeterProvider pipeline.
+ * - Synchronous instrument creation (counters, histograms) for RPC, job
+ *   queue, and NodeStore I/O metrics.
+ * - Observable gauge callback registration for cache hit rates, TxQ state,
+ *   CountedObject instances, load factors, and NodeStore queue depth.
+ * - No-op stubs when XRPL_ENABLE_TELEMETRY is not defined.
+ */
 
 // On Windows, OTel's spin_lock_mutex.h (transitively included from
 // MetricsRegistry.h) defines _WINSOCKAPI_ and includes <windows.h>.
@@ -88,17 +89,18 @@ constexpr char kJobQueuedDurationUs[] = "job_queued_us";
 constexpr char kJobRunningDurationUs[] = "job_running_us";
 constexpr char kRpcMethodDurationUs[] = "rpc_method_us";
 
-/** Register an explicit-bucket histogram view for a microsecond-valued
- *  instrument.
+/**
+ * Register an explicit-bucket histogram view for a microsecond-valued
+ * instrument.
  *
- *  The SDK's default histogram buckets top out at 10,000 (10 ms when the
- *  values are microseconds), so any duration above 10 ms saturates and
- *  every quantile reads as 10 ms. Job wait/run times and RPC latencies
- *  routinely exceed that, so we install boundaries spanning 100 µs to
- *  60 s to capture the real distribution.
+ * The SDK's default histogram buckets top out at 10,000 (10 ms when the
+ * values are microseconds), so any duration above 10 ms saturates and
+ * every quantile reads as 10 ms. Job wait/run times and RPC latencies
+ * routinely exceed that, so we install boundaries spanning 100 µs to
+ * 60 s to capture the real distribution.
  *
- *  @param views   The registry to add the view to.
- *  @param name    Instrument name to match (e.g. "job_running_us").
+ * @param views   The registry to add the view to.
+ * @param name    Instrument name to match (e.g. "job_running_us").
  */
 void
 addMicrosecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
@@ -846,6 +848,22 @@ MetricsRegistry::registerServerInfoGauge()
                         "last_close_converge_time_ms",
                         static_cast<int64_t>(consensusInfo["previous_mseconds"].asUInt()));
                 }
+
+                // Network close time of the last closed ledger, as NetClock
+                // seconds since the XRPL epoch (2000-01-01). Unlike a span
+                // timestamp, a gauge value survives as a queryable time series,
+                // so dashboards can show last-close age (staleness) via
+                // now - value. The close interval comes from the
+                // ledgers_closed_total counter, not a delta of this gauge
+                // (a timestamp gauge's delta aliases to the scrape period).
+                // Skip until a ledger has closed.
+                if (auto const closed = app.getLedgerMaster().getClosedLedger())
+                {
+                    observe(
+                        "last_close_time",
+                        static_cast<int64_t>(
+                            closed->header().closeTime.time_since_epoch().count()));
+                }
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
@@ -1203,8 +1221,10 @@ MetricsRegistry::registerLedgerEconomyGauge()
                 if (ledger)
                 {
                     auto const& fees = ledger->fees();
+                    // Base reserve = one account, zero owned objects:
+                    // accountReserve(ownerCount=0, accountCount=1) == reserve.
                     observe(
-                        "reserve_base_xrp", static_cast<double>(fees.accountReserve(0).drops()));
+                        "reserve_base_xrp", static_cast<double>(fees.accountReserve(0, 1).drops()));
                     observe("reserve_inc_xrp", static_cast<double>(fees.increment.drops()));
                 }
 
