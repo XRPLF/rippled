@@ -1699,19 +1699,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
         return;
     }
 
-    {
-        std::size_t totalNodeBytes = 0;
-        for (int i = 0; i < m->nodes_size(); ++i)
-            totalNodeBytes += m->nodes(i).nodedata().size();
-        if (totalNodeBytes > kMaxLedgerDataBytes)
-        {
-            JLOG(pJournal_.warn())
-                << "Ledger data: oversized nodes (" << totalNodeBytes << " bytes)";
-            fee_.update(Resource::kFeeInvalidData, "oversized ledger nodes");
-            return;
-        }
-    }
-
     // If there is a request cookie, attempt to relay the message
     if (m->has_requestcookie())
     {
