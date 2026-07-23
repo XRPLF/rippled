@@ -75,13 +75,12 @@ TicketCreate::doApply()
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
     std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
-    {
-        XRPAmount const reserve =
-            view().fees().accountReserve(sleAccountRoot->getFieldU32(sfOwnerCount) + ticketCount);
-
-        if (preFeeBalance_ < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
+    if (preFeeBalance_ < accountReserve(
+                             view(),
+                             sleAccountRoot,
+                             j_,
+                             {.ownerCountDelta = static_cast<std::int32_t>(ticketCount)}))
+        return tecINSUFFICIENT_RESERVE;
 
     beast::Journal const viewJ{ctx_.registry.get().getJournal("View")};
 
@@ -100,11 +99,12 @@ TicketCreate::doApply()
     for (std::uint32_t i = 0; i < ticketCount; ++i)
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
-        Keylet const ticketKeylet = keylet::kTicket(accountID_, curTicketSeq);
+        Keylet const ticketKeylet = keylet::ticket(accountID_, curTicketSeq);
         SLE::pointer const sleTicket = std::make_shared<SLE>(ticketKeylet);
 
         sleTicket->setAccountID(sfAccount, accountID_);
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);
+
         view().insert(sleTicket);
 
         auto const page = view().dirInsert(
@@ -120,12 +120,12 @@ TicketCreate::doApply()
     }
 
     // Update the record of the number of Tickets this account owns.
-    std::uint32_t const oldTicketCount = (*(sleAccountRoot))[~sfTicketCount].valueOr(0u);
+    std::uint32_t const oldTicketCount = (*sleAccountRoot)[~sfTicketCount].valueOr(0u);
 
     sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 
     // Every added Ticket counts against the creator's reserve.
-    adjustOwnerCount(view(), sleAccountRoot, ticketCount, viewJ);
+    increaseOwnerCount(view(), sleAccountRoot, {}, ticketCount, viewJ);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.
@@ -135,10 +135,7 @@ TicketCreate::doApply()
 }
 
 void
-TicketCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+TicketCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

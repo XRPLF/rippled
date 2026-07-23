@@ -14,5 +14,5 @@
     i32.div_s
   )
 
-  (export "finish" (func $test_int_overflow))
+  (export "escrow_finish" (func $test_int_overflow))
 )

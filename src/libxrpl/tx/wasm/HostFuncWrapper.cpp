@@ -1,8 +1,8 @@
 #include <xrpl/tx/wasm/HostFuncWrapper.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Issue.h>
@@ -29,8 +29,11 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
+#include <expected>
 #include <functional>
 #include <optional>
+#include <stdexcept>
+#include <string>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
@@ -41,7 +44,12 @@ namespace xrpl {
 
 using SFieldCRef = std::reference_wrapper<SField const>;
 
-static inline Expected<std::int64_t, HostFunctionError>
+constexpr int64_t unalignedGas = 50;
+
+// Charge `delta` gas; returns the remaining gas. Out-of-gas throws hfErrOutOfGas
+// (-> tecOUT_OF_GAS); a failed setGas is an xrpld bug, throws hfErrInternal
+// (-> tecINTERNAL). HostFuncMain_wrap turns both into traps.
+static inline std::int64_t
 checkGas(WasmRuntimeWrapper& rt, int64_t delta)
 {
     int64_t const gas = rt.getGas();
@@ -51,67 +59,52 @@ checkGas(WasmRuntimeWrapper& rt, int64_t delta)
     int64_t const x = gas >= delta ? gas - delta : 0;
 
     if (rt.setGas(x) < 0)
-        return Unexpected(HostFunctionError::Internal);  // LCOV_EXCL_LINE
+        Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
     if (gas < delta)
-        return Unexpected(HostFunctionError::OutOfGas);
+        Throw<std::runtime_error>(std::string(hfErrOutOfGas));
 
     return x;
 }
 
-static inline Expected<std::int64_t, wasm_trap_t*>
-checkGas(WasmRuntimeWrapper& rt, WasmImportFunc const& impFunc)
+// Transfer limit is a separate soft budget: exceeding it is a normal guest-facing
+// return code, not a trap. Only a failed setTransferLimit (an xrpld bug) throws.
+static inline std::expected<std::int64_t, HostFunctionError>
+checkTransfer(WasmRuntimeWrapper& rt, int64_t delta)
 {
-    auto g = checkGas(rt, impFunc.gas);
+    auto const transLimit = rt.getTransferLimit();
+    int64_t const x = transLimit >= delta ? transLimit - delta : 0;
 
-    if (!g)
-    {
-        if (g.error() == HostFunctionError::OutOfGas)
-        {
-            wasm_trap_t* const trap =  // NOLINT
-                reinterpret_cast<wasm_trap_t*>(WasmEngine::instance().newTrap("hf out of gas"));
-            return Unexpected(trap);
-        }
+    if (rt.setTransferLimit(x) < 0)
+        Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
-        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(    // NOLINT
-            WasmEngine::instance().newTrap("can't set gas"));  // LCOV_EXCL_LINE
-        return Unexpected(trap);                               // LCOV_EXCL_LINE
-    }
+    if (transLimit < delta)
+        return std::unexpected(HostFunctionError::OutOfTransferLimit);
 
-    return *g;
+    return x;
 }
 
-static Expected<std::tuple<HostFunctions&, WasmImportFunc const&>, wasm_trap_t*>
+// On any failure here a C++ exception is thrown; HostFuncMain_wrap's catch-all
+// turns it into tecINTERNAL. These conditions are all xrpld-side invariants.
+static std::tuple<HostFunctions&, WasmImportFunc const&>
 mainCheck(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     if (env == nullptr)
-    {
-        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(     // NOLINT
-            WasmEngine::instance().newTrap("no environment"));  // LCOV_EXCL_LINE
-        return Unexpected(trap);                                // LCOV_EXCL_LINE
-    }
+        Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
     if (params == nullptr)
-    {
-        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(  // NOLINT
-            WasmEngine::instance().newTrap("no params"));    // LCOV_EXCL_LINE
-        return Unexpected(trap);                             // LCOV_EXCL_LINE
-    }
+        Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
     if (results == nullptr)
-    {
-        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(  // NOLINT
-            WasmEngine::instance().newTrap("no results"));   // LCOV_EXCL_LINE
-        return Unexpected(trap);                             // LCOV_EXCL_LINE
-    }
+        Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
     WasmUserData const* udata = reinterpret_cast<WasmUserData*>(env);
     HostFunctions& hf = udata->first;
     WasmRuntimeWrapper& rt = hf.getRT();
     WasmImportFunc const& impFunc = udata->second;
 
-    if (auto g = checkGas(rt, impFunc); !g)
-        return Unexpected(g.error());  // LCOV_EXCL_LINE
+    // Charge the per-call gas. Throws (and terminates) if out of gas.
+    checkGas(rt, impFunc.gas);
 
     return std::tie(hf, impFunc);
 }
@@ -146,40 +139,43 @@ setData(
     if (srcSize > dstSize)
         return hfErrorToInt(HostFunctionError::BufferTooSmall);
 
+    if (auto t = checkTransfer(runtime, srcSize); !t)
+        return hfErrorToInt(t.error());
+
     memcpy(memory.p + dst, src, srcSize);
 
     return srcSize;
 }
 
-static Expected<Slice, HostFunctionError>
+static std::expected<Slice, HostFunctionError>
 getDataSlice(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     int64_t const ptr = params->data[i].of.i32;
     int64_t const size = params->data[i + 1].of.i32;
     i += 2;
     if (ptr < 0 || size < 0)
-        return Unexpected(HostFunctionError::InvalidParams);
+        return std::unexpected(HostFunctionError::InvalidParams);
 
     if (size == 0)
         return Slice();
 
     if (size > kMaxWasmDataLength)
-        return Unexpected(HostFunctionError::DataFieldTooLarge);
+        return std::unexpected(HostFunctionError::DataFieldTooLarge);
 
     auto const memory = runtime.getMem();
     // LCOV_EXCL_START
     if (memory.s == 0u)
-        return Unexpected(HostFunctionError::NoMemExported);
+        return std::unexpected(HostFunctionError::NoMemExported);
     // LCOV_EXCL_STOP
 
     if (std::cmp_greater(ptr + size, memory.s))
-        return Unexpected(HostFunctionError::PointerOutOfBounds);
+        return std::unexpected(HostFunctionError::PointerOutOfBounds);
 
-    Slice data(memory.p + ptr, size);
+    Slice const data(memory.p + ptr, size);
     return data;
 }
 
-static Expected<int32_t, HostFunctionError>
+static std::expected<int32_t, HostFunctionError>
 getDataInt32(WasmRuntimeWrapper const&, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const result = params->data[i].of.i32;
@@ -187,7 +183,7 @@ getDataInt32(WasmRuntimeWrapper const&, wasm_val_vec_t const* params, int32_t& i
     return result;
 }
 
-static Expected<int64_t, HostFunctionError>
+static std::expected<int64_t, HostFunctionError>
 getDataInt64(WasmRuntimeWrapper const&, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const result = params->data[i].of.i64;
@@ -196,18 +192,18 @@ getDataInt64(WasmRuntimeWrapper const&, wasm_val_vec_t const* params, int32_t& i
 }
 
 template <class T>
-static Expected<T, HostFunctionError>
+static std::expected<T, HostFunctionError>
 getDataUnsigned(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     static_assert(std::is_unsigned_v<T>);
     auto const r = getDataSlice(runtime, params, i);
     if (!r)
-        return Unexpected(r.error());
+        return std::unexpected(r.error());
     if (r->size() != sizeof(T))
-        return Unexpected(HostFunctionError::InvalidParams);
+        return std::unexpected(HostFunctionError::InvalidParams);
 
     T x;
-    uintptr_t const p = reinterpret_cast<uintptr_t>(r->data());
+    auto const p = reinterpret_cast<uintptr_t>(r->data());
     if (p & (alignof(T) - 1))  // unaligned
     {
         memcpy(&x, r->data(), sizeof(T));
@@ -221,133 +217,158 @@ getDataUnsigned(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32
     return x;
 }
 
-static Expected<uint32_t, HostFunctionError>
+static std::expected<uint32_t, HostFunctionError>
 getDataUInt32(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     return getDataUnsigned<uint32_t>(runtime, params, i);
 }
 
-static Expected<uint64_t, HostFunctionError>
+static std::expected<uint64_t, HostFunctionError>
 getDataUInt64(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     return getDataUnsigned<uint64_t>(runtime, params, i);
 }
 
-static Expected<SFieldCRef, HostFunctionError>
+static std::expected<SFieldCRef, HostFunctionError>
 getDataSField(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const& m = SField::getKnownCodeToField();
     auto const it = m.find(params->data[i].of.i32);
     i++;
     if (it == m.end())
-        return Unexpected(HostFunctionError::InvalidField);
+        return std::unexpected(HostFunctionError::InvalidField);
 
     return *it->second;
 }
 
-static Expected<uint256, HostFunctionError>
+static std::expected<uint256, HostFunctionError>
 getDataUInt256(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
-        return Unexpected(slice.error());
+        return std::unexpected(slice.error());
 
     if (slice->size() != uint256::size())
-        return Unexpected(HostFunctionError::InvalidParams);
+        return std::unexpected(HostFunctionError::InvalidParams);
+
+    if (auto t = checkTransfer(runtime, uint256::size()); !t)
+        return std::unexpected(t.error());
 
     return uint256::fromVoid(slice->data());
 }
 
-static Expected<AccountID, HostFunctionError>
+static std::expected<AccountID, HostFunctionError>
 getDataAccountID(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
-        return Unexpected(slice.error());
+        return std::unexpected(slice.error());
 
     if (slice->size() != AccountID::size())
-        return Unexpected(HostFunctionError::InvalidParams);
+        return std::unexpected(HostFunctionError::InvalidParams);
+
+    if (auto t = checkTransfer(runtime, AccountID::size()); !t)
+        return std::unexpected(t.error());
 
     return AccountID::fromVoid(slice->data());
 }
 
-static Expected<Currency, HostFunctionError>
+static std::expected<Currency, HostFunctionError>
 getDataCurrency(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
-        return Unexpected(slice.error());
+        return std::unexpected(slice.error());
 
     if (slice->size() != Currency::size())
-        return Unexpected(HostFunctionError::InvalidParams);
+        return std::unexpected(HostFunctionError::InvalidParams);
+
+    if (auto t = checkTransfer(runtime, Currency::size()); !t)
+        return std::unexpected(t.error());
 
     return Currency::fromVoid(slice->data());
 }
 
-static Expected<Asset, HostFunctionError>
+static std::expected<Asset, HostFunctionError>
 getDataAsset(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
-        return Unexpected(slice.error());
+        return std::unexpected(slice.error());
 
     if (slice->size() == MPTID::size())
     {
+        if (auto t = checkTransfer(runtime, slice->size()); !t)
+            return std::unexpected(t.error());
+
         auto const mptid = MPTID::fromVoid(slice->data());
         return Asset{mptid};
     }
 
     if (slice->size() == Currency::size())
     {
+        if (auto t = checkTransfer(runtime, slice->size()); !t)
+            return std::unexpected(t.error());
+
         auto const currency = Currency::fromVoid(slice->data());
         auto const issue = Issue{currency, xrpAccount()};
         if (!issue.native())
-            return Unexpected(HostFunctionError::InvalidParams);
+            return std::unexpected(HostFunctionError::InvalidParams);
 
         return Asset{issue};
     }
 
     if (slice->size() == (Currency::size() + AccountID::size()))
     {
+        if (auto t = checkTransfer(runtime, slice->size()); !t)
+            return std::unexpected(t.error());
+
         auto const issue = Issue(
             Currency::fromVoid(slice->data()),
             AccountID::fromVoid(slice->data() + Currency::size()));
 
         if (issue.native())
-            return Unexpected(HostFunctionError::InvalidParams);
+            return std::unexpected(HostFunctionError::InvalidParams);
 
         return Asset{issue};
     }
 
-    return Unexpected(HostFunctionError::InvalidParams);
+    return std::unexpected(HostFunctionError::InvalidParams);
 }
 
-static Expected<std::string_view, HostFunctionError>
+static std::expected<std::string_view, HostFunctionError>
 getDataString(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
-        return Unexpected(slice.error());
+        return std::unexpected(slice.error());
 
     return std::string_view(reinterpret_cast<char const*>(slice->data()), slice->size());
 }
 
-static Expected<FieldLocator, HostFunctionError>
+static std::expected<FieldLocator, HostFunctionError>
 getDataLocator(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     static_assert(kMaxWasmDataLength % sizeof(int32_t) == 0);
 
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
-        return Unexpected(slice.error());
+        return std::unexpected(slice.error());
     if (slice->empty() || ((slice->size() & 3) != 0u))  // must be multiple of 4
-        return Unexpected(HostFunctionError::LocatorMalformed);
+        return std::unexpected(HostFunctionError::LocatorMalformed);
 
     uint32_t const locSize = slice->size() / sizeof(int32_t);
-    uintptr_t const p = reinterpret_cast<uintptr_t>(slice->data());
+    auto const p = reinterpret_cast<uintptr_t>(slice->data());
 
     if ((p & (alignof(int32_t) - 1)) != 0u)
     {  // unaligned
+
+        // Use gas and transfer limit for copying. checkGas throws (and
+        // terminates execution) if out of gas; checkTransfer keeps returning a
+        // guest-facing code when the transfer limit is exceeded.
+        checkGas(runtime, unalignedGas);
+        if (auto t = checkTransfer(runtime, slice->size()); !t)
+            return std::unexpected(t.error());
 
         std::vector<int32_t> locBuf(locSize);
         memcpy(&locBuf[0], slice->data(), slice->size());
@@ -356,7 +377,7 @@ getDataLocator(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_
         return locator;
     }
 
-    int32_t const* locPtr = reinterpret_cast<int32_t const*>(slice->data());
+    auto const* locPtr = reinterpret_cast<int32_t const*>(slice->data());
     return FieldLocator(locPtr, locSize);
 }
 
@@ -382,7 +403,7 @@ returnResult(
     WasmRuntimeWrapper& runtime,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results,
-    Expected<T, HostFunctionError> const& res,
+    std::expected<T, HostFunctionError> const& res,
     int32_t index)
 {
     if (!res)
@@ -391,7 +412,7 @@ returnResult(
     if constexpr (std::is_same_v<T, Bytes>)
     {
         if (index < 0 || index + 1 >= params->size)
-            return hfResult(results, HostFunctionError::Internal);  // LCOV_EXCL_LINE
+            Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
         auto const dataResult = setData(
             runtime,
@@ -404,7 +425,7 @@ returnResult(
     else if constexpr (std::is_same_v<T, Hash>)
     {
         if (index < 0 || index + 1 >= params->size)
-            return hfResult(results, HostFunctionError::Internal);  // LCOV_EXCL_LINE
+            Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
         auto const dataResult = setData(
             runtime,
@@ -421,7 +442,7 @@ returnResult(
     else if constexpr (std::is_same_v<T, std::uint32_t>)
     {
         if (index < 0 || index + 1 >= params->size)
-            return hfResult(results, HostFunctionError::Internal);  // LCOV_EXCL_LINE
+            Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
         auto const resultValue = adjustWasmEndianess(res.value());
         auto const dataResult = setData(
@@ -435,7 +456,7 @@ returnResult(
     else if constexpr (std::is_same_v<T, int64_t>)
     {
         if (index < 0 || index + 1 >= params->size)
-            return hfResult(results, HostFunctionError::Internal);  // LCOV_EXCL_LINE
+            Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
         auto const resultValue = adjustWasmEndianess(res.value());
         auto const dataResult = setData(
@@ -449,7 +470,7 @@ returnResult(
     else if constexpr (std::is_same_v<T, FloatPair>)
     {
         if (index < 0 || index + 3 >= params->size)
-            return hfResult(results, HostFunctionError::Internal);  // LCOV_EXCL_LINE
+            Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
         auto const mantissa = adjustWasmEndianess(res->first);
         auto const r1 = setData(
@@ -481,6 +502,7 @@ returnResult(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+
 wasm_trap_t*
 HostFuncMain_wrap(WASM_CB_PARAMS_LIST)
 {
@@ -488,11 +510,7 @@ HostFuncMain_wrap(WASM_CB_PARAMS_LIST)
 
     try
     {
-        auto const mc = mainCheck(env, params, results);
-        if (!mc)
-            return mc.error();  // LCOV_EXCL_LINE
-        auto& [hf, impFunc] = *mc;
-
+        auto [hf, impFunc] = mainCheck(env, params, results);
         hfName = impFunc.name;
         auto* fWrap = reinterpret_cast<wasmSecondaryCbFuncType*>(impFunc.wrap);
         return fWrap(hf, params, results);
@@ -502,8 +520,11 @@ HostFuncMain_wrap(WASM_CB_PARAMS_LIST)
 #ifdef DEBUG_OUTPUT
         std::cerr << "Hostfunction " << hfName << " exception: " << e.what() << std::endl;
 #endif
+        // Normalize to the two boundary signals: explicit out-of-gas, else any
+        // exception (including stray ones from helpers) is an internal fault.
+        bool const oog = std::string_view(e.what()) == hfErrOutOfGas;
         wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(  // NOLINT
-            WasmEngine::instance().newTrap(e.what()));       // LCOV_EXCL_LINE
+            WasmEngine::instance().newTrap(std::string(oog ? hfErrOutOfGas : hfErrInternal)));
         return trap;
     }
     catch (...)
@@ -511,12 +532,12 @@ HostFuncMain_wrap(WASM_CB_PARAMS_LIST)
 #ifdef DEBUG_OUTPUT
         std::cerr << "Hostfunction " << hfName << " unknown exception." << std::endl;
 #endif
-        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(        // NOLINT
-            WasmEngine::instance().newTrap("Unknown exception"));  // LCOV_EXCL_LINE
+        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(               // NOLINT
+            WasmEngine::instance().newTrap(std::string(hfErrInternal)));  // LCOV_EXCL_LINE
         return trap;
     }
 
-    return nullptr;
+    return nullptr;  // LCOV_EXCL_LINE
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -958,7 +979,7 @@ escrowKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 }
 
 wasm_trap_t*
-lineKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
+trustLineKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
     int index = 0;
     WasmRuntimeWrapper& runtime = hf.getRT();
@@ -979,12 +1000,12 @@ lineKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
         runtime,
         params,
         results,
-        hf.lineKeylet(acc1.value(), acc2.value(), currency.value()),
+        hf.trustLineKeylet(acc1.value(), acc2.value(), currency.value()),
         index);
 }
 
 wasm_trap_t*
-mptIssuanceKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
+mptokenIssuanceKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
     int index = 0;
     WasmRuntimeWrapper& runtime = hf.getRT();
@@ -998,7 +1019,7 @@ mptIssuanceKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
         return hfResult(results, seq.error());
 
     return returnResult(
-        runtime, params, results, hf.mptIssuanceKeylet(acc.value(), seq.value()), index);
+        runtime, params, results, hf.mptokenIssuanceKeylet(acc.value(), seq.value()), index);
 }
 
 wasm_trap_t*
@@ -1023,7 +1044,7 @@ mptokenKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 }
 
 wasm_trap_t*
-nftOfferKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
+nftokenOfferKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
     int index = 0;
     WasmRuntimeWrapper& runtime = hf.getRT();
@@ -1037,7 +1058,7 @@ nftOfferKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
         return hfResult(results, seq.error());
 
     return returnResult(
-        runtime, params, results, hf.nftOfferKeylet(acc.value(), seq.value()), index);
+        runtime, params, results, hf.nftokenOfferKeylet(acc.value(), seq.value()), index);
 }
 
 wasm_trap_t*
@@ -1075,7 +1096,7 @@ oracleKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 }
 
 wasm_trap_t*
-paychanKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
+paychannelKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
     int index = 0;
     WasmRuntimeWrapper& runtime = hf.getRT();
@@ -1093,7 +1114,11 @@ paychanKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
         return hfResult(results, seq.error());
 
     return returnResult(
-        runtime, params, results, hf.paychanKeylet(acc.value(), dest.value(), seq.value()), index);
+        runtime,
+        params,
+        results,
+        hf.paychannelKeylet(acc.value(), dest.value(), seq.value()),
+        index);
 }
 
 wasm_trap_t*
@@ -1115,7 +1140,7 @@ permissionedDomainKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 }
 
 wasm_trap_t*
-signersKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
+signerListKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
     int index = 0;
     WasmRuntimeWrapper& runtime = hf.getRT();
@@ -1124,7 +1149,7 @@ signersKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
     if (!acc)
         return hfResult(results, acc.error());
 
-    return returnResult(runtime, params, results, hf.signersKeylet(acc.value()), index);
+    return returnResult(runtime, params, results, hf.signerListKeylet(acc.value()), index);
 }
 
 wasm_trap_t*
@@ -1231,7 +1256,7 @@ getNFTTransferFee_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 }
 
 wasm_trap_t*
-getNFTSerial_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
+getNFTSequence_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
     int index = 0;
     WasmRuntimeWrapper& runtime = hf.getRT();
@@ -1240,7 +1265,7 @@ getNFTSerial_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
     if (!nftId)
         return hfResult(results, nftId.error());
 
-    return returnResult(runtime, params, results, hf.getNFTSerial(*nftId), index);
+    return returnResult(runtime, params, results, hf.getNFTSequence(*nftId), index);
 }
 
 wasm_trap_t*
@@ -1341,7 +1366,7 @@ traceAmount_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
     std::optional<STAmount> amount;
     try
     {
-        amount = STAmount(serialIter, kSfGeneric);
+        amount = STAmount(serialIter, sfGeneric);
     }
     catch (std::exception const&)
     {
@@ -1408,7 +1433,7 @@ floatFromSTAmount_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
     std::optional<STAmount> amount;
     try
     {
-        amount = STAmount(serialIter, kSfGeneric);
+        amount = STAmount(serialIter, sfGeneric);
     }
     catch (std::exception const&)
     {
@@ -1440,7 +1465,7 @@ floatFromSTNumber_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
     std::optional<STNumber> num;
     try
     {
-        num = STNumber(serialIter, kSfGeneric);
+        num = STNumber(serialIter, sfGeneric);
     }
     catch (std::exception const&)
     {
@@ -1677,6 +1702,7 @@ class MockWasmRuntimeWrapper : public WasmRuntimeWrapper
     Wmem mem_;
 
     std::int64_t gas_ = 1'000'000;
+    std::int64_t transferLimit_ = kWasmTransferLimit;
 
 public:
     MockWasmRuntimeWrapper(Wmem memory) : mem_(memory)
@@ -1701,6 +1727,19 @@ public:
     {
         gas_ = gas;
         return gas_;
+    }
+
+    std::int64_t
+    getTransferLimit() override
+    {
+        return transferLimit_;
+    }
+
+    std::int64_t
+    setTransferLimit(std::int64_t x) override
+    {
+        transferLimit_ = x;
+        return transferLimit_;
     }
 };
 

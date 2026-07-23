@@ -18,6 +18,6 @@
      i32.const 1
    )
 
-   ;; Export as "finish" as requested
-   (export "finish" (func $read_overflow))
+   ;; Export as "escrow_finish" as requested
+   (export "escrow_finish" (func $read_overflow))
  )

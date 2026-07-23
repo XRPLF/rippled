@@ -1,12 +1,20 @@
 #pragma once
 
-#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
+
+#include <functional>
+#include <set>
+#include <string>
 
 namespace json {
 class Object;
@@ -39,7 +47,9 @@ struct Handler
 Handler const*
 getHandler(unsigned int version, bool betaEnabled, std::string const&);
 
-/** Return a json::ValueType::Object with a single entry. */
+/**
+ * Return a json::ValueType::Object with a single entry.
+ */
 template <class Value>
 json::Value
 makeObjectValue(Value const& value, json::StaticString const& field = jss::message)
@@ -49,7 +59,9 @@ makeObjectValue(Value const& value, json::StaticString const& field = jss::messa
     return result;
 }
 
-/** Return names of all methods. */
+/**
+ * Return names of all methods.
+ */
 std::set<char const*>
 getHandlerNames();
 
