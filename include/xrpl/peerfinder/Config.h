@@ -35,7 +35,7 @@ struct Config
      * Outbound connections are only maintained if autoConnect
      * is `true`.
      */
-    std::size_t outPeers;
+    std::size_t outPeers = calcOutPeers();  // Note: relies on `maxPeers` being initialized
 
     /**
      * The number of automatic inbound connections to maintain.
@@ -82,11 +82,6 @@ struct Config
     //--------------------------------------------------------------------------
 
     /**
-     * Create a configuration with default values.
-     */
-    Config();
-
-    /**
      * Returns a suitable value for outPeers according to the rules.
      */
     [[nodiscard]] std::size_t
@@ -117,8 +112,11 @@ struct Config
         int ipLimit,
         bool verifyEndpoints);
 
+    /**
+     * Compares two configurations for equality field by field.
+     */
     friend bool
-    operator==(Config const& lhs, Config const& rhs);
+    operator==(Config const& lhs, Config const& rhs) = default;
 };
 
 //------------------------------------------------------------------------------

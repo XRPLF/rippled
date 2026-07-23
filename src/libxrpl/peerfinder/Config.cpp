@@ -9,21 +9,6 @@
 
 namespace xrpl::PeerFinder {
 
-Config::Config() : outPeers(calcOutPeers())
-
-{
-}
-
-bool
-operator==(Config const& lhs, Config const& rhs)
-{
-    return lhs.autoConnect == rhs.autoConnect && lhs.peerPrivate == rhs.peerPrivate &&
-        lhs.wantIncoming == rhs.wantIncoming && lhs.inPeers == rhs.inPeers &&
-        lhs.maxPeers == rhs.maxPeers && lhs.outPeers == rhs.outPeers &&
-        lhs.features == rhs.features && lhs.ipLimit == rhs.ipLimit &&
-        lhs.listeningPort == rhs.listeningPort && lhs.verifyEndpoints == rhs.verifyEndpoints;
-}
-
 std::size_t
 Config::calcOutPeers() const
 {
