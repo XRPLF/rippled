@@ -17,6 +17,53 @@ let
   '';
 
   rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ../rust-toolchain.toml;
+
+  # Nix wraps its toolchain so that binaries are exposed only under unsuffixed
+  # names (gcc, g++, clang-tidy, ...). Several tools probe for a
+  # version-suffixed name first and fall back to a system binary on the PATH
+  # when Nix doesn't provide it:
+  #   - Conan's Boost recipe looks up `g++-<major>` before plain `g++`.
+  #   - bin/pre-commit/clang_tidy_check.py looks up `run-clang-tidy-<v>` and
+  #     `clang-apply-replacements-<v>` before the unsuffixed names.
+  # On a host that also has the matching system binary (e.g. Ubuntu's
+  # `/usr/bin/g++-15` or `clang-tidy-22`) the probe escapes Nix and mixes a
+  # system tool into the Nix environment. Generate version-suffixed symlinks
+  # next to a package's tools so those probes resolve to the Nix ones.
+  #
+  # Compiler links must point at whichever compiler is active in a given
+  # environment (the plain stdenv compiler in the dev shell, the custom-glibc
+  # wrappers in ci-env.nix), so those callers pass their own `package`; the
+  # clang tooling is environment-independent and is linked in commonPackages.
+  mkVersionedToolLinks =
+    {
+      name,
+      package,
+      version,
+      tools,
+    }:
+    pkgs.linkFarm "${name}-${toString version}-versioned-links" (
+      map (tool: {
+        name = "bin/${tool}-${toString version}";
+        path = "${package}/bin/${tool}";
+      }) tools
+    );
+
+  clangToolLinks = mkVersionedToolLinks {
+    name = "clang-tools";
+    package = clangTools;
+    version = llvmVersion;
+    tools = [
+      "clang-tidy"
+      "clang-apply-replacements"
+      "clang-format"
+    ];
+  };
+  runClangTidyLink = mkVersionedToolLinks {
+    name = "run-clang-tidy";
+    package = runClangTidy;
+    version = llvmVersion;
+    tools = [ "run-clang-tidy" ];
+  };
 in
 {
   inherit
@@ -24,9 +71,12 @@ in
     llvmVersion
     gccPackage
     llvmPackages
+    mkVersionedToolLinks
     ;
 
   commonPackages = with pkgs; [
+    clangToolLinks
+    runClangTidyLink
     ccache
     clangbuildanalyzer
     clangTools
