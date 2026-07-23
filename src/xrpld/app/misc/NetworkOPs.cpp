@@ -24,7 +24,6 @@
 #include <xrpld/consensus/ConsensusParms.h>
 #include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/ClusterNode.h>
 #include <xrpld/overlay/Overlay.h>
@@ -54,6 +53,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/utility/rngfill.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/ClosureCounter.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
@@ -266,7 +266,9 @@ class NetworkOPsImp final : public NetworkOPs
         }
     };
 
-    //! Server fees published on `server` subscription
+    /**
+     * Server fees published on `server` subscription
+     */
     struct ServerFeeSummary
     {
         ServerFeeSummary() = default;
@@ -313,7 +315,7 @@ public:
         , consensus_(
               registry_.get().getApp(),
               makeFeeVote(
-                  setupFeeVote(registry_.get().getApp().config().section("voting")),
+                  setupFeeVote(registry_.get().getApp().config().section(Sections::kVoting)),
                   registry_.get().getJournal("FeeVote")),
               ledgerMaster,
               *localTX_,
@@ -327,10 +329,10 @@ public:
               validatorKeys.keys ? validatorKeys.keys->masterPublicKey
                                  : decltype(validatorMasterPK_){})
         , ledgerMaster_(ledgerMaster)
-        , job_queue_(jobQueue)
+        , jobQueue_(jobQueue)
         , standalone_(standalone)
         , minPeerCount_(startValid ? 0 : minPeerCount)
-        , stats_(std::bind(&NetworkOPsImp::collectMetrics, this), collector)
+        , stats_([this] { collectMetrics(); }, collector)
     {
     }
 
@@ -469,9 +471,10 @@ public:
     void
     setStandAlone() override;
 
-    /** Called to initially start our timers.
-        Not called for stand-alone mode.
-    */
+    /**
+     * Called to initially start our timers.
+     * Not called for stand-alone mode.
+     */
     void
     setStateTimer() override;
 
@@ -527,6 +530,8 @@ public:
     updateLocalTx(ReadView const& view) override;
     std::size_t
     getLocalTxCount() override;
+    std::size_t
+    getBookSubscribersCount() override;
 
     //
     // Monitoring: publisher side.
@@ -586,7 +591,9 @@ public:
     bool
     subBook(InfoSub::ref ispListener, Book const&) override;
     bool
-    unsubBook(std::uint64_t uListener, Book const&) override;
+    unsubBook(InfoSub::ref ispListener, Book const&) override;
+    bool
+    unsubBookInternal(std::uint64_t uListener, Book const&) override;
 
     bool
     subManifests(InfoSub::ref ispListener) override;
@@ -628,6 +635,12 @@ public:
     addRpcSub(std::string const& strUrl, InfoSub::ref) override;
     bool
     tryRemoveRpcSub(std::string const& strUrl) override;
+
+    beast::Journal const&
+    journal() const override
+    {
+        return journal_;
+    }
 
     void
     stop() override
@@ -704,6 +717,32 @@ private:
         std::shared_ptr<ReadView const> const& ledger,
         AcceptedLedgerTx const& transaction,
         bool last);
+
+    /**
+     * Fan transaction notifications out to all book subscribers.
+     *
+     * Extracts the set of order books affected by @p transaction, then
+     * delivers @p jvObj to every live subscriber of those books.
+     *
+     * Uses a two-pass design to keep subLock_ hold time short:
+     *   1. Under subLock_, collect strong InfoSub pointers for all live
+     *      subscribers and prune any expired weak_ptrs encountered.
+     *   2. Release subLock_, then call send() on each collected pointer.
+     *
+     * @param transaction The accepted ledger transaction to inspect.
+     * @param jvObj JSON representation of the transaction to deliver.
+     *
+     * @note Thread-safety: acquires subLock_ for the collection pass only.
+     *       send() is intentionally called outside the lock to avoid blocking
+     *       all other sub/unsub/publish paths while I/O is in progress.
+     * @note Contention: subLock_ is shared with all other subscription types.
+     *       On high-throughput nodes processing multi-hop payments that touch
+     *       many offer nodes, this pass holds subLock_ longer than the old
+     *       per-book BookListeners locks did. This is an accepted trade-off
+     *       for lock-domain simplicity.
+     */
+    void
+    pubBookTransaction(AcceptedLedgerTx const& transaction, MultiApiJson const& jvObj);
 
     void
     pubProposedAccountTransaction(
@@ -802,8 +841,20 @@ private:
 
     LedgerMaster& ledgerMaster_;
 
+    /**
+     * Maps each order book to its current set of subscribers.
+     *  Outer key: the Book (currency pair + optional domain).
+     *  Inner key: InfoSub::seq (unique per connection).
+     *  Inner value: weak_ptr so that a dropped connection does not prevent
+     *  the InfoSub from being destroyed; expired entries are pruned lazily
+     *  by pubBookTransaction and eagerly by unsubBookInternal (~InfoSub path).
+     *  Guarded by subLock_.
+     */
+    using SubBookMapType = hash_map<Book, SubMapType>;
+
     SubInfoMapType subAccount_;
     SubInfoMapType subRTAccount_;
+    SubBookMapType subBook_;  ///< Guarded by subLock_.
 
     subRpcMapType rpcSubMap_;
 
@@ -828,7 +879,7 @@ private:
 
     ServerFeeSummary lastFeeSummary_;
 
-    JobQueue& job_queue_;
+    JobQueue& jobQueue_;
 
     // Whether we are in standalone mode.
     bool const standalone_;
@@ -853,34 +904,34 @@ private:
         template <class Handler>
         Stats(Handler const& handler, beast::insight::Collector::ptr const& collector)
             : hook(collector->makeHook(handler))
-            , disconnected_duration(
+            , disconnectedDuration(
                   collector->makeGauge("State_Accounting", "Disconnected_duration"))
-            , connected_duration(collector->makeGauge("State_Accounting", "Connected_duration"))
-            , syncing_duration(collector->makeGauge("State_Accounting", "Syncing_duration"))
-            , tracking_duration(collector->makeGauge("State_Accounting", "Tracking_duration"))
-            , full_duration(collector->makeGauge("State_Accounting", "Full_duration"))
-            , disconnected_transitions(
+            , connectedDuration(collector->makeGauge("State_Accounting", "Connected_duration"))
+            , syncingDuration(collector->makeGauge("State_Accounting", "Syncing_duration"))
+            , trackingDuration(collector->makeGauge("State_Accounting", "Tracking_duration"))
+            , fullDuration(collector->makeGauge("State_Accounting", "Full_duration"))
+            , disconnectedTransitions(
                   collector->makeGauge("State_Accounting", "Disconnected_transitions"))
-            , connected_transitions(
+            , connectedTransitions(
                   collector->makeGauge("State_Accounting", "Connected_transitions"))
-            , syncing_transitions(collector->makeGauge("State_Accounting", "Syncing_transitions"))
-            , tracking_transitions(collector->makeGauge("State_Accounting", "Tracking_transitions"))
-            , full_transitions(collector->makeGauge("State_Accounting", "Full_transitions"))
+            , syncingTransitions(collector->makeGauge("State_Accounting", "Syncing_transitions"))
+            , trackingTransitions(collector->makeGauge("State_Accounting", "Tracking_transitions"))
+            , fullTransitions(collector->makeGauge("State_Accounting", "Full_transitions"))
         {
         }
 
         beast::insight::Hook hook;
-        beast::insight::Gauge disconnected_duration;
-        beast::insight::Gauge connected_duration;
-        beast::insight::Gauge syncing_duration;
-        beast::insight::Gauge tracking_duration;
-        beast::insight::Gauge full_duration;
+        beast::insight::Gauge disconnectedDuration;
+        beast::insight::Gauge connectedDuration;
+        beast::insight::Gauge syncingDuration;
+        beast::insight::Gauge trackingDuration;
+        beast::insight::Gauge fullDuration;
 
-        beast::insight::Gauge disconnected_transitions;
-        beast::insight::Gauge connected_transitions;
-        beast::insight::Gauge syncing_transitions;
-        beast::insight::Gauge tracking_transitions;
-        beast::insight::Gauge full_transitions;
+        beast::insight::Gauge disconnectedTransitions;
+        beast::insight::Gauge connectedTransitions;
+        beast::insight::Gauge syncingTransitions;
+        beast::insight::Gauge trackingTransitions;
+        beast::insight::Gauge fullTransitions;
     };
 
     std::mutex statsMutex_;  // Mutex to lock stats_
@@ -990,7 +1041,7 @@ NetworkOPsImp::setTimer(
     // Only start the timer if waitHandlerCounter_ is not yet joined.
     if (auto optionalCountedHandler =
             waitHandlerCounter_.wrap([this, onExpire, onError](boost::system::error_code const& e) {
-                if ((e.value() == boost::system::errc::success) && (!job_queue_.isStopped()))
+                if ((e.value() == boost::system::errc::success) && (!jobQueue_.isStopped()))
                 {
                     onExpire();
                 }
@@ -1017,7 +1068,7 @@ NetworkOPsImp::setHeartbeatTimer()
         heartbeatTimer_,
         consensus_.parms().ledgerGRANULARITY,
         [this]() {
-            job_queue_.addJob(JtNetopTimer, "NetHeart", [this]() { processHeartbeatTimer(); });
+            jobQueue_.addJob(JtNetopTimer, "NetHeart", [this]() { processHeartbeatTimer(); });
         },
         [this]() { setHeartbeatTimer(); });
 }
@@ -1031,7 +1082,7 @@ NetworkOPsImp::setClusterTimer()
         clusterTimer_,
         10s,
         [this]() {
-            job_queue_.addJob(JtNetopCluster, "NetCluster", [this]() { processClusterTimer(); });
+            jobQueue_.addJob(JtNetopCluster, "NetCluster", [this]() { processClusterTimer(); });
         },
         [this]() { setClusterTimer(); });
 }
@@ -1206,8 +1257,9 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
         return;
     }
 
-    // Enforce Network bar for batch txn
-    if (iTrans->isFlag(tfInnerBatchTxn) && ledgerMaster_.getValidatedRules().enabled(featureBatch))
+    // Reject any transaction with the tfInnerBatchTxn flag at the network
+    // boundary, regardless of amendment state.
+    if (iTrans->isFlag(tfInnerBatchTxn))
     {
         JLOG(journal_.error()) << "Submitted transaction invalid: tfInnerBatchTxn flag present.";
         return;
@@ -1247,7 +1299,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 
     auto tx = std::make_shared<Transaction>(trans, reason, registry_.get().getApp());
 
-    job_queue_.addJob(JtTransaction, "SubmitTxn", [this, tx]() {
+    jobQueue_.addJob(JtTransaction, "SubmitTxn", [this, tx]() {
         auto t = tx;
         processTransaction(t, false, false, FailHard::No);
     });
@@ -1273,7 +1325,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     // under no circumstances will we ever accept an inner txn within a batch
     // txn from the network.
     auto const sttx = *transaction->getSTransaction();
-    if (sttx.isFlag(tfInnerBatchTxn) && view->rules().enabled(featureBatch))
+    if (sttx.isFlag(tfInnerBatchTxn))
     {
         transaction->setStatus(TransStatus::INVALID);
         transaction->setResult(temINVALID_FLAG);
@@ -1312,7 +1364,7 @@ NetworkOPsImp::processTransaction(
     bool bLocal,
     FailHard failType)
 {
-    auto ev = job_queue_.makeLoadEvent(JtTxnProc, "ProcessTXN");
+    auto ev = jobQueue_.makeLoadEvent(JtTxnProc, "ProcessTXN");
 
     // preProcessTransaction can change our pointer
     if (!preProcessTransaction(transaction))
@@ -1344,7 +1396,7 @@ NetworkOPsImp::doTransactionAsync(
 
     if (dispatchState_ == DispatchState::None)
     {
-        if (job_queue_.addJob(JtBatch, "TxBatchAsync", [this]() { transactionBatch(); }))
+        if (jobQueue_.addJob(JtBatch, "TxBatchAsync", [this]() { transactionBatch(); }))
         {
             dispatchState_ = DispatchState::Scheduled;
         }
@@ -1389,7 +1441,7 @@ NetworkOPsImp::doTransactionSyncBatch(
             if (!transactions_.empty())
             {
                 // More transactions need to be applied, but by another job.
-                if (job_queue_.addJob(JtBatch, "TxBatchSync", [this]() { transactionBatch(); }))
+                if (jobQueue_.addJob(JtBatch, "TxBatchSync", [this]() { transactionBatch(); }))
                 {
                     dispatchState_ = DispatchState::Scheduled;
                 }
@@ -1401,7 +1453,7 @@ NetworkOPsImp::doTransactionSyncBatch(
 void
 NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
 {
-    auto ev = job_queue_.makeLoadEvent(JtTxnProc, "ProcessTXNSet");
+    auto ev = jobQueue_.makeLoadEvent(JtTxnProc, "ProcessTXNSet");
     std::vector<std::shared_ptr<Transaction>> candidates;
     candidates.reserve(set.size());
     for (auto const& [_, tx] : set)
@@ -1640,11 +1692,13 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                         e.transaction->setKept();
                     }
                     else
+                    {
                         JLOG(journal_.debug())
                             << "Not holding transaction " << e.transaction->getID() << ": "
                             << (e.local ? "local" : "network") << ", "
                             << "result: " << e.result << " ledgers left: "
                             << (ledgersLeft ? to_string(*ledgersLeft) : "unspecified");
+                    }
                 }
             }
             else
@@ -2571,7 +2625,7 @@ NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::str
 
     // We will always relay trusted validations; if configured, we will
     // also relay all untrusted validations.
-    return registry_.get().getApp().config().RELAY_UNTRUSTED_VALIDATIONS == 1 || val->isTrusted();
+    return registry_.get().getApp().config().relayUntrustedValidations == 1 || val->isTrusted();
 }
 
 json::Value
@@ -2631,8 +2685,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         info[jss::hostid] = getHostId(admin);
 
     // domain: if configured with a domain, report it:
-    if (!registry_.get().getApp().config().SERVER_DOMAIN.empty())
-        info[jss::server_domain] = registry_.get().getApp().config().SERVER_DOMAIN;
+    if (!registry_.get().getApp().config().serverDomain.empty())
+        info[jss::server_domain] = registry_.get().getApp().config().serverDomain;
 
     info[jss::build_version] = BuildInfo::getVersionString();
 
@@ -2652,7 +2706,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         // Note: By default the node size is "tiny". When parsing it's an error if the final
         // NODE_SIZE is over 4 so below code should be safe.
         // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
-        switch (registry_.get().getApp().config().NODE_SIZE)
+        switch (registry_.get().getApp().config().nodeSize)
         {
             case 0:
                 info[jss::node_size] = "tiny";
@@ -2787,7 +2841,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     //  info[jss::consensus] = consensus_.getJson();
 
     if (admin)
-        info[jss::load] = job_queue_.getJson();
+        info[jss::load] = jobQueue_.getJson();
 
     if (auto const netid = registry_.get().getOverlay().networkID())
         info[jss::network_id] = static_cast<json::UInt>(*netid);
@@ -2952,8 +3006,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         {
             // Don't publish admin ports for non-admin users
             if (!admin &&
-                !(port.admin_nets_v4.empty() && port.admin_nets_v6.empty() &&
-                  port.admin_user.empty() && port.admin_password.empty()))
+                !(port.adminNetsV4.empty() && port.adminNetsV6.empty() && port.adminUser.empty() &&
+                  port.adminPassword.empty()))
                 continue;
             std::vector<std::string> proto;
             // NOLINTNEXTLINE(modernize-use-ranges)
@@ -2973,11 +3027,12 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             }
         }
 
-        if (registry_.get().getApp().config().exists(SECTION_PORT_GRPC))
+        if (registry_.get().getApp().config().exists(Sections::kPortGrpc))
         {
-            auto const& grpcSection = registry_.get().getApp().config().section(SECTION_PORT_GRPC);
-            auto const optPort = grpcSection.get("port");
-            if (optPort && grpcSection.get("ip"))
+            auto const& grpcSection =
+                registry_.get().getApp().config().section(Sections::kPortGrpc);
+            auto const optPort = grpcSection.get(Keys::kPort);
+            if (optPort && grpcSection.get(Keys::kIp))
             {
                 auto& jv = ports.append(json::Value(json::ValueType::Object));
                 jv[jss::port] = *optPort;
@@ -3170,14 +3225,14 @@ NetworkOPsImp::reportFeeChange()
     // only schedule the job if something has changed
     if (f != lastFeeSummary_)
     {
-        job_queue_.addJob(JtClientFeeChange, "PubFee", [this]() { pubServer(); });
+        jobQueue_.addJob(JtClientFeeChange, "PubFee", [this]() { pubServer(); });
     }
 }
 
 void
 NetworkOPsImp::reportConsensusStateChange(ConsensusPhase phase)
 {
-    job_queue_.addJob(JtClientConsensus, "PubCons", [this, phase]() { pubConsensus(phase); });
+    jobQueue_.addJob(JtClientConsensus, "PubCons", [this, phase]() { pubConsensus(phase); });
 }
 
 inline void
@@ -3189,6 +3244,16 @@ inline std::size_t
 NetworkOPsImp::getLocalTxCount()
 {
     return localTX_->size();
+}
+
+std::size_t
+NetworkOPsImp::getBookSubscribersCount()
+{
+    std::scoped_lock const sl(subLock_);
+    std::size_t total = 0;
+    for (auto const& [_, subs] : subBook_)
+        total += subs.size();
+    return total;
 }
 
 // This routine should only be used to publish accepted or validated
@@ -3352,9 +3417,87 @@ NetworkOPsImp::pubValidatedTransaction(
     }
 
     if (transaction.getResult() == tesSUCCESS)
-        registry_.get().getOrderBookDB().processTxn(ledger, transaction, jvObj);
+        pubBookTransaction(transaction, jvObj);
 
     pubAccountTransaction(ledger, transaction, last);
+}
+
+void
+NetworkOPsImp::pubBookTransaction(AcceptedLedgerTx const& alTx, MultiApiJson const& jvObj)
+{
+    auto const books = affectedBooks(alTx, journal_);
+    if (books.empty())
+        return;
+
+    // Two-pass design:
+    //
+    //   1. Under subLock_, walk subBook_, collect a strong pointer for each
+    //      unique listener (and prune any expired weak_ptrs we encounter).
+    //   2. Release subLock_, then send to each collected listener.
+    //
+    // Reasoning:
+    //   * send() can be slow / blocking, so holding subLock_ across it would
+    //     stall every other sub/unsub/pub path on this server (see the matching
+    //     TODO above pubServer at line ~2275).
+    //   * A strong pointer destructed while subLock_ is held risks running
+    //     ~InfoSub() in-line, which re-enters unsubBook() and mutates the very
+    //     subBook_/SubMapType being iterated -> dangling iterator UB.
+    //
+    // Releasing subLock_ before any InfoSub::pointer can decay solves both.
+    // ~InfoSub() reacquires subLock_ via unsubBook() on its own and serializes
+    // safely with concurrent traffic.
+
+    std::vector<InfoSub::pointer> listeners;
+    hash_set<std::uint64_t> seen;
+
+    // Sized for the common case where every affected book has at most
+    // one subscriber. Multi-subscriber books trigger reallocation, but
+    // that is rare and the upper-bound estimate (sum of per-book sizes)
+    // would itself require walking subBook_ twice.
+    listeners.reserve(books.size());
+    seen.reserve(books.size());
+
+    {
+        std::scoped_lock const sl(subLock_);
+
+        for (auto const& book : books)
+        {
+            auto it = subBook_.find(book);
+            if (it == subBook_.end())
+                continue;
+
+            for (auto sit = it->second.begin(); sit != it->second.end();)
+            {
+                if (auto p = sit->second.lock())
+                {
+                    // Defensive: subBook_ entries are normally cleared by
+                    // ~InfoSub() -> unsubBook(), so we rarely see expired
+                    // weak_ptrs here. The else branch covers the narrow race
+                    // where the last strong ref is dropped between insertion
+                    // and our lock() call.
+                    if (seen.emplace(p->getSeq()).second)
+                        listeners.emplace_back(std::move(p));
+                    ++sit;
+                }
+                else
+                {
+                    JLOG(journal_.debug())
+                        << "pubBookTransaction: pruning expired weak_ptr for seq=" << sit->first;
+                    sit = it->second.erase(sit);
+                }
+            }
+
+            if (it->second.empty())
+                subBook_.erase(it);
+        }
+    }
+
+    for (auto const& p : listeners)
+    {
+        jvObj.visit(p->getApiVersion(), [&](json::Value const& jv) { p->send(jv, true); });
+    }
+    // listeners destructs here, outside subLock_; ~InfoSub (if any fires)
+    // will reacquire subLock_ via unsubBook with no iterator hazard.
 }
 
 void
@@ -3676,10 +3819,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                     return true;
             }
 
-            for (auto& node : meta->getNodes())
-            {
+            return std::ranges::any_of(meta->getNodes(), [&](auto& node) {
                 if (node.getFieldU16(sfLedgerEntryType) != ltACCOUNT_ROOT)
-                    continue;
+                    return false;
 
                 if (node.isFieldPresent(sfNewFields))
                 {
@@ -3693,9 +3835,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         }
                     }
                 }
-            }
-
-            return false;
+                return false;
+            });
         };
 
         auto send = [&](json::Value const& jvObj, bool unsubscribe) -> bool {
@@ -3737,7 +3878,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 .ledgerRange = {.min = minLedger, .max = maxLedger},
                 .marker = marker,
                 .limit = 0,
-                .bAdmin = true};
+                .bAdmin = true,
+                .delegate = std::nullopt};
             return db.newestAccountTxPage(options);
         };
 
@@ -4010,26 +4152,39 @@ NetworkOPsImp::unsubAccountHistoryInternal(
 bool
 NetworkOPsImp::subBook(InfoSub::ref isrListener, Book const& book)
 {
-    if (auto listeners = registry_.get().getOrderBookDB().makeBookListeners(book))
+    // Server-side insert first, then InfoSub bookkeeping. If the InfoSub-side
+    // insert throws, the orphan in subBook_ is cleared by the expired-weak_ptr
+    // prune in pubBookTransaction. With the reverse ordering, ~InfoSub would
+    // call unsubBookInternal for a key that was never inserted server-side.
     {
-        listeners->addSubscriber(isrListener);
+        std::scoped_lock const sl(subLock_);
+        subBook_[book].try_emplace(isrListener->getSeq(), isrListener);
     }
-    else
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::NetworkOPsImp::subBook : null book listeners");
-        // LCOV_EXCL_STOP
-    }
+    isrListener->insertBookSubscription(book);
     return true;
 }
 
 bool
-NetworkOPsImp::unsubBook(std::uint64_t uSeq, Book const& book)
+NetworkOPsImp::unsubBook(InfoSub::ref isrListener, Book const& book)
 {
-    if (auto listeners = registry_.get().getOrderBookDB().getBookListeners(book))
-        listeners->removeSubscriber(uSeq);
+    // Mirrors unsubAccount: clear the per-subscriber tracking set first so
+    // ~InfoSub does not re-issue an unsubBookInternal for a book the caller
+    // already removed, then erase the server-side entry.
+    isrListener->deleteBookSubscription(book);
+    return unsubBookInternal(isrListener->getSeq(), book);
+}
 
-    return true;
+bool
+NetworkOPsImp::unsubBookInternal(std::uint64_t uSeq, Book const& book)
+{
+    std::scoped_lock const sl(subLock_);
+    auto it = subBook_.find(book);
+    if (it == subBook_.end())
+        return false;
+    bool const erased = it->second.erase(uSeq) != 0u;
+    if (it->second.empty())
+        subBook_.erase(it);
+    return erased;
 }
 
 std::uint32_t
@@ -4240,7 +4395,7 @@ NetworkOPsImp::findRpcSub(std::string const& strUrl)
 {
     std::scoped_lock const sl(subLock_);
 
-    subRpcMapType::iterator const it = rpcSubMap_.find(strUrl);
+    auto const it = rpcSubMap_.find(strUrl);
 
     if (it != rpcSubMap_.end())
         return it->second;
@@ -4316,7 +4471,7 @@ NetworkOPsImp::getBookPage(
     bool bDone = false;
     bool bDirectAdvance = true;
 
-    std::shared_ptr<SLE const> sleOfferDir;
+    SLE::const_pointer sleOfferDir;
     uint256 offerIndex;
     unsigned int uBookEntry = 0;
     STAmount saDirRate;
@@ -4626,26 +4781,25 @@ NetworkOPsImp::collectMetrics()
     counters[static_cast<std::size_t>(mode)].dur += current;
 
     std::scoped_lock const lock(statsMutex_);
-    stats_.disconnected_duration.set(
+    stats_.disconnectedDuration.set(
         counters[static_cast<std::size_t>(OperatingMode::DISCONNECTED)].dur.count());
-    stats_.connected_duration.set(
+    stats_.connectedDuration.set(
         counters[static_cast<std::size_t>(OperatingMode::CONNECTED)].dur.count());
-    stats_.syncing_duration.set(
+    stats_.syncingDuration.set(
         counters[static_cast<std::size_t>(OperatingMode::SYNCING)].dur.count());
-    stats_.tracking_duration.set(
+    stats_.trackingDuration.set(
         counters[static_cast<std::size_t>(OperatingMode::TRACKING)].dur.count());
-    stats_.full_duration.set(counters[static_cast<std::size_t>(OperatingMode::FULL)].dur.count());
+    stats_.fullDuration.set(counters[static_cast<std::size_t>(OperatingMode::FULL)].dur.count());
 
-    stats_.disconnected_transitions.set(
+    stats_.disconnectedTransitions.set(
         counters[static_cast<std::size_t>(OperatingMode::DISCONNECTED)].transitions);
-    stats_.connected_transitions.set(
+    stats_.connectedTransitions.set(
         counters[static_cast<std::size_t>(OperatingMode::CONNECTED)].transitions);
-    stats_.syncing_transitions.set(
+    stats_.syncingTransitions.set(
         counters[static_cast<std::size_t>(OperatingMode::SYNCING)].transitions);
-    stats_.tracking_transitions.set(
+    stats_.trackingTransitions.set(
         counters[static_cast<std::size_t>(OperatingMode::TRACKING)].transitions);
-    stats_.full_transitions.set(
-        counters[static_cast<std::size_t>(OperatingMode::FULL)].transitions);
+    stats_.fullTransitions.set(counters[static_cast<std::size_t>(OperatingMode::FULL)].transitions);
 }
 
 void
@@ -4676,7 +4830,7 @@ NetworkOPsImp::StateAccounting::json(json::Value& obj) const
     counters[static_cast<std::size_t>(mode)].dur += current;
 
     obj[jss::state_accounting] = json::ValueType::Object;
-    for (std::size_t i = static_cast<std::size_t>(OperatingMode::DISCONNECTED);
+    for (auto i = static_cast<std::size_t>(OperatingMode::DISCONNECTED);
          i <= static_cast<std::size_t>(OperatingMode::FULL);
          ++i)
     {

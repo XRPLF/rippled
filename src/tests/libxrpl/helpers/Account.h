@@ -26,7 +26,7 @@ public:
      * This account is created in the genesis ledger with all 100 billion XRP.
      * It uses the well-known seed "masterpassphrase".
      */
-    static Account const master;
+    static Account const kMaster;
 
     /**
      * @brief Create an account from a name.
@@ -38,35 +38,45 @@ public:
      */
     explicit Account(std::string_view name, KeyType type = KeyType::Secp256k1);
 
-    /** @brief Return the human-readable name. */
-    std::string const&
+    /**
+     * @brief Return the human-readable name.
+     */
+    [[nodiscard]] std::string const&
     name() const noexcept
     {
         return name_;
     }
 
-    /** @brief Return the AccountID. */
-    AccountID const&
+    /**
+     * @brief Return the AccountID.
+     */
+    [[nodiscard]] AccountID const&
     id() const noexcept
     {
         return id_;
     }
 
-    /** @brief Return the public key. */
-    PublicKey const&
+    /**
+     * @brief Return the public key.
+     */
+    [[nodiscard]] PublicKey const&
     pk() const noexcept
     {
         return keyPair_.first;
     }
 
-    /** @brief Return the secret key. */
-    SecretKey const&
+    /**
+     * @brief Return the secret key.
+     */
+    [[nodiscard]] SecretKey const&
     sk() const noexcept
     {
         return keyPair_.second;
     }
 
-    /** @brief Implicit conversion to AccountID. */
+    /**
+     * @brief Implicit conversion to AccountID.
+     */
     operator AccountID const&() const noexcept
     {
         return id_;

@@ -3,10 +3,14 @@
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Slice.h>
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
 
+#include <cstdint>
 #include <cstring>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -24,7 +28,7 @@ public:
     STBlob(SField const& f, void const* data, std::size_t size);
     STBlob(SField const& f, Buffer&& b);
     STBlob(SField const& n);
-    STBlob(SerialIter&, SField const& name = kSfGeneric);
+    STBlob(SerialIter&, SField const& name = sfGeneric);
 
     [[nodiscard]] std::size_t
     size() const;

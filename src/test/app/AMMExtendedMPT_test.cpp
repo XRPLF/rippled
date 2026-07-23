@@ -463,7 +463,7 @@ private:
         // Provide micro amounts to compensate for fees to make results round
         // nice.
         auto const startingXrp =
-            XRP(100) + env.current()->fees().accountReserve(2) + env.current()->fees().base * 3;
+            XRP(100) + env.current()->fees().accountReserve(2, 1) + env.current()->fees().base * 3;
 
         env.fund(startingXrp, gw_, alice_);
         env.fund(XRP(2'000), bob_);
@@ -2296,8 +2296,10 @@ private:
             // 1,400e12 - 56.3368e12*1.25 = 1400e12 - 70.4210e12 =
             // 1329.5789e12GBP
             env.require(Balance(alice_, gbp(1'329'578'947'368'420)));
-            //// 25% on 56.3368e12ETH is paid in tr fee 56.3368e12*1.25
-            ///= 70.4210e12ETH
+            /**
+             * / 25% on 56.3368e12ETH is paid in tr fee 56.3368e12*1.25
+             * = 70.4210e12ETH
+             */
             // 56.3368e12GBP is swapped in for 53.3322e12ETH
             BEAST_EXPECT(amm.expectBalances(
                 gbp(1'056'336'842'105'264), eth(946'667'729'591'836), amm.tokens()));
@@ -3114,10 +3116,8 @@ private:
         btc.set({.holder = bob, .flags = tfMPTLock});
 
         {
-            // different from IOU. The offer is created but not crossed.
-            env(offer(bob, btc(5), XRP(25)));
+            env(offer(bob, btc(5), XRP(25)), Ter(tecLOCKED));
             env.close();
-            BEAST_EXPECT(expectOffers(env, bob, 1, {{{btc(5), XRP(25)}}}));
             BEAST_EXPECT(ammAlice.expectBalances(XRP(500), btc(105), ammAlice.tokens()));
         }
 
@@ -3220,7 +3220,7 @@ private:
             btc.set({.flags = tfMPTLock});
 
             // assets can't be bought on the market
-            AMM const ammA3(env, a3, btc(1), XRP(1), Ter(tecFROZEN));
+            AMM const ammA3(env, a3, btc(1), XRP(1), Ter(tecLOCKED));
 
             // direct issues can be sent
             env(pay(g1, a2, btc(1)));

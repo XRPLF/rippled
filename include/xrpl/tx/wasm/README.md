@@ -45,7 +45,7 @@ The module follows a layered architecture:
 
 - **`HostFunc.h`** - Abstract `HostFunctions` base class defining the interface
   for all callable host functions. Each method returns
-  `Expected<T, HostFunctionError>`.
+  `std::expected<T, HostFunctionError>`.
 
 - **`HostFuncImpl.h` / `detail/HostFuncImpl*.cpp`** - Concrete
   `WasmHostFunctionsImpl` class that implements host functions with access to
@@ -103,7 +103,7 @@ WASM execution is metered, and if the gas limit is exceeded, execution fails.
 ## Entry Point
 
 The WASM module must export a function with the name defined by
-`ESCROW_FUNCTION_NAME` (currently `"finish"`). This function:
+`escrowFunctionName` (currently `"escrow_finish"`). This function:
 
 - Takes no parameters (or parameters passed via host function calls)
 - Returns an `int32_t`:
@@ -120,10 +120,10 @@ Add a virtual method declaration with a default implementation that returns an
 error:
 
 ```cpp
-virtual Expected<ReturnType, HostFunctionError>
+virtual std::expected<ReturnType, HostFunctionError>
 myNewFunction(ParamType1 param1, ParamType2 param2)
 {
-    return Unexpected(HostFunctionError::INTERNAL);
+    return std::unexpected(HostFunctionError::INTERNAL);
 }
 ```
 
@@ -132,7 +132,7 @@ myNewFunction(ParamType1 param1, ParamType2 param2)
 Add the method override declaration in `WasmHostFunctionsImpl`:
 
 ```cpp
-Expected<ReturnType, HostFunctionError>
+std::expected<ReturnType, HostFunctionError>
 myNewFunction(ParamType1 param1, ParamType2 param2) override;
 ```
 
@@ -141,7 +141,7 @@ myNewFunction(ParamType1 param1, ParamType2 param2) override;
 Add the implementation in the appropriate file:
 
 ```cpp
-Expected<ReturnType, HostFunctionError>
+std::expected<ReturnType, HostFunctionError>
 WasmHostFunctionsImpl::myNewFunction(ParamType1 param1, ParamType2 param2)
 {
     // Implementation using ctx (ApplyContext) for ledger access

@@ -32,7 +32,7 @@ use xrpl_std::host::trace::{trace, trace_account_buf, trace_data, trace_num, Dat
 use xrpl_std::sfield;
 
 #[unsafe(no_mangle)]
-pub extern "C" fn finish() -> i32 {
+pub extern "C" fn escrow_finish() -> i32 {
     let _ = trace("=== HOST FUNCTIONS TEST ===");
     let _ = trace("Testing 26 host functions");
 
@@ -98,7 +98,7 @@ fn test_ledger_header_functions() -> i32 {
 
     // Test 1.1: get_ledger_sqn() - should return current ledger sequence number
     let mut sqn_buffer = [0u8; 4];
-    let sqn_result = unsafe { host::get_ledger_sqn(sqn_buffer.as_mut_ptr(), sqn_buffer.len()) };
+    let sqn_result = unsafe { host::ldgr_index(sqn_buffer.as_mut_ptr(), sqn_buffer.len()) };
 
     if sqn_result <= 0 {
         let _ = trace_num("ERROR: get_ledger_sqn failed:", sqn_result as i64);
@@ -110,7 +110,7 @@ fn test_ledger_header_functions() -> i32 {
     // Test 1.2: get_parent_ledger_time() - should return parent ledger timestamp
     let mut time_buffer = [0u8; 4];
     let time_result =
-        unsafe { host::get_parent_ledger_time(time_buffer.as_mut_ptr(), time_buffer.len()) };
+        unsafe { host::parent_ldgr_time(time_buffer.as_mut_ptr(), time_buffer.len()) };
 
     if time_result <= 0 {
         let _ = trace_num("ERROR: get_parent_ledger_time failed:", time_result as i64);
@@ -122,7 +122,7 @@ fn test_ledger_header_functions() -> i32 {
     // Test 1.3: get_parent_ledger_hash() - should return parent ledger hash (32 bytes)
     let mut hash_buffer = [0u8; 32];
     let hash_result =
-        unsafe { host::get_parent_ledger_hash(hash_buffer.as_mut_ptr(), hash_buffer.len()) };
+        unsafe { host::parent_ldgr_hash(hash_buffer.as_mut_ptr(), hash_buffer.len()) };
 
     if hash_result != 32 {
         let _ = trace_num(
@@ -146,8 +146,8 @@ fn test_transaction_data_functions() -> i32 {
     // Test with Account field (required, 20 bytes)
     let mut account_buffer = [0u8; 20];
     let account_len = unsafe {
-        host::get_tx_field(
-            sfield::Account,
+        host::tx_field(
+            sfield::Account.into(),
             account_buffer.as_mut_ptr(),
             account_buffer.len(),
         )
@@ -165,8 +165,13 @@ fn test_transaction_data_functions() -> i32 {
     // Test with Fee field (XRP amount - 8 bytes in new serialized format)
     // New format: XRP amounts are always 8 bytes (positive: value | cPositive flag, negative: just value)
     let mut fee_buffer = [0u8; 8];
-    let fee_len =
-        unsafe { host::get_tx_field(sfield::Fee, fee_buffer.as_mut_ptr(), fee_buffer.len()) };
+    let fee_len = unsafe {
+        host::tx_field(
+            sfield::Fee.into(),
+            fee_buffer.as_mut_ptr(),
+            fee_buffer.len(),
+        )
+    };
 
     if fee_len != 8 {
         let _ = trace_num(
@@ -184,8 +189,13 @@ fn test_transaction_data_functions() -> i32 {
 
     // Test with Sequence field (required, 4 bytes uint32)
     let mut seq_buffer = [0u8; 4];
-    let seq_len =
-        unsafe { host::get_tx_field(sfield::Sequence, seq_buffer.as_mut_ptr(), seq_buffer.len()) };
+    let seq_len = unsafe {
+        host::tx_field(
+            sfield::Sequence.into(),
+            seq_buffer.as_mut_ptr(),
+            seq_buffer.len(),
+        )
+    };
 
     if seq_len != 4 {
         let _ = trace_num(
@@ -200,10 +210,12 @@ fn test_transaction_data_functions() -> i32 {
     // Use get_tx_field() with appropriate parameters for all transaction field access.
 
     // Test 2.2: get_tx_nested_field() - Nested field access with locator
-    let locator = [0x01_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8]; // Two int32s in little-endian: [1, 0]
+    let locator = [
+        0x01_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
+    ]; // Two int32s in little-endian: [1, 0]
     let mut nested_buffer = [0u8; 32];
     let nested_result = unsafe {
-        host::get_tx_nested_field(
+        host::tx_inner(
             locator.as_ptr(),
             locator.len(),
             nested_buffer.as_mut_ptr(),
@@ -227,15 +239,14 @@ fn test_transaction_data_functions() -> i32 {
     }
 
     // Test 2.3: get_tx_array_len() - Get array length
-    let signers_len = unsafe { host::get_tx_array_len(sfield::Signers) };
+    let signers_len = unsafe { host::tx_arr_len(sfield::Signers.into()) };
     let _ = trace_num("Signers array length:", signers_len as i64);
 
-    let memos_len = unsafe { host::get_tx_array_len(sfield::Memos) };
+    let memos_len = unsafe { host::tx_arr_len(sfield::Memos.into()) };
     let _ = trace_num("Memos array length:", memos_len as i64);
 
     // Test 2.4: get_tx_nested_array_len() - Get nested array length with locator
-    let nested_array_len =
-        unsafe { host::get_tx_nested_array_len(locator.as_ptr(), locator.len()) };
+    let nested_array_len = unsafe { host::tx_inner_arr_len(locator.as_ptr(), locator.len()) };
 
     if nested_array_len < 0 {
         let _ = trace_num(
@@ -259,8 +270,8 @@ fn test_current_ledger_object_functions() -> i32 {
     // Test with Balance field (XRP amount - 8 bytes in new serialized format)
     let mut balance_buffer = [0u8; 8];
     let balance_result = unsafe {
-        host::get_current_ledger_obj_field(
-            sfield::Balance,
+        host::home_le_field(
+            sfield::Balance.into(),
             balance_buffer.as_mut_ptr(),
             balance_buffer.len(),
         )
@@ -297,8 +308,8 @@ fn test_current_ledger_object_functions() -> i32 {
     // Test with Account field
     let mut current_account_buffer = [0u8; 20];
     let current_account_result = unsafe {
-        host::get_current_ledger_obj_field(
-            sfield::Account,
+        host::home_le_field(
+            sfield::Account.into(),
             current_account_buffer.as_mut_ptr(),
             current_account_buffer.len(),
         )
@@ -314,10 +325,12 @@ fn test_current_ledger_object_functions() -> i32 {
     }
 
     // Test 3.2: get_current_ledger_obj_nested_field() - Nested field access
-    let locator = [0x01_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8]; // Two int32s in little-endian: [1, 0]
+    let locator = [
+        0x01_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
+    ]; // Two int32s in little-endian: [1, 0]
     let mut current_nested_buffer = [0u8; 32];
     let current_nested_result = unsafe {
-        host::get_current_ledger_obj_nested_field(
+        host::home_le_inner(
             locator.as_ptr(),
             locator.len(),
             current_nested_buffer.as_mut_ptr(),
@@ -340,7 +353,7 @@ fn test_current_ledger_object_functions() -> i32 {
     }
 
     // Test 3.3: get_current_ledger_obj_array_len() - Array length in current object
-    let current_array_len = unsafe { host::get_current_ledger_obj_array_len(sfield::Signers) };
+    let current_array_len = unsafe { host::home_le_arr_len(sfield::Signers.into()) };
     let _ = trace_num(
         "Current object Signers array length:",
         current_array_len as i64,
@@ -348,7 +361,7 @@ fn test_current_ledger_object_functions() -> i32 {
 
     // Test 3.4: get_current_ledger_obj_nested_array_len() - Nested array length
     let current_nested_array_len =
-        unsafe { host::get_current_ledger_obj_nested_array_len(locator.as_ptr(), locator.len()) };
+        unsafe { host::home_le_inner_arr_len(locator.as_ptr(), locator.len()) };
 
     if current_nested_array_len < 0 {
         let _ = trace_num(
@@ -379,7 +392,7 @@ fn test_any_ledger_object_functions() -> i32 {
     // Test 4.1: cache_ledger_obj() - Cache a ledger object
     let mut keylet_buffer = [0u8; 32];
     let keylet_result = unsafe {
-        host::account_keylet(
+        host::accountroot_id(
             account_id.0.as_ptr(),
             account_id.0.len(),
             keylet_buffer.as_mut_ptr(),
@@ -389,14 +402,13 @@ fn test_any_ledger_object_functions() -> i32 {
 
     if keylet_result != 32 {
         let _ = trace_num(
-            "ERROR: account_keylet failed for caching test:",
+            "ERROR: accountroot_id failed for caching test:",
             keylet_result as i64,
         );
         return -401; // Keylet generation failed for caching test
     }
 
-    let cache_result =
-        unsafe { host::cache_ledger_obj(keylet_buffer.as_ptr(), keylet_result as usize, 0) };
+    let cache_result = unsafe { host::cache_le(keylet_buffer.as_ptr(), keylet_result as usize, 0) };
 
     if cache_result <= 0 {
         let _ = trace_num(
@@ -411,9 +423,9 @@ fn test_any_ledger_object_functions() -> i32 {
 
         // Test get_ledger_obj_field with invalid slot
         let field_result = unsafe {
-            host::get_ledger_obj_field(
+            host::le_field(
                 1,
-                sfield::Balance,
+                sfield::Balance.into(),
                 test_buffer.as_mut_ptr(),
                 test_buffer.len(),
             )
@@ -426,9 +438,11 @@ fn test_any_ledger_object_functions() -> i32 {
         }
 
         // Test get_ledger_obj_nested_field with invalid slot
-        let locator = [0x01_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8]; // Two int32s in little-endian: [1, 0]
+        let locator = [
+            0x01_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
+        ]; // Two int32s in little-endian: [1, 0]
         let nested_result = unsafe {
-            host::get_ledger_obj_nested_field(
+            host::le_inner(
                 1,
                 locator.as_ptr(),
                 locator.len(),
@@ -444,7 +458,7 @@ fn test_any_ledger_object_functions() -> i32 {
         }
 
         // Test get_ledger_obj_array_len with invalid slot
-        let array_result = unsafe { host::get_ledger_obj_array_len(1, sfield::Signers) };
+        let array_result = unsafe { host::le_arr_len(1, sfield::Signers.into()) };
         if array_result < 0 {
             let _ = trace_num(
                 "INFO: get_ledger_obj_array_len failed as expected:",
@@ -454,7 +468,7 @@ fn test_any_ledger_object_functions() -> i32 {
 
         // Test get_ledger_obj_nested_array_len with invalid slot
         let nested_array_result =
-            unsafe { host::get_ledger_obj_nested_array_len(1, locator.as_ptr(), locator.len()) };
+            unsafe { host::le_inner_arr_len(1, locator.as_ptr(), locator.len()) };
         if nested_array_result < 0 {
             let _ = trace_num(
                 "INFO: get_ledger_obj_nested_array_len failed as expected:",
@@ -473,9 +487,9 @@ fn test_any_ledger_object_functions() -> i32 {
     // Test 4.2: get_ledger_obj_field() - Access field from cached object
     let mut cached_balance_buffer = [0u8; 8];
     let cached_balance_result = unsafe {
-        host::get_ledger_obj_field(
+        host::le_field(
             slot,
-            sfield::Balance,
+            sfield::Balance.into(),
             cached_balance_buffer.as_mut_ptr(),
             cached_balance_buffer.len(),
         )
@@ -509,10 +523,12 @@ fn test_any_ledger_object_functions() -> i32 {
     }
 
     // Test 4.3: get_ledger_obj_nested_field() - Nested field from cached object
-    let locator = [0x01_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8]; // Two int32s in little-endian: [1, 0]
+    let locator = [
+        0x01_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8,
+    ]; // Two int32s in little-endian: [1, 0]
     let mut cached_nested_buffer = [0u8; 32];
     let cached_nested_result = unsafe {
-        host::get_ledger_obj_nested_field(
+        host::le_inner(
             slot,
             locator.as_ptr(),
             locator.len(),
@@ -536,7 +552,7 @@ fn test_any_ledger_object_functions() -> i32 {
     }
 
     // Test 4.4: get_ledger_obj_array_len() - Array length from cached object
-    let cached_array_len = unsafe { host::get_ledger_obj_array_len(slot, sfield::Signers) };
+    let cached_array_len = unsafe { host::le_arr_len(slot, sfield::Signers.into()) };
     let _ = trace_num(
         "Cached object Signers array length:",
         cached_array_len as i64,
@@ -544,7 +560,7 @@ fn test_any_ledger_object_functions() -> i32 {
 
     // Test 4.5: get_ledger_obj_nested_array_len() - Nested array length from cached object
     let cached_nested_array_len =
-        unsafe { host::get_ledger_obj_nested_array_len(slot, locator.as_ptr(), locator.len()) };
+        unsafe { host::le_inner_arr_len(slot, locator.as_ptr(), locator.len()) };
 
     if cached_nested_array_len < 0 {
         let _ = trace_num(
@@ -570,30 +586,30 @@ fn test_keylet_generation_functions() -> i32 {
     let escrow_finish = EscrowFinish;
     let account_id = escrow_finish.get_account().unwrap();
 
-    // Test 5.1: account_keylet() - Generate keylet for account
-    let mut account_keylet_buffer = [0u8; 32];
-    let account_keylet_result = unsafe {
-        host::account_keylet(
+    // Test 5.1: accountroot_id() - Generate keylet for account
+    let mut accountroot_id_buffer = [0u8; 32];
+    let accountroot_id_result = unsafe {
+        host::accountroot_id(
             account_id.0.as_ptr(),
             account_id.0.len(),
-            account_keylet_buffer.as_mut_ptr(),
-            account_keylet_buffer.len(),
+            accountroot_id_buffer.as_mut_ptr(),
+            accountroot_id_buffer.len(),
         )
     };
 
-    if account_keylet_result != 32 {
+    if accountroot_id_result != 32 {
         let _ = trace_num(
-            "ERROR: account_keylet failed:",
-            account_keylet_result as i64,
+            "ERROR: accountroot_id failed:",
+            accountroot_id_result as i64,
         );
         return -501; // Account keylet generation failed
     }
-    let _ = trace_data("Account keylet:", &account_keylet_buffer, DataRepr::AsHex);
+    let _ = trace_data("Account keylet:", &accountroot_id_buffer, DataRepr::AsHex);
 
     // Test 5.2: credential_keylet() - Generate keylet for credential
     let mut credential_keylet_buffer = [0u8; 32];
     let credential_keylet_result = unsafe {
-        host::credential_keylet(
+        host::credential_id(
             account_id.0.as_ptr(), // Subject
             account_id.0.len(),
             account_id.0.as_ptr(), // Issuer - same account for test
@@ -624,7 +640,7 @@ fn test_keylet_generation_functions() -> i32 {
     let sequence_number: i32 = 1000;
     let sequence_number_bytes = sequence_number.to_be_bytes();
     let escrow_keylet_result = unsafe {
-        host::escrow_keylet(
+        host::escrow_id(
             account_id.0.as_ptr(),
             account_id.0.len(),
             sequence_number_bytes.as_ptr(),
@@ -645,7 +661,7 @@ fn test_keylet_generation_functions() -> i32 {
     let document_id: i32 = 42;
     let document_id_bytes = document_id.to_be_bytes();
     let oracle_keylet_result = unsafe {
-        host::oracle_keylet(
+        host::oracle_id(
             account_id.0.as_ptr(),
             account_id.0.len(),
             document_id_bytes.as_ptr(),
@@ -674,7 +690,7 @@ fn test_utility_functions() -> i32 {
     let test_data = b"Hello, XRPL WASM world!";
     let mut hash_output = [0u8; 32];
     let hash_result = unsafe {
-        host::compute_sha512_half(
+        host::sha512_half(
             test_data.as_ptr(),
             test_data.len(),
             hash_output.as_mut_ptr(),
@@ -695,7 +711,7 @@ fn test_utility_functions() -> i32 {
     let nft_id = [0u8; 32]; // Dummy NFT ID for testing
     let mut nft_buffer = [0u8; 256];
     let nft_result = unsafe {
-        host::get_nft(
+        host::nft_uri(
             account_id.0.as_ptr(),
             account_id.0.len(),
             nft_id.as_ptr(),
@@ -766,7 +782,7 @@ fn test_data_update_functions() -> i32 {
     // Test 7.1: update_data() - Update current ledger entry data
     let update_payload = b"Updated ledger entry data from WASM test";
 
-    let update_result = unsafe { host::update_data(update_payload.as_ptr(), update_payload.len()) };
+    let update_result = unsafe { host::set_data(update_payload.as_ptr(), update_payload.len()) };
 
     if update_result != update_payload.len() as i32 {
         let _ = trace_num("ERROR: update_data failed:", update_result as i64);

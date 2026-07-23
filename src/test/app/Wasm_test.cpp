@@ -1,3 +1,4 @@
+#include <expected>
 #ifdef _DEBUG
 // #define DEBUG_OUTPUT 1
 #endif
@@ -6,7 +7,6 @@
 #include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx/Env.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
@@ -160,13 +160,13 @@ struct Wasm_test : public beast::unit_test::Suite
 {
     void
     checkResult(
-        Expected<WasmResult<int32_t>, TER> re,
+        std::expected<WasmResult<int32_t>, WasmTER> re,
         int32_t expectedResult,
         int64_t expectedCost,
         std::source_location const location = std::source_location::current())
     {
         auto const lineStr = " (" + std::to_string(location.line()) + ")";
-        if (BEAST_EXPECTS(re.has_value(), transToken(re.error()) + lineStr))
+        if (BEAST_EXPECTS(re.has_value(), transToken(re.error().ter) + lineStr))
         {
             BEAST_EXPECTS(re->result == expectedResult, std::to_string(re->result) + lineStr);
             BEAST_EXPECTS(re->cost == expectedCost, std::to_string(re->cost) + lineStr);
@@ -286,7 +286,7 @@ struct Wasm_test : public beast::unit_test::Suite
         Env env{*this};
         TestLedgerDataProvider hfs(env);
         ImportVec imports;
-        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", hfs, 33);
+        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "ldgr_index", hfs, 33);
         auto& engine = WasmEngine::instance();
 
         auto re =
@@ -444,8 +444,10 @@ struct Wasm_test : public beast::unit_test::Suite
 
             if (BEAST_EXPECT(!re))
             {
+                // Running out of gas now terminates with tecOUT_OF_GAS (was
+                // previously collapsed into tecFAILED_PROCESSING).
                 BEAST_EXPECTS(
-                    re.error() == tecFAILED_PROCESSING, std::to_string(TERtoInt(re.error())));
+                    re.error().ter == tecOUT_OF_GAS, std::to_string(TERtoInt(re.error().ter)));
             }
 
             env.close();
@@ -472,7 +474,7 @@ struct Wasm_test : public beast::unit_test::Suite
             TestHostFunctions hfs(env);
             auto re = runEscrowWasm(allHFWasm, hfs, -1, escrowFunctionName, {});
             BEAST_EXPECT(!re.has_value());
-            BEAST_EXPECT(re.error() == temBAD_AMOUNT);
+            BEAST_EXPECT(re.error().ter == temBAD_AMOUNT);
         }
 
         {
@@ -480,7 +482,7 @@ struct Wasm_test : public beast::unit_test::Suite
             TestHostFunctions hfs(env);
             auto re = runEscrowWasm(allHFWasm, hfs, 0, escrowFunctionName, {});
             BEAST_EXPECT(!re.has_value());
-            BEAST_EXPECT(re.error() == temBAD_AMOUNT);
+            BEAST_EXPECT(re.error().ter == temBAD_AMOUNT);
         }
 
         {
@@ -497,10 +499,10 @@ struct Wasm_test : public beast::unit_test::Suite
                 explicit FieldNotFoundHostFunctions(Env& env) : TestHostFunctions(env)
                 {
                 }
-                Expected<Bytes, HostFunctionError>
+                [[nodiscard]] std::expected<Bytes, HostFunctionError>
                 getTxField(SField const& fname) const override
                 {
-                    return Unexpected(HostFunctionError::FieldNotFound);
+                    return std::unexpected(HostFunctionError::FieldNotFound);
                 }
             };
 
@@ -515,7 +517,7 @@ struct Wasm_test : public beast::unit_test::Suite
                 explicit OversizedFieldHostFunctions(Env& env) : TestHostFunctions(env)
                 {
                 }
-                Expected<Bytes, HostFunctionError>
+                [[nodiscard]] std::expected<Bytes, HostFunctionError>
                 getTxField(SField const& fname) const override
                 {
                     return Bytes((128 + 1) * 64 * 1024, 1);
@@ -657,7 +659,7 @@ struct Wasm_test : public beast::unit_test::Suite
         auto const codecovWasm = hexToBytes(kCodecovTestsWasmHex);
         TestHostFunctions hfs(env);
 
-        auto const allowance = 220'169;
+        auto const allowance = 204'624;
         auto re = runEscrowWasm(codecovWasm, hfs, allowance, escrowFunctionName, {});
 
         checkResult(re, 1, allowance);
@@ -817,7 +819,7 @@ struct Wasm_test : public beast::unit_test::Suite
             auto& engine = WasmEngine::instance();
 
             auto re = engine.run(badAlignWasm, hfs, 1'000'000, "test", {}, imports, env.journal);
-            if (BEAST_EXPECTS(re, transToken(re.error())))
+            if (BEAST_EXPECTS(re, transToken(re.error().ter)))
             {
                 BEAST_EXPECTS(re->result == 0x47308594, std::to_string(re->result));
             }

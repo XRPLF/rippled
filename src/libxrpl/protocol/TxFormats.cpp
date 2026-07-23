@@ -30,6 +30,9 @@ TxFormats::getCommonFields()
         {sfSigners, SoeOptional},  // submit_multisigned
         {sfNetworkID, SoeOptional},
         {sfDelegate, SoeOptional},
+        {sfSponsor, SoeOptional},
+        {sfSponsorFlags, SoeOptional},
+        {sfSponsorSignature, SoeOptional},
     };
     return kCommonFields;
 }

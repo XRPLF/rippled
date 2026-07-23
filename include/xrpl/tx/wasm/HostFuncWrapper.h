@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpl/tx/wasm/WasmImportsHelper.h>
+#include <xrpl/tx/wasm/HostFunc.h>
 
 #include <wasm.h>
 
@@ -115,7 +115,7 @@ using escrowKeylet_proto =
     int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t* escrowKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
-using lineKeylet_proto = int32_t(
+using trustLineKeylet_proto = int32_t(
     uint8_t const*,
     int32_t,
     uint8_t const*,
@@ -124,19 +124,19 @@ using lineKeylet_proto = int32_t(
     int32_t,
     uint8_t*,
     int32_t);
-wasm_trap_t* lineKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
+wasm_trap_t* trustLineKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
-using mptIssuanceKeylet_proto =
+using mptokenIssuanceKeylet_proto =
     int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t* mptIssuanceKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
+wasm_trap_t* mptokenIssuanceKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
 using mptokenKeylet_proto =
     int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t* mptokenKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
-using nftOfferKeylet_proto =
+using nftokenOfferKeylet_proto =
     int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t* nftOfferKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
+wasm_trap_t* nftokenOfferKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
 using offerKeylet_proto =
     int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
@@ -146,7 +146,7 @@ using oracleKeylet_proto =
     int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t* oracleKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
-using paychanKeylet_proto = int32_t(
+using paychannelKeylet_proto = int32_t(
     uint8_t const*,
     int32_t,
     uint8_t const*,
@@ -155,14 +155,14 @@ using paychanKeylet_proto = int32_t(
     int32_t,
     uint8_t*,
     int32_t);
-wasm_trap_t* paychanKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
+wasm_trap_t* paychannelKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
 using permissionedDomainKeylet_proto =
     int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t* permissionedDomainKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
-using signersKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t* signersKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
+using signerListKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t* signerListKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
 using ticketKeylet_proto =
     int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
@@ -187,8 +187,8 @@ wasm_trap_t* getNFTFlags_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 using getNFTTransferFee_proto = int32_t(uint8_t const*, int32_t);
 wasm_trap_t* getNFTTransferFee_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
-using getNFTSerial_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t* getNFTSerial_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
+using getNFTSequence_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t* getNFTSequence_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
 using trace_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, int32_t);
 wasm_trap_t* trace_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
