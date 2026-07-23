@@ -364,6 +364,8 @@ public:
     static constexpr internalrep kMaxRep = std::numeric_limits<rep>::max();
     static_assert(kMaxRep == 9'223'372'036'854'775'807);
     static_assert(-kMaxRep == std::numeric_limits<rep>::min() + 1);
+    static constexpr internalrep kMaxRepUp = ((kMaxRep / 10) + 1) * 10;
+    static_assert(kMaxRepUp == 9'223'372'036'854'775'810ULL);
 
     // May need to make unchecked private
     struct Unchecked
@@ -591,6 +593,13 @@ public:
     std::pair<T, int>
     normalizeToRange() const;
 
+    // Safely convert rep (int64) mantissa to internalrep (uint64). If the rep
+    // is negative, returns the positive value. This takes a little extra work
+    // because converting std::numeric_limits<std::int64_t>::min() flirts with
+    // UB, and can vary across compilers.
+    static internalrep
+    externalToInternal(rep mantissa);
+
 private:
     static thread_local RoundingMode mode;
     // The available ranges for mantissa
@@ -645,13 +654,6 @@ private:
     // exponent could go out of range, so it will be checked.
     [[nodiscard]] Number
     shiftExponent(int exponentDelta) const;
-
-    // Safely convert rep (int64) mantissa to internalrep (uint64). If the rep
-    // is negative, returns the positive value. This takes a little extra work
-    // because converting std::numeric_limits<std::int64_t>::min() flirts with
-    // UB, and can vary across compilers.
-    static internalrep
-    externalToInternal(rep mantissa);
 };
 
 constexpr Number::Number(bool negative, internalrep mantissa, int exponent, Unchecked) noexcept

@@ -39,6 +39,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -82,13 +83,9 @@ class PermissionedDEX_test : public beast::unit_test::Suite
                 return false;
 
             auto const& indexes = page->getFieldV256(sfIndexes);
-            for (auto const& index : indexes)
-            {
-                if (index == keylet::offer(account, offerSeq).key)
-                    return true;
-            }
-
-            return false;
+            return std::ranges::any_of(indexes, [&](auto const& index) {
+                return index == keylet::offer(account, offerSeq).key;
+            });
         };
 
         auto const sle = env.le(keylet::offer(account.id(), offerSeq));

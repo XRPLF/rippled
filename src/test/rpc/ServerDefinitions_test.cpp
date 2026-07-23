@@ -8,6 +8,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
 #include <set>
 #include <string>
 
@@ -61,14 +62,12 @@ public:
             // check exception SFields
             {
                 auto const fieldExists = [&](std::string name) {
-                    for (auto& field : result[jss::result][jss::FIELDS])
-                    {
-                        if (field[0u].asString() == name)
-                        {
-                            return true;
-                        }
-                    }
-                    return false;
+                    auto& fields = result[jss::result][jss::FIELDS];
+                    // json::Value is not a std::ranges range, so the iterator form is used.
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    return std::any_of(fields.begin(), fields.end(), [&](auto& field) {
+                        return field[0u].asString() == name;
+                    });
                 };
                 BEAST_EXPECT(fieldExists("Generic"));
                 BEAST_EXPECT(fieldExists("Invalid"));

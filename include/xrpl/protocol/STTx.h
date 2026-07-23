@@ -142,8 +142,25 @@ public:
         TxnSql status,
         std::string const& escapedMetaData) const;
 
-    [[nodiscard]] std::vector<uint256> const&
+    /**
+     * The IDs of the inner transactions of a Batch.
+     */
+    [[nodiscard]] std::vector<uint256>
     getBatchTransactionIDs() const;
+
+    /**
+     * The inner transactions of a Batch, built and validated at construction.
+     * Always seated for Batch STTx instances (construction throws if oversized).
+     */
+    [[nodiscard]] std::vector<std::shared_ptr<STTx const>> const&
+    getBatchTransactions() const;
+
+    /**
+     * The account responsible for the authorization: the delegate when
+     * sfDelegate is present, otherwise the account.
+     */
+    [[nodiscard]] AccountID
+    getInitiator() const;
 
     [[nodiscard]] AccountID
     getFeePayerID() const;
@@ -166,13 +183,16 @@ private:
     checkMultiSign(Rules const& rules, STObject const& sigObject) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkBatchSingleSign(STObject const& batchSigner) const;
+    checkBatchSingleSign(STObject const& batchSigner, std::vector<uint256> const& txIds) const;
 
     [[nodiscard]] std::expected<void, std::string>
-    checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const;
+    checkBatchMultiSign(
+        STObject const& batchSigner,
+        Rules const& rules,
+        std::vector<uint256> const& txIds) const;
 
     void
-    buildBatchTxnIds();
+    buildBatchTxns();
 
     STBase*
     copy(std::size_t n, void* buf) const override;
@@ -180,11 +200,11 @@ private:
     move(std::size_t n, void* buf) override;
 
     friend class detail::STVar;
-    std::optional<std::vector<uint256>> batchTxnIds_;
+    std::optional<std::vector<std::shared_ptr<STTx const>>> batchTxns_;
 };
 
 bool
-passesLocalChecks(STObject const& st, std::string&);
+passesLocalChecks(STTx const& tx, std::string&);
 
 /**
  * Sterilize a transaction.
