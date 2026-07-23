@@ -39,7 +39,7 @@ The first time you run this command, it will take a few minutes to download and 
 ### Platform notes
 
 - **Linux**: `nix develop` gives you a shell with all the tooling necessary to develop xrpld
-  and with GCC 15.2 (also provided by Nix), rebuilt against the same pinned glibc as CI.
+  and with the same GCC/glibc toolchain that Nix builds for CI.
   See [Choosing a different compiler](#choosing-a-different-compiler)
   for the custom-vs-plain toolchain trade-off.
 - **macOS**: `nix develop` gives you a full environment too, with Clang (and
