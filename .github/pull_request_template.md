@@ -1,10 +1,10 @@
 <!--
-This PR template helps you to write a good pull request description.
+This PR template helps you write a good pull request description.
 Please feel free to include additional useful information even beyond what is requested below.
 
 If your branch is on a personal fork and has a name that allows it to
 run CI build/test jobs (e.g. "ci/foo"), remember to rename it BEFORE
-opening the PR.  This avoids unnecessary redundant test runs. Renaming
+opening the PR. This avoids redundant test runs. Renaming
 the branch after opening the PR will close the PR.
 https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-branches-in-your-repository/renaming-a-branch
 -->
@@ -15,7 +15,7 @@ https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-
 Please include a summary of the changes.
 This may be a direct input to the release notes.
 If too broad, please consider splitting into multiple PRs.
-If a relevant task or issue, please link it here.
+If there is a relevant task or issue, please link it here.
 -->
 
 ### Context of Change
@@ -65,5 +65,5 @@ This section may not be needed if your change includes thoroughly commented unit
 
 <!--
 ## Future Tasks
-For future tasks related to PR.
+For future tasks related to this PR.
 -->
