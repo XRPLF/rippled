@@ -301,14 +301,18 @@ public:
         // read loop ends, so the server observes a clean close (not a RST) and
         // has finished tearing the connection down by the time we return.
         // If the server already closed, the wait below returns immediately.
-        boost::asio::post(ios_, boost::asio::bind_executor(strand_, [this] {
-                              if (!peerClosed_)
-                              {
-                                  ws_.async_close(
-                                      boost::beast::websocket::close_code::normal,
-                                      boost::asio::bind_executor(strand_, [](error_code) {}));
-                              }
-                          }));
+        boost::asio::post(
+            ios_,
+            boost::asio::bind_executor(
+                strand_,  //
+                [this] {
+                    if (!peerClosed_)
+                    {
+                        ws_.async_close(
+                            boost::beast::websocket::close_code::normal,
+                            boost::asio::bind_executor(strand_, [](error_code) {}));
+                    }
+                }));
 
         auto lock = readEnded_.lock<std::unique_lock>();
         readEndCv_.wait_for(lock, kDisconnectTimeout, [&lock] { return *lock; });
@@ -317,10 +321,14 @@ public:
         // the outstanding read ends and the worker thread can later be joined.
         if (!*lock)
         {
-            boost::asio::post(ios_, boost::asio::bind_executor(strand_, [this] {
-                                  boost::system::error_code ec;
-                                  stream_.close(ec);
-                              }));
+            boost::asio::post(
+                ios_,
+                boost::asio::bind_executor(
+                    strand_,  //
+                    [this] {
+                        boost::system::error_code ec;
+                        stream_.close(ec);
+                    }));
         }
     }
 
