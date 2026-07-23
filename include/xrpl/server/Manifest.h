@@ -281,7 +281,7 @@ private:
      *
      * Once reached, a manifest for a brand-new unlisted key is rejected.
      */
-    static constexpr std::size_t kMaxUntrustedCount = 50000;
+    static constexpr std::size_t kMaxUntrustedCount = 100;
 
     /**
      * Running count of manifests rejected because the untrusted cap was full.
