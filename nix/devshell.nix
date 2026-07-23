@@ -1,16 +1,51 @@
-{ pkgs, ... }:
+{ pkgs, customGlibc, ... }:
 let
   inherit (import ./packages.nix { inherit pkgs; })
     commonPackages
+    gccPackage
     gccVersion
     llvmVersion
     llvmPackages
     mkVersionedToolLinks
+    mkGcov
     ;
 
-  # Plain nixpkgs stdenvs — no custom glibc, unlike ci-env.nix.
-  gccStdenv = pkgs."gcc${toString gccVersion}Stdenv";
-  clangStdenv = llvmPackages.stdenv;
+  # Plain nixpkgs stdenvs — no custom glibc.
+  plainGccStdenv = pkgs."gcc${toString gccVersion}Stdenv";
+  plainClangStdenv = llvmPackages.stdenv;
+
+  # Custom-glibc stdenvs, matching the CI environment (see compilers.nix). The
+  # pinned glibc snapshot only builds on Linux, so on darwin these fall back to
+  # the plain stdenvs; the `if isLinux` guard keeps `customGlibc` from being
+  # forced (and erroring) on macOS.
+  customCompilers = import ./compilers.nix { inherit pkgs customGlibc; };
+  customGccStdenv = if pkgs.stdenv.isLinux then customCompilers.customStdenv else plainGccStdenv;
+  customClangStdenv =
+    if pkgs.stdenv.isLinux then customCompilers.customClangStdenv else plainClangStdenv;
+
+  # gcov matching each gcc shell, so `-Dcoverage=ON` builds work in the shell.
+  plainGcov = mkGcov {
+    name = "plain";
+    cc = gccPackage.cc;
+  };
+  customGccGcov = if pkgs.stdenv.isLinux then customCompilers.customGcov else plainGcov;
+
+  # Shown when entering a *-plain shell. These exist only on Linux (see below),
+  # where the stock toolchain diverges from CI.
+  plainWarningHook = ''
+    echo "⚠️  WARNING: this is the stock nixpkgs toolchain and does not match CI's glibc. Prefer 'nix develop .#gcc' / '.#clang' unless you need to skip the custom-glibc build."
+  '';
+
+  # Tools to expose under version-suffixed names (see mkVersionedToolLinks).
+  gccVersionedTools = [
+    "gcc"
+    "g++"
+    "cpp"
+  ];
+  clangVersionedTools = [
+    "clang"
+    "clang++"
+  ];
 
   # compilerName is the command used to print the version, or null for none.
   makeShell =
@@ -19,9 +54,11 @@ let
       compilerName,
       version ? null,
       versionedTools ? [ ],
+      extraPackages ? [ ],
+      warningHook ? "",
     }:
     let
-      compilerVersion =
+      compilerVersionHook =
         if compilerName == null then
           ''echo "No compiler specified - using system compiler"''
         else
@@ -37,10 +74,11 @@ let
       });
     in
     (pkgs.mkShell.override { inherit stdenv; }) {
-      packages = commonPackages ++ versionedLinks;
+      packages = commonPackages ++ versionedLinks ++ extraPackages;
       shellHook = ''
         echo "Welcome to xrpld development shell";
-        ${compilerVersion}
+        ${compilerVersionHook}
+        ${warningHook}
       '';
     };
 in
@@ -48,25 +86,21 @@ rec {
   # macOS: Nix Clang. Linux: Nix GCC.
   default = if pkgs.stdenv.isDarwin then clang else gcc;
 
+  # gcc/clang use the custom-glibc toolchain, matching CI. On darwin there is no
+  # custom glibc, so they fall back to the plain nixpkgs toolchain.
   gcc = makeShell {
-    stdenv = gccStdenv;
+    stdenv = customGccStdenv;
     compilerName = "gcc";
     version = gccVersion;
-    versionedTools = [
-      "gcc"
-      "g++"
-      "cpp"
-    ];
+    versionedTools = gccVersionedTools;
+    extraPackages = [ customGccGcov ];
   };
 
   clang = makeShell {
-    stdenv = clangStdenv;
+    stdenv = customClangStdenv;
     compilerName = "clang";
     version = llvmVersion;
-    versionedTools = [
-      "clang"
-      "clang++"
-    ];
+    versionedTools = clangVersionedTools;
   };
 
   # Nix provides no compiler; use the one from your system (e.g. Apple Clang).
@@ -75,4 +109,25 @@ rec {
     compilerName = null;
   };
   apple-clang = no-compiler;
+}
+# The *-plain shells (stock nixpkgs toolchain) exist only on Linux: on darwin
+# gcc/clang are already plain, so these would be redundant and are omitted, which
+# makes `nix develop .#gcc-plain` fail there rather than silently aliasing gcc.
+// pkgs.lib.optionalAttrs pkgs.stdenv.isLinux {
+  gcc-plain = makeShell {
+    stdenv = plainGccStdenv;
+    compilerName = "gcc";
+    version = gccVersion;
+    versionedTools = gccVersionedTools;
+    extraPackages = [ plainGcov ];
+    warningHook = plainWarningHook;
+  };
+
+  clang-plain = makeShell {
+    stdenv = plainClangStdenv;
+    compilerName = "clang";
+    version = llvmVersion;
+    versionedTools = clangVersionedTools;
+    warningHook = plainWarningHook;
+  };
 }
