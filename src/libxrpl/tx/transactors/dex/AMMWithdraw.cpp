@@ -34,6 +34,7 @@
 #include <cstdint>
 #include <exception>
 #include <optional>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 
