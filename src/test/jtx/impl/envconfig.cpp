@@ -24,9 +24,9 @@ setupConfigForUnitTests(Config& cfg)
     cfg.fees.referenceFee = UNIT_TEST_REFERENCE_FEE;
     cfg.fees.accountReserve = XRP(200).value().xrp().drops();
     cfg.fees.ownerReserve = XRP(50).value().xrp().drops();
-    cfg.FEES.gasLimit = 1'000'000;
-    cfg.FEES.bytecodeSizeLimit = 1'000'000;
-    cfg.FEES.gasPrice = 1'000;
+    cfg.fees.gasLimit = 1'000'000;
+    cfg.fees.bytecodeSizeLimit = 1'000'000;
+    cfg.fees.gasPrice = 1'000;
 
     // The Beta API (currently v2) is always available to tests
     cfg.betaRpcApi = true;

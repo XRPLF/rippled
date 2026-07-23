@@ -1220,12 +1220,12 @@ setupFeeVote(Section const& section)
             setup.accountReserve = temp;
         if (set(temp, Keys::kOwnerReserve, section))
             setup.ownerReserve = temp;
-        if (set(temp, "gas_limit", section) && temp <= kMaxGasLimit)
-            setup.gas_limit = temp;
-        if (set(temp, "bytecode_size_limit", section) && temp <= kMaxBytecodeSizeLimit)
-            setup.bytecode_size_limit = temp;
-        if (set(temp, "gas_price", section))
-            setup.gas_price = temp;
+        if (set(temp, Keys::kGasLimit, section) && temp <= kMaxGasLimit)
+            setup.gasLimit = temp;
+        if (set(temp, Keys::kBytecodeSizeLimit, section) && temp <= kMaxBytecodeSizeLimit)
+            setup.bytecodeSizeLimit = temp;
+        if (set(temp, Keys::kGasPrice, section))
+            setup.gasPrice = temp;
     }
     return setup;
 }

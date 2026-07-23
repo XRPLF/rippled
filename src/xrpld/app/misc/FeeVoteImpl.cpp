@@ -172,19 +172,19 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
     }
     if (rules.enabled(featureSmartEscrow))
     {
-        if (target_.gas_limit <= kMaxGasLimit)
+        if (target_.gasLimit <= kMaxGasLimit)
         {
-            vote(lastFees.gasLimit, target_.gas_limit, "gas limit", sfGasLimit);
+            vote(lastFees.gasLimit, target_.gasLimit, "gas limit", sfGasLimit);
         }
-        if (target_.bytecode_size_limit <= kMaxBytecodeSizeLimit)
+        if (target_.bytecodeSizeLimit <= kMaxBytecodeSizeLimit)
         {
             vote(
                 lastFees.bytecodeSizeLimit,
-                target_.bytecode_size_limit,
+                target_.bytecodeSizeLimit,
                 "bytecode size limit",
                 sfBytecodeSizeLimit);
         }
-        vote(lastFees.gasPrice, target_.gas_price, "gas price", sfGasPrice);
+        vote(lastFees.gasPrice, target_.gasPrice, "gas price", sfGasPrice);
     }
 }
 
@@ -211,16 +211,16 @@ FeeVoteImpl::doVoting(
 
     detail::VotableValue gasLimitVote(
         lastClosedLedger->fees().gasLimit,
-        validOrCurrent(target_.gas_limit, kMaxGasLimit, lastClosedLedger->fees().gasLimit));
+        validOrCurrent(target_.gasLimit, kMaxGasLimit, lastClosedLedger->fees().gasLimit));
 
     detail::VotableValue bytecodeSizeLimitVote(
         lastClosedLedger->fees().bytecodeSizeLimit,
         validOrCurrent(
-            target_.bytecode_size_limit,
+            target_.bytecodeSizeLimit,
             kMaxBytecodeSizeLimit,
             lastClosedLedger->fees().bytecodeSizeLimit));
 
-    detail::VotableValue gasPriceVote(lastClosedLedger->fees().gasPrice, target_.gas_price);
+    detail::VotableValue gasPriceVote(lastClosedLedger->fees().gasPrice, target_.gasPrice);
 
     auto const& rules = lastClosedLedger->rules();
     if (rules.enabled(featureXRPFees))

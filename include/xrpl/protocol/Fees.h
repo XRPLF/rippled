@@ -13,7 +13,9 @@ inline constexpr std::uint32_t kFeeUnitsDeprecated = 10;
 // Number of micro-drops in one drop.
 constexpr std::uint32_t microDropsPerDrop{1'000'000};
 
-/** Maximum Feature Extension fee settings. */
+/**
+ * Maximum Feature Extension fee settings.
+ */
 inline constexpr std::uint32_t kMaxGasLimit{2'000'000};
 inline constexpr std::uint32_t kMaxBytecodeSizeLimit{200'000};
 
@@ -40,13 +42,19 @@ struct Fees
      */
     XRPAmount increment{0};
 
-    /** @brief Gas limit for Feature Extensions (instructions). */
+    /**
+     * @brief Gas limit for Feature Extensions (instructions).
+     */
     std::uint32_t gasLimit{0};
 
-    /** @brief Bytecode size limit for Feature Extensions (bytes). */
+    /**
+     * @brief Bytecode size limit for Feature Extensions (bytes).
+     */
     std::uint32_t bytecodeSizeLimit{0};
 
-    /** @brief Price of WASM gas (micro-drops). */
+    /**
+     * @brief Price of WASM gas (micro-drops).
+     */
     std::uint32_t gasPrice{0};
 
     explicit Fees() = default;

@@ -93,6 +93,7 @@ struct Keys
     static constexpr auto kBbtOptions = "bbt_options";
     static constexpr auto kBgThreads = "bg_threads";
     static constexpr auto kBlockSize = "block_size";
+    static constexpr auto kBytecodeSizeLimit = "bytecode_size_limit";
     static constexpr auto kCacheAge = "cache_age";
     static constexpr auto kCacheMb = "cache_mb";
     static constexpr auto kCacheSize = "cache_size";
@@ -107,6 +108,8 @@ struct Keys
     static constexpr auto kFileSizeMult = "file_size_mult";
     static constexpr auto kFilterBits = "filter_bits";
     static constexpr auto kFilterFull = "filter_full";
+    static constexpr auto kGasLimit = "gas_limit";
+    static constexpr auto kGasPrice = "gas_price";
     static constexpr auto kHardSet = "hard_set";
     static constexpr auto kHighThreads = "high_threads";
     static constexpr auto kHoldTime = "hold_time";
