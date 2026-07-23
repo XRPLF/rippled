@@ -14,9 +14,6 @@ let
     mkGcov
     ;
 
-  customGccPackage = gccPackage;
-  customLlvmPackages = llvmPackages;
-
   # binutils wrapped to emit binaries that reference the custom glibc
   # (dynamic linker path, library search path, RPATH).
   customBinutils = pkgs.wrapBintoolsWith {
@@ -29,10 +26,10 @@ let
   # the existing gcc binary but links against the custom glibc, so the
   # resulting compiler ships runtime libraries that only reference symbols
   # available in that glibc.
-  customGccCc = customGccPackage.cc.override {
+  customGccCc = gccPackage.cc.override {
     stdenv = pkgs.stdenvAdapters.overrideCC pkgs.stdenv (
       pkgs.wrapCCWith {
-        cc = customGccPackage.cc;
+        cc = gccPackage.cc;
         libc = customGlibc;
         bintools = customBinutils;
       }
@@ -54,9 +51,9 @@ let
     cc = customGccCc;
   };
 
-  # stdenv built around the rebuilt gcc / custom glibc. Used to rebuild
-  # compiler-rt below so its sanitizer runtimes see the custom glibc
-  # headers.
+  # stdenv built around the rebuilt gcc / custom glibc. Exported as the dev
+  # shell's gcc stdenv, and used below to rebuild compiler-rt so its sanitizer
+  # runtimes see the custom glibc headers.
   customStdenv = pkgs.stdenvAdapters.overrideCC pkgs.stdenv customGcc;
 
   # Rebuild compiler-rt against the custom glibc so the sanitizer runtimes
@@ -66,7 +63,7 @@ let
   # makes std::atomic unfindable in our stdenv; we don't use scudo (only
   # asan/ubsan/tsan etc.).
   customCompilerRt =
-    (customLlvmPackages.compiler-rt.override {
+    (llvmPackages.compiler-rt.override {
       stdenv = customStdenv;
     }).overrideAttrs
       (old: {
@@ -84,7 +81,7 @@ let
   # sanitizer runtimes (libclang_rt.*.a) are found at link time; this
   # mirrors what nixpkgs does internally when building llvmPackages.clang.
   customClang = pkgs.wrapCCWith {
-    cc = customLlvmPackages.clang-unwrapped;
+    cc = llvmPackages.clang-unwrapped;
     libc = customGlibc;
     bintools = customBinutils;
     gccForLibs = customGccCc;
@@ -92,7 +89,7 @@ let
     extraBuildCommands = ''
       rsrc="$out/resource-root"
       mkdir "$rsrc"
-      ln -s "${customLlvmPackages.clang-unwrapped.lib}/lib/clang/${toString llvmVersion}/include" "$rsrc/include"
+      ln -s "${llvmPackages.clang-unwrapped.lib}/lib/clang/${toString llvmVersion}/include" "$rsrc/include"
       ln -s "${customCompilerRt.out}/lib" "$rsrc/lib"
       ln -s "${customCompilerRt.out}/share" "$rsrc/share" || true
       echo "-resource-dir=$rsrc" >> $out/nix-support/cc-cflags
