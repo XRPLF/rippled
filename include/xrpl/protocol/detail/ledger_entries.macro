@@ -339,7 +339,7 @@ LEDGER_ENTRY(ltESCROW, 0x0075, Escrow, escrow, ({
     {sfCondition,            SoeOptional},
     {sfCancelAfter,          SoeOptional},
     {sfFinishAfter,          SoeOptional},
-    {sfFinishFunction,       SoeOptional},
+    {sfBytecode,             SoeOptional},
     {sfData,                 SoeOptional},
     {sfSourceTag,            SoeOptional},
     {sfDestinationTag,       SoeOptional},

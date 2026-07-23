@@ -61,9 +61,9 @@ public:
     }
 
     void
-    setWasmReturnCode(std::int32_t const wasmReturnCode)
+    setVMReturnCode(std::int32_t const vmReturnCode)
     {
-        wasmReturnCode_ = wasmReturnCode;
+        vmReturnCode_ = vmReturnCode;
     }
 
     /** Get the number of modified entries
@@ -85,7 +85,7 @@ public:
 private:
     std::optional<STAmount> deliver_;
     std::optional<std::uint32_t> gasUsed_;
-    std::optional<std::int32_t> wasmReturnCode_;
+    std::optional<std::int32_t> vmReturnCode_;
 };
 
 }  // namespace xrpl

@@ -58,10 +58,10 @@ ApplyContext::discard()
 std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
-    if (wasmReturnCode_.has_value())
+    if (vmReturnCode_.has_value())
     {
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-        view_->setWasmReturnCode(*wasmReturnCode_);
+        view_->setVMReturnCode(*vmReturnCode_);
     }
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
     view_->setGasUsed(gasUsed_);
