@@ -96,8 +96,10 @@ PendingTraceId::~PendingTraceId() noexcept
     if (!gTlsPendingConsumed)
     {
         // The assert above is stripped in release, so bump a counter too: a
-        // dropped deterministic trace root stays observable via
-        // unconsumedDeterministicIdDrops(). Relaxed: this is a diagnostic tally.
+        // process-wide tally of dropped deterministic trace roots. It is
+        // exposed via unconsumedDeterministicIdDrops() as an extension point
+        // for a future metric or diagnostic to read; nothing wires it to a log
+        // or metric yet. Relaxed: this is a plain diagnostic tally.
         gUnconsumedDeterministicIdDrops.fetch_add(1, std::memory_order_relaxed);
     }
     gTlsPendingTraceId.reset();  // never leak, even in release
