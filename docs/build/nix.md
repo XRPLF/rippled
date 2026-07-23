@@ -38,8 +38,10 @@ The first time you run this command, it will take a few minutes to download and 
 
 ### Platform notes
 
-- **Linux**: `nix develop` gives you a shell with all the tooling necessary to
-  develop xrpld and with GCC 15.2 (also provided by Nix). There are no caveats.
+- **Linux**: `nix develop` gives you a shell with all the tooling necessary to develop xrpld
+  and with GCC 15.2 (also provided by Nix), rebuilt against the same pinned glibc as CI.
+  See [Choosing a different compiler](#choosing-a-different-compiler)
+  for the custom-vs-plain toolchain trade-off.
 - **macOS**: `nix develop` gives you a full environment too, with Clang (and
   every other tool, including Conan) provided by Nix. To use your system-wide
   Apple Clang instead, enter `nix develop .#apple-clang`. Conan has no binary in
@@ -63,8 +65,15 @@ The first time you run this command, it will take a few minutes to download and 
 ### Choosing a different compiler
 
 A compiler can be chosen by providing its name with the `.#` prefix, e.g. `nix develop .#clang`.
-The `.#gcc` and `.#clang` shells provide the same GCC and Clang versions used in CI
-(pinned in [`nix/packages.nix`](../../nix/packages.nix)).
+
+On Linux, `.#gcc` and `.#clang` provide the exact toolchain CI uses:
+the compiler (pinned in [`nix/packages.nix`](../../nix/packages.nix))
+rebuilt against the pinned custom glibc (see [`nix/compilers.nix`](../../nix/compilers.nix)).
+Building that toolchain the first time is slow unless it is fetched from a Nix binary cache.
+If you don't need the custom glibc, `.#gcc-plain` and `.#clang-plain`
+give you the stock nixpkgs compilers of the same versions.
+On macOS there is no custom glibc, so these all resolve to the plain nixpkgs toolchain.
+
 Use `nix flake show` to see all the available development shells.
 
 Use `nix develop .#no-compiler` to use the compiler from your system.
@@ -109,6 +118,10 @@ nix develop -c "$SHELL"
 ## Building xrpld with Nix
 
 Once inside the Nix development shell, follow the standard [build instructions](../../BUILD.md#steps). The Nix shell provides all necessary tools (CMake, Ninja, Conan, etc.).
+
+Coverage builds (`-Dcoverage=ON`) work in the `gcc` and `gcc-plain` shells:
+each ships a `gcov` matching its compiler, since Nix's cc-wrapper does not expose one.
+The `clang` shells do not include `llvm-cov`, so use a `gcc` shell for coverage.
 
 ## Automatic Activation with direnv
 
