@@ -116,7 +116,7 @@ TYPED_SFIELD(sfOverpaymentInterestRate,  UINT32,    68) // 1/10 basis points (bi
 TYPED_SFIELD(sfExtensionComputeLimit,    UINT32,    69)
 TYPED_SFIELD(sfExtensionSizeLimit,       UINT32,    70)
 TYPED_SFIELD(sfGasPrice,                 UINT32,    71)
-TYPED_SFIELD(sfComputationAllowance,     UINT32,    72)
+TYPED_SFIELD(sfGas,                      UINT32,    72)
 TYPED_SFIELD(sfGasUsed,                  UINT32,    73)
 
 // 64-bit integers (common)
@@ -232,7 +232,7 @@ TYPED_SFIELD(sfManagementFeeOutstanding, NUMBER,     17, SField::kSmdNeedsAsset 
 
 // 32-bit signed (common)
 TYPED_SFIELD(sfLoanScale,                INT32,      1)
-TYPED_SFIELD(sfWasmReturnCode,           INT32,      2)
+TYPED_SFIELD(sfVMReturnCode,             INT32,      2)
 
 // currency amount (common)
 TYPED_SFIELD(sfAmount,                   AMOUNT,     1)
@@ -304,7 +304,7 @@ TYPED_SFIELD(sfAssetClass,               VL,        28)
 TYPED_SFIELD(sfProvider,                 VL,        29)
 TYPED_SFIELD(sfMPTokenMetadata,          VL,        30)
 TYPED_SFIELD(sfCredentialType,           VL,        31)
-TYPED_SFIELD(sfFinishFunction,           VL,        32)
+TYPED_SFIELD(sfBytecode,                 VL,        32)
 
 // account (common)
 TYPED_SFIELD(sfAccount,                  ACCOUNT,    1)

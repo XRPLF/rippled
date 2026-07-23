@@ -52,7 +52,7 @@ public:
         std::optional<STAmount> const& deliver,
         std::optional<uint256 const> const& parentBatchId,
         std::optional<std::uint32_t> const& gasUsed,
-        std::optional<std::int32_t> const& wasmReturnCode,
+        std::optional<std::int32_t> const& vmReturnCode,
         bool isDryRun,
         beast::Journal j);
 

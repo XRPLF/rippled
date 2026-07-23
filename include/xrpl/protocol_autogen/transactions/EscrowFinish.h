@@ -148,29 +148,29 @@ public:
     }
 
     /**
-     * @brief Get sfComputationAllowance (SoeOptional)
+     * @brief Get sfGas (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getComputationAllowance() const
+    getGas() const
     {
-        if (hasComputationAllowance())
+        if (hasGas())
         {
-            return this->tx_->at(sfComputationAllowance);
+            return this->tx_->at(sfGas);
         }
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfComputationAllowance is present.
+     * @brief Check if sfGas is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasComputationAllowance() const
+    hasGas() const
     {
-        return this->tx_->isFieldPresent(sfComputationAllowance);
+        return this->tx_->isFieldPresent(sfGas);
     }
 };
 
@@ -274,13 +274,13 @@ public:
     }
 
     /**
-     * @brief Set sfComputationAllowance (SoeOptional)
+     * @brief Set sfGas (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     EscrowFinishBuilder&
-    setComputationAllowance(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setGas(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
-        object_[sfComputationAllowance] = value;
+        object_[sfGas] = value;
         return *this;
     }
 

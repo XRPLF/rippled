@@ -1261,7 +1261,7 @@ Transactor::operator()()
     }
     else if (
         (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
-        (result == tecEXPIRED) || (result == tecWASM_REJECTED) ||
+        (result == tecEXPIRED) || (result == tecBYTECODE_REJECTED) ||
         (isTecClaimHardFail(result, view().flags())))
     {
         JLOG(j_.trace()) << "reapplying because of " << transToken(result);
@@ -1281,7 +1281,7 @@ Transactor::operator()()
         bool const doLinesOrMPTs = (result == tecINCOMPLETE);
         bool const doNFTokenOffers = (result == tecEXPIRED);
         bool const doCredentials = (result == tecEXPIRED);
-        bool const doWasmData = (result == tecWASM_REJECTED);
+        bool const doWasmData = (result == tecBYTECODE_REJECTED);
         if (doOffers || doLinesOrMPTs || doNFTokenOffers || doCredentials || doWasmData)
         {
             ctx_.visit([doOffers,
@@ -1374,7 +1374,7 @@ Transactor::operator()()
                 view(), expiredCredentials, ctx_.registry.get().getJournal("View"));
         }
 
-        if (result == tecWASM_REJECTED)
+        if (result == tecBYTECODE_REJECTED)
         {
             modifyWasmDataFields(
                 view(), modifiedWasmObjects, ctx_.registry.get().getJournal("View"));

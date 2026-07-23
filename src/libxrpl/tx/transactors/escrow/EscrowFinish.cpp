@@ -77,7 +77,7 @@ EscrowFinish::checkExtraFeatures(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfCredentialIDs) && !ctx.rules.enabled(featureCredentials))
         return false;
 
-    if (ctx.tx.isFieldPresent(sfComputationAllowance) && !ctx.rules.enabled(featureSmartEscrow))
+    if (ctx.tx.isFieldPresent(sfGas) && !ctx.rules.enabled(featureSmartEscrow))
     {
         return false;
     }
@@ -98,7 +98,7 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    if (auto const allowance = ctx.tx[~sfComputationAllowance]; allowance)
+    if (auto const allowance = ctx.tx[~sfGas]; allowance)
     {
         auto const fees(ctx.registry.get().getFees());
         if (fees.extensionComputeLimit == 0)
@@ -112,7 +112,7 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         }
         if (*allowance > fees.extensionComputeLimit)
         {
-            JLOG(ctx.j.debug()) << "ComputationAllowance too large: " << *allowance;
+            JLOG(ctx.j.debug()) << "Gas too large: " << *allowance;
             return temBAD_LIMIT;
         }
     }
@@ -164,7 +164,7 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         extraFee += view.fees().base * (32 + (fb->size() / 16));
     }
-    if (std::optional<uint64_t> const allowance = tx[~sfComputationAllowance]; allowance)
+    if (std::optional<uint64_t> const allowance = tx[~sfGas]; allowance)
     {
         // The extra fee is the allowance in drops, rounded up to the nearest
         // whole drop.
@@ -259,21 +259,21 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
 
         if (ctx.view.rules().enabled(featureSmartEscrow))
         {
-            if (slep->isFieldPresent(sfFinishFunction))
+            if (slep->isFieldPresent(sfBytecode))
             {
-                if (!ctx.tx.isFieldPresent(sfComputationAllowance))
+                if (!ctx.tx.isFieldPresent(sfGas))
                 {
-                    JLOG(ctx.j.debug()) << "FinishFunction requires ComputationAllowance";
-                    return tefWASM_FIELD_NOT_INCLUDED;
+                    JLOG(ctx.j.debug()) << "Bytecode requires Gas";
+                    return tefBYTECODE_NOT_INCLUDED;
                 }
             }
             else
             {
-                if (ctx.tx.isFieldPresent(sfComputationAllowance))
+                if (ctx.tx.isFieldPresent(sfGas))
                 {
-                    JLOG(ctx.j.debug()) << "FinishFunction not present, "
-                                           "ComputationAllowance present";
-                    return tefNO_WASM;
+                    JLOG(ctx.j.debug()) << "Bytecode not present, "
+                                           "Gas present";
+                    return tefNO_BYTECODE;
                 }
             }
         }
@@ -403,21 +403,21 @@ EscrowFinish::doApply()
     }
 
     // Execute custom release function
-    if ((*slep)[~sfFinishFunction])
+    if ((*slep)[~sfBytecode])
     {
         JLOG(j_.trace()) << "The escrow has a finish function, running WASM code...";
         // WASM execution
-        auto const wasmStr = slep->getFieldVL(sfFinishFunction);
+        auto const wasmStr = slep->getFieldVL(sfBytecode);
         std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
         WasmHostFunctionsImpl ledgerDataProvider(ctx_, k);
 
-        if (!ctx_.tx.isFieldPresent(sfComputationAllowance))
+        if (!ctx_.tx.isFieldPresent(sfGas))
         {
             // already checked above, this check is just in case
             return tecINTERNAL;
         }
-        std::uint32_t const allowance = ctx_.tx[sfComputationAllowance];
+        std::uint32_t const allowance = ctx_.tx[sfGas];
         auto re = runEscrowWasm(wasm, ledgerDataProvider, allowance, escrowFunctionName);
         JLOG(j_.trace()) << "Escrow WASM ran";
 
@@ -438,7 +438,7 @@ EscrowFinish::doApply()
             auto const reCost = re.value().cost;
             JLOG(j_.debug()) << "WASM Success: " + std::to_string(reValue) << ", cost: " << reCost;
 
-            ctx_.setWasmReturnCode(reValue);
+            ctx_.setVMReturnCode(reValue);
 
             if (reCost < 0 || reCost > std::numeric_limits<uint32_t>::max())
                 return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -446,7 +446,7 @@ EscrowFinish::doApply()
 
             if (reValue <= 0)
             {
-                return tecWASM_REJECTED;
+                return tecBYTECODE_REJECTED;
             }
         }
         else
@@ -531,7 +531,7 @@ EscrowFinish::doApply()
 
     ctx_.view().update(sled);
 
-    auto const reserveToSubtract = calculateAdditionalReserve((*slep)[~sfFinishFunction]);
+    auto const reserveToSubtract = calculateAdditionalReserve((*slep)[~sfBytecode]);
 
     // Adjust source owner count
     auto const sle = ctx_.view().peek(keylet::account(account));

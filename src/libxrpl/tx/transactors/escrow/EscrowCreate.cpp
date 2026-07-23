@@ -121,11 +121,11 @@ XRPAmount
 EscrowCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     XRPAmount txnFees{Transactor::calculateBaseFee(view, tx)};
-    if (tx.isFieldPresent(sfFinishFunction))
+    if (tx.isFieldPresent(sfBytecode))
     {
         // 10 base fees for the transaction (1 is in
         // `Transactor::calculateBaseFee`), plus 5 drops per byte
-        txnFees += 9 * view.fees().base + 5 * tx[sfFinishFunction].size();
+        txnFees += 9 * view.fees().base + 5 * tx[sfBytecode].size();
     }
     return txnFees;
 }
@@ -133,7 +133,7 @@ EscrowCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 bool
 EscrowCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return (!ctx.tx.isFieldPresent(sfFinishFunction) && !ctx.tx.isFieldPresent(sfData)) ||
+    return (!ctx.tx.isFieldPresent(sfBytecode) && !ctx.tx.isFieldPresent(sfData)) ||
         ctx.rules.enabled(featureSmartEscrow);
 }
 
@@ -168,17 +168,17 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         ctx.tx[sfCancelAfter] <= ctx.tx[sfFinishAfter])
         return temBAD_EXPIRATION;
 
-    if (ctx.tx.isFieldPresent(sfFinishFunction) && !ctx.tx.isFieldPresent(sfCancelAfter))
+    if (ctx.tx.isFieldPresent(sfBytecode) && !ctx.tx.isFieldPresent(sfCancelAfter))
         return temBAD_EXPIRATION;
 
     // In the absence of a FinishAfter, the escrow can be finished
     // immediately, which can be confusing. When creating an escrow,
     // we want to ensure that either a FinishAfter time is explicitly
     // specified or a completion condition is attached.
-    if (!ctx.tx[~sfFinishAfter] && !ctx.tx[~sfCondition] && !ctx.tx[~sfFinishFunction])
+    if (!ctx.tx[~sfFinishAfter] && !ctx.tx[~sfCondition] && !ctx.tx[~sfBytecode])
     {
         JLOG(ctx.j.debug()) << "Must have at least one of FinishAfter, "
-                               "Condition, or FinishFunction.";
+                               "Condition, or Bytecode.";
         return temMALFORMED;
     }
 
@@ -198,9 +198,9 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfData))
     {
-        if (!ctx.tx.isFieldPresent(sfFinishFunction))
+        if (!ctx.tx.isFieldPresent(sfBytecode))
         {
-            JLOG(ctx.j.debug()) << "EscrowCreate with Data requires FinishFunction";
+            JLOG(ctx.j.debug()) << "EscrowCreate with Data requires Bytecode";
             return temMALFORMED;
         }
         auto const data = ctx.tx.getFieldVL(sfData);
@@ -211,7 +211,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (ctx.tx.isFieldPresent(sfFinishFunction))
+    if (ctx.tx.isFieldPresent(sfBytecode))
     {
         auto const fees(ctx.registry.get().getFees());
         if (fees.extensionSizeLimit == 0 || fees.extensionComputeLimit == 0)
@@ -220,10 +220,10 @@ EscrowCreate::preflight(PreflightContext const& ctx)
             return temTEMP_DISABLED;
         }
 
-        auto const code = ctx.tx.getFieldVL(sfFinishFunction);
+        auto const code = ctx.tx.getFieldVL(sfBytecode);
         if (code.empty() || code.size() > fees.extensionSizeLimit)
         {
-            JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad size " << code.size();
+            JLOG(ctx.j.debug()) << "EscrowCreate.Bytecode bad size " << code.size();
             return temMALFORMED;
         }
         // actual validity of WASM code happens in `preflightSigValidated`
@@ -236,16 +236,16 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 NotTEC
 EscrowCreate::preflightSigValidated(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfFinishFunction))
+    if (ctx.tx.isFieldPresent(sfBytecode))
     {
-        auto const code = ctx.tx.getFieldVL(sfFinishFunction);
+        auto const code = ctx.tx.getFieldVL(sfBytecode);
         // basic checks happen in `preflight`
 
         HostFunctions mock(ctx.j);
         auto const re = preflightEscrowWasm(code, mock, escrowFunctionName);
         if (!isTesSuccess(re))
         {
-            JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad WASM";
+            JLOG(ctx.j.debug()) << "EscrowCreate.Bytecode bad WASM";
             return re;
         }
     }
@@ -508,7 +508,7 @@ EscrowCreate::doApply()
 
     // Check reserve and funds availability
     STAmount const amount{ctx_.tx[sfAmount]};
-    auto const reserveToAdd = calculateAdditionalReserve(ctx_.tx[~sfFinishFunction]);
+    auto const reserveToAdd = calculateAdditionalReserve(ctx_.tx[~sfBytecode]);
 
     auto const reserve = ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + reserveToAdd);
 
@@ -544,7 +544,7 @@ EscrowCreate::doApply()
     (*slep)[~sfCancelAfter] = ctx_.tx[~sfCancelAfter];
     (*slep)[~sfFinishAfter] = ctx_.tx[~sfFinishAfter];
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
-    (*slep)[~sfFinishFunction] = ctx_.tx[~sfFinishFunction];
+    (*slep)[~sfBytecode] = ctx_.tx[~sfBytecode];
     (*slep)[~sfData] = ctx_.tx[~sfData];
 
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
