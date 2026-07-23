@@ -218,6 +218,7 @@ words:
   - Nyffenegger
   - onlatest
   - ostr
+  - oxalica
   - pargs
   - partitioner
   - paychan
@@ -264,6 +265,8 @@ words:
   - Rohrs
   - roundings
   - rustc
+  - rustfmt
+  - rustup
   - sahyadri
   - Satoshi
   - scons
@@ -307,6 +310,7 @@ words:
   - takerpays
   - ters
   - TMEndpointv2
+  - toolchain
   - tparam
   - trixie
   - tx
@@ -339,6 +343,7 @@ words:
   - unsquelch
   - unsquelched
   - unsquelching
+  - unsuffixed
   - unvalidated
   - unveto
   - unvetoed
