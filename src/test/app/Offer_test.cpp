@@ -4351,6 +4351,9 @@ public:
         auto const gw = Account("gw");
         auto const alice = Account("alice");
         auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const dan = Account("dan");
+        auto const eve = Account("eve");
         auto const gwUSD = gw["USD"];
 
         // Test without fixCleanup3_4_0 amendment
@@ -4389,13 +4392,6 @@ public:
         // Test with fixCleanup3_4_0 amendment
         {
             Env env{*this, features};
-
-            auto const gw = Account("gw");
-            auto const alice = Account("alice");
-            auto const bob = Account("bob");
-            auto const carol = Account("carol");
-            auto const dan = Account("dan");
-            auto const gwUSD = gw["USD"];
 
             env.fund(XRP(400000), gw, alice, bob, carol, dan);
             env.close();
@@ -4466,7 +4462,6 @@ public:
             env.close();
 
             // Create new account eve without trustline
-            auto const eve = Account("eve");
             env.fund(XRP(400000), eve);
             env.close();
 

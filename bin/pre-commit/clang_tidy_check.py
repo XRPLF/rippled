@@ -49,6 +49,7 @@ def find_tool(name: str) -> str | None:
 def find_build_dir(repo_root: Path) -> Path | None:
     for name in (".build", "build"):
         candidate = repo_root / name
+        print("find_build_dir: candidate: ", candidate)
         if (candidate / "compile_commands.json").exists():
             return candidate
     return None
@@ -94,7 +95,6 @@ def main():
     repo_root = Path(
         subprocess.check_output(
             ["git", "rev-parse", "--show-toplevel"],
-            cwd=Path(__file__).parent,
             text=True,
         ).strip()
     )
