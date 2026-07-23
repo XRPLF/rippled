@@ -3452,7 +3452,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                     BEAST_EXPECT(result[0].of.i32 == 0))
                 {
                     auto const messages = sink.messages().str();
-                    BEAST_EXPECT(messages.find(msg) != std::string::npos);
+                    BEAST_EXPECT(messages.contains(msg));
                 }
             }
 
@@ -3471,8 +3471,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                     std::string hex;
                     hex.reserve(data.size() * 2);
                     boost::algorithm::hex(data.begin(), data.end(), std::back_inserter(hex));
-                    BEAST_EXPECT(messages.find(msg) != std::string::npos);
-                    BEAST_EXPECT(messages.find(hex) != std::string::npos);
+                    BEAST_EXPECT(messages.contains(msg));
+                    BEAST_EXPECT(messages.contains(hex));
                 }
             }
         }
@@ -3542,8 +3542,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                 BEAST_EXPECT(result[0].of.i32 == 0))
             {
                 auto const messages = sink.messages().str();
-                BEAST_EXPECT(messages.find(msg) != std::string::npos);
-                BEAST_EXPECT(messages.find(std::to_string(num)) != std::string::npos);
+                BEAST_EXPECT(messages.contains(msg));
+                BEAST_EXPECT(messages.contains(std::to_string(num)));
             }
         }
 
@@ -3611,8 +3611,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                 BEAST_EXPECT(result[0].of.i32 == 0))
             {
                 auto const messages = sink.messages().str();
-                BEAST_EXPECT(messages.find(msg) != std::string::npos);
-                BEAST_EXPECT(messages.find(env.master.human()) != std::string::npos);
+                BEAST_EXPECT(messages.contains(msg));
+                BEAST_EXPECT(messages.contains(env.master.human()));
             }
         }
 
@@ -3689,8 +3689,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                     BEAST_EXPECT(result[0].of.i32 == 0))
                 {
                     auto const messages = sink.messages().str();
-                    BEAST_EXPECT(messages.find(msg) != std::string::npos);
-                    BEAST_EXPECT(messages.find(amount.getFullText()) != std::string::npos);
+                    BEAST_EXPECT(messages.contains(msg));
+                    BEAST_EXPECT(messages.contains(amount.getFullText()));
                 }
             }
 
@@ -6176,7 +6176,10 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         // trace() uses getDataString() -> getDataSlice() which does NOT check transfer limit
         std::string testMsg = "This message is longer than 10 bytes to prove slices don't count";
         vrt.setBytes(0, testMsg.data(), testMsg.size());
-        vrt.setBytes(100, (uint8_t const*)"dummy", 5);  // Empty data slice for trace
+        vrt.setBytes(
+            100,
+            reinterpret_cast<uint8_t const*>("dummy"),
+            5);  // Empty data slice for trace
         {
             WasmValVec params(5), result(1);
             // trace(msg_ptr, msg_len, data_ptr, data_len, asHex)

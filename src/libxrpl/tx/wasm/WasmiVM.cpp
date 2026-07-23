@@ -311,7 +311,10 @@ InstanceWrapper::setTransferLimit(std::int64_t x)
 ModulePtr
 ModuleWrapper::init(StorePtr& s, Bytes const& wasmBin, beast::Journal j)
 {
-    wasm_byte_vec_t const code{.size = wasmBin.size(), .data = (char*)(wasmBin.data())};
+    wasm_byte_vec_t const code{
+        .size = wasmBin.size(),
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+        .data = const_cast<char*>(reinterpret_cast<char const*>(wasmBin.data()))};
     ModulePtr m = ModulePtr(wasm_module_new(s.get(), &code), &wasm_module_delete);
     if (!m)
         throw std::runtime_error("can't create module");
@@ -482,7 +485,7 @@ ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports) const
     return wimports;
 }
 
-wasm_functype_t*
+wasm_functype_t const*
 ModuleWrapper::getFuncType(std::string_view funcName) const
 {
     for (size_t i = 0; i < exportTypes_.size(); i++)
@@ -493,7 +496,7 @@ ModuleWrapper::getFuncType(std::string_view funcName) const
         if (wasm_externtype_kind(exnType) == WASM_EXTERN_FUNC &&
             funcName == std::string_view(name->data, name->size))
         {
-            return wasm_externtype_as_functype(const_cast<wasm_externtype_t*>(exnType));
+            return wasm_externtype_as_functype_const(exnType);
         }
     }
 
