@@ -4328,6 +4328,7 @@ public:
     testDisallowIncomingTrustline(FeatureBitset features)
     {
         testcase("DisallowIncomingTrustline in OfferCreate");
+
         // Test that asfDisallowIncomingTrustline flag prevents offer crossing
         // when the taker doesn't have a trustline.
         //
@@ -4347,15 +4348,14 @@ public:
         // So accounts must create trustlines BEFORE the issuer sets the flag.
 
         using namespace jtx;
+        auto const gw = Account("gw");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gwUSD = gw["USD"];
 
         // Test without fixCleanup3_4_0 amendment
         {
             Env env{*this, features - fixCleanup3_4_0};
-
-            auto const gw = Account("gw");
-            auto const alice = Account("alice");
-            auto const bob = Account("bob");
-            auto const gwUSD = gw["USD"];
 
             env.fund(XRP(400000), gw, alice, bob);
             env.close();
