@@ -134,7 +134,7 @@ runEscrowWasm(
 
     // microseconds is intentional.  The resolution of the StatsD is milliseconds,
     // but this runs too fast for that.
-    hfs.executionTimeEvent("runEscrowWasm")
+    hfs.executionTimeEvent("runEscrowWasm_us")
         .notify(
             std::chrono::milliseconds{std::chrono::duration_cast<std::chrono::microseconds>(
                                           std::chrono::steady_clock::now() - start)
@@ -172,7 +172,7 @@ preflightEscrowWasm(
 
     // microseconds is intentional.  The resolution of the StatsD is milliseconds,
     // but this runs too fast for that.
-    hfs.executionTimeEvent("preflightEscrowWasm")
+    hfs.executionTimeEvent("preflightEscrowWasm_us")
         .notify(
             std::chrono::milliseconds{std::chrono::duration_cast<std::chrono::microseconds>(
                                           std::chrono::steady_clock::now() - start)
