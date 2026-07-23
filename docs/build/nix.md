@@ -81,14 +81,18 @@ Use `nix develop .#no-compiler` to use the compiler from your system.
 ### Example Usage
 
 ```bash
-# Use GCC (same version as CI)
+# Use GCC — same toolchain as CI (custom glibc on Linux)
 nix develop .#gcc
 
-# Use Clang (same version as CI)
+# Use Clang — same toolchain as CI (custom glibc on Linux)
 nix develop .#clang
 
 # Use default for your platform
 nix develop
+
+# Stock nixpkgs GCC/Clang — skips the custom-glibc build, but does not match CI
+nix develop .#gcc-plain
+nix develop .#clang-plain
 ```
 
 ### Using a different shell
