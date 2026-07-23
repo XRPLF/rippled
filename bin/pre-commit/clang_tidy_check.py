@@ -94,7 +94,6 @@ def main():
     repo_root = Path(
         subprocess.check_output(
             ["git", "rev-parse", "--show-toplevel"],
-            cwd=Path(__file__).parent,
             text=True,
         ).strip()
     )
