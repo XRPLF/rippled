@@ -889,6 +889,24 @@ public:
     operator=(ScopedActivation const&) = delete;
 };
 
+/**
+ * Activate a span guard as the ambient context if it is live, else return a
+ * no-op activation. Accepts any handle (shared_ptr / optional) that is
+ * contextually convertible to bool and dereferences to a SpanGuard. Non-owning:
+ * the handle still owns/ends the span. Returns a null ScopedActivation when the
+ * handle is empty or the span is inactive (e.g. telemetry disabled).
+ * @param guard  A shared_ptr<SpanGuard> or optional<SpanGuard>.
+ * @return An RAII activation; drop it to restore the prior context.
+ */
+template <class SpanGuardHandle>
+[[nodiscard]] ScopedActivation
+activateIfLive(SpanGuardHandle const& guard)
+{
+    if (guard && *guard)
+        return guard->activate();
+    return ScopedActivation{};
+}
+
 // ---------------------------------------------------------------------------
 // No-op stub (all inline, zero overhead, no OTel dependency)
 // ---------------------------------------------------------------------------
@@ -1160,6 +1178,22 @@ public:
         return false;
     }
 };
+
+/**
+ * No-op counterpart to the telemetry-enabled activateIfLive(). Same signature
+ * and handle contract (shared_ptr / optional of SpanGuard); always yields a
+ * null ScopedActivation because a stub guard is never live.
+ * @param guard  A shared_ptr<SpanGuard> or optional<SpanGuard>.
+ * @return A null (no-op) ScopedActivation.
+ */
+template <class SpanGuardHandle>
+[[nodiscard]] ScopedActivation
+activateIfLive(SpanGuardHandle const& guard)
+{
+    if (guard && *guard)
+        return guard->activate();
+    return ScopedActivation{};
+}
 
 #endif  // XRPL_ENABLE_TELEMETRY
 
