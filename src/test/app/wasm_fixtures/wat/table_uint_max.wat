@@ -7,9 +7,9 @@
   ;; Note that using -1 as the table size cannot be parsed by wasm-tools or wat2wasm
   (table 0xFFFFFFFF funcref)
 
-  (func $finish (result i32)
+  (func $escrow_finish (result i32)
     ;; If the module loads despite the massive table, return 1.
     i32.const 1
   )
-  (export "finish" (func $finish))
+  (export "escrow_finish" (func $escrow_finish))
 )

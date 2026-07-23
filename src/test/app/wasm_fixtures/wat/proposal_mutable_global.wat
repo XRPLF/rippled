@@ -6,7 +6,7 @@
   ;; In strict MVP, exported globals had to be immutable (const).
   (export "counter" (global $counter))
 
-  (func $finish (result i32)
+  (func $escrow_finish (result i32)
     ;; 1. Get current value
     global.get $counter
 
@@ -21,5 +21,5 @@
     i32.const 1
   )
 
-  (export "finish" (func $finish))
+  (export "escrow_finish" (func $escrow_finish))
 )

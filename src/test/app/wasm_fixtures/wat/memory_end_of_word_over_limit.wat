@@ -24,5 +24,5 @@
   )
 
   ;; Export the function so you can call it from your host (JS, Python, etc.)
-  (export "finish" (func $test_straddle))
+  (export "escrow_finish" (func $test_straddle))
 )

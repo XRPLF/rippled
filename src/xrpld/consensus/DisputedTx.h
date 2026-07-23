@@ -4,64 +4,77 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 
 #include <boost/container/flat_map.hpp>
 
+#include <cstddef>
+#include <memory>
+#include <sstream>
+#include <string>
 #include <utility>
 
 namespace xrpl {
 
-/** A transaction discovered to be in dispute during consensus.
-
-    During consensus, a @ref DisputedTx is created when a transaction
-    is discovered to be disputed. The object persists only as long as
-    the dispute.
-
-    Undisputed transactions have no corresponding @ref DisputedTx object.
-
-    Refer to @ref Consensus for details on the template type requirements.
-
-    @tparam Tx The type for a transaction
-    @tparam NodeId The type for a node identifier
-*/
+/**
+ * A transaction discovered to be in dispute during consensus.
+ *
+ * During consensus, a @ref DisputedTx is created when a transaction
+ * is discovered to be disputed. The object persists only as long as
+ * the dispute.
+ *
+ * Undisputed transactions have no corresponding @ref DisputedTx object.
+ *
+ * Refer to @ref Consensus for details on the template type requirements.
+ *
+ * @tparam Tx The type for a transaction
+ * @tparam NodeId The type for a node identifier
+ */
 
 template <class Tx, class NodeId>
 class DisputedTx
 {
-    using TxID_t = typename Tx::ID;
+    using TxID_t = Tx::ID;
     using Map_t = boost::container::flat_map<NodeId, bool>;
 
 public:
-    /** Constructor
-
-        @param tx The transaction under dispute
-        @param ourVote Our vote on whether tx should be included
-        @param numPeers Anticipated number of peer votes
-        @param j Journal for debugging
-    */
+    /**
+     * Constructor
+     *
+     * @param tx The transaction under dispute
+     * @param ourVote Our vote on whether tx should be included
+     * @param numPeers Anticipated number of peer votes
+     * @param j Journal for debugging
+     */
     DisputedTx(Tx tx, bool ourVote, std::size_t numPeers, beast::Journal j)
         : ourVote_(ourVote), tx_(std::move(tx)), j_(j)
     {
         votes_.reserve(numPeers);
     }
 
-    //! The unique id/hash of the disputed transaction.
+    /**
+     * The unique id/hash of the disputed transaction.
+     */
     [[nodiscard]] TxID_t const&
     id() const
     {
         return tx_.id();
     }
 
-    //! Our vote on whether the transaction should be included.
+    /**
+     * Our vote on whether the transaction should be included.
+     */
     [[nodiscard]] bool
     getOurVote() const
     {
         return ourVote_;
     }
 
-    //! Are we and our peers "stalled" where we probably won't change
-    //! our vote?
+    /**
+     * Are we and our peers "stalled" where we probably won't change
+     * our vote?
+     */
     [[nodiscard]] bool
     stalled(
         ConsensusParms const& p,
@@ -79,20 +92,20 @@ public:
         // enough, so there's room for change. Check the times in case the state
         // machine is altered to allow states to loop.
         if (nextCutoff.consensusTime > currentCutoff.consensusTime ||
-            avalancheCounter_ < p.avMIN_ROUNDS)
+            avalancheCounter_ < p.avMinRounds)
             return false;
 
         // We've haven't had this vote for minimum rounds yet. Things could
         // change.
-        if (proposing && currentVoteCounter_ < p.avMIN_ROUNDS)
+        if (proposing && currentVoteCounter_ < p.avMinRounds)
             return false;
 
         // If we or any peers have changed a vote in several rounds, then
         // things could still change. But if _either_ has not changed in that
         // long, we're unlikely to change our vote any time soon. (This prevents
         // a malicious peer from flip-flopping a vote to prevent consensus.)
-        if (peersUnchanged < p.avSTALLED_ROUNDS &&
-            (proposing && currentVoteCounter_ < p.avSTALLED_ROUNDS))
+        if (peersUnchanged < p.avStalledRounds &&
+            (proposing && currentVoteCounter_ < p.avStalledRounds))
             return false;
 
         // Does this transaction have more than 80% agreement
@@ -108,7 +121,7 @@ public:
         int const weight = support / total;
         // Returns true if the tx has more than minCONSENSUS_PCT (80) percent
         // agreement. Either voting for _or_ voting against the tx.
-        bool const stalled = weight > p.minCONSENSUS_PCT || weight < (100 - p.minCONSENSUS_PCT);
+        bool const stalled = weight > p.minConsensusPct || weight < (100 - p.minConsensusPct);
 
         if (stalled)
         {
@@ -126,53 +139,62 @@ public:
         return stalled;
     }
 
-    //! The disputed transaction.
+    /**
+     * The disputed transaction.
+     */
     [[nodiscard]] Tx const&
     tx() const
     {
         return tx_;
     }
 
-    //! Change our vote
+    /**
+     * Change our vote
+     */
     void
     setOurVote(bool o)
     {
         ourVote_ = o;
     }
 
-    /** Change a peer's vote
-
-        @param peer Identifier of peer.
-        @param votesYes Whether peer votes to include the disputed transaction.
-
-        @return bool Whether the peer changed its vote. (A new vote counts as a
-       change.)
-    */
+    /**
+     * Change a peer's vote
+     *
+     * @param peer Identifier of peer.
+     * @param votesYes Whether peer votes to include the disputed transaction.
+     *
+     * @return bool Whether the peer changed its vote. (A new vote counts as a
+     * change.)
+     */
     [[nodiscard]] bool
     setVote(NodeId const& peer, bool votesYes);
 
-    /** Remove a peer's vote
-
-        @param peer Identifier of peer.
-    */
+    /**
+     * Remove a peer's vote
+     *
+     * @param peer Identifier of peer.
+     */
     void
     unVote(NodeId const& peer);
 
-    /** Update our vote given progression of consensus.
-
-        Updates our vote on this disputed transaction based on our peers' votes
-        and how far along consensus has proceeded.
-
-        @param percentTime Percentage progress through consensus, e.g. 50%
-               through or 90%.
-        @param proposing Whether we are proposing to our peers in this round.
-        @param p Consensus parameters controlling thresholds for voting
-        @return Whether our vote changed
-    */
+    /**
+     * Update our vote given progression of consensus.
+     *
+     * Updates our vote on this disputed transaction based on our peers' votes
+     * and how far along consensus has proceeded.
+     *
+     * @param percentTime Percentage progress through consensus, e.g. 50%
+     *        through or 90%.
+     * @param proposing Whether we are proposing to our peers in this round.
+     * @param p Consensus parameters controlling thresholds for voting
+     * @return Whether our vote changed
+     */
     bool
     updateVote(int percentTime, bool proposing, ConsensusParms const& p);
 
-    //! JSON representation of dispute, used for debugging
+    /**
+     * JSON representation of dispute, used for debugging
+     */
     [[nodiscard]] json::Value
     getJson() const;
 
@@ -182,11 +204,17 @@ private:
     bool ourVote_;  //< Our vote (true is yes)
     Tx tx_;         //< Transaction under dispute
     Map_t votes_;   //< Map from NodeID to vote
-    //! The number of rounds we've gone without changing our vote
+    /**
+     * The number of rounds we've gone without changing our vote
+     */
     std::size_t currentVoteCounter_ = 0;
-    //! Which minimum acceptance percentage phase we are currently in
+    /**
+     * Which minimum acceptance percentage phase we are currently in
+     */
     ConsensusParms::AvalancheState avalancheState_ = ConsensusParms::AvalancheState::Init;
-    //! How long we have been in the current acceptance phase
+    /**
+     * How long we have been in the current acceptance phase
+     */
     std::size_t avalancheCounter_ = 0;
     beast::Journal const j_;
 };
@@ -276,7 +304,7 @@ DisputedTx<Tx, NodeId>::updateVote(int percentTime, bool proposing, ConsensusPar
     // Proposing or not, we need to keep track of which state we've reached so
     // we can determine if the vote has stalled.
     auto const [requiredPct, newState] =
-        getNeededWeight(p, avalancheState_, percentTime, ++avalancheCounter_, p.avMIN_ROUNDS);
+        getNeededWeight(p, avalancheState_, percentTime, ++avalancheCounter_, p.avMinRounds);
     if (newState)
     {
         avalancheState_ = *newState;
@@ -286,7 +314,7 @@ DisputedTx<Tx, NodeId>::updateVote(int percentTime, bool proposing, ConsensusPar
     if (proposing)  // give ourselves full weight
     {
         // This is basically the percentage of nodes voting 'yes' (including us)
-        weight = (yays_ * 100 + (ourVote_ ? 100 : 0)) / (nays_ + yays_ + 1);
+        weight = ((yays_ * 100) + (ourVote_ ? 100 : 0)) / (nays_ + yays_ + 1);
 
         newPosition = weight > requiredPct;
     }

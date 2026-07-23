@@ -1,10 +1,28 @@
 #pragma once
 
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/tx/wasm/HostFunc.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
+#include <xrpl/tx/wasm/WasmImportsHelper.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
 #include <wasm.h>
-#include <wasmi.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <expected>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -120,7 +138,10 @@ using WasmImporttypeVec = WasmVec<
 struct WasmiResult
 {
     WasmValVec r;
-    bool f{false};  // failure flag
+    // Set iff the call trapped. Holds the TER the trap was classified into
+    // (tecINTERNAL / tecOUT_OF_GAS / tecFAILED_PROCESSING); see
+    // WasmiEngine::call. std::nullopt means the call returned normally.
+    std::optional<TER> ter;
 
     WasmiResult(unsigned n = 0) : r(n)
     {
@@ -147,6 +168,7 @@ class InstanceWrapper
     mutable int memIdx_ = -1;
     InstancePtr instance_;
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
+    std::int64_t transferLimit_ = kWasmTransferLimit;
 
 private:
     static InstancePtr
@@ -194,6 +216,12 @@ public:
 
     std::int64_t
     setGas(std::int64_t) const;
+
+    std::int64_t
+    getTransferLimit() const;
+
+    std::int64_t
+    setTransferLimit(std::int64_t);
 };
 
 class ModuleWrapper
@@ -236,7 +264,7 @@ public:
         return instanceWrap_.getFunc(funcName, exportTypes_);
     }
 
-    wasm_functype_t*
+    wasm_functype_t const*
     getFuncType(std::string_view funcName) const;
 
     Wmem
@@ -297,7 +325,7 @@ public:
     static EnginePtr
     init();
 
-    Expected<WasmResult<int32_t>, TER>
+    std::expected<WasmResult<int32_t>, WasmTER>
     run(Bytes const& wasmCode,
         HostFunctions& hfs,
         int64_t gas,
@@ -348,7 +376,7 @@ private:
         return moduleWrap_ ? moduleWrap_->getMem() : Wmem();
     }
 
-    Expected<WasmResult<int32_t>, TER>
+    std::expected<WasmResult<int32_t>, WasmTER>
     runHlp(
         Bytes const& wasmCode,
         HostFunctions& hfs,

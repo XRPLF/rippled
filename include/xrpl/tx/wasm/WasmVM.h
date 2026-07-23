@@ -1,9 +1,17 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/HostFunc.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
 #include <xrpl/tx/wasm/WasmImportsHelper.h>
 
+#include <cstdint>
+#include <expected>
+#include <memory>
+#include <string>
 #include <string_view>
+#include <vector>
 
 namespace xrpl {
 
@@ -17,7 +25,7 @@ std::string_view inline constexpr wAlloc = "allocate";
 std::string_view inline constexpr wDealloc = "deallocate";
 std::string_view inline constexpr wProcExit = "proc_exit";
 
-std::string_view inline constexpr escrowFunctionName = "finish";
+std::string_view inline constexpr escrowFunctionName = "escrow_finish";
 
 uint32_t inline constexpr maxPages = 128;  // 8MB = 64KB*128
 
@@ -40,7 +48,7 @@ public:
     static WasmEngine&
     instance();
 
-    Expected<WasmResult<int32_t>, TER>
+    std::expected<WasmResult<int32_t>, WasmTER>
     run(Bytes const& wasmCode,
         HostFunctions& hfs,
         int64_t gasLimit,
@@ -71,7 +79,7 @@ public:
 ImportVec
 createWasmImport(HostFunctions& hfs);
 
-Expected<EscrowResult, TER>
+std::expected<EscrowResult, WasmTER>
 runEscrowWasm(
     Bytes const& wasmCode,
     HostFunctions& hfs,

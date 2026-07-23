@@ -2,10 +2,17 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/protocol/TER.h>
 
+#include <bit>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <stdexcept>
+#include <string_view>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -14,8 +21,20 @@ using Bytes = std::vector<std::uint8_t>;
 using Hash = xrpl::uint256;
 using FloatPair = std::pair<int64_t, int32_t>;
 
+// Error signals that cross the wasm boundary as trap messages (the C API has no
+// trap code). WasmiEngine::call maps them to TER: hfErrInternal -> tecINTERNAL,
+// hfErrOutOfGas / wasmi's OutOfFuel -> tecOUT_OF_GAS, anything else ->
+// tecFAILED_PROCESSING.
+//
+// Matched as substrings, not by equality: the C API returns the Rust Debug form
+// of the error, e.g. `Error { kind: Message("HfInternal") }` or
+// `Error { kind: TrapCode(OutOfFuel) }`.
+std::string_view inline constexpr hfErrInternal = "HfInternal";
+std::string_view inline constexpr hfErrOutOfGas = "HfOutOfGas";
+std::string_view inline constexpr wasmiTrapOutOfFuel = "OutOfFuel";
+
 enum class HostFunctionError : int32_t {
-    Internal = -1,
+    Unimplemented = -1,
     FieldNotFound = -2,
     BufferTooSmall = -3,
     NoArray = -4,
@@ -25,7 +44,7 @@ enum class HostFunctionError : int32_t {
     SlotsFull = -8,
     EmptySlot = -9,
     LedgerObjNotFound = -10,
-    Decoding = -11,
+    OutOfTransferLimit = -11,
     DataFieldTooLarge = -12,
     PointerOutOfBounds = -13,
     NoMemExported = -14,
@@ -35,9 +54,6 @@ enum class HostFunctionError : int32_t {
     IndexOutOfBounds = -18,
     FloatInputMalformed = -19,
     FloatComputationError = -20,
-    NoRuntime = -21,
-    OutOfGas = -22,
-    OutOfTransferLimit = -23,
 };
 
 enum class WasmTypes { WtI32, WtI64 };
@@ -60,6 +76,15 @@ struct WasmResult
     int64_t cost;
 };
 using EscrowResult = WasmResult<int32_t>;
+
+// Engine error when wasm does not run to completion. `cost` is the gas consumed
+// when meaningful (tecOUT_OF_GAS / tecFAILED_PROCESSING; caller writes it to tx
+// metadata); std::nullopt for tecINTERNAL and malformed input (no gas reported).
+struct WasmTER
+{
+    TER ter;
+    std::optional<int64_t> cost;
+};
 
 class FieldLocator
 {
@@ -124,6 +149,12 @@ public:
 
     virtual std::int64_t
     setGas(std::int64_t gas) = 0;
+
+    virtual std::int64_t
+    getTransferLimit() = 0;
+
+    virtual std::int64_t
+    setTransferLimit(std::int64_t transferLimit) = 0;
 };
 using RTOptRef = std::optional<std::reference_wrapper<WasmRuntimeWrapper>>;
 
@@ -158,7 +189,6 @@ wasmParamsHlp(std::vector<WasmParam>& v, std::int64_t p, Types&&... args)
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v)
 {
-    return;
 }
 
 template <class... Types>

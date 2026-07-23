@@ -23,5 +23,5 @@
     i32.const 1
   )
 
-  (export "finish" (func $test_offset_overflow))
+  (export "escrow_finish" (func $test_offset_overflow))
 )

@@ -27,9 +27,9 @@ class LedgerMaster_test : public beast::unit_test::Suite
     {
         using namespace jtx;
         return envconfig([&](std::unique_ptr<Config> cfg) {
-            cfg->NETWORK_ID = networkID;
+            cfg->networkId = networkID;
             // This test relies on ledger hash so must lock it to fee 10.
-            cfg->FEES.reference_fee = 10;
+            cfg->fees.referenceFee = 10;
             return cfg;
         });
     }

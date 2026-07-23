@@ -10,6 +10,8 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/throw_exception.hpp>
 
+#include <exception>
+#include <memory>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -39,13 +41,14 @@ class Thread;
 
 enum class AbortT { NoAbortOnFail, AbortOnFail };
 
-/** A testsuite class.
-
-    Derived classes execute a series of testcases, where each testcase is
-    a series of pass/fail tests. To provide a unit test using this class,
-    derive from it and use the BEAST_DEFINE_UNIT_TEST macro in a
-    translation unit.
-*/
+/**
+ * A testsuite class.
+ *
+ * Derived classes execute a series of testcases, where each testcase is
+ * a series of pass/fail tests. To provide a unit test using this class,
+ * derive from it and use the BEAST_DEFINE_UNIT_TEST macro in a
+ * translation unit.
+ */
 class Suite
 {
 private:
@@ -116,16 +119,17 @@ private:
         {
         }
 
-        /** Open a new testcase.
-
-            A testcase is a series of evaluated test conditions. A test
-            suite may have multiple test cases. A test is associated with
-            the last opened testcase. When the test first runs, a default
-            unnamed case is opened. Tests with only one case may omit the
-            call to testcase.
-
-            @param abort Determines if suite continues running after a failure.
-        */
+        /**
+         * Open a new testcase.
+         *
+         * A testcase is a series of evaluated test conditions. A test
+         * suite may have multiple test cases. A test is associated with
+         * the last opened testcase. When the test first runs, a default
+         * unnamed case is opened. Tests with only one case may omit the
+         * call to testcase.
+         *
+         * @param abort Determines if suite continues running after a failure.
+         */
         void
         operator()(std::string const& name, AbortT abort = AbortT::NoAbortOnFail);
 
@@ -138,19 +142,23 @@ private:
     };
 
 public:
-    /** Logging output stream.
-
-        Text sent to the log output stream will be forwarded to
-        the output stream associated with the runner.
-    */
+    /**
+     * Logging output stream.
+     *
+     * Text sent to the log output stream will be forwarded to
+     * the output stream associated with the runner.
+     */
     LogOs<char> log;
 
-    /** Memberspace for declaring test cases. */
+    /**
+     * Memberspace for declaring test cases.
+     */
     TestcaseT testcase;
 
-    /** Returns the "current" running suite.
-        If no suite is running, nullptr is returned.
-    */
+    /**
+     * Returns the "current" running suite.
+     * If no suite is running, nullptr is returned.
+     */
     static Suite*
     thisSuite()
     {
@@ -166,30 +174,34 @@ public:
     Suite&
     operator=(Suite const&) = delete;
 
-    /** Invokes the test using the specified runner.
-
-        Data members are set up here instead of the constructor as a
-        convenience to writing the derived class to avoid repetition of
-        forwarded constructor arguments to the base.
-        Normally this is called by the framework for you.
-    */
+    /**
+     * Invokes the test using the specified runner.
+     *
+     * Data members are set up here instead of the constructor as a
+     * convenience to writing the derived class to avoid repetition of
+     * forwarded constructor arguments to the base.
+     * Normally this is called by the framework for you.
+     */
     template <class = void>
     void
     operator()(Runner& r);
 
-    /** Record a successful test condition. */
+    /**
+     * Record a successful test condition.
+     */
     template <class = void>
     void
     pass();
 
-    /** Record a failure.
-
-        @param reason Optional text added to the output on a failure.
-
-        @param file The source code file where the test failed.
-
-        @param line The source code line number where the test failed.
-    */
+    /**
+     * Record a failure.
+     *
+     * @param reason Optional text added to the output on a failure.
+     *
+     * @param file The source code file where the test failed.
+     *
+     * @param line The source code line number where the test failed.
+     */
     /** @{ */
     template <class String>
     void
@@ -200,23 +212,24 @@ public:
     fail(std::string const& reason = "");
     /** @} */
 
-    /** Evaluate a test condition.
-
-        This function provides improved logging by incorporating the
-        file name and line number into the reported output on failure,
-        as well as additional text specified by the caller.
-
-        @param shouldBeTrue The condition to test. The condition
-        is evaluated in a boolean context.
-
-        @param reason Optional added text to output on a failure.
-
-        @param file The source code file where the test failed.
-
-        @param line The source code line number where the test failed.
-
-        @return `true` if the test condition indicates success.
-    */
+    /**
+     * Evaluate a test condition.
+     *
+     * This function provides improved logging by incorporating the
+     * file name and line number into the reported output on failure,
+     * as well as additional text specified by the caller.
+     *
+     * @param shouldBeTrue The condition to test. The condition
+     * is evaluated in a boolean context.
+     *
+     * @param reason Optional added text to output on a failure.
+     *
+     * @param file The source code file where the test failed.
+     *
+     * @param line The source code line number where the test failed.
+     *
+     * @return `true` if the test condition indicates success.
+     */
     /** @{ */
     template <class Condition>
     bool
@@ -273,15 +286,19 @@ public:
         return unexcept(f, "");
     }
 
-    /** Return the argument associated with the runner. */
+    /**
+     * Return the argument associated with the runner.
+     */
     std::string const&
     arg() const
     {
         return runner_->arg();
     }
 
-    // DEPRECATED
-    // @return `true` if the test condition indicates success(a false value)
+    /**
+     * DEPRECATED
+     * @return `true` if the test condition indicates success(a false value)
+     */
     template <class Condition, class String>
     bool
     unexpected(Condition shouldBeFalse, String const& reason);
@@ -303,7 +320,9 @@ private:
         return &kPTs;
     }
 
-    /** Runs the suite. */
+    /**
+     * Runs the suite.
+     */
     virtual void
     run() = 0;
 
@@ -556,18 +575,20 @@ Suite::run(Runner& r)
 }
 
 #ifndef BEAST_EXPECT
-/** Check a precondition.
-
-    If the condition is false, the file and line number are reported.
-*/
+/**
+ * Check a precondition.
+ *
+ * If the condition is false, the file and line number are reported.
+ */
 #define BEAST_EXPECT(cond) expect(cond, __FILE__, __LINE__)
 #endif
 
 #ifndef BEAST_EXPECTS
-/** Check a precondition.
-
-    If the condition is false, the file and line number are reported.
-*/
+/**
+ * Check a precondition.
+ *
+ * If the condition is false, the file and line number are reported.
+ */
 #define BEAST_EXPECTS(cond, reason) \
     ((cond) ? (pass(), true) : (fail((reason), __FILE__, __LINE__), false))
 #endif
@@ -591,41 +612,43 @@ Suite::run(Runner& r)
 //
 #ifndef BEAST_DEFINE_TESTSUITE
 
-/** Enables insertion of test suites into the global container.
-    The default is to insert all test suite definitions into the global
-    container. If BEAST_DEFINE_TESTSUITE is user defined, this macro
-    has no effect.
-*/
+/**
+ * Enables insertion of test suites into the global container.
+ * The default is to insert all test suite definitions into the global
+ * container. If BEAST_DEFINE_TESTSUITE is user defined, this macro
+ * has no effect.
+ */
 #ifndef BEAST_NO_UNIT_TEST_INLINE
 #define BEAST_NO_UNIT_TEST_INLINE 0
 #endif
 
-/** Define a unit test suite.
-
-    Class     The type representing the class being tested.
-    Module    Identifies the module.
-    Library   Identifies the library.
-
-    The declaration for the class implementing the test should be the same
-    as Class ## _test. For example, if Class is aged_ordered_container, the
-    test class must be declared as:
-
-    @code
-
-    struct aged_ordered_container_test : beast::unit_test::suite
-    {
-        //...
-    };
-
-    @endcode
-
-    The macro invocation must appear in the same namespace as the test class.
-
-    Unit test priorities were introduced so parallel unit_test::suites would
-    execute faster. Suites with longer running times have higher priorities
-    than unit tests with shorter running times.  Suites with no priorities
-    are assumed to run most quickly, so they run last.
-*/
+/**
+ * Define a unit test suite.
+ *
+ * Class     The type representing the class being tested.
+ * Module    Identifies the module.
+ * Library   Identifies the library.
+ *
+ * The declaration for the class implementing the test should be the same
+ * as Class ## _test. For example, if Class is aged_ordered_container, the
+ * test class must be declared as:
+ *
+ * @code
+ *
+ * struct aged_ordered_container_test : beast::unit_test::suite
+ * {
+ *     //...
+ * };
+ *
+ * @endcode
+ *
+ * The macro invocation must appear in the same namespace as the test class.
+ *
+ * Unit test priorities were introduced so parallel unit_test::suites would
+ * execute faster. Suites with longer running times have higher priorities
+ * than unit tests with shorter running times.  Suites with no priorities
+ * are assumed to run most quickly, so they run last.
+ */
 
 #if BEAST_NO_UNIT_TEST_INLINE
 #define BEAST_DEFINE_TESTSUITE(Class, Module, Library)
@@ -634,7 +657,7 @@ Suite::run(Runner& r)
 #define BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Class, Module, Library, Priority)
 
 #else
-#include <xrpl/beast/unit_test/global_suites.h>
+#include <xrpl/beast/unit_test/global_suites.h>  // IWYU pragma: keep
 #define BEAST_DEFINE_TESTSUITE(Class, Module, Library) \
     BEAST_DEFINE_TESTSUITE_INSERT(Class, Module, Library, false, 0)
 #define BEAST_DEFINE_TESTSUITE_MANUAL(Class, Module, Library) \

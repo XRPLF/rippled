@@ -1,5 +1,5 @@
 (module
-  (func $finish (export "finish") (result i32)
+  (func $escrow_finish (export "escrow_finish") (result i32)
     ;; Setup for Requirement 2: Divide an i32 by 0
     i32.const 42   ;; Push numerator
     i32.const 0    ;; Push denominator (0)

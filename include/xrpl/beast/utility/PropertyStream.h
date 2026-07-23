@@ -3,14 +3,18 @@
 #include <xrpl/beast/core/List.h>
 
 #include <mutex>
+#include <ostream>
 #include <sstream>
 #include <string>
+#include <utility>
 
 namespace beast {
 
 //------------------------------------------------------------------------------
 
-/** Abstract stream with RAII containers that produce a property tree. */
+/**
+ * Abstract stream with RAII containers that produce a property tree.
+ */
 class PropertyStream
 {
 public:
@@ -304,7 +308,9 @@ public:
 //
 //------------------------------------------------------------------------------
 
-/** Subclasses can be called to write to a stream and have children. */
+/**
+ * Subclasses can be called to write to a stream and have children.
+ */
 class PropertyStream::Source
 {
 private:
@@ -322,17 +328,22 @@ public:
     Source&
     operator=(Source const&) = delete;
 
-    /** Returns the name of this source. */
+    /**
+     * Returns the name of this source.
+     */
     [[nodiscard]] std::string const&
     name() const;
 
-    /** Add a child source. */
+    /**
+     * Add a child source.
+     */
     void
     add(Source& source);
 
-    /** Add a child source by pointer.
-        The source pointer is returned so it can be used in ctor-initializers.
-    */
+    /**
+     * Add a child source by pointer.
+     * The source pointer is returned so it can be used in ctor-initializers.
+     */
     template <class Derived>
     Derived*
     add(Derived* child)
@@ -341,45 +352,55 @@ public:
         return child;
     }
 
-    /** Remove a child source from this Source. */
+    /**
+     * Remove a child source from this Source.
+     */
     void
     remove(Source& child);
 
-    /** Remove all child sources from this Source. */
+    /**
+     * Remove all child sources from this Source.
+     */
     void
     removeAll();
 
-    /** Write only this Source to the stream. */
+    /**
+     * Write only this Source to the stream.
+     */
     void
     writeOne(PropertyStream& stream);
 
-    /** write this source and all its children recursively to the stream. */
+    /**
+     * write this source and all its children recursively to the stream.
+     */
     void
     write(PropertyStream& stream);
 
-    /** Parse the path and write the corresponding Source and optional children.
-        If the source is found, it is written. If the wildcard character '*'
-        exists as the last character in the path, then all the children are
-        written recursively.
-    */
+    /**
+     * Parse the path and write the corresponding Source and optional children.
+     * If the source is found, it is written. If the wildcard character '*'
+     * exists as the last character in the path, then all the children are
+     * written recursively.
+     */
     void
     write(PropertyStream& stream, std::string const& path);
 
-    /** Parse the dot-delimited Source path and return the result.
-        The first value will be a pointer to the Source object corresponding
-        to the given path. If no Source object exists, then the first value
-        will be nullptr and the second value will be undefined.
-        The second value is a boolean indicating whether or not the path string
-        specifies the wildcard character '*' as the last character.
-
-        print statement examples
-        "parent.child" prints child and all of its children
-        "parent.child." start at the parent and print down to child
-        "parent.grandchild" prints nothing- grandchild not direct descendent
-        "parent.grandchild." starts at the parent and prints down to grandchild
-        "parent.grandchild.*" starts at parent, print through grandchild
-       children
-    */
+    /**
+     * Parse the dot-delimited Source path and return the result.
+     *  The first value will be a pointer to the Source object corresponding
+     *  to the given path. If no Source object exists, then the first value
+     *  will be nullptr and the second value will be undefined.
+     *  The second value is a boolean indicating whether or not the path string
+     *  specifies the wildcard character '*' as the last character.
+     *
+     *  print statement examples
+     *  "parent.child" prints child and all of its children
+     *  "parent.child." start at the parent and print down to child
+     *  "parent.grandchild" prints nothing- grandchild not direct descendent
+     *  "parent.grandchild." starts at the parent and prints down to grandchild
+     *  "parent.grandchild.*" starts at parent, print through grandchild
+     * children
+     */
     std::pair<Source*, bool>
     find(std::string path);
 
@@ -399,9 +420,10 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Subclass override.
-        The default version does nothing.
-    */
+    /**
+     * Subclass override.
+     * The default version does nothing.
+     */
     virtual void
     onWrite(Map&);
 };
