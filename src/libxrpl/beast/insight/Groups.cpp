@@ -11,6 +11,7 @@
 #include <xrpl/beast/insight/Meter.h>
 
 #include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -87,6 +88,7 @@ public:
 
     Collector::ptr collector;
     Items items;
+    mutable std::mutex groupMutex;
 
     explicit GroupsImp(Collector::ptr collector) : collector(std::move(collector))
     {
@@ -97,6 +99,7 @@ public:
     Group::ptr const&
     get(std::string const& name) override
     {
+        std::scoped_lock const _{groupMutex};
         std::pair<Items::iterator, bool> const result(items.emplace(name, Group::ptr()));
         Group::ptr& group(result.first->second);
         if (result.second)
