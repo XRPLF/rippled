@@ -1,4 +1,3 @@
-#include <test/csf.h>
 #include <test/csf/Peer.h>
 #include <test/csf/PeerGroup.h>
 #include <test/csf/Sim.h>
@@ -1035,16 +1034,6 @@ public:
         // slow ledger is generated
         UndoDelay undoDelay{behind};
         sim.collectors.add(undoDelay);
-
-#if 0
-        // Have all beast::journal output printed to stdout
-        for (Peer* p : network)
-            p->sink.threshold(beast::Severity::All);
-
-        // Print ledger accept and fully validated events to stdout
-        StreamCollector sc{std::cout};
-        sim.collectors.add(sc);
-#endif
         // Run the simulation for 100 seconds of simulation time with
         std::chrono::nanoseconds const simDuration = 100s;
 

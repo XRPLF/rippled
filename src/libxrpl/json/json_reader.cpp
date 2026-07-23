@@ -5,12 +5,13 @@
 
 #include <algorithm>
 #include <cctype>
+#include <charconv>
 #include <cstdint>
 #include <cstdio>
-#include <cstring>
 #include <istream>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 
 namespace json {
 // Implementation of class Reader
@@ -86,8 +87,8 @@ Reader::parse(char const* beginDoc, char const* endDoc, Value& root)
     begin_ = beginDoc;
     end_ = endDoc;
     current_ = begin_;
-    lastValueEnd_ = 0;
-    lastValue_ = 0;
+    lastValueEnd_ = nullptr;
+    lastValue_ = nullptr;
     errors_.clear();
 
     while (!nodes_.empty())
@@ -605,34 +606,17 @@ bool
 Reader::decodeDouble(Token& token)
 {
     double value = 0;
-    int const bufferSize = 32;
-    int count = 0;
-    int const length = int(token.end - token.start);
-    // Sanity check to avoid buffer overflow exploits.
-    if (length < 0)
-    {
-        return addError("Unable to parse token length", token);
-    }
-    // Avoid using a string constant for the format control string given to
-    // sscanf, as this can cause hard to debug crashes on OS X. See here for
-    // more info:
-    //
-    // http://developer.apple.com/library/mac/#DOCUMENTATION/DeveloperTools/gcc-4.0.1/gcc/Incompatibilities.html
-    char format[] = "%lf";
-    if (length <= bufferSize)
-    {
-        Char buffer[bufferSize + 1];
-        memcpy(buffer, token.start, length);
-        buffer[length] = 0;
-        count = sscanf(buffer, format, &value);
-    }
-    else
-    {
-        std::string const buffer(token.start, token.end);
-        count = sscanf(buffer.c_str(), format, &value);
-    }
-    if (count != 1)
+    auto const [ptr, ec] = std::from_chars(token.start, token.end, value);
+
+    // Reject anything from_chars could not turn into a finite double:
+    //   - ec != std::errc{}: no valid conversion, or an out-of-range magnitude
+    //     (e.g. 1e400).
+    //   - ptr != token.end: readNumber() is permissive about which characters
+    //     it collects into a token (it will, for example, keep a '+' mid-token),
+    //     but from_chars() will stop at the first character it cannot parse.
+    if (ec != std::errc{} || ptr != token.end)
         return addError("'" + std::string(token.start, token.end) + "' is not a number.", token);
+
     currentValue() = value;
     return true;
 }
@@ -908,9 +892,8 @@ Reader::getFormattedErrorMessages() const
 {
     std::string formattedMessage;
 
-    for (Errors::const_iterator itError = errors_.begin(); itError != errors_.end(); ++itError)
+    for (auto const& error : errors_)
     {
-        ErrorInfo const& error = *itError;
         formattedMessage += "* " + getLocationLineAndColumn(error.token.start) + "\n";
         formattedMessage += "  " + error.message + "\n";
 

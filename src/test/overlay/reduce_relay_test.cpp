@@ -64,7 +64,8 @@ static constexpr std::uint32_t kMaxPeers = 10;
 static constexpr std::uint32_t kMaxValidators = 10;
 static constexpr std::uint32_t kMaxMessages = 200000;
 
-/** Simulate two entities - peer directly connected to the server
+/**
+ * Simulate two entities - peer directly connected to the server
  * (via squelch in PeerSim) and PeerImp (via Overlay)
  */
 class PeerPartial : public Peer
@@ -192,7 +193,9 @@ public:
     }
 };
 
-/** Manually advanced clock. */
+/**
+ * Manually advanced clock.
+ */
 class ManualClock
 {
 public:
@@ -238,7 +241,9 @@ private:
     inline static time_point kNow = time_point(seconds(0));
 };
 
-/** Simulate server's OverlayImpl */
+/**
+ * Simulate server's OverlayImpl
+ */
 class Overlay
 {
 public:
@@ -260,7 +265,8 @@ public:
 
 class Validator;
 
-/** Simulate link from a validator to a peer directly connected
+/**
+ * Simulate link from a validator to a peer directly connected
  * to the server.
  */
 class Link
@@ -317,18 +323,19 @@ private:
     bool up_{true};
 };
 
-/** Simulate Validator */
+/**
+ * Simulate Validator
+ */
 class Validator
 {
     using Links = std::unordered_map<Peer::id_t, LinkSPtr>;
 
 public:
-    Validator() : pkey_(std::get<0>(randomKeyPair(KeyType::Ed25519)))
+    Validator() : pkey_(std::get<0>(randomKeyPair(KeyType::Ed25519))), id_(sid++)
     {
         protocol::TMValidation v;
         v.set_validation("validation");
         message_ = std::make_shared<Message>(v, protocol::mtVALIDATION, pkey_);
-        id_ = sid++;
     }
     Validator(Validator const&) = default;
     Validator(Validator&&) = default;
@@ -401,14 +408,18 @@ public:
         }
     }
 
-    /** Send to specific peers */
+    /**
+     * Send to specific peers
+     */
     void
     send(std::vector<Peer::id_t> peers, SquelchCB f)
     {
         forLinks(peers, [&](Link& link, MessageSPtr m) { link.send(m, f); });
     }
 
-    /** Send to all peers */
+    /**
+     * Send to all peers
+     */
     void
     send(SquelchCB f)
     {
@@ -457,7 +468,6 @@ public:
     using id_t = Peer::id_t;
     PeerSim(Overlay& overlay, beast::Journal journal) : overlay_(overlay), squelch_(journal)
     {
-        id_ = sid++;
     }
 
     ~PeerSim() override = default;
@@ -480,7 +490,9 @@ public:
         sid = 0;
     }
 
-    /** Local Peer (PeerImp) */
+    /**
+     * Local Peer (PeerImp)
+     */
     void
     onMessage(MessageSPtr const& m, SquelchCB f) override
     {
@@ -493,7 +505,9 @@ public:
             {}, *validator, id(), f);  // NOLINT(bugprone-unchecked-optional-access)
     }
 
-    /** Remote Peer (Directly connected Peer) */
+    /**
+     * Remote Peer (Directly connected Peer)
+     */
     void
     onMessage(protocol::TMSquelch const& squelch) override
     {
@@ -512,7 +526,7 @@ public:
 private:
     inline static id_t sid = 0;
     std::string fingerprint_;
-    id_t id_;
+    id_t id_{sid++};
     Overlay& overlay_;
     reduce_relay::Squelch<ManualClock> squelch_;
 };
@@ -838,19 +852,18 @@ public:
         }
     }
 
-    /** Is peer in Selected state in any of the slots */
+    /**
+     * Is peer in Selected state in any of the slots
+     */
     bool
     isSelected(Peer::id_t id)
     {
-        for (auto& v : validators_)
-        {
-            if (overlay_.isSelected(v, id))
-                return true;
-        }
-        return false;
+        return std::ranges::any_of(
+            validators_, [&](auto& v) { return overlay_.isSelected(v, id); });
     }
 
-    /** Check if there are peers to unsquelch - peer is in Selected
+    /**
+     * Check if there are peers to unsquelch - peer is in Selected
      * state in any of the slots and there are peers in Squelched state
      * in those slots.
      */
@@ -894,7 +907,9 @@ protected:
         std::cout << std::endl;
     }
 
-    /** Send squelch (if duration is set) or unsquelch (if duration not set) */
+    /**
+     * Send squelch (if duration is set) or unsquelch (if duration not set)
+     */
     static Peer::id_t
     sendSquelch(
         PublicKey const& validator,
@@ -932,7 +947,8 @@ protected:
         bool handled = false;
     };
 
-    /** Randomly brings the link between a validator and a peer down.
+    /**
+     * Randomly brings the link between a validator and a peer down.
      * Randomly disconnects a peer. Those events are generated one at a time.
      */
     void
@@ -1110,7 +1126,8 @@ protected:
         f(log);
     }
 
-    /** Initial counting round: three peers receive message "faster" then
+    /**
+     * Initial counting round: three peers receive message "faster" then
      * others. Once the message count for the three peers reaches threshold
      * the rest of the peers are squelched and the slot for the given validator
      * is in Selected state.
@@ -1121,7 +1138,8 @@ protected:
         doTest("Initial Round", log, [this](bool log) { BEAST_EXPECT(propagateAndSquelch(log)); });
     }
 
-    /** Receiving message from squelched peer too soon should not change the
+    /**
+     * Receiving message from squelched peer too soon should not change the
      * slot's state to Counting.
      */
     void
@@ -1132,7 +1150,8 @@ protected:
         });
     }
 
-    /** Receiving message from squelched peer should change the
+    /**
+     * Receiving message from squelched peer should change the
      * slot's state to Counting.
      */
     void
@@ -1144,7 +1163,9 @@ protected:
         });
     }
 
-    /** Propagate enough messages to generate one squelch event */
+    /**
+     * Propagate enough messages to generate one squelch event
+     */
     bool
     propagateAndSquelch(bool log, bool purge = true, bool resetClock = true)
     {
@@ -1178,7 +1199,9 @@ protected:
         return n == 1 && res;
     }
 
-    /** Send fewer message so that squelch event is not generated */
+    /**
+     * Send fewer message so that squelch event is not generated
+     */
     bool
     propagateNoSquelch(
         bool log,
@@ -1205,7 +1228,8 @@ protected:
         return !squelched && res;
     }
 
-    /** Receiving a message from new peer should change the
+    /**
+     * Receiving a message from new peer should change the
      * slot's state to Counting.
      */
     void
@@ -1218,8 +1242,10 @@ protected:
         });
     }
 
-    /** Selected peer disconnects. Should change the state to counting and
-     * unsquelch squelched peers. */
+    /**
+     * Selected peer disconnects. Should change the state to counting and
+     * unsquelch squelched peers.
+     */
     void
     testSelectedPeerDisconnects(bool log)
     {
@@ -1237,8 +1263,10 @@ protected:
         });
     }
 
-    /** Selected peer stops relaying. Should change the state to counting and
-     * unsquelch squelched peers. */
+    /**
+     * Selected peer stops relaying. Should change the state to counting and
+     * unsquelch squelched peers.
+     */
     void
     testSelectedPeerStopsRelaying(bool log)
     {
@@ -1257,7 +1285,8 @@ protected:
         });
     }
 
-    /** Squelched peer disconnects. Should not change the state to counting.
+    /**
+     * Squelched peer disconnects. Should not change the state to counting.
      */
     void
     testSquelchedPeerDisconnects(bool log)

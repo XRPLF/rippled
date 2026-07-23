@@ -4,9 +4,14 @@
 #include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/beast/container/aged_unordered_map.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/protocol/PublicKey.h>
 
 #include <atomic>
+#include <cstdint>
+#include <memory>
 #include <optional>
+#include <string>
 
 namespace xrpl::PeerFinder {
 
@@ -130,14 +135,17 @@ public:
     public:
         explicit RecentT(clock_type& clock);
 
-        /** Called for each valid endpoint received for a slot.
-            We also insert messages that we send to the slot to prevent
-            sending a slot the same address too frequently.
-        */
+        /**
+         * Called for each valid endpoint received for a slot.
+         * We also insert messages that we send to the slot to prevent
+         * sending a slot the same address too frequently.
+         */
         void
         insert(beast::IP::Endpoint const& ep, std::uint32_t hops);
 
-        /** Returns `true` if we should not send endpoint to the slot. */
+        /**
+         * Returns `true` if we should not send endpoint to the slot.
+         */
         bool
         filter(beast::IP::Endpoint const& ep, std::uint32_t hops);
 

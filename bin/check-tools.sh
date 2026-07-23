@@ -90,21 +90,41 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
     check perl
     check pkg-config
     check vim
+    check zip
 
     # These tools are present in our Linux CI images and in local development
     # setups, but not in the macOS CI environment. So check them everywhere
     # except when running in CI on macOS.
     if [ "${os}" = "linux" ] || [ -z "${CI:-}" ]; then
         check clang-format
+        check dot
         check doxygen
         check gcovr
         check gh
         check git-cliff
+        check git-lfs
         check gpg
         # pre-commit, or its alternative implementation prek
         check pre-commit sh -c 'pre-commit --version || prek --version'
         check run-clang-tidy run-clang-tidy --help
     fi
+fi
+
+# Rust toolchain. Part of the Nix commonPackages, so available on both Linux
+# and macOS. The cargo plugins are invoked through cargo (`cargo <sub>`), which
+# resolves the matching `cargo-<sub>` binary on PATH; `--version` is offline and
+# does not need a Cargo project.
+if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
+    echo
+    echo "Rust toolchain:"
+    check cargo
+    check cargo-audit cargo audit --version
+    check cargo-llvm-cov cargo llvm-cov --version
+    check cargo-nextest cargo nextest --version
+    check clippy clippy-driver --version
+    check rust-analyzer
+    check rustc
+    check rustfmt
 fi
 
 # GCC is the default compiler on Linux. macOS uses the system Apple Clang

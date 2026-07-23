@@ -1,16 +1,24 @@
 #pragma once
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/core/StartUpType.h>
-#include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/SociDB.h>
 
 #include <boost/filesystem/path.hpp>
 
+#include <soci/statement.h>
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <memory>
 #include <mutex>
-#include <optional>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace soci {
 class session;

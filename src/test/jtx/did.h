@@ -2,9 +2,17 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/owners.h>
+#include <test/jtx/JTx.h>
 
-/** DID operations. */
+#include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+
+#include <string>
+
+/**
+ * DID operations.
+ */
 namespace xrpl::test::jtx::did {
 
 json::Value
@@ -13,7 +21,9 @@ set(jtx::Account const& account);
 json::Value
 setValid(jtx::Account const& account);
 
-/** Sets the optional DIDDocument on a DIDSet. */
+/**
+ * Sets the optional DIDDocument on a DIDSet.
+ */
 class Document
 {
 private:
@@ -31,7 +41,9 @@ public:
     }
 };
 
-/** Sets the optional URI on a DIDSet. */
+/**
+ * Sets the optional URI on a DIDSet.
+ */
 class Uri
 {
 private:
@@ -49,7 +61,9 @@ public:
     }
 };
 
-/** Sets the optional Data on a DIDSet. */
+/**
+ * Sets the optional Data on a DIDSet.
+ */
 class Data
 {
 private:

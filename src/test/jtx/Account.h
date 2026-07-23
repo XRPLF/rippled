@@ -1,18 +1,22 @@
 #pragma once
 
 #include <xrpl/beast/hash/uhash.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/UintTypes.h>
 
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace xrpl::test::jtx {
 
 class IOU;
 
-/** Immutable cryptographic account descriptor. */
+/**
+ * Immutable cryptographic account descriptor.
+ */
 class Account
 {
 private:
@@ -22,7 +26,9 @@ private:
     };
 
 public:
-    /** The master account. */
+    /**
+     * The master account.
+     */
     static Account const kMaster;
 
     Account() = delete;
@@ -33,7 +39,9 @@ public:
     Account&
     operator=(Account&&) = default;
 
-    /** Create an account from a simple string name. */
+    /**
+     * Create an account from a simple string name.
+     */
     /** @{ */
     Account(std::string name, KeyType type = KeyType::Secp256k1);
 
@@ -48,63 +56,79 @@ public:
 
     /** @} */
 
-    /** Create an Account from an account ID. Should only be used when the
-     * secret key is unavailable, such as for pseudo-accounts. */
+    /**
+     * Create an Account from an account ID. Should only be used when the
+     * secret key is unavailable, such as for pseudo-accounts.
+     */
     explicit Account(std::string name, AccountID const& id);
 
     enum class AcctStringType { Base58Seed, Other };
-    /** Create an account from a base58 seed string.  Throws on invalid seed. */
+    /**
+     * Create an account from a base58 seed string.  Throws on invalid seed.
+     */
     Account(AcctStringType stringType, std::string base58SeedStr);
 
-    /** Return the name */
+    /**
+     * Return the name
+     */
     [[nodiscard]] std::string const&
     name() const
     {
         return name_;
     }
 
-    /** Return the public key. */
+    /**
+     * Return the public key.
+     */
     [[nodiscard]] PublicKey const&
     pk() const
     {
         return pk_;
     }
 
-    /** Return the secret key. */
+    /**
+     * Return the secret key.
+     */
     [[nodiscard]] SecretKey const&
     sk() const
     {
         return sk_;
     }
 
-    /** Returns the Account ID.
-
-        The Account ID is the uint160 hash of the public key.
-    */
+    /**
+     * Returns the Account ID.
+     *
+     * The Account ID is the uint160 hash of the public key.
+     */
     [[nodiscard]] AccountID
     id() const
     {
         return id_;
     }
 
-    /** Returns the human readable public key. */
+    /**
+     * Returns the human readable public key.
+     */
     [[nodiscard]] std::string const&
     human() const
     {
         return human_;
     }
 
-    /** Implicit conversion to AccountID.
-
-        This allows passing an Account
-        where an AccountID is expected.
-    */
+    /**
+     * Implicit conversion to AccountID.
+     *
+     * This allows passing an Account
+     * where an AccountID is expected.
+     */
     operator AccountID() const
     {
         return id_;
     }
 
-    /** Returns an IOU for the specified gateway currency. */
+    /**
+     * Returns an IOU for the specified gateway currency.
+     */
     IOU
     operator[](std::string const& s) const;
 

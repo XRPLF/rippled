@@ -4,14 +4,18 @@
   ...
 }:
 let
-  inherit (import ./packages.nix { inherit pkgs; }) commonPackages;
-  inherit (pkgs) lib;
+  inherit (import ./packages.nix { inherit pkgs; })
+    commonPackages
+    gccPackage
+    gccVersion
+    llvmPackages
+    llvmVersion
+    mkVersionedToolLinks
+    ;
 
-  # Underlying compiler toolchains to wrap. Bump these in one place to
-  # roll the whole environment forward.
-  customGccPackage = pkgs.gcc15;
-  customLlvmPackages = pkgs.llvmPackages_22;
-  customClangMajor = lib.versions.major (lib.getVersion customLlvmPackages.clang-unwrapped);
+  # Underlying compiler toolchains to wrap (versions pinned in packages.nix).
+  customGccPackage = gccPackage;
+  customLlvmPackages = llvmPackages;
 
   # binutils wrapped to emit binaries that reference the custom glibc
   # (dynamic linker path, library search path, RPATH).
@@ -90,7 +94,7 @@ let
     extraBuildCommands = ''
       rsrc="$out/resource-root"
       mkdir "$rsrc"
-      ln -s "${customLlvmPackages.clang-unwrapped.lib}/lib/clang/${customClangMajor}/include" "$rsrc/include"
+      ln -s "${customLlvmPackages.clang-unwrapped.lib}/lib/clang/${toString llvmVersion}/include" "$rsrc/include"
       ln -s "${customCompilerRt.out}/lib" "$rsrc/lib"
       ln -s "${customCompilerRt.out}/share" "$rsrc/share" || true
       echo "-resource-dir=$rsrc" >> $out/nix-support/cc-cflags
@@ -125,6 +129,25 @@ in
       customGcov
       customClangForCiEnv
       customBinutils
+      (mkVersionedToolLinks {
+        name = "gcc";
+        package = customGcc;
+        version = gccVersion;
+        tools = [
+          "gcc"
+          "g++"
+          "cpp"
+        ];
+      })
+      (mkVersionedToolLinks {
+        name = "clang";
+        package = customClang;
+        version = llvmVersion;
+        tools = [
+          "clang"
+          "clang++"
+        ];
+      })
       # CA certificate bundle so HTTPS clients (git, curl, conan) can verify
       # TLS connections without ca-certificates being installed in the system.
       pkgs.cacert
