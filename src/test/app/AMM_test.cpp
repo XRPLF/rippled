@@ -2293,8 +2293,9 @@ private:
         // ePrice = lptAMMBalance(100) * f(0.001) / amountBalance(100) = 0.001
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                auto const err =
-                    env.enabled(fixCleanup3_3_0) ? Ter(tecAMM_FAILED) : Ter(tefEXCEPTION);
+                auto const err = env.enabled(fixCleanup3_3_0) || env.enabled(fixCleanup3_4_0)
+                    ? Ter(tecAMM_FAILED)
+                    : Ter(tefEXCEPTION);
                 ammAlice.withdraw(
                     WithdrawArg{
                         .account = alice_,
@@ -2305,7 +2306,7 @@ private:
             {{USD(100), EUR(100)}},
             1000,
             std::nullopt,
-            {all - fixCleanup3_3_0, all});
+            {all - fixCleanup3_3_0 - fixCleanup3_4_0, all - fixCleanup3_4_0, all});
     }
 
     void
