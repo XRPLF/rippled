@@ -21,7 +21,7 @@ set_target_properties(
 )
 # Lets test sources include the shared helpers as <helpers/...>.
 target_include_directories(xrpl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(xrpl_tests PRIVATE GTest::gtest xrpl.libxrpl)
+target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
 
 # One source subdirectory per module. Network unit tests are currently not
 # supported on Windows.
@@ -29,6 +29,7 @@ set(test_modules
     basics
     crypto
     json
+    peerfinder
     resource
     shamap
     tx

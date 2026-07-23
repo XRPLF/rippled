@@ -1,11 +1,4 @@
-#include <xrpld/peerfinder/PeerfinderManager.h>
-
-#include <xrpld/peerfinder/Slot.h>
-#include <xrpld/peerfinder/detail/Checker.h>
-#include <xrpld/peerfinder/detail/Logic.h>
-#include <xrpld/peerfinder/detail/SlotImp.h>
-#include <xrpld/peerfinder/detail/SourceStrings.h>
-#include <xrpld/peerfinder/detail/StoreSqdb.h>
+#include <xrpl/peerfinder/PeerfinderManager.h>
 
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Gauge.h>
@@ -13,7 +6,15 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
-#include <xrpl/config/BasicConfig.h>
+#include <xrpl/peerfinder/Config.h>
+#include <xrpl/peerfinder/Slot.h>
+#include <xrpl/peerfinder/Types.h>
+#include <xrpl/peerfinder/detail/Checker.h>
+#include <xrpl/peerfinder/detail/Logic.h>
+#include <xrpl/peerfinder/detail/SlotImp.h>
+#include <xrpl/peerfinder/detail/SourceStrings.h>
+#include <xrpl/peerfinder/detail/Store.h>
+#include <xrpl/peerfinder/make_Manager.h>
 #include <xrpl/protocol/PublicKey.h>
 
 #include <boost/asio/executor_work_guard.hpp>
@@ -38,10 +39,9 @@ public:
     std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     clock_type& clock_;
     beast::Journal journal_;
-    StoreSqdb store_;
+    Store& store_;
     Checker<boost::asio::ip::tcp> checker_;
     Logic<decltype(checker_)> logic_;
-    BasicConfig const& config_;
     // NOLINTEND(readability-identifier-naming)
 
     //--------------------------------------------------------------------------
@@ -50,16 +50,15 @@ public:
         boost::asio::io_context& ioContext,
         clock_type& clock,
         beast::Journal journal,
-        BasicConfig const& config,
+        Store& store,
         beast::insight::Collector::ptr const& collector)
         : io_context_(ioContext)
         , work_(std::in_place, boost::asio::make_work_guard(io_context_))
         , clock_(clock)
         , journal_(journal)
-        , store_(journal)
+        , store_(store)
         , checker_(io_context_)
         , logic_(clock, store_, checker_, journal)
-        , config_(config)
         , stats_([this] { collectMetrics(); }, collector)
     {
     }
@@ -206,7 +205,6 @@ public:
     void
     start() override
     {
-        store_.open(config_);
         logic_.load();
     }
 
@@ -261,10 +259,10 @@ makeManager(
     boost::asio::io_context& ioContext,
     clock_type& clock,
     beast::Journal journal,
-    BasicConfig const& config,
+    Store& store,
     beast::insight::Collector::ptr const& collector)
 {
-    return std::make_unique<ManagerImp>(ioContext, clock, journal, config, collector);
+    return std::make_unique<ManagerImp>(ioContext, clock, journal, store, collector);
 }
 
 }  // namespace xrpl::PeerFinder

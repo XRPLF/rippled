@@ -1,11 +1,11 @@
 #pragma once
 
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/detail/Store.h>
-
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/peerfinder/Types.h>
+#include <xrpl/peerfinder/detail/Store.h>
+#include <xrpl/peerfinder/detail/Tuning.h>
 
 #include <boost/bimap.hpp>
 #include <boost/bimap/multiset_of.hpp>

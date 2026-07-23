@@ -133,6 +133,12 @@ target_link_libraries(
 add_module(xrpl resource)
 target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
 
+add_module(xrpl peerfinder)
+target_link_libraries(
+    xrpl.libxrpl.peerfinder
+    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.protocol
+)
+
 # Level 08
 add_module(xrpl net)
 target_link_libraries(
@@ -227,6 +233,7 @@ target_link_modules(
     ledger
     net
     nodestore
+    peerfinder
     protocol
     protocol_autogen
     rdb

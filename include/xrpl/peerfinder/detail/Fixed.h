@@ -1,7 +1,7 @@
 #pragma once
 
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/detail/Tuning.h>
+#include <xrpl/peerfinder/Types.h>
+#include <xrpl/peerfinder/detail/Tuning.h>
 
 #include <algorithm>
 #include <chrono>

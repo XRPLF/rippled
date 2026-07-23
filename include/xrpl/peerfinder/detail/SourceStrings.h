@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpld/peerfinder/detail/Source.h>
+#include <xrpl/peerfinder/detail/Source.h>
 
 #include <memory>
 #include <string>

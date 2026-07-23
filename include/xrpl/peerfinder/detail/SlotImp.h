@@ -1,10 +1,9 @@
 #pragma once
 
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/Slot.h>
-
 #include <xrpl/beast/container/aged_unordered_map.h>
 #include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/peerfinder/Slot.h>
+#include <xrpl/peerfinder/Types.h>
 #include <xrpl/protocol/PublicKey.h>
 
 #include <atomic>
@@ -172,7 +171,7 @@ private:
     std::optional<beast::IP::Endpoint> localEndpoint_;
     std::optional<PublicKey> publicKey_;
 
-    static constexpr std::int32_t kUnknownPort = -1;
+    static std::int32_t constexpr kUnknownPort = -1;
     std::atomic<std::int32_t> listeningPort_;
 
 public:

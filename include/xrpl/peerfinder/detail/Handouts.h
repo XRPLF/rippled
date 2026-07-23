@@ -1,12 +1,11 @@
 #pragma once
 
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/detail/SlotImp.h>
-#include <xrpld/peerfinder/detail/Tuning.h>
-
 #include <xrpl/beast/container/aged_set.h>
 #include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/peerfinder/Types.h>
+#include <xrpl/peerfinder/detail/SlotImp.h>
+#include <xrpl/peerfinder/detail/Tuning.h>
 
 #include <algorithm>
 #include <cstddef>

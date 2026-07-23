@@ -1,11 +1,10 @@
 #pragma once
 
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/Slot.h>
-#include <xrpld/peerfinder/detail/Tuning.h>
-
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/peerfinder/Config.h>
+#include <xrpl/peerfinder/Slot.h>
+#include <xrpl/peerfinder/detail/Tuning.h>
 
 #include <cstddef>
 #include <sstream>

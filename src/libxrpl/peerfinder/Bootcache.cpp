@@ -1,19 +1,19 @@
-#include <xrpld/peerfinder/detail/Bootcache.h>
-
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/detail/Store.h>
-#include <xrpld/peerfinder/detail/Tuning.h>
-#include <xrpld/peerfinder/detail/iosformat.h>
+#include <xrpl/peerfinder/detail/Bootcache.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/peerfinder/Types.h>
+#include <xrpl/peerfinder/detail/Store.h>
+#include <xrpl/peerfinder/detail/Tuning.h>
 
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <iomanip>
+#include <ios>
 #include <vector>
 
 namespace xrpl::PeerFinder {
@@ -82,13 +82,14 @@ Bootcache::load()
         auto const result(this->map_.insert(value_type(endpoint, valence)));
         if (!result.second)
         {
-            JLOG(this->journal_.error()) << beast::Leftw(18) << "Bootcache discard " << endpoint;
+            JLOG(this->journal_.error())
+                << std::left << std::setw(18) << "Bootcache discard " << endpoint;
         }
     }));
 
     if (n > 0)
     {
-        JLOG(journal_.info()) << beast::Leftw(18) << "Bootcache loaded " << n
+        JLOG(journal_.info()) << std::left << std::setw(18) << "Bootcache loaded " << n
                               << ((n > 1) ? " addresses" : " address");
         prune();
     }
@@ -100,7 +101,7 @@ Bootcache::insert(beast::IP::Endpoint const& endpoint)
     auto const result(map_.insert(value_type(endpoint, 0)));
     if (result.second)
     {
-        JLOG(journal_.trace()) << beast::Leftw(18) << "Bootcache insert " << endpoint;
+        JLOG(journal_.trace()) << std::left << std::setw(18) << "Bootcache insert " << endpoint;
         prune();
         flagForUpdate();
     }
@@ -121,7 +122,7 @@ Bootcache::insertStatic(beast::IP::Endpoint const& endpoint)
 
     if (result.second)
     {
-        JLOG(journal_.trace()) << beast::Leftw(18) << "Bootcache insert " << endpoint;
+        JLOG(journal_.trace()) << std::left << std::setw(18) << "Bootcache insert " << endpoint;
         prune();
         flagForUpdate();
     }
@@ -146,8 +147,9 @@ Bootcache::onSuccess(beast::IP::Endpoint const& endpoint)
         XRPL_ASSERT(result.second, "xrpl::PeerFinder::Bootcache::onSuccess : endpoint inserted");
     }
     Entry const& entry(result.first->right);
-    JLOG(journal_.info()) << beast::Leftw(18) << "Bootcache connect " << endpoint << " with "
-                          << entry.valence() << ((entry.valence() > 1) ? " successes" : " success");
+    JLOG(journal_.info()) << std::left << std::setw(18) << "Bootcache connect " << endpoint
+                          << " with " << entry.valence()
+                          << ((entry.valence() > 1) ? " successes" : " success");
     flagForUpdate();
 }
 
@@ -170,8 +172,8 @@ Bootcache::onFailure(beast::IP::Endpoint const& endpoint)
     }
     Entry const& entry(result.first->right);
     auto const n(std::abs(entry.valence()));
-    JLOG(journal_.debug()) << beast::Leftw(18) << "Bootcache failed " << endpoint << " with " << n
-                           << ((n > 1) ? " attempts" : " attempt");
+    JLOG(journal_.debug()) << std::left << std::setw(18) << "Bootcache failed " << endpoint
+                           << " with " << n << ((n > 1) ? " attempts" : " attempt");
     flagForUpdate();
 }
 
@@ -209,17 +211,19 @@ Bootcache::prune()
     // Work backwards because bimap doesn't handle
     // erasing using a reverse iterator very well.
     //
-    for (auto iter(map_.right.end()); count-- > 0 && iter != map_.right.begin(); ++pruned)
+    for (auto iter(map_.right.end()); count > 0 && iter != map_.right.begin(); ++pruned)
     {
+        --count;
         --iter;
         beast::IP::Endpoint const& endpoint(iter->get_left());
         Entry const& entry(iter->get_right());
-        JLOG(journal_.trace()) << beast::Leftw(18) << "Bootcache pruned" << endpoint
+        JLOG(journal_.trace()) << std::left << std::setw(18) << "Bootcache pruned" << endpoint
                                << " at valence " << entry.valence();
         iter = map_.right.erase(iter);
     }
 
-    JLOG(journal_.debug()) << beast::Leftw(18) << "Bootcache pruned " << pruned << " entries total";
+    JLOG(journal_.debug()) << std::left << std::setw(18) << "Bootcache pruned " << pruned
+                           << " entries total";
 }
 
 // Updates the Store with the current set of entries if needed.

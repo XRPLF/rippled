@@ -1,9 +1,5 @@
 #pragma once
 
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/detail/Tuning.h>
-#include <xrpld/peerfinder/detail/iosformat.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/container/aged_map.h>
@@ -12,6 +8,8 @@
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/utility/maybe_const.h>
+#include <xrpl/peerfinder/Types.h>
+#include <xrpl/peerfinder/detail/Tuning.h>
 
 #include <boost/intrusive/list.hpp>
 #include <boost/iterator/transform_iterator.hpp>
@@ -22,6 +20,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <iomanip>
+#include <ios>
 #include <iterator>
 #include <memory>
 #include <sstream>
@@ -411,7 +411,7 @@ Livecache<Allocator>::expire()
     }
     if (n > 0)
     {
-        JLOG(journal_.debug()) << beast::Leftw(18) << "Livecache expired " << n
+        JLOG(journal_.debug()) << std::left << std::setw(18) << "Livecache expired " << n
                                << ((n > 1) ? " entries" : " entry");
     }
 }
@@ -434,7 +434,7 @@ Livecache<Allocator>::insert(Endpoint const& ep)
     if (result.second)
     {
         hops.insert(e);
-        JLOG(journal_.debug()) << beast::Leftw(18) << "Livecache insert " << ep.address
+        JLOG(journal_.debug()) << std::left << std::setw(18) << "Livecache insert " << ep.address
                                << " at hops " << ep.hops;
         return;
     }
@@ -442,7 +442,7 @@ Livecache<Allocator>::insert(Endpoint const& ep)
     {
         // Drop duplicates at higher hops
         std::size_t const excess(ep.hops - e.endpoint.hops);
-        JLOG(journal_.trace()) << beast::Leftw(18) << "Livecache drop " << ep.address
+        JLOG(journal_.trace()) << std::left << std::setw(18) << "Livecache drop " << ep.address
                                << " at hops +" << excess;
         return;
     }
@@ -453,12 +453,12 @@ Livecache<Allocator>::insert(Endpoint const& ep)
     if (ep.hops < e.endpoint.hops)
     {
         hops.reinsert(e, ep.hops);
-        JLOG(journal_.debug()) << beast::Leftw(18) << "Livecache update " << ep.address
+        JLOG(journal_.debug()) << std::left << std::setw(18) << "Livecache update " << ep.address
                                << " at hops " << ep.hops;
     }
     else
     {
-        JLOG(journal_.trace()) << beast::Leftw(18) << "Livecache refresh " << ep.address
+        JLOG(journal_.trace()) << std::left << std::setw(18) << "Livecache refresh " << ep.address
                                << " at hops " << ep.hops;
     }
 }

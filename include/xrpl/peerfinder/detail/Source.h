@@ -1,8 +1,7 @@
 #pragma once
 
-#include <xrpld/peerfinder/PeerfinderManager.h>
-
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/peerfinder/Types.h>
 
 #include <boost/system/error_code.hpp>
 

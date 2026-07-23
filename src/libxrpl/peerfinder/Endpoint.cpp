@@ -1,7 +1,5 @@
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/detail/Tuning.h>
-
 #include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/peerfinder/Types.h>
 
 #include <algorithm>
 #include <cstdint>

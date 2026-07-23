@@ -1,17 +1,5 @@
 #pragma once
 
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/Slot.h>
-#include <xrpld/peerfinder/detail/Bootcache.h>
-#include <xrpld/peerfinder/detail/Counts.h>
-#include <xrpld/peerfinder/detail/Fixed.h>
-#include <xrpld/peerfinder/detail/Handouts.h>
-#include <xrpld/peerfinder/detail/Livecache.h>
-#include <xrpld/peerfinder/detail/SlotImp.h>
-#include <xrpld/peerfinder/detail/Source.h>
-#include <xrpld/peerfinder/detail/Store.h>
-#include <xrpld/peerfinder/detail/iosformat.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
@@ -22,18 +10,34 @@
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/peerfinder/Config.h>
+#include <xrpl/peerfinder/Slot.h>
+#include <xrpl/peerfinder/Types.h>
+#include <xrpl/peerfinder/detail/Bootcache.h>
+#include <xrpl/peerfinder/detail/Counts.h>
+#include <xrpl/peerfinder/detail/Fixed.h>
+#include <xrpl/peerfinder/detail/Handouts.h>
+#include <xrpl/peerfinder/detail/Livecache.h>
+#include <xrpl/peerfinder/detail/SlotImp.h>
+#include <xrpl/peerfinder/detail/Source.h>
+#include <xrpl/peerfinder/detail/Store.h>
 #include <xrpl/protocol/PublicKey.h>
+
+#include <boost/asio/error.hpp>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <iomanip>
+#include <ios>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <set>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <tuple>
 #include <utility>
@@ -197,8 +201,8 @@ public:
 
             if (result.second)
             {
-                JLOG(journal.debug())
-                    << beast::Leftw(18) << "Logic add fixed '" << name << "' at " << remoteAddress;
+                JLOG(journal.debug()) << std::left << std::setw(18) << "Logic add fixed '" << name
+                                      << "' at " << remoteAddress;
                 return;
             }
         }
@@ -221,7 +225,7 @@ public:
         if (iter == slots.end())
         {
             // The slot disconnected before we finished the check
-            JLOG(journal.debug()) << beast::Leftw(18) << "Logic tested " << checkedAddress
+            JLOG(journal.debug()) << std::left << std::setw(18) << "Logic tested " << checkedAddress
                                   << " but the connection was closed";
             return;
         }
@@ -255,7 +259,7 @@ public:
         beast::IP::Endpoint const& localEndpoint,
         beast::IP::Endpoint const& remoteEndpoint)
     {
-        JLOG(journal.debug()) << beast::Leftw(18) << "Logic accept" << remoteEndpoint
+        JLOG(journal.debug()) << std::left << std::setw(18) << "Logic accept" << remoteEndpoint
                               << " on local " << localEndpoint;
 
         std::scoped_lock const _(lock);
@@ -266,7 +270,7 @@ public:
             auto const count = connectedAddresses.count(remoteEndpoint.address());
             if (count + 1 > config_.ipLimit)
             {
-                JLOG(journal.debug()) << beast::Leftw(18) << "Logic dropping inbound "
+                JLOG(journal.debug()) << std::left << std::setw(18) << "Logic dropping inbound "
                                       << remoteEndpoint << " because of ip limits.";
                 return {SlotImp::ptr(), Result::IpLimitExceeded};
             }
@@ -275,8 +279,8 @@ public:
         // Check for duplicate connection
         if (slots.contains(remoteEndpoint))
         {
-            JLOG(journal.debug()) << beast::Leftw(18) << "Logic dropping " << remoteEndpoint
-                                  << " as duplicate incoming";
+            JLOG(journal.debug()) << std::left << std::setw(18) << "Logic dropping "
+                                  << remoteEndpoint << " as duplicate incoming";
             return {SlotImp::ptr(), Result::DuplicatePeer};
         }
 
@@ -304,15 +308,15 @@ public:
     std::pair<SlotImp::ptr, Result>
     newOutboundSlot(beast::IP::Endpoint const& remoteEndpoint)
     {
-        JLOG(journal.debug()) << beast::Leftw(18) << "Logic connect " << remoteEndpoint;
+        JLOG(journal.debug()) << std::left << std::setw(18) << "Logic connect " << remoteEndpoint;
 
         std::scoped_lock const _(lock);
 
         // Check for duplicate connection
         if (slots.contains(remoteEndpoint))
         {
-            JLOG(journal.debug()) << beast::Leftw(18) << "Logic dropping " << remoteEndpoint
-                                  << " as duplicate connect";
+            JLOG(journal.debug()) << std::left << std::setw(18) << "Logic dropping "
+                                  << remoteEndpoint << " as duplicate connect";
             return {SlotImp::ptr(), Result::DuplicatePeer};
         }
 
@@ -506,15 +510,15 @@ public:
 
             if (!h.list().empty())
             {
-                JLOG(journal.debug())
-                    << beast::Leftw(18) << "Logic connect " << h.list().size() << " fixed";
+                JLOG(journal.debug()) << std::left << std::setw(18) << "Logic connect "
+                                      << h.list().size() << " fixed";
                 return h.list();
             }
 
             if (counts_.attempts() > 0)
             {
-                JLOG(journal.debug())
-                    << beast::Leftw(18) << "Logic waiting on " << counts_.attempts() << " attempts";
+                JLOG(journal.debug()) << std::left << std::setw(18) << "Logic waiting on "
+                                      << counts_.attempts() << " attempts";
                 return none;
             }
         }
@@ -535,14 +539,14 @@ public:
             if (!h.list().empty())
             {
                 JLOG(journal.debug())
-                    << beast::Leftw(18) << "Logic connect " << h.list().size() << " live "
+                    << std::left << std::setw(18) << "Logic connect " << h.list().size() << " live "
                     << ((h.list().size() > 1) ? "endpoints" : "endpoint");
                 return h.list();
             }
             if (counts_.attempts() > 0)
             {
-                JLOG(journal.debug())
-                    << beast::Leftw(18) << "Logic waiting on " << counts_.attempts() << " attempts";
+                JLOG(journal.debug()) << std::left << std::setw(18) << "Logic waiting on "
+                                      << counts_.attempts() << " attempts";
                 return none;
             }
         }
@@ -568,8 +572,9 @@ public:
 
         if (!h.list().empty())
         {
-            JLOG(journal.debug()) << beast::Leftw(18) << "Logic connect " << h.list().size()
-                                  << " boot " << ((h.list().size() > 1) ? "addresses" : "address");
+            JLOG(journal.debug()) << std::left << std::setw(18) << "Logic connect "
+                                  << h.list().size() << " boot "
+                                  << ((h.list().size() > 1) ? "addresses" : "address");
             return h.list();
         }
 
@@ -689,8 +694,8 @@ public:
             // Enforce hop limit
             if (ep.hops > Tuning::kMaxHops)
             {
-                JLOG(journal.debug()) << beast::Leftw(18) << "Endpoints drop " << ep.address
-                                      << " for excess hops " << ep.hops;
+                JLOG(journal.debug()) << std::left << std::setw(18) << "Endpoints drop "
+                                      << ep.address << " for excess hops " << ep.hops;
                 iter = list.erase(iter);
                 continue;
             }
@@ -706,18 +711,18 @@ public:
                 }
                 else
                 {
-                    JLOG(journal.debug())
-                        << beast::Leftw(18) << "Endpoints drop " << ep.address << " for extra self";
+                    JLOG(journal.debug()) << std::left << std::setw(18) << "Endpoints drop "
+                                          << ep.address << " for extra self";
                     iter = list.erase(iter);
                     continue;
                 }
             }
 
             // Discard invalid addresses
-            if (config_.verifyEndpoints && !isValidAddress(ep.address))
+            if (!isValidAddress(ep.address))
             {
-                JLOG(journal.debug())
-                    << beast::Leftw(18) << "Endpoints drop " << ep.address << " as invalid";
+                JLOG(journal.debug()) << std::left << std::setw(18) << "Endpoints drop "
+                                      << ep.address << " as invalid";
                 iter = list.erase(iter);
                 continue;
             }
@@ -727,8 +732,8 @@ public:
                     return ep.address == other.address;
                 }))
             {
-                JLOG(journal.debug())
-                    << beast::Leftw(18) << "Endpoints drop " << ep.address << " as duplicate";
+                JLOG(journal.debug()) << std::left << std::setw(18) << "Endpoints drop "
+                                      << ep.address << " as duplicate";
                 iter = list.erase(iter);
                 continue;
             }
@@ -1074,13 +1079,13 @@ public:
         if (!results.error)
         {
             int const count(addBootcacheAddresses(results.addresses));
-            JLOG(journal.info()) << beast::Leftw(18) << "Logic added " << count << " new "
+            JLOG(journal.info()) << std::left << std::setw(18) << "Logic added " << count << " new "
                                  << ((count == 1) ? "address" : "addresses") << " from "
                                  << source->name();
         }
         else
         {
-            JLOG(journal.error()) << beast::Leftw(18) << "Logic failed "
+            JLOG(journal.error()) << std::left << std::setw(18) << "Logic failed "
                                   << "'" << source->name() << "' fetch, "
                                   << results.error.message();
         }
@@ -1097,8 +1102,6 @@ public:
     isValidAddress(beast::IP::Endpoint const& address)
     {
         if (isUnspecified(address))
-            return false;
-        if (isLoopback(address))
             return false;
         if (!isPublic(address))
             return false;
@@ -1221,8 +1224,8 @@ Logic<Checker>::onRedirects(
         bootcache.insert(beast::IPAddressConversion::fromAsio(*first));
     if (n > 0)
     {
-        JLOG(journal.trace()) << beast::Leftw(18) << "Logic add " << n << " redirect IPs from "
-                              << remoteAddress;
+        JLOG(journal.trace()) << std::left << std::setw(18) << "Logic add " << n
+                              << " redirect IPs from " << remoteAddress;
     }
 }
 
