@@ -562,8 +562,7 @@ RCLConsensus::Adaptor::doAccept(
     // (and any spans created here) correlate to it. Non-owning: acceptSpan still
     // owns/ends the span. doAccept runs to completion on the JtAccept worker
     // (no coroutine yield), so this scope is thread-local and safe.
-    auto acceptActivation =
-        (acceptSpan && *acceptSpan) ? acceptSpan->activate() : telemetry::ScopedActivation{};
+    auto acceptActivation = telemetry::activateIfLive(acceptSpan);
 
     prevProposers_ = result.proposers;
     prevRoundTime_ = result.roundTime.read();

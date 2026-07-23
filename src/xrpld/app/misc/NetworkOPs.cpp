@@ -1649,8 +1649,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             // Non-owning: the span is still owned/ended by e.span. Scoped to
             // one loop iteration, so each tx's span is ambient only for its
             // own processing. No yield in this loop.
-            auto txActivation =
-                (e.span && *e.span) ? e.span->activate() : telemetry::ScopedActivation{};
+            auto txActivation = telemetry::activateIfLive(e.span);
 
             if (e.span && *e.span)
             {
