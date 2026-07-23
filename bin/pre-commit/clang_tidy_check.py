@@ -168,7 +168,19 @@ def main():
     if not os.environ.get("TIDY"):
         return 0
 
-    repo_root = Path(__file__).parent.parent
+    # Derive the repo root from git so this keeps working regardless of where
+    # under the tree this script lives. Fall back to the script location
+    # (bin/pre-commit/ is two levels below the repo root) if git is unavailable.
+    result = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+        cwd=Path(__file__).parent,
+    )
+    if result.returncode == 0:
+        repo_root = Path(result.stdout.strip())
+    else:
+        repo_root = Path(__file__).parent.parent.parent
     files = staged_files(repo_root)
     if not files:
         return 0

@@ -1,8 +1,10 @@
 #include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx/Env.h>
+#include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/HostFunc.h>
@@ -225,6 +227,36 @@ struct Wasm_test : public beast::unit_test::Suite
         // if (res) printf("invokeAdd get the result: %d\n", res.value());
 
         checkResult(re, 6'912, 59);
+    }
+
+    void
+    testVersion()
+    {
+        testcase("wasm module test");
+        // wat2wasm --enable-annotations mymodule.wat -o mymodule.wasm
+        // xxd -p mymodule.wasm | tr -d '\n'
+        static auto const kWasmModule = hexToBytes(
+            "0061736d010000000105016000017f03020100040401700000070a010666696e69736800000a0601040041"
+            "010b00201a7872706c2d657363726f772d7374646c69622d76657273696f6e342e352e3600201a7872706c"
+            "2d636f6d6d6f6e2d7374646c69622d76657273696f6e312e322e33");
+
+        StreamSink sink{beast::Severity::Debug};
+        beast::Journal const journal{sink};
+
+        auto& vm = WasmEngine::instance();
+
+        auto hfs = HostFunctions{};
+        auto imports = ImportVec{};
+        WasmImpFunc<Add_proto>(imports, "func-add", reinterpret_cast<void*>(&add), &hfs);
+
+        [[maybe_unused]] auto result =
+            vm.run(kWasmModule, hfs, 10'000'000, "finish", wasmParams(), imports, journal);
+
+        auto const logged = sink.messages().str();
+        BEAST_EXPECT(
+            logged.find("Module version: xrpl-escrow-stdlib-version 4.5.6") != std::string::npos);
+        BEAST_EXPECT(
+            logged.find("Module version: xrpl-common-stdlib-version 1.2.3") != std::string::npos);
     }
 
     void
@@ -1548,6 +1580,8 @@ struct Wasm_test : public beast::unit_test::Suite
     run() override
     {
         using namespace test::jtx;
+
+        testVersion();
 
         testGetDataHelperFunctions();
         testWasmLib();

@@ -21,6 +21,7 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -277,7 +278,7 @@ InstanceWrapper::setGas(std::int64_t gas) const
 ModulePtr
 ModuleWrapper::init(StorePtr& s, Bytes const& wasmBin, beast::Journal j)
 {
-    wasm_byte_vec_t const code{wasmBin.size(), (char*)(wasmBin.data())};
+    wasm_byte_vec_t const code{.size = wasmBin.size(), .data = (char*)(wasmBin.data())};
     ModulePtr m = ModulePtr(wasm_module_new(s.get(), &code), &wasm_module_delete);
     if (!m)
         throw std::runtime_error("can't create module");
@@ -711,8 +712,8 @@ WasmiResult
 WasmiEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in)
 {
     WasmiResult ret(NR);
-    wasm_val_vec_t const inv =
-        in.empty() ? wasm_val_vec_t WASM_EMPTY_VEC : wasm_val_vec_t{in.size(), in.data()};
+    wasm_val_vec_t const inv = in.empty() ? wasm_val_vec_t WASM_EMPTY_VEC
+                                          : wasm_val_vec_t{.size = in.size(), .data = in.data()};
 
 #ifdef SHOW_CALL_TIME
     auto const start = usecs();
@@ -799,6 +800,134 @@ WasmiEngine::run(
     return Unexpected<TER>(tecFAILED_PROCESSING);
 }
 
+namespace {
+
+struct CustomSection
+{
+    std::string_view name;
+    std::span<char const> payload;
+};
+
+struct Version
+{
+    std::string_view name;
+    std::string_view version;
+
+    Version(std::string_view theName, std::string_view theVersion)
+        : name{theName}, version{theVersion}
+    {
+    }
+};
+
+uint32_t
+readLEB128(Bytes const& wasmCode, size_t& offset)
+{
+    auto result = uint32_t{};
+    auto shift = uint32_t{};
+    while (offset < wasmCode.size())
+    {
+        auto byte = wasmCode[offset++];
+        result |= static_cast<uint32_t>(byte & (shift < 28 ? 0x7Fu : 0x0Fu)) << shift;
+        if ((byte & 0x80) == 0)
+        {
+            break;
+        }
+        shift += 7;
+        if (shift >= 32)
+        {
+            // Drain the rest of the bytes for this leb.
+            while (offset < wasmCode.size())
+            {
+                if ((wasmCode[offset++] & 0x80) == 0)
+                {
+                    break;
+                }
+            }
+            break;
+        }
+    }
+    return result;
+}
+
+template <typename Filter>
+void
+filterCustomSections(Bytes const& wasmCode, Filter&& filter)
+{
+    auto offset = size_t{8};  // Skip Magic number and Version
+
+    if (wasmCode.size() <= offset)
+    {
+        // There is nothing to parse.
+        return;
+    }
+
+    while (offset < wasmCode.size())
+    {
+        auto sectionId = wasmCode[offset++];
+        auto sectionSize = readLEB128(wasmCode, offset);
+        auto nextSection = offset + sectionSize;
+
+        if (nextSection > wasmCode.size())
+        {
+            break;
+        }
+
+        if (sectionId == 0)
+        {
+            // Wasm custom section marker.
+            auto customSection = CustomSection{};
+            auto size = readLEB128(wasmCode, offset);
+
+            if (offset + size > wasmCode.size() || offset + size > nextSection)
+            {
+                return;
+            }
+
+            customSection.name =
+                std::string_view{reinterpret_cast<char const*>(wasmCode.data()) + offset, size};
+            offset += size;
+
+            if (offset >= nextSection)
+            {
+                offset = nextSection;
+                continue;
+            }
+
+            size = nextSection - offset;
+            customSection.payload = std::span<char const>{
+                reinterpret_cast<char const*>(wasmCode.data()) + offset, size};
+
+            if (filter(customSection))
+            {
+                return;
+            }
+        }
+        offset = nextSection;
+    }
+}
+
+std::vector<Version>
+extractVersionInfo(Bytes const& wasmCode)
+{
+    static constexpr auto kCommonLib = "xrpl-common-stdlib-version";
+    static constexpr auto kEscrowLib = "xrpl-escrow-stdlib-version";
+
+    auto versions = std::vector<Version>{};
+    filterCustomSections(wasmCode, [&](auto const& section) {
+        if (section.name == kCommonLib || section.name == kEscrowLib)
+        {
+            versions.emplace_back(
+                section.name, std::string_view{section.payload.data(), section.payload.size()});
+        }
+
+        // Just read until we have found all the information we are looking for.
+        return versions.size() == 2;
+    });
+    return versions;
+}
+
+}  // namespace
+
 Expected<WasmResult<int32_t>, TER>
 WasmiEngine::runHlp(
     Bytes const& wasmCode,
@@ -817,6 +946,11 @@ WasmiEngine::runHlp(
         throw std::runtime_error("empty module");
     if (!hfs.checkSelf())
         throw std::runtime_error("hfs isn't clean");
+
+    for (auto const& version : extractVersionInfo(wasmCode))
+    {
+        j_.debug() << "Module version: " << version.name << " " << version.version;
+    }
 
     // Create and instantiate the module.
     [[maybe_unused]] int const m = addModule(wasmCode, true, imports, gas);
@@ -960,7 +1094,7 @@ wasm_trap_t*
 WasmiEngine::newTrap(std::string const& txt)
 {
     static char empty[1] = {0};
-    wasm_message_t msg = {1, empty};
+    wasm_message_t msg = {.size = 1, .data = empty};
 
     if (!txt.empty())
         wasm_name_new(&msg, txt.size() + 1, txt.c_str());  // include 0
