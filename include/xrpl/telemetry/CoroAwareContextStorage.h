@@ -86,6 +86,17 @@ class CoroAwareContextStorage : public opentelemetry::context::RuntimeContextSto
 public:
     CoroAwareContextStorage() = default;
 
+    // Non-copyable and non-movable: the LocalValue store is keyed by the
+    // address of stack_, so copying or moving would mis-key the store and
+    // strand its entries. Only ever new-ed once and installed on the SDK, so
+    // these are for intent/safety rather than a live bug.
+    CoroAwareContextStorage(CoroAwareContextStorage const&) = delete;
+    CoroAwareContextStorage&
+    operator=(CoroAwareContextStorage const&) = delete;
+    CoroAwareContextStorage(CoroAwareContextStorage&&) = delete;
+    CoroAwareContextStorage&
+    operator=(CoroAwareContextStorage&&) = delete;
+
     /**
      * @return the current (top-of-stack) context for this coro/thread.
      */
