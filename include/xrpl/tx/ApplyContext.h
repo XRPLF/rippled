@@ -17,7 +17,6 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
-#include <utility>
 
 namespace xrpl {
 

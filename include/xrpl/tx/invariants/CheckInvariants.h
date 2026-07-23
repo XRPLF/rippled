@@ -8,6 +8,9 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 
+#include <functional>
+#include <optional>
+
 namespace xrpl {
 
 /**
