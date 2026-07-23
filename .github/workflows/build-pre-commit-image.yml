@@ -7,10 +7,12 @@ on:
     paths:
       - ".github/workflows/build-pre-commit-image.yml"
       - "bin/pre-commit/Dockerfile"
+      - "rust-toolchain.toml"
   pull_request:
     paths:
       - ".github/workflows/build-pre-commit-image.yml"
       - "bin/pre-commit/Dockerfile"
+      - "rust-toolchain.toml"
   workflow_dispatch:
 
 concurrency:
@@ -28,7 +30,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@ee03d31bcc4501d7599dc1b1ecd7a34af582ad1c
+    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@9e7e4e80af9e684c116b38369add8eea64451f32
     with:
       image_name: xrpld/pre-commit
       dockerfile: bin/pre-commit/Dockerfile
