@@ -1,3 +1,4 @@
+/*
 #include <expected>
 #ifdef _DEBUG
 // #define DEBUG_OUTPUT 1
@@ -78,32 +79,32 @@ struct Wasm_test : public beast::unit_test::Suite
     {
         testcase("wasm lib test");
         // clang-format off
-        /* The WASM module buffer. */
-        Bytes const wasm = {/* WASM header */
+        // The WASM module buffer. //
+        Bytes const wasm = {// WASM header //
                           0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00,
-                          /* Type section */
+                          // Type section //
                           0x01, 0x07, 0x01,
-                          /* function type {i32, i32} -> {i32} */
+                          // function type {i32, i32} -> {i32} //
                           0x60, 0x02, 0x7F, 0x7F, 0x01, 0x7F,
-                          /* Import section */
+                          // Import section //
                           0x02, 0x13, 0x01,
-                          /* module name: "extern" */
+                          // module name: "extern" //
                           0x06, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6E,
-                          /* extern name: "func-add" */
+                          // extern name: "func-add" //
                           0x08, 0x66, 0x75, 0x6E, 0x63, 0x2D, 0x61, 0x64, 0x64,
-                          /* import desc: func 0 */
+                          // import desc: func 0 //
                           0x00, 0x00,
-                          /* Function section */
+                          // Function section //
                           0x03, 0x02, 0x01, 0x00,
-                          /* Export section */
+                          // Export section //
                           0x07, 0x0A, 0x01,
-                          /* export name: "addTwo" */
+                          // export name: "addTwo" //
                           0x06, 0x61, 0x64, 0x64, 0x54, 0x77, 0x6F,
-                          /* export desc: func 0 */
+                          // export desc: func 0 //
                           0x00, 0x01,
-                          /* Code section */
+                          // Code section //
                           0x0A, 0x0A, 0x01,
-                          /* code body */
+                          // code body //
                           0x08, 0x00, 0x20, 0x00, 0x20, 0x01, 0x10, 0x00, 0x0B};
         // clang-format on
         auto& vm = WasmEngine::instance();
@@ -467,3 +468,4 @@ struct Wasm_test : public beast::unit_test::Suite
 BEAST_DEFINE_TESTSUITE(Wasm, app, xrpl);
 
 }  // namespace xrpl::test
+*/

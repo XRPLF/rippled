@@ -34,7 +34,6 @@ class Xrpl(ConanFile):
         "nudb/2.0.9",
         "openssl/3.6.3",
         "soci/4.0.3",
-        "wasmi/1.0.9",
         "zlib/1.3.2",
     ]
 
@@ -222,7 +221,6 @@ class Xrpl(ConanFile):
             "soci::soci",
             "secp256k1::secp256k1",
             "sqlite3::sqlite",
-            "wasmi::wasmi",
             "xxhash::xxhash",
             "zlib::zlib",
         ]

@@ -1,3 +1,4 @@
+/*
 #include <xrpl/tx/wasm/WasmiVM.h>
 
 #include <xrpl/basics/contract.h>
@@ -956,3 +957,4 @@ WasmiEngine::newTrap(std::string const& txt)
 }
 
 }  // namespace xrpl
+*/
