@@ -216,6 +216,7 @@ TYPED_SFIELD(sfLoanID,                   UINT256,   38)
 TYPED_SFIELD(sfReferenceHolding,         UINT256,   39)
 TYPED_SFIELD(sfBlindingFactor,           UINT256,   40)
 TYPED_SFIELD(sfObjectID,                 UINT256,   41)
+TYPED_SFIELD(sfProposalID,               UINT256,   42)
 
 // number (common)
 TYPED_SFIELD(sfNumber,                   NUMBER,     1)
@@ -357,6 +358,7 @@ TYPED_SFIELD(sfHighSponsor,              ACCOUNT,   28)
 TYPED_SFIELD(sfLowSponsor,               ACCOUNT,   29)
 TYPED_SFIELD(sfCounterpartySponsor,      ACCOUNT,   30)
 TYPED_SFIELD(sfSponsee,                  ACCOUNT,   31)
+TYPED_SFIELD(sfSigningFor,               ACCOUNT,   32)
 
 // vector of 256-bit
 TYPED_SFIELD(sfIndexes,                  VECTOR256,  1, SField::kSmdNever)

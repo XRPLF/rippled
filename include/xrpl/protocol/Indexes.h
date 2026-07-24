@@ -188,6 +188,27 @@ check(uint256 const& key) noexcept
 /** @} */
 
 /**
+ * A TransactionProposal
+ *
+ * target and ticketSequence are the proposed transaction's Account and
+ * TicketSequence value (a proposed transaction is ticket-only). The owner
+ * (proposer) is deliberately not part of the key: the identity is
+ * (target, ticketSequence) so that the entry can be located — and
+ * automatically deleted — from the target transaction alone when it consumes
+ * that ticket, without knowing who proposed it.
+ */
+/** @{ */
+Keylet
+txProposal(AccountID const& target, std::uint32_t ticketSequence) noexcept;
+
+inline Keylet
+txProposal(uint256 const& key) noexcept
+{
+    return {ltTRANSACTION_PROPOSAL, key};
+}
+/** @} */
+
+/**
  * A DepositPreauth
  */
 /** @{ */
