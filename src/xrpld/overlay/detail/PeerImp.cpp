@@ -1320,6 +1320,12 @@ PeerImp::handleTransaction(
         auto span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
         span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
         span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
+        // The current (open) ledger index when the relayed tx was received —
+        // the ledger being worked on. Correlates this tx.receive to the ledger
+        // trace; not yet applied to a specific ledger here, so no hash.
+        span->setAttribute(
+            tx_span::attr::currentLedgerSeq,
+            static_cast<std::int64_t>(app_.getLedgerMaster().getCurrentLedgerIndex()));
         if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
             span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
         if (auto const version = getVersion(); !version.empty())

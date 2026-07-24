@@ -750,13 +750,35 @@ TxQ::apply(
     OpenView& view,
     std::shared_ptr<STTx const> const& tx,
     ApplyFlags flags,
-    beast::Journal j)
+    beast::Journal j,
+    telemetry::SpanContext const* parentCtx)
 {
     using namespace telemetry;
-    ScopedSpanGuard span(TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::enqueue);
+    // Parent the enqueue span to the caller's tx.process span when a context is
+    // supplied (submission path), using the explicit-context factory: the parent
+    // comes from the captured ctx rather than being inherited from whatever span
+    // is ambient, and this ScopedSpanGuard's scope is RAII-bounded to this fully
+    // synchronous call (no coroutine yield), so no unrelated parent leaks in and
+    // its scope cannot leak out onto a reused worker.
+    // On the open-ledger rebuild path parentCtx is null and this is a root; the
+    // current_ledger_seq attribute below correlates it to the ledger instead.
+    // A lambda (not a ternary) picks the factory: ScopedSpanGuard's move ctor is
+    // deleted, so guaranteed copy elision on each return is the only way to
+    // construct it conditionally.
+    auto span = [&]() -> ScopedSpanGuard {
+        if (parentCtx && parentCtx->isValid())
+            return ScopedSpanGuard::childSpan(txq_span::enqueue, *parentCtx);
+        return ScopedSpanGuard(
+            TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::enqueue);
+    }();
     span.setAttribute(txq_span::attr::txHash, to_string(tx->getTransactionID()).c_str());
     if (auto const* fmt = TxFormats::getInstance().findByType(tx->getTxnType()))
         span.setAttribute(txq_span::attr::txType, fmt->getName().c_str());
+    // The ledger being worked on (open/tentative apply or in-flight consensus
+    // build) — correlates this enqueue to the ledger trace in every context.
+    span.setAttribute(txq_span::attr::currentLedgerSeq, static_cast<std::int64_t>(view.seq()));
+    span.setAttribute(
+        txq_span::attr::currentLedgerHash, to_string(view.header().parentHash).c_str());
     // Default outcome; overridden below on the direct-apply and queued paths.
     // Every other early return leaves the tx rejected from the queue.
     span.setAttribute(txq_span::attr::txqStatus, txq_span::val::rejected);
