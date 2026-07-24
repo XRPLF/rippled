@@ -62,6 +62,10 @@ STNumber::associateAsset(Asset const& a)
         "STNumber::associateAsset",
         "field needs asset");
 
+    if (getFName().shouldMeta(SField::kSmdFullPrecision) &&
+        isFeatureEnabled(*getFName().precisionGateFeature))
+        return;
+
     roundToAsset(a, value_);
 }
 
@@ -81,10 +85,18 @@ STNumber::add(Serializer& s) const
         // asset is defined in the STTakesAsset base class
         if (asset_)
         {
-            // The number should be rounded to the asset's precision, but round
-            // it here if it has an asset assigned.
-            roundToAsset(*asset_, value);
-            XRPL_ASSERT_PARTS(value_ == value, "xrpl::STNumber::add", "value is already rounded");
+            // Fields that opt into full precision (see kSmdFullPrecision) skip the
+            // round-trip once their gating amendment is enabled; associateAsset()
+            // already left value_ unrounded, so there's nothing to redo here.
+            if (!(field.shouldMeta(SField::kSmdFullPrecision) &&
+                  isFeatureEnabled(*field.precisionGateFeature)))
+            {
+                // The number should be rounded to the asset's precision, but round
+                // it here if it has an asset assigned.
+                roundToAsset(*asset_, value);
+                XRPL_ASSERT_PARTS(
+                    value_ == value, "xrpl::STNumber::add", "value is already rounded");
+            }
         }
         else
         {

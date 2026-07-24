@@ -49,8 +49,10 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -3991,6 +3993,78 @@ class Vault_test : public beast::unit_test::Suite
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(400));
             }
         });
+    }
+
+    // sfAssetsTotal is a kSmdNeedsAsset NUMBER field, so any value assigned to
+    // it is rounded to STAmount's 16-significant-digit IOU precision as soon
+    // as associateAsset() runs (at the end of every Vault/Loan transactor's
+    // doApply()). featureLendingProtocolV1_1 lets this specific field skip
+    // that round-trip and keep the raw Number's full precision instead. No
+    // other kSmdNeedsAsset field (AssetsAvailable, LossUnrealized, etc.) is
+    // affected.
+    void
+    testAssetsTotalFullPrecision()
+    {
+        testcase("AssetsTotal full precision behind featureLendingProtocolV1_1");
+
+        using namespace test::jtx;
+
+        // 18 significant digits: more than an IOU STAmount (16 significant
+        // digits) can represent exactly.
+        Number const fullPrecision{123456789012345678LL, -17};
+
+        auto testCase = [&, this](FeatureBitset features, bool expectFullPrecision) {
+            Env env{*this, features};
+
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(1000), issuer, owner);
+            env.close();
+
+            PrettyAsset const asset = issuer["IOU"];
+            env.trust(asset(1000), owner);
+            env(pay(issuer, owner, asset(200)));
+            env.close();
+
+            Vault const vault{env};
+            auto const [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            // Bypass the normal transactor path (which never produces a Number
+            // needing more than STAmount precision) to exercise associateAsset()
+            // directly with a value that does. associateAsset() itself relies on
+            // isFeatureEnabled(), which reads the current-transaction Rules set
+            // by CurrentTransactionRulesGuard during real transaction processing
+            // (see Transactor); replicate that context here.
+            bool const modified =
+                env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) -> bool {
+                    Sandbox sb(&view, TapNone);
+                    auto sle = sb.peek(keylet);
+                    if (!BEAST_EXPECT(sle))
+                        return false;
+                    sle->at(sfAssetsTotal) = fullPrecision;
+                    CurrentTransactionRulesGuard const rulesGuard(view.rules());
+                    associateAsset(*sle, asset.raw());
+                    sb.update(sle);
+                    sb.apply(view);
+                    return true;
+                });
+            BEAST_EXPECT(modified);
+
+            Number const stored = env.le(keylet)->at(sfAssetsTotal);
+            if (expectFullPrecision)
+            {
+                BEAST_EXPECT(stored == fullPrecision);
+            }
+            else
+            {
+                BEAST_EXPECT(stored != fullPrecision);
+            }
+        };
+
+        testCase(testableAmendments() - featureLendingProtocolV1_1, false);
+        testCase(testableAmendments() | featureLendingProtocolV1_1, true);
     }
 
     void
@@ -8312,6 +8386,7 @@ public:
         testNonTransferableShares();
         testFailedPseudoAccount();
         testScaleIOU();
+        testAssetsTotalFullPrecision();
         testRPC();
         testVaultClawbackBurnShares();
         testVaultClawbackAssets();

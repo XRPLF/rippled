@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
 
@@ -128,6 +129,18 @@ fieldCode(int id, int index)
  * is only one instance per fieldType/fieldValue pair which serves the
  * entire application.
  */
+
+// Pairs an SField::kSmd* metadata flag with the amendment that activates it,
+// so the two can never be set independently of each other. Declared outside
+// SField because a nested class's default member initializers cannot be used
+// within the enclosing (still-incomplete) class's own member declarations.
+// See SField::kSmdFullPrecision.
+struct SFieldPrecisionGate
+{
+    int flag = 0;
+    uint256 const* feature = nullptr;
+};
+
 class SField
 {
 public:
@@ -138,16 +151,24 @@ public:
     static constexpr auto kSmdCreate = 0x08;       // value when it's created
     static constexpr auto kSmdAlways = 0x10;   // value when node containing it is affected at all
     static constexpr auto kSmdBaseTen = 0x20;  // value is treated as base 10, overriding behavior
-    static constexpr auto kSmdPseudoAccount = 0x40;  // if this field is set in an ACCOUNT_ROOT
-                                                     // _only_, then it is a pseudo-account
-    static constexpr auto kSmdNeedsAsset = 0x80;     // This field needs to be associated with an
-                                                     // asset before it is serialized as a ledger
-                                                     // object. Intended for STNumber.
+    static constexpr auto kSmdPseudoAccount = 0x40;   // if this field is set in an ACCOUNT_ROOT
+                                                      // _only_, then it is a pseudo-account
+    static constexpr auto kSmdNeedsAsset = 0x80;      // This field needs to be associated with an
+                                                      // asset before it is serialized as a ledger
+                                                      // object. Intended for STNumber.
+    static constexpr auto kSmdFullPrecision = 0x100;  // Paired with a PrecisionGate::feature: this
+                                                      // NUMBER field falls back to raw Number
+                                                      // precision (skips the STAmount round-trip
+                                                      // in roundToAsset()) once that amendment is
+                                                      // enabled. Must be set together with a
+                                                      // non-null PrecisionGate::feature.
     static constexpr auto kSmdDefault =
         kSmdChangeOrig | kSmdChangeNew | kSmdDeleteFinal | kSmdCreate;
 
     enum class IsSigning : unsigned char { No, Yes };
     static IsSigning const kNotSigning = IsSigning::No;
+
+    using PrecisionGate = SFieldPrecisionGate;
 
     int const fieldCodeMem;            // (type<<16)|index // TODO: rename, clashes with function
     SerializedTypeID const fieldType;  // STI_*
@@ -157,6 +178,7 @@ public:
     int const fieldNum;
     IsSigning const signingField;
     json::StaticString const jsonName;
+    uint256 const* const precisionGateFeature;  // non-null iff kSmdFullPrecision is set
 
     SField(SField const&) = delete;
     SField&
@@ -175,7 +197,8 @@ public:
         int fv,
         char const* fn,
         int meta = kSmdDefault,
-        IsSigning signing = IsSigning::Yes);
+        IsSigning signing = IsSigning::Yes,
+        PrecisionGate precisionGate = {.flag = 0, .feature = nullptr});
     explicit SField(PrivateAccessTagT, int fc, char const* fn);
 
     static SField const&

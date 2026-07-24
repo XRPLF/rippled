@@ -221,7 +221,9 @@ TYPED_SFIELD(sfObjectID,                 UINT256,   41)
 TYPED_SFIELD(sfNumber,                   NUMBER,     1)
 TYPED_SFIELD(sfAssetsAvailable,          NUMBER,     2, SField::kSmdNeedsAsset | SField::kSmdDefault)
 TYPED_SFIELD(sfAssetsMaximum,            NUMBER,     3, SField::kSmdNeedsAsset | SField::kSmdDefault)
-TYPED_SFIELD(sfAssetsTotal,              NUMBER,     4, SField::kSmdNeedsAsset | SField::kSmdDefault)
+TYPED_SFIELD(sfAssetsTotal,              NUMBER,     4, SField::kSmdNeedsAsset | SField::kSmdDefault,
+    SField::IsSigning::Yes,
+    (SField::PrecisionGate{.flag = SField::kSmdFullPrecision, .feature = &featureLendingProtocolV1_1}))
 TYPED_SFIELD(sfLossUnrealized,           NUMBER,     5, SField::kSmdNeedsAsset | SField::kSmdDefault)
 TYPED_SFIELD(sfDebtTotal,                NUMBER,     6, SField::kSmdNeedsAsset | SField::kSmdDefault)
 TYPED_SFIELD(sfDebtMaximum,              NUMBER,     7, SField::kSmdNeedsAsset | SField::kSmdDefault)

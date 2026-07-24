@@ -1,6 +1,7 @@
 #include <xrpl/protocol/SField.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Feature.h>
 
 #include <string>
 #include <unordered_map>
@@ -73,15 +74,17 @@ SField::SField(
     int fv,
     char const* fn,
     int meta,
-    IsSigning signing)
+    IsSigning signing,
+    PrecisionGate precisionGate)
     : fieldCodeMem(fieldCode(tid, fv))
     , fieldType(tid)
     , fieldValue(fv)
     , fieldName(fn)
-    , fieldMeta(meta)
+    , fieldMeta(meta | precisionGate.flag)
     , fieldNum(++num)
     , signingField(signing)
     , jsonName(fieldName.c_str())
+    , precisionGateFeature(precisionGate.feature)
 {
     XRPL_ASSERT(
         !knownCodeToField.contains(fieldCodeMem),
@@ -89,6 +92,10 @@ SField::SField(
     XRPL_ASSERT(
         !knownNameToField.contains(fieldName),
         "xrpl::SField::SField(tid,fv,fn,meta,signing) : fieldName is unique");
+    XRPL_ASSERT(
+        (precisionGate.flag != 0) == (precisionGate.feature != nullptr),
+        "xrpl::SField::SField(tid,fv,fn,meta,signing) : PrecisionGate flag and feature are set "
+        "together");
     knownCodeToField[fieldCodeMem] = this;
     knownNameToField[fieldName] = this;
 }
@@ -102,6 +109,7 @@ SField::SField(PrivateAccessTagT, int fc, char const* fn)
     , fieldNum(++num)
     , signingField(IsSigning::Yes)
     , jsonName(fieldName.c_str())
+    , precisionGateFeature(nullptr)
 {
     XRPL_ASSERT(
         !knownCodeToField.contains(fieldCodeMem),
