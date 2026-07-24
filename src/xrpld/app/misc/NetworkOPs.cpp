@@ -1415,6 +1415,12 @@ NetworkOPsImp::processTransaction(
     auto span = std::make_shared<SpanGuard>(txProcessSpan(transaction->getID()));
     span->setAttribute(tx_span::attr::txHash, to_string(transaction->getID()).c_str());
     span->setAttribute(tx_span::attr::local, bLocal);
+    // The current (open) ledger index at submission/relay time — the ledger
+    // being worked on. Correlates this tx.process to the ledger trace; the tx
+    // has not yet been applied to a specific ledger here, so there is no hash.
+    span->setAttribute(
+        tx_span::attr::currentLedgerSeq,
+        static_cast<std::int64_t>(ledgerMaster_.getCurrentLedgerIndex()));
     if (auto const& stx = transaction->getSTransaction())
     {
         if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
@@ -1625,8 +1631,19 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     if (e.failType == FailHard::Yes)
                         flags |= TapFailHard;
 
+                    // Parent the txq.enqueue span to this tx's tx.process span
+                    // via an explicit captured context (the parent is explicit,
+                    // not ambient-inherited). Null on the open-ledger rebuild
+                    // path, where no tx.process span exists.
+                    auto const txProcessCtx =
+                        (e.span && *e.span) ? e.span->spanContext() : telemetry::SpanContext{};
                     auto const result = registry_.get().getTxQ().apply(
-                        registry_.get().getApp(), view, e.transaction->getSTransaction(), flags, j);
+                        registry_.get().getApp(),
+                        view,
+                        e.transaction->getSTransaction(),
+                        flags,
+                        j,
+                        txProcessCtx.isValid() ? &txProcessCtx : nullptr);
                     e.result = result.ter;
                     e.applied = result.applied;
                     changed = changed || result.applied;

@@ -146,6 +146,19 @@ inline constexpr auto closeResolutionMs = makeStr("close_resolution_ms");
  */
 inline constexpr auto ledgerHash = makeStr("ledger_hash");
 inline constexpr auto fullValidation = makeStr("full_validation");
+
+/**
+ * Shared "ledger being worked on" attrs — the open/tentative or in-flight
+ * consensus-build ledger a transaction is applied into, NOT an established or
+ * validated ledger (that is `ledgerSeq`, set on ledger.build / consensus.round).
+ * Named after the RPC field `ledger_current_index` and the `currentLedgerSeq`
+ * log usage. Reused by the tx lifecycle, apply-pipeline, and TxQ spans so a
+ * transaction's work can be correlated to the ledger it targeted.
+ * `currentLedgerHash` is the current view's parent-ledger hash, which equals the
+ * consensus.round deterministic trace-id seed on the consensus-build path.
+ */
+inline constexpr auto currentLedgerSeq = makeStr("current_ledger_seq");
+inline constexpr auto currentLedgerHash = makeStr("current_ledger_hash");
 }  // namespace attr
 
 // ===== Shared attribute values =============================================
