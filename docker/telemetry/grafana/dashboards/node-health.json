@@ -43,6 +43,85 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
+      "description": "###### What this is:\n*A single at-a-glance verdict: is this node healthy and doing its job (fully synced and keeping up with the network)?*\n\n###### How it's computed:\n*1 (Healthy) only when server_state == Full AND the validated ledger age is under 30s; otherwise 0 (Not Healthy). Combines server_info{metric=\"server_state\"} and ledgermaster_validated_ledger_age.*\n\n###### Reading it:\n*Green \"Healthy\" = full sync and current. Red \"Not Healthy\" = not full, or lagging the network (catching up, flapping, or stalled).*\n\n###### Healthy range:\n*Healthy (green) in steady state.*\n\n###### Watch for:\n*Any sustained Not Healthy \u2014 drill into the Operating Mode and Validated Ledger Age panels below to see whether it is a state or a lag problem.*\n\n###### Keywords:\n- **Full** *(per node)* \u2014 the node has the current validated ledger and complete recent history.\n- **Validated ledger age** *(per node)* \u2014 seconds since the last freshly validated ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 a boolean AND of two native metrics.*\n*Recorded in xrpld code as native metrics (beast::insight); the collector only forwards them; the Grafana query combines them.*\n\n###### Source:\n[app/misc/NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode / getValidatedLedgerAge`\n\n###### References:\n[Server states](https://xrpl.org/docs/concepts/networks-and-servers/rippled-server-states) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Not Healthy",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Healthy",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 129,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace((server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"server_state\"} == bool 4) * on(service_instance_id) (ledgermaster_validated_ledger_age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"} < bool 30), \"series\", \"Node Health\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "title": "Node Health",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "description": "###### What this is:\n*How old the most recently validated ledger is, in seconds.*\n\n###### How it's computed:\n*Current value of the validated-ledger-age gauge, refreshed each collection interval.*\n\n###### Reading it:\n*Lower is better; it should stay near the network close interval.*\n\n###### Healthy range:\n*Under about 7 seconds on a healthy node.*\n\n###### Watch for:\n*Values above 20 seconds mean the node is falling behind the network.*\n\n###### Keywords:\n- **Validated ledger** *(network-wide)* \u2014 a ledger confirmed final by the trusted validator quorum; its contents never change.\n- **Ledger close interval** *(network-wide)* \u2014 the network's steady ledger rhythm \u2014 roughly one closed ledger every 3-5 seconds on Mainnet.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Recorded in xrpld code as a native metric (beast::insight); the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[LedgerMaster.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/LedgerMaster.h)\n\n###### Function:\n`LedgerMaster::Stats::collectMetrics`\n\n###### References:\n[Validated ledger](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers) \u00b7 [Ledger close interval](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#validated-ledger)",
       "fieldConfig": {
         "defaults": {
@@ -71,7 +150,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 4
       },
       "id": 67,
       "options": {
@@ -141,7 +220,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 4
       },
       "id": 68,
       "options": {
@@ -207,7 +286,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 12
+        "y": 16
       },
       "id": 69,
       "options": {
@@ -273,7 +352,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 12
+        "y": 16
       },
       "id": 70,
       "options": {
@@ -343,7 +422,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 28
       },
       "id": 71,
       "options": {
@@ -446,7 +525,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 28
       },
       "id": 72,
       "options": {
@@ -489,7 +568,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 36
+        "y": 40
       },
       "id": 121,
       "title": "Operating Mode",
@@ -563,7 +642,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 37
+        "y": 41
       },
       "id": 74,
       "options": {
@@ -698,7 +777,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 37
+        "y": 41
       },
       "id": 75,
       "options": {
@@ -833,7 +912,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 49
+        "y": 53
       },
       "id": 76,
       "options": {
@@ -913,7 +992,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 49
+        "y": 53
       },
       "id": 77,
       "options": {
@@ -1040,7 +1119,7 @@
         "h": 24,
         "w": 24,
         "x": 0,
-        "y": 61
+        "y": 65
       },
       "id": 78,
       "options": {
@@ -1085,7 +1164,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 85
+        "y": 89
       },
       "id": 122,
       "title": "NodeStore I/O",
@@ -1157,7 +1236,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 86
+        "y": 90
       },
       "id": 80,
       "options": {
@@ -1276,7 +1355,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 86
+        "y": 90
       },
       "id": 81,
       "options": {
@@ -1383,7 +1462,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 98
+        "y": 102
       },
       "id": 82,
       "options": {
@@ -1494,7 +1573,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 98
+        "y": 102
       },
       "id": 83,
       "options": {
@@ -1605,7 +1684,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 110
+        "y": 114
       },
       "id": 84,
       "options": {
@@ -1724,7 +1803,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 110
+        "y": 114
       },
       "id": 85,
       "options": {
@@ -1767,7 +1846,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 122
+        "y": 126
       },
       "id": 123,
       "title": "Jobs",
@@ -1839,7 +1918,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 123
+        "y": 127
       },
       "id": 87,
       "options": {
@@ -1942,7 +2021,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 123
+        "y": 127
       },
       "id": 88,
       "options": {
@@ -2125,7 +2204,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 135
+        "y": 139
       },
       "id": 89,
       "options": {
@@ -2308,7 +2387,7 @@
         "h": 16,
         "w": 24,
         "x": 0,
-        "y": 147
+        "y": 151
       },
       "id": 90,
       "options": {
@@ -2411,7 +2490,7 @@
         "h": 16,
         "w": 24,
         "x": 0,
-        "y": 163
+        "y": 167
       },
       "id": 91,
       "options": {
@@ -2454,7 +2533,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 179
+        "y": 183
       },
       "id": 124,
       "panels": [
@@ -2902,7 +2981,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 180
+        "y": 184
       },
       "id": 125,
       "title": "Server Info",
@@ -3043,7 +3122,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 181
+        "y": 185
       },
       "id": 98,
       "options": {
@@ -3107,7 +3186,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 181
+        "y": 185
       },
       "id": 99,
       "options": {
@@ -3176,7 +3255,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 193
+        "y": 197
       },
       "id": 100,
       "options": {
@@ -3235,7 +3314,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 193
+        "y": 197
       },
       "id": 103,
       "options": {
@@ -3333,7 +3412,7 @@
         "h": 7,
         "w": 12,
         "x": 0,
-        "y": 205
+        "y": 209
       },
       "id": 58,
       "options": {
@@ -3397,7 +3476,7 @@
         "h": 7,
         "w": 12,
         "x": 12,
-        "y": 205
+        "y": 209
       },
       "id": 56,
       "options": {
@@ -3458,7 +3537,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 212
+        "y": 216
       },
       "id": 102,
       "options": {
@@ -3557,7 +3636,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 212
+        "y": 216
       },
       "id": 105,
       "options": {
@@ -3656,7 +3735,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 224
+        "y": 228
       },
       "id": 104,
       "options": {
@@ -3755,7 +3834,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 236
+        "y": 240
       },
       "id": 128,
       "options": {
@@ -3862,7 +3941,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 224
+        "y": 228
       },
       "id": 106,
       "options": {
@@ -3965,7 +4044,7 @@
         "h": 16,
         "w": 24,
         "x": 0,
-        "y": 236
+        "y": 240
       },
       "id": 107,
       "options": {
@@ -4008,7 +4087,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 252
+        "y": 256
       },
       "id": 126,
       "title": "Complete Ledgers & DB",
@@ -4052,7 +4131,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 253
+        "y": 257
       },
       "id": 109,
       "options": {
@@ -4142,7 +4221,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 253
+        "y": 257
       },
       "id": 110,
       "options": {
@@ -4224,7 +4303,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 265
+        "y": 269
       },
       "id": 111,
       "options": {
@@ -4327,7 +4406,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 265
+        "y": 269
       },
       "id": 112,
       "options": {
@@ -4370,7 +4449,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 277
+        "y": 281
       },
       "id": 127,
       "title": "Ledger Economy",
@@ -4405,7 +4484,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 278
+        "y": 282
       },
       "id": 114,
       "options": {
@@ -4471,7 +4550,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 278
+        "y": 282
       },
       "id": 115,
       "options": {
@@ -4537,7 +4616,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 290
+        "y": 294
       },
       "id": 116,
       "options": {
@@ -4644,7 +4723,7 @@
         "h": 16,
         "w": 12,
         "x": 12,
-        "y": 290
+        "y": 294
       },
       "id": 117,
       "options": {
@@ -4747,7 +4826,7 @@
         "h": 16,
         "w": 24,
         "x": 0,
-        "y": 306
+        "y": 310
       },
       "id": 118,
       "options": {
@@ -4850,7 +4929,7 @@
         "h": 16,
         "w": 12,
         "x": 0,
-        "y": 322
+        "y": 326
       },
       "id": 119,
       "options": {
@@ -4953,7 +5032,7 @@
         "h": 16,
         "w": 12,
         "x": 12,
-        "y": 322
+        "y": 326
       },
       "id": 120,
       "options": {
