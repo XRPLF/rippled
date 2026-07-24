@@ -45,18 +45,18 @@
  * - mutex_     : guards task_.handle().resume() so that post()-before-suspend
  *                races cannot resume the coroutine while it is still running.
  *                (See the race condition discussion in JobQueue.h)
- * - mutex_run_ : guards runCount_ counter; used by join() to wait until
+ * - mutexRun_ : guards runCount_ counter; used by join() to wait until
  *                all in-flight resume operations complete.
- * - jq_.m_mutex: guards nSuspend_ increments/decrements.
+ * - jq_.mutex_: guards nSuspend_ increments/decrements.
  *
  * Common Mistakes When Modifying This File
  * =========================================
  *
  * 1. Changing lock ordering.
  *    resume() acquires locks sequentially (never held simultaneously):
- *    jq_.m_mutex (released immediately), then mutex_ (held across resume),
- *    then mutex_run_ (released after decrement). post() acquires only
- *    mutex_run_. Any new code path must follow the same order.
+ *    jq_.mutex_ (released immediately), then mutex_ (held across resume),
+ *    then mutexRun_ (released after decrement). post() acquires only
+ *    mutexRun_. Any new code path must follow the same order.
  *
  * 2. Removing the shared_from_this() capture in post().
  *    The lambda passed to addJob captures [this, sp = shared_from_this()].
@@ -90,7 +90,7 @@ namespace xrpl {
  * @param name Human-readable name for logging
  */
 inline JobQueue::CoroTaskRunner::CoroTaskRunner(
-    create_t,
+    CreateT,
     JobQueue& jq,
     JobType type,
     std::string const& name)
@@ -127,9 +127,9 @@ JobQueue::CoroTaskRunner::init(F&& f)
  * The join() call is necessary because with async dispatch the
  * coroutine runs on a worker thread. The gate signal (which wakes
  * the test thread) can arrive before resume() has set finished_.
- * join() synchronizes via mutex_run_, establishing a happens-before
- * edge: finished_ = true -> unlock(mutex_run_) in resume() ->
- * lock(mutex_run_) in join() -> read finished_.
+ * join() synchronizes via mutexRun_, establishing a happens-before
+ * edge: finished_ = true -> unlock(mutexRun_) in resume() ->
+ * lock(mutexRun_) in join() -> read finished_.
  */
 inline JobQueue::CoroTaskRunner::~CoroTaskRunner()
 {
@@ -145,7 +145,7 @@ inline JobQueue::CoroTaskRunner::~CoroTaskRunner()
 inline void
 JobQueue::CoroTaskRunner::onSuspend()
 {
-    std::lock_guard lock(jq_.m_mutex);
+    std::lock_guard lock(jq_.mutex_);
     ++jq_.nSuspend_;
 }
 
@@ -155,7 +155,7 @@ JobQueue::CoroTaskRunner::onSuspend()
 inline void
 JobQueue::CoroTaskRunner::onUndoSuspend()
 {
-    std::lock_guard lock(jq_.m_mutex);
+    std::lock_guard lock(jq_.mutex_);
     --jq_.nSuspend_;
 }
 
@@ -210,7 +210,8 @@ JobQueue::CoroTaskRunner::suspend()
  * to work around a GCC-12 codegen bug (see declaration in JobQueue.h).
  *
  * If the JobQueue is stopping (post fails), the suspend count is
- * undone and the coroutine is resumed immediately via h.resume().
+ * undone and the coroutine continues immediately via symmetric
+ * transfer back to its own handle.
  *
  * @return An inline YieldPostAwaiter
  */
@@ -227,15 +228,35 @@ JobQueue::CoroTaskRunner::yieldAndPost()
             return false;
         }
 
-        void
+        /**
+         * Returns a coroutine_handle<> (symmetric transfer) rather than
+         * void + h.resume(). Two reasons:
+         *
+         *  1. h.resume() runs the coroutine nested inside this frame. A
+         *     coroutine that yields in a loop against a stopping JobQueue
+         *     fails post() every iteration, so the stack grows without
+         *     bound. Symmetric transfer is a tail call and does not nest.
+         *
+         *  2. After h.resume() returns, the coroutine may have completed
+         *     and destroyed its frame -- the frame this awaiter lives in.
+         *     Returning from await_suspend would then touch freed memory.
+         *
+         * A bool return would also avoid nesting, but GCC-12 miscompiles
+         * bool-returning await_suspend (see JobQueueAwaiter.h).
+         *
+         * @return noop_coroutine() to stay suspended (job posted);
+         *         the caller's handle to continue now (JQ stopping)
+         */
+        std::coroutine_handle<>
         await_suspend(std::coroutine_handle<> h)
         {
             runner_.onSuspend();
             if (!runner_.post())
             {
                 runner_.onUndoSuspend();
-                h.resume();
+                return h;
             }
+            return std::noop_coroutine();
         }
 
         void
@@ -257,7 +278,7 @@ inline bool
 JobQueue::CoroTaskRunner::post()
 {
     {
-        std::lock_guard lk(mutex_run_);
+        std::lock_guard lk(mutexRun_);
         ++runCount_;
     }
 
@@ -268,7 +289,7 @@ JobQueue::CoroTaskRunner::post()
     }
 
     // The coroutine will not run. Undo the runCount_ increment.
-    std::lock_guard lk(mutex_run_);
+    std::lock_guard lk(mutexRun_);
     --runCount_;
     cv_.notify_all();
     return false;
@@ -278,7 +299,7 @@ JobQueue::CoroTaskRunner::post()
  * Resume the coroutine on the current thread.
  *
  * Steps:
- *   1. Decrement nSuspend_ (under jq_.m_mutex)
+ *   1. Decrement nSuspend_ (under jq_.mutex_)
  *   2. Swap in this coroutine's LocalValues for thread-local isolation
  *   3. Resume the coroutine handle (under mutex_)
  *   4. Swap out LocalValues, restoring the thread's previous state
@@ -293,7 +314,7 @@ inline void
 JobQueue::CoroTaskRunner::resume()
 {
     {
-        std::lock_guard lock(jq_.m_mutex);
+        std::lock_guard lock(jq_.mutex_);
         --jq_.nSuspend_;
     }
     auto saved = detail::getLocalValues().release();
@@ -315,7 +336,7 @@ JobQueue::CoroTaskRunner::resume()
         // frame destruction triggers runner cleanup.
         [[maybe_unused]] auto completed = std::move(task_);
     }
-    std::lock_guard lk(mutex_run_);
+    std::lock_guard lk(mutexRun_);
     --runCount_;
     cv_.notify_all();
 }
@@ -341,7 +362,7 @@ JobQueue::CoroTaskRunner::expectEarlyExit()
 {
     if (!finished_)
     {
-        std::lock_guard lock(jq_.m_mutex);
+        std::lock_guard lock(jq_.mutex_);
         --jq_.nSuspend_;
         finished_ = true;
     }
@@ -357,7 +378,7 @@ JobQueue::CoroTaskRunner::expectEarlyExit()
 
 /**
  * Block until all pending/active resume operations complete.
- * Uses cv_ + mutex_run_ to wait until runCount_ reaches 0 or
+ * Uses cv_ + mutexRun_ to wait until runCount_ reaches 0 or
  * finished_ becomes true. The finished_ check handles the case
  * where resume() is called directly (without post()), which
  * decrements runCount_ below zero. In that scenario runCount_
@@ -367,7 +388,7 @@ JobQueue::CoroTaskRunner::expectEarlyExit()
 inline void
 JobQueue::CoroTaskRunner::join()
 {
-    std::unique_lock<std::mutex> lk(mutex_run_);
+    std::unique_lock<std::mutex> lk(mutexRun_);
     cv_.wait(lk, [this]() { return runCount_ == 0 || finished_; });
 }
 

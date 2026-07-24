@@ -6,4 +6,4 @@
 
 namespace xrpl {
 using CachedSLEs = TaggedCache<uint256, SLE const>;
-}
+}  // namespace xrpl

@@ -1,15 +1,46 @@
-#include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/detail/Handshake.h>
 
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/detail/ProtocolVersion.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/rfc2616.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/tokens.h>
 
-#include <boost/regex.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/beast/http/status.hpp>
+#include <boost/beast/http/verb.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_search.hpp>
+#include <boost/system/detail/error_code.hpp>
 
-#include <algorithm>
+#include <openssl/crypto.h>
+#include <openssl/sha.h>
+#include <openssl/ssl.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
 
 // VFALCO Shouldn't we have to include the OpenSSL
 // headers or something for SSL_get_finished?
@@ -23,7 +54,7 @@ getFeatureValue(boost::beast::http::fields const& headers, std::string const& fe
     if (header == headers.end())
         return {};
     boost::smatch match;
-    boost::regex rx(feature + "=([^;\\s]+)");
+    boost::regex const rx(feature + "=([^;\\s]+)");
     std::string const allFeatures(header->value());
     if (boost::regex_search(allFeatures, match, rx))
         return {match[1]};
@@ -37,7 +68,7 @@ isFeatureValue(
     std::string const& value)
 {
     if (auto const fvalue = getFeatureValue(headers, feature))
-        return beast::rfc2616::token_in_list(fvalue.value(), value);
+        return beast::rfc2616::tokenInList(fvalue.value(), value);
 
     return false;
 }
@@ -57,13 +88,13 @@ makeFeaturesRequestHeader(
 {
     std::stringstream str;
     if (comprEnabled)
-        str << FEATURE_COMPR << "=lz4" << DELIM_FEATURE;
+        str << kFeatureCompr << "=lz4" << kDelimFeature;
     if (ledgerReplayEnabled)
-        str << FEATURE_LEDGER_REPLAY << "=1" << DELIM_FEATURE;
+        str << kFeatureLedgerReplay << "=1" << kDelimFeature;
     if (txReduceRelayEnabled)
-        str << FEATURE_TXRR << "=1" << DELIM_FEATURE;
+        str << kFeatureTxrr << "=1" << kDelimFeature;
     if (vpReduceRelayEnabled)
-        str << FEATURE_VPRR << "=1" << DELIM_FEATURE;
+        str << kFeatureVprr << "=1" << kDelimFeature;
     return str.str();
 }
 
@@ -76,45 +107,46 @@ makeFeaturesResponseHeader(
     bool vpReduceRelayEnabled)
 {
     std::stringstream str;
-    if (comprEnabled && isFeatureValue(headers, FEATURE_COMPR, "lz4"))
-        str << FEATURE_COMPR << "=lz4" << DELIM_FEATURE;
-    if (ledgerReplayEnabled && featureEnabled(headers, FEATURE_LEDGER_REPLAY))
-        str << FEATURE_LEDGER_REPLAY << "=1" << DELIM_FEATURE;
-    if (txReduceRelayEnabled && featureEnabled(headers, FEATURE_TXRR))
-        str << FEATURE_TXRR << "=1" << DELIM_FEATURE;
-    if (vpReduceRelayEnabled && featureEnabled(headers, FEATURE_VPRR))
-        str << FEATURE_VPRR << "=1" << DELIM_FEATURE;
+    if (comprEnabled && isFeatureValue(headers, kFeatureCompr, "lz4"))
+        str << kFeatureCompr << "=lz4" << kDelimFeature;
+    if (ledgerReplayEnabled && featureEnabled(headers, kFeatureLedgerReplay))
+        str << kFeatureLedgerReplay << "=1" << kDelimFeature;
+    if (txReduceRelayEnabled && featureEnabled(headers, kFeatureTxrr))
+        str << kFeatureTxrr << "=1" << kDelimFeature;
+    if (vpReduceRelayEnabled && featureEnabled(headers, kFeatureVprr))
+        str << kFeatureVprr << "=1" << kDelimFeature;
     return str.str();
 }
 
-/** Hashes the latest finished message from an SSL stream.
-
-    @param ssl the session to get the message from.
-    @param get a pointer to the function to call to retrieve the finished
-               message. This can be either:
-               - `SSL_get_finished` or
-               - `SSL_get_peer_finished`.
-    @return `true` if successful, `false` otherwise.
-
-    @note This construct is non-standard. There are potential "standard"
-          alternatives that should be considered. For a discussion, on
-          this topic, see https://github.com/openssl/openssl/issues/5509 and
-          https://github.com/ripple/rippled/issues/2413.
-*/
-static std::optional<base_uint<512>>
+/**
+ * Hashes the latest finished message from an SSL stream.
+ *
+ * @param ssl the session to get the message from.
+ * @param get a pointer to the function to call to retrieve the finished
+ *            message. This can be either:
+ *            - `SSL_get_finished` or
+ *            - `SSL_get_peer_finished`.
+ * @return `true` if successful, `false` otherwise.
+ *
+ * @note This construct is non-standard. There are potential "standard"
+ *       alternatives that should be considered. For a discussion, on
+ *       this topic, see https://github.com/openssl/openssl/issues/5509 and
+ *       https://github.com/XRPLF/rippled/issues/2413.
+ */
+static std::optional<BaseUInt<512>>
 hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
 {
-    constexpr std::size_t sslMinimumFinishedLength = 12;
+    static constexpr std::size_t kSslMinimumFinishedLength = 12;
 
     unsigned char buf[1024];
-    size_t len = get(ssl, buf, sizeof(buf));
+    size_t const len = get(ssl, buf, sizeof(buf));
 
-    if (len < sslMinimumFinishedLength)
+    if (len < kSslMinimumFinishedLength)
         return std::nullopt;
 
-    sha512_hasher h;
+    sha512_hasher const h;
 
-    base_uint<512> cookie;
+    BaseUInt<512> cookie;
     SHA512(buf, len, cookie.data());
     return cookie;
 }
@@ -140,7 +172,7 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
 
     // Both messages hash to the same value and the cookie
     // is 0. Don't allow this.
-    if (result == beast::zero)
+    if (result == beast::kZero)
     {
         JLOG(journal.error()) << "Cookie generation: identical finished messages";
         return std::nullopt;
@@ -154,8 +186,8 @@ buildHandshake(
     boost::beast::http::fields& h,
     xrpl::uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
-    beast::IP::Address public_ip,
-    beast::IP::Address remote_ip,
+    beast::IP::Address publicIp,
+    beast::IP::Address remoteIp,
     Application& app)
 {
     if (networkID)
@@ -166,26 +198,26 @@ buildHandshake(
         h.insert("Network-ID", std::to_string(*networkID));
     }
 
-    h.insert("Network-Time", std::to_string(app.timeKeeper().now().time_since_epoch().count()));
+    h.insert("Network-Time", std::to_string(app.getTimeKeeper().now().time_since_epoch().count()));
 
     h.insert("Public-Key", toBase58(TokenType::NodePublic, app.nodeIdentity().first));
 
     {
         auto const sig =
             signDigest(app.nodeIdentity().first, app.nodeIdentity().second, sharedValue);
-        h.insert("Session-Signature", base64_encode(sig.data(), sig.size()));
+        h.insert("Session-Signature", base64Encode(sig.data(), sig.size()));
     }
 
     h.insert("Instance-Cookie", std::to_string(app.instanceID()));
 
-    if (!app.config().SERVER_DOMAIN.empty())
-        h.insert("Server-Domain", app.config().SERVER_DOMAIN);
+    if (!app.config().serverDomain.empty())
+        h.insert("Server-Domain", app.config().serverDomain);
 
-    if (beast::IP::is_public(remote_ip))
-        h.insert("Remote-IP", remote_ip.to_string());
+    if (beast::IP::isPublic(remoteIp))
+        h.insert("Remote-IP", remoteIp.to_string());
 
-    if (!public_ip.is_unspecified())
-        h.insert("Local-IP", public_ip.to_string());
+    if (!publicIp.is_unspecified())
+        h.insert("Local-IP", publicIp.to_string());
 
     if (auto const cl = app.getLedgerMaster().getClosedLedger())
     {
@@ -199,7 +231,7 @@ verifyHandshake(
     boost::beast::http::fields const& headers,
     xrpl::uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
-    beast::IP::Address public_ip,
+    beast::IP::Address publicIp,
     beast::IP::Address remote,
     Application& app)
 {
@@ -235,7 +267,7 @@ verifyHandshake(
 
         using namespace std::chrono;
 
-        auto const ourTime = app.timeKeeper().now();
+        auto const ourTime = app.getTimeKeeper().now();
         auto const tolerance = 20s;
 
         // We can't blindly "return a-b;" because TimeKeeper::time_point
@@ -260,7 +292,7 @@ verifyHandshake(
 
             if (pk)
             {
-                if (publicKeyType(*pk) != KeyType::secp256k1)
+                if (publicKeyType(*pk) != KeyType::Secp256k1)
                     throw std::runtime_error("Unsupported public key type");
 
                 return *pk;
@@ -282,7 +314,7 @@ verifyHandshake(
         if (iter == headers.end())
             throw std::runtime_error("No session signature specified");
 
-        auto sig = base64_decode(iter->value());
+        auto sig = base64Decode(iter->value());
 
         if (!verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
             throw std::runtime_error("Failed to verify session");
@@ -294,36 +326,35 @@ verifyHandshake(
     if (auto const iter = headers.find("Local-IP"); iter != headers.end())
     {
         boost::system::error_code ec;
-        auto const local_ip = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
+        auto const localIp = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
 
         if (ec)
             throw std::runtime_error("Invalid Local-IP");
 
-        if (beast::IP::is_public(remote) && remote != local_ip)
+        if (beast::IP::isPublic(remote) && remote != localIp)
         {
             throw std::runtime_error(
-                "Incorrect Local-IP: " + remote.to_string() + " instead of " +
-                local_ip.to_string());
+                "Incorrect Local-IP: " + remote.to_string() + " instead of " + localIp.to_string());
         }
     }
 
     if (auto const iter = headers.find("Remote-IP"); iter != headers.end())
     {
         boost::system::error_code ec;
-        auto const remote_ip = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
+        auto const remoteIp = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
 
         if (ec)
             throw std::runtime_error("Invalid Remote-IP");
 
-        if (beast::IP::is_public(remote) && !beast::IP::is_unspecified(public_ip))
+        if (beast::IP::isPublic(remote) && !beast::IP::isUnspecified(publicIp))
         {
             // We know our public IP and peer reports our connection came
             // from some other IP.
-            if (remote_ip != public_ip)
+            if (remoteIp != publicIp)
             {
                 throw std::runtime_error(
-                    "Incorrect Remote-IP: " + public_ip.to_string() + " instead of " +
-                    remote_ip.to_string());
+                    "Incorrect Remote-IP: " + publicIp.to_string() + " instead of " +
+                    remoteIp.to_string());
             }
         }
     }
@@ -359,8 +390,8 @@ http_response_type
 makeResponse(
     bool crawlPublic,
     http_request_type const& req,
-    beast::IP::Address public_ip,
-    beast::IP::Address remote_ip,
+    beast::IP::Address publicIp,
+    beast::IP::Address remoteIp,
     uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     ProtocolVersion protocol,
@@ -378,12 +409,12 @@ makeResponse(
         "X-Protocol-Ctl",
         makeFeaturesResponseHeader(
             req,
-            app.config().COMPRESSION,
-            app.config().LEDGER_REPLAY,
-            app.config().TX_REDUCE_RELAY_ENABLE,
-            app.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE));
+            app.config().compression,
+            app.config().ledgerReplay,
+            app.config().txReduceRelayEnable,
+            app.config().vpReduceRelayBaseSquelchEnable));
 
-    buildHandshake(resp, sharedValue, networkID, public_ip, remote_ip, app);
+    buildHandshake(resp, sharedValue, networkID, publicIp, remoteIp, app);
 
     return resp;
 }

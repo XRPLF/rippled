@@ -1,15 +1,32 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapAddNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 
+#include <xrpl.pb.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <mutex>
 #include <set>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -19,7 +36,7 @@ class InboundLedger final : public TimeoutCounter,
                             public CountedObject<InboundLedger>
 {
 public:
-    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
     // These are the reasons we might acquire a ledger
     enum class Reason {
@@ -36,20 +53,24 @@ public:
         clock_type&,
         std::unique_ptr<PeerSet> peerSet);
 
-    ~InboundLedger();
+    ~InboundLedger() override;
 
     // Called when another attempt is made to fetch this same ledger
     void
     update(std::uint32_t seq);
 
-    /** Returns true if we got all the data. */
+    /**
+     * Returns true if we got all the data.
+     */
     bool
     isComplete() const
     {
         return complete_;
     }
 
-    /** Returns false if we failed to get the data. */
+    /**
+     * Returns false if we failed to get the data.
+     */
     bool
     isFailed() const
     {
@@ -59,13 +80,13 @@ public:
     std::shared_ptr<Ledger const>
     getLedger() const
     {
-        return mLedger;
+        return ledger_;
     }
 
     std::uint32_t
     getSeq() const
     {
-        return mSeq;
+        return seq_;
     }
 
     bool
@@ -78,8 +99,10 @@ public:
 
     using neededHash_t = std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
 
-    /** Return a Json::objectValue. */
-    Json::Value
+    /**
+     * Return a json::ValueType::Object.
+     */
+    json::Value
     getJson(int);
 
     void
@@ -88,17 +111,17 @@ public:
     void
     touch()
     {
-        mLastAction = m_clock.now();
+        lastAction_ = clock_.now();
     }
 
     clock_type::time_point
     getLastAction() const
     {
-        return mLastAction;
+        return lastAction_;
     }
 
 private:
-    enum class TriggerReason { added, reply, timeout };
+    enum class TriggerReason { Added, Reply, Timeout };
 
     void
     filterNodes(std::vector<std::pair<SHAMapNodeID, uint256>>& nodes, TriggerReason reason);
@@ -128,13 +151,13 @@ private:
     pmDowncast() override;
 
     int
-    processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& data);
+    processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData const& data);
 
     bool
     takeHeader(std::string const& data);
 
     void
-    receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode&);
+    receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode&);
 
     bool
     takeTxRootNode(Slice const& data, SHAMapAddNode&);
@@ -143,33 +166,33 @@ private:
     takeAsRootNode(Slice const& data, SHAMapAddNode&);
 
     std::vector<uint256>
-    neededTxHashes(int max, SHAMapSyncFilter* filter) const;
+    neededTxHashes(int max, SHAMapSyncFilter const* filter) const;
 
     std::vector<uint256>
-    neededStateHashes(int max, SHAMapSyncFilter* filter) const;
+    neededStateHashes(int max, SHAMapSyncFilter const* filter) const;
 
-    clock_type& m_clock;
-    clock_type::time_point mLastAction;
+    clock_type& clock_;
+    clock_type::time_point lastAction_;
 
-    std::shared_ptr<Ledger> mLedger;
-    bool mHaveHeader;
-    bool mHaveState;
-    bool mHaveTransactions;
-    bool mSignaled;
-    bool mByHash;
-    std::uint32_t mSeq;
-    Reason const mReason;
+    std::shared_ptr<Ledger> ledger_;
+    bool haveHeader_{false};
+    bool haveState_{false};
+    bool haveTransactions_{false};
+    bool signaled_{false};
+    bool byHash_{true};
+    std::uint32_t seq_;
+    Reason const reason_;
 
-    std::set<uint256> mRecentNodes;
+    std::set<uint256> recentNodes_;
 
-    SHAMapAddNode mStats;
+    SHAMapAddNode stats_;
 
     // Data we have received from peers
-    std::mutex mReceivedDataLock;
+    std::mutex receivedDataLock_;
     std::vector<std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>>
-        mReceivedData;
-    bool mReceiveDispatched;
-    std::unique_ptr<PeerSet> mPeerSet;
+        receivedData_;
+    bool receiveDispatched_{false};
+    std::unique_ptr<PeerSet> peerSet_;
 };
 
 }  // namespace xrpl

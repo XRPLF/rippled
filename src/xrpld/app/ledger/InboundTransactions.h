@@ -2,22 +2,30 @@
 
 #include <xrpld/overlay/Peer.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/beast/insight/Collector.h>
 #include <xrpl/shamap/SHAMap.h>
 
+#include <xrpl.pb.h>
+
+#include <chrono>
+#include <cstdint>
+#include <functional>
 #include <memory>
 
 namespace xrpl {
 
 class Application;
 
-/** Manages the acquisition and lifetime of transaction sets.
+/**
+ * Manages the acquisition and lifetime of transaction sets.
  */
 
 class InboundTransactions
 {
 public:
-    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
     InboundTransactions() = default;
     InboundTransactions(InboundTransactions const&) = delete;
@@ -26,7 +34,8 @@ public:
 
     virtual ~InboundTransactions() = 0;
 
-    /** Find and return a transaction set, or nullptr if it is missing.
+    /**
+     * Find and return a transaction set, or nullptr if it is missing.
      *
      * @param setHash The transaction set ID (digest of the SHAMap root node).
      * @param acquire Whether to fetch the transaction set from the network if
@@ -37,7 +46,8 @@ public:
     virtual std::shared_ptr<SHAMap>
     getSet(uint256 const& setHash, bool acquire) = 0;
 
-    /** Add a transaction set from a LedgerData message.
+    /**
+     * Add a transaction set from a LedgerData message.
      *
      * @param setHash The transaction set ID (digest of the SHAMap root node).
      * @param peer The peer that sent the message.
@@ -49,7 +59,8 @@ public:
         std::shared_ptr<Peer> peer,
         std::shared_ptr<protocol::TMLedgerData> message) = 0;
 
-    /** Add a transaction set.
+    /**
+     * Add a transaction set.
      *
      * @param setHash The transaction set ID (should match set.getHash()).
      * @param set The transaction set.
@@ -59,7 +70,8 @@ public:
     virtual void
     giveSet(uint256 const& setHash, std::shared_ptr<SHAMap> const& set, bool acquired) = 0;
 
-    /** Informs the container if a new consensus round
+    /**
+     * Informs the container if a new consensus round
      */
     virtual void
     newRound(std::uint32_t seq) = 0;
@@ -69,7 +81,7 @@ public:
 };
 
 std::unique_ptr<InboundTransactions>
-make_InboundTransactions(
+makeInboundTransactions(
     Application& app,
     beast::insight::Collector::ptr const& collector,
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet);

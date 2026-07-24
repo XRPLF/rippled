@@ -1,27 +1,46 @@
 #pragma once
 
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/TaggedCache.h>
-#include <xrpl/ledger/CachedSLEs.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 
 #include <boost/asio.hpp>
+
+#include <optional>
+#include <string>
 
 namespace xrpl {
 
 // Forward declarations
 namespace NodeStore {
 class Database;
-}
+}  // namespace NodeStore
 namespace Resource {
 class Manager;
-}
+}  // namespace Resource
 namespace perf {
 class PerfLog;
-}
+}  // namespace perf
 
 // This is temporary until we migrate all code to use ServiceRegistry.
 class Application;
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+class TaggedCache;
+class STLedgerEntry;
+using SLE = STLedgerEntry;
+using CachedSLEs = TaggedCache<uint256, SLE const>;
 
 // Forward declarations
 class AcceptedLedger;
@@ -45,7 +64,7 @@ class NetworkIDService;
 class OpenLedger;
 class OrderBookDB;
 class Overlay;
-class PathRequests;
+class PathRequestManager;
 class PeerReservationTable;
 class PendingSaves;
 class RelationalDatabase;
@@ -64,17 +83,17 @@ using RCLValidations = Validations<RCLValidationsAdaptor>;
 
 using NodeCache = TaggedCache<SHAMapHash, Blob>;
 
-/** Service registry for dependency injection.
-
-    This abstract interface provides access to various services and components
-    used throughout the application. It separates the service locator pattern
-    from the Application lifecycle management.
-
-    Components that need access to services can hold a reference to
-    ServiceRegistry rather than Application when they only need service
-    access and not lifecycle management.
-
-*/
+/**
+ * Service registry for dependency injection.
+ *
+ * This abstract interface provides access to various services and components
+ * used throughout the application. It separates the service locator pattern
+ * from the Application lifecycle management.
+ *
+ * Components that need access to services can hold a reference to
+ * ServiceRegistry rather than Application when they only need service
+ * access and not lifecycle management.
+ */
 class ServiceRegistry
 {
 public:
@@ -89,7 +108,7 @@ public:
     getNodeFamily() = 0;
 
     virtual TimeKeeper&
-    timeKeeper() = 0;
+    getTimeKeeper() = 0;
 
     virtual JobQueue&
     getJobQueue() = 0;
@@ -98,7 +117,7 @@ public:
     getTempNodeCache() = 0;
 
     virtual CachedSLEs&
-    cachedSLEs() = 0;
+    getCachedSLEs() = 0;
 
     virtual NetworkIDService&
     getNetworkIDService() = 0;
@@ -120,26 +139,26 @@ public:
     getValidations() = 0;
 
     virtual ValidatorList&
-    validators() = 0;
+    getValidators() = 0;
 
     virtual ValidatorSite&
-    validatorSites() = 0;
+    getValidatorSites() = 0;
 
     virtual ManifestCache&
-    validatorManifests() = 0;
+    getValidatorManifests() = 0;
 
     virtual ManifestCache&
-    publisherManifests() = 0;
+    getPublisherManifests() = 0;
 
     // Network services
     virtual Overlay&
-    overlay() = 0;
+    getOverlay() = 0;
 
     virtual Cluster&
-    cluster() = 0;
+    getCluster() = 0;
 
     virtual PeerReservationTable&
-    peerReservations() = 0;
+    getPeerReservations() = 0;
 
     virtual Resource::Manager&
     getResourceManager() = 0;
@@ -174,13 +193,13 @@ public:
     getLedgerReplayer() = 0;
 
     virtual PendingSaves&
-    pendingSaves() = 0;
+    getPendingSaves() = 0;
 
     virtual OpenLedger&
-    openLedger() = 0;
+    getOpenLedger() = 0;
 
-    virtual OpenLedger const&
-    openLedger() const = 0;
+    [[nodiscard]] virtual OpenLedger const&
+    getOpenLedger() const = 0;
 
     // Transaction and operation services
     virtual NetworkOPs&
@@ -195,8 +214,8 @@ public:
     virtual TxQ&
     getTxQ() = 0;
 
-    virtual PathRequests&
-    getPathRequests() = 0;
+    virtual PathRequestManager&
+    getPathRequestManager() = 0;
 
     // Server services
     virtual ServerHandler&
@@ -206,29 +225,31 @@ public:
     getPerfLog() = 0;
 
     // Configuration and state
-    virtual bool
+    [[nodiscard]] virtual bool
     isStopping() const = 0;
 
     virtual beast::Journal
-    journal(std::string const& name) = 0;
+    getJournal(std::string const& name) = 0;
 
     virtual boost::asio::io_context&
     getIOContext() = 0;
 
     virtual Logs&
-    logs() = 0;
+    getLogs() = 0;
 
-    virtual std::optional<uint256> const&
-    trapTxID() const = 0;
+    [[nodiscard]] virtual std::optional<uint256> const&
+    getTrapTxID() const = 0;
 
-    /** Retrieve the "wallet database" */
+    /**
+     * Retrieve the "wallet database"
+     */
     virtual DatabaseCon&
     getWalletDB() = 0;
 
     // Temporary: Get the underlying Application for functions that haven't
     // been migrated yet. This should be removed once all code is migrated.
     virtual Application&
-    app() = 0;
+    getApp() = 0;
 };
 
 }  // namespace xrpl

@@ -33,7 +33,7 @@ public:
      * @brief Construct a RippleState ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit RippleState(std::shared_ptr<SLE const> sle)
+    explicit RippleState(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfBalance (soeREQUIRED)
+     * @brief Get sfBalance (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfLowLimit (soeREQUIRED)
+     * @brief Get sfLowLimit (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfHighLimit (soeREQUIRED)
+     * @brief Get sfHighLimit (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -79,7 +79,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -90,7 +90,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -101,7 +101,7 @@ public:
     }
 
     /**
-     * @brief Get sfLowNode (soeOPTIONAL)
+     * @brief Get sfLowNode (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -125,7 +125,7 @@ public:
     }
 
     /**
-     * @brief Get sfLowQualityIn (soeOPTIONAL)
+     * @brief Get sfLowQualityIn (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -149,7 +149,7 @@ public:
     }
 
     /**
-     * @brief Get sfLowQualityOut (soeOPTIONAL)
+     * @brief Get sfLowQualityOut (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -173,7 +173,7 @@ public:
     }
 
     /**
-     * @brief Get sfHighNode (soeOPTIONAL)
+     * @brief Get sfHighNode (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -197,7 +197,7 @@ public:
     }
 
     /**
-     * @brief Get sfHighQualityIn (soeOPTIONAL)
+     * @brief Get sfHighQualityIn (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -221,7 +221,7 @@ public:
     }
 
     /**
-     * @brief Get sfHighQualityOut (soeOPTIONAL)
+     * @brief Get sfHighQualityOut (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -243,13 +243,61 @@ public:
     {
         return this->sle_->isFieldPresent(sfHighQualityOut);
     }
+
+    /**
+     * @brief Get sfHighSponsor (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    getHighSponsor() const
+    {
+        if (hasHighSponsor())
+            return this->sle_->at(sfHighSponsor);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfHighSponsor is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasHighSponsor() const
+    {
+        return this->sle_->isFieldPresent(sfHighSponsor);
+    }
+
+    /**
+     * @brief Get sfLowSponsor (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    getLowSponsor() const
+    {
+        if (hasLowSponsor())
+            return this->sle_->at(sfLowSponsor);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLowSponsor is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLowSponsor() const
+    {
+        return this->sle_->isFieldPresent(sfLowSponsor);
+    }
 };
 
 /**
  * @brief Builder for RippleState ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class RippleStateBuilder : public LedgerEntryBuilderBase<RippleStateBuilder>
@@ -278,7 +326,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    RippleStateBuilder(std::shared_ptr<SLE const> sle)
+    RippleStateBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltRIPPLE_STATE)
         {
@@ -287,10 +335,12 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
-     * @brief Set sfBalance (soeREQUIRED)
+     * @brief Set sfBalance (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -301,7 +351,7 @@ public:
     }
 
     /**
-     * @brief Set sfLowLimit (soeREQUIRED)
+     * @brief Set sfLowLimit (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -312,7 +362,7 @@ public:
     }
 
     /**
-     * @brief Set sfHighLimit (soeREQUIRED)
+     * @brief Set sfHighLimit (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -323,7 +373,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -334,7 +384,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -345,7 +395,7 @@ public:
     }
 
     /**
-     * @brief Set sfLowNode (soeOPTIONAL)
+     * @brief Set sfLowNode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -356,7 +406,7 @@ public:
     }
 
     /**
-     * @brief Set sfLowQualityIn (soeOPTIONAL)
+     * @brief Set sfLowQualityIn (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -367,7 +417,7 @@ public:
     }
 
     /**
-     * @brief Set sfLowQualityOut (soeOPTIONAL)
+     * @brief Set sfLowQualityOut (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -378,7 +428,7 @@ public:
     }
 
     /**
-     * @brief Set sfHighNode (soeOPTIONAL)
+     * @brief Set sfHighNode (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -389,7 +439,7 @@ public:
     }
 
     /**
-     * @brief Set sfHighQualityIn (soeOPTIONAL)
+     * @brief Set sfHighQualityIn (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -400,13 +450,35 @@ public:
     }
 
     /**
-     * @brief Set sfHighQualityOut (soeOPTIONAL)
+     * @brief Set sfHighQualityOut (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
     setHighQualityOut(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfHighQualityOut] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfHighSponsor (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    RippleStateBuilder&
+    setHighSponsor(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    {
+        object_[sfHighSponsor] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfLowSponsor (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    RippleStateBuilder&
+    setLowSponsor(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    {
+        object_[sfLowSponsor] = value;
         return *this;
     }
 

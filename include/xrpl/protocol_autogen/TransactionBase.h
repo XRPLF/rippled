@@ -450,7 +450,9 @@ public:
     }
 
 protected:
-    /** @brief The underlying transaction object being wrapped. */
+    /**
+     * @brief The underlying transaction object being wrapped.
+     */
     std::shared_ptr<STTx const> tx_;
 };
 

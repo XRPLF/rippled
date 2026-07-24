@@ -9,16 +9,16 @@ namespace beast {
 namespace detail {
 
 template <class = void>
-class xor_shift_engine
+class XorShiftEngine
 {
 public:
     using result_type = std::uint64_t;
 
-    xor_shift_engine(xor_shift_engine const&) = default;
-    xor_shift_engine&
-    operator=(xor_shift_engine const&) = default;
+    XorShiftEngine(XorShiftEngine const&) = default;
+    XorShiftEngine&
+    operator=(XorShiftEngine const&) = default;
 
-    explicit xor_shift_engine(result_type val = 1977u);
+    explicit XorShiftEngine(result_type val = 1977u);
 
     void
     seed(result_type seed);
@@ -26,32 +26,34 @@ public:
     result_type
     operator()();
 
-    static result_type constexpr min()
+    static constexpr result_type
+    min()
     {
         return std::numeric_limits<result_type>::min();
     }
 
-    static result_type constexpr max()
+    static constexpr result_type
+    max()
     {
         return std::numeric_limits<result_type>::max();
     }
 
 private:
-    result_type s_[2];
+    result_type s_[2]{};
 
     static result_type
     murmurhash3(result_type x);
 };
 
-template <class _>
-xor_shift_engine<_>::xor_shift_engine(result_type val)
+template <class Unused>
+XorShiftEngine<Unused>::XorShiftEngine(result_type val)
 {
     seed(val);
 }
 
-template <class _>
+template <class Unused>
 void
-xor_shift_engine<_>::seed(result_type seed)
+XorShiftEngine<Unused>::seed(result_type seed)
 {
     if (seed == 0)
         throw std::domain_error("invalid seed");
@@ -59,9 +61,9 @@ xor_shift_engine<_>::seed(result_type seed)
     s_[1] = murmurhash3(s_[0]);
 }
 
-template <class _>
+template <class Unused>
 auto
-xor_shift_engine<_>::operator()() -> result_type
+XorShiftEngine<Unused>::operator()() -> result_type
 {
     result_type s1 = s_[0];
     result_type const s0 = s_[1];
@@ -70,9 +72,9 @@ xor_shift_engine<_>::operator()() -> result_type
     return (s_[1] = (s1 ^ s0 ^ (s1 >> 17) ^ (s0 >> 26))) + s0;
 }
 
-template <class _>
+template <class Unused>
 auto
-xor_shift_engine<_>::murmurhash3(result_type x) -> result_type
+XorShiftEngine<Unused>::murmurhash3(result_type x) -> result_type
 {
     x ^= x >> 33;
     x *= 0xff51afd7ed558ccdULL;
@@ -83,14 +85,15 @@ xor_shift_engine<_>::murmurhash3(result_type x) -> result_type
 
 }  // namespace detail
 
-/** XOR-shift Generator.
-
-    Meets the requirements of UniformRandomNumberGenerator.
-
-    Simple and fast RNG based on:
-    http://xorshift.di.unimi.it/xorshift128plus.c
-    does not accept seed==0
-*/
-using xor_shift_engine = detail::xor_shift_engine<>;
+/**
+ * XOR-shift Generator.
+ *
+ * Meets the requirements of UniformRandomNumberGenerator.
+ *
+ * Simple and fast RNG based on:
+ * http://xorshift.di.unimi.it/xorshift128plus.c
+ * does not accept seed==0
+ */
+using xor_shift_engine = detail::XorShiftEngine<>;
 
 }  // namespace beast

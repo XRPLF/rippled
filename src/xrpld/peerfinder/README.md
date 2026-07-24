@@ -2,8 +2,8 @@
 
 ## Introduction
 
-The _Ripple payment network_ consists of a collection of _peers_ running the
-**rippled software**. Each peer maintains multiple outgoing connections and
+The _XRPL payment network_ consists of a collection of _peers_ running the
+**xrpld software**. Each peer maintains multiple outgoing connections and
 optional incoming connections to other peers. These connections are made over
 both the public Internet and private local area networks. This network defines
 a fully connected directed graph of nodes. Peers send and receive messages to
@@ -175,7 +175,7 @@ When choosing addresses from the boot cache for the purpose of
 establishing outgoing connections, addresses are ranked in decreasing order of
 valence. The Bootcache is persistent. Entries are periodically inserted and
 updated in the corresponding SQLite database during program operation. When
-**rippled** is launched, the existing Bootcache database data is accessed and
+**xrpld** is launched, the existing Bootcache database data is accessed and
 loaded to accelerate the bootstrap process.
 
 Desirable entries in the Bootcache are addresses for servers which are known to
@@ -306,7 +306,7 @@ the address, and its retry timer has expired.
 
 The PeerFinder makes its best effort to become fully connected to the fixed
 addresses specified in the configuration file before moving on to establish
-outgoing connections to foreign peers. This security feature helps rippled
+outgoing connections to foreign peers. This security feature helps xrpld
 establish itself with a trusted set of peers first before accepting untrusted
 data from the network.
 
