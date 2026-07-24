@@ -5,6 +5,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 
 using namespace xrpl::NodeStore;
 
@@ -27,7 +28,7 @@ TEST(Varint, encode_decode)
         0xffff,
         0xffffffff,
         0xffffffffffffUL,
-        0xffffffffffffffffUL,
+        std::numeric_limits<std::size_t>::max(),
     });
 
     for (auto const value : kValues)
