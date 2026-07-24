@@ -53,7 +53,6 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include <vector>
 
 namespace xrpl {
 
@@ -5550,22 +5549,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // The sigma proof verifies ciphertext consistency and commitments,
         // but doesn't check the range. We'll construct it with the overdraft
         // amount to bypass the client-side check.
-
-        // Build recipients for sigma proof
-        std::vector<ConfidentialRecipient> recipients;
-        recipients.push_back({
-            .publicKey = Slice(requireOptional(mptIssuer.getPubKey(alice), "Missing alice pubkey")),
-            .encryptedAmount = aliceEncAmt,
-        });
-        recipients.push_back({
-            .publicKey = Slice(requireOptional(mptIssuer.getPubKey(bob), "Missing bob pubkey")),
-            .encryptedAmount = bobEncAmt,
-        });
-        recipients.push_back({
-            .publicKey =
-                Slice(requireOptional(mptIssuer.getPubKey(issuer), "Missing issuer pubkey")),
-            .encryptedAmount = issuerEncAmt,
-        });
 
         // Generate the sigma proof manually using the lower-level secp256k1 API
         auto* ctx = mpt_secp256k1_context();
