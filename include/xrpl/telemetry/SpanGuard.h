@@ -236,11 +236,11 @@ public:
      */
 #ifdef XRPL_ENABLE_TELEMETRY
     [[nodiscard]] bool
-    isValid() const;
+    isValid() const noexcept;
 #else
     // NOLINTBEGIN(readability-convert-member-functions-to-static)
     [[nodiscard]] bool
-    isValid() const
+    isValid() const noexcept
     {
         return false;
     }
@@ -275,7 +275,7 @@ class SpanGuard
     struct Impl;
     std::unique_ptr<Impl> impl_;
 
-    explicit SpanGuard(std::unique_ptr<Impl> impl);
+    explicit SpanGuard(std::unique_ptr<Impl> impl) noexcept;
 
     // ScopedSpanGuard wraps a SpanGuard and needs the raw span to build
     // its Scope; it reads impl_ directly so no OTel type leaks here.
@@ -306,7 +306,7 @@ public:
      * @param name    Span name suffix (e.g. "submit").
      */
     [[nodiscard]] static SpanGuard
-    span(TraceCategory cat, std::string_view prefix, std::string_view name);
+    span(TraceCategory cat, std::string_view prefix, std::string_view name) noexcept;
 
     /**
      * Create a span that always starts a fresh trace root.
@@ -324,7 +324,7 @@ public:
      * @return An active root-span guard, or a null guard if disabled.
      */
     [[nodiscard]] static SpanGuard
-    freshRoot(TraceCategory cat, std::string_view prefix, std::string_view name);
+    freshRoot(TraceCategory cat, std::string_view prefix, std::string_view name) noexcept;
 
     // --- Child / linked span creation ----------------------------------
 
@@ -346,7 +346,7 @@ public:
      * @return A new guard, or null if this guard is inactive.
      */
     [[nodiscard]] SpanGuard
-    childSpan(std::string_view name) const;
+    childSpan(std::string_view name) const noexcept;
 
     /**
      * Create a child span parented to an explicit captured context.
@@ -355,7 +355,7 @@ public:
      * @return A new guard, or null if parentCtx is invalid.
      */
     [[nodiscard]] static SpanGuard
-    childSpan(std::string_view name, SpanContext const& parentCtx);
+    childSpan(std::string_view name, SpanContext const& parentCtx) noexcept;
 
     /**
      * Create a span linked (follows-from) to this guard's span.
@@ -365,7 +365,7 @@ public:
      * @return A new guard, or null if this guard is inactive.
      */
     [[nodiscard]] SpanGuard
-    linkedSpan(std::string_view name) const;
+    linkedSpan(std::string_view name) const noexcept;
 
     /**
      * Create a span linked to an explicit captured context.
@@ -374,7 +374,7 @@ public:
      * @return A new guard, or null if linkCtx is invalid.
      */
     [[nodiscard]] static SpanGuard
-    linkedSpan(std::string_view name, SpanContext const& linkCtx);
+    linkedSpan(std::string_view name, SpanContext const& linkCtx) noexcept;
 
     // --- Hash-derived span (category-gated) -----------------------------
 
@@ -431,7 +431,7 @@ public:
      * threadLocalContext() for that.
      */
     [[nodiscard]] SpanContext
-    spanContext() const;
+    spanContext() const noexcept;
 
     /**
      * Snapshot the calling thread's CURRENTLY-ACTIVE OTel context (the
@@ -444,7 +444,7 @@ public:
      * @return A SpanContext holding the thread's current context.
      */
     [[nodiscard]] static SpanContext
-    threadLocalContext();
+    threadLocalContext() noexcept;
 
     /**
      * Extract raw trace context bytes from this span for propagation.
@@ -465,31 +465,31 @@ public:
      * Set a string attribute. No-op on a null guard.
      */
     void
-    setAttribute(std::string_view key, std::string_view value);
+    setAttribute(std::string_view key, std::string_view value) noexcept;
 
     /**
      * Set a string attribute (C-string overload). No-op on a null guard.
      */
     void
-    setAttribute(std::string_view key, char const* value);
+    setAttribute(std::string_view key, char const* value) noexcept;
 
     /**
      * Set an integer attribute. No-op on a null guard.
      */
     void
-    setAttribute(std::string_view key, std::int64_t value);
+    setAttribute(std::string_view key, std::int64_t value) noexcept;
 
     /**
      * Set a floating-point attribute. No-op on a null guard.
      */
     void
-    setAttribute(std::string_view key, double value);
+    setAttribute(std::string_view key, double value) noexcept;
 
     /**
      * Set a boolean attribute. No-op on a null guard.
      */
     void
-    setAttribute(std::string_view key, bool value);
+    setAttribute(std::string_view key, bool value) noexcept;
 
     // --- Status / events -----------------------------------------------
 
@@ -497,21 +497,21 @@ public:
      * Mark the span status as OK. No-op on a null guard.
      */
     void
-    setOk();
+    setOk() noexcept;
 
     /**
      * Mark the span status as error. No-op on a null guard.
      * @param description  Optional human-readable error description.
      */
     void
-    setError(std::string_view description = "");
+    setError(std::string_view description = "") noexcept;
 
     /**
      * Add a named event to the span's timeline. No-op on a null guard.
      * @param name  Event name.
      */
     void
-    addEvent(std::string_view name);
+    addEvent(std::string_view name) noexcept;
 
     /**
      * Record an exception as a span event following OTel semantic
@@ -520,7 +520,7 @@ public:
      * @param e  The exception to record.
      */
     void
-    recordException(std::exception const& e);
+    recordException(std::exception const& e) noexcept;
 
     /**
      * Mark this span for discard and end it immediately.
@@ -528,7 +528,7 @@ public:
      * batch export queue. After discard(), the guard is inert.
      */
     void
-    discard();
+    discard() noexcept;
 
     // --- Activation (non-owning) ---------------------------------------
 
@@ -539,13 +539,13 @@ public:
      * @return an RAII activation; drop it to restore the prior context.
      */
     [[nodiscard]] ScopedActivation
-    activate() const;
+    activate() const noexcept;
 
     /**
      * @return true if this guard holds an active span.
      */
     explicit
-    operator bool() const;
+    operator bool() const noexcept;
 };
 
 /**
@@ -637,7 +637,7 @@ class ScopedSpanGuard
     struct ScopedImpl;
     std::unique_ptr<ScopedImpl> impl_;
 
-    explicit ScopedSpanGuard(SpanGuard&& guard);
+    explicit ScopedSpanGuard(SpanGuard&& guard) noexcept;
 
 public:
     /**
@@ -648,7 +648,7 @@ public:
      * @param prefix  Span name prefix (e.g. "rpc.command").
      * @param name    Span name suffix (e.g. "submit").
      */
-    ScopedSpanGuard(TraceCategory cat, std::string_view prefix, std::string_view name);
+    ScopedSpanGuard(TraceCategory cat, std::string_view prefix, std::string_view name) noexcept;
 
     ~ScopedSpanGuard();
 
@@ -670,7 +670,7 @@ public:
      * @return An active scoped root-span guard, or a null one if disabled.
      */
     [[nodiscard]] static ScopedSpanGuard
-    freshRoot(TraceCategory cat, std::string_view prefix, std::string_view name);
+    freshRoot(TraceCategory cat, std::string_view prefix, std::string_view name) noexcept;
 
     // --- Child / linked span creation ----------------------------------
 
@@ -681,7 +681,7 @@ public:
      * @return A new scoped guard, or a null one if this guard is inactive.
      */
     [[nodiscard]] ScopedSpanGuard
-    childSpan(std::string_view name) const;
+    childSpan(std::string_view name) const noexcept;
 
     /**
      * Create a scoped child span parented to an explicit captured
@@ -691,7 +691,7 @@ public:
      * @return A new scoped guard, or a null one if parentCtx is invalid.
      */
     [[nodiscard]] static ScopedSpanGuard
-    childSpan(std::string_view name, SpanContext const& parentCtx);
+    childSpan(std::string_view name, SpanContext const& parentCtx) noexcept;
 
     /**
      * Create a scoped span linked (follows-from) to this guard's span
@@ -700,7 +700,7 @@ public:
      * @return A new scoped guard, or a null one if this guard is inactive.
      */
     [[nodiscard]] ScopedSpanGuard
-    linkedSpan(std::string_view name) const;
+    linkedSpan(std::string_view name) const noexcept;
 
     /**
      * Create a scoped span linked to an explicit captured context and
@@ -710,7 +710,7 @@ public:
      * @return A new scoped guard, or a null one if linkCtx is invalid.
      */
     [[nodiscard]] static ScopedSpanGuard
-    linkedSpan(std::string_view name, SpanContext const& linkCtx);
+    linkedSpan(std::string_view name, SpanContext const& linkCtx) noexcept;
 
     // --- Handoff bridge -------------------------------------------------
 
@@ -721,7 +721,7 @@ public:
      * store is active.
      * @return The unscoped SpanGuard that now owns the span.
      */
-    operator SpanGuard() &&;
+    operator SpanGuard() && noexcept;
 
     // --- Context capture -----------------------------------------------
 
@@ -735,7 +735,7 @@ public:
      * SpanGuard::threadLocalContext() for that.
      */
     [[nodiscard]] SpanContext
-    spanContext() const;
+    spanContext() const noexcept;
 
     // --- Forwarding methods (delegate to the owned SpanGuard) ----------
 
@@ -743,51 +743,51 @@ public:
      * Set a string attribute. No-op on a null guard.
      */
     void
-    setAttribute(std::string_view key, std::string_view value);
+    setAttribute(std::string_view key, std::string_view value) noexcept;
 
     /**
      * Set a string attribute (C-string overload). No-op on a null guard.
      */
     void
-    setAttribute(std::string_view key, char const* value);
+    setAttribute(std::string_view key, char const* value) noexcept;
 
     /**
      * Set an integer attribute. No-op on a null guard.
      */
     void
-    setAttribute(std::string_view key, std::int64_t value);
+    setAttribute(std::string_view key, std::int64_t value) noexcept;
 
     /**
      * Set a floating-point attribute. No-op on a null guard.
      */
     void
-    setAttribute(std::string_view key, double value);
+    setAttribute(std::string_view key, double value) noexcept;
 
     /**
      * Set a boolean attribute. No-op on a null guard.
      */
     void
-    setAttribute(std::string_view key, bool value);
+    setAttribute(std::string_view key, bool value) noexcept;
 
     /**
      * Mark the span status as OK. No-op on a null guard.
      */
     void
-    setOk();
+    setOk() noexcept;
 
     /**
      * Mark the span status as error. No-op on a null guard.
      * @param description  Optional human-readable error description.
      */
     void
-    setError(std::string_view description = "");
+    setError(std::string_view description = "") noexcept;
 
     /**
      * Add a named event to the span's timeline. No-op on a null guard.
      * @param name  Event name.
      */
     void
-    addEvent(std::string_view name);
+    addEvent(std::string_view name) noexcept;
 
     /**
      * Record an exception as a span event and mark status as error.
@@ -795,7 +795,7 @@ public:
      * @param e  The exception to record.
      */
     void
-    recordException(std::exception const& e);
+    recordException(std::exception const& e) noexcept;
 
     /**
      * Mark this span for discard and end it immediately. discard() pops the
@@ -804,13 +804,13 @@ public:
      * no-op.
      */
     void
-    discard();
+    discard() noexcept;
 
     /**
      * @return true if this guard holds an active span.
      */
     explicit
-    operator bool() const;
+    operator bool() const noexcept;
 };
 
 /**
@@ -864,7 +864,7 @@ class ScopedActivation
     struct Impl;
     std::unique_ptr<Impl> impl_;
     friend class SpanGuard;
-    explicit ScopedActivation(std::unique_ptr<Impl> impl);
+    explicit ScopedActivation(std::unique_ptr<Impl> impl) noexcept;
 
 public:
     /**
@@ -944,35 +944,35 @@ public:
     operator=(SpanGuard const&) = delete;
 
     [[nodiscard]] static SpanGuard
-    span(TraceCategory, std::string_view, std::string_view)
+    span(TraceCategory, std::string_view, std::string_view) noexcept
     {
         return {};
     }
 
     [[nodiscard]] static SpanGuard
-    freshRoot(TraceCategory, std::string_view, std::string_view)
+    freshRoot(TraceCategory, std::string_view, std::string_view) noexcept
     {
         return {};
     }
 
     // NOLINTBEGIN(readability-convert-member-functions-to-static)
     [[nodiscard]] SpanGuard
-    childSpan(std::string_view) const
+    childSpan(std::string_view) const noexcept
     {
         return {};
     }
     [[nodiscard]] static SpanGuard
-    childSpan(std::string_view, SpanContext const&)
+    childSpan(std::string_view, SpanContext const&) noexcept
     {
         return {};
     }
     [[nodiscard]] SpanGuard
-    linkedSpan(std::string_view) const
+    linkedSpan(std::string_view) const noexcept
     {
         return {};
     }
     [[nodiscard]] static SpanGuard
-    linkedSpan(std::string_view, SpanContext const&)
+    linkedSpan(std::string_view, SpanContext const&) noexcept
     {
         return {};
     }
@@ -996,7 +996,7 @@ public:
     }
 
     [[nodiscard]] SpanContext
-    spanContext() const
+    spanContext() const noexcept
     {
         return {};
     }
@@ -1008,63 +1008,63 @@ public:
     // NOLINTEND(readability-convert-member-functions-to-static)
 
     [[nodiscard]] static SpanContext
-    threadLocalContext()
+    threadLocalContext() noexcept
     {
         return {};
     }
 
     void
-    setAttribute(std::string_view, std::string_view)
+    setAttribute(std::string_view, std::string_view) noexcept
     {
     }
     void
-    setAttribute(std::string_view, char const*)
+    setAttribute(std::string_view, char const*) noexcept
     {
     }
     void
-    setAttribute(std::string_view, std::int64_t)
+    setAttribute(std::string_view, std::int64_t) noexcept
     {
     }
     void
-    setAttribute(std::string_view, double)
+    setAttribute(std::string_view, double) noexcept
     {
     }
     void
-    setAttribute(std::string_view, bool)
+    setAttribute(std::string_view, bool) noexcept
     {
     }
 
     void
-    setOk()
+    setOk() noexcept
     {
     }
     void
-    setError(std::string_view = "")
+    setError(std::string_view = "") noexcept
     {
     }
     void
-    addEvent(std::string_view)
+    addEvent(std::string_view) noexcept
     {
     }
     void
-    recordException(std::exception const&)
+    recordException(std::exception const&) noexcept
     {
     }
     void
-    discard()
+    discard() noexcept
     {
     }
 
     // NOLINTBEGIN(readability-convert-member-functions-to-static)
     [[nodiscard]] ScopedActivation
-    activate() const
+    activate() const noexcept
     {
         return {};
     }
     // NOLINTEND(readability-convert-member-functions-to-static)
 
     explicit
-    operator bool() const
+    operator bool() const noexcept
     {
         return false;
     }
@@ -1078,7 +1078,7 @@ class ScopedSpanGuard
     ScopedSpanGuard() = default;
 
 public:
-    ScopedSpanGuard(TraceCategory, std::string_view, std::string_view)
+    ScopedSpanGuard(TraceCategory, std::string_view, std::string_view) noexcept
     {
     }
     ~ScopedSpanGuard() = default;
@@ -1091,89 +1091,89 @@ public:
     operator=(ScopedSpanGuard const&) = delete;
 
     [[nodiscard]] static ScopedSpanGuard
-    freshRoot(TraceCategory, std::string_view, std::string_view)
+    freshRoot(TraceCategory, std::string_view, std::string_view) noexcept
     {
         return {};
     }
 
     // NOLINTBEGIN(readability-convert-member-functions-to-static)
     [[nodiscard]] ScopedSpanGuard
-    childSpan(std::string_view) const
+    childSpan(std::string_view) const noexcept
     {
         return {};
     }
     [[nodiscard]] static ScopedSpanGuard
-    childSpan(std::string_view, SpanContext const&)
+    childSpan(std::string_view, SpanContext const&) noexcept
     {
         return {};
     }
     [[nodiscard]] ScopedSpanGuard
-    linkedSpan(std::string_view) const
+    linkedSpan(std::string_view) const noexcept
     {
         return {};
     }
     [[nodiscard]] static ScopedSpanGuard
-    linkedSpan(std::string_view, SpanContext const&)
+    linkedSpan(std::string_view, SpanContext const&) noexcept
     {
         return {};
     }
 
     [[nodiscard]] SpanContext
-    spanContext() const
+    spanContext() const noexcept
     {
         return {};
     }
     // NOLINTEND(readability-convert-member-functions-to-static)
 
-    operator SpanGuard() &&
+    operator SpanGuard() && noexcept
     {
         return {};
     }
 
     void
-    setAttribute(std::string_view, std::string_view)
+    setAttribute(std::string_view, std::string_view) noexcept
     {
     }
     void
-    setAttribute(std::string_view, char const*)
+    setAttribute(std::string_view, char const*) noexcept
     {
     }
     void
-    setAttribute(std::string_view, std::int64_t)
+    setAttribute(std::string_view, std::int64_t) noexcept
     {
     }
     void
-    setAttribute(std::string_view, double)
+    setAttribute(std::string_view, double) noexcept
     {
     }
     void
-    setAttribute(std::string_view, bool)
+    setAttribute(std::string_view, bool) noexcept
     {
     }
 
     void
-    setOk()
+    setOk() noexcept
     {
     }
     void
-    setError(std::string_view = "")
+    setError(std::string_view = "") noexcept
     {
     }
     void
-    addEvent(std::string_view)
+    addEvent(std::string_view) noexcept
     {
     }
     void
-    recordException(std::exception const&)
+    recordException(std::exception const&) noexcept
     {
     }
     void
-    discard()
+    discard() noexcept
     {
     }
 
     explicit
-    operator bool() const
+    operator bool() const noexcept
     {
         return false;
     }

@@ -83,7 +83,7 @@ SpanContext::SpanContext(std::shared_ptr<Impl> impl) : impl_(std::move(impl))
 }
 
 bool
-SpanContext::isValid() const
+SpanContext::isValid() const noexcept
 {
     return impl_ != nullptr;
 }
@@ -129,12 +129,12 @@ SpanGuard::SpanGuard(SpanGuard&&) noexcept = default;
 SpanGuard&
 SpanGuard::operator=(SpanGuard&&) noexcept = default;
 
-SpanGuard::SpanGuard(std::unique_ptr<Impl> impl) : impl_(std::move(impl))
+SpanGuard::SpanGuard(std::unique_ptr<Impl> impl) noexcept : impl_(std::move(impl))
 {
 }
 
 SpanGuard::
-operator bool() const
+operator bool() const noexcept
 {
     return impl_ != nullptr;
 }
@@ -198,7 +198,7 @@ categoryToSpanKind(TraceCategory cat)
 }  // namespace
 
 SpanGuard
-SpanGuard::span(TraceCategory cat, std::string_view prefix, std::string_view name)
+SpanGuard::span(TraceCategory cat, std::string_view prefix, std::string_view name) noexcept
 {
     auto* tel = Telemetry::getInstance();
     if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
@@ -210,7 +210,7 @@ SpanGuard::span(TraceCategory cat, std::string_view prefix, std::string_view nam
 }
 
 SpanGuard
-SpanGuard::freshRoot(TraceCategory cat, std::string_view prefix, std::string_view name)
+SpanGuard::freshRoot(TraceCategory cat, std::string_view prefix, std::string_view name) noexcept
 {
     auto* tel = Telemetry::getInstance();
     if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
@@ -227,7 +227,7 @@ SpanGuard::freshRoot(TraceCategory cat, std::string_view prefix, std::string_vie
 // ===== Child / linked span creation ========================================
 
 SpanGuard
-SpanGuard::childSpan(std::string_view name) const
+SpanGuard::childSpan(std::string_view name) const noexcept
 {
     if (!impl_)
         return {};
@@ -239,7 +239,7 @@ SpanGuard::childSpan(std::string_view name) const
 }
 
 SpanGuard
-SpanGuard::childSpan(std::string_view name, SpanContext const& parentCtx)
+SpanGuard::childSpan(std::string_view name, SpanContext const& parentCtx) noexcept
 {
     if (!parentCtx.isValid())
         return {};
@@ -250,7 +250,7 @@ SpanGuard::childSpan(std::string_view name, SpanContext const& parentCtx)
 }
 
 SpanGuard
-SpanGuard::linkedSpan(std::string_view name) const
+SpanGuard::linkedSpan(std::string_view name) const noexcept
 {
     if (!impl_)
         return {};
@@ -274,7 +274,7 @@ SpanGuard::linkedSpan(std::string_view name) const
 }
 
 SpanGuard
-SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
+SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx) noexcept
 {
     if (!linkCtx.isValid())
         return {};
@@ -375,7 +375,7 @@ SpanGuard::hashSpan(
 // ===== Context capture =====================================================
 
 SpanContext
-SpanGuard::spanContext() const
+SpanGuard::spanContext() const noexcept
 {
     if (!impl_ || !impl_->span)
         return {};
@@ -390,7 +390,7 @@ SpanGuard::spanContext() const
 }
 
 SpanContext
-SpanGuard::threadLocalContext()
+SpanGuard::threadLocalContext() noexcept
 {
     // Snapshot whatever span is currently active on THIS thread's context
     // stack (the ambient context), independent of any guard. This is the
@@ -422,7 +422,7 @@ SpanGuard::getTraceBytes() const
 // ===== Attribute setters ===================================================
 
 void
-SpanGuard::setAttribute(std::string_view key, std::string_view value)
+SpanGuard::setAttribute(std::string_view key, std::string_view value) noexcept
 {
     if (impl_)
     {
@@ -433,27 +433,27 @@ SpanGuard::setAttribute(std::string_view key, std::string_view value)
 }
 
 void
-SpanGuard::setAttribute(std::string_view key, char const* value)
+SpanGuard::setAttribute(std::string_view key, char const* value) noexcept
 {
     setAttribute(key, std::string_view(value));
 }
 
 void
-SpanGuard::setAttribute(std::string_view key, std::int64_t value)
+SpanGuard::setAttribute(std::string_view key, std::int64_t value) noexcept
 {
     if (impl_)
         impl_->span->SetAttribute(opentelemetry::nostd::string_view(key.data(), key.size()), value);
 }
 
 void
-SpanGuard::setAttribute(std::string_view key, double value)
+SpanGuard::setAttribute(std::string_view key, double value) noexcept
 {
     if (impl_)
         impl_->span->SetAttribute(opentelemetry::nostd::string_view(key.data(), key.size()), value);
 }
 
 void
-SpanGuard::setAttribute(std::string_view key, bool value)
+SpanGuard::setAttribute(std::string_view key, bool value) noexcept
 {
     if (impl_)
         impl_->span->SetAttribute(opentelemetry::nostd::string_view(key.data(), key.size()), value);
@@ -462,28 +462,28 @@ SpanGuard::setAttribute(std::string_view key, bool value)
 // ===== Status / events =====================================================
 
 void
-SpanGuard::setOk()
+SpanGuard::setOk() noexcept
 {
     if (impl_)
         impl_->span->SetStatus(otel_trace::StatusCode::kOk);
 }
 
 void
-SpanGuard::setError(std::string_view description)
+SpanGuard::setError(std::string_view description) noexcept
 {
     if (impl_)
         impl_->span->SetStatus(otel_trace::StatusCode::kError, std::string(description));
 }
 
 void
-SpanGuard::addEvent(std::string_view name)
+SpanGuard::addEvent(std::string_view name) noexcept
 {
     if (impl_)
         impl_->span->AddEvent(std::string(name));
 }
 
 void
-SpanGuard::recordException(std::exception const& e)
+SpanGuard::recordException(std::exception const& e) noexcept
 {
     if (!impl_)
         return;
@@ -498,7 +498,7 @@ SpanGuard::recordException(std::exception const& e)
 }
 
 void
-SpanGuard::discard()
+SpanGuard::discard() noexcept
 {
     if (impl_)
     {
@@ -579,7 +579,7 @@ struct ScopedSpanGuard::ScopedImpl
 
 // ===== ScopedSpanGuard core lifecycle ======================================
 
-ScopedSpanGuard::ScopedSpanGuard(SpanGuard&& guard)
+ScopedSpanGuard::ScopedSpanGuard(SpanGuard&& guard) noexcept
     : impl_(std::make_unique<ScopedImpl>(std::move(guard)))
 {
 }
@@ -598,37 +598,43 @@ ScopedSpanGuard::~ScopedSpanGuard()
 
 // ===== ScopedSpanGuard factory methods =====================================
 
-ScopedSpanGuard::ScopedSpanGuard(TraceCategory cat, std::string_view prefix, std::string_view name)
+ScopedSpanGuard::ScopedSpanGuard(
+    TraceCategory cat,
+    std::string_view prefix,
+    std::string_view name) noexcept
     : ScopedSpanGuard(SpanGuard::span(cat, prefix, name))
 {
 }
 
 ScopedSpanGuard
-ScopedSpanGuard::freshRoot(TraceCategory cat, std::string_view prefix, std::string_view name)
+ScopedSpanGuard::freshRoot(
+    TraceCategory cat,
+    std::string_view prefix,
+    std::string_view name) noexcept
 {
     return ScopedSpanGuard(SpanGuard::freshRoot(cat, prefix, name));
 }
 
 ScopedSpanGuard
-ScopedSpanGuard::childSpan(std::string_view name) const
+ScopedSpanGuard::childSpan(std::string_view name) const noexcept
 {
     return ScopedSpanGuard(impl_->guard.childSpan(name));
 }
 
 ScopedSpanGuard
-ScopedSpanGuard::childSpan(std::string_view name, SpanContext const& parentCtx)
+ScopedSpanGuard::childSpan(std::string_view name, SpanContext const& parentCtx) noexcept
 {
     return ScopedSpanGuard(SpanGuard::childSpan(name, parentCtx));
 }
 
 ScopedSpanGuard
-ScopedSpanGuard::linkedSpan(std::string_view name) const
+ScopedSpanGuard::linkedSpan(std::string_view name) const noexcept
 {
     return ScopedSpanGuard(impl_->guard.linkedSpan(name));
 }
 
 ScopedSpanGuard
-ScopedSpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
+ScopedSpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx) noexcept
 {
     return ScopedSpanGuard(SpanGuard::linkedSpan(name, linkCtx));
 }
@@ -636,7 +642,7 @@ ScopedSpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
 // ===== ScopedSpanGuard handoff bridge ======================================
 
 ScopedSpanGuard::
-operator SpanGuard() &&
+operator SpanGuard() && noexcept
 {
     // The scope must be popped while its constructing context store is
     // active; handing off under a different store would pop the wrong stack.
@@ -652,7 +658,7 @@ operator SpanGuard() &&
 // ===== ScopedSpanGuard context capture =====================================
 
 SpanContext
-ScopedSpanGuard::spanContext() const
+ScopedSpanGuard::spanContext() const noexcept
 {
     return impl_->guard.spanContext();
 }
@@ -660,61 +666,61 @@ ScopedSpanGuard::spanContext() const
 // ===== ScopedSpanGuard forwarding methods ==================================
 
 void
-ScopedSpanGuard::setAttribute(std::string_view key, std::string_view value)
+ScopedSpanGuard::setAttribute(std::string_view key, std::string_view value) noexcept
 {
     impl_->guard.setAttribute(key, value);
 }
 
 void
-ScopedSpanGuard::setAttribute(std::string_view key, char const* value)
+ScopedSpanGuard::setAttribute(std::string_view key, char const* value) noexcept
 {
     impl_->guard.setAttribute(key, value);
 }
 
 void
-ScopedSpanGuard::setAttribute(std::string_view key, std::int64_t value)
+ScopedSpanGuard::setAttribute(std::string_view key, std::int64_t value) noexcept
 {
     impl_->guard.setAttribute(key, value);
 }
 
 void
-ScopedSpanGuard::setAttribute(std::string_view key, double value)
+ScopedSpanGuard::setAttribute(std::string_view key, double value) noexcept
 {
     impl_->guard.setAttribute(key, value);
 }
 
 void
-ScopedSpanGuard::setAttribute(std::string_view key, bool value)
+ScopedSpanGuard::setAttribute(std::string_view key, bool value) noexcept
 {
     impl_->guard.setAttribute(key, value);
 }
 
 void
-ScopedSpanGuard::setOk()
+ScopedSpanGuard::setOk() noexcept
 {
     impl_->guard.setOk();
 }
 
 void
-ScopedSpanGuard::setError(std::string_view description)
+ScopedSpanGuard::setError(std::string_view description) noexcept
 {
     impl_->guard.setError(description);
 }
 
 void
-ScopedSpanGuard::addEvent(std::string_view name)
+ScopedSpanGuard::addEvent(std::string_view name) noexcept
 {
     impl_->guard.addEvent(name);
 }
 
 void
-ScopedSpanGuard::recordException(std::exception const& e)
+ScopedSpanGuard::recordException(std::exception const& e) noexcept
 {
     impl_->guard.recordException(e);
 }
 
 void
-ScopedSpanGuard::discard()
+ScopedSpanGuard::discard() noexcept
 {
     // A live Scope must be popped while its constructing context store is
     // active; discarding under a different store corrupts that store's
@@ -730,7 +736,7 @@ ScopedSpanGuard::discard()
 }
 
 ScopedSpanGuard::
-operator bool() const
+operator bool() const noexcept
 {
     return impl_ && static_cast<bool>(impl_->guard);
 }
@@ -769,7 +775,7 @@ struct ScopedActivation::Impl
 
 ScopedActivation::ScopedActivation() = default;
 
-ScopedActivation::ScopedActivation(std::unique_ptr<Impl> impl) : impl_(std::move(impl))
+ScopedActivation::ScopedActivation(std::unique_ptr<Impl> impl) noexcept : impl_(std::move(impl))
 {
 }
 
@@ -786,7 +792,7 @@ ScopedActivation::~ScopedActivation()
 }
 
 ScopedActivation
-SpanGuard::activate() const
+SpanGuard::activate() const noexcept
 {
     if (!impl_ || !impl_->span)
         return {};
