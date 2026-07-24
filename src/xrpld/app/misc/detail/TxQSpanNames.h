@@ -73,12 +73,22 @@ inline constexpr auto acceptTx = makeStr("accept_tx");
 inline constexpr auto cleanup = makeStr("cleanup");
 }  // namespace op
 
+// ===== Full span names (prefix.op) ===========================================
+//
+// Joined "txq.<op>" names for the explicit-context factories
+// (SpanGuard::childSpan(name, ctx)) that take one full span name rather than a
+// prefix/suffix pair.
+
+inline constexpr auto enqueue = join(prefix::txq, op::enqueue);
+
 // ===== Attribute keys ======================================================
 
 namespace attr {
 /**
  * Canonical shared constants (defined in SpanNames.h).
  */
+using ::xrpl::telemetry::attr::currentLedgerHash;
+using ::xrpl::telemetry::attr::currentLedgerSeq;
 using ::xrpl::telemetry::attr::ledgerSeq;
 using ::xrpl::telemetry::attr::txHash;
 
