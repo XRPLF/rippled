@@ -42,6 +42,14 @@ if(_cxx_real MATCHES "^/nix/store/")
 endif()
 unset(_cxx_real)
 
+# True inside the Nix CI Docker image, identified by the /nix/ci-env tree it
+# ships (see nix/docker/Dockerfile). The dev shell and bare systems don't have
+# it, so it distinguishes the CI image from other Nix-compiler environments.
+set(is_ci_image FALSE)
+if(EXISTS "/nix/ci-env/bin")
+    set(is_ci_image TRUE)
+endif()
+
 # --------------------------------------------------------------------
 # Operating system detection
 # --------------------------------------------------------------------
