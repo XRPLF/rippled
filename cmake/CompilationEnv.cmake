@@ -35,10 +35,10 @@ endif()
 # True when the C++ compiler resolves into the Nix store. CMAKE_CXX_COMPILER may
 # be referenced through a symlink outside the store (a Nix profile, a /usr/bin
 # alternative, ...), so resolve the real path before matching.
-set(is_nix FALSE)
+set(is_nix_compiler FALSE)
 get_filename_component(_cxx_real "${CMAKE_CXX_COMPILER}" REALPATH)
 if(_cxx_real MATCHES "^/nix/store/")
-    set(is_nix TRUE)
+    set(is_nix_compiler TRUE)
 endif()
 unset(_cxx_real)
 

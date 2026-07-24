@@ -172,7 +172,7 @@ else()
     # flag is unused -> Clang errors under our -Werror. At link time the flag IS consumed
     # (it selects the C++ runtime), so we move it there instead of dropping it entirely.
     if(
-        is_nix
+        is_nix_compiler
         AND is_linux
         AND is_clang
         AND CMAKE_CXX_FLAGS MATCHES "stdlib=libstdc"

@@ -29,7 +29,7 @@ set(_loader_path_script "${CMAKE_SOURCE_DIR}/bin/default-loader-path.sh")
 if(
     is_linux
     AND NOT SANITIZERS_ENABLED
-    AND is_nix
+    AND is_nix_compiler
     AND NOT DEFINED ENV{XRPLD_NO_PATCH_NIX_BINARY}
 )
     execute_process(
