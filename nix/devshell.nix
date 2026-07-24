@@ -56,6 +56,10 @@ let
       versionedTools ? [ ],
       extraPackages ? [ ],
       warningHook ? "",
+      # Opt out of PatchNixBinary.cmake retargeting binaries to the system
+      # loader. The plain toolchain links a newer glibc, so it must not be
+      # patched; the custom toolchain patches by default.
+      noPatchNixBinary ? false,
     }:
     let
       compilerVersionHook =
@@ -73,14 +77,17 @@ let
         tools = versionedTools;
       });
     in
-    (pkgs.mkShell.override { inherit stdenv; }) {
-      packages = commonPackages ++ versionedLinks ++ extraPackages;
-      shellHook = ''
-        echo "Welcome to xrpld development shell";
-        ${compilerVersionHook}
-        ${warningHook}
-      '';
-    };
+    (pkgs.mkShell.override { inherit stdenv; }) (
+      {
+        packages = commonPackages ++ versionedLinks ++ extraPackages;
+        shellHook = ''
+          echo "Welcome to xrpld development shell";
+          ${compilerVersionHook}
+          ${warningHook}
+        '';
+      }
+      // pkgs.lib.optionalAttrs noPatchNixBinary { XRPLD_NO_PATCH_NIX_BINARY = "1"; }
+    );
 in
 rec {
   # macOS: Nix Clang. Linux: Nix GCC.
@@ -121,6 +128,7 @@ rec {
     versionedTools = gccVersionedTools;
     extraPackages = [ plainGcov ];
     warningHook = plainWarningHook;
+    noPatchNixBinary = true;
   };
 
   clang-plain = makeShell {
@@ -129,5 +137,6 @@ rec {
     version = llvmVersion;
     versionedTools = clangVersionedTools;
     warningHook = plainWarningHook;
+    noPatchNixBinary = true;
   };
 }

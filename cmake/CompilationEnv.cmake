@@ -30,6 +30,19 @@ if(CMAKE_GENERATOR STREQUAL "Xcode")
 endif()
 
 # --------------------------------------------------------------------
+# Nix toolchain detection
+# --------------------------------------------------------------------
+# True when the C++ compiler resolves into the Nix store. CMAKE_CXX_COMPILER may
+# be referenced through a symlink outside the store (a Nix profile, a /usr/bin
+# alternative, ...), so resolve the real path before matching.
+set(is_nix FALSE)
+get_filename_component(_cxx_real "${CMAKE_CXX_COMPILER}" REALPATH)
+if(_cxx_real MATCHES "^/nix/store/")
+    set(is_nix TRUE)
+endif()
+unset(_cxx_real)
+
+# --------------------------------------------------------------------
 # Operating system detection
 # --------------------------------------------------------------------
 set(is_linux FALSE)
