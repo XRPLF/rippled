@@ -1530,6 +1530,52 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 to_string(deltas.debtTotalDelta));
     }
 
+    void
+    testAccrualLoanOriginationExceedsVaultMaximum()
+    {
+        using namespace xrpl::Accrual;
+
+        struct TestCase
+        {
+            std::string name;
+            Number vaultMaximum;
+            Number vaultTotal;
+            Number interestDue;
+            bool expected;
+        };
+
+        auto const testCases = std::vector<TestCase>{
+            {.name = "No maximum configured",
+             .vaultMaximum = Number{0},
+             .vaultTotal = Number{900},
+             .interestDue = Number{1'000},
+             .expected = false},
+            {.name = "Interest fits under headroom",
+             .vaultMaximum = Number{1'000},
+             .vaultTotal = Number{900},
+             .interestDue = Number{50},
+             .expected = false},
+            {.name = "Interest exactly fills headroom",
+             .vaultMaximum = Number{1'000},
+             .vaultTotal = Number{900},
+             .interestDue = Number{100},
+             .expected = false},
+            {.name = "Interest exceeds headroom",
+             .vaultMaximum = Number{1'000},
+             .vaultTotal = Number{900},
+             .interestDue = Number{101},
+             .expected = true},
+        };
+
+        for (auto const& tc : testCases)
+        {
+            testcase("Accrual::loanOriginationExceedsVaultMaximum: " + tc.name);
+            BEAST_EXPECT(
+                loanOriginationExceedsVaultMaximum(
+                    tc.vaultMaximum, tc.vaultTotal, tc.interestDue) == tc.expected);
+        }
+    }
+
     // Constructs a minimal ltLOAN SLE with just the fields needed by
     // loanVaultExposure. Mirrors the bare-SLE pattern used by
     // testCanApplyToBrokerCover for ltLOAN_BROKER.
@@ -1549,11 +1595,18 @@ class LendingHelpers_test : public beast::unit_test::Suite
     // Constructs a minimal ltVAULT SLE with just LEVersion set (or left
     // absent), for exercising the dispatchers' per-Vault gating.
     static std::shared_ptr<SLE>
-    makeVaultSle(std::optional<VaultVersion> leVersion = std::nullopt)
+    makeVaultSle(
+        std::optional<VaultVersion> leVersion = std::nullopt,
+        std::optional<Number> assetsMaximum = std::nullopt,
+        std::optional<Number> assetsTotal = std::nullopt)
     {
         auto sle = std::make_shared<SLE>(ltVAULT, uint256{2u});
         if (leVersion)
             sle->at(sfLEVersion) = std::to_underlying(*leVersion);
+        if (assetsMaximum)
+            sle->at(sfAssetsMaximum) = *assetsMaximum;
+        if (assetsTotal)
+            sle->at(sfAssetsTotal) = *assetsTotal;
         return sle;
     }
 
@@ -1650,6 +1703,55 @@ class LendingHelpers_test : public beast::unit_test::Suite
             auto const expected = xrpl::CashBasis::loanOriginationDeltas(principalRequested);
             BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
             BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
+        }
+    }
+
+    void
+    testLoanOriginationExceedsVaultMaximumDispatcher()
+    {
+        using namespace jtx;
+
+        Number const vaultMaximum{1'000};
+        Number const vaultTotal{900};
+        // Exceeds Accrual's headroom (100), but must never trip CashBasis.
+        Number const interestDue{101};
+
+        auto const legacyVault = makeVaultSle(std::nullopt, vaultMaximum, vaultTotal);
+        auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis, vaultMaximum, vaultTotal);
+
+        {
+            testcase(
+                "loanOriginationExceedsVaultMaximum dispatcher: amendment disabled picks "
+                "Accrual");
+            Env env{*this};
+            env.disableFeature(featureLendingProtocolV1_1);
+            BEAST_EXPECT(
+                loanOriginationExceedsVaultMaximum(
+                    env.current()->rules(), cashBasisVault, vaultTotal, interestDue) ==
+                xrpl::Accrual::loanOriginationExceedsVaultMaximum(
+                    vaultMaximum, vaultTotal, interestDue));
+        }
+
+        {
+            testcase(
+                "loanOriginationExceedsVaultMaximum dispatcher: amendment enabled, legacy vault "
+                "picks Accrual");
+            Env const env{*this};
+            BEAST_EXPECT(
+                loanOriginationExceedsVaultMaximum(
+                    env.current()->rules(), legacyVault, vaultTotal, interestDue) ==
+                xrpl::Accrual::loanOriginationExceedsVaultMaximum(
+                    vaultMaximum, vaultTotal, interestDue));
+        }
+
+        {
+            testcase(
+                "loanOriginationExceedsVaultMaximum dispatcher: amendment enabled, LEVersion == "
+                "VaultVersion::CashBasis picks CashBasis");
+            Env const env{*this};
+            BEAST_EXPECT(
+                loanOriginationExceedsVaultMaximum(
+                    env.current()->rules(), cashBasisVault, vaultTotal, interestDue) == false);
         }
     }
 
@@ -1845,10 +1947,12 @@ public:
 
         testAccrualLoanOriginationDeltas();
         testCashBasisLoanOriginationDeltas();
+        testAccrualLoanOriginationExceedsVaultMaximum();
         testAccrualLoanVaultExposure();
         testCashBasisLoanVaultExposure();
         testLoanPaymentDeltas();
         testLoanOriginationDeltasDispatcher();
+        testLoanOriginationExceedsVaultMaximumDispatcher();
         testLoanVaultExposureDispatcher();
         testLoanPaymentDeltasDispatcher();
     }

@@ -139,6 +139,15 @@ loanOriginationDeltas(Number const& principalRequested, Number const& interestDu
     return {.assetsTotalDelta = interestDue, .debtTotalDelta = principalRequested + interestDue};
 }
 
+bool
+loanOriginationExceedsVaultMaximum(
+    Number const& vaultMaximum,
+    Number const& vaultTotal,
+    Number const& interestDue)
+{
+    return vaultMaximum != 0 && interestDue > vaultMaximum - vaultTotal;
+}
+
 Number
 loanVaultExposure(SLE::const_ref loanSle)
 {
@@ -202,6 +211,22 @@ loanOriginationDeltas(
     return cashBasisEnabled(rules, vaultSle)
         ? CashBasis::loanOriginationDeltas(principalRequested)
         : Accrual::loanOriginationDeltas(principalRequested, interestDue);
+}
+
+bool
+loanOriginationExceedsVaultMaximum(
+    Rules const& rules,
+    SLE::const_ref vaultSle,
+    Number const& vaultTotal,
+    Number const& interestDue)
+{
+    // Cash-basis origination doesn't recognize interest into AssetsTotal, so
+    // interest due can never push the vault past AssetsMaximum at origination.
+    if (cashBasisEnabled(rules, vaultSle))
+        return false;
+
+    auto const vaultMaximum = vaultSle->at(sfAssetsMaximum);
+    return Accrual::loanOriginationExceedsVaultMaximum(vaultMaximum, vaultTotal, interestDue);
 }
 
 Number

@@ -302,6 +302,14 @@ namespace Accrual {
 AccountingDeltas
 loanOriginationDeltas(Number const& principalRequested, Number const& interestDue);
 
+// LoanSet origination: would recognizing this loan's interest push
+// Vault.AssetsTotal past Vault.AssetsMaximum?
+bool
+loanOriginationExceedsVaultMaximum(
+    Number const& vaultMaximum,
+    Number const& vaultTotal,
+    Number const& interestDue);
+
 // LoanManage impair/unimpair/default: the vault's exposure to this loan
 Number
 loanVaultExposure(SLE::const_ref loanSle);
@@ -336,6 +344,13 @@ loanOriginationDeltas(
     Rules const& rules,
     SLE::const_ref vaultSle,
     Number const& principalRequested,
+    Number const& interestDue);
+
+bool
+loanOriginationExceedsVaultMaximum(
+    Rules const& rules,
+    SLE::const_ref vaultSle,
+    Number const& vaultTotal,
     Number const& interestDue);
 
 Number

@@ -444,7 +444,9 @@ LoanSet::doApply()
         vaultMaximum == 0 || vaultMaximum > *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
         "Vault is below maximum limit");
-    if (vaultMaximum != 0 && state.interestDue > vaultMaximum - vaultTotalProxy)
+
+    if (loanOriginationExceedsVaultMaximum(
+            ctx_.view().rules(), vaultSle, vaultTotalProxy, state.interestDue))
     {
         JLOG(j_.warn()) << "Loan would exceed the maximum assets of the vault";
         return tecLIMIT_EXCEEDED;

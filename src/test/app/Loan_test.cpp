@@ -8683,9 +8683,9 @@ protected:
                     to_string(debtTotalDelta));
         }
 
-        // AssetsMaximum / DebtMaximum guards: unconditionally checked against
-        // principal + interestDue, regardless of the amendment. Verify that
-        // the accept/reject boundary is bit-for-bit identical in both cases.
+        // AssetsMaximum guard checks interestDue headroom only under
+        // whole-life accounting (cash-basis never adds interest to
+        // AssetsTotal). DebtMaximum guard is unconditional either way.
         auto runVaultGuard = [&](FeatureBitset features, Number const& slack, TER expected) {
             Env env(*this, features);
 
@@ -8745,18 +8745,24 @@ protected:
         };
 
         Number const oneDrop = xrpAsset(1).value();
+        {
+            testcase("whole-life: LoanSet AssetsMaximum guard checks interestDue headroom");
+            // Guard rejects when there's not quite enough headroom for the
+            // interest.
+            runVaultGuard(all_, interestDueCash - oneDrop, tecLIMIT_EXCEEDED);
+            // Guard accepts at the exact boundary.
+            runVaultGuard(all_, interestDueCash, tesSUCCESS);
+        }
+
+        {
+            testcase("cash-basis: LoanSet AssetsMaximum guard ignores interestDue headroom");
+            // Even far less headroom than interestDue still succeeds, since
+            // cash-basis origination never adds interest to AssetsTotal.
+            runVaultGuard(all_ | featureLendingProtocolV1_1, oneDrop, tesSUCCESS);
+        }
+
         for (auto const features : {all_ | featureLendingProtocolV1_1, all_})
         {
-            testcase(
-                std::string("cash-basis: LoanSet AssetsMaximum guard unaffected by amendment (") +
-                (features[featureLendingProtocolV1_1] ? "enabled)" : "disabled)"));
-            // Guard rejects when there's not quite enough headroom for the
-            // interest, even though cash-basis never touches AssetsTotal for
-            // interest.
-            runVaultGuard(features, interestDueCash - oneDrop, tecLIMIT_EXCEEDED);
-            // Guard accepts at the exact boundary.
-            runVaultGuard(features, interestDueCash, tesSUCCESS);
-
             testcase(
                 std::string("cash-basis: LoanSet DebtMaximum guard unaffected by amendment (") +
                 (features[featureLendingProtocolV1_1] ? "enabled)" : "disabled)"));
