@@ -732,7 +732,7 @@
       "description": "###### What this is:\n*All overlay traffic categories ranked by inbound bytes, giving an at-a-glance view of which message types consume the most receive bandwidth.*\n\n###### How it's computed:\n*Top categories by latest inbound byte value across all traffic categories. Each bar is labelled with its traffic category followed by the node identity; the shared `_bytes_in` suffix is dropped from the category name because the panel already reports inbound bytes.*\n\n###### Reading it:\n*The longest bars are the biggest bandwidth consumers; on a synced node transactions, proposals, and validations usually lead.*\n\n###### Healthy range:\n*workload-dependent.*\n\n###### Watch for:\n*A single ledger-data or fetch category dominating (ongoing sync) or an unexpected category topping the list.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl ctor (TrafficGauges)`",
       "type": "bargauge",
       "gridPos": {
-        "h": 12,
+        "h": 18,
         "w": 24,
         "x": 0,
         "y": 56
@@ -793,7 +793,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 68
+        "y": 74
       },
       "id": 16,
       "panels": []
@@ -806,7 +806,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 69
+        "y": 75
       },
       "options": {
         "tooltip": {
@@ -910,7 +910,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 69
+        "y": 75
       },
       "options": {
         "tooltip": {
@@ -959,7 +959,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 77
+        "y": 83
       },
       "options": {
         "tooltip": {
@@ -1008,7 +1008,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 77
+        "y": 83
       },
       "options": {
         "tooltip": {
@@ -1085,7 +1085,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 85
+        "y": 91
       },
       "options": {
         "tooltip": {
@@ -1127,7 +1127,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 85
+        "y": 91
       },
       "options": {
         "tooltip": {
@@ -1169,7 +1169,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 93
+        "y": 99
       },
       "options": {
         "tooltip": {
@@ -1211,7 +1211,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 93
+        "y": 99
       },
       "options": {
         "tooltip": {
@@ -1267,7 +1267,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 101
+        "y": 107
       },
       "options": {
         "tooltip": {
@@ -1309,7 +1309,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 101
+        "y": 107
       },
       "options": {
         "tooltip": {
