@@ -7,6 +7,7 @@ ignorePaths:
   - cmake/**
   - LICENSE.md
   - .clang-tidy
+  - src/test/app/wasm_fixtures/*.c
 language: en
 allowCompoundWords: true # TODO (#6334)
 ignoreRandomStrings: true
@@ -67,6 +68,7 @@ words:
   - Btrfs
   - Buildx
   - canonicality
+  - cdylib
   - canonicalised
   - changespq
   - checkme
@@ -295,6 +297,7 @@ words:
   - STATSDCOLLECTOR
   - stissue
   - stnum
+  - stnumber
   - stobj
   - stobject
   - stpath
@@ -362,6 +365,7 @@ words:
   - wthread
   - xbridge
   - xchain
+  - xfloat
   - ximinez
   - XMACRO
   - xrpkuwait

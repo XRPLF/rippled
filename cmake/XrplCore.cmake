@@ -67,6 +67,7 @@ target_link_libraries(
         Xrpl::opts
         Xrpl::syslibs
         secp256k1::secp256k1
+        wasmi::wasmi
         xrpl.libpb
         xxHash::xxhash
         $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>

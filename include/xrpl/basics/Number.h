@@ -549,8 +549,21 @@ public:
     setround(RoundingMode inMode);
 
     /**
-     * Returns which mantissa scale is currently in use for normalization.
+     * Convert an integer to a RoundingMode, validating that it is in range.
      *
+     * Returns std::nullopt if the value does not correspond to a valid
+     * RoundingMode.
+     */
+    static std::optional<RoundingMode>
+    checkedRoundingMode(int mode) noexcept
+    {
+        if (mode < static_cast<int>(RoundingMode::ToNearest) ||
+            mode > static_cast<int>(RoundingMode::Upward))
+            return std::nullopt;
+        return static_cast<RoundingMode>(mode);
+    }
+
+    /**
      * If you think you need to call this outside of unit tests, no you don't.
      */
     static MantissaRange::MantissaScale
