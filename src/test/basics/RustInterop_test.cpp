@@ -4,7 +4,7 @@
 
 namespace xrpl {
 
-class RustInterop_test : public beast::unit_test::suite
+class RustInterop_test : public beast::unit_test::Suite
 {
 public:
     void
