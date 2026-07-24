@@ -17,6 +17,7 @@
 #endif  // XRPL_ENABLE_TELEMETRY
 
 #include <chrono>
+#include <cstddef>
 #include <cstring>
 #include <fstream>
 #include <functional>
@@ -315,13 +316,21 @@ Logs::format(
             auto spanCtx = span->GetContext();
             if (spanCtx.IsValid())
             {
-                char traceId[32], spanId[16];
-                spanCtx.trace_id().ToLowerBase16(opentelemetry::nostd::span<char, 32>{traceId});
-                spanCtx.span_id().ToLowerBase16(opentelemetry::nostd::span<char, 16>{spanId});
-                output += "trace_id=";
-                output.append(traceId, 32);
-                output += " span_id=";
-                output.append(spanId, 16);
+                // Hex widths of a W3C trace context: 16-byte trace_id and
+                // 8-byte span_id render to 32 and 16 lowercase hex chars.
+                constexpr std::size_t kTraceIdHexLen = 32;
+                constexpr std::size_t kSpanIdHexLen = 16;
+                constexpr auto kTraceIdPrefix = "trace_id=";
+                constexpr auto kSpanIdPrefix = " span_id=";
+                char traceId[kTraceIdHexLen], spanId[kSpanIdHexLen];
+                spanCtx.trace_id().ToLowerBase16(
+                    opentelemetry::nostd::span<char, kTraceIdHexLen>{traceId});
+                spanCtx.span_id().ToLowerBase16(
+                    opentelemetry::nostd::span<char, kSpanIdHexLen>{spanId});
+                output += kTraceIdPrefix;
+                output.append(traceId, kTraceIdHexLen);
+                output += kSpanIdPrefix;
+                output.append(spanId, kSpanIdHexLen);
                 output += ' ';
             }
         }
