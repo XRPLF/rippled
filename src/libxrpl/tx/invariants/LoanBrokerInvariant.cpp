@@ -15,15 +15,12 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <memory>
+#include <algorithm>
 
 namespace xrpl {
 
 void
-ValidLoanBroker::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidLoanBroker::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     if (after)
     {
@@ -132,10 +129,10 @@ ValidLoanBroker::finalize(
         }
     }
 
-    for (auto const& [brokerID, broker] : brokers_)
-    {
+    return std::ranges::all_of(brokers_, [&](auto const& entry) {
+        auto const& [brokerID, broker] = entry;
         auto const& after =
-            broker.brokerAfter ? broker.brokerAfter : view.read(keylet::loanbroker(brokerID));
+            broker.brokerAfter ? broker.brokerAfter : view.read(keylet::loanBroker(brokerID));
 
         if (!after)
         {
@@ -209,8 +206,8 @@ ValidLoanBroker::finalize(
                 return false;
             }
         }
-    }
-    return true;
+        return true;
+    });
 }
 
 }  // namespace xrpl

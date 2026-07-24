@@ -1,9 +1,19 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/detail/ApplyStateTable.h>
+#include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/XRPAmount.h>
+
+#include <memory>
+#include <optional>
 
 namespace xrpl::detail {
 
@@ -40,7 +50,7 @@ public:
     [[nodiscard]] std::optional<key_type>
     succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const override;
 
-    [[nodiscard]] std::shared_ptr<SLE const>
+    [[nodiscard]] SLE::const_pointer
     read(Keylet const& k) const override;
 
     [[nodiscard]] std::unique_ptr<SlesType::iter_base>
@@ -69,28 +79,28 @@ public:
     [[nodiscard]] ApplyFlags
     flags() const override;
 
-    std::shared_ptr<SLE>
+    SLE::pointer
     peek(Keylet const& k) override;
 
     void
-    erase(std::shared_ptr<SLE> const& sle) override;
+    erase(SLE::ref sle) override;
 
     void
-    insert(std::shared_ptr<SLE> const& sle) override;
+    insert(SLE::ref sle) override;
 
     void
-    update(std::shared_ptr<SLE> const& sle) override;
+    update(SLE::ref sle) override;
 
     // RawView
 
     void
-    rawErase(std::shared_ptr<SLE> const& sle) override;
+    rawErase(SLE::ref sle) override;
 
     void
-    rawInsert(std::shared_ptr<SLE> const& sle) override;
+    rawInsert(SLE::ref sle) override;
 
     void
-    rawReplace(std::shared_ptr<SLE> const& sle) override;
+    rawReplace(SLE::ref sle) override;
 
     void
     rawDestroyXRP(XRPAmount const& feeDrops) override;

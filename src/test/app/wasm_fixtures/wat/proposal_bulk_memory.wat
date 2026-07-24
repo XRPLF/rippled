@@ -21,5 +21,5 @@
     i32.eq
   )
 
-  (export "finish" (func $test_bulk_ops))
+  (export "escrow_finish" (func $test_bulk_ops))
 )

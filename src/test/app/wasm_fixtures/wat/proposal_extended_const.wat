@@ -4,12 +4,12 @@
   ;;    This proposal allows (i32.add (i32.const X) (i32.const Y)).
   (global $g i32 (i32.add (i32.const 10) (i32.const 32)))
 
-  (func $finish (result i32)
+  (func $escrow_finish (result i32)
     ;; 2. verify the global equals 42
     global.get $g
     i32.const 42
     i32.eq
   )
 
-  (export "finish" (func $finish))
+  (export "escrow_finish" (func $escrow_finish))
 )

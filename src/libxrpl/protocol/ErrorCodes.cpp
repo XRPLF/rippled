@@ -212,7 +212,7 @@ containsError(json::Value const& json)
 int
 errorCodeHttpStatus(ErrorCodeI code)
 {
-    return getErrorInfo(code).http_status;
+    return getErrorInfo(code).httpStatus;
 }
 
 }  // namespace RPC

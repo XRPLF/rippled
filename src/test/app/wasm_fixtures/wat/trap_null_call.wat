@@ -5,7 +5,7 @@
 
   (type $t (func (result i32)))
 
-  (func $finish (result i32)
+  (func $escrow_finish (result i32)
     ;; Call Index 0.
     ;; Bounds check passes (0 < 1).
     ;; Null check fails.
@@ -18,5 +18,5 @@
     call_indirect (type $t)
   )
 
-  (export "finish" (func $finish))
+  (export "escrow_finish" (func $escrow_finish))
 )

@@ -22,5 +22,5 @@
     i32.const 1
   )
 
-  (export "finish" (func $grow_from_zero))
+  (export "escrow_finish" (func $grow_from_zero))
 )

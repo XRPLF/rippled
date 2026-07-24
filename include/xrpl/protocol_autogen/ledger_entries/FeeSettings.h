@@ -33,7 +33,7 @@ public:
      * @brief Construct a FeeSettings ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit FeeSettings(std::shared_ptr<SLE const> sle)
+    explicit FeeSettings(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -357,7 +357,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    FeeSettingsBuilder(std::shared_ptr<SLE const> sle)
+    FeeSettingsBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltFEE_SETTINGS)
         {
@@ -366,7 +366,9 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
      * @brief Set sfBaseFee (SoeOptional)

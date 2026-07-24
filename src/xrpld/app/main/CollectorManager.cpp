@@ -1,6 +1,5 @@
 #include <xrpld/app/main/CollectorManager.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Group.h>
 #include <xrpl/beast/insight/Groups.h>
@@ -8,6 +7,8 @@
 #include <xrpl/beast/insight/StatsDCollector.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 
 #include <memory>
 #include <string>
@@ -25,13 +26,13 @@ public:
 
     CollectorManagerImp(Section const& params, beast::Journal journal) : journal_(journal)
     {
-        std::string const& server = get(params, "server");
+        std::string const& server = get(params, Keys::kServer);
 
         if (server == "statsd")
         {
             beast::IP::Endpoint const address(
-                beast::IP::Endpoint::fromString(get(params, "address")));
-            std::string const& prefix(get(params, "prefix"));
+                beast::IP::Endpoint::fromString(get(params, Keys::kAddress)));
+            std::string const& prefix(get(params, Keys::kPrefix));
 
             collector_ = beast::insight::StatsDCollector::make(address, prefix, journal);
         }

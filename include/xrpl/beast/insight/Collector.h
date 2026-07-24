@@ -4,22 +4,25 @@
 #include <xrpl/beast/insight/Event.h>
 #include <xrpl/beast/insight/Gauge.h>
 #include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/Meter.h>
 
+#include <memory>
 #include <string>
 
 namespace beast::insight {
 
-/** Interface for a manager that allows collection of metrics.
-
-    To export metrics from a class, pass and save a shared_ptr to this
-    interface in the class constructor. Create the metric objects
-    as desired (counters, events, gauges, meters, and an optional hook)
-    using the interface.
-
-    @see Counter, Event, Gauge, Hook, Meter
-    @see NullCollector, StatsDCollector
-*/
+/**
+ * Interface for a manager that allows collection of metrics.
+ *
+ * To export metrics from a class, pass and save a shared_ptr to this
+ * interface in the class constructor. Create the metric objects
+ * as desired (counters, events, gauges, meters, and an optional hook)
+ * using the interface.
+ *
+ * @see Counter, Event, Gauge, Hook, Meter
+ * @see NullCollector, StatsDCollector
+ */
 class Collector
 {
 public:
@@ -27,18 +30,19 @@ public:
 
     virtual ~Collector() = 0;
 
-    /** Create a hook.
-
-        A hook is called at each collection interval, on an implementation
-        defined thread. This is a convenience facility for gathering metrics
-        in the polling style. The typical usage is to update all the metrics
-        of interest in the handler.
-
-        Handler will be called with this signature:
-            void handler (void)
-
-        @see Hook
-    */
+    /**
+     * Create a hook.
+     *
+     * A hook is called at each collection interval, on an implementation
+     * defined thread. This is a convenience facility for gathering metrics
+     * in the polling style. The typical usage is to update all the metrics
+     * of interest in the handler.
+     *
+     * Handler will be called with this signature:
+     *     void handler (void)
+     *
+     * @see Hook
+     */
     /** @{ */
     template <class Handler>
     Hook
@@ -51,9 +55,10 @@ public:
     makeHook(HookImpl::HandlerType const& handler) = 0;
     /** @} */
 
-    /** Create a counter with the specified name.
-        @see Counter
-    */
+    /**
+     * Create a counter with the specified name.
+     * @see Counter
+     */
     /** @{ */
     virtual Counter
     makeCounter(std::string const& name) = 0;
@@ -67,9 +72,10 @@ public:
     }
     /** @} */
 
-    /** Create an event with the specified name.
-        @see Event
-    */
+    /**
+     * Create an event with the specified name.
+     * @see Event
+     */
     /** @{ */
     virtual Event
     makeEvent(std::string const& name) = 0;
@@ -83,9 +89,10 @@ public:
     }
     /** @} */
 
-    /** Create a gauge with the specified name.
-        @see Gauge
-    */
+    /**
+     * Create a gauge with the specified name.
+     * @see Gauge
+     */
     /** @{ */
     virtual Gauge
     makeGauge(std::string const& name) = 0;
@@ -99,9 +106,10 @@ public:
     }
     /** @} */
 
-    /** Create a meter with the specified name.
-        @see Meter
-    */
+    /**
+     * Create a meter with the specified name.
+     * @see Meter
+     */
     /** @{ */
     virtual Meter
     makeMeter(std::string const& name) = 0;

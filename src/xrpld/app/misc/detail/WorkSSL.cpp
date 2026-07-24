@@ -12,7 +12,6 @@
 #include <boost/asio/ssl/stream_base.hpp>
 #include <boost/format/free_funcs.hpp>
 
-#include <functional>
 #include <stdexcept>
 #include <string>
 
@@ -30,9 +29,9 @@ WorkSSL::WorkSSL(
     callback_type cb)
     : WorkBase(host, path, port, ios, lastEndpoint, lastStatus, cb)
     , context_(
-          config.SSL_VERIFY_DIR,
-          config.SSL_VERIFY_FILE,
-          config.SSL_VERIFY,
+          config.sslVerifyDir,
+          config.sslVerifyFile,
+          config.sslVerify,
           j,
           boost::asio::ssl::context::tlsv12_client)
     , stream_(socket_, context_.context())
@@ -55,7 +54,7 @@ WorkSSL::onConnect(error_code const& ec)
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
         boost::asio::bind_executor(
-            strand_, std::bind(&WorkSSL::onHandshake, shared_from_this(), std::placeholders::_1)));
+            strand_, [self = shared_from_this()](error_code const& ec) { self->onHandshake(ec); }));
 }
 
 void

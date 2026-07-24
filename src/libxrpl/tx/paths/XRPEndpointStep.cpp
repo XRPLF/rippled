@@ -16,7 +16,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/paths/detail/AmountSpec.h>
 #include <xrpl/tx/paths/detail/EitherAmount.h>
 #include <xrpl/tx/paths/detail/StepChecks.h>
 #include <xrpl/tx/paths/detail/Steps.h>
@@ -204,7 +203,7 @@ private:
         {
             return ctx.strandDeliver.visit(
                 [&](Issue const& issue) {
-                    if (!ctx.view.exists(keylet::line(acc, issue)))
+                    if (!ctx.view.exists(keylet::trustLine(acc, issue)))
                         return -1;
                     return 0;
                 },

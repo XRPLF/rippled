@@ -1,19 +1,27 @@
 #pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TER.h>
 
+#include <exception>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
 namespace xrpl::RPC {
 
-/** Status represents the results of an operation that might fail.
-
-    It wraps the legacy codes TER and error_code_i, providing both a uniform
-    interface and a way to attach additional information to existing status
-    returns.
-
-    A Status can also be used to fill a json::Value with a JSON-RPC 2.0
-    error response:  see http://www.jsonrpc.org/specification#error_object
+/**
+ * Status represents the results of an operation that might fail.
+ *
+ * It wraps the legacy codes TER and error_code_i, providing both a uniform
+ * interface and a way to attach additional information to existing status
+ * returns.
+ *
+ * A Status can also be used to fill a json::Value with a JSON-RPC 2.0
+ * error response:  see http://www.jsonrpc.org/specification#error_object
  */
 struct Status : public std::exception
 {
@@ -26,9 +34,11 @@ public:
 
     Status() = default;
 
-    // The enable_if allows only integers (not enums).  Prevents enum narrowing.
-    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-    Status(T code, Strings d = {}) : code_(code), messages_(std::move(d))
+    // The constraint allows only integers (not enums).  Prevents enum narrowing.
+    template <typename T>
+    Status(T code, Strings d = {})
+        requires(std::is_integral_v<T>)
+        : code_(code), messages_(std::move(d))
     {
     }
 
@@ -52,21 +62,27 @@ public:
     [[nodiscard]] std::string
     codeString() const;
 
-    /** Returns true if the Status is *not* OK. */
+    /**
+     * Returns true if the Status is *not* OK.
+     */
     operator bool() const
     {
         return code_ != kOK;
     }
 
-    /** Returns true if the Status is OK. */
+    /**
+     * Returns true if the Status is OK.
+     */
     bool
     operator!() const
     {
         return !bool(*this);
     }
 
-    /** Returns the Status as a TER.
-        This may only be called if type() == Type::TER. */
+    /**
+     * Returns the Status as a TER.
+     * This may only be called if type() == Type::TER.
+     */
     [[nodiscard]] TER
     toTER() const
     {
@@ -74,8 +90,10 @@ public:
         return TER::fromInt(code_);
     }
 
-    /** Returns the Status as an error_code_i.
-        This may only be called if type() == Type::ErrorCodeI. */
+    /**
+     * Returns the Status as an error_code_i.
+     * This may only be called if type() == Type::ErrorCodeI.
+     */
     [[nodiscard]] ErrorCodeI
     toErrorCode() const
     {
@@ -83,7 +101,8 @@ public:
         return ErrorCodeI(code_);
     }
 
-    /** Apply the Status to a JsonObject
+    /**
+     * Apply the Status to a JsonObject
      */
     void
     inject(json::Value& object) const
@@ -107,7 +126,9 @@ public:
         return messages_;
     }
 
-    /** Return the first message, if any. */
+    /**
+     * Return the first message, if any.
+     */
     [[nodiscard]] std::string
     message() const;
 
@@ -120,9 +141,11 @@ public:
     [[nodiscard]] std::string
     toString() const;
 
-    /** Fill a json::Value with an RPC 2.0 response.
-        If the Status is OK, fillJson has no effect.
-        Not currently used. */
+    /**
+     * Fill a json::Value with an RPC 2.0 response.
+     * If the Status is OK, fillJson has no effect.
+     * Not currently used.
+     */
     void
     fillJson(json::Value&);
 

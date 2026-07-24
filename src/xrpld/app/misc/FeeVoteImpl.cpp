@@ -8,8 +8,9 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
-#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Protocol.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAccount.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/Serializer.h>
@@ -135,13 +136,10 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
     };
     if (rules.enabled(featureXRPFees))
     {
-        vote(lastFees.base, target_.reference_fee, "base fee", sfBaseFeeDrops);
-        vote(lastFees.reserve, target_.account_reserve, "base reserve", sfReserveBaseDrops);
+        vote(lastFees.base, target_.referenceFee, "base fee", sfBaseFeeDrops);
+        vote(lastFees.reserve, target_.accountReserve, "base reserve", sfReserveBaseDrops);
         vote(
-            lastFees.increment,
-            target_.owner_reserve,
-            "reserve increment",
-            sfReserveIncrementDrops);
+            lastFees.increment, target_.ownerReserve, "reserve increment", sfReserveIncrementDrops);
     }
     else
     {
@@ -162,31 +160,31 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
             }
         };
 
-        voteAndConvert(lastFees.base, target_.reference_fee, to64, "base fee", sfBaseFee);
+        voteAndConvert(lastFees.base, target_.referenceFee, to64, "base fee", sfBaseFee);
         voteAndConvert(
-            lastFees.reserve, target_.account_reserve, to32, "base reserve", sfReserveBase);
+            lastFees.reserve, target_.accountReserve, to32, "base reserve", sfReserveBase);
         voteAndConvert(
             lastFees.increment,
-            target_.owner_reserve,
+            target_.ownerReserve,
             to32,
             "reserve increment",
             sfReserveIncrement);
     }
     if (rules.enabled(featureSmartEscrow))
     {
-        if (target_.gas_limit <= kMaxGasLimit)
+        if (target_.gasLimit <= kMaxGasLimit)
         {
-            vote(lastFees.gasLimit, target_.gas_limit, "gas limit", sfGasLimit);
+            vote(lastFees.gasLimit, target_.gasLimit, "gas limit", sfGasLimit);
         }
-        if (target_.bytecode_size_limit <= kMaxBytecodeSizeLimit)
+        if (target_.bytecodeSizeLimit <= kMaxBytecodeSizeLimit)
         {
             vote(
                 lastFees.bytecodeSizeLimit,
-                target_.bytecode_size_limit,
+                target_.bytecodeSizeLimit,
                 "bytecode size limit",
                 sfBytecodeSizeLimit);
         }
-        vote(lastFees.gasPrice, target_.gas_price, "gas price", sfGasPrice);
+        vote(lastFees.gasPrice, target_.gasPrice, "gas price", sfGasPrice);
     }
 }
 
@@ -201,11 +199,11 @@ FeeVoteImpl::doVoting(
         lastClosedLedger && isFlagLedger(lastClosedLedger->seq()),
         "xrpl::FeeVoteImpl::doVoting : has a flag ledger");
 
-    detail::VotableValue baseFeeVote(lastClosedLedger->fees().base, target_.reference_fee);
+    detail::VotableValue baseFeeVote(lastClosedLedger->fees().base, target_.referenceFee);
 
-    detail::VotableValue baseReserveVote(lastClosedLedger->fees().reserve, target_.account_reserve);
+    detail::VotableValue baseReserveVote(lastClosedLedger->fees().reserve, target_.accountReserve);
 
-    detail::VotableValue incReserveVote(lastClosedLedger->fees().increment, target_.owner_reserve);
+    detail::VotableValue incReserveVote(lastClosedLedger->fees().increment, target_.ownerReserve);
 
     auto validOrCurrent = [](std::uint32_t target, std::uint32_t max, std::uint32_t current) {
         return target <= max ? target : current;
@@ -213,16 +211,16 @@ FeeVoteImpl::doVoting(
 
     detail::VotableValue gasLimitVote(
         lastClosedLedger->fees().gasLimit,
-        validOrCurrent(target_.gas_limit, kMaxGasLimit, lastClosedLedger->fees().gasLimit));
+        validOrCurrent(target_.gasLimit, kMaxGasLimit, lastClosedLedger->fees().gasLimit));
 
     detail::VotableValue bytecodeSizeLimitVote(
         lastClosedLedger->fees().bytecodeSizeLimit,
         validOrCurrent(
-            target_.bytecode_size_limit,
+            target_.bytecodeSizeLimit,
             kMaxBytecodeSizeLimit,
             lastClosedLedger->fees().bytecodeSizeLimit));
 
-    detail::VotableValue gasPriceVote(lastClosedLedger->fees().gasPrice, target_.gas_price);
+    detail::VotableValue gasPriceVote(lastClosedLedger->fees().gasPrice, target_.gasPrice);
 
     auto const& rules = lastClosedLedger->rules();
     if (rules.enabled(featureXRPFees))

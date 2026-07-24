@@ -25,7 +25,7 @@
   ;;    Encoded in little-endian: 06 00 00 00
   (data (i32.const 4) "\06\00\00\00")
 
-  (func $finish (result i32)
+  (func $escrow_finish (result i32)
     (local $nwritten_ptr i32)
 
     ;; We will ask WASI to write the "number of bytes written" to address 24
@@ -55,5 +55,5 @@
     end
   )
 
-  (export "finish" (func $finish))
+  (export "escrow_finish" (func $escrow_finish))
 )
