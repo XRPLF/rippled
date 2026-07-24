@@ -887,7 +887,69 @@
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
-          }
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Disconnected",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Connected",
+                  "color": "orange",
+                  "index": 1
+                },
+                "2": {
+                  "text": "Syncing",
+                  "color": "yellow",
+                  "index": 2
+                },
+                "3": {
+                  "text": "Tracking",
+                  "color": "blue",
+                  "index": 3
+                },
+                "4": {
+                  "text": "Full",
+                  "color": "green",
+                  "index": 4
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "blue",
+                "value": 3
+              },
+              {
+                "color": "green",
+                "value": 4
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "min": 0,
+          "max": 4
         },
         "overrides": []
       }
