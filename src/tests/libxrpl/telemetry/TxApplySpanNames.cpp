@@ -51,3 +51,12 @@ TEST(TxApplySpanNames, stage_values_are_the_three_pipeline_stages)
     EXPECT_EQ(std::string_view(tx_apply_span::val::preclaim), "preclaim");
     EXPECT_EQ(std::string_view(tx_apply_span::val::apply), "apply");
 }
+
+TEST(TxApplySpanNames, current_ledger_keys_are_shared_constants)
+{
+    // "ledger being worked on" keys, re-exported from the base SpanNames.h so
+    // every emitter (tx.*, txq.*, apply pipeline) shares one string. Set on
+    // preclaim/transactor (view-bearing); preflight omits them (stateless).
+    EXPECT_EQ(std::string_view(tx_apply_span::attr::currentLedgerSeq), "current_ledger_seq");
+    EXPECT_EQ(std::string_view(tx_apply_span::attr::currentLedgerHash), "current_ledger_hash");
+}

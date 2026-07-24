@@ -51,6 +51,13 @@ using ::xrpl::telemetry::attr::peerId;
 using ::xrpl::telemetry::attr::txHash;
 
 /**
+ * "current_ledger_seq" — the open/current ledger index at the time the tx is
+ * received or submitted (the ledger being worked on), NOT an established ledger.
+ * No parent-ledger hash here: these entry points have no ledger view.
+ */
+using ::xrpl::telemetry::attr::currentLedgerSeq;
+
+/**
  * "local" — whether tx originated locally.
  */
 inline constexpr auto local = makeStr("local");
