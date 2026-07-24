@@ -29,6 +29,8 @@
 #include <boost/beast/http/write.hpp>
 #include <boost/system/system_error.hpp>
 
+#include <algorithm>
+#include <array>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -87,6 +89,8 @@ class JSONRPCClient : public AbstractClient
     boost::beast::multi_buffer bout_;
     unsigned rpcVersion_;
 
+    bool disconnected_ = false;
+
     // Errors that mean the persistent keep-alive connection was dropped by the
     // server (rather than a genuine protocol failure), so the request can be
     // safely retried on a fresh connection.
@@ -94,12 +98,18 @@ class JSONRPCClient : public AbstractClient
     droppedConnection(boost::system::error_code const& ec)
     {
         namespace error = boost::asio::error;
-        return ec == boost::beast::http::error::end_of_stream ||  //
-            ec == error::eof ||                                   //
-            ec == error::connection_reset ||                      //
-            ec == error::connection_aborted ||                    //
-            ec == error::broken_pipe ||                           //
-            ec == error::not_connected;
+        static auto const kDroppedConnectionErrors = std::to_array<boost::system::error_code>({
+            boost::beast::http::error::end_of_stream,
+            error::eof,
+            error::connection_reset,
+            error::connection_aborted,
+            error::broken_pipe,
+            error::not_connected,
+        });
+
+        return std::ranges::any_of(
+            kDroppedConnectionErrors,
+            [&ec](boost::system::error_code const& e) { return ec == e; });
     }
 
     // Tear down and re-establish the socket to ep_, discarding any buffered
@@ -109,7 +119,7 @@ class JSONRPCClient : public AbstractClient
     {
         boost::system::error_code ec;
         stream_.close(ec);
-        bin_.consume(bin_.size());
+        bin_.clear();
         stream_.connect(ep_);
     }
 
@@ -120,18 +130,23 @@ public:
         stream_.connect(ep_);
     }
 
-    /*
-        Return value is an Object type with up to three keys:
-            status
-            error
-            result
-    */
+    // Return value is an Object type with up to three keys:
+    //     status
+    //     error
+    //     result
     json::Value
     invoke(std::string const& cmd, json::Value const& params) override
     {
         using namespace boost::beast::http;
         using namespace boost::asio;
         using namespace std::string_literals;
+
+        // Once disconnect() has released the slot, the client must not be
+        // reused (see AbstractClient::disconnect). Refuse rather than let the
+        // failed write/read below trip the reconnect path and silently
+        // re-consume a connection slot, which would defeat disconnectClient().
+        if (disconnected_)
+            Throw<std::logic_error>("JSONRPCClient::invoke called after disconnect()");
 
         request<string_body> req;
         req.method(boost::beast::http::verb::post);
@@ -203,6 +218,11 @@ public:
     void
     disconnect() override
     {
+        if (disconnected_)
+            return;
+
+        disconnected_ = true;
+
         boost::system::error_code ec;
         stream_.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
         stream_.close(ec);
