@@ -9,7 +9,6 @@
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/consensus/Validations.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/ClusterNode.h>
 #include <xrpld/overlay/Peer.h>
@@ -20,8 +19,6 @@
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/Slot.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
@@ -38,12 +35,15 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/consensus/Validations.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/peerfinder/Slot.h>
+#include <xrpl/peerfinder/Types.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
@@ -1514,6 +1514,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
             return;
 
         std::vector<SHAMapNodeID> nodeIDs;
+        bool tooManyNodeIds = false;
         if (itype != protocol::liBASE)
         {
             nodeIDs.reserve(std::min(m->nodeids_size(), Tuning::kSoftMaxReplyNodes));
@@ -1521,12 +1522,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
             {
                 if (nodeIDs.size() >= Tuning::kSoftMaxReplyNodes)
                 {
-                    // Charge the peer for requesting too many node IDs, but continue processing the
-                    // received node IDs up to the limit. If the request is legitimate then at least
-                    // they will get a response and won't have to resend these nodes in their next
-                    // request.
-                    peer->charge(
-                        Resource::kFeeModerateBurdenPeer, "TMGetLedger: too many node IDs");
+                    // The peer requested too many node IDs. Continue processing the received node
+                    // IDs up to the limit. If the request is legitimate then at least they will get
+                    // a response and won't have to resend these nodes in their next request.
+                    tooManyNodeIds = true;
                     break;
                 }
                 auto parsed = deserializeSHAMapNodeID(nodeId);
@@ -1538,6 +1537,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
                 nodeIDs.push_back(std::move(*parsed));
             }
         }
+
+        // Charge once per request. Requesting too many node IDs is charged even for a relay
+        // response, since it's a distinct infraction from the "received a get ledger request"
+        // charge below, which is skipped for relay responses.
+        if (tooManyNodeIds)
+            peer->charge(Resource::kFeeModerateBurdenPeer, "TMGetLedger: too many node IDs");
+        else if (!m->has_requestcookie())
+            peer->charge(
+                Resource::kFeeModerateBurdenPeer, "TMGetLedger: received get ledger request");
 
         peer->processLedgerRequest(m, std::move(nodeIDs));
     });
@@ -3387,10 +3395,6 @@ PeerImp::processLedgerRequest(
     std::shared_ptr<protocol::TMGetLedger> const& m,
     std::vector<SHAMapNodeID> nodeIDs)
 {
-    // Do not resource charge a peer responding to a relay
-    if (!m->has_requestcookie())
-        charge(Resource::kFeeModerateBurdenPeer, "received a get ledger request");
-
     std::shared_ptr<Ledger const> ledger;
     std::shared_ptr<SHAMap const> sharedMap;
     SHAMap const* map{nullptr};
@@ -3560,7 +3564,7 @@ PeerImp::processLedgerRequest(
         }
 
         JLOG(pJournal_.info()) << "processLedgerRequest: Got request for " << m->nodeids_size()
-                               << " nodes at depth " << queryDepth << ", return "
+                               << " node IDs at depth " << queryDepth << ", return "
                                << ledgerData.nodes_size() << " nodes";
     }
 

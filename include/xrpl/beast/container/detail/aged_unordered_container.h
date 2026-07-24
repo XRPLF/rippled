@@ -5,6 +5,7 @@
 #include <xrpl/beast/container/detail/aged_associative_container.h>
 #include <xrpl/beast/container/detail/aged_container_iterator.h>
 #include <xrpl/beast/container/detail/empty_base_optimization.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/unordered_set.hpp>
