@@ -1,4 +1,4 @@
-#include <xrpl/nodestore/detail/varint.h>
+#include <xrpl/nodestore/detail/Varint.h>
 
 #include <gtest/gtest.h>
 
@@ -8,7 +8,7 @@
 
 using namespace xrpl::NodeStore;
 
-TEST(varint, encode_decode)
+TEST(Varint, encode_decode)
 {
     static constexpr auto kValues = std::to_array<std::size_t>({
         0,
@@ -32,7 +32,7 @@ TEST(varint, encode_decode)
 
     for (auto const value : kValues)
     {
-        std::array<std::uint8_t, varint_traits<std::size_t>::kMax> buffer{};
+        std::array<std::uint8_t, VarintTraits<std::size_t>::kMax> buffer{};
         auto const bytesWritten = writeVarint(buffer.data(), value);
         EXPECT_GT(bytesWritten, 0u);
         EXPECT_EQ(bytesWritten, sizeVarint(value));
