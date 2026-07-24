@@ -30,7 +30,7 @@ if(
     is_linux
     AND NOT SANITIZERS_ENABLED
     AND is_nix
-    AND NOT "$ENV{XRPLD_NO_PATCH_NIX_BINARY}"
+    AND NOT DEFINED ENV{XRPLD_NO_PATCH_NIX_BINARY}
 )
     execute_process(
         COMMAND "${_loader_path_script}"
