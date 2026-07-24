@@ -10,6 +10,78 @@
   "links": [],
   "panels": [
     {
+      "title": "Node Health",
+      "description": "###### What this is:\n*A single at-a-glance verdict: is this node healthy and doing its job (fully synced and keeping up with the network)?*\n\n###### How it's computed:\n*1 (Healthy) only when server_state == Full AND the validated ledger age is under 30s; otherwise 0 (Not Healthy). Combines server_info{metric=\"server_state\"} and ledgermaster_validated_ledger_age.*\n\n###### Reading it:\n*Green \"Healthy\" = full sync and current. Red \"Not Healthy\" = not full, or lagging the network (catching up, flapping, or stalled).*\n\n###### Healthy range:\n*Healthy (green) in steady state.*\n\n###### Watch for:\n*Any sustained Not Healthy \u2014 drill into the Operating Mode and Validated Ledger Age panels below to see whether it is a state or a lag problem.*\n\n###### Keywords:\n- **Full** *(per node)* \u2014 the node has the current validated ledger and complete recent history.\n- **Validated ledger age** *(per node)* \u2014 seconds since the last freshly validated ledger.\n\n###### Computation boundary:\n*Result: Per node \u2014 a boolean AND of two native metrics.*\n*Recorded in xrpld code as native metrics (beast::insight); the collector only forwards them; the Grafana query combines them.*\n\n###### Source:\n[app/misc/NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode / getValidatedLedgerAge`\n\n###### References:\n[Server states](https://xrpl.org/docs/concepts/networks-and-servers/rippled-server-states) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md)",
+      "type": "stat",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Not Healthy",
+                  "color": "red",
+                  "index": 0
+                },
+                "1": {
+                  "text": "Healthy",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace((server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"server_state\"} == bool 4) * on(service_instance_id) (ledgermaster_validated_ledger_age{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"} < bool 30), \"series\", \"Node Health\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ]
+    },
+    {
       "title": "Validated Ledger Age",
       "description": "###### What this is:\n*How old the most recently validated ledger is, in seconds.*\n\n###### How it's computed:\n*Current value of the validated-ledger-age gauge, refreshed each collection interval.*\n\n###### Reading it:\n*Lower is better; it should stay near the network close interval.*\n\n###### Healthy range:\n*Under about 7 seconds on a healthy node.*\n\n###### Watch for:\n*Values above 20 seconds mean the node is falling behind the network.*\n\n###### Source:\n[LedgerMaster.h](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/ledger/LedgerMaster.h)\n\n###### Function:\n`LedgerMaster::Stats::collectMetrics`",
       "type": "stat",
@@ -17,7 +89,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 4
       },
       "options": {
         "tooltip": {
@@ -67,7 +139,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 4
       },
       "options": {
         "tooltip": {
@@ -117,7 +189,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 12
       },
       "options": {
         "tooltip": {
@@ -183,7 +255,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 12
       },
       "options": {
         "tooltip": {
@@ -247,7 +319,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 20
       },
       "options": {
         "tooltip": {
@@ -287,7 +359,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 20
       },
       "options": {
         "tooltip": {
@@ -327,7 +399,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 28
       },
       "options": {
         "tooltip": {
@@ -361,7 +433,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 28
       },
       "options": {
         "tooltip": {
@@ -406,7 +478,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 36
       },
       "collapsed": false,
       "panels": []
@@ -417,7 +489,7 @@
       "type": "timeseries",
       "gridPos": {
         "x": 0,
-        "y": 33,
+        "y": 37,
         "w": 12,
         "h": 8
       },
@@ -475,7 +547,7 @@
       "type": "timeseries",
       "gridPos": {
         "x": 12,
-        "y": 33,
+        "y": 37,
         "w": 12,
         "h": 8
       },
@@ -520,7 +592,7 @@
       "type": "timeseries",
       "gridPos": {
         "x": 0,
-        "y": 41,
+        "y": 45,
         "w": 12,
         "h": 8
       },
@@ -585,7 +657,7 @@
       "type": "timeseries",
       "gridPos": {
         "x": 12,
-        "y": 41,
+        "y": 45,
         "w": 12,
         "h": 8
       },
@@ -634,7 +706,7 @@
       "type": "timeseries",
       "gridPos": {
         "x": 0,
-        "y": 49,
+        "y": 53,
         "w": 12,
         "h": 8
       },
@@ -692,7 +764,7 @@
       "type": "timeseries",
       "gridPos": {
         "x": 12,
-        "y": 49,
+        "y": 53,
         "w": 12,
         "h": 8
       },
@@ -737,7 +809,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 57
+        "y": 61
       },
       "collapsed": false,
       "panels": []
@@ -750,7 +822,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 58
+        "y": 62
       },
       "options": {
         "tooltip": {
@@ -810,7 +882,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 58
+        "y": 62
       },
       "options": {
         "tooltip": {
@@ -870,7 +942,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 66
+        "y": 70
       },
       "collapsed": false,
       "panels": []
@@ -883,7 +955,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 67
+        "y": 71
       },
       "options": {
         "tooltip": {
@@ -930,7 +1002,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 75
+        "y": 79
       },
       "collapsed": false,
       "panels": []
@@ -943,7 +1015,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 76
+        "y": 80
       },
       "options": {
         "tooltip": {
@@ -1024,7 +1096,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 76
+        "y": 80
       },
       "options": {
         "tooltip": {
@@ -1058,7 +1130,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 76
+        "y": 80
       },
       "options": {
         "tooltip": {
@@ -1092,7 +1164,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 76
+        "y": 80
       },
       "options": {
         "tooltip": {
@@ -1124,7 +1196,7 @@
       "type": "timeseries",
       "gridPos": {
         "x": 0,
-        "y": 84,
+        "y": 88,
         "w": 12,
         "h": 8
       },
@@ -1168,7 +1240,7 @@
       "type": "timeseries",
       "gridPos": {
         "x": 12,
-        "y": 84,
+        "y": 88,
         "w": 12,
         "h": 8
       },
@@ -1214,7 +1286,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 92
+        "y": 96
       },
       "options": {
         "tooltip": {
@@ -1248,7 +1320,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 100
+        "y": 104
       },
       "options": {
         "tooltip": {
@@ -1282,7 +1354,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 100
+        "y": 104
       },
       "options": {
         "tooltip": {
@@ -1324,7 +1396,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 108
+        "y": 112
       },
       "collapsed": false,
       "panels": []
@@ -1337,7 +1409,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 109
+        "y": 113
       },
       "options": {
         "showHeader": true
@@ -1369,7 +1441,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 109
+        "y": 113
       },
       "options": {
         "tooltip": {
@@ -1424,7 +1496,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 117
+        "y": 121
       },
       "options": {
         "tooltip": {
@@ -1458,7 +1530,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 117
+        "y": 121
       },
       "options": {
         "tooltip": {
@@ -1499,7 +1571,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 125
+        "y": 129
       },
       "collapsed": false,
       "panels": []
@@ -1512,7 +1584,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 126
+        "y": 130
       },
       "options": {
         "tooltip": {
@@ -1546,7 +1618,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 126
+        "y": 130
       },
       "options": {
         "tooltip": {
@@ -1580,7 +1652,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 126
+        "y": 130
       },
       "options": {
         "tooltip": {
@@ -1614,7 +1686,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 126
+        "y": 130
       },
       "options": {
         "tooltip": {
@@ -1676,7 +1748,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 134
+        "y": 138
       },
       "options": {
         "tooltip": {
@@ -1721,7 +1793,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 36
       },
       "collapsed": false,
       "panels": []
@@ -1734,7 +1806,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 33
+        "y": 37
       },
       "options": {
         "tooltip": {
@@ -1834,7 +1906,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 33
+        "y": 37
       },
       "options": {
         "tooltip": {
@@ -1934,7 +2006,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 41
+        "y": 45
       },
       "options": {
         "tooltip": {
@@ -1974,7 +2046,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 41
+        "y": 45
       },
       "options": {
         "tooltip": {
@@ -2025,7 +2097,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 49
+        "y": 53
       },
       "options": {
         "tooltip": {
@@ -2074,7 +2146,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 49
+        "y": 53
       },
       "options": {
         "tooltip": {
@@ -2120,7 +2192,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 57
+        "y": 61
       },
       "options": {
         "tooltip": {
@@ -2160,7 +2232,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 65
+        "y": 69
       },
       "options": {
         "tooltip": {
@@ -2200,7 +2272,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 126
+        "y": 130
       },
       "options": {
         "tooltip": {
@@ -2240,7 +2312,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 126
+        "y": 130
       },
       "options": {
         "tooltip": {
@@ -2280,7 +2352,7 @@
         "h": 8,
         "w": 18,
         "x": 0,
-        "y": 134
+        "y": 138
       },
       "options": {
         "mergeValues": true,
@@ -2368,7 +2440,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 134
+        "y": 138
       },
       "options": {
         "reduceOptions": {
