@@ -11,12 +11,14 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
+#include <iterator>
 #include <limits>
 #include <numbers>
 #include <optional>
 #include <regex>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 namespace xrpl {
@@ -1329,6 +1331,44 @@ TEST(json_value, iterator)
         json::Value const i{-3};
         EXPECT_EQ(i.begin(), i.end());
     }
+}
+
+TEST(json_value, iterator_traits)
+{
+    // The iterators must expose value_type and iterator_category so that
+    // std::iterator_traits classifies them as (at least) input iterators.
+    // Without these, iterator_traits deduces output_iterator_tag and standard
+    // algorithms such as std::all_of fail to instantiate.
+    using CIt = json::ValueConstIterator;
+    using It = json::ValueIterator;
+
+    static_assert(std::is_same_v<std::iterator_traits<CIt>::value_type, json::Value>);
+    static_assert(std::is_same_v<std::iterator_traits<It>::value_type, json::Value>);
+    static_assert(std::is_same_v<
+                  std::iterator_traits<CIt>::iterator_category,
+                  std::bidirectional_iterator_tag>);
+    static_assert(std::is_same_v<
+                  std::iterator_traits<It>::iterator_category,
+                  std::bidirectional_iterator_tag>);
+
+    // A standard algorithm over the iterators must compile and run. This is the
+    // exact usage (std::all_of over a Value's members) that regressed the build.
+    json::Value obj{json::ValueType::Object};
+    obj["a"] = 2;
+    obj["b"] = 4;
+    obj["c"] = 6;
+
+    json::Value const& cobj = obj;
+    EXPECT_TRUE(std::all_of(cobj.begin(), cobj.end(), [](json::Value const& v) {
+        return v.asInt() % 2 == 0;
+    }));
+    EXPECT_FALSE(
+        std::all_of(cobj.begin(), cobj.end(), [](json::Value const& v) { return v.asInt() > 3; }));
+
+    // count_if exercises the input-iterator contract and returns an exact count.
+    EXPECT_EQ(
+        std::count_if(cobj.begin(), cobj.end(), [](json::Value const& v) { return v.asInt() > 3; }),
+        2);
 }
 
 TEST(json_value, nest_limits)
