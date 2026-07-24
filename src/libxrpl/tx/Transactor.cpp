@@ -1208,11 +1208,14 @@ Transactor::checkMultiSign(
 //------------------------------------------------------------------------------
 
 static void
-removeUnfundedOffers(ApplyView& view, std::vector<uint256> const& offers, beast::Journal viewJ)
+removeUnfundedOffers(
+    ApplyView& view,
+    std::vector<std::pair<uint256, SLE::const_ref>> const& offers,
+    beast::Journal viewJ)
 {
     int removed = 0;
 
-    for (auto const& index : offers)
+    for (auto const& [index, _] : offers)
     {
         if (auto const sleOffer = view.peek(keylet::offer(index)))
         {
@@ -1227,12 +1230,12 @@ removeUnfundedOffers(ApplyView& view, std::vector<uint256> const& offers, beast:
 static void
 removeExpiredNFTokenOffers(
     ApplyView& view,
-    std::vector<uint256> const& offers,
+    std::vector<std::pair<uint256, SLE::const_ref>> const& offers,
     beast::Journal viewJ)
 {
     std::size_t removed = 0;
 
-    for (auto const& index : offers)
+    for (auto const& [index, _] : offers)
     {
         if (auto const offer = view.peek(keylet::nftokenOffer(index)))
         {
@@ -1244,9 +1247,12 @@ removeExpiredNFTokenOffers(
 }
 
 static void
-removeExpiredCredentials(ApplyView& view, std::vector<uint256> const& creds, beast::Journal viewJ)
+removeExpiredCredentials(
+    ApplyView& view,
+    std::vector<std::pair<uint256, SLE::const_ref>> const& creds,
+    beast::Journal viewJ)
 {
-    for (auto const& index : creds)
+    for (auto const& [index, _] : creds)
     {
         if (auto const sle = view.peek(keylet::credential(index)))
         {
@@ -1263,14 +1269,14 @@ removeExpiredCredentials(ApplyView& view, std::vector<uint256> const& creds, bea
 static void
 modifyWasmDataFields(
     ApplyView& view,
-    std::vector<std::pair<uint256, Blob>> const& wasmObjects,
+    std::vector<std::pair<uint256, SLE::const_ref>> const& wasmObjects,
     beast::Journal viewJ)
 {
-    for (auto const& [index, data] : wasmObjects)
+    for (auto const& [index, after] : wasmObjects)
     {
         if (auto const sle = view.peek(keylet::escrow(index)))
         {
-            sle->setFieldVL(sfData, data);
+            sle->setFieldVL(sfData, after->getFieldVL(sfData));
             view.update(sle);
         }
     }
@@ -1279,7 +1285,7 @@ modifyWasmDataFields(
 static void
 removeDeletedTrustLines(
     ApplyView& view,
-    std::vector<uint256> const& trustLines,
+    std::vector<std::pair<uint256, SLE::const_ref>> const& trustLines,
     beast::Journal viewJ)
 {
     if (trustLines.size() > kMaxDeletableAmmTrustLines)
@@ -1289,7 +1295,7 @@ removeDeletedTrustLines(
         return;
     }
 
-    for (auto const& index : trustLines)
+    for (auto const& [index, _] : trustLines)
     {
         if (auto const sleState = view.peek({ltRIPPLE_STATE, index});
             !isTesSuccess(deleteAMMTrustLine(view, sleState, std::nullopt, viewJ)))
@@ -1478,7 +1484,7 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
     // re-applied after the context is reset.
     auto const typesToCollect = typesForResult(result);
 
-    std::map<LedgerEntryType, std::vector<uint256>> deletedObjects;
+    std::map<LedgerEntryType, std::vector<std::pair<uint256, SLE::const_ref>>> deletedObjects;
     if (!typesToCollect.empty())
     {
         ctx_.visit(
@@ -1502,7 +1508,7 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
                                     after->getFieldAmount(sfTakerPays))
                                 return;
 
-                            deletedObjects[type].push_back(index);
+                            deletedObjects[type].push_back({index, after});
                         }
                     }
                 }

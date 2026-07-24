@@ -21,7 +21,7 @@ setupConfigForUnitTests(Config& cfg)
     using namespace jtx;
     // Default fees to old values, so tests don't have to worry about changes in
     // Config.h
-    // NOTE: For new `FEES` fields, you need to wait for the first flag ledger
+    // NOTE: For new `fees` fields, you need to wait for the first flag ledger
     // to close for the values to be activated.
     cfg.fees.referenceFee = UNIT_TEST_REFERENCE_FEE;
     cfg.fees.accountReserve = XRP(200).value().xrp().drops();

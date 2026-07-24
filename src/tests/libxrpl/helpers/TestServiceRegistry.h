@@ -75,8 +75,8 @@ class TestServiceRegistry : public ServiceRegistry
     defaultFees()
     {
         Fees fees{XRPAmount{10}, XRPAmount{10 * kDropsPerXrp}, XRPAmount{2 * kDropsPerXrp}};
-        fees.extensionComputeLimit = 1'000'000;
-        fees.extensionSizeLimit = 100'000;
+        fees.gasLimit = 1'000'000;
+        fees.bytecodeSizeLimit = 100'000;
         fees.gasPrice = 1'000'000;
         return fees;
     }

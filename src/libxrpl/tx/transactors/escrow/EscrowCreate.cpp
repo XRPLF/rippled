@@ -92,8 +92,11 @@ EscrowCreate::checkExtraFeatures(PreflightContext const& ctx)
     // Only require featureMPTokensV1 when the escrow amount is an MPT and
     // fixCleanup3_2_0 is active; XRP/IOU escrows are unaffected by this gate.
     if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx[sfAmount].holds<MPTIssue>())
-        return ctx.rules.enabled(featureMPTokensV1);
-    return true;
+        if (!ctx.rules.enabled(featureMPTokensV1))
+            return false;
+
+    return (!ctx.tx.isFieldPresent(sfBytecode) && !ctx.tx.isFieldPresent(sfData)) ||
+        ctx.rules.enabled(featureSmartEscrow);
 }
 
 template <ValidIssueType T>
@@ -139,13 +142,6 @@ EscrowCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
         txnFees += 9 * view.fees().base + 5 * tx[sfBytecode].size();
     }
     return txnFees;
-}
-
-bool
-EscrowCreate::checkExtraFeatures(PreflightContext const& ctx)
-{
-    return (!ctx.tx.isFieldPresent(sfBytecode) && !ctx.tx.isFieldPresent(sfData)) ||
-        ctx.rules.enabled(featureSmartEscrow);
 }
 
 NotTEC
@@ -215,7 +211,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         }
         auto const data = ctx.tx.getFieldVL(sfData);
-        if (data.size() > maxWasmDataLength)
+        if (data.size() > kMaxWasmDataLength)
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.Data bad size " << data.size();
             return temMALFORMED;
@@ -225,14 +221,14 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfBytecode))
     {
         auto const fees(ctx.registry.get().getFees());
-        if (fees.extensionSizeLimit == 0 || fees.extensionComputeLimit == 0)
+        if (fees.bytecodeSizeLimit == 0 || fees.gasLimit == 0)
         {
             JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
             return temTEMP_DISABLED;
         }
 
         auto const code = ctx.tx.getFieldVL(sfBytecode);
-        if (code.empty() || code.size() > fees.extensionSizeLimit)
+        if (code.empty() || code.size() > fees.bytecodeSizeLimit)
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.Bytecode bad size " << code.size();
             return temMALFORMED;

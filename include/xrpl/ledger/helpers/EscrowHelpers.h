@@ -256,7 +256,7 @@ escrowUnlockApplyHelper<MPTIssue>(
 }
 
 template <class T>
-static uint32_t
+static int32_t
 calculateAdditionalReserve(T const& finishFunction)
 {
     if (!finishFunction)

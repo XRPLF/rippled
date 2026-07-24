@@ -78,9 +78,8 @@ EscrowFinish::checkExtraFeatures(PreflightContext const& ctx)
         return false;
 
     if (ctx.tx.isFieldPresent(sfGas) && !ctx.rules.enabled(featureSmartEscrow))
-    {
         return false;
-    }
+
     return true;
 }
 
@@ -101,7 +100,7 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     if (auto const allowance = ctx.tx[~sfGas]; allowance)
     {
         auto const fees(ctx.registry.get().getFees());
-        if (fees.extensionComputeLimit == 0)
+        if (fees.bytecodeSizeLimit == 0)
         {
             JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
             return temTEMP_DISABLED;
@@ -110,7 +109,7 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         {
             return temBAD_LIMIT;
         }
-        if (*allowance > fees.extensionComputeLimit)
+        if (*allowance > fees.bytecodeSizeLimit)
         {
             JLOG(ctx.j.debug()) << "Gas too large: " << *allowance;
             return temBAD_LIMIT;
@@ -423,7 +422,7 @@ EscrowFinish::doApply()
 
         if (auto const& data = ledgerDataProvider.getData(); data.has_value())
         {
-            if (data->size() > maxWasmDataLength)
+            if (data->size() > kMaxWasmDataLength)
             {
                 // should already be checked in the updateData host function
                 return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -451,8 +450,8 @@ EscrowFinish::doApply()
         }
         else
         {
-            JLOG(j_.debug()) << "WASM Failure: " + transHuman(re.error());
-            return re.error();
+            JLOG(j_.debug()) << "WASM Failure: " + transHuman(re.error().ter);
+            return re.error().ter;
         }
     }
 

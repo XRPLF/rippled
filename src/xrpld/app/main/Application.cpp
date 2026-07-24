@@ -824,15 +824,15 @@ public:
     {
         XRPL_ASSERT(config_, "xrpl::ApplicationImp::getFees : non-null config");
 
-        auto const& f1(config_->FEES);
+        auto const& f1(config_->fees);
 
         Fees f2;
-        f2.base = f1.reference_fee;
-        f2.reserve = f1.account_reserve;
-        f2.increment = f1.owner_reserve;
-        f2.extensionComputeLimit = f1.extension_compute_limit;
-        f2.extensionSizeLimit = f1.extension_size_limit;
-        f2.gasPrice = f1.gas_price;
+        f2.base = f1.referenceFee;
+        f2.reserve = f1.accountReserve;
+        f2.increment = f1.ownerReserve;
+        f2.gasLimit = f1.gasLimit;
+        f2.bytecodeSizeLimit = f1.bytecodeSizeLimit;
+        f2.gasPrice = f1.gasPrice;
 
         return f2;
     }
