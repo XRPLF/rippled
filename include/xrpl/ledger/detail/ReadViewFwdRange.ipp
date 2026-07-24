@@ -1,22 +1,21 @@
 #pragma once
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 template <class ValueType>
-ReadViewFwdRange<ValueType>::iterator::iterator(iterator const& other)
+ReadViewFwdRange<ValueType>::Iterator::Iterator(Iterator const& other)
     : view_(other.view_), impl_(other.impl_ ? other.impl_->copy() : nullptr), cache_(other.cache_)
 {
 }
 
 template <class ValueType>
-ReadViewFwdRange<ValueType>::iterator::iterator(iterator&& other) noexcept
+ReadViewFwdRange<ValueType>::Iterator::Iterator(Iterator&& other) noexcept
     : view_(other.view_), impl_(std::move(other.impl_)), cache_(std::move(other.cache_))
 {
 }
 
 template <class ValueType>
-ReadViewFwdRange<ValueType>::iterator::iterator(
+ReadViewFwdRange<ValueType>::Iterator::Iterator(
     ReadView const* view,
     std::unique_ptr<iter_base> impl)
     : view_(view), impl_(std::move(impl))
@@ -25,7 +24,7 @@ ReadViewFwdRange<ValueType>::iterator::iterator(
 
 template <class ValueType>
 auto
-ReadViewFwdRange<ValueType>::iterator::operator=(iterator const& other) -> iterator&
+ReadViewFwdRange<ValueType>::Iterator::operator=(Iterator const& other) -> Iterator&
 {
     if (this != &other)
     {
@@ -38,7 +37,7 @@ ReadViewFwdRange<ValueType>::iterator::operator=(iterator const& other) -> itera
 
 template <class ValueType>
 auto
-ReadViewFwdRange<ValueType>::iterator::operator=(iterator&& other) noexcept -> iterator&
+ReadViewFwdRange<ValueType>::Iterator::operator=(Iterator&& other) noexcept -> Iterator&
 {
     if (this != &other)
     {
@@ -52,7 +51,7 @@ ReadViewFwdRange<ValueType>::iterator::operator=(iterator&& other) noexcept -> i
 
 template <class ValueType>
 bool
-ReadViewFwdRange<ValueType>::iterator::operator==(iterator const& other) const
+ReadViewFwdRange<ValueType>::Iterator::operator==(Iterator const& other) const
 {
     XRPL_ASSERT(
         view_ == other.view_,
@@ -67,14 +66,14 @@ ReadViewFwdRange<ValueType>::iterator::operator==(iterator const& other) const
 
 template <class ValueType>
 bool
-ReadViewFwdRange<ValueType>::iterator::operator!=(iterator const& other) const
+ReadViewFwdRange<ValueType>::Iterator::operator!=(Iterator const& other) const
 {
     return !(*this == other);
 }
 
 template <class ValueType>
 auto
-ReadViewFwdRange<ValueType>::iterator::operator*() const -> reference
+ReadViewFwdRange<ValueType>::Iterator::operator*() const -> reference
 {
     if (!cache_)
         cache_ = impl_->dereference();
@@ -83,14 +82,14 @@ ReadViewFwdRange<ValueType>::iterator::operator*() const -> reference
 
 template <class ValueType>
 auto
-ReadViewFwdRange<ValueType>::iterator::operator->() const -> pointer
+ReadViewFwdRange<ValueType>::Iterator::operator->() const -> pointer
 {
     return &**this;
 }
 
 template <class ValueType>
 auto
-ReadViewFwdRange<ValueType>::iterator::operator++() -> iterator&
+ReadViewFwdRange<ValueType>::Iterator::operator++() -> Iterator&
 {
     impl_->increment();
     cache_.reset();
@@ -99,13 +98,12 @@ ReadViewFwdRange<ValueType>::iterator::operator++() -> iterator&
 
 template <class ValueType>
 auto
-ReadViewFwdRange<ValueType>::iterator::operator++(int) -> iterator
+ReadViewFwdRange<ValueType>::Iterator::operator++(int) -> Iterator
 {
-    iterator prev(view_, impl_->copy());
+    Iterator prev(view_, impl_->copy());
     prev.cache_ = std::move(cache_);
     ++(*this);
     return prev;
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

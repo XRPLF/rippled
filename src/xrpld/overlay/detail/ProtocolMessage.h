@@ -5,14 +5,21 @@
 #include <xrpld/overlay/detail/ZeroCopyStream.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/messages.h>
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
 
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <optional>
+#include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -35,7 +42,9 @@ protocolMessageType(protocol::TMProofPathRequest const&)
     return protocol::mtPROOF_PATH_REQ;
 }
 
-/** Returns the name of a protocol message given its type. */
+/**
+ * Returns the name of a protocol message given its type.
+ */
 template <class = void>
 std::string
 protocolMessageName(int type)
@@ -94,25 +103,35 @@ namespace detail {
 
 struct MessageHeader
 {
-    /** The size of the message on the wire.
+    /**
+     * The size of the message on the wire.
+     *
+     * @note This is the sum of sizes of the header and the payload.
+     */
+    std::uint32_t totalWireSize = 0;
 
-        @note This is the sum of sizes of the header and the payload.
-    */
-    std::uint32_t total_wire_size = 0;
+    /**
+     * The size of the header associated with this message.
+     */
+    std::uint32_t headerSize = 0;
 
-    /** The size of the header associated with this message. */
-    std::uint32_t header_size = 0;
+    /**
+     * The size of the payload on the wire.
+     */
+    std::uint32_t payloadWireSize = 0;
 
-    /** The size of the payload on the wire. */
-    std::uint32_t payload_wire_size = 0;
+    /**
+     * Uncompressed message size if the message is compressed.
+     */
+    std::uint32_t uncompressedSize = 0;
 
-    /** Uncompressed message size if the message is compressed. */
-    std::uint32_t uncompressed_size = 0;
+    /**
+     * The type of the message.
+     */
+    std::uint16_t messageType = 0;
 
-    /** The type of the message. */
-    std::uint16_t message_type = 0;
-
-    /** Indicates which compression algorithm the payload is compressed with.
+    /**
+     * Indicates which compression algorithm the payload is compressed with.
      * Currently only lz4 is supported. If None then the message is not
      * compressed.
      */
@@ -133,14 +152,15 @@ buffersEnd(BufferSequence const& bufs)
     return boost::asio::buffers_iterator<BufferSequence, std::uint8_t>::end(bufs);
 }
 
-/** Parse a message header
- * @return a seated optional if the message header was successfully
- *         parsed. An unseated optional otherwise, in which case
- *         @param ec contains more information:
- *         - set to `errc::success` if not enough bytes were present
- *         - set to `errc::no_message` if a valid header was not present
- *         @bufs - sequence of input buffers, can't be empty
- *         @size input data size
+/**
+ * Parse a message header.
+ *
+ * @param ec On failure, set to `errc::success` if not enough bytes were
+ *           present, or `errc::no_message` if a valid header was not present.
+ * @param bufs Sequence of input buffers; can't be empty.
+ * @param size Input data size.
+ * @return A seated optional if the message header was successfully parsed, or
+ *         an unseated optional otherwise (see @p ec).
  */
 template <class BufferSequence>
 std::optional<MessageHeader>
@@ -159,10 +179,10 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
     // - 32 bits are the uncompressed data size
     if (*iter & 0x80)
     {
-        hdr.header_size = headerBytesCompressed;
+        hdr.headerSize = kHeaderBytesCompressed;
 
         // not enough bytes to parse the header
-        if (size < hdr.header_size)
+        if (size < hdr.headerSize)
         {
             ec = make_error_code(boost::system::errc::success);
             return std::nullopt;
@@ -183,18 +203,18 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
         }
 
         for (int i = 0; i != 4; ++i)
-            hdr.payload_wire_size = (hdr.payload_wire_size << 8) + *iter++;
+            hdr.payloadWireSize = (hdr.payloadWireSize << 8) + *iter++;
 
         // clear the top four bits (the compression bits).
-        hdr.payload_wire_size &= 0x0FFFFFFF;
+        hdr.payloadWireSize &= 0x0FFFFFFF;
 
-        hdr.total_wire_size = hdr.header_size + hdr.payload_wire_size;
+        hdr.totalWireSize = hdr.headerSize + hdr.payloadWireSize;
 
         for (int i = 0; i != 2; ++i)
-            hdr.message_type = (hdr.message_type << 8) + *iter++;
+            hdr.messageType = (hdr.messageType << 8) + *iter++;
 
         for (int i = 0; i != 4; ++i)
-            hdr.uncompressed_size = (hdr.uncompressed_size << 8) + *iter++;
+            hdr.uncompressedSize = (hdr.uncompressedSize << 8) + *iter++;
 
         return hdr;
     }
@@ -204,9 +224,9 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
     // - 26 bits are the payload size
     if ((*iter & 0xFC) == 0)
     {
-        hdr.header_size = headerBytes;
+        hdr.headerSize = kHeaderBytes;
 
-        if (size < hdr.header_size)
+        if (size < hdr.headerSize)
         {
             ec = make_error_code(boost::system::errc::success);
             return std::nullopt;
@@ -215,13 +235,13 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
         hdr.algorithm = Algorithm::None;
 
         for (int i = 0; i != 4; ++i)
-            hdr.payload_wire_size = (hdr.payload_wire_size << 8) + *iter++;
+            hdr.payloadWireSize = (hdr.payloadWireSize << 8) + *iter++;
 
-        hdr.uncompressed_size = hdr.payload_wire_size;
-        hdr.total_wire_size = hdr.header_size + hdr.payload_wire_size;
+        hdr.uncompressedSize = hdr.payloadWireSize;
+        hdr.totalWireSize = hdr.headerSize + hdr.payloadWireSize;
 
         for (int i = 0; i != 2; ++i)
-            hdr.message_type = (hdr.message_type << 8) + *iter++;
+            hdr.messageType = (hdr.messageType << 8) + *iter++;
 
         return hdr;
     }
@@ -230,46 +250,43 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
     return std::nullopt;
 }
 
-template <
-    class T,
-    class Buffers,
-    class = std::enable_if_t<std::is_base_of<::google::protobuf::Message, T>::value>>
+template <class T, class Buffers>
 std::shared_ptr<T>
 parseMessageContent(MessageHeader const& header, Buffers const& buffers)
+    requires(std::is_base_of_v<::google::protobuf::Message, T>)
 {
-    auto const m = std::make_shared<T>();
+    auto m = std::make_shared<T>();
 
     ZeroCopyInputStream<Buffers> stream(buffers);
-    stream.Skip(header.header_size);
+    stream.Skip(header.headerSize);
 
     if (header.algorithm != compression::Algorithm::None)
     {
         std::vector<std::uint8_t> payload;
-        payload.resize(header.uncompressed_size);
+        payload.resize(header.uncompressedSize);
 
         auto const payloadSize = xrpl::compression::decompress(
             stream,
-            header.payload_wire_size,
+            header.payloadWireSize,
             payload.data(),
-            header.uncompressed_size,
+            header.uncompressedSize,
             header.algorithm);
 
         if (payloadSize == 0 || !m->ParseFromArray(payload.data(), payloadSize))
             return {};
     }
     else if (!m->ParseFromZeroCopyStream(&stream))
+    {
         return {};
+    }
 
     return m;
 }
 
-template <
-    class T,
-    class Buffers,
-    class Handler,
-    class = std::enable_if_t<std::is_base_of<::google::protobuf::Message, T>::value>>
+template <class T, class Buffers, class Handler>
 bool
 invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
+    requires(std::is_base_of_v<::google::protobuf::Message, T>)
 {
     auto const m = parseMessageContent<T>(header, buffers);
     if (!m)
@@ -277,31 +294,32 @@ invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
 
     using namespace xrpl::compression;
     handler.onMessageBegin(
-        header.message_type,
+        header.messageType,
         m,
-        header.payload_wire_size,
-        header.uncompressed_size,
+        header.payloadWireSize,
+        header.uncompressedSize,
         header.algorithm != Algorithm::None);
     handler.onMessage(m);
-    handler.onMessageEnd(header.message_type, m);
+    handler.onMessageEnd(header.messageType, m);
 
     return true;
 }
 
 }  // namespace detail
 
-/** Calls the handler for up to one protocol message in the passed buffers.
-
-    If there is insufficient data to produce a complete protocol
-    message, zero is returned for the number of bytes consumed.
-
-    @param buffers The buffer that contains the data we've received
-    @param handler The handler that will be used to process the message
-    @param hint If possible, a hint as to the amount of data to read next. The
-                returned value MAY be zero, which means "no hint"
-
-    @return The number of bytes consumed, or the error code if any.
-*/
+/**
+ * Calls the handler for up to one protocol message in the passed buffers.
+ *
+ * If there is insufficient data to produce a complete protocol
+ * message, zero is returned for the number of bytes consumed.
+ *
+ * @param buffers The buffer that contains the data we've received
+ * @param handler The handler that will be used to process the message
+ * @param hint If possible, a hint as to the amount of data to read next. The
+ *             returned value MAY be zero, which means "no hint"
+ *
+ * @return The number of bytes consumed, or the error code if any.
+ */
 template <class Buffers, class Handler>
 std::pair<std::size_t, boost::system::error_code>
 invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hint)
@@ -327,8 +345,8 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
     // whose size exceeds this may result in the connection being dropped. A
     // larger message size may be supported in the future or negotiated as
     // part of a protocol upgrade.
-    if (header->payload_wire_size > maximumMessageSize ||
-        header->uncompressed_size > maximumMessageSize)
+    if (header->payloadWireSize > kMaximumMessageSize ||
+        header->uncompressedSize > kMaximumMessageSize)
     {
         result.second = make_error_code(boost::system::errc::message_size);
         return result;
@@ -343,15 +361,15 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
 
     // We don't have the whole message yet. This isn't an error but we have
     // nothing to do.
-    if (header->total_wire_size > size)
+    if (header->totalWireSize > size)
     {
-        hint = header->total_wire_size - size;
+        hint = header->totalWireSize - size;
         return result;
     }
 
-    bool success;
+    bool success = false;
 
-    switch (header->message_type)
+    switch (header->messageType)
     {
         case protocol::mtMANIFESTS:
             success = detail::invoke<protocol::TMManifests>(*header, buffers, handler);
@@ -418,12 +436,12 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
             success = detail::invoke<protocol::TMReplayDeltaResponse>(*header, buffers, handler);
             break;
         default:
-            handler.onMessageUnknown(header->message_type);
+            handler.onMessageUnknown(header->messageType);
             success = true;
             break;
     }
 
-    result.first = header->total_wire_size;
+    result.first = header->totalWireSize;
 
     if (!success)
         result.second = make_error_code(boost::system::errc::bad_message);

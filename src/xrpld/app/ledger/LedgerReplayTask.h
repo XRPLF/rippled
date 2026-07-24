@@ -4,6 +4,11 @@
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
+
+#include <cstdint>
+#include <memory>
 #include <vector>
 
 namespace xrpl {
@@ -25,16 +30,16 @@ public:
     {
     public:
         // set on construct
-        InboundLedger::Reason reason_;
-        uint256 finishHash_;
-        std::uint32_t totalLedgers_;  // including the start and the finish
+        InboundLedger::Reason reason;
+        uint256 finishHash;
+        std::uint32_t totalLedgers;  // including the start and the finish
 
         // to be updated
-        std::uint32_t finishSeq_ = 0;
-        std::vector<uint256> skipList_ = {};  // including the finishHash
-        uint256 startHash_ = {};
-        std::uint32_t startSeq_ = 0;
-        bool full_ = false;
+        std::uint32_t finishSeq = 0;
+        std::vector<uint256> skipList;  // including the finishHash
+        uint256 startHash;
+        std::uint32_t startSeq = 0;
+        bool full = false;
 
         /**
          * constructor
@@ -59,8 +64,10 @@ public:
         bool
         update(uint256 const& hash, std::uint32_t seq, std::vector<uint256> const& sList);
 
-        /** check if this task can be merged into an existing task */
-        bool
+        /**
+         * check if this task can be merged into an existing task
+         */
+        [[nodiscard]] bool
         canMergeInto(TaskParameter const& existingTask) const;
     };
 
@@ -80,9 +87,11 @@ public:
         std::shared_ptr<SkipListAcquire>& skipListAcquirer,
         TaskParameter const& parameter);
 
-    ~LedgerReplayTask();
+    ~LedgerReplayTask() override;
 
-    /** Start the task */
+    /**
+     * Start the task
+     */
     void
     init();
 
@@ -100,7 +109,9 @@ public:
         return parameter_;
     }
 
-    /** return if the task is finished */
+    /**
+     * return if the task is finished
+     */
     bool
     finished() const;
 
@@ -146,7 +157,7 @@ private:
     TaskParameter parameter_;
     uint32_t maxTimeouts_;
     std::shared_ptr<SkipListAcquire> skipListAcquirer_;
-    std::shared_ptr<Ledger const> parent_ = {};
+    std::shared_ptr<Ledger const> parent_;
     uint32_t deltaToBuild_ = 0;  // should not build until have parent
     std::vector<std::shared_ptr<LedgerDeltaAcquire>> deltas_;
 

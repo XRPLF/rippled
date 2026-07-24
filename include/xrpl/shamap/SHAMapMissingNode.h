@@ -1,9 +1,9 @@
 #pragma once
 
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/safe_cast.h>
 
-#include <iosfwd>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -28,7 +28,7 @@ to_string(SHAMapType t)
         case SHAMapType::FREE:
             return "Free Tree";
         default:
-            return std::to_string(safe_cast<std::underlying_type_t<SHAMapType>>(t));
+            return std::to_string(safeCast<std::underlying_type_t<SHAMapType>>(t));
     }
 }
 

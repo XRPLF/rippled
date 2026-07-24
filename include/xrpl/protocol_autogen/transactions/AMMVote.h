@@ -19,9 +19,9 @@ class AMMVoteBuilder;
  * @brief Transaction: AMMVote
  *
  * Type: ttAMM_VOTE (38)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureAMM
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMVoteBuilder to construct new transactions.
@@ -48,7 +48,8 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfAsset (soeREQUIRED)
+     * @brief Get sfAsset (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +60,8 @@ public:
     }
 
     /**
-     * @brief Get sfAsset2 (soeREQUIRED)
+     * @brief Get sfAsset2 (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -70,7 +72,7 @@ public:
     }
 
     /**
-     * @brief Get sfTradingFee (soeREQUIRED)
+     * @brief Get sfTradingFee (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -85,7 +87,7 @@ public:
  * @brief Builder for AMMVote transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class AMMVoteBuilder : public TransactionBuilderBase<AMMVoteBuilder>
@@ -125,10 +127,13 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
-     * @brief Set sfAsset (soeREQUIRED)
+     * @brief Set sfAsset (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     AMMVoteBuilder&
@@ -139,7 +144,8 @@ public:
     }
 
     /**
-     * @brief Set sfAsset2 (soeREQUIRED)
+     * @brief Set sfAsset2 (SoeRequired)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     AMMVoteBuilder&
@@ -150,7 +156,7 @@ public:
     }
 
     /**
-     * @brief Set sfTradingFee (soeREQUIRED)
+     * @brief Set sfTradingFee (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMVoteBuilder&

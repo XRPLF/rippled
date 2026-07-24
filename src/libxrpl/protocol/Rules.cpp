@@ -1,6 +1,5 @@
 #include <xrpl/protocol/Rules.h>
-// Do not remove. Forces Rules.h to stay first, to verify it can compile
-// without any hidden dependencies
+
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -22,8 +21,8 @@ namespace {
 LocalValue<std::optional<Rules>>&
 getCurrentTransactionRulesRef()
 {
-    static LocalValue<std::optional<Rules>> r;
-    return r;
+    static LocalValue<std::optional<Rules>> kR;
+    return kR;
 }
 }  // namespace
 
@@ -39,27 +38,88 @@ setCurrentTransactionRules(std::optional<Rules> r)
     // Make global changes associated with the rules before the value is moved.
     // Push the appropriate setting, instead of having the class pull every time
     // the value is needed. That could get expensive fast.
-    bool enableLargeNumbers =
-        !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
-    Number::setMantissaScale(enableLargeNumbers ? MantissaRange::large : MantissaRange::small);
+
+    // Declare the range this way to keep clang-tidy from complaining
+    auto const range = [&r]() {
+        // If any new conditions with new amendments are added to "enableLargeNumbers", those
+        // amendments must also be added to useRulesGuards.
+        bool const enableLargeNumbers =
+            !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
+        // If enableLargeNumbers is true, then useRulesGuards must also return true.
+        // However, the reverse is not true. Other amendments can cause the rules guard to be used,
+        // even though large numbers are _not_ used.
+        XRPL_ASSERT(
+            !r || !enableLargeNumbers || useRulesGuards(*r),
+            "setCurrentTransactionRules : rule decisions match");
+
+        if (enableLargeNumbers)
+        {
+            static_assert(
+                MantissaRange::MantissaScale::Large == MantissaRange::MantissaScale::Large330);
+            if (!r || r->enabled(fixCleanup3_3_0))
+            {
+                return MantissaRange::MantissaScale::Large330;
+            }
+            if (r->enabled(fixCleanup3_2_0))
+            {
+                return MantissaRange::MantissaScale::Large320;
+            }
+            return MantissaRange::MantissaScale::LargeLegacy;
+        }
+        return MantissaRange::MantissaScale::Small;
+    }();
+    Number::setMantissaScale(range);
 
     *getCurrentTransactionRulesRef() = std::move(r);
+}
+
+bool
+useRulesGuards(Rules const& rules)
+{
+    // The list of amendments used here - to decide whether to create a RulesGuard - must be a
+    // superset of the list used to determine "enableLargeNumbers" in setCurrentTransactionRules.
+    // Additional amendments can be added if desired.
+    //
+    // As soon as any one of these amendments is retired, this whole function can be removed, along
+    // with createGuards, and any other callers, and the first set of guards can be created directly
+    // at the call site, without using optional.
+    return rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol) ||
+        rules.enabled(fixCleanup3_2_0) || rules.enabled(fixCleanup3_3_0);
+}
+
+void
+createGuards(
+    Rules const& rules,
+    std::optional<CurrentTransactionRulesGuard>& rulesGuard,
+    std::optional<NumberMantissaScaleGuard>& mantissaScaleGuard)
+{
+    if (useRulesGuards(rules))
+    {
+        // raii classes for the current ledger rules. If the rules are set, the MantissaRange will
+        // be updated, too.
+        rulesGuard.emplace(rules);
+    }
+    else
+    {
+        // Without those features enabled, always use the old number rules.
+        mantissaScaleGuard.emplace(MantissaRange::MantissaScale::Small);
+    }
 }
 
 class Rules::Impl
 {
 private:
-    std::unordered_set<uint256, hardened_hash<>> set_;
+    std::unordered_set<uint256, HardenedHash<>> set_;
     std::optional<uint256> digest_;
-    std::unordered_set<uint256, beast::uhash<>> const& presets_;
+    std::unordered_set<uint256, beast::Uhash<>> const& presets_;
 
 public:
-    explicit Impl(std::unordered_set<uint256, beast::uhash<>> const& presets) : presets_(presets)
+    explicit Impl(std::unordered_set<uint256, beast::Uhash<>> const& presets) : presets_(presets)
     {
     }
 
     Impl(
-        std::unordered_set<uint256, beast::uhash<>> const& presets,
+        std::unordered_set<uint256, beast::Uhash<>> const& presets,
         std::optional<uint256> const& digest,
         STVector256 const& amendments)
         : digest_(digest), presets_(presets)
@@ -68,13 +128,13 @@ public:
         set_.insert(amendments.begin(), amendments.end());
     }
 
-    std::unordered_set<uint256, beast::uhash<>> const&
+    [[nodiscard]] std::unordered_set<uint256, beast::Uhash<>> const&
     presets() const
     {
         return presets_;
     }
 
-    bool
+    [[nodiscard]] bool
     enabled(uint256 const& feature) const
     {
         if (presets_.contains(feature))
@@ -97,20 +157,20 @@ public:
     }
 };
 
-Rules::Rules(std::unordered_set<uint256, beast::uhash<>> const& presets)
+Rules::Rules(std::unordered_set<uint256, beast::Uhash<>> const& presets)
     : impl_(std::make_shared<Impl>(presets))
 {
 }
 
 Rules::Rules(
-    std::unordered_set<uint256, beast::uhash<>> const& presets,
+    std::unordered_set<uint256, beast::Uhash<>> const& presets,
     std::optional<uint256> const& digest,
     STVector256 const& amendments)
     : impl_(std::make_shared<Impl>(presets, digest, amendments))
 {
 }
 
-std::unordered_set<uint256, beast::uhash<>> const&
+std::unordered_set<uint256, beast::Uhash<>> const&
 Rules::presets() const
 {
     return impl_->presets();
@@ -140,10 +200,18 @@ Rules::operator!=(Rules const& other) const
 }
 
 bool
-isFeatureEnabled(uint256 const& feature)
+isFeatureEnabled(uint256 const& feature, bool resultIfNoRules)
 {
     auto const& rules = getCurrentTransactionRules();
-    return rules && rules->enabled(feature);
+    if (!rules)
+        return resultIfNoRules;
+    return rules->enabled(feature);
+}
+
+bool
+isFeatureEnabled(uint256 const& feature)
+{
+    return isFeatureEnabled(feature, false);
 }
 
 }  // namespace xrpl

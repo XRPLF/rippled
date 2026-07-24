@@ -1,10 +1,18 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
 
-/** AMMVote implements AMM vote Transactor.
+/**
+ * AMMVote implements AMM vote Transactor.
  * This transactor allows for the TradingFee of the AMM instance be a votable
  * parameter. Any account (LP) that holds the corresponding LPTokens can cast
  * a vote using the new AMMVote transaction. VoteSlots array in ltAMM object
@@ -30,7 +38,7 @@ namespace xrpl {
 class AMMVote : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit AMMVote(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -47,6 +55,17 @@ public:
 
     TER
     doApply() override;
+
+    void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
 };
 
 }  // namespace xrpl

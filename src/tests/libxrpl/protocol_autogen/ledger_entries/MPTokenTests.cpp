@@ -27,6 +27,12 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     auto const ownerNodeValue = canonical_UINT64();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
+    auto const confidentialBalanceInboxValue = canonical_VL();
+    auto const confidentialBalanceSpendingValue = canonical_VL();
+    auto const confidentialBalanceVersionValue = canonical_UINT32();
+    auto const issuerEncryptedBalanceValue = canonical_VL();
+    auto const auditorEncryptedBalanceValue = canonical_VL();
+    auto const holderEncryptionKeyValue = canonical_VL();
 
     MPTokenBuilder builder{
         accountValue,
@@ -38,6 +44,12 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
 
     builder.setMPTAmount(mPTAmountValue);
     builder.setLockedAmount(lockedAmountValue);
+    builder.setConfidentialBalanceInbox(confidentialBalanceInboxValue);
+    builder.setConfidentialBalanceSpending(confidentialBalanceSpendingValue);
+    builder.setConfidentialBalanceVersion(confidentialBalanceVersionValue);
+    builder.setIssuerEncryptedBalance(issuerEncryptedBalanceValue);
+    builder.setAuditorEncryptedBalance(auditorEncryptedBalanceValue);
+    builder.setHolderEncryptionKey(holderEncryptionKeyValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -94,6 +106,54 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasLockedAmount());
     }
 
+    {
+        auto const& expected = confidentialBalanceInboxValue;
+        auto const actualOpt = entry.getConfidentialBalanceInbox();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfConfidentialBalanceInbox");
+        EXPECT_TRUE(entry.hasConfidentialBalanceInbox());
+    }
+
+    {
+        auto const& expected = confidentialBalanceSpendingValue;
+        auto const actualOpt = entry.getConfidentialBalanceSpending();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfConfidentialBalanceSpending");
+        EXPECT_TRUE(entry.hasConfidentialBalanceSpending());
+    }
+
+    {
+        auto const& expected = confidentialBalanceVersionValue;
+        auto const actualOpt = entry.getConfidentialBalanceVersion();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfConfidentialBalanceVersion");
+        EXPECT_TRUE(entry.hasConfidentialBalanceVersion());
+    }
+
+    {
+        auto const& expected = issuerEncryptedBalanceValue;
+        auto const actualOpt = entry.getIssuerEncryptedBalance();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfIssuerEncryptedBalance");
+        EXPECT_TRUE(entry.hasIssuerEncryptedBalance());
+    }
+
+    {
+        auto const& expected = auditorEncryptedBalanceValue;
+        auto const actualOpt = entry.getAuditorEncryptedBalance();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAuditorEncryptedBalance");
+        EXPECT_TRUE(entry.hasAuditorEncryptedBalance());
+    }
+
+    {
+        auto const& expected = holderEncryptionKeyValue;
+        auto const actualOpt = entry.getHolderEncryptionKey();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfHolderEncryptionKey");
+        EXPECT_TRUE(entry.hasHolderEncryptionKey());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -114,6 +174,12 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     auto const ownerNodeValue = canonical_UINT64();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
+    auto const confidentialBalanceInboxValue = canonical_VL();
+    auto const confidentialBalanceSpendingValue = canonical_VL();
+    auto const confidentialBalanceVersionValue = canonical_UINT32();
+    auto const issuerEncryptedBalanceValue = canonical_VL();
+    auto const auditorEncryptedBalanceValue = canonical_VL();
+    auto const holderEncryptionKeyValue = canonical_VL();
 
     auto sle = std::make_shared<SLE>(MPToken::entryType, index);
 
@@ -124,6 +190,12 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     sle->at(sfOwnerNode) = ownerNodeValue;
     sle->at(sfPreviousTxnID) = previousTxnIDValue;
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
+    sle->at(sfConfidentialBalanceInbox) = confidentialBalanceInboxValue;
+    sle->at(sfConfidentialBalanceSpending) = confidentialBalanceSpendingValue;
+    sle->at(sfConfidentialBalanceVersion) = confidentialBalanceVersionValue;
+    sle->at(sfIssuerEncryptedBalance) = issuerEncryptedBalanceValue;
+    sle->at(sfAuditorEncryptedBalance) = auditorEncryptedBalanceValue;
+    sle->at(sfHolderEncryptionKey) = holderEncryptionKeyValue;
 
     MPTokenBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -210,6 +282,84 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfLockedAmount");
     }
 
+    {
+        auto const& expected = confidentialBalanceInboxValue;
+
+        auto const fromSleOpt = entryFromSle.getConfidentialBalanceInbox();
+        auto const fromBuilderOpt = entryFromBuilder.getConfidentialBalanceInbox();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfConfidentialBalanceInbox");
+        expectEqualField(expected, *fromBuilderOpt, "sfConfidentialBalanceInbox");
+    }
+
+    {
+        auto const& expected = confidentialBalanceSpendingValue;
+
+        auto const fromSleOpt = entryFromSle.getConfidentialBalanceSpending();
+        auto const fromBuilderOpt = entryFromBuilder.getConfidentialBalanceSpending();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfConfidentialBalanceSpending");
+        expectEqualField(expected, *fromBuilderOpt, "sfConfidentialBalanceSpending");
+    }
+
+    {
+        auto const& expected = confidentialBalanceVersionValue;
+
+        auto const fromSleOpt = entryFromSle.getConfidentialBalanceVersion();
+        auto const fromBuilderOpt = entryFromBuilder.getConfidentialBalanceVersion();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfConfidentialBalanceVersion");
+        expectEqualField(expected, *fromBuilderOpt, "sfConfidentialBalanceVersion");
+    }
+
+    {
+        auto const& expected = issuerEncryptedBalanceValue;
+
+        auto const fromSleOpt = entryFromSle.getIssuerEncryptedBalance();
+        auto const fromBuilderOpt = entryFromBuilder.getIssuerEncryptedBalance();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfIssuerEncryptedBalance");
+        expectEqualField(expected, *fromBuilderOpt, "sfIssuerEncryptedBalance");
+    }
+
+    {
+        auto const& expected = auditorEncryptedBalanceValue;
+
+        auto const fromSleOpt = entryFromSle.getAuditorEncryptedBalance();
+        auto const fromBuilderOpt = entryFromBuilder.getAuditorEncryptedBalance();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAuditorEncryptedBalance");
+        expectEqualField(expected, *fromBuilderOpt, "sfAuditorEncryptedBalance");
+    }
+
+    {
+        auto const& expected = holderEncryptionKeyValue;
+
+        auto const fromSleOpt = entryFromSle.getHolderEncryptionKey();
+        auto const fromBuilderOpt = entryFromBuilder.getHolderEncryptionKey();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfHolderEncryptionKey");
+        expectEqualField(expected, *fromBuilderOpt, "sfHolderEncryptionKey");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -276,5 +426,17 @@ TEST(MPTokenTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getMPTAmount().has_value());
     EXPECT_FALSE(entry.hasLockedAmount());
     EXPECT_FALSE(entry.getLockedAmount().has_value());
+    EXPECT_FALSE(entry.hasConfidentialBalanceInbox());
+    EXPECT_FALSE(entry.getConfidentialBalanceInbox().has_value());
+    EXPECT_FALSE(entry.hasConfidentialBalanceSpending());
+    EXPECT_FALSE(entry.getConfidentialBalanceSpending().has_value());
+    EXPECT_FALSE(entry.hasConfidentialBalanceVersion());
+    EXPECT_FALSE(entry.getConfidentialBalanceVersion().has_value());
+    EXPECT_FALSE(entry.hasIssuerEncryptedBalance());
+    EXPECT_FALSE(entry.getIssuerEncryptedBalance().has_value());
+    EXPECT_FALSE(entry.hasAuditorEncryptedBalance());
+    EXPECT_FALSE(entry.getAuditorEncryptedBalance().has_value());
+    EXPECT_FALSE(entry.hasHolderEncryptionKey());
+    EXPECT_FALSE(entry.getHolderEncryptionKey().has_value());
 }
 }

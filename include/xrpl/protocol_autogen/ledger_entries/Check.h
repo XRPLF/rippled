@@ -33,7 +33,7 @@ public:
      * @brief Construct a Check ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Check(std::shared_ptr<SLE const> sle)
+    explicit Check(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestination (soeREQUIRED)
+     * @brief Get sfDestination (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfSendMax (soeREQUIRED)
+     * @brief Get sfSendMax (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -79,7 +79,7 @@ public:
     }
 
     /**
-     * @brief Get sfSequence (soeREQUIRED)
+     * @brief Get sfSequence (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -90,7 +90,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -101,7 +101,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationNode (soeREQUIRED)
+     * @brief Get sfDestinationNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -112,7 +112,7 @@ public:
     }
 
     /**
-     * @brief Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -136,7 +136,7 @@ public:
     }
 
     /**
-     * @brief Get sfInvoiceID (soeOPTIONAL)
+     * @brief Get sfInvoiceID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -160,7 +160,7 @@ public:
     }
 
     /**
-     * @brief Get sfSourceTag (soeOPTIONAL)
+     * @brief Get sfSourceTag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -184,7 +184,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -208,7 +208,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -219,7 +219,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -234,7 +234,7 @@ public:
  * @brief Builder for Check ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class CheckBuilder : public LedgerEntryBuilderBase<CheckBuilder>
@@ -269,7 +269,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    CheckBuilder(std::shared_ptr<SLE const> sle)
+    CheckBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltCHECK)
         {
@@ -278,10 +278,12 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -292,7 +294,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -303,7 +305,7 @@ public:
     }
 
     /**
-     * @brief Set sfSendMax (soeREQUIRED)
+     * @brief Set sfSendMax (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -314,7 +316,7 @@ public:
     }
 
     /**
-     * @brief Set sfSequence (soeREQUIRED)
+     * @brief Set sfSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -325,7 +327,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -336,7 +338,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationNode (soeREQUIRED)
+     * @brief Set sfDestinationNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -347,7 +349,7 @@ public:
     }
 
     /**
-     * @brief Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -358,7 +360,7 @@ public:
     }
 
     /**
-     * @brief Set sfInvoiceID (soeOPTIONAL)
+     * @brief Set sfInvoiceID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -369,7 +371,7 @@ public:
     }
 
     /**
-     * @brief Set sfSourceTag (soeOPTIONAL)
+     * @brief Set sfSourceTag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -380,7 +382,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -391,7 +393,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&
@@ -402,7 +404,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CheckBuilder&

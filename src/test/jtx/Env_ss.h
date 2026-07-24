@@ -1,16 +1,21 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <xrpl/json/json_value.h>
 
-/** A transaction testing environment wrapper.
-    Transactions submitted in sign-and-submit mode
-    by default.
-*/
-class Env_ss
+#include <source_location>
+#include <utility>
+
+namespace xrpl::test::jtx {
+
+/**
+ * A transaction testing environment wrapper.
+ * Transactions submitted in sign-and-submit mode
+ * by default.
+ */
+class EnvSs
 {
 private:
     Env& env_;
@@ -24,14 +29,14 @@ private:
         operator=(SignSubmitRunner&&) = delete;
 
         SignSubmitRunner(Env& env, JTx&& jt, std::source_location loc)
-            : env_(env), jt_(jt), loc_(loc)
+            : env_(env), jt_(std::move(jt)), loc_(loc)
         {
         }
 
         void
-        operator()(Json::Value const& params = Json::nullValue)
+        operator()(json::Value const& params = json::ValueType::Null)
         {
-            env_.sign_and_submit(jt_, params, loc_);
+            env_.signAndSubmit(jt_, params, loc_);
         }
 
     private:
@@ -41,17 +46,17 @@ private:
     };
 
 public:
-    Env_ss(Env_ss const&) = delete;
-    Env_ss&
-    operator=(Env_ss const&) = delete;
+    EnvSs(EnvSs const&) = delete;
+    EnvSs&
+    operator=(EnvSs const&) = delete;
 
-    Env_ss(Env& env) : env_(env)
+    EnvSs(Env& env) : env_(env)
     {
     }
 
     template <class... FN>
     SignSubmitRunner
-    operator()(WithSourceLocation<Json::Value> jv, FN const&... fN)
+    operator()(WithSourceLocation<json::Value> jv, FN const&... fN)
     {
         auto jtx = env_.jt(std::move(jv.value), fN...);
         return SignSubmitRunner(env_, std::move(jtx), jv.loc);
@@ -66,6 +71,4 @@ public:
     }
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

@@ -19,9 +19,9 @@ class LedgerStateFixBuilder;
  * @brief Transaction: LedgerStateFix
  *
  * Type: ttLEDGER_STATE_FIX (53)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: fixNFTokenPageLinks
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use LedgerStateFixBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfLedgerFixType (soeREQUIRED)
+     * @brief Get sfLedgerFixType (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwner (soeOPTIONAL)
+     * @brief Get sfOwner (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -83,13 +83,39 @@ public:
     {
         return this->tx_->isFieldPresent(sfOwner);
     }
+
+    /**
+     * @brief Get sfBookDirectory (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getBookDirectory() const
+    {
+        if (hasBookDirectory())
+        {
+            return this->tx_->at(sfBookDirectory);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfBookDirectory is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasBookDirectory() const
+    {
+        return this->tx_->isFieldPresent(sfBookDirectory);
+    }
 };
 
 /**
  * @brief Builder for LedgerStateFix transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class LedgerStateFixBuilder : public TransactionBuilderBase<LedgerStateFixBuilder>
@@ -125,10 +151,12 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
-     * @brief Set sfLedgerFixType (soeREQUIRED)
+     * @brief Set sfLedgerFixType (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     LedgerStateFixBuilder&
@@ -139,13 +167,24 @@ public:
     }
 
     /**
-     * @brief Set sfOwner (soeOPTIONAL)
+     * @brief Set sfOwner (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     LedgerStateFixBuilder&
     setOwner(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
     {
         object_[sfOwner] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfBookDirectory (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    LedgerStateFixBuilder&
+    setBookDirectory(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfBookDirectory] = value;
         return *this;
     }
 

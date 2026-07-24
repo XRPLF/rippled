@@ -33,7 +33,7 @@ public:
      * @brief Construct a Delegate ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Delegate(std::shared_ptr<SLE const> sle)
+    explicit Delegate(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfAuthorize (soeREQUIRED)
+     * @brief Get sfAuthorize (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfPermissions (soeREQUIRED)
+     * @brief Get sfPermissions (SoeRequired)
      * @note This is an untyped field (unknown).
      * @return The field value.
      */
@@ -80,7 +80,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -91,7 +91,31 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfDestinationNode (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    getDestinationNode() const
+    {
+        if (hasDestinationNode())
+            return this->sle_->at(sfDestinationNode);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfDestinationNode is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasDestinationNode() const
+    {
+        return this->sle_->isFieldPresent(sfDestinationNode);
+    }
+
+    /**
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -102,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -117,7 +141,7 @@ public:
  * @brief Builder for Delegate ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class DelegateBuilder : public LedgerEntryBuilderBase<DelegateBuilder>
@@ -148,7 +172,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    DelegateBuilder(std::shared_ptr<SLE const> sle)
+    DelegateBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltDELEGATE)
         {
@@ -157,10 +181,12 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -171,7 +197,7 @@ public:
     }
 
     /**
-     * @brief Set sfAuthorize (soeREQUIRED)
+     * @brief Set sfAuthorize (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -182,7 +208,7 @@ public:
     }
 
     /**
-     * @brief Set sfPermissions (soeREQUIRED)
+     * @brief Set sfPermissions (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -193,7 +219,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -204,7 +230,18 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfDestinationNode (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    DelegateBuilder&
+    setDestinationNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    {
+        object_[sfDestinationNode] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&
@@ -215,7 +252,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DelegateBuilder&

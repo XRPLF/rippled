@@ -1,21 +1,27 @@
 #pragma once
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
-/** The disposition of a consumer after applying a load charge. */
-enum Disposition {
-    /** No action required. */
-    ok
+/**
+ * The disposition of a consumer after applying a load charge.
+ */
+enum class Disposition {
+    /**
+     * No action required.
+     */
+    Ok
 
-    /** Consumer should be warned that consumption is high. */
+    /**
+     * Consumer should be warned that consumption is high.
+     */
     ,
-    warn
+    Warn
 
-    /** Consumer should be disconnected for excess consumption. */
+    /**
+     * Consumer should be disconnected for excess consumption.
+     */
     ,
-    drop
+    Drop
 };
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource

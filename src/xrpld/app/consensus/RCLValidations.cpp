@@ -1,4 +1,5 @@
 #include <xrpld/app/consensus/RCLValidations.h>
+
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
@@ -8,10 +9,20 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/consensus/Validations.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/tokens.h>
 
+#include <algorithm>
 #include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -35,8 +46,10 @@ RCLValidatedLedger::RCLValidatedLedger(
         ancestors_ = hashIndex->getFieldV256(sfHashes).value();
     }
     else
+    {
         JLOG(j_.warn()) << "Ledger " << ledgerSeq_ << ":" << ledgerID_
                         << " missing recent ancestor hashes";
+    }
 }
 
 auto
@@ -100,7 +113,7 @@ RCLValidationsAdaptor::RCLValidationsAdaptor(Application& app, beast::Journal j)
 NetClock::time_point
 RCLValidationsAdaptor::now() const
 {
-    return app_.timeKeeper().closeTime();
+    return app_.getTimeKeeper().closeTime();
 }
 
 std::optional<RCLValidatedLedger>
@@ -119,7 +132,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 
         Application* pApp = &app_;
 
-        app_.getJobQueue().addJob(jtADVANCE, "GetConsL2", [pApp, hash, this]() {
+        app_.getJobQueue().addJob(JtAdvance, "GetConsL2", [pApp, hash, this]() {
             JLOG(j_.debug()) << "JOB advanceLedger getConsensusLedger2 started";
             pApp->getInboundLedgers().acquireAsync(hash, 0, InboundLedger::Reason::CONSENSUS);
         });
@@ -132,7 +145,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
     XRPL_ASSERT(
         ledger->header().hash == hash, "xrpl::RCLValidationsAdaptor::acquire : ledger hash match");
 
-    return RCLValidatedLedger(std::move(ledger), j_);
+    return RCLValidatedLedger(ledger, j_);
 }
 
 void
@@ -148,25 +161,25 @@ handleNewValidation(
     auto const seq = val->getFieldU32(sfLedgerSequence);
 
     // Ensure validation is marked as trusted if signer currently trusted
-    auto masterKey = app.validators().getTrustedKey(signingKey);
+    auto masterKey = app.getValidators().getTrustedKey(signingKey);
 
     if (!val->isTrusted() && masterKey)
         val->setTrusted();
 
     // If not currently trusted, see if signer is currently listed
     if (!masterKey)
-        masterKey = app.validators().getListedKey(signingKey);
+        masterKey = app.getValidators().getListedKey(signingKey);
 
     auto& validations = app.getValidations();
 
     // masterKey is seated only if validator is trusted or listed
     auto const outcome = validations.add(calcNodeID(masterKey.value_or(signingKey)), val);
 
-    if (outcome == ValStatus::current)
+    if (outcome == ValStatus::Current)
     {
         if (val->isTrusted())
         {
-            if (bypassAccept == BypassAccept::yes)
+            if (bypassAccept == BypassAccept::Yes)
             {
                 XRPL_ASSERT(j, "xrpl::handleNewValidation : journal is available");
                 if (j.has_value())
@@ -204,14 +217,14 @@ handleNewValidation(
             return ret;
         }();
 
-        if (outcome == ValStatus::conflicting)
+        if (outcome == ValStatus::Conflicting)
         {
             ls << "Byzantine Behavior Detector: " << (val->isTrusted() ? "trusted " : "untrusted ")
                << id << ": Conflicting validation for " << seq << "!\n["
                << val->getSerializer().slice() << "]";
         }
 
-        if (outcome == ValStatus::multiple)
+        if (outcome == ValStatus::Multiple)
         {
             ls << "Byzantine Behavior Detector: " << (val->isTrusted() ? "trusted " : "untrusted ")
                << id << ": Multiple validations for " << seq << "/" << hash << "!\n["

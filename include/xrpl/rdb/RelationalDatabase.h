@@ -1,17 +1,33 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/LedgerShortcut.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/TxSearched.h>
-#include <xrpl/rdb/DatabaseCon.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/variant.hpp>
+
+#include <concepts>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <map>
+#include <memory>
+#include <optional>
+#include <tuple>
+#include <utility>
+#include <variant>
+#include <vector>
 
 namespace xrpl {
 
@@ -28,6 +44,22 @@ struct LedgerRange
 {
     uint32_t min;
     uint32_t max;
+};
+
+/**
+ * @brief Enumeration of possible delegate types that can occur during filtering in account_tx
+ */
+enum class DelegateType {
+    Actor,  ///< Another account signed and submitted transactions on behalf of this account (this
+            ///< account is the owner/delegator).
+    Authorizer  ///< This account signed and submitted transactions on behalf of another account
+                ///< (this account is the signer/delegatee).
+};
+
+struct DelegateFilter
+{
+    DelegateType type = DelegateType::Actor;
+    std::optional<AccountID> counterparty;
 };
 
 class RelationalDatabase
@@ -49,21 +81,24 @@ public:
     struct AccountTxOptions
     {
         AccountID const& account;
-        std::uint32_t minLedger;
-        std::uint32_t maxLedger;
-        std::uint32_t offset;
-        std::uint32_t limit;
-        bool bUnlimited;
+        /**
+         * Ledger sequence range to search. A value of 0 for min or max
+         * means unbounded in that direction (no constraint applied).
+         */
+        LedgerRange ledgerRange{};
+        std::uint32_t offset = 0;
+        std::uint32_t limit = 0;
+        bool bUnlimited{};
     };
 
     struct AccountTxPageOptions
     {
         AccountID const& account;
-        std::uint32_t minLedger;
-        std::uint32_t maxLedger;
+        LedgerRange ledgerRange{};
         std::optional<AccountTxMarker> marker;
-        std::uint32_t limit;
-        bool bAdmin;
+        std::uint32_t limit = 0;
+        bool bAdmin = false;
+        std::optional<DelegateFilter> delegate;
     };
 
     using AccountTx = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
@@ -83,14 +118,16 @@ public:
         bool forward = false;
         uint32_t limit = 0;
         std::optional<AccountTxMarker> marker;
+        std::optional<DelegateFilter> delegate;
     };
 
     struct AccountTxResult
     {
         std::variant<AccountTxs, MetaTxsList> transactions;
-        LedgerRange ledgerRange;
-        uint32_t limit;
+        LedgerRange ledgerRange{};
+        uint32_t limit = 0;
         std::optional<AccountTxMarker> marker;
+        std::optional<DelegateFilter> delegate;
     };
 
     virtual ~RelationalDatabase() = default;
@@ -247,7 +284,7 @@ public:
      * @return Struct CountMinMax which contains the minimum sequence,
      *         maximum sequence and number of ledgers.
      */
-    virtual struct CountMinMax
+    virtual CountMinMax
     getLedgerCountMinMax() = 0;
 
     /**
@@ -405,10 +442,10 @@ public:
      * @param id Hash of the transaction.
      * @param range Range of ledgers to check, if present.
      * @param ec Default error code value.
-     * @return Transaction and its metadata if found, otherwise TxSearched::all
+     * @return Transaction and its metadata if found, otherwise TxSearched::All
      *         if a range is provided and all ledgers from the range are present
-     *         in the database, TxSearched::some if a range is provided and not
-     *         all ledgers are present, TxSearched::unknown if the range is not
+     *         in the database, TxSearched::Some if a range is provided and not
+     *         all ledgers are present, TxSearched::Unknown if the range is not
      *         provided or a deserializing error occurred. In the last case the
      *         error code is returned via the ec parameter, in other cases the
      *         default error code is not changed.
@@ -417,7 +454,7 @@ public:
     getTransaction(
         uint256 const& id,
         std::optional<ClosedInterval<uint32_t>> const& range,
-        error_code_i& ec) = 0;
+        ErrorCodeI& ec) = 0;
 
     /**
      * @brief getKBUsedAll Returns the amount of space used by all databases.
@@ -455,9 +492,10 @@ public:
     closeTransactionDB() = 0;
 };
 
-template <class T, class C>
+template <typename T, typename C>
 T
 rangeCheckedCast(C c)
+    requires(std::is_arithmetic_v<T> && std::is_arithmetic_v<C> && std::convertible_to<C, T>)
 {
     if ((c > std::numeric_limits<T>::max()) || (!std::numeric_limits<T>::is_signed && c < 0) ||
         (std::numeric_limits<T>::is_signed && std::numeric_limits<C>::is_signed &&

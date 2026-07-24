@@ -1,13 +1,19 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
 
+#include <xrpld/core/Config.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/JobQueueAwaiter.h>
 
 #include <chrono>
+#include <condition_variable>
+#include <memory>
 #include <mutex>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /**
  * Test suite for the C++20 coroutine primitives: CoroTask, CoroTaskRunner,
@@ -18,7 +24,7 @@ namespace test {
  *
  *   CoroTask_test
  *   +-------------------------------------------------+
- *   | + gate (inner class) : condition_variable helper |
+ *   | + Gate (inner class) : condition_variable helper |
  *   +-------------------------------------------------+
  *          |  uses
  *          v
@@ -46,15 +52,15 @@ namespace test {
  *   testShutdownRejection     | postCoroTask returns nullptr when stopping
  *   testExpectEarlyExit       | expectEarlyExit() with finished_ == false
  */
-class CoroTask_test : public beast::unit_test::suite
+class CoroTask_test : public beast::unit_test::Suite
 {
 public:
     /**
      * Simple one-shot gate for synchronizing between test thread
      * and coroutine worker threads. signal() sets the flag;
-     * wait_for() blocks until signaled or timeout.
+     * waitFor() blocks until signaled or timeout.
      */
-    class gate
+    class Gate
     {
     private:
         std::condition_variable cv_;
@@ -65,16 +71,16 @@ public:
         /**
          * Block until signaled or timeout expires.
          *
-         * @param rel_time Maximum duration to wait
+         * @param relTime Maximum duration to wait
          *
          * @return true if signaled before timeout
          */
         template <class Rep, class Period>
         bool
-        wait_for(std::chrono::duration<Rep, Period> const& rel_time)
+        waitFor(std::chrono::duration<Rep, Period> const& relTime)
         {
             std::unique_lock<std::mutex> lk(mutex_);
-            auto b = cv_.wait_for(lk, rel_time, [this] { return signaled_; });
+            auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
             signaled_ = false;
             return b;
         }
@@ -108,18 +114,18 @@ public:
         testcase("void completion");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = true;
+            cfg->forceMultiThread = true;
             return cfg;
         }));
 
-        gate g;
+        Gate g;
         auto runner = env.app().getJobQueue().postCoroTask(
-            jtCLIENT, "CoroTaskTest", [gp = &g](auto) -> CoroTask<void> {
+            JtClient, "CoroTaskTest", [gp = &g](auto) -> CoroTask<void> {
                 gp->signal();
                 co_return;
             });
         BEAST_EXPECT(runner);
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         runner->join();
         BEAST_EXPECT(!runner->runnable());
     }
@@ -137,14 +143,14 @@ public:
         testcase("correct order");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = true;
+            cfg->forceMultiThread = true;
             return cfg;
         }));
 
-        gate g1, g2;
+        Gate g1, g2;
         std::shared_ptr<JobQueue::CoroTaskRunner> r;
         auto runner = env.app().getJobQueue().postCoroTask(
-            jtCLIENT,
+            JtClient,
             "CoroTaskTest",
             [rp = &r, g1p = &g1, g2p = &g2](auto runner) -> CoroTask<void> {
                 *rp = runner;
@@ -154,10 +160,10 @@ public:
                 co_return;
             });
         BEAST_EXPECT(runner);
-        BEAST_EXPECT(g1.wait_for(5s));
+        BEAST_EXPECT(g1.waitFor(5s));
         runner->join();
         runner->post();
-        BEAST_EXPECT(g2.wait_for(5s));
+        BEAST_EXPECT(g2.waitFor(5s));
         runner->join();
     }
 
@@ -174,19 +180,19 @@ public:
         testcase("incorrect order");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = true;
+            cfg->forceMultiThread = true;
             return cfg;
         }));
 
-        gate g;
+        Gate g;
         env.app().getJobQueue().postCoroTask(
-            jtCLIENT, "CoroTaskTest", [gp = &g](auto runner) -> CoroTask<void> {
+            JtClient, "CoroTaskTest", [gp = &g](auto runner) -> CoroTask<void> {
                 runner->post();
                 co_await runner->suspend();
                 gp->signal();
                 co_return;
             });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
     }
 
     /**
@@ -201,14 +207,14 @@ public:
         testcase("JobQueueAwaiter");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = true;
+            cfg->forceMultiThread = true;
             return cfg;
         }));
 
-        gate g;
+        Gate g;
         int step = 0;
         env.app().getJobQueue().postCoroTask(
-            jtCLIENT, "CoroTaskTest", [sp = &step, gp = &g](auto runner) -> CoroTask<void> {
+            JtClient, "CoroTaskTest", [sp = &step, gp = &g](auto runner) -> CoroTask<void> {
                 *sp = 1;
                 co_await runner->yieldAndPost();
                 *sp = 2;
@@ -217,7 +223,7 @@ public:
                 gp->signal();
                 co_return;
             });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(step == 3);
     }
 
@@ -242,20 +248,20 @@ public:
         LocalValue<int> lv(-1);
         BEAST_EXPECT(*lv == -1);
 
-        gate g;
-        jq.addJob(jtCLIENT, "LocalValTest", [&]() {
+        Gate g;
+        jq.addJob(JtClient, "LocalValTest", [&]() {
             this->BEAST_EXPECT(*lv == -1);
             *lv = -2;
             this->BEAST_EXPECT(*lv == -2);
             g.signal();
         });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(*lv == -1);
 
         for (int i = 0; i < N; ++i)
         {
             jq.postCoroTask(
-                jtCLIENT,
+                JtClient,
                 "CoroTaskTest",
                 [this, ap = &a, gp = &g, lvp = &lv, id = i](auto runner) -> CoroTask<void> {
                     (*ap)[id] = runner;
@@ -271,13 +277,13 @@ public:
                     this->BEAST_EXPECT(**lvp == id);
                     co_return;
                 });
-            BEAST_EXPECT(g.wait_for(5s));
+            BEAST_EXPECT(g.waitFor(5s));
             a[i]->join();
         }
         for (auto const& r : a)
         {
             r->post();
-            BEAST_EXPECT(g.wait_for(5s));
+            BEAST_EXPECT(g.waitFor(5s));
             r->join();
         }
         for (auto const& r : a)
@@ -286,11 +292,11 @@ public:
             r->join();
         }
 
-        jq.addJob(jtCLIENT, "LocalValTest", [&]() {
+        jq.addJob(JtClient, "LocalValTest", [&]() {
             this->BEAST_EXPECT(*lv == -2);
             g.signal();
         });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(*lv == -1);
     }
 
@@ -307,19 +313,19 @@ public:
         testcase("exception propagation");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = true;
+            cfg->forceMultiThread = true;
             return cfg;
         }));
 
-        gate g;
+        Gate g;
         auto runner = env.app().getJobQueue().postCoroTask(
-            jtCLIENT, "CoroTaskTest", [gp = &g](auto) -> CoroTask<void> {
+            JtClient, "CoroTaskTest", [gp = &g](auto) -> CoroTask<void> {
                 gp->signal();
                 throw std::runtime_error("test exception");
                 co_return;
             });
         BEAST_EXPECT(runner);
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         runner->join();
         // The exception is caught by promise_type::unhandled_exception()
         // and the coroutine is considered done
@@ -338,15 +344,15 @@ public:
         testcase("multiple yields");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = true;
+            cfg->forceMultiThread = true;
             return cfg;
         }));
 
-        gate g;
+        Gate g;
         int counter = 0;
         std::shared_ptr<JobQueue::CoroTaskRunner> r;
         auto runner = env.app().getJobQueue().postCoroTask(
-            jtCLIENT,
+            JtClient,
             "CoroTaskTest",
             [rp = &r, cp = &counter, gp = &g](auto runner) -> CoroTask<void> {
                 *rp = runner;
@@ -362,17 +368,17 @@ public:
             });
         BEAST_EXPECT(runner);
 
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(counter == 1);
         runner->join();
 
         runner->post();
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(counter == 2);
         runner->join();
 
         runner->post();
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(counter == 3);
         runner->join();
         BEAST_EXPECT(!runner->runnable());
@@ -391,21 +397,21 @@ public:
         testcase("value return");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = true;
+            cfg->forceMultiThread = true;
             return cfg;
         }));
 
-        gate g;
+        Gate g;
         int result = 0;
         auto runner = env.app().getJobQueue().postCoroTask(
-            jtCLIENT, "CoroTaskTest", [rp = &result, gp = &g](auto) -> CoroTask<void> {
+            JtClient, "CoroTaskTest", [rp = &result, gp = &g](auto) -> CoroTask<void> {
                 auto inner = []() -> CoroTask<int> { co_return 42; };
                 *rp = co_await inner();
                 gp->signal();
                 co_return;
             });
         BEAST_EXPECT(runner);
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         runner->join();
         BEAST_EXPECT(result == 42);
         BEAST_EXPECT(!runner->runnable());
@@ -424,14 +430,14 @@ public:
         testcase("value exception");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = true;
+            cfg->forceMultiThread = true;
             return cfg;
         }));
 
-        gate g;
+        Gate g;
         bool caught = false;
         auto runner = env.app().getJobQueue().postCoroTask(
-            jtCLIENT, "CoroTaskTest", [cp = &caught, gp = &g](auto) -> CoroTask<void> {
+            JtClient, "CoroTaskTest", [cp = &caught, gp = &g](auto) -> CoroTask<void> {
                 auto inner = []() -> CoroTask<int> {
                     throw std::runtime_error("inner error");
                     co_return 0;
@@ -448,7 +454,7 @@ public:
                 co_return;
             });
         BEAST_EXPECT(runner);
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         runner->join();
         BEAST_EXPECT(caught);
         BEAST_EXPECT(!runner->runnable());
@@ -467,14 +473,14 @@ public:
         testcase("value chaining");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = true;
+            cfg->forceMultiThread = true;
             return cfg;
         }));
 
-        gate g;
+        Gate g;
         int result = 0;
         auto runner = env.app().getJobQueue().postCoroTask(
-            jtCLIENT, "CoroTaskTest", [rp = &result, gp = &g](auto) -> CoroTask<void> {
+            JtClient, "CoroTaskTest", [rp = &result, gp = &g](auto) -> CoroTask<void> {
                 auto add = [](int a, int b) -> CoroTask<int> { co_return a + b; };
                 auto mul = [add](int a, int b) -> CoroTask<int> {
                     int sum = co_await add(a, b);
@@ -485,7 +491,7 @@ public:
                 co_return;
             });
         BEAST_EXPECT(runner);
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         runner->join();
         BEAST_EXPECT(result == 14);  // (3 + 4) * 2
         BEAST_EXPECT(!runner->runnable());
@@ -503,7 +509,7 @@ public:
         testcase("shutdown rejection");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = true;
+            cfg->forceMultiThread = true;
             return cfg;
         }));
 
@@ -511,7 +517,7 @@ public:
         env.app().getJobQueue().stop();
 
         auto runner = env.app().getJobQueue().postCoroTask(
-            jtCLIENT, "CoroTaskTest", [](auto) -> CoroTask<void> { co_return; });
+            JtClient, "CoroTaskTest", [](auto) -> CoroTask<void> { co_return; });
         BEAST_EXPECT(!runner);
     }
 
@@ -528,7 +534,7 @@ public:
         testcase("expectEarlyExit with unfinished coroutine");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = true;
+            cfg->forceMultiThread = true;
             return cfg;
         }));
 
@@ -537,7 +543,7 @@ public:
         // Create a runner directly (bypassing postCoroTask) so we can
         // control the lifecycle and exercise the early-exit path.
         auto runner = std::make_shared<JobQueue::CoroTaskRunner>(
-            JobQueue::CoroTaskRunner::create_t{}, jq, jtCLIENT, "TestEarlyExit");
+            JobQueue::CoroTaskRunner::CreateT{}, jq, JtClient, "TestEarlyExit");
         runner->init([](auto) -> CoroTask<void> { co_return; });
 
         // Simulate the nSuspend_ increment that postCoroTask normally does.
@@ -570,5 +576,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(CoroTask, core, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test
