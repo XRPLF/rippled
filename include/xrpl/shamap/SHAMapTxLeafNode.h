@@ -1,14 +1,23 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/IntrusivePointer.h>
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <cstdint>
+#include <utility>
 
 namespace xrpl {
 
-/** A leaf node for a transaction. No metadata is included. */
+/**
+ * A leaf node for a transaction. No metadata is included.
+ */
 class SHAMapTxLeafNode final : public SHAMapLeafNode, public CountedObject<SHAMapTxLeafNode>
 {
 public:
@@ -26,7 +35,7 @@ public:
     {
     }
 
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     clone(std::uint32_t cowid) const final
     {
         return intr_ptr::makeShared<SHAMapTxLeafNode>(item_, cowid, hash_);

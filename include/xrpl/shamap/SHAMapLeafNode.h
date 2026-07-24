@@ -1,9 +1,12 @@
 #pragma once
 
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <cstdint>
+#include <string>
 
 namespace xrpl {
 
@@ -43,11 +46,12 @@ public:
     boost::intrusive_ptr<SHAMapItem const> const&
     peekItem() const;
 
-    /** Set the item that this node points to and update the node's hash.
-
-        @param i the new item
-        @return false if the change was, effectively, a noop (that is, if the
-                hash was unchanged); true otherwise.
+    /**
+     * Set the item that this node points to and update the node's hash.
+     *
+     * @param i the new item
+     * @return false if the change was, effectively, a noop (that is, if the
+     *         hash was unchanged); true otherwise.
      */
     bool
     setItem(boost::intrusive_ptr<SHAMapItem const> i);

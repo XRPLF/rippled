@@ -8,9 +8,16 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/Units.h>
 
 #include <cstdint>
+#include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -287,9 +294,9 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 std::uint32_t n;
             };
             auto const cases = std::vector<AboveThreshold>{
-                {"r=5%, n=3", Number{5, -2}, 3},
-                {"r=0.1%, n=1000", Number{1, -3}, 1'000},
-                {"r=1e-7, n=100 (above threshold by 10x)", Number{1, -7}, 100},
+                {.name = "r=5%, n=3", .r = Number{5, -2}, .n = 3},
+                {.name = "r=0.1%, n=1000", .r = Number{1, -3}, .n = 1'000},
+                {.name = "r=1e-7, n=100 (above threshold by 10x)", .r = Number{1, -7}, .n = 100},
             };
             for (auto const& tc : cases)
             {
@@ -318,8 +325,10 @@ class LendingHelpers_test : public beast::unit_test::Suite
             auto const cases = std::vector<BelowThreshold>{
                 // bug regime: r = 1 TenthBips32 over 600s payment interval
                 // → r ≈ 1.9e-10, r*n ≈ 3.8e-10 < 1e-9.
-                {"bug regime: r~1.9e-10, n=2", loanPeriodicRate(TenthBips32{1}, 600), 2},
-                {"r=1e-12, n=100", Number{1, -12}, 100},
+                {.name = "bug regime: r~1.9e-10, n=2",
+                 .r = loanPeriodicRate(TenthBips32{1}, 600),
+                 .n = 2},
+                {.name = "r=1e-12, n=100", .r = Number{1, -12}, .n = 100},
             };
             for (auto const& tc : cases)
             {
@@ -356,8 +365,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 std::uint32_t n;
             };
             auto const cases = std::vector<Boundary>{
-                {"r=1e-9, n=1", Number{1, -9}, 1},
-                {"r=1e-12, n=1000", Number{1, -12}, 1'000},
+                {.name = "r=1e-9, n=1", .r = Number{1, -9}, .n = 1},
+                {.name = "r=1e-12, n=1000", .r = Number{1, -12}, .n = 1'000},
             };
 
             for (auto const& tc : cases)
@@ -505,7 +514,9 @@ class LendingHelpers_test : public beast::unit_test::Suite
         auto const expectedOverpaymentManagementFee = Number{10};   // 10% of 100
         auto const expectedPrincipalPortion = Number{400};          // 1,000 - 100 - 500
 
+        Env const env{*this};
         auto const components = xrpl::detail::computeOverpaymentComponents(
+            env.current()->rules(),
             iou,
             loanScale,
             overpayment,
@@ -846,7 +857,13 @@ class LendingHelpers_test : public beast::unit_test::Suite
         Number const overpaymentAmount{50};
 
         auto const overpaymentComponents = computeOverpaymentComponents(
-            asset, loanScale, overpaymentAmount, TenthBips32(0), TenthBips32(0), managementFeeRate);
+            env.current()->rules(),
+            asset,
+            loanScale,
+            overpaymentAmount,
+            TenthBips32(0),
+            TenthBips32(0),
+            managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
             env.current()->rules(),
@@ -934,6 +951,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
         auto const overpaymentComponents = computeOverpaymentComponents(
+            env.current()->rules(),
             asset,
             loanScale,
             Number{50, 0},
@@ -1029,6 +1047,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
         auto const overpaymentComponents = computeOverpaymentComponents(
+            env.current()->rules(),
             asset,
             loanScale,
             Number{50, 0},
@@ -1130,6 +1149,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
         auto const overpaymentComponents = computeOverpaymentComponents(
+            env.current()->rules(),
             asset,
             loanScale,
             Number{50, 0},
@@ -1239,6 +1259,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
         auto const overpaymentComponents = computeOverpaymentComponents(
+            env.current()->rules(),
             asset,
             loanScale,
             Number{50, 0},
@@ -1336,7 +1357,6 @@ class LendingHelpers_test : public beast::unit_test::Suite
         using namespace jtx;
         using namespace xrpl::detail;
 
-        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -1347,7 +1367,9 @@ class LendingHelpers_test : public beast::unit_test::Suite
         std::uint32_t const paymentsRemaining = 10;
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
+        Env const env{*this};
         auto const overpaymentComponents = computeOverpaymentComponents(
+            env.current()->rules(),
             asset,
             loanScale,
             Number{50, 0},
@@ -1355,90 +1377,178 @@ class LendingHelpers_test : public beast::unit_test::Suite
             TenthBips32(10'000),  // 10% overpayment fee
             managementFeeRate);
 
-        auto const loanProperties = computeLoanProperties(
-            env.current()->rules(),
-            asset,
-            loanPrincipal,
-            loanInterestRate,
-            paymentInterval,
-            paymentsRemaining,
-            managementFeeRate,
-            loanScale);
+        struct Outcome
+        {
+            LoanPaymentParts parts;
+            LoanState oldState;
+            LoanState newState;
+        };
 
-        auto const ret = tryOverpayment(
-            env.current()->rules(),
-            asset,
-            loanScale,
-            overpaymentComponents,
-            loanProperties.loanState,
-            loanProperties.periodicPayment,
-            periodicRate,
-            paymentsRemaining,
-            managementFeeRate,
-            env.journal);
+        // Run tryOverpayment under a given amendment set. At this (non-near-zero)
+        // rate computeLoanProperties is amendment-independent, so the loan state
+        // is identical across the amendment; only tryOverpayment's fixCleanup3_2_0
+        // behaviour (the exact-principal pin and the management-fee re-derivation
+        // from that principal) differs.
+        auto run = [&](FeatureBitset features) -> std::optional<Outcome> {
+            Env const env{*this, features};
+            auto const loanProperties = computeLoanProperties(
+                env.current()->rules(),
+                asset,
+                loanPrincipal,
+                loanInterestRate,
+                paymentInterval,
+                paymentsRemaining,
+                managementFeeRate,
+                loanScale);
+            auto const ret = tryOverpayment(
+                env.current()->rules(),
+                asset,
+                loanScale,
+                overpaymentComponents,
+                loanProperties.loanState,
+                loanProperties.periodicPayment,
+                periodicRate,
+                paymentsRemaining,
+                managementFeeRate,
+                env.journal);
+            if (!BEAST_EXPECT(ret))
+                return std::nullopt;
+            return Outcome{
+                .parts = ret->first,
+                .oldState = loanProperties.loanState,
+                .newState = ret->second.loanState};
+        };
 
-        BEAST_EXPECT(ret);
+        auto const fixedOpt = run(testableAmendments());
+        auto const legacyOpt = run(testableAmendments() - fixCleanup3_2_0);
+        if (!fixedOpt || !legacyOpt)
+        {
+            BEAST_EXPECT(fixedOpt.has_value());
+            BEAST_EXPECT(legacyOpt.has_value());
+            return;
+        }
+        Outcome const& fixed = *fixedOpt;
+        Outcome const& legacy = *legacyOpt;
 
-        auto const& [actualPaymentParts, newLoanProperties] = *ret;
-        auto const& newState = newLoanProperties.loanState;
+        // Components that the amendment does not change. The management fee is
+        // charged against the overpayment interest portion first, so interest
+        // paid stays 4.5 and fee paid 5.5; the principal repaid is 40 in both.
+        auto checkCommon = [&](Outcome const& o, char const* tag) {
+            BEAST_EXPECTS(
+                (o.parts.interestPaid == Number{45, -1}),
+                std::string(tag) + " interestPaid " + to_string(o.parts.interestPaid));
+            BEAST_EXPECTS(
+                (o.parts.feePaid == Number{55, -1}),
+                std::string(tag) + " feePaid " + to_string(o.parts.feePaid));
+            BEAST_EXPECTS(
+                o.parts.principalPaid == 40,
+                std::string(tag) + " principalPaid " + to_string(o.parts.principalPaid));
+            BEAST_EXPECT(
+                o.parts.principalPaid ==
+                o.oldState.principalOutstanding - o.newState.principalOutstanding);
+            // v = p + i + m identity: the non-interest part of valueChange equals
+            // the interest-due change.
+            BEAST_EXPECT(
+                o.parts.valueChange - o.parts.interestPaid ==
+                o.newState.interestDue - o.oldState.interestDue);
+        };
+        checkCommon(fixed, "fixed");
+        checkCommon(legacy, "legacy");
 
-        // =========== VALIDATE PAYMENT PARTS ===========
-
-        // Since there is loan management fee, the fee is charged against
-        // overpayment interest portion first, so interest paid remains 4.5
-        BEAST_EXPECTS(
-            (actualPaymentParts.interestPaid == Number{45, -1}),
-            " interestPaid mismatch: expected 4.5, got " +
-                to_string(actualPaymentParts.interestPaid));
-
-        // With overpayment interest portion, value change should equal the
-        // interest decrease plus overpayment interest portion
-        BEAST_EXPECTS(
-            (actualPaymentParts.valueChange ==
-             Number{-164737, -5} + actualPaymentParts.interestPaid),
-            " valueChange mismatch: expected " +
-                to_string(Number{-164737, -5} + actualPaymentParts.interestPaid) + ", got " +
-                to_string(actualPaymentParts.valueChange));
-
-        // While there is no overpayment fee, fee paid should equal the
-        // management fee charged against the overpayment interest portion
-        BEAST_EXPECTS(
-            (actualPaymentParts.feePaid == Number{55, -1}),
-            " feePaid mismatch: expected 5.5, got " + to_string(actualPaymentParts.feePaid));
-
-        BEAST_EXPECTS(
-            actualPaymentParts.principalPaid == 40,
-            " principalPaid mismatch: expected 40, got `" +
-                to_string(actualPaymentParts.principalPaid));
-
-        // =========== VALIDATE STATE CHANGES ===========
-
-        BEAST_EXPECTS(
-            actualPaymentParts.principalPaid ==
-                loanProperties.loanState.principalOutstanding - newState.principalOutstanding,
-            " principalPaid mismatch: expected " +
-                to_string(
-                    loanProperties.loanState.principalOutstanding - newState.principalOutstanding) +
-                ", got " + to_string(actualPaymentParts.principalPaid));
-
-        // Note that the management fee value change is not captured, as this
-        // value is not needed to correctly update the Vault state.
-        BEAST_EXPECTS(
-            (newState.managementFeeDue - loanProperties.loanState.managementFeeDue ==
-             Number{-18304, -5}),
-            " management fee change mismatch: expected " + to_string(Number{-18304, -5}) +
-                ", got " +
-                to_string(newState.managementFeeDue - loanProperties.loanState.managementFeeDue));
-
-        BEAST_EXPECTS(
-            actualPaymentParts.valueChange - actualPaymentParts.interestPaid ==
-                newState.interestDue - loanProperties.loanState.interestDue,
-            " valueChange mismatch: expected " +
-                to_string(newState.interestDue - loanProperties.loanState.interestDue) + ", got " +
-                to_string(actualPaymentParts.valueChange - actualPaymentParts.interestPaid));
+        // With fixCleanup3_2_0 the management fee is re-derived from the exact
+        // principal; without it, from the one-scale-unit-high round-trip
+        // principal. So the management fee outstanding (and hence the value
+        // change, via v = p + i + m) differ by exactly one scale-unit (1e-5 at
+        // loanScale -5) between the two paths.
+        BEAST_EXPECT((fixed.parts.valueChange == Number{-164738, -5} + fixed.parts.interestPaid));
+        BEAST_EXPECT(
+            (fixed.newState.managementFeeDue - fixed.oldState.managementFeeDue ==
+             Number{-18303, -5}));
+        BEAST_EXPECT((legacy.parts.valueChange == Number{-164737, -5} + legacy.parts.interestPaid));
+        BEAST_EXPECT(
+            (legacy.newState.managementFeeDue - legacy.oldState.managementFeeDue ==
+             Number{-18304, -5}));
     }
 
 public:
+    void
+    testCanApplyToBrokerCover()
+    {
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        PrettyAsset const iou = issuer["IOU"];
+
+        // sfCoverAvailable = Number{10} on an IOU → STAmount exponent = -14,
+        // so coverScale = -14.  The ULP boundary is 5e-15; anything below
+        // that rounds to zero at cover scale.  Number{1,-16} = 1e-16 is our
+        // representative sub-ULP probe.
+        struct TestCase
+        {
+            std::string name;
+            Number coverAvailable;
+            STAmount amount;
+            TER expected;
+        };
+
+        auto const testCases = std::vector<TestCase>{
+            {
+                .name = "Zero amount",
+                .coverAvailable = Number{10},
+                .amount = STAmount{iou, Number{0}},
+                .expected = tecPRECISION_LOSS,
+            },
+            {
+                .name = "Rounds to zero at cover scale",
+                .coverAvailable = Number{10},
+                .amount = STAmount{iou, Number{1, -16}},
+                .expected = tecPRECISION_LOSS,
+            },
+            {
+                .name = "Zero coverAvailable, whole-unit amount",
+                // coverScale = 0 (zero STAmount exponent); 1 IOU is not
+                // zero at integer scale → tesSUCCESS.
+                .coverAvailable = Number{0},
+                .amount = STAmount{iou, Number{1}},
+                .expected = tesSUCCESS,
+            },
+            {
+                .name = "Supra-ULP amount",
+                .coverAvailable = Number{10},
+                .amount = STAmount{iou, Number{1, -13}},
+                .expected = tesSUCCESS,
+            },
+        };
+
+        Env const env{*this};
+
+        for (auto const& tc : testCases)
+        {
+            testcase("canApplyToBrokerCover: " + tc.name);
+            auto sle = std::make_shared<SLE>(ltLOAN_BROKER, uint256{1u});
+            sle->at(sfCoverAvailable) = tc.coverAvailable;
+            BEAST_EXPECT(
+                canApplyToBrokerCover(*env.current(), sle, iou, tc.amount, env.journal, "test") ==
+                tc.expected);
+        }
+
+        // Amendment off → guard is bypassed regardless of amount.
+        {
+            testcase("canApplyToBrokerCover: amendment disabled");
+            Env const envOff{*this, testableAmendments() - fixCleanup3_2_0};
+            auto sle = std::make_shared<SLE>(ltLOAN_BROKER, uint256{1u});
+            sle->at(sfCoverAvailable) = Number{10};
+            BEAST_EXPECT(
+                canApplyToBrokerCover(
+                    *envOff.current(),
+                    sle,
+                    iou,
+                    STAmount{iou, Number{0}},
+                    envOff.journal,
+                    "test") == tesSUCCESS);
+        }
+    }
+
     void
     run() override
     {
@@ -1462,6 +1572,7 @@ public:
         testComputePaymentFactorNearZeroRate();
         testComputeOverpaymentComponents();
         testComputeInterestAndFeeParts();
+        testCanApplyToBrokerCover();
     }
 };
 

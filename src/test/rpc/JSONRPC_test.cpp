@@ -12,12 +12,12 @@
 #include <test/jtx/trust.h>
 
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -2238,7 +2238,7 @@ public:
 
         {
             json::Value req;
-            json::Reader().parse("{ \"fee_mult_max\" : 1, \"tx_json\" : { } } ", req);
+            json::Reader().parse(R"({ "fee_mult_max" : 1, "tx_json" : { } } )", req);
             json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
@@ -2275,7 +2275,7 @@ public:
 
         {
             json::Value req;
-            json::Reader().parse("{ \"fee_mult_max\" : 0, \"tx_json\" : { } } ", req);
+            json::Reader().parse(R"({ "fee_mult_max" : 0, "tx_json" : { } } )", req);
             json::Value const result = checkFee(
                 req,
                 Role::ADMIN,
@@ -2375,8 +2375,9 @@ public:
         testcase("autofill escalated fees");
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
-                    cfg->section("transaction_queue").set("minimum_txn_in_ledger_standalone", "3");
+                    cfg->loadFromString(std::string("[") + Sections::kSigningSupport + "]\ntrue");
+                    cfg->section(Sections::kTransactionQueue)
+                        .set(Keys::kMinimumTxnInLedgerStandalone, "3");
                     return cfg;
                 })};
         LoadFeeTrack const& feeTrackOuter = env.app().getFeeTrack();
@@ -2697,7 +2698,7 @@ public:
         testcase("autofill NetworkID");
         using namespace test::jtx;
         Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->NETWORK_ID = 1025;
+                    cfg->networkId = 1025;
                     return cfg;
                 })};
 
@@ -2743,7 +2744,7 @@ public:
         // "c" (phantom signer) is rPcNzota6B8YBokhYtcTNqQVCngtbnWfux.
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FEES.reference_fee = 10;
+            cfg->fees.referenceFee = 10;
             return cfg;
         }));
         env.fund(XRP(100000), a, ed, g);

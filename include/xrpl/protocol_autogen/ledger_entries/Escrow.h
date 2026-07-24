@@ -33,7 +33,7 @@ public:
      * @brief Construct a Escrow ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Escrow(std::shared_ptr<SLE const> sle)
+    explicit Escrow(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -411,7 +411,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    EscrowBuilder(std::shared_ptr<SLE const> sle)
+    EscrowBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltESCROW)
         {
@@ -420,7 +420,9 @@ public:
         object_ = *sle;
     }
 
-    /** @brief Ledger entry-specific field setters */
+    /**
+     * @brief Ledger entry-specific field setters
+     */
 
     /**
      * @brief Set sfAccount (SoeRequired)

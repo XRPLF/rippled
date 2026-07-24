@@ -23,5 +23,5 @@
     i32.const 1
   )
 
-  (export "finish" (func $access_last_byte))
+  (export "escrow_finish" (func $access_last_byte))
 )

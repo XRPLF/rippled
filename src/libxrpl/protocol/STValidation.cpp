@@ -6,7 +6,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/KeyType.h>  // IWYU pragma: keep
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
@@ -60,8 +60,8 @@ STValidation::validationFormat()
         {sfReserveBaseDrops,      SoeOptional},
         {sfReserveIncrementDrops, SoeOptional},
         // featureSmartEscrow
-        {sfExtensionComputeLimit,  SoeOptional},
-        {sfExtensionSizeLimit,     SoeOptional},
+        {sfGasLimit,               SoeOptional},
+        {sfBytecodeSizeLimit,      SoeOptional},
         {sfGasPrice,               SoeOptional},
     };
     // clang-format on

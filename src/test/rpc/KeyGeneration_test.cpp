@@ -19,15 +19,15 @@ namespace xrpl::RPC {
 
 struct KeyStrings
 {
-    char const* account_id;
-    char const* master_key;
-    char const* master_seed;
-    char const* master_seed_hex;
-    char const* public_key;
-    char const* public_key_hex;
-    char const* secret_key_hex;
+    char const* accountId;
+    char const* masterKey;
+    char const* masterSeed;
+    char const* masterSeedHex;
+    char const* publicKey;
+    char const* publicKeyHex;
+    char const* secretKeyHex;
     char const* passphrase;
-    char const* passphrase_warning;
+    char const* passphraseWarning;
 };
 
 namespace common {
@@ -38,45 +38,45 @@ static char const* gMasterSeedHex = "BE6A670A19B209E112146D0A7ED2AAD7";
 }  // namespace common
 
 static KeyStrings const kSecP256K1Strings = {
-    .account_id = "r4Vtj2jrfmTVZGfSP3gH9hQPMqFPQFin8f",
-    .master_key = common::gMasterKey,
-    .master_seed = common::gMasterSeed,
-    .master_seed_hex = common::gMasterSeedHex,
-    .public_key = "aBQxK2YFNqzmAaXNczYcjqDjfiKkLsJUizsr1UBf44RCF8FHdrmX",
-    .public_key_hex = "038AAE247B2344B1837FBED8F57389C8C11774510A3F7D784F2A09F0CB6843236C",
-    .secret_key_hex = "1949ECD889EA71324BC7A30C8E81F4E93CB73EE19D59E9082111E78CC3DDABC2",
+    .accountId = "r4Vtj2jrfmTVZGfSP3gH9hQPMqFPQFin8f",
+    .masterKey = common::gMasterKey,
+    .masterSeed = common::gMasterSeed,
+    .masterSeedHex = common::gMasterSeedHex,
+    .publicKey = "aBQxK2YFNqzmAaXNczYcjqDjfiKkLsJUizsr1UBf44RCF8FHdrmX",
+    .publicKeyHex = "038AAE247B2344B1837FBED8F57389C8C11774510A3F7D784F2A09F0CB6843236C",
+    .secretKeyHex = "1949ECD889EA71324BC7A30C8E81F4E93CB73EE19D59E9082111E78CC3DDABC2",
     .passphrase = common::gPassphrase,
-    .passphrase_warning =
+    .passphraseWarning =
         "This wallet was generated using a user-supplied "
         "passphrase that has low entropy and is vulnerable "
         "to brute-force attacks.",
 };
 
 static KeyStrings const kED25519Strings = {
-    .account_id = "r4qV6xTXerqaZav3MJfSY79ynmc1BSBev1",
-    .master_key = common::gMasterKey,
-    .master_seed = common::gMasterSeed,
-    .master_seed_hex = common::gMasterSeedHex,
-    .public_key = "aKEQmgLMyZPMruJFejUuedp169LgW6DbJt1rej1DJ5hWUMH4pHJ7",
-    .public_key_hex = "ED54C3F5BEDA8BD588B203D23A27398FAD9D20F88A974007D6994659CD7273FE1D",
-    .secret_key_hex = "77AAED2698D56D6676323629160F4EEF21CFD9EE3D0745CC78FA291461F98278",
+    .accountId = "r4qV6xTXerqaZav3MJfSY79ynmc1BSBev1",
+    .masterKey = common::gMasterKey,
+    .masterSeed = common::gMasterSeed,
+    .masterSeedHex = common::gMasterSeedHex,
+    .publicKey = "aKEQmgLMyZPMruJFejUuedp169LgW6DbJt1rej1DJ5hWUMH4pHJ7",
+    .publicKeyHex = "ED54C3F5BEDA8BD588B203D23A27398FAD9D20F88A974007D6994659CD7273FE1D",
+    .secretKeyHex = "77AAED2698D56D6676323629160F4EEF21CFD9EE3D0745CC78FA291461F98278",
     .passphrase = common::gPassphrase,
-    .passphrase_warning =
+    .passphraseWarning =
         "This wallet was generated using a user-supplied "
         "passphrase that has low entropy and is vulnerable "
         "to brute-force attacks.",
 };
 
 static KeyStrings const kStrongBrainStrings = {
-    .account_id = "rBcvXmNb7KPkNdMkpckdWPpbvkWgcV3nir",
-    .master_key = "TED AVON CAVE HOUR BRAG JEFF RIFT NEAL TOLD FAT SEW SAN",
-    .master_seed = "shKdhWka8hS7Es3bpctCZXBiAwfUN",
-    .master_seed_hex = "74BA8389B44F98CF41E795CD91F9C93F",
-    .public_key = "aBRL2sqVuzrsM6zikPB4v8UBHGn1aKkrsxhYEffhcQxB2LKyywE5",
-    .public_key_hex = "03BD334FB9E06C58D69603E9922686528B18A754BC2F2E1ADA095FFE67DE952C64",
-    .secret_key_hex = "84262FB16AA25BE407174C7EDAB531220C30FA4D8A28AA9D564673FB3D34502C",
+    .accountId = "rBcvXmNb7KPkNdMkpckdWPpbvkWgcV3nir",
+    .masterKey = "TED AVON CAVE HOUR BRAG JEFF RIFT NEAL TOLD FAT SEW SAN",
+    .masterSeed = "shKdhWka8hS7Es3bpctCZXBiAwfUN",
+    .masterSeedHex = "74BA8389B44F98CF41E795CD91F9C93F",
+    .publicKey = "aBRL2sqVuzrsM6zikPB4v8UBHGn1aKkrsxhYEffhcQxB2LKyywE5",
+    .publicKeyHex = "03BD334FB9E06C58D69603E9922686528B18A754BC2F2E1ADA095FFE67DE952C64",
+    .secretKeyHex = "84262FB16AA25BE407174C7EDAB531220C30FA4D8A28AA9D564673FB3D34502C",
     .passphrase = "A4yKIRGdzrw0YQ$2%TFKYG9HP*&ok^!sy7E@RwICs",
-    .passphrase_warning =
+    .passphraseWarning =
         "This wallet was generated using a user-supplied "
         "passphrase. It may be vulnerable to brute-force "
         "attacks.",
@@ -120,11 +120,11 @@ public:
         json::Value result = walletPropose(params);
 
         BEAST_EXPECT(!containsError(result));
-        expectEquals(result[jss::account_id], s.account_id);
-        expectEquals(result[jss::master_seed], s.master_seed);
-        expectEquals(result[jss::master_seed_hex], s.master_seed_hex);
-        expectEquals(result[jss::public_key], s.public_key);
-        expectEquals(result[jss::public_key_hex], s.public_key_hex);
+        expectEquals(result[jss::account_id], s.accountId);
+        expectEquals(result[jss::master_seed], s.masterSeed);
+        expectEquals(result[jss::master_seed_hex], s.masterSeedHex);
+        expectEquals(result[jss::public_key], s.publicKey);
+        expectEquals(result[jss::public_key_hex], s.publicKeyHex);
         expectEquals(
             result[jss::key_type],
             params.isMember(jss::key_type) ? params[jss::key_type] : "secp256k1");
@@ -139,7 +139,7 @@ public:
         json::Value params;
         if (keyType)
             params[jss::key_type] = *keyType;
-        params[jss::seed] = strings.master_seed;
+        params[jss::seed] = strings.masterSeed;
 
         auto const wallet = testSecretWallet(params, strings);
         BEAST_EXPECT(!wallet.isMember(jss::warning));
@@ -153,7 +153,7 @@ public:
         json::Value params;
         if (keyType)
             params[jss::key_type] = *keyType;
-        params[jss::seed_hex] = strings.master_seed_hex;
+        params[jss::seed_hex] = strings.masterSeedHex;
 
         auto const wallet = testSecretWallet(params, strings);
         BEAST_EXPECT(!wallet.isMember(jss::warning));
@@ -173,7 +173,7 @@ public:
         auto const wallet = testSecretWallet(params, strings);
         if (value == strings.passphrase)
         {
-            BEAST_EXPECT(wallet[jss::warning] == strings.passphrase_warning);
+            BEAST_EXPECT(wallet[jss::warning] == strings.passphraseWarning);
         }
         else
         {
@@ -187,9 +187,9 @@ public:
         testcase("passphrase");
 
         testLegacyPassphrase(strings.passphrase, keyType, strings);
-        testLegacyPassphrase(strings.master_key, keyType, strings);
-        testLegacyPassphrase(strings.master_seed, keyType, strings);
-        testLegacyPassphrase(strings.master_seed_hex, keyType, strings);
+        testLegacyPassphrase(strings.masterKey, keyType, strings);
+        testLegacyPassphrase(strings.masterSeed, keyType, strings);
+        testLegacyPassphrase(strings.masterSeedHex, keyType, strings);
     }
 
     void
@@ -205,8 +205,8 @@ public:
         json::Value params;
         if (keyType)
             params[jss::key_type] = *keyType;
-        params[jss::seed] = strings.master_seed;
-        params[jss::seed_hex] = strings.master_seed_hex;
+        params[jss::seed] = strings.masterSeed;
+        params[jss::seed_hex] = strings.masterSeedHex;
 
         // Secret fields are mutually exclusive.
         BEAST_EXPECT(containsError(walletPropose(params)));
@@ -294,7 +294,7 @@ public:
     {
         testcase("keypairForSignature - " + (keyType ? *keyType : "no key_type"));
 
-        auto const publicKey = parseBase58<PublicKey>(TokenType::AccountPublic, strings.public_key);
+        auto const publicKey = parseBase58<PublicKey>(TokenType::AccountPublic, strings.publicKey);
         BEAST_EXPECT(publicKey);
 
         if (!keyType)
@@ -302,7 +302,7 @@ public:
             {
                 json::Value params;
                 json::Value error;
-                params[jss::secret] = strings.master_seed;
+                params[jss::secret] = strings.masterSeed;
 
                 auto ret = keypairForSignature(params, error);
                 BEAST_EXPECT(!containsError(error));
@@ -316,7 +316,7 @@ public:
             {
                 json::Value params;
                 json::Value error;
-                params[jss::secret] = strings.master_seed_hex;
+                params[jss::secret] = strings.masterSeedHex;
 
                 auto ret = keypairForSignature(params, error);
                 BEAST_EXPECT(!containsError(error));
@@ -330,7 +330,7 @@ public:
             {
                 json::Value params;
                 json::Value error;
-                params[jss::secret] = strings.master_key;
+                params[jss::secret] = strings.masterKey;
 
                 auto ret = keypairForSignature(params, error);
                 BEAST_EXPECT(!containsError(error));
@@ -349,7 +349,7 @@ public:
             json::Value error;
 
             params[jss::key_type] = *keyType;
-            params[jss::seed] = strings.master_seed;
+            params[jss::seed] = strings.masterSeed;
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(!containsError(error));
@@ -365,7 +365,7 @@ public:
             json::Value error;
 
             params[jss::key_type] = *keyType;
-            params[jss::seed_hex] = strings.master_seed_hex;
+            params[jss::seed_hex] = strings.masterSeedHex;
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(!containsError(error));
@@ -381,7 +381,7 @@ public:
             json::Value error;
 
             params[jss::key_type] = *keyType;
-            params[jss::passphrase] = strings.master_key;
+            params[jss::passphrase] = strings.masterKey;
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(!containsError(error));

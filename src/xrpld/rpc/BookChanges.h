@@ -1,13 +1,25 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
+#include <map>
 #include <memory>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <tuple>
 
 namespace json {
 class Value;

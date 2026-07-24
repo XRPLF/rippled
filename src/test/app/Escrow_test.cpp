@@ -1544,7 +1544,7 @@ struct Escrow_test : public beast::unit_test::Suite
                 credentials::Ids({credIdx}),
                 Ter(tecNO_PERMISSION));
 
-            env(deposit::authCredentials(bob, {{zelda, credType}}));
+            env(deposit::authCredentials(bob, {{.issuer = zelda, .credType = credType}}));
             env.close();
 
             // Success
@@ -1601,7 +1601,7 @@ struct Escrow_test : public beast::unit_test::Suite
                 // Bob require pre-authorization
                 env(fset(bob, asfDepositAuth));
                 env.close();
-                env(deposit::authCredentials(bob, {{zelda, credType}}));
+                env(deposit::authCredentials(bob, {{.issuer = zelda, .credType = credType}}));
                 env.close();
 
                 // Use any valid credentials if account == dst
