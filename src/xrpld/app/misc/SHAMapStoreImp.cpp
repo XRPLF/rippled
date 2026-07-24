@@ -262,6 +262,45 @@ SHAMapStoreImp::fdRequired() const
     return fdRequired_;
 }
 
+void
+SHAMapStoreImp::rescueNode(SHAMapTreeNode const& node)
+{
+    XRPL_ASSERT(node.cowid() == 0, "SHAMapStoreImp::copyNode : rescued node must be clean");
+    // Reachable from the validated state map in memory, but present in
+    // neither backend: its only on-disk copy lived in a backend removed by
+    // an earlier rotation, and it was never rewritten because it is clean
+    // (cowid == 0, so flushDirty skips it). Persist the in-memory body
+    // directly into the writable backend so it survives this rotation
+    // instead of later surfacing as an unresolvable SHAMapMissingNode.
+
+    auto const nodeType = node.getType();
+    auto const objectType = std::invoke([nodeType] {
+        switch (nodeType)
+        {
+            case SHAMapNodeType::TnAccountState:
+                return NodeObjectType::AccountNode;
+            case SHAMapNodeType::TnTransactionNm:
+                return NodeObjectType::TransactionNode;
+            default:
+                return NodeObjectType::Unknown;
+        }
+    });
+
+    auto const hash = node.getHash().asUInt256();
+    if (objectType == NodeObjectType::Unknown)
+    {
+        JLOG(journal_.warn()) << "copyNode: unable to re-store node with unknown type, hash="
+                              << hash << " type=" << static_cast<int>(nodeType);
+        return;
+    }
+    Serializer s;
+    node.serializeWithPrefix(s);
+    dbRotating_->store(objectType, std::move(s.modData()), hash, 0);
+
+    JLOG(journal_.info()) << "copyNode: re-stored node missing from both backends, hash=" << hash
+                          << " type=" << static_cast<int>(nodeType);
+}
+
 bool
 SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
@@ -270,19 +309,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
         node.getHash().asUInt256(), 0, NodeStore::FetchType::Synchronous, true);
     if (!obj)
     {
-        XRPL_ASSERT(node.cowid() == 0, "SHAMapStoreImp::copyNode : rescued node must be clean");
-        // Reachable from the validated state map in memory, but present in
-        // neither backend: its only on-disk copy lived in a backend removed by
-        // an earlier rotation, and it was never rewritten because it is clean
-        // (cowid == 0, so flushDirty skips it). Persist the in-memory body
-        // directly into the writable backend so it survives this rotation
-        // instead of later surfacing as an unresolvable SHAMapMissingNode.
-        auto const hash = node.getHash().asUInt256();
-        Serializer s;
-        node.serializeWithPrefix(s);
-        dbRotating_->store(NodeObjectType::AccountNode, std::move(s.modData()), hash, 0);
-        JLOG(journal_.warn()) << "copyNode: re-stored node missing from both backends, hash="
-                              << hash << " type=" << static_cast<int>(node.getType());
+        rescueNode(node);
     }
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {
@@ -308,6 +335,11 @@ SHAMapStoreImp::run()
 
     while (true)
     {
+        XRPL_ASSERT(
+            dbRotating_->getRotationInFlight() == 0,
+            "SHAMapStoreImp::run : rotationInFlight_ must be zero "
+            "outside rotation window");
+
         healthy_ = true;
         std::shared_ptr<Ledger const> validatedLedger;
 
@@ -353,12 +385,32 @@ SHAMapStoreImp::run()
         // will delete up to (not including) lastRotated
         if (readyToRotate)
         {
+            auto const diff = validatedSeq - lastRotated;
             JLOG(journal_.warn()) << "rotating  validatedSeq " << validatedSeq << " lastRotated "
-                                  << lastRotated << " deleteInterval " << deleteInterval_
-                                  << " canDelete_ " << canDelete_ << " state "
+                                  << lastRotated << " diff " << diff << " deleteInterval "
+                                  << deleteInterval_ << " canDelete_ " << canDelete_ << " state "
                                   << app_.getOPs().strOperatingMode(false) << " age "
                                   << ledgerMaster_->getValidatedLedgerAge().count()
                                   << "s. Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
+
+            // Close the getKeys()->swap exposure window: from here until
+            // rotate() completes, an ordinary read for new ledgers served by the archive is
+            // copied forward into the writable backend, so a node fetched
+            // from the doomed archive cannot be left RAM-only when the
+            // archive is deleted. RAII so the early returns below (and any
+            // exception) also clear the flag.
+            struct RotationExposureGuard
+            {
+                NodeStore::DatabaseRotating& db;
+                ~RotationExposureGuard()
+                {
+                    db.setRotationInFlight(0);
+                }
+            };
+            RotationExposureGuard const rotationExposureGuard{*dbRotating_};
+            // Anything before lastRotated is going to get deleted soon, so we don't care about
+            // moving it to the writable DB.
+            dbRotating_->setRotationInFlight(lastRotated);
 
             clearPrior(lastRotated);
             if (healthWait() == HealthResult::Stopping)
@@ -386,23 +438,6 @@ SHAMapStoreImp::run()
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug())
                 << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
-
-            // Close the getKeys()->swap exposure window: from here until
-            // rotate() completes, an ordinary read served by the archive is
-            // copied forward into the writable backend, so a node fetched
-            // from the doomed archive cannot be left RAM-only when the
-            // archive is deleted. RAII so the early returns below (and any
-            // exception) also clear the flag.
-            struct RotationExposureGuard
-            {
-                NodeStore::DatabaseRotating& db;
-                ~RotationExposureGuard()
-                {
-                    db.setRotationInFlight(false);
-                }
-            };
-            RotationExposureGuard const rotationExposureGuard{*dbRotating_};
-            dbRotating_->setRotationInFlight(true);
 
             JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();
@@ -433,9 +468,14 @@ SHAMapStoreImp::run()
                     clearCaches(validatedSeq);
                 });
 
-            JLOG(journal_.warn()) << "finished rotation. validatedSeq: " << validatedSeq
-                                  << ", lastRotated: " << lastRotated
-                                  << ". Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
+            auto const currentValidatedSeq = ledgerMaster_->getValidLedgerIndex();
+            auto const processingDiff = currentValidatedSeq - validatedSeq;
+            JLOG(journal_.warn())
+                << "finished rotation. validatedSeq: " << validatedSeq
+                << ", lastRotated: " << lastRotated << " diff " << diff
+                << ". Updated validated seq is " << currentValidatedSeq << ", " << processingDiff
+                << " ledgers were validated during the rotation processs. Complete ledgers: "
+                << ledgerMaster_->getCompleteLedgers();
         }
     }
 }
@@ -630,8 +670,7 @@ SHAMapStoreImp::freshenCaches()
 {
     if (freshenCache(*treeNodeCache_))
         return;
-    if (freshenCache(app_.getMasterTransaction().getCache()))
-        return;
+    freshenCache(app_.getMasterTransaction().getCache());
 }
 
 void
@@ -701,7 +740,6 @@ SHAMapStoreImp::healthWait()
         numMissing =
             lowerBound == 0 ? 0 : ledgerMaster_->missingFromCompleteLedgerRange(lowerBound, index);
     };
-
     // Tracked server status properties
     LedgerIndex index = 0;
     std::chrono::seconds age;
@@ -720,7 +758,24 @@ SHAMapStoreImp::healthWait()
 
         readServerStatus(index, age, mode, numMissing, lowerBound, unlock);
     }
-    while (!stop_ && (mode != OperatingMode::FULL || age > ageThreshold || numMissing > 0))
+
+    auto healthy = [&]() {
+        // Special case: If the server is disconnected, it's not doing any ledger I/O, because
+        // it's focused on trying to get peers. A disconnected state is should never be caused by
+        // the activity of the server. It's usually limited to hardware or connectivity issues. Take
+        // advantage of that to run as much rotation I/O as possible before it comes back online.
+        if (mode == OperatingMode::DISCONNECTED)
+            return true;
+        if (age > ageThreshold)
+            return false;
+        if (numMissing > 0)
+            return false;
+        if (mode != OperatingMode::FULL)
+            return false;
+        return true;
+    };
+
+    while (!stop_ && !healthy())
     {
         // this value shouldn't change, so grab it while we have the
         // lock
@@ -728,18 +783,26 @@ SHAMapStoreImp::healthWait()
 
         ScopeUnlock const unlock(lock);
 
-        auto const stream = std::invoke([mode, age, ageThreshold, index, lastLedger, this]() {
-            if (mode != OperatingMode::FULL || age > ageThreshold)
-                return journal_.warn();
-            if (index != lastLedger)
-                return journal_.trace();
-            return journal_.info();
-        });
-        JLOG(stream) << "Waiting " << waitTime.count() << "s for node to stabilize. state: "
+        auto const [stream, waitMs] = std::invoke(
+            [mode, age, ageThreshold, index, lastLedger, waitTime, this]()
+                -> std::pair<beast::Journal::Stream, std::chrono::milliseconds> {
+                if (mode != OperatingMode::FULL || age > ageThreshold)
+                    return {journal_.warn(), waitTime};
+                if (index != lastLedger)
+                {
+                    // We expect this ledger to be built soon, so log at a lower level, and don't
+                    // wait as long.
+                    return {
+                        journal_.trace(),
+                        std::chrono::duration_cast<std::chrono::milliseconds>(waitTime) / 4};
+                }
+                return {journal_.info(), waitTime};
+            });
+        JLOG(stream) << "Waiting " << waitMs.count() << "ms for node to stabilize. state: "
                      << app_.getOPs().strOperatingMode(mode, false) << ". age " << age.count()
                      << "s. Missing ledgers: " << numMissing << ".  Expect: " << lowerBound << "-"
                      << index << ". Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
-        std::this_thread::sleep_for(waitTime);
+        std::this_thread::sleep_for(waitMs);
 
         readServerStatus(index, age, mode, numMissing, lowerBound, unlock);
         lastLedger = index;

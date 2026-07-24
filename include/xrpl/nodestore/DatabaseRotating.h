@@ -4,6 +4,7 @@
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/protocol/Protocol.h>
 
 #include <functional>
 #include <memory>
@@ -45,15 +46,15 @@ public:
     /**
      * Marks an online-delete rotation as in progress (or completed).
      *
-     * While in flight, a read served by the archive backend is copied
-     * forward into the writable backend even for ordinary
-     * (duplicate == false) fetches: the archive is about to be deleted,
-     * and a node body canonicalized into caches during the rotation
-     * window would otherwise survive only in RAM once the archive is
-     * dropped.
+     * While in flight, a read for ledgers after the inFlight value served by the archive backend is
+     * copied forward into the writable backend even for ordinary (duplicate == false) fetches: the
+     * archive is about to be deleted, and a node body canonicalized into caches during the rotation
+     * window would otherwise survive only in RAM once the archive is dropped.
      */
     virtual void
-    setRotationInFlight(bool inFlight) = 0;
+    setRotationInFlight(LedgerIndex inFlight) = 0;
+    virtual LedgerIndex
+    getRotationInFlight() const = 0;
 };
 
 }  // namespace xrpl::NodeStore

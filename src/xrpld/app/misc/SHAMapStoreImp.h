@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <concepts>
 #include <condition_variable>
 #include <cstdint>
 #include <functional>
@@ -177,6 +178,9 @@ public:
     minimumOnline() const override;
 
 private:
+    // Force write a node to the writable backend during rotation so it doesn't get lost
+    void
+    rescueNode(SHAMapTreeNode const& node);
     // callback for visitNodes
     bool
     copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node);
@@ -196,7 +200,18 @@ private:
 
         for (auto const& key : cache.getKeys())
         {
-            dbRotating_->fetchNodeObject(key, 0, NodeStore::FetchType::Synchronous, true);
+            [[maybe_unused]]
+            auto const obj =
+                dbRotating_->fetchNodeObject(key, 0, NodeStore::FetchType::Synchronous, true);
+            if constexpr (std::derived_from<typename CacheInstance::mapped_type, SHAMapTreeNode>)
+            {
+                if (!obj)
+                {
+                    auto const node = cache.fetch(key);
+                    if (node)
+                        rescueNode(*node);
+                }
+            }
             if (!(++check % checkHealthInterval_) && healthWait() == HealthResult::Stopping)
                 return true;
         }

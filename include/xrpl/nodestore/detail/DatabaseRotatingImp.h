@@ -8,6 +8,7 @@
 #include <xrpl/nodestore/DatabaseRotating.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/protocol/Protocol.h>
 
 #include <atomic>
 #include <cstdint>
@@ -71,20 +72,27 @@ public:
     sweep() override;
 
     void
-    setRotationInFlight(bool inFlight) override;
+    setRotationInFlight(LedgerIndex inFlight) override;
+    LedgerIndex
+    getRotationInFlight() const override;
 
 private:
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
     mutable std::mutex mutex_;
 
-    // True between SHAMapStore starting the cache-freshen phase and the
-    // completion of rotate(). While true, archive hits on ordinary
-    // (duplicate == false) fetches are copied forward into the writable
-    // backend; copyForwardCount_ tallies them per rotation for the
+    // Set to the index of the last rotated ledger between SHAMapStore
+    // starting the cache-freshen phase and the completion of rotate().
+    // While non-zero, archive hits on ordinary (duplicate == false)
+    // fetches are copied forward into the writable backend if they are
+    // for that ledger or later, since those are the ones we'll keep.
+    // To be safe, copy forward if the provided ledger index is 0.
+    // copyForwardCount_ tallies them per rotation for the
     // summary line logged at swap.
-    std::atomic<bool> rotationInFlight_{false};
+    // copyRejectCount_ tallies the ones that weren't copied.
+    std::atomic<LedgerIndex> rotationInFlight_{0};
     std::atomic<std::uint64_t> copyForwardCount_{0};
+    std::atomic<std::uint64_t> copyRejectCount_{0};
 
     std::shared_ptr<NodeObject>
     fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)
