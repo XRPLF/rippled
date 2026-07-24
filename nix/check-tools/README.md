@@ -39,10 +39,12 @@ done
 (With Docker, replace `container run … -a "${arch}"` with
 `docker run … --platform "linux/${arch}"`.)
 
-The macOS snapshot is generated locally:
+The macOS snapshot is generated locally. `CI=` is unset so `check-tools.sh`
+checks the full dev-shell tool set (it otherwise skips some tools when `CI` is
+set):
 
 ```bash
-nix develop -c bash -c 'CHECK_TOOLS_SKIP_CLONE=1 bash bin/check-tools.sh' |
+CI= nix develop -c bash -c 'CHECK_TOOLS_SKIP_CLONE=1 bash bin/check-tools.sh' |
     sed -n '/^Detected OS:/,$p' \
         >nix/check-tools/macos.txt
 ```

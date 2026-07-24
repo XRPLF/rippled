@@ -86,6 +86,9 @@ jobs:
       - name: Regenerate snapshot
         env:
           CHECK_TOOLS_SKIP_CLONE: "1"
+          # check-tools.sh skips some macOS tools when CI is set; the snapshots
+          # capture the full `nix develop` environment, so unset it here.
+          CI: ""
         run: |
           if [ "${{ matrix.nix_develop }}" = "true" ]; then
               nix --extra-experimental-features "nix-command flakes" develop \
