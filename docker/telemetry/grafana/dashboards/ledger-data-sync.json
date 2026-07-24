@@ -829,7 +829,7 @@
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
           "unit": "short",
           "custom": {
-            "axisLabel": "State (0-4)",
+            "axisLabel": "Server State",
             "spanNulls": 1800000,
             "insertNulls": false,
             "showPoints": "auto",
