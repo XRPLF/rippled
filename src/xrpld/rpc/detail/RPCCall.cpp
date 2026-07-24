@@ -569,12 +569,10 @@ private:
         {
             if (jv.size() == 0)
                 return false;
-            for (auto const& j : jv)
-            {
-                if (!isValidJson2(j))
-                    return false;
-            }
-            return true;
+            // json::Value is not a std::ranges range, so the iterator form is used.
+            // NOLINTNEXTLINE(modernize-use-ranges)
+            return std::all_of(
+                jv.begin(), jv.end(), [this](auto const& j) { return isValidJson2(j); });
         }
         if (jv.isObject())
         {
@@ -1745,7 +1743,9 @@ rpcClient(
                     static_cast<int>(setup.client.secure) != 0,  // Use SSL
                     config.quiet(),
                     logs,
-                    std::bind(RPCCallImp::callRPCHandler, &jvOutput, std::placeholders::_1),
+                    [&jvOutput](json::Value const& jvInput) {
+                        RPCCallImp::callRPCHandler(&jvOutput, jvInput);
+                    },
                     headers);
                 isService.run();  // This blocks until there are no more
                                   // outstanding async calls.
@@ -1870,24 +1870,16 @@ fromNetwork(
         ioContext,
         strIp,
         iPort,
-        std::bind(
-            &RPCCallImp::onRequest,
-            strMethod,
-            jvParams,
-            headers,
-            strPath,
-            std::placeholders::_1,
-            std::placeholders::_2,
-            j),
+        [strMethod, jvParams, headers, strPath, j](
+            boost::asio::streambuf& sb, std::string const& strHost) {
+            RPCCallImp::onRequest(strMethod, jvParams, headers, strPath, sb, strHost, j);
+        },
         kRpcReplyMaxBytes,
         kRpcWebhookTimeout,
-        std::bind(
-            &RPCCallImp::onResponse,
-            callbackFuncP,
-            std::placeholders::_1,
-            std::placeholders::_2,
-            std::placeholders::_3,
-            j),
+        [callbackFuncP, j](
+            boost::system::error_code const& ecResult, int iStatus, std::string const& strData) {
+            return RPCCallImp::onResponse(callbackFuncP, ecResult, iStatus, strData, j);
+        },
         j);
 }
 

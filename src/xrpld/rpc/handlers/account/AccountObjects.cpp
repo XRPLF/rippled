@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
@@ -26,15 +27,17 @@
 
 namespace xrpl {
 
-/** Gathers all objects for an account in a ledger.
-    @param ledger Ledger to search account objects.
-    @param account AccountID to find objects for.
-    @param typeFilter Gathers objects of these types. empty gathers all types.
-    @param dirIndex Begin gathering account objects from this directory.
-    @param entryIndex Begin gathering objects from this directory node.
-    @param limit Maximum number of objects to find.
-    @param jvResult A JSON result that holds the request objects.
-*/
+/**
+ * Gathers all objects for an account in a ledger.
+ * @param ledger Ledger to search account objects.
+ * @param account AccountID to find objects for.
+ * @param typeFilter Gathers objects of these types. empty gathers all types.
+ * @param dirIndex Begin gathering account objects from this directory.
+ * @param entryIndex Begin gathering objects from this directory node.
+ * @param limit Maximum number of objects to find.
+ * @param sponsoredFilter If set, only return objects whose sponsored state matches the value.
+ * @param jvResult A JSON result that holds the request objects.
+ */
 bool
 getAccountObjects(
     ReadView const& ledger,
@@ -43,6 +46,7 @@ getAccountObjects(
     uint256 dirIndex,
     uint256 entryIndex,
     std::uint32_t const limit,
+    std::optional<bool> const sponsoredFilter,
     json::Value& jvResult)
 {
     // check if dirIndex is valid
@@ -53,6 +57,12 @@ getAccountObjects(
                                 LedgerEntryType ledgerType) {
         auto it = std::ranges::find(typeFilter, ledgerType);
         return it != typeFilter.end();
+    };
+
+    auto sponsoredMatchesFilter = [&sponsoredFilter](std::optional<AccountID> const& sponsor) {
+        if (!sponsoredFilter.has_value())
+            return true;
+        return sponsor.has_value() == *sponsoredFilter;
     };
 
     // if dirIndex != 0, then all NFTs have already been returned.  only
@@ -93,7 +103,10 @@ getAccountObjects(
 
         while (currentPage)
         {
-            jvObjects.append(currentPage->getJson(JsonOptions::Values::None));
+            std::optional<AccountID> const nftSponsor = currentPage->at(~sfSponsor);
+            bool const canAppendNFT = sponsoredMatchesFilter(nftSponsor);
+            if (canAppendNFT)
+                jvObjects.append(currentPage->getJson());
             auto const npm = (*currentPage)[~sfNextPageMin];
             if (npm)
             {
@@ -179,11 +192,32 @@ getAccountObjects(
         {
             auto const sleNode = ledger.read(keylet::child(*entryIter));
 
-            if (!typeFilter.has_value() ||
-                typeMatchesFilter(typeFilter.value(), sleNode->getType()))
+            bool canAppend = true;
+
+            if (typeFilter.has_value() &&
+                !typeMatchesFilter(typeFilter.value(), sleNode->getType()))
+                canAppend = false;
+
+            // An object counts as sponsored no matter which party's directory
+            // it was found through; the sponsorship need not belong to
+            // `account`'s side.
+            std::optional<AccountID> sponsor;
+            if (sleNode->getType() == ltRIPPLE_STATE)
             {
-                jvObjects.append(sleNode->getJson(JsonOptions::Values::None));
+                sponsor = getLedgerEntryReserveSponsorID(sleNode, sfHighSponsor);
+                if (!sponsor)
+                    sponsor = getLedgerEntryReserveSponsorID(sleNode, sfLowSponsor);
             }
+            else if (isLedgerEntrySupportedBySponsorship(*sleNode))
+            {
+                sponsor = getLedgerEntryReserveSponsorID(sleNode);
+            }
+
+            if (!sponsoredMatchesFilter(sponsor))
+                canAppend = false;
+
+            if (canAppend)
+                jvObjects.append(sleNode->getJson(JsonOptions::Values::None));
 
             if (++itemsAdded == limitLeft)
             {
@@ -271,6 +305,7 @@ doAccountObjects(RPC::JsonContext& context)
             {.name = jss::mptoken, .type = ltMPTOKEN},
             {.name = jss::permissioned_domain, .type = ltPERMISSIONED_DOMAIN},
             {.name = jss::vault, .type = ltVAULT},
+            {.name = jss::sponsorship, .type = ltSPONSORSHIP},
         };
 
         typeFilter.emplace();
@@ -329,7 +364,18 @@ doAccountObjects(RPC::JsonContext& context)
             return RPC::invalidFieldError(jss::marker);
     }
 
-    if (!getAccountObjects(*ledger, accountID, typeFilter, dirIndex, entryIndex, limit, result))
+    std::optional<bool> sponsoredFilter;
+    if (params.isMember(jss::sponsored))
+    {
+        auto const& sponsoredJv = params[jss::sponsored];
+        if (!sponsoredJv.isBool())
+            return RPC::expectedFieldError(jss::sponsored, "boolean");
+
+        sponsoredFilter = sponsoredJv.asBool();
+    }
+
+    if (!getAccountObjects(
+            *ledger, accountID, typeFilter, dirIndex, entryIndex, limit, sponsoredFilter, result))
         return RPC::invalidFieldError(jss::marker);
 
     result[jss::account] = toBase58(accountID);

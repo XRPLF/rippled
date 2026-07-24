@@ -66,13 +66,14 @@ protected:
     bool const ownerPaysTransferFee_;
     // Mark as inactive (dry) if too many offers are consumed
     bool inactive_ = false;
-    /** Number of offers consumed or partially consumed the last time
-        the step ran, including expired and unfunded offers.
-
-        N.B. This is not the total number offers consumed by this step for the
-        entire payment, it is only the number the last time it ran. Offers may
-        be partially consumed multiple times during a payment.
-    */
+    /**
+     * Number of offers consumed or partially consumed the last time
+     * the step ran, including expired and unfunded offers.
+     *
+     * N.B. This is not the total number offers consumed by this step for the
+     * entire payment, it is only the number the last time it ran. Offers may
+     * be partially consumed multiple times during a payment.
+     */
     std::uint32_t offersUsed_ = 0;
     // If set, AMM liquidity might be available
     // if AMM offer quality is better than CLOB offer
@@ -731,7 +732,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             // Create MPToken for the offer's owner. No need to check
             // for the reserve since the offer is removed if it is consumed.
             // Therefore, the owner count remains the same.
-            if (auto const err = checkCreateMPT(sb, assetIn.get<MPTIssue>(), owner, j_);
+            if (auto const err = checkCreateMPT(sb, assetIn.get<MPTIssue>(), owner, {}, j_);
                 !isTesSuccess(err))
             {
                 return true;

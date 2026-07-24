@@ -97,18 +97,24 @@ namespace test::jtx {
 
 // JSON generators
 
-/** Add and/or remove flag. */
+/**
+ * Add and/or remove flag.
+ */
 json::Value
 fset(Account const& account, std::uint32_t on, std::uint32_t off = 0);
 
-/** Remove account flag. */
+/**
+ * Remove account flag.
+ */
 inline json::Value
 fclear(Account const& account, std::uint32_t off)
 {
     return fset(account, 0, off);
 }
 
-/** Match set account flags */
+/**
+ * Match set account flags
+ */
 class Flags : private xrpl::detail::FlagsHelper
 {
 private:
@@ -124,7 +130,9 @@ public:
     operator()(Env& env) const;
 };
 
-/** Match clear account flags */
+/**
+ * Match clear account flags
+ */
 class Nflags : private xrpl::detail::FlagsHelper
 {
 private:

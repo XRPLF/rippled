@@ -20,19 +20,22 @@
 
 namespace xrpl {
 
-/** Configuration for OrderBookDB */
+/**
+ * Configuration for OrderBookDB
+ */
 struct OrderBookDBConfig
 {
     int pathSearchMax;
     bool standalone;
 };
 
-/** Create an OrderBookDB instance.
-
-    @param registry Service registry for accessing other services
-    @param config Configuration parameters
-    @return A new OrderBookDB instance
-*/
+/**
+ * Create an OrderBookDB instance.
+ *
+ * @param registry Service registry for accessing other services
+ * @param config Configuration parameters
+ * @return A new OrderBookDB instance
+ */
 std::unique_ptr<OrderBookDB>
 makeOrderBookDb(ServiceRegistry& registry, OrderBookDBConfig const& config);
 
