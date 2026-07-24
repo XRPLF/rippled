@@ -91,10 +91,12 @@ jobs:
           CI: ""
         run: |
           if [ "${{ matrix.nix_develop }}" = "true" ]; then
+              # `nix develop` prints the dev-shell greeting first; keep only the
+              # check-tools.sh output (from the "Detected OS:" line onward).
               nix --extra-experimental-features "nix-command flakes" develop \
                   -c bash bin/check-tools.sh | sed -n '/^Detected OS:/,$p' >"${{ matrix.snapshot }}"
           else
-              bash bin/check-tools.sh | sed -n '/^Detected OS:/,$p' >"${{ matrix.snapshot }}"
+              bash bin/check-tools.sh >"${{ matrix.snapshot }}"
           fi
 
       - name: Verify snapshot is up to date

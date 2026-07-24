@@ -17,8 +17,9 @@ So if you change the environment (bump the image tag in
 and commit the affected snapshots.
 
 Each snapshot is `check-tools.sh` stdout with the git-clone connectivity check
-skipped (`CHECK_TOOLS_SKIP_CLONE=1`) and any preceding shell-hook output trimmed
-(`sed -n '/^Detected OS:/,$p'`), so it contains only deterministic version data.
+skipped (`CHECK_TOOLS_SKIP_CLONE=1`), so it contains only deterministic version
+data. On macOS the dev-shell greeting that `nix develop` prints first is dropped
+with `sed -n '/^Detected OS:/,$p'`.
 
 ## Regenerating
 
@@ -30,9 +31,7 @@ img="ghcr.io/xrplf/xrpld/nix-nixos:$(jq -r .image_tag .github/scripts/strategy-m
 
 for arch in amd64 arm64; do
     container run --rm -i -e CHECK_TOOLS_SKIP_CLONE=1 -a "${arch}" --entrypoint bash "${img}" -s \
-        <bin/check-tools.sh |
-        sed -n '/^Detected OS:/,$p' \
-            >"nix/check-tools/nix-nixos-${arch}.txt"
+        <bin/check-tools.sh >"nix/check-tools/nix-nixos-${arch}.txt"
 done
 ```
 
