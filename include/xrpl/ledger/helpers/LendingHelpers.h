@@ -25,9 +25,18 @@
 #include <expected>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 namespace xrpl {
+
+/**
+ * The flow requested by a LoanSet transaction, determined from its fields.
+ *
+ * OneStep is the immediate flow, where the loan is created and disbursed in
+ * a single transaction. TwoStep is the pending (Borrower) flow, where the
+ * LoanBroker owner proposes a loan that the named Borrower must later accept.
+ * Invalid indicates that the fields do not match either flow shape.
+ */
+enum class LoanFlow { Invalid, OneStep, TwoStep };
 
 /**
  * Broker cover preclaim precision guard (fixCleanup3_2_0).
@@ -595,7 +604,7 @@ checkLoanFreeze(
 reserveLoanOwner(
     ApplyView& view,
     AccountID const& borrower,
-    SLE::ref borrowerSle,
+    SLE::ref loanOwnerSle,
     AccountID const& signingAccount,
     XRPAmount preFeeBalance,
     beast::Journal j);
@@ -607,9 +616,7 @@ reserveLoanOwner(
 [[nodiscard]] TER
 disburseLoan(
     ApplyViewContext& viewContext,
-    AccountID const& borrower,
     SLE::ref borrowerSle,
-    AccountID const& brokerOwner,
     SLE::ref brokerOwnerSle,
     AccountID const& vaultPseudo,
     Asset const& vaultAsset,
@@ -618,38 +625,5 @@ disburseLoan(
     AccountID const& signingAccount,
     AccountID const& counterparty,
     beast::Journal j);
-
-/**
- * Update the LoanBroker ledger entry for a newly created loan.
- *
- * Adjusts the broker's outstanding debt total and owner count, advances the
- * broker's loan sequence, and persists the entry.
- */
-[[nodiscard]] TER
-updateLoanBroker(
-    ApplyView& view,
-    SLE::ref brokerSle,
-    Number const& newDebtDelta,
-    Asset const& vaultAsset,
-    int vaultScale,
-    beast::Journal j);
-
-/**
- * Link the loan into the broker pseudo-account's directory.
- *
- * Done for both flows when the loan is created by LoanSet.
- */
-[[nodiscard]] TER
-linkLoanBroker(ApplyView& view, AccountID const& brokerPseudo, SLE::pointer& loan);
-
-/**
- * Make the borrower the owner of the loan by linking it into the borrower's
- * directory.
- *
- * Done by LoanSet for the immediate flow, and deferred to LoanAccept for the
- * two-step (pending) flow.
- */
-[[nodiscard]] TER
-linkLoanBorrower(ApplyView& view, AccountID const& borrower, SLE::pointer& loan);
 
 }  // namespace xrpl

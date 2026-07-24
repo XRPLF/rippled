@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -101,30 +102,33 @@ isTwoStepFlowEnabled(Rules const& rules)
 }
 
 /**
- * Returns true if the transaction is using the two-step flow.
+ * Determines which LoanFlow a LoanSet transaction is requesting from its
+ * fields. The two-step flow is only available when the corresponding
+ * amendment is enabled; when it is not, transactions carrying two-step
+ * fields are reported as Invalid.
  */
-bool
-isTwoStepFlow(STTx const& tx)
+LoanFlow
+getLoanFlow(STTx const& tx, bool twoStepFlowEnabled)
 {
-    // The two-step (Borrower) flow is started when the LoanSet names a
-    // Borrower and a StartDate but carries neither a Counterparty nor a
-    // CounterpartySignature.
-    return tx.isFieldPresent(sfBorrower) && tx.isFieldPresent(sfStartDate);
-}
+    bool const isBatch = tx.isFlag(tfInnerBatchTxn);
+    bool const hasCounterparty = tx.isFieldPresent(sfCounterparty);
+    bool const hasCounterpartySignature = tx.isFieldPresent(sfCounterpartySignature);
+    bool const hasBorrower = tx.isFieldPresent(sfBorrower);
+    bool const hasStartDate = tx.isFieldPresent(sfStartDate);
+    bool const hasBorrowerOrStartDate = hasBorrower || hasStartDate;
 
-/**
- * Returns true if the transaction is using the one-step flow.
- */
-bool
-isOneStepFlow(STTx const& tx)
-{
-    return tx.isFieldPresent(sfCounterpartySignature);
+    if (twoStepFlowEnabled && hasBorrower && hasStartDate && !hasCounterparty &&
+        !hasCounterpartySignature)
+        return LoanFlow::TwoStep;
+    if ((hasCounterpartySignature || isBatch) && !hasBorrowerOrStartDate)
+        return LoanFlow::OneStep;
+    return LoanFlow::Invalid;
 }
 
 std::uint32_t
 getStartDate(ReadView const& view, STTx const& tx)
 {
-    if (isTwoStepFlow(tx) && isTwoStepFlowEnabled(view.rules()))
+    if (getLoanFlow(tx, isTwoStepFlowEnabled(view.rules())) == LoanFlow::TwoStep)
     {
         return tx[sfStartDate];
     }
@@ -132,49 +136,37 @@ getStartDate(ReadView const& view, STTx const& tx)
 }
 
 /**
- * Resolves the borrower and counterparty accounts, reading the LoanBroker
- * owner from the broker entry.
+ * Resolves the borrower and counterparty accounts for a LoanSet, reading the
+ * LoanBroker owner from the broker entry.
  *
  * The counterparty is the explicit Counterparty field if present, otherwise
- * the LoanBroker owner. In the two-step flow the borrower is the named
- * Borrower; in the immediate flow it is whichever of the signer /
- * counterparty is not the LoanBroker owner.
+ * the LoanBroker owner. In the two-step (Borrower) flow the borrower is the
+ * named Borrower; in the immediate flow the borrower is whichever of the
+ * signer / counterparty is not the LoanBroker owner.
  *
  * @param tx The LoanSet transaction being applied.
  * @param brokerSle The LoanBroker ledger entry.
  * @param signingAccount The account that signed the transaction.
+ * @param flow The flow the transaction is exercising.
  *
  * @return The resolved borrower and counterparty accounts.
  */
 Participants
-resolveParticipants(STTx const& tx, SLE::const_ref brokerSle, AccountID const& signingAccount)
+resolveParticipants(
+    STTx const& tx,
+    SLE::const_ref brokerSle,
+    AccountID const& signingAccount,
+    LoanFlow flow)
 {
     AccountID const brokerOwner = brokerSle->at(sfOwner);
     auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
 
-    // In the two-step (Borrower) flow the LoanBroker owner proposes the loan on
-    // behalf of the named Borrower. In the immediate flow the Borrower is
-    // whichever of the signer / counterparty is not the LoanBroker owner.
-    if (isTwoStepFlow(tx))
-        return Participants{.borrower = tx[sfBorrower], .counterparty = counterparty};
-
-    auto const borrower = counterparty == brokerOwner ? signingAccount : counterparty;
+    AccountID const borrower = [&]() -> AccountID {
+        if (flow == LoanFlow::TwoStep)
+            return tx[sfBorrower];
+        return counterparty == brokerOwner ? signingAccount : counterparty;
+    }();
     return Participants{.borrower = borrower, .counterparty = counterparty};
-}
-
-std::vector<OptionaledField<STNumber>> const&
-getValueFields()
-{
-    static std::vector<OptionaledField<STNumber>> const kValueFields{
-        ~sfPrincipalRequested,
-        ~sfLoanOriginationFee,
-        ~sfLoanServiceFee,
-        ~sfLatePaymentFee,
-        ~sfClosePaymentFee
-        // Overpayment fee is really a rate. Don't check it here.
-    };
-
-    return kValueFields;
 }
 
 /**
@@ -253,7 +245,7 @@ setupLoan(ApplyContext& ctx, beast::Journal const& j)
     }
     // Check that relevant values won't lose precision. This is mostly only
     // relevant for IOU assets.
-    for (auto const& field : getValueFields())
+    for (auto const& field : LoanSet::getValueFields())
     {
         if (auto const value = tx[field];
             value && !isRounded(vaultAsset, *value, properties.loanScale))
@@ -461,12 +453,20 @@ applyPendingLoan(
         "assets available must not be greater than assets outstanding");
     view.update(vaultSle);
 
-    if (auto const ter = updateLoanBroker(view, brokerSle, newDebtDelta, vaultAsset, vaultScale, j))
-        return ter;
+    // Update the balances in the loan broker
+    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), newDebtDelta, vaultAsset, vaultScale);
+    adjustLoanBrokerOwnerCount(view, brokerSle, 1, j);
+    auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
+    loanSequenceProxy += 1;
+    // The sequence should be extremely unlikely to roll over, but fail if it
+    // does
+    if (loanSequenceProxy == 0)
+        return tecMAX_SEQUENCE_REACHED;
+    view.update(brokerSle);
 
     // Link the loan into the broker's directory. The borrower directory link is
     // deferred to LoanAccept for the two-step (pending) flow.
-    if (auto const ter = linkLoanBroker(view, brokerPseudo, loan))
+    if (auto const ter = dirLink(view, brokerPseudo, loan, sfLoanBrokerNode))
         return ter;
 
     associateAsset(*vaultSle, vaultAsset);
@@ -534,9 +534,7 @@ applyImmediateLoan(
     auto applyViewContext = ctx.getApplyViewContext();
     if (auto const ter = disburseLoan(
             applyViewContext,
-            plan.borrower,
             borrowerSle,
-            brokerOwner,
             brokerOwnerSle,
             vaultPseudo,
             vaultAsset,
@@ -562,15 +560,23 @@ applyImmediateLoan(
         "assets available must not be greater than assets outstanding");
     view.update(vaultSle);
 
-    if (auto const ter = updateLoanBroker(view, brokerSle, newDebtDelta, vaultAsset, vaultScale, j))
-        return ter;
+    // Update the balances in the loan broker
+    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), newDebtDelta, vaultAsset, vaultScale);
+    adjustLoanBrokerOwnerCount(view, brokerSle, 1, j);
+    auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
+    loanSequenceProxy += 1;
+    // The sequence should be extremely unlikely to roll over, but fail if it
+    // does
+    if (loanSequenceProxy == 0)
+        return tecMAX_SEQUENCE_REACHED;
+    view.update(brokerSle);
 
     // Link the loan into the broker's directory, then make the borrower the
     // owner of the loan by linking it into the borrower's directory.
-    if (auto const ter = linkLoanBroker(view, brokerPseudo, loan))
+    if (auto const ter = dirLink(view, brokerPseudo, loan, sfLoanBrokerNode))
         return ter;
 
-    if (auto const ter = linkLoanBorrower(view, plan.borrower, loan))
+    if (auto const ter = dirLink(view, plan.borrower, loan, sfOwnerNode))
         return ter;
 
     associateAsset(*vaultSle, vaultAsset);
@@ -584,7 +590,14 @@ applyImmediateLoan(
 bool
 LoanSet::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
+    if (!checkLendingProtocolDependencies(ctx.rules, ctx.tx))
+        return false;
+
+    // The two-step (Borrower) flow fields (Borrower / StartDate) require the
+    // two-step flow to be enabled.
+    bool const hasBorrowerOrStartDate =
+        ctx.tx.isFieldPresent(sfBorrower) || ctx.tx.isFieldPresent(sfStartDate);
+    return isTwoStepFlowEnabled(ctx.rules) || !hasBorrowerOrStartDate;
 }
 
 std::uint32_t
@@ -624,54 +637,18 @@ LoanSet::preflight(PreflightContext const& ctx)
     }();
 
     bool const twoStepFlowEnabled = isTwoStepFlowEnabled(ctx.rules);
-    bool const twoStepFlow = isTwoStepFlow(tx);
-    bool const oneStepFlow = isOneStepFlow(tx);
-    // In the two-step (Borrower) flow introduced by V1.1, a CounterpartySignature
-    // is not required even for non-batch transactions. The immediate flow still
-    // requires one.
-    if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig && !twoStepFlowEnabled)
+    if (getLoanFlow(tx, twoStepFlowEnabled) == LoanFlow::Invalid)
     {
-        JLOG(ctx.j.warn()) << "LoanSet transaction must have a CounterpartySignature.";
-        return temBAD_SIGNER;
-    }
-
-    if (twoStepFlowEnabled)
-    {
-        if (!twoStepFlow && !oneStepFlow)
+        // Before the two-step (Borrower) flow was introduced by V1.1, a
+        // CounterpartySignature was mandatory for every non-batch transaction.
+        if (!twoStepFlowEnabled)
         {
-            JLOG(ctx.j.warn()) << "LoanSet transaction must specify either a Borrower with a "
-                                  "StartDate or a CounterpartySignature.";
-            return temINVALID;
+            JLOG(ctx.j.warn()) << "LoanSet transaction must have a CounterpartySignature.";
+            return temBAD_SIGNER;
         }
-
-        if (oneStepFlow)
-        {
-            if (tx.isFieldPresent(sfBorrower) || tx.isFieldPresent(sfStartDate))
-            {
-                JLOG(ctx.j.warn()) << "LoanSet transaction cannot specify both a Borrower with a "
-                                      "StartDate and a CounterpartySignature.";
-                return temINVALID;
-            }
-        }
-
-        if (twoStepFlow)
-        {
-            if (tx.isFieldPresent(sfCounterpartySignature))
-            {
-                JLOG(ctx.j.warn()) << "LoanSet transaction cannot specify both a Borrower with a "
-                                      "StartDate and a CounterpartySignature.";
-                return temINVALID;
-            }
-        }
-    }
-    else
-    {
-        if (tx.isFieldPresent(sfBorrower) || tx.isFieldPresent(sfStartDate))
-        {
-            JLOG(ctx.j.warn()) << "LoanSet transaction cannot specify a Borrower with a "
-                                  "StartDate without the two-step flow being enabled.";
-            return temDISABLED;
-        }
+        JLOG(ctx.j.warn()) << "LoanSet transaction must specify either a Borrower with a "
+                              "StartDate or a CounterpartySignature.";
+        return temINVALID;
     }
 
     if (counterPartySig)
@@ -741,7 +718,7 @@ LoanSet::checkSign(PreclaimContext const& ctx)
 
     // In the two-step (Borrower) flow introduced by V1.1 there is no
     // counterparty, so there is no CounterpartySignature to check.
-    if (isTwoStepFlowEnabled(ctx.view.rules()) && isTwoStepFlow(ctx.tx))
+    if (getLoanFlow(ctx.tx, isTwoStepFlowEnabled(ctx.view.rules())) == LoanFlow::TwoStep)
         return tesSUCCESS;
 
     // Counter signer is optional. If it's not specified, it's assumed to be
@@ -791,6 +768,21 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
     }();
 
     return normalCost + (signerCount * baseFee);
+}
+
+std::vector<OptionaledField<STNumber>> const&
+LoanSet::getValueFields()
+{
+    static std::vector<OptionaledField<STNumber>> const kValueFields{
+        ~sfPrincipalRequested,
+        ~sfLoanOriginationFee,
+        ~sfLoanServiceFee,
+        ~sfLatePaymentFee,
+        ~sfClosePaymentFee
+        // Overpayment fee is really a rate. Don't check it here.
+    };
+
+    return kValueFields;
 }
 
 TER
@@ -857,36 +849,31 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
     auto const brokerOwner = brokerSle->at(sfOwner);
-    bool const twoStepFlow = isTwoStepFlow(tx);
+    auto const flow = getLoanFlow(tx, isTwoStepFlowEnabled(ctx.view.rules()));
+    bool const twoStepFlow = flow == LoanFlow::TwoStep;
+    auto const participants = resolveParticipants(tx, brokerSle, account, flow);
 
-    // Determine the Borrower and validate the submitter's permission. In the
-    // two-step flow the LoanBroker owner proposes the loan on behalf of the
-    // named Borrower, so the submitter must be the owner. In the immediate flow
-    // either the Borrower or the LoanBroker owner may submit, with the other
-    // acting as the counterparty.
-    std::expected<AccountID, TER> const maybeBorrower = [&]() -> std::expected<AccountID, TER> {
+    // Validate the submitter's permission. In the two-step flow the LoanBroker
+    // owner proposes the loan on behalf of the named Borrower, so the submitter
+    // must be the owner. In the immediate flow either the Borrower or the
+    // LoanBroker owner may submit, with the other acting as the counterparty.
+    if (account != brokerOwner)
+    {
         if (twoStepFlow)
         {
-            if (account != brokerOwner)
-            {
-                JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
-                return std::unexpected(tecNO_PERMISSION);
-            }
-            return tx[sfBorrower];
+            JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
+            return tecNO_PERMISSION;
         }
-        auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
-        if (account != brokerOwner && counterparty != brokerOwner)
+
+        if (participants.counterparty != brokerOwner)
         {
             JLOG(ctx.j.warn()) << "Neither Account nor Counterparty are the owner "
                                   "of the LoanBroker.";
-            return std::unexpected(tecNO_PERMISSION);
+            return tecNO_PERMISSION;
         }
-        return counterparty == brokerOwner ? account : counterparty;
-    }();
-    if (!maybeBorrower)
-        return maybeBorrower.error();
+    }
 
-    auto borrower = *maybeBorrower;
+    auto const borrower = participants.borrower;
     auto const brokerPseudo = brokerSle->at(sfAccount);
     if (auto const borrowerSle = ctx.view.read(keylet::account(borrower)); !borrowerSle)
     {
@@ -945,7 +932,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         if (auto const ter = requireAuth(ctx.view, asset, brokerOwner, AuthType::WeakAuth))
             return ter;
 
-        if (tx[sfStartDate] <= currentLedgerCloseTime(ctx.view))
+        if (hasExpired(ctx.view, tx[~sfStartDate]))
         {
             JLOG(ctx.j.warn()) << "Start date is in the past.";
             return tecEXPIRED;
@@ -958,7 +945,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
 TER
 LoanSet::doApply()
 {
-    auto const setup = setupLoan();
+    auto const setup = setupLoan(ctx_, j_);
     if (!setup)
         return setup.error();
 
@@ -966,7 +953,9 @@ LoanSet::doApply()
     // pending (two-step) and immediate flows each own their full sequence of
     // ledger mutations; nothing here is reordered relative to the prior
     // implementation.
-    auto const participants = resolveParticipants(ctx_.tx, setup->brokerSle, accountID_);
+    auto const flow = getLoanFlow(ctx_.tx, isTwoStepFlowEnabled(ctx_.view().rules()));
+    bool const twoStepFlow = flow == LoanFlow::TwoStep;
+    auto const participants = resolveParticipants(ctx_.tx, setup->brokerSle, accountID_, flow);
     LoanPlan const plan{
         .brokerID = setup->brokerID,
         .borrower = participants.borrower,
@@ -978,8 +967,8 @@ LoanSet::doApply()
         .paymentInterval = setup->paymentInterval,
         .paymentTotal = setup->paymentTotal};
 
-    return isTwoStepFlow(ctx_.tx) ? applyPendingLoan(ctx_, accountID_, preFeeBalance_, plan, j_)
-                                  : applyImmediateLoan(ctx_, accountID_, preFeeBalance_, plan, j_);
+    return twoStepFlow ? applyPendingLoan(ctx_, accountID_, preFeeBalance_, plan, j_)
+                       : applyImmediateLoan(ctx_, accountID_, preFeeBalance_, plan, j_);
 }
 
 void

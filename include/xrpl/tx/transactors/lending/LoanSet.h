@@ -15,9 +15,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <expected>
-#include <memory>
-#include <vector>
 
 namespace xrpl {
 
@@ -44,6 +41,9 @@ public:
 
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
+
+    static std::vector<OptionaledField<STNumber>> const&
+    getValueFields();
 
     static TER
     preclaim(PreclaimContext const& ctx);

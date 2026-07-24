@@ -136,9 +136,7 @@ LoanAccept::doApply()
     // to the broker owner.
     if (auto const ter = disburseLoan(
             applyViewContext,
-            borrower,
             borrowerSle,
-            brokerOwner,
             brokerOwnerSle,
             vaultPseudo,
             vaultAsset,
@@ -155,7 +153,7 @@ LoanAccept::doApply()
     view.update(vaultSle);
 
     // Make the borrower the owner of the loan.
-    if (auto const ter = linkLoanBorrower(view, borrower, loanSle))
+    if (auto const ter = dirLink(view, borrower, loanSle, sfOwnerNode))
         return ter;
     view.update(loanSle);
 

@@ -32,7 +32,6 @@
 #include <memory>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 namespace xrpl {
 
@@ -2199,15 +2198,18 @@ TER
 reserveLoanOwner(
     ApplyView& view,
     AccountID const& borrower,
-    SLE::ref borrowerSle,
+    SLE::ref loanOwnerSle,
     AccountID const& signingAccount,
     XRPAmount preFeeBalance,
     beast::Journal j)
 {
-    increaseOwnerCount(view, borrowerSle, {}, 1, j);
+    XRPL_ASSERT(
+        loanOwnerSle && loanOwnerSle->getType() == ltACCOUNT_ROOT,
+        "xrpl::reserveLoanOwner : valid AccountRoot");
+    increaseOwnerCount(view, loanOwnerSle, {}, 1, j);
     auto const balance =
-        signingAccount == borrower ? preFeeBalance : borrowerSle->at(sfBalance).value().xrp();
-    if (balance < accountReserve(view, borrowerSle, j))
+        signingAccount == borrower ? preFeeBalance : loanOwnerSle->at(sfBalance).value().xrp();
+    if (balance < accountReserve(view, loanOwnerSle, j))
         return tecINSUFFICIENT_RESERVE;
     return tesSUCCESS;
 }
@@ -2215,9 +2217,7 @@ reserveLoanOwner(
 TER
 disburseLoan(
     ApplyViewContext& viewContext,
-    AccountID const& borrower,
     SLE::ref borrowerSle,
-    AccountID const& brokerOwner,
     SLE::ref brokerOwnerSle,
     AccountID const& vaultPseudo,
     Asset const& vaultAsset,
@@ -2227,6 +2227,15 @@ disburseLoan(
     AccountID const& counterparty,
     beast::Journal j)
 {
+    XRPL_ASSERT(
+        borrowerSle && borrowerSle->getType() == ltACCOUNT_ROOT,
+        "xrpl::disburseLoan : valid borrower AccountRoot");
+    XRPL_ASSERT(
+        brokerOwnerSle && brokerOwnerSle->getType() == ltACCOUNT_ROOT,
+        "xrpl::disburseLoan : valid broker owner AccountRoot");
+    AccountID const borrower = borrowerSle->at(sfAccount);
+    AccountID const brokerOwner = brokerOwnerSle->at(sfAccount);
+
     // Account for the origination fee using two payments
     //
     // 1. Transfer loanAssetsAvailable (principalRequested - originationFee)
@@ -2290,40 +2299,4 @@ disburseLoan(
     return tesSUCCESS;
 }
 
-TER
-updateLoanBroker(
-    ApplyView& view,
-    SLE::ref brokerSle,
-    Number const& newDebtDelta,
-    Asset const& vaultAsset,
-    int vaultScale,
-    beast::Journal j)
-{
-    // Update the balances in the loan broker
-    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), newDebtDelta, vaultAsset, vaultScale);
-    adjustLoanBrokerOwnerCount(view, brokerSle, 1, j);
-    auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
-    loanSequenceProxy += 1;
-    // The sequence should be extremely unlikely to roll over, but fail if it
-    // does
-    if (loanSequenceProxy == 0)
-        return tecMAX_SEQUENCE_REACHED;
-    view.update(brokerSle);
-
-    return tesSUCCESS;
-}
-
-TER
-linkLoanBroker(ApplyView& view, AccountID const& brokerPseudo, SLE::pointer& loan)
-{
-    // Put the loan into the pseudo-account's directory
-    return dirLink(view, brokerPseudo, loan, sfLoanBrokerNode);
-}
-
-TER
-linkLoanBorrower(ApplyView& view, AccountID const& borrower, SLE::pointer& loan)
-{
-    // Borrower is the owner of the loan
-    return dirLink(view, borrower, loan, sfOwnerNode);
-}
 }  // namespace xrpl
