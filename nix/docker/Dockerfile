@@ -8,10 +8,12 @@ RUN mkdir -p ~/.config/nix && \
 
 # Copy our source and setup our working dir.
 COPY nix/ci-env.nix /tmp/build/nix/ci-env.nix
+COPY nix/compilers.nix /tmp/build/nix/compilers.nix
 COPY nix/packages.nix /tmp/build/nix/packages.nix
 COPY nix/utils.nix /tmp/build/nix/utils.nix
 COPY flake.nix /tmp/build/
 COPY flake.lock /tmp/build/
+COPY rust-toolchain.toml /tmp/build/
 WORKDIR /tmp/build
 
 FROM builder-source AS builder

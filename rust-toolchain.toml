@@ -1,8 +1,4 @@
-# Rust toolchain pin for rustup-based CI runners and local development.
-# rustup reads this file and installs the pinned toolchain (see the
-# prepare-runner action in XRPLF/actions, which runs `rustup toolchain install`).
-# NOTE: the Nix CI image and development shell ignore this file; its rustc comes from flake.lock.
 [toolchain]
 channel = "1.95"
-components = ["rustfmt", "clippy"]
+components = ["rustfmt", "clippy", "rust-analyzer", "llvm-tools-preview"]
 profile = "minimal"
