@@ -78,9 +78,20 @@ txTypeName(TxType txnType)
  * @param name   Full span name (tx_apply_span::preflight / ::preclaim).
  * @param stage  Stage attribute value (tx_apply_span::val::*).
  * @param tx     The transaction supplying the id and type.
+ * @param curLedgerSeq         Seq of the ledger being worked on, set as the
+ *                             current_ledger_seq attribute. Passed by the
+ *                             view-bearing stages (preclaim); nullopt for the
+ *                             stateless preflight, which then omits it.
+ * @param curLedgerParentHash  Parent hash of that ledger, set as
+ *                             current_ledger_hash. nullptr to omit.
  */
 [[nodiscard]] telemetry::SpanGuard
-makeStageSpan(std::string_view name, std::string_view stage, STTx const& tx)
+makeStageSpan(
+    std::string_view name,
+    std::string_view stage,
+    STTx const& tx,
+    std::optional<LedgerIndex> curLedgerSeq = std::nullopt,
+    uint256 const* curLedgerParentHash = nullptr)
 {
     auto const txID = tx.getTransactionID();
     auto span = telemetry::SpanGuard::hashSpan(
@@ -92,6 +103,17 @@ makeStageSpan(std::string_view name, std::string_view stage, STTx const& tx)
         span.setAttribute(telemetry::tx_apply_span::attr::stage, stage);
         if (char const* typeName = txTypeName(tx.getTxnType()))
             span.setAttribute(telemetry::tx_apply_span::attr::txType, typeName);
+        // The ledger being worked on — set only by the view-bearing stages
+        // (preclaim/transactor). Preflight is stateless and passes nullopt, so
+        // it carries no ledger attribute (documented exception).
+        if (curLedgerSeq)
+            span.setAttribute(
+                telemetry::tx_apply_span::attr::currentLedgerSeq,
+                static_cast<std::int64_t>(*curLedgerSeq));
+        if (curLedgerParentHash)
+            span.setAttribute(
+                telemetry::tx_apply_span::attr::currentLedgerHash,
+                to_string(*curLedgerParentHash).c_str());
     }
     return span;
 }
@@ -224,8 +246,14 @@ static TER
 invokePreclaim(PreclaimContext const& ctx)
 {
     // Trace the preclaim stage under the transaction's deterministic trace_id.
+    // Preclaim has a ledger view, so tag the span with the ledger being worked
+    // on (seq + parent hash) to correlate it to the ledger/consensus trace.
     auto span = makeStageSpan(
-        telemetry::tx_apply_span::preclaim, telemetry::tx_apply_span::val::preclaim, ctx.tx);
+        telemetry::tx_apply_span::preclaim,
+        telemetry::tx_apply_span::val::preclaim,
+        ctx.tx,
+        ctx.view.seq(),
+        &ctx.view.header().parentHash);
     try
     {
         // use name hiding to accomplish compile-time polymorphism of static

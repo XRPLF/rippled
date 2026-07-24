@@ -78,14 +78,14 @@ All spans instrumented in xrpld, grouped by subsystem:
 
 ### Transaction Spans
 
-| Span Name       | Source File     | Attributes                                                                        | Description                           |
-| --------------- | --------------- | --------------------------------------------------------------------------------- | ------------------------------------- |
-| `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied` | Transaction submission and processing |
-| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`        | Transaction received from peer relay  |
-| `tx.apply`      | BuildLedger.cpp | `ledger_seq`, `tx_count`, `tx_failed`                                             | Transaction set applied per ledger    |
-| `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                  | Stateless checks stage                |
-| `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                  | Ledger-aware checks stage             |
-| `tx.transactor` | Transactor.cpp  | `stage`, `tx_type`, `ter_result`, `applied`                                       | Apply stage (transactor runs)         |
+| Span Name       | Source File     | Attributes                                                                                              | Description                           |
+| --------------- | --------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied`, `current_ledger_seq` | Transaction submission and processing |
+| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`, `current_ledger_seq`        | Transaction received from peer relay  |
+| `tx.apply`      | BuildLedger.cpp | `ledger_seq`, `tx_count`, `tx_failed`                                                                   | Transaction set applied per ledger    |
+| `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                                        | Stateless checks stage                |
+| `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`, `current_ledger_seq`, `current_ledger_hash`                           | Ledger-aware checks stage             |
+| `tx.transactor` | Transactor.cpp  | `stage`, `tx_type`, `ter_result`, `applied`, `current_ledger_seq`, `current_ledger_hash`                | Apply stage (transactor runs)         |
 
 The three apply-pipeline spans (`tx.preflight`, `tx.preclaim`, `tx.transactor`)
 share a deterministic `trace_id` from `txID[0:16]`, so they group under one
@@ -93,16 +93,23 @@ trace per transaction. The `stage` attribute (`preflight` / `preclaim` /
 `apply`) drives the collector spanmetrics `stage` dimension, giving per-stage
 RED metrics on the _Transaction Overview_ dashboard.
 
+`current_ledger_seq` is the current (open/in-flight) ledger index a span acted on
+— the ledger being worked on, not an established one — so a transaction's
+txID-keyed spans can be joined to the ledger trace it targeted
+(`span.current_ledger_seq`). The view-bearing stages (`tx.preclaim`,
+`tx.transactor`) also carry `current_ledger_hash` (the current ledger's parent
+hash); `tx.preflight` is stateless and omits both.
+
 ### Transaction Queue Spans
 
-| Span Name          | Source File | Attributes                                               | Description                                        |
-| ------------------ | ----------- | -------------------------------------------------------- | -------------------------------------------------- |
-| `txq.enqueue`      | TxQ.cpp     | `tx_hash`, `tx_type`                                     | Transaction enqueue decision (child of tx.process) |
-| `txq.apply_direct` | TxQ.cpp     | --                                                       | Direct apply attempt (bypassing queue)             |
-| `txq.batch_clear`  | TxQ.cpp     | --                                                       | Batch clear of queued transactions for an account  |
-| `txq.accept`       | TxQ.cpp     | `queue_size`, `ledger_changed`                           | Ledger-close accept loop over queued transactions  |
-| `txq.accept_tx`    | TxQ.cpp     | `tx_hash`, `retries_remaining`, `ter_code`, `txq_status` | Per-transaction apply during accept                |
-| `txq.cleanup`      | TxQ.cpp     | `ledger_seq`                                             | Post-close cleanup of expired queue entries        |
+| Span Name          | Source File | Attributes                                                        | Description                                                                                                                                                                                  |
+| ------------------ | ----------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `txq.enqueue`      | TxQ.cpp     | `tx_hash`, `tx_type`, `current_ledger_seq`, `current_ledger_hash` | Enqueue decision; parents to `tx.process` on the submission path (explicit context), a root on the open-ledger rebuild path — `current_ledger_seq` correlates it to the ledger in both cases |
+| `txq.apply_direct` | TxQ.cpp     | --                                                                | Direct apply attempt (bypassing queue)                                                                                                                                                       |
+| `txq.batch_clear`  | TxQ.cpp     | --                                                                | Batch clear of queued transactions for an account                                                                                                                                            |
+| `txq.accept`       | TxQ.cpp     | `queue_size`, `ledger_changed`                                    | Ledger-close accept loop over queued transactions                                                                                                                                            |
+| `txq.accept_tx`    | TxQ.cpp     | `tx_hash`, `retries_remaining`, `ter_code`, `txq_status`          | Per-transaction apply during accept                                                                                                                                                          |
+| `txq.cleanup`      | TxQ.cpp     | `ledger_seq`                                                      | Post-close cleanup of expired queue entries                                                                                                                                                  |
 
 ### PathFinding Spans
 
@@ -345,6 +352,28 @@ sum by (stage) (rate(traces_span_metrics_calls_total{span_name=~"tx.preflight|tx
 | "Was consensus outcome normal?"     | `consensus.accept`          | `consensus_state`              |
 | "Did a validator bow out?"          | `consensus.proposal.send`   | `is_bow_out`                   |
 | "Which ledger was validated?"       | `consensus.validation.send` | `ledger_hash`                  |
+| "What tx work fed a given ledger?"  | `tx.*` / `txq.*`            | `current_ledger_seq`           |
+
+### Correlating a transaction to the ledger it was worked on
+
+The `tx.process`, `tx.receive`, `txq.enqueue`, `tx.preclaim`, and `tx.transactor`
+spans carry `current_ledger_seq` — the open/in-flight ledger they acted on (not
+an established ledger). Because these spans are keyed on the transaction id (their
+own trace) while the ledger/consensus spans are keyed on the ledger, use the
+attribute to bridge the two id-spaces:
+
+```
+# All transaction-side work recorded against ledger N
+{span.current_ledger_seq = N}
+
+# Join to the ledger build/consensus trace for the same ledger
+{name="ledger.build" && span.ledger_seq = N}
+```
+
+`txq.enqueue` and the view-bearing apply stages also carry `current_ledger_hash`
+(the current ledger's parent hash), which equals the `consensus.round`
+deterministic trace-id seed on the consensus-build path. `tx.preflight` is
+stateless and omits both attributes.
 
 ---
 
