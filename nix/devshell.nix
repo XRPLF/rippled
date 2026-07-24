@@ -50,12 +50,17 @@ let
   # compilerName is the command used to print the version, or null for none.
   makeShell =
     {
+      shellName,
       stdenv,
       compilerName,
       version ? null,
       versionedTools ? [ ],
       extraPackages ? [ ],
       warningHook ? "",
+      # Opt out of PatchNixBinary.cmake retargeting binaries to the system
+      # loader. The plain toolchain links a newer glibc, so it must not be
+      # patched; the custom toolchain patches by default.
+      noPatchNixBinary ? false,
     }:
     let
       compilerVersionHook =
@@ -73,14 +78,20 @@ let
         tools = versionedTools;
       });
     in
-    (pkgs.mkShell.override { inherit stdenv; }) {
-      packages = commonPackages ++ versionedLinks ++ extraPackages;
-      shellHook = ''
-        echo "Welcome to xrpld development shell";
-        ${compilerVersionHook}
-        ${warningHook}
-      '';
-    };
+    (pkgs.mkShell.override { inherit stdenv; }) (
+      {
+        packages = commonPackages ++ versionedLinks ++ extraPackages;
+        # Marks a managed dev shell, so the build (XrplSanity.cmake) can tell an
+        # intentional Nix toolchain from one leaked into a bare shell.
+        XRPL_DEVSHELL = shellName;
+        shellHook = ''
+          echo "Welcome to xrpld development shell";
+          ${compilerVersionHook}
+          ${warningHook}
+        '';
+      }
+      // pkgs.lib.optionalAttrs noPatchNixBinary { XRPLD_NO_PATCH_NIX_BINARY = "1"; }
+    );
 in
 rec {
   # macOS: Nix Clang. Linux: Nix GCC.
@@ -89,6 +100,7 @@ rec {
   # gcc/clang use the custom-glibc toolchain, matching CI. On darwin there is no
   # custom glibc, so they fall back to the plain nixpkgs toolchain.
   gcc = makeShell {
+    shellName = "gcc";
     stdenv = customGccStdenv;
     compilerName = "gcc";
     version = gccVersion;
@@ -97,6 +109,7 @@ rec {
   };
 
   clang = makeShell {
+    shellName = "clang";
     stdenv = customClangStdenv;
     compilerName = "clang";
     version = llvmVersion;
@@ -105,6 +118,7 @@ rec {
 
   # Nix provides no compiler; use the one from your system (e.g. Apple Clang).
   no-compiler = makeShell {
+    shellName = "no-compiler";
     stdenv = pkgs.stdenvNoCC;
     compilerName = null;
   };
@@ -115,19 +129,23 @@ rec {
 # makes `nix develop .#gcc-plain` fail there rather than silently aliasing gcc.
 // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux {
   gcc-plain = makeShell {
+    shellName = "gcc-plain";
     stdenv = plainGccStdenv;
     compilerName = "gcc";
     version = gccVersion;
     versionedTools = gccVersionedTools;
     extraPackages = [ plainGcov ];
     warningHook = plainWarningHook;
+    noPatchNixBinary = true;
   };
 
   clang-plain = makeShell {
+    shellName = "clang-plain";
     stdenv = plainClangStdenv;
     compilerName = "clang";
     version = llvmVersion;
     versionedTools = clangVersionedTools;
     warningHook = plainWarningHook;
+    noPatchNixBinary = true;
   };
 }
