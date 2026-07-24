@@ -6,8 +6,8 @@
    `patch_nix_binary` adds a POST_BUILD step that resets the interpreter
    to the system default loader and drops the rpath.
 
-   This runs by default for Nix-toolchain builds (determined if compiler is resolving under /nix/store/),
-   which is where binaries get a Nix-store loader.
+   This runs by default for Nix-toolchain builds (determined by whether the compiler resolves under /nix/store/).
+   Those builds are where binaries get a Nix-store loader.
    It is opted out of by setting the XRPLD_NO_PATCH_NIX_BINARY environment variable —
    the plain Nix dev shells set it, since their binaries link a newer glibc
    and must not be retargeted to the system loader.
