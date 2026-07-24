@@ -3,9 +3,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/LendingHelpers.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STTx.h>
@@ -15,6 +12,7 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
+#include <vector>
 
 namespace xrpl {
 

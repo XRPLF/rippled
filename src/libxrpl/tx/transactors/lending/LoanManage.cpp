@@ -76,7 +76,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    if (loanSle->isFlag(lsfLoanPending))
+    if (isPendingLoan(loanSle))
     {
         JLOG(ctx.j.warn()) << "Loan is pending acceptance. A pending loan can not be managed.";
         return tecNO_PERMISSION;

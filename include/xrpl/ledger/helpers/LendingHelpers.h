@@ -281,6 +281,17 @@ constructLoanState(
 LoanState
 constructLoanState(SLE::const_ref loan);
 
+/**
+ * Returns true if the loan is a pending loan created by the two-step
+ * (Borrower) flow, i.e. it carries the lsfLoanPending flag and has not yet
+ * been accepted by the borrower.
+ */
+inline bool
+isPendingLoan(SLE::const_ref loan)
+{
+    return loan->isFlag(lsfLoanPending);
+}
+
 Number
 computeManagementFee(
     Asset const& asset,
