@@ -41,7 +41,7 @@ defaults:
 jobs:
   # The nix-nixos image tag is pinned alongside the build matrix in linux.json,
   # so snapshots are checked against the exact image CI builds against.
-  image-tag:
+  linux-image-tag:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
@@ -56,7 +56,7 @@ jobs:
   # One job for all environments; they differ only in whether the tools come
   # from the nix-nixos container (Linux) or `nix develop` (macOS).
   check-tools:
-    needs: image-tag
+    needs: linux-image-tag
     strategy:
       fail-fast: false
       matrix:
@@ -73,7 +73,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     # Linux runs inside the pinned nix-nixos image; macOS runs natively and uses
     # the flake's dev shell instead (see the run step below).
-    container: ${{ !matrix.nix_develop && format('ghcr.io/xrplf/xrpld/nix-nixos:{0}', needs.image-tag.outputs.tag) || null }}
+    container: ${{ !matrix.nix_develop && format('ghcr.io/xrplf/xrpld/nix-nixos:{0}', needs.linux-image-tag.outputs.tag) || null }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
