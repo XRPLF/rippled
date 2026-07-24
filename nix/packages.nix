@@ -48,6 +48,17 @@ let
       }) tools
     );
 
+  # The cc-wrapper doesn't re-export gcov, but coverage tooling (gcovr) needs a
+  # gcov that exactly matches the compiler. Surface it from a gcc `cc` output.
+  mkGcov =
+    { name, cc }:
+    pkgs.linkFarm "gcov-${name}" [
+      {
+        name = "bin/gcov";
+        path = "${cc}/bin/gcov";
+      }
+    ];
+
   clangToolLinks = mkVersionedToolLinks {
     name = "clang-tools";
     package = clangTools;
@@ -72,6 +83,7 @@ in
     gccPackage
     llvmPackages
     mkVersionedToolLinks
+    mkGcov
     ;
 
   commonPackages = with pkgs; [

@@ -1,12 +1,11 @@
 #include <xrpld/app/rdb/PeerFinder.h>
 
-#include <xrpld/peerfinder/detail/Store.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/BasicConfig.h>
+#include <xrpl/peerfinder/detail/Store.h>
 #include <xrpl/rdb/SociDB.h>
 
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
