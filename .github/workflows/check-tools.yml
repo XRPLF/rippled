@@ -48,6 +48,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
       - name: Read nix image tag
         id: tag
         run: echo "tag=$(jq -r .image_tag .github/scripts/strategy-matrix/linux.json)" >>"${GITHUB_OUTPUT}"
@@ -76,11 +77,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
       - name: Prepare runner
         uses: XRPLF/actions/prepare-runner@e4b6449d55a61c002d7c3fdfa6c20f721ede0606
         with:
           enable_ccache: false
-      - name: Regenerate and verify snapshot
+
+      - name: Regenerate snapshot
         env:
           CHECK_TOOLS_SKIP_CLONE: "1"
         run: |
@@ -90,10 +93,14 @@ jobs:
           else
               bash bin/check-tools.sh | sed -n '/^Detected OS:/,$p' >"${{ matrix.snapshot }}"
           fi
+
+      - name: Verify snapshot is up to date
+        run: |
           if ! git diff --exit-code -- "${{ matrix.snapshot }}"; then
               echo "::error::${{ matrix.snapshot }} is out of date. Regenerate it (see nix/check-tools/README.md) and commit the result."
               exit 1
           fi
+
       - name: Upload regenerated snapshot
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
