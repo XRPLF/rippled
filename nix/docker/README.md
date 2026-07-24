@@ -75,8 +75,9 @@ toolchain being present at runtime. Two pieces make that work:
 
 - **An expected dynamic linker in the image.**
   Binaries built in Nix environments reference a dynamic linker from Nix store paths, which won't be present in the base image. However,
-  [`loader-path.sh`](./loader-path.sh) reports the expected loader path for the
-  current architecture, so we can patch the binaries to use the correct loader.
+  [`bin/default-loader-path.sh`](../../bin/default-loader-path.sh) reports the
+  expected loader path for the current architecture, so we can patch the binaries
+  to use the correct loader.
 
 The build then verifies all of this end to end, and the C++ and Rust programs
 go through the same pipeline: each is compiled in `final`, has its `PT_INTERP`
@@ -93,7 +94,7 @@ whose resulting binary is patched and run like the others.
 | File                                                                    | Purpose                                                                              |
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | [`./Dockerfile`](./Dockerfile)                                          | Multi-stage build described above.                                                   |
-| [`./loader-path.sh`](./loader-path.sh)                                  | Print the dynamic-linker (`PT_INTERP`) path for the current architecture.            |
+| [`../../bin/default-loader-path.sh`](../../bin/default-loader-path.sh)  | Print the dynamic-linker (`PT_INTERP`) path for the current architecture.            |
 | [`./test_files/cpp/`](./test_files/cpp)                                 | C++ sanitizer smoke test: sources + compile/run scripts.                             |
 | [`./test_files/rust/`](./test_files/rust)                               | Rust smoke test: rustc sources + a cargo proc-macro workspace + compile/run scripts. |
 | [`/bin/check-tools.sh`](../../bin/check-tools.sh)                       | Verify every expected tools are present and runnable.                                |
