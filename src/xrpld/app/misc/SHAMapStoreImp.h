@@ -180,7 +180,9 @@ public:
 private:
     // Force write a node to the writable backend during rotation so it doesn't get lost
     void
-    rescueNode(SHAMapTreeNode const& node);
+    rescueNode(
+        SHAMapTreeNode const& node,
+        std::optional<NodeObjectType> expectedType = std::nullopt);
     // callback for visitNodes
     bool
     copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node);

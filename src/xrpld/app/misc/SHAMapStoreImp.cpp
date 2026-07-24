@@ -263,7 +263,7 @@ SHAMapStoreImp::fdRequired() const
 }
 
 void
-SHAMapStoreImp::rescueNode(SHAMapTreeNode const& node)
+SHAMapStoreImp::rescueNode(SHAMapTreeNode const& node, std::optional<NodeObjectType> expectedType)
 {
     XRPL_ASSERT(node.cowid() == 0, "SHAMapStoreImp::copyNode : rescued node must be clean");
     // Reachable from the validated state map in memory, but present in
@@ -274,25 +274,39 @@ SHAMapStoreImp::rescueNode(SHAMapTreeNode const& node)
     // instead of later surfacing as an unresolvable SHAMapMissingNode.
 
     auto const nodeType = node.getType();
-    auto const objectType = std::invoke([nodeType] {
+    auto const objectType = std::invoke([nodeType, expectedType] {
         switch (nodeType)
         {
             case SHAMapNodeType::TnAccountState:
                 return NodeObjectType::AccountNode;
+            // We don't expect to see transaction nodes. The check below will prevent writing them.
             case SHAMapNodeType::TnTransactionNm:
+            case SHAMapNodeType::TnTransactionMd:
                 return NodeObjectType::TransactionNode;
+            case SHAMapNodeType::TnInner:
+                return expectedType.value_or(NodeObjectType::Unknown);
             default:
                 return NodeObjectType::Unknown;
         }
     });
 
     auto const hash = node.getHash().asUInt256();
-    if (objectType == NodeObjectType::Unknown)
+    XRPL_ASSERT_IF(
+        expectedType,
+        *expectedType == objectType,
+        "SHAMapStoreImp::rescueNode : expected node type");
+
+    if (objectType != NodeObjectType::AccountNode || (expectedType && *expectedType != objectType))
     {
-        JLOG(journal_.warn()) << "copyNode: unable to re-store node with unknown type, hash="
-                              << hash << " type=" << static_cast<int>(nodeType);
+        // LCOV_EXCL_START
+        JLOG(journal_.warn())
+            << "copyNode: unable to re-store node with unsupported/unknown type, hash=" << hash
+            << " type=" << static_cast<int>(nodeType);
+        UNREACHABLE("SHAMapStoreImp::rescueNode : unsupported node type");
         return;
+        // LCOV_EXCL_STOP
     }
+
     Serializer s;
     node.serializeWithPrefix(s);
     dbRotating_->store(objectType, std::move(s.modData()), hash, 0);
@@ -309,7 +323,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
         node.getHash().asUInt256(), 0, NodeStore::FetchType::Synchronous, true);
     if (!obj)
     {
-        rescueNode(node);
+        rescueNode(node, NodeObjectType::AccountNode);
     }
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {
