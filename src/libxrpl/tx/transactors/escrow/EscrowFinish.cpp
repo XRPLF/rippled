@@ -100,7 +100,7 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     if (auto const allowance = ctx.tx[~sfGas]; allowance)
     {
         auto const fees(ctx.registry.get().getFees());
-        if (fees.bytecodeSizeLimit == 0)
+        if (fees.gasLimit == 0)
         {
             JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
             return temTEMP_DISABLED;
@@ -109,7 +109,7 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         {
             return temBAD_LIMIT;
         }
-        if (*allowance > fees.bytecodeSizeLimit)
+        if (*allowance > fees.gasLimit)
         {
             JLOG(ctx.j.debug()) << "Gas too large: " << *allowance;
             return temBAD_LIMIT;

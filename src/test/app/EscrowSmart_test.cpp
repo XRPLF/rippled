@@ -491,7 +491,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
             env(escrow::finish(carol, alice, seq),
                 Fee(finishFee),
                 escrow::Gas(2),
-                Ter(tecFAILED_PROCESSING));
+                Ter(tecOUT_OF_GAS));
         }
 
         {
@@ -1020,7 +1020,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                 if (BEAST_EXPECT(txMeta && txMeta->isFieldPresent(sfGasUsed)))
                 {
                     BEAST_EXPECTS(
-                        txMeta->getFieldU32(sfGasUsed) == 68'292,
+                        txMeta->getFieldU32(sfGasUsed) == 68'041,
                         std::to_string(txMeta->getFieldU32(sfGasUsed)));
                 }
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfVMReturnCode)))
@@ -1097,7 +1097,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                 env.close();
                 env.close();
 
-                auto const allowance = 184'444;
+                auto const allowance = 184'375;
                 auto const finishFee = env.current()->fees().base +
                     (allowance * env.current()->fees().gasPrice) / microDropsPerDrop + 1;
                 env(escrow::finish(carol, alice, seq), escrow::Gas(allowance), Fee(finishFee));
@@ -1192,11 +1192,11 @@ struct EscrowSmart_test : public beast::unit_test::Suite
         std::vector<TestCase> const testCases = {
             // Code blob tests
             {TestCase::BlobType::Code,
-             99'959,
+             99'950,
              std::nullopt,
              ExpectedStatus::Success},  // just under 100kb
             {TestCase::BlobType::Code,
-             99'961,
+             99'955,
              std::nullopt,
              ExpectedStatus::Malformed},  // just over 100kb
             {TestCase::BlobType::Code, 200'000, 10'000'000, ExpectedStatus::Success},  // ~200kb
@@ -1210,11 +1210,11 @@ struct EscrowSmart_test : public beast::unit_test::Suite
              ExpectedStatus::Crash},  // just over 1MB JSON
             // Data blob tests
             {TestCase::BlobType::Data,
-             99'946,
+             99'939,
              std::nullopt,
              ExpectedStatus::Success},  // just under 100kb
             {TestCase::BlobType::Data,
-             99'948,
+             99'941,
              std::nullopt,
              ExpectedStatus::Malformed},  // just over 100kb
             {TestCase::BlobType::Data, 200'000, 10'000'000, ExpectedStatus::Success},  // ~200kb

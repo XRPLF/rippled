@@ -52,7 +52,7 @@ setCommonHostFunctions(HostFunctions& hfs, ImportVec& i)
     WASM_IMPORT_FUNC2(i, getLedgerObjNestedArrayLen, "le_inner_arr_len", hfs,                                  70);
 
     WASM_IMPORT_FUNC2(i, checkSignature, "check_sig", hfs,                                                  35'000);
-    WASM_IMPORT_FUNC2(i, computeSha512HalfHash, "compute_sha512_half", hfs,                                  1'500);
+    WASM_IMPORT_FUNC2(i, computeSha512HalfHash, "sha512_half", hfs,                                          2'000);
 
     WASM_IMPORT_FUNC2(i, accountKeylet, "accountroot_id", hfs,                                                350);
     WASM_IMPORT_FUNC2(i, ammKeylet, "amm_id", hfs,                                                            450);

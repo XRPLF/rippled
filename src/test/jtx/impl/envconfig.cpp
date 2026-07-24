@@ -27,8 +27,8 @@ setupConfigForUnitTests(Config& cfg)
     cfg.fees.accountReserve = XRP(200).value().xrp().drops();
     cfg.fees.ownerReserve = XRP(50).value().xrp().drops();
     cfg.fees.gasLimit = 1'000'000;
-    cfg.fees.bytecodeSizeLimit = 1'000'000;
-    cfg.fees.gasPrice = 1'000;  // 1 drop = 1,000,000 micro-drops
+    cfg.fees.bytecodeSizeLimit = 100'000;
+    cfg.fees.gasPrice = 1'000'000;  // 1 drop = 1,000,000 micro-drops
 
     // The Beta API (currently v2) is always available to tests
     cfg.betaRpcApi = true;
