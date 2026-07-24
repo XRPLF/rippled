@@ -1516,7 +1516,7 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
                     auto const type = after->getType();
                     if (typesToCollect.contains(type) && type == ltESCROW &&
                         after->isFieldPresent(sfData))
-                        modifiedObjects[type].push_back({index, after});
+                        modifiedObjects[type].emplace_back(index, after);
                 }
             });
     }

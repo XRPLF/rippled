@@ -23,6 +23,8 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 template <ValidIssueType T>

@@ -16,6 +16,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <optional>

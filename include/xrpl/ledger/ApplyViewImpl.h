@@ -13,6 +13,7 @@
 #include <xrpl/protocol/TxMeta.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <optional>
 

@@ -1073,7 +1073,8 @@ struct EscrowSmart_test : public beast::unit_test::Suite
             env(token::createOffer(carol, tokenId, XRP(100)), token::Owner(alice));
             env(offer(alice, carol["GBP"](0.1), XRP(100)));
             env(paychan::create(alice, carol, XRP(1000), 100s, alice.pk()));
-            pdomain::Credentials const credentials{{alice, "first credential"}};
+            pdomain::Credentials const credentials{
+                {.issuer = alice, .credType = "first credential"}};
             env(pdomain::setTx(alice, credentials));
             env(signers(alice, 1, {{carol, 1}}));
             env(ticket::create(alice, 1));
@@ -1191,41 +1192,47 @@ struct EscrowSmart_test : public beast::unit_test::Suite
 
         std::vector<TestCase> const testCases = {
             // Code blob tests
-            {TestCase::BlobType::Code,
-             99'950,
-             std::nullopt,
-             ExpectedStatus::Success},  // just under 100kb
-            {TestCase::BlobType::Code,
-             99'955,
-             std::nullopt,
-             ExpectedStatus::Malformed},  // just over 100kb
-            {TestCase::BlobType::Code, 200'000, 10'000'000, ExpectedStatus::Success},  // ~200kb
-            {TestCase::BlobType::Code,
-             490'000,
-             10'000'000,
-             ExpectedStatus::Success},  // just under 1MB JSON
-            {TestCase::BlobType::Code,
-             999'999,
-             10'000'000,
-             ExpectedStatus::Crash},  // just over 1MB JSON
+            {.type = TestCase::BlobType::Code,
+             .size = 99'950,
+             .sizeLimit = std::nullopt,
+             .expected = ExpectedStatus::Success},  // just under 100kb
+            {.type = TestCase::BlobType::Code,
+             .size = 99'955,
+             .sizeLimit = std::nullopt,
+             .expected = ExpectedStatus::Malformed},  // just over 100kb
+            {.type = TestCase::BlobType::Code,
+             .size = 200'000,
+             .sizeLimit = 10'000'000,
+             .expected = ExpectedStatus::Success},  // ~200kb
+            {.type = TestCase::BlobType::Code,
+             .size = 490'000,
+             .sizeLimit = 10'000'000,
+             .expected = ExpectedStatus::Success},  // just under 1MB JSON
+            {.type = TestCase::BlobType::Code,
+             .size = 999'999,
+             .sizeLimit = 10'000'000,
+             .expected = ExpectedStatus::Crash},  // just over 1MB JSON
             // Data blob tests
-            {TestCase::BlobType::Data,
-             99'939,
-             std::nullopt,
-             ExpectedStatus::Success},  // just under 100kb
-            {TestCase::BlobType::Data,
-             99'941,
-             std::nullopt,
-             ExpectedStatus::Malformed},  // just over 100kb
-            {TestCase::BlobType::Data, 200'000, 10'000'000, ExpectedStatus::Success},  // ~200kb
-            {TestCase::BlobType::Data,
-             490'000,
-             10'000'000,
-             ExpectedStatus::Success},  // just under 1MB JSON
-            {TestCase::BlobType::Data,
-             999'950,
-             10'000'000,
-             ExpectedStatus::Crash},  // just over 1MB JSON
+            {.type = TestCase::BlobType::Data,
+             .size = 99'939,
+             .sizeLimit = std::nullopt,
+             .expected = ExpectedStatus::Success},  // just under 100kb
+            {.type = TestCase::BlobType::Data,
+             .size = 99'941,
+             .sizeLimit = std::nullopt,
+             .expected = ExpectedStatus::Malformed},  // just over 100kb
+            {.type = TestCase::BlobType::Data,
+             .size = 200'000,
+             .sizeLimit = 10'000'000,
+             .expected = ExpectedStatus::Success},  // ~200kb
+            {.type = TestCase::BlobType::Data,
+             .size = 490'000,
+             .sizeLimit = 10'000'000,
+             .expected = ExpectedStatus::Success},  // just under 1MB JSON
+            {.type = TestCase::BlobType::Data,
+             .size = 999'950,
+             .sizeLimit = 10'000'000,
+             .expected = ExpectedStatus::Crash},  // just over 1MB JSON
         };
 
         for (auto const& tc : testCases)
