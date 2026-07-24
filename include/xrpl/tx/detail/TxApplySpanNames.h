@@ -102,6 +102,15 @@ inline constexpr auto transactor = join(seg::tx, op::transactor);
 
 namespace attr {
 /**
+ * Shared "ledger being worked on" attrs (defined in SpanNames.h). Set on
+ * tx.preclaim and tx.transactor (both run against a view whose seq() is the
+ * ledger being applied into). tx.preflight is stateless (no view) and is the
+ * documented exception — it carries neither.
+ */
+using ::xrpl::telemetry::attr::currentLedgerHash;
+using ::xrpl::telemetry::attr::currentLedgerSeq;
+
+/**
  * "stage" — which apply-pipeline stage this span represents. Drives the
  * collector spanmetrics `stage` dimension for per-stage RED metrics.
  */
