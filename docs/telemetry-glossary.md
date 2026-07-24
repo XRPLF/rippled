@@ -499,6 +499,16 @@ A node stores ledger history as one or more contiguous ranges. One continuous ra
 
 **Scope:** per node — measured on and specific to this individual server.
 
+<a id="fresh-node-sync-diagnostics"></a>
+
+### Fresh-node sync diagnostics
+
+The set of signals that explain why a freshly-started node is slow to reach, or never reaches, a validated ledger. They split into pre-quorum bootstrap (DNS, peer dial, protocol negotiation, UNL fetch and quorum, clock skew) and the post-peering acquire pipeline (sync state, ledger and tx-set acquire, job queue, quorum and publish lag, back-fill, persistence). Rendered by the Ledger Sync Health dashboard; individual terms are defined below as each signal lands.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Diagnosing slow/stuck fresh sync](./telemetry-runbook.md#diagnosing-slowstuck-fresh-sync) (operator flow) · [Server states on xrpl.org](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states)
+
 <a id="historical-fetch-rate"></a>
 
 ### Historical fetch rate

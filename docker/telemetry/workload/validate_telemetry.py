@@ -8,9 +8,11 @@ and Grafana (dashboards) APIs to produce a pass/fail report.
 Validation categories:
   1. Span validation     — All 16+ span types present with required attributes
   2. Metric validation   — SpanMetrics, StatsD, and Phase 9 metrics are non-zero
-  3. Log-trace correlation — Loki logs contain trace_id/span_id fields
-  4. Dashboard validation — All 14 Grafana dashboards render data
-  5. External parity     — Span attrs, metric existence, and value sanity for
+  3. Sync diagnostics    — Fresh-node sync signals (bootstrap + acquire
+                           pipeline) declared in the "sync_diagnostics" group
+  4. Log-trace correlation — Loki logs contain trace_id/span_id fields
+  5. Dashboard validation — All 15 Grafana dashboards render data
+  6. External parity     — Span attrs, metric existence, and value sanity for
                            external dashboard parity (validator-health,
                            peer-quality, node-health)
 
@@ -61,6 +63,12 @@ EXPECTED_METRICS_FILE = SCRIPT_DIR / "expected_metrics.json"
 # cycles) before failing, so the check is robust to runner speed.
 METRIC_POLL_TIMEOUT_SEC = 45.0
 METRIC_POLL_INTERVAL_SEC = 5.0
+
+# Group key in expected_metrics.json holding the fresh-node sync-diagnostics
+# metrics (bootstrap + acquire pipeline). Owned by
+# assert_sync_diagnostics_metrics() so those signals get their own report
+# category and a single, explicit failure per missing metric.
+SYNC_DIAGNOSTICS_GROUP = "sync_diagnostics"
 
 
 # ---------------------------------------------------------------------------
@@ -518,6 +526,12 @@ async def _validate_parent_child(
 # Metric Validation (Prometheus API)
 # ---------------------------------------------------------------------------
 
+# Top-level keys of expected_metrics.json that validate_metrics() must not walk
+# with its generic group loop: "description" is prose, "grafana_dashboards"
+# holds dashboard UIDs (checked by validate_dashboards), and
+# "sync_diagnostics" has its own validator, assert_sync_diagnostics_metrics().
+SKIPPED_METRIC_GROUPS = ("description", "grafana_dashboards", SYNC_DIAGNOSTICS_GROUP)
+
 
 async def validate_metrics(
     session: aiohttp.ClientSession,
@@ -580,9 +594,12 @@ async def validate_metrics(
     with open(EXPECTED_METRICS_FILE) as f:
         expected = json.load(f)
 
-    # Check each metric category.
+    # Check each metric category.  SKIPPED_METRIC_GROUPS keys are either not
+    # metric groups at all or are owned by a dedicated validator below, so
+    # skipping them here keeps each group to a single owner (no duplicate
+    # Prometheus queries and no duplicate report entries).
     for category_key, category_data in expected.items():
-        if category_key in ("description", "grafana_dashboards"):
+        if category_key in SKIPPED_METRIC_GROUPS:
             continue
 
         metrics = category_data.get("metrics", [])
@@ -654,6 +671,63 @@ async def _check_prometheus_metric(
                 passed=False,
                 message=f"{metric_name}: query failed ({exc})",
             )
+        )
+
+
+async def assert_sync_diagnostics_metrics(
+    session: aiohttp.ClientSession,
+    prometheus_url: str,
+    report: ValidationReport,
+) -> None:
+    """Assert every metric in the 'sync_diagnostics' group is present.
+
+    Fresh-node sync-diagnostics work packages append native metric names to the
+    "sync_diagnostics" group in expected_metrics.json; this check fails the run
+    if any listed metric regresses to absent, so a dropped signal cannot pass
+    CI silently. An empty group is a genuine no-op: nothing is queried and no
+    check is recorded, which is the state before any signal has landed.
+
+    A missing group key is itself a failure — the key is the anchor the sync
+    work packages append to, so its absence means the harness lost the contract
+    rather than that there is nothing to check.
+
+    Args:
+        session:        aiohttp client session.
+        prometheus_url: Prometheus API base URL.
+        report:         ValidationReport to accumulate results.
+    """
+    logger.info("--- Fresh-Node Sync Diagnostics Metrics ---")
+
+    with open(EXPECTED_METRICS_FILE) as f:
+        expected = json.load(f)
+
+    group = expected.get(SYNC_DIAGNOSTICS_GROUP)
+    if group is None:
+        report.add(
+            CheckResult(
+                name=f"metric.{SYNC_DIAGNOSTICS_GROUP}.group_present",
+                category="metric",
+                passed=False,
+                message=(
+                    f"'{SYNC_DIAGNOSTICS_GROUP}' group missing from "
+                    f"{EXPECTED_METRICS_FILE.name}"
+                ),
+            )
+        )
+        return
+
+    metrics = group.get("metrics", [])
+    if not metrics:
+        logger.info(
+            "[SKIP] metric.%s: group is empty (no sync-diagnostics signals "
+            "declared yet)",
+            SYNC_DIAGNOSTICS_GROUP,
+        )
+        return
+
+    for metric_name in metrics:
+        await _check_prometheus_metric(
+            session, prometheus_url, metric_name, SYNC_DIAGNOSTICS_GROUP, report
         )
 
 
@@ -1187,6 +1261,7 @@ async def run_validation(
         await validate_spans(session, tempo_url, report)
         await validate_span_durations(session, tempo_url, report)
         await validate_metrics(session, prometheus_url, report)
+        await assert_sync_diagnostics_metrics(session, prometheus_url, report)
         if not skip_loki:
             await validate_log_trace_correlation(session, loki_url, tempo_url, report)
         await validate_dashboards(session, grafana_url, report)

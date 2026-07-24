@@ -1379,3 +1379,27 @@ prefix=xrpld
 | `trace_consensus`    | `1`     | `consensus.*` spans          |
 | `trace_ledger`       | `1`     | `ledger.*` spans             |
 | `trace_peer`         | `1`     | `peer.*` spans (high volume) |
+
+---
+
+## Fresh-node sync diagnostics
+
+Signals that explain why a freshly-started node is slow to reach, or never
+reaches, a validated ledger (`server_state=full`). Two groups: pre-quorum
+bootstrap (DNS, dial, handshake, UNL/quorum, clock skew) and the post-peering
+ledger/tx-set acquire pipeline.
+
+Rendered by the **Ledger Sync Health** dashboard
+(uid `ledger-sync-health`, rows `Bootstrap (Domain 0)` and `Sync pipeline`).
+Operator flow: [telemetry-runbook.md](../docs/telemetry-runbook.md)
+"Diagnosing slow/stuck fresh sync". Terms:
+[telemetry-glossary.md](../docs/telemetry-glossary.md)
+"Fresh-node sync diagnostics".
+
+The table below is the single index for these signals; one row is added per
+signal as it lands. `Type` is the instrument kind (counter / gauge / histogram /
+span / span attr), `Emit site` the owning source file, and `Panel` the dashboard
+panel that renders it.
+
+| Signal | Type | Emit site | Panel | Meaning |
+| ------ | ---- | --------- | ----- | ------- |

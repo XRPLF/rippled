@@ -127,6 +127,10 @@
     "description": "External dashboard parity: storage detail metrics (MetricsRegistry).",
     "metrics": ["storage_detail{metric=\"nudb_bytes\"}"]
   },
+  "sync_diagnostics": {
+    "description": "Fresh-node sync diagnostics (MetricsRegistry native metrics). Bootstrap (Domain 0) and acquire-pipeline signals rendered by the ledger-sync-health dashboard. Empty until the emitting work packages land; names are appended one per signal.",
+    "metrics": []
+  },
   "grafana_dashboards": {
     "description": "All Grafana dashboards that must render data (UIDs as provisioned on disk under docker/telemetry/grafana/dashboards/).",
     "uids": [
@@ -143,7 +147,8 @@
       "network-traffic",
       "rpc-pathfinding",
       "overlay-traffic-detail",
-      "ledger-data-sync"
+      "ledger-data-sync",
+      "ledger-sync-health"
     ]
   }
 }

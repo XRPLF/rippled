@@ -2043,6 +2043,33 @@ The `getKBUsed*()` methods require SQLite databases to exist. If running with
 - Verify Loki is running: `curl http://localhost:3100/ready`
 - Check the filelog receiver glob `/var/log/xrpld/*/debug.log` matches your log layout — the log file must sit one subdirectory below the mount root
 
+### Diagnosing slow/stuck fresh sync
+
+A fresh node that is slow to reach `server_state=full`, or never reaches it, is
+diagnosed from the **Ledger Sync Health** dashboard (uid `ledger-sync-health`).
+
+Walk the dashboard rows top-down — the first row that looks wrong is the stage
+that is blocking:
+
+1. **Bootstrap (Domain 0)** — can the node reach peers and form a quorum at all?
+   Covers DNS resolution, outbound dial, protocol/network-ID negotiation, UNL
+   fetch with trusted-key-vs-quorum, and clock skew. A node that never gets past
+   this row can never validate, no matter how healthy the pipeline looks.
+2. **Sync pipeline** — is ledger data actually arriving and being applied?
+   Covers sync-state transitions, ledger/tx-set acquire progress, job-queue
+   backlog, quorum and publish lag, back-fill, and persistence latency.
+
+Signal definitions:
+[telemetry-glossary.md](./telemetry-glossary.md) "Fresh-node sync diagnostics".
+Signal index (instrument, emit site, panel):
+[09-data-collection-reference.md](../OpenTelemetryPlan/09-data-collection-reference.md)
+"Fresh-node sync diagnostics".
+
+Note: the sync signals are native metrics, which are never sampled — unlike the
+span-derived (spanmetrics) series, they are always complete.
+
+_(Per-signal diagnosis steps are added as each signal lands.)_
+
 ## Performance Tuning
 
 | Scenario                 | Recommendation                                            |
