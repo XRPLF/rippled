@@ -4,123 +4,137 @@
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/utility/Journal.h>
 
 #include <atomic>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 
 namespace xrpl {
 
 namespace detail {
 
-/** Remembers which tree keys have all descendants resident.
-    This optimizes the process of acquiring a complete tree.
-*/
+/**
+ * Remembers which tree keys have all descendants resident.
+ * This optimizes the process of acquiring a complete tree.
+ */
 class BasicFullBelowCache
 {
 private:
     using CacheType = KeyCache;
 
 public:
-    enum { defaultCacheTargetSize = 0 };
+    static constexpr auto kDefaultCacheTargetSize = 0;
 
     using key_type = uint256;
-    using clock_type = typename CacheType::clock_type;
+    using clock_type = CacheType::clock_type;
 
-    /** Construct the cache.
-
-        @param name A label for diagnostics and stats reporting.
-        @param collector The collector to use for reporting stats.
-        @param targetSize The cache target size.
-        @param targetExpirationSeconds The expiration time for items.
-    */
+    /**
+     * Construct the cache.
+     *
+     * @param name A label for diagnostics and stats reporting.
+     * @param collector The collector to use for reporting stats.
+     * @param targetSize The cache target size.
+     * @param targetExpirationSeconds The expiration time for items.
+     */
     BasicFullBelowCache(
         std::string const& name,
         clock_type& clock,
         beast::Journal j,
-        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::New(),
-        std::size_t target_size = defaultCacheTargetSize,
+        beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::make(),
+        std::size_t targetSize = kDefaultCacheTargetSize,
         std::chrono::seconds expiration = std::chrono::minutes{2})
-        : m_cache(name, target_size, expiration, clock, j, collector), m_gen(1)
+        : cache_(name, targetSize, expiration, clock, j, collector), gen_(1)
     {
     }
 
-    /** Return the clock associated with the cache. */
+    /**
+     * Return the clock associated with the cache.
+     */
     clock_type&
     clock()
     {
-        return m_cache.clock();
+        return cache_.clock();
     }
 
-    /** Return the number of elements in the cache.
-        Thread safety:
-            Safe to call from any thread.
-    */
+    /**
+     * Return the number of elements in the cache.
+     * Thread safety:
+     *     Safe to call from any thread.
+     */
     std::size_t
     size() const
     {
-        return m_cache.size();
+        return cache_.size();
     }
 
-    /** Remove expired cache items.
-        Thread safety:
-            Safe to call from any thread.
-    */
+    /**
+     * Remove expired cache items.
+     * Thread safety:
+     *     Safe to call from any thread.
+     */
     void
     sweep()
     {
-        m_cache.sweep();
+        cache_.sweep();
     }
 
-    /** Refresh the last access time of an item, if it exists.
-        Thread safety:
-            Safe to call from any thread.
-        @param key The key to refresh.
-        @return `true` If the key exists.
-    */
+    /**
+     * Refresh the last access time of an item, if it exists.
+     * Thread safety:
+     *     Safe to call from any thread.
+     * @param key The key to refresh.
+     * @return `true` If the key exists.
+     */
     bool
-    touch_if_exists(key_type const& key)
+    touchIfExists(key_type const& key)
     {
-        return m_cache.touch_if_exists(key);
+        return cache_.touchIfExists(key);
     }
 
-    /** Insert a key into the cache.
-        If the key already exists, the last access time will still
-        be refreshed.
-        Thread safety:
-            Safe to call from any thread.
-        @param key The key to insert.
-    */
+    /**
+     * Insert a key into the cache.
+     * If the key already exists, the last access time will still
+     * be refreshed.
+     * Thread safety:
+     *     Safe to call from any thread.
+     * @param key The key to insert.
+     */
     void
     insert(key_type const& key)
     {
-        m_cache.insert(key);
+        cache_.insert(key);
     }
 
-    /** generation determines whether cached entry is valid */
+    /**
+     * generation determines whether cached entry is valid
+     */
     std::uint32_t
-    getGeneration(void) const
+    getGeneration() const
     {
-        return m_gen;
+        return gen_;
     }
 
     void
     clear()
     {
-        m_cache.clear();
-        ++m_gen;
+        cache_.clear();
+        ++gen_;
     }
 
     void
     reset()
     {
-        m_cache.clear();
-        m_gen = 1;
+        cache_.clear();
+        gen_ = 1;
     }
 
 private:
-    CacheType m_cache;
-    std::atomic<std::uint32_t> m_gen;
+    CacheType cache_;
+    std::atomic<std::uint32_t> gen_;
 };
 
 }  // namespace detail

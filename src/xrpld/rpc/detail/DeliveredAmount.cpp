@@ -1,14 +1,22 @@
-#include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/ledger/OpenLedger.h>
-#include <xrpld/app/misc/Transaction.h>
-#include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/RPCErr.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/misc/Transaction.h>
+#include <xrpld/rpc/Context.h>
 
-namespace xrpl {
-namespace RPC {
+#include <xrpl/basics/chrono.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/jss.h>
+
+#include <chrono>
+#include <memory>
+#include <optional>
+
+namespace xrpl::RPC {
 
 /*
   GetLedgerIndex and GetCloseTime are lambdas that allow the close time and
@@ -77,7 +85,7 @@ canHaveDeliveredAmount(
 
 void
 insertDeliveredAmount(
-    Json::Value& meta,
+    json::Value& meta,
     ReadView const& ledger,
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta)
@@ -92,13 +100,13 @@ insertDeliveredAmount(
         auto amt = getDeliveredAmount(getLedgerIndex, getCloseTime, serializedTx, transactionMeta);
         if (amt)
         {
-            meta[jss::delivered_amount] = amt->getJson(JsonOptions::include_date);
+            meta[jss::delivered_amount] = amt->getJson(JsonOptions::Values::IncludeDate);
         }
         else
         {
             // report "unavailable" which cannot be parsed into a sensible
             // amount.
-            meta[jss::delivered_amount] = Json::Value("unavailable");
+            meta[jss::delivered_amount] = json::Value("unavailable");
         }
     }
 }
@@ -136,7 +144,7 @@ getDeliveredAmount(
 
 void
 insertDeliveredAmount(
-    Json::Value& meta,
+    json::Value& meta,
     RPC::JsonContext const& context,
     std::shared_ptr<Transaction> const& transaction,
     TxMeta const& transactionMeta)
@@ -146,7 +154,7 @@ insertDeliveredAmount(
 
 void
 insertDeliveredAmount(
-    Json::Value& meta,
+    json::Value& meta,
     RPC::JsonContext const& context,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
@@ -159,16 +167,15 @@ insertDeliveredAmount(
 
         if (amt)
         {
-            meta[jss::delivered_amount] = amt->getJson(JsonOptions::include_date);
+            meta[jss::delivered_amount] = amt->getJson(JsonOptions::Values::IncludeDate);
         }
         else
         {
             // report "unavailable" which cannot be parsed into a sensible
             // amount.
-            meta[jss::delivered_amount] = Json::Value("unavailable");
+            meta[jss::delivered_amount] = json::Value("unavailable");
         }
     }
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

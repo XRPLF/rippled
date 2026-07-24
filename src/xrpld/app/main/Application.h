@@ -2,32 +2,31 @@
 
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/PropertyStream.h>
-#include <xrpl/core/PeerReservationTable.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/shamap/TreeNodeCache.h>
 
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
 
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <mutex>
+#include <optional>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
-namespace unl {
-class Manager;
-}
-namespace Resource {
-class Manager;
-}
-namespace NodeStore {
-class Database;
-}  // namespace NodeStore
 namespace perf {
 class PerfLog;
-}
+}  // namespace perf
 
 // VFALCO TODO Fix forward declares required for header dependency loops
 class AmendmentTable;
@@ -66,7 +65,7 @@ class NetworkOPs;
 class OpenLedger;
 class OrderBookDB;
 class Overlay;
-class PathRequests;
+class PathRequestManager;
 class PendingSaves;
 class PublicKey;
 class ServerHandler;
@@ -120,8 +119,8 @@ public:
     virtual void
     run() = 0;
     virtual void
-    signalStop(std::string msg) = 0;
-    virtual bool
+    signalStop(std::string const& msg) = 0;
+    [[nodiscard]] virtual bool
     checkSigs() const = 0;
     virtual void
     checkSigs(bool) = 0;
@@ -130,8 +129,10 @@ public:
     // ---
     //
 
-    /** Returns a 64-bit instance identifier, generated at startup */
-    virtual std::uint64_t
+    /**
+     * Returns a 64-bit instance identifier, generated at startup
+     */
+    [[nodiscard]] virtual std::uint64_t
     instanceID() const = 0;
 
     virtual Config&
@@ -140,7 +141,7 @@ public:
     virtual std::pair<PublicKey, SecretKey> const&
     nodeIdentity() = 0;
 
-    virtual std::optional<PublicKey const>
+    [[nodiscard]] virtual std::optional<PublicKey const>
     getValidationPublicKey() const = 0;
 
     virtual std::chrono::milliseconds
@@ -150,21 +151,25 @@ public:
     serverOkay(std::string& reason) = 0;
 
     /* Returns the number of file descriptors the application needs */
-    virtual int
+    [[nodiscard]] virtual int
     fdRequired() const = 0;
 
-    /** Ensure that a newly-started validator does not sign proposals older
-     * than the last ledger it persisted. */
+    /**
+     * Ensure that a newly-started validator does not sign proposals older
+     * than the last ledger it persisted.
+     */
     virtual LedgerIndex
     getMaxDisallowedLedger() = 0;
 
-    /** Returns the number of io_context (I/O worker) threads used by the application. */
-    virtual size_t
+    /**
+     * Returns the number of io_context (I/O worker) threads used by the application.
+     */
+    [[nodiscard]] virtual size_t
     getNumberOfThreads() const = 0;
 };
 
 std::unique_ptr<Application>
-make_Application(
+makeApplication(
     std::unique_ptr<Config> config,
     std::unique_ptr<Logs> logs,
     std::unique_ptr<TimeKeeper> timeKeeper);

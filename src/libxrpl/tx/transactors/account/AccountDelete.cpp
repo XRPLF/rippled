@@ -1,24 +1,40 @@
+#include <xrpl/tx/transactors/account/AccountDelete.h>
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/Units.h>
-#include <xrpl/tx/transactors/account/AccountDelete.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/account/SignerListSet.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
-namespace xrpl {
+#include <cstdint>
+#include <utility>
 
+namespace xrpl {
 bool
 AccountDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
@@ -54,7 +70,7 @@ using DeleterFuncPtr = TER (*)(
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
+    SLE::ref sleDel,
     beast::Journal j);
 
 // Local function definitions that provides signature compatibility.
@@ -64,7 +80,7 @@ offerDelete(
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
+    SLE::ref sleDel,
     beast::Journal j)
 {
     return offerDelete(view, sleDel, j);
@@ -76,7 +92,7 @@ removeSignersFromLedger(
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
+    SLE::ref sleDel,
     beast::Journal j)
 {
     return SignerListSet::removeFromLedger(registry, view, account, j);
@@ -88,7 +104,7 @@ removeTicketFromLedger(
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
-    std::shared_ptr<SLE> const&,
+    SLE::ref,
     beast::Journal j)
 {
     return Transactor::ticketDelete(view, account, delIndex, j);
@@ -100,7 +116,7 @@ removeDepositPreauthFromLedger(
     ApplyView& view,
     AccountID const&,
     uint256 const& delIndex,
-    std::shared_ptr<SLE> const&,
+    SLE::ref,
     beast::Journal j)
 {
     return DepositPreauth::removeFromLedger(view, delIndex, j);
@@ -112,7 +128,7 @@ removeNFTokenOfferFromLedger(
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
+    SLE::ref sleDel,
     beast::Journal)
 {
     if (!nft::deleteTokenOffer(view, sleDel))
@@ -127,7 +143,7 @@ removeDIDFromLedger(
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
+    SLE::ref sleDel,
     beast::Journal j)
 {
     return DIDDelete::deleteSLE(view, sleDel, account, j);
@@ -139,7 +155,7 @@ removeOracleFromLedger(
     ApplyView& view,
     AccountID const& account,
     uint256 const&,
-    std::shared_ptr<SLE> const& sleDel,
+    SLE::ref sleDel,
     beast::Journal j)
 {
     return OracleDelete::deleteOracle(view, sleDel, account, j);
@@ -151,7 +167,7 @@ removeCredentialFromLedger(
     ApplyView& view,
     AccountID const&,
     uint256 const&,
-    std::shared_ptr<SLE> const& sleDel,
+    SLE::ref sleDel,
     beast::Journal j)
 {
     return credentials::deleteSLE(view, sleDel, j);
@@ -161,12 +177,12 @@ TER
 removeDelegateFromLedger(
     ServiceRegistry&,
     ApplyView& view,
-    AccountID const& account,
-    uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
+    AccountID const&,
+    uint256 const&,
+    SLE::ref sleDel,
     beast::Journal j)
 {
-    return DelegateSet::deleteDelegate(view, sleDel, account, j);
+    return DelegateSet::deleteDelegate(view, sleDel, j);
 }
 
 // Return nullptr if the LedgerEntryType represents an obligation that can't
@@ -213,7 +229,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!sleDst)
         return tecNO_DST;
 
-    if ((((*sleDst)[sfFlags] & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
+    if (sleDst->isFlag(lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
         return tecDST_TAG_NEEDED;
 
     // If credentials are provided - check them anyway
@@ -225,7 +241,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!ctx.tx.isFieldPresent(sfCredentialIDs))
     {
         // Check whether the destination account requires deposit authorization.
-        if ((sleDst->getFlags() & lsfDepositAuth) != 0u)
+        if (sleDst->isFlag(lsfDepositAuth))
         {
             if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
                 return tecNO_PERMISSION;
@@ -243,12 +259,21 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
         return tecHAS_OBLIGATIONS;
 
     // If the account owns any NFTs it cannot be deleted.
-    Keylet const first = keylet::nftpage_min(account);
-    Keylet const last = keylet::nftpage_max(account);
+    Keylet const first = keylet::nftokenPageMin(account);
+    Keylet const last = keylet::nftokenPageMax(account);
 
     auto const cp = ctx.view.read(
         Keylet(ltNFTOKEN_PAGE, ctx.view.succ(first.key, last.key.next()).value_or(last.key)));
     if (cp)
+        return tecHAS_OBLIGATIONS;
+
+    if (sleAccount->isFieldPresent(sfSponsor))
+    {
+        if (dst != sleAccount->getAccountID(sfSponsor))
+            return tecNO_SPONSOR_PERMISSION;
+    }
+    if (sleAccount->isFieldPresent(sfSponsoringOwnerCount) ||
+        sleAccount->isFieldPresent(sfSponsoringAccountCount))
         return tecHAS_OBLIGATIONS;
 
     // We don't allow an account to be deleted if its sequence number
@@ -257,8 +282,8 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     //
     // We look at the account's Sequence rather than the transaction's
     // Sequence in preparation for Tickets.
-    constexpr std::uint32_t seqDelta{255};
-    if ((*sleAccount)[sfSequence] + seqDelta > ctx.view.seq())
+    static constexpr std::uint32_t kSeqDelta{255};
+    if ((*sleAccount)[sfSequence] + kSeqDelta > ctx.view.seq())
         return tecTOO_SOON;
 
     // We don't allow an account to be deleted if
@@ -273,7 +298,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     // NFTokenSequence of this NFToken is the same as the one that the
     // authorized minter minted in a previous ledger.
     if ((*sleAccount)[~sfFirstNFTokenSequence].value_or(0) +
-            (*sleAccount)[~sfMintedNFTokens].value_or(0) + seqDelta >
+            (*sleAccount)[~sfMintedNFTokens].value_or(0) + kSeqDelta >
         ctx.view.seq())
         return tecTOO_SOON;
 
@@ -283,16 +308,16 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (dirIsEmpty(ctx.view, ownerDirKeylet))
         return tesSUCCESS;
 
-    std::shared_ptr<SLE const> sleDirNode{};
+    SLE::const_pointer sleDirNode{};
     unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::zero};
+    uint256 dirEntry{beast::kZero};
 
     // Account has no directory at all.  This _should_ have been caught
     // by the dirIsEmpty() check earlier, but it's okay to catch it here.
     if (!cdirFirst(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
         return tesSUCCESS;
 
-    std::int32_t deletableDirEntryCount{0};
+    std::uint32_t deletableDirEntryCount{0};
     do
     {
         // Make sure any directory node types that we find are the kind
@@ -308,14 +333,14 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
             // LCOV_EXCL_STOP
         }
 
-        LedgerEntryType const nodeType{safe_cast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
+        LedgerEntryType const nodeType{safeCast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
 
         if (nonObligationDeleter(nodeType) == nullptr)
             return tecHAS_OBLIGATIONS;
 
         // We found a deletable directory entry.  Count it.  If we find too
         // many deletable directory entries then bail out.
-        if (++deletableDirEntryCount > maxDeletableDirEntries)
+        if (++deletableDirEntryCount > kMaxDeletableDirEntries)
             return tefTOO_BIG;
 
     } while (cdirNext(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
@@ -326,7 +351,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 TER
 AccountDelete::doApply()
 {
-    auto src = view().peek(keylet::account(account_));
+    auto src = view().peek(keylet::account(accountID_));
     XRPL_ASSERT(src, "xrpl::AccountDelete::doApply : non-null source account");
 
     auto const dstID = ctx_.tx[sfDestination];
@@ -339,21 +364,21 @@ AccountDelete::doApply()
     if (ctx_.tx.isFieldPresent(sfCredentialIDs))
     {
         if (auto err =
-                verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, dstID, dst, ctx_.journal);
+                verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, dstID, dst, ctx_.journal);
             !isTesSuccess(err))
             return err;
     }
 
-    Keylet const ownerDirKeylet{keylet::ownerDir(account_)};
+    Keylet const ownerDirKeylet{keylet::ownerDir(accountID_)};
     auto const ter = cleanupOnAccountDelete(
         view(),
         ownerDirKeylet,
         [&](LedgerEntryType nodeType,
             uint256 const& dirEntry,
-            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
+            SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
             if (auto deleter = nonObligationDeleter(nodeType))
             {
-                TER const result{deleter(ctx_.registry, view(), account_, dirEntry, sleItem, j_)};
+                TER const result{deleter(ctx_.registry, view(), accountID_, dirEntry, sleItem, j_)};
 
                 return {result, SkipEntry::No};
             }
@@ -377,6 +402,35 @@ AccountDelete::doApply()
     (*src)[sfBalance] = (*src)[sfBalance] - remainingBalance;
     ctx_.deliver(remainingBalance);
 
+    if (src->isFieldPresent(sfSponsor))
+    {
+        auto const sponsorID = src->getAccountID(sfSponsor);
+        auto sponsorSle = view().peek(keylet::account(sponsorID));
+
+        if (!sponsorSle)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        auto const sponsoringAccountCount = sponsorSle->getFieldU32(sfSponsoringAccountCount);
+
+        XRPL_ASSERT(
+            sponsoringAccountCount != 0,
+            "xrpl::AccountDelete::doApply : sponsoring account count is present");
+        if (sponsoringAccountCount == 0)
+        {
+            // sanity check
+            // Since sfSponsoringAccountCount is set to soeDEFAULT, the field will not be
+            // present with a value of 0.
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+        }
+        sponsorSle->at(sfSponsoringAccountCount) = sponsoringAccountCount - 1;
+        view().update(sponsorSle);
+
+        // Following line might look redundant, but without it, sfSponsor
+        // would end up remaining in after-ltAccountRoot during the
+        // InvariantCheck.
+        src->makeFieldAbsent(sfSponsor);
+    }
+
     XRPL_ASSERT(
         (*src)[sfBalance] == XRPAmount(0), "xrpl::AccountDelete::doApply : source balance is zero");
 
@@ -384,7 +438,7 @@ AccountDelete::doApply()
     // delete it.
     if (view().exists(ownerDirKeylet) && !view().emptyDirDelete(ownerDirKeylet))
     {
-        JLOG(j_.error()) << "AccountDelete cannot delete root dir node of " << toBase58(account_);
+        JLOG(j_.error()) << "AccountDelete cannot delete root dir node of " << toBase58(accountID_);
         return tecHAS_OBLIGATIONS;
     }
 
@@ -396,6 +450,24 @@ AccountDelete::doApply()
     view().erase(src);
 
     return tesSUCCESS;
+}
+
+void
+AccountDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+AccountDelete::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

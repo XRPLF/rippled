@@ -12,13 +12,13 @@
 namespace xrpl {
 
 /**
-   Add a `nftoken_ids` field to the `meta` output parameter.
-   The field is only added to successful NFTokenMint, NFTokenAcceptOffer,
-   and NFTokenCancelOffer transactions.
-
-   Helper functions are not static because they can be used by Clio.
-   @{
+ * Add a `nftoken_ids` field to the `meta` output parameter.
+ * The field is only added to successful NFTokenMint, NFTokenAcceptOffer,
+ * and NFTokenCancelOffer transactions.
+ *
+ * Helper functions are not static because they can be used by Clio.
  */
+/** @{ */
 bool
 canHaveNFTokenID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& transactionMeta);
 
@@ -30,7 +30,7 @@ getNFTokenIDFromDeletedOffer(TxMeta const& transactionMeta);
 
 void
 insertNFTokenID(
-    Json::Value& response,
+    json::Value& response,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta);
 /** @} */

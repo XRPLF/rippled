@@ -1,20 +1,42 @@
-#include <test/jtx.h>
 #include <test/jtx/Env.h>
 
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
+#include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/peerfinder/detail/SlotImp.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/make_SSLContext.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/peerfinder/Slot.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/protocol/messages.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/server/Handoff.h>
 
-namespace xrpl {
-namespace test {
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
+
+#include <xrpl.pb.h>
+
+#include <cstddef>
+#include <memory>
+#include <utility>
+#include <vector>
+
+namespace xrpl::test {
 
 using namespace jtx;
 
@@ -25,7 +47,7 @@ using namespace jtx;
  * Tuning::hardMaxReplyNodes to prevent excessive memory usage and
  * potential DoS attacks from peers requesting large numbers of objects.
  */
-class TMGetObjectByHash_test : public beast::unit_test::suite
+class TMGetObjectByHash_test : public beast::unit_test::Suite
 {
     using middle_type = boost::beast::tcp_stream;
     using stream_type = boost::beast::ssl_stream<middle_type>;
@@ -44,22 +66,22 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
             PublicKey const& publicKey,
             ProtocolVersion protocol,
             Resource::Consumer consumer,
-            std::unique_ptr<TMGetObjectByHash_test::stream_type>&& stream_ptr,
+            std::unique_ptr<TMGetObjectByHash_test::stream_type>&& streamPtr,
             OverlayImpl& overlay)
             : PeerImp(
                   app,
-                  id_++,
+                  id++,
                   slot,
                   std::move(request),
                   publicKey,
                   protocol,
                   consumer,
-                  std::move(stream_ptr),
+                  std::move(streamPtr),
                   overlay)
         {
         }
 
-        ~PeerTest() = default;
+        ~PeerTest() override = default;
 
         void
         run() override
@@ -78,34 +100,45 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
             return lastSentMessage_;
         }
 
+        // Synchronous test access to the JobQueue-dispatched processor.
+        // The production path runs this on JtLedgerReq; tests need a
+        // synchronous entry point to inspect the reply via send().
+        // PeerImp::processGetObjectByHash is `protected` so the derived
+        // test subclass can call it directly.
+        void
+        runProcessGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
+        {
+            processGetObjectByHash(m);
+        }
+
         static void
         resetId()
         {
-            id_ = 0;
+            id = 0;
         }
 
     private:
-        inline static Peer::id_t id_ = 0;
+        inline static Peer::id_t id = 0;
         std::shared_ptr<Message> lastSentMessage_;
     };
 
-    shared_context context_{make_SSLContext("")};
+    shared_context context_{makeSslContext("")};
     ProtocolVersion protocolVersion_{1, 7};
 
     std::shared_ptr<PeerTest>
     createPeer(jtx::Env& env)
     {
-        auto& overlay = dynamic_cast<OverlayImpl&>(env.app().overlay());
+        auto& overlay = dynamic_cast<OverlayImpl&>(env.app().getOverlay());
         boost::beast::http::request<boost::beast::http::dynamic_body> request;
-        auto stream_ptr =
+        auto streamPtr =
             std::make_unique<stream_type>(socket_type(env.app().getIOContext()), *context_);
 
-        beast::IP::Endpoint local(boost::asio::ip::make_address("172.1.1.1"), 51235);
-        beast::IP::Endpoint remote(boost::asio::ip::make_address("172.1.1.2"), 51235);
+        beast::IP::Endpoint const local(boost::asio::ip::make_address("172.1.1.1"), 51235);
+        beast::IP::Endpoint const remote(boost::asio::ip::make_address("172.1.1.2"), 51235);
 
-        PublicKey key(std::get<0>(randomKeyPair(KeyType::ed25519)));
+        PublicKey const key(std::get<0>(randomKeyPair(KeyType::Ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
-        auto [slot, _] = overlay.peerFinder().new_inbound_slot(local, remote);
+        auto [slot, _] = overlay.peerFinder().newInboundSlot(local, remote);
 
         auto peer = std::make_shared<PeerTest>(
             env.app(),
@@ -114,10 +147,10 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
             key,
             protocolVersion_,
             consumer,
-            std::move(stream_ptr),
+            std::move(streamPtr),
             overlay);
 
-        overlay.add_active(peer);
+        overlay.addActive(peer);
         return peer;
     }
 
@@ -132,11 +165,12 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         hashes.reserve(numObjects);
         for (int i = 0; i < numObjects; ++i)
         {
-            uint256 hash(xrpl::sha512Half(i));
+            uint256 const hash(xrpl::sha512Half(i));
             hashes.push_back(hash);
 
             Blob data(100, static_cast<unsigned char>(i % 256));
-            nodeStore.store(hotLEDGER, std::move(data), hash, nodeStore.earliestLedgerSeq());
+            nodeStore.store(
+                NodeObjectType::Ledger, std::move(data), hash, nodeStore.earliestLedgerSeq());
         }
 
         // Create a request with more objects than hardMaxReplyNodes
@@ -156,6 +190,10 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
     /**
      * Test that reply is limited to hardMaxReplyNodes when more objects
      * are requested than the limit allows.
+     *
+     * `onMessage(TMGetObjectByHash)` dispatches the generic-query path
+     * to the JobQueue, so tests invoke the synchronous processor
+     * directly via `runProcessGetObjectByHash`.
      */
     void
     testReplyLimit(size_t const numObjects, int const expectedReplySize)
@@ -168,8 +206,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         auto peer = createPeer(env);
 
         auto request = createRequest(numObjects, env);
-        // Call the onMessage handler
-        peer->onMessage(request);
+        peer->runProcessGetObjectByHash(request);
 
         // Verify that a reply was sent
         auto sentMessage = peer->getLastSentMessage();
@@ -190,7 +227,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
     void
     run() override
     {
-        int const limit = static_cast<int>(Tuning::hardMaxReplyNodes);
+        int const limit = static_cast<int>(Tuning::kHardMaxReplyNodes);
         testReplyLimit(limit + 1, limit);
         testReplyLimit(limit, limit);
         testReplyLimit(limit - 1, limit - 1);
@@ -199,5 +236,4 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(TMGetObjectByHash, overlay, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

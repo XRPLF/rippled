@@ -1,12 +1,21 @@
 #pragma once
 
-#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 
 #include <boost/container/flat_set.hpp>
 
+#include <cstdint>
 #include <optional>
 
 namespace xrpl {
@@ -18,27 +27,27 @@ public:
     TxMeta(uint256 const& txID, std::uint32_t ledger, Blob const&);
     TxMeta(uint256 const& txID, std::uint32_t ledger, STObject const&);
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     getTxID() const
     {
         return transactionID_;
     }
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getLgrSeq() const
     {
         return ledgerSeq_;
     }
-    int
+    [[nodiscard]] int
     getResult() const
     {
         return result_;
     }
-    TER
+    [[nodiscard]] TER
     getResultTER() const
     {
         return TER::fromInt(result_);
     }
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getIndex() const
     {
         return index_;
@@ -51,11 +60,13 @@ public:
     STObject&
     getAffectedNode(uint256 const&);
 
-    /** Return a list of accounts affected by this transaction */
-    boost::container::flat_set<AccountID>
+    /**
+     * Return a list of accounts affected by this transaction
+     */
+    [[nodiscard]] boost::container::flat_set<AccountID>
     getAffectedAccounts() const;
 
-    Json::Value
+    [[nodiscard]] json::Value
     getJson(JsonOptions p) const
     {
         return getAsObject().getJson(p);
@@ -63,14 +74,14 @@ public:
     void
     addRaw(Serializer&, TER, std::uint32_t index);
 
-    STObject
+    [[nodiscard]] STObject
     getAsObject() const;
     STArray&
     getNodes()
     {
         return nodes_;
     }
-    STArray const&
+    [[nodiscard]] STArray const&
     getNodes() const
     {
         return nodes_;
@@ -86,7 +97,7 @@ public:
             parentBatchID_ = obj.getFieldH256(sfParentBatchID);
     }
 
-    std::optional<STAmount> const&
+    [[nodiscard]] std::optional<STAmount> const&
     getDeliveredAmount() const
     {
         return deliveredAmount_;

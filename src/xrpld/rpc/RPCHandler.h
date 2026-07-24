@@ -1,19 +1,24 @@
 #pragma once
 
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
 
-namespace xrpl {
-namespace RPC {
+#include <xrpl/json/json_value.h>
+
+#include <string>
+
+namespace xrpl::RPC {
 
 struct JsonContext;
 
-/** Execute an RPC command and store the results in a Json::Value. */
+/**
+ * Execute an RPC command and store the results in a json::Value.
+ */
 Status
-doCommand(RPC::JsonContext&, Json::Value&);
+doCommand(RPC::JsonContext&, json::Value&);
 
 Role
 roleRequired(unsigned int version, bool betaEnabled, std::string const& method);
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

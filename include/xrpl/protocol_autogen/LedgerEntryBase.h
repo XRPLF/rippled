@@ -27,7 +27,7 @@ public:
      * @brief Construct a ledger entry wrapper from an existing SLE object.
      * @param sle The underlying serialized ledger entry to wrap
      */
-    explicit LedgerEntryBase(std::shared_ptr<SLE const> sle) : sle_(std::move(sle))
+    explicit LedgerEntryBase(SLE::const_pointer sle) : sle_(std::move(sle))
     {
     }
 
@@ -131,6 +131,19 @@ public:
     }
 
     /**
+     * @brief Check if a specific flag is set.
+     *
+     * @param f The flag bitmask to check
+     * @return true if all bits in f are set in the flags field
+     */
+    [[nodiscard]]
+    bool
+    isFlag(std::uint32_t f) const
+    {
+        return sle_->isFlag(f);
+    }
+
+    /**
      * @brief Get the underlying SLE object.
      *
      * Provides direct access to the wrapped serialized ledger entry object
@@ -138,15 +151,17 @@ public:
      * @return A constant reference to the underlying SLE object
      */
     [[nodiscard]]
-    std::shared_ptr<SLE const>
+    SLE::const_pointer
     getSle() const
     {
         return sle_;
     }
 
 protected:
-    /** @brief The underlying serialized ledger entry being wrapped. */
-    std::shared_ptr<SLE const> sle_;
+    /**
+     * @brief The underlying serialized ledger entry being wrapped.
+     */
+    SLE::const_pointer sle_;
 };
 
 }  // namespace xrpl::ledger_entries

@@ -1,14 +1,18 @@
 #include <test/jtx/Env.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/CoroTask.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 
-namespace xrpl {
-namespace test {
+#include <atomic>
+#include <memory>
+
+namespace xrpl::test {
 
 //------------------------------------------------------------------------------
 
-class JobQueue_test : public beast::unit_test::suite
+class JobQueue_test : public beast::unit_test::Suite
 {
     void
     testAddJob()
@@ -20,7 +24,7 @@ class JobQueue_test : public beast::unit_test::suite
             // addJob() should run the Job (and return true).
             std::atomic<bool> jobRan{false};
             BEAST_EXPECT(
-                jQueue.addJob(jtCLIENT, "JobAddTest1", [&jobRan]() { jobRan = true; }) == true);
+                jQueue.addJob(JtClient, "JobAddTest1", [&jobRan]() { jobRan = true; }) == true);
 
             // Wait for the Job to run.
             while (!jobRan)
@@ -37,7 +41,7 @@ class JobQueue_test : public beast::unit_test::suite
             // unprotected variable on the stack should be completely safe.
             // Not recommended for the faint of heart...
             bool unprotected = false;
-            BEAST_EXPECT(jQueue.addJob(jtCLIENT, "JobAddTest2", [&unprotected]() {
+            BEAST_EXPECT(jQueue.addJob(JtClient, "JobAddTest2", [&unprotected]() {
                 unprotected = false;
             }) == false);
         }
@@ -58,7 +62,7 @@ class JobQueue_test : public beast::unit_test::suite
             // Test repeated post()s until the coroutine completes.
             std::atomic<int> yieldCount{0};
             auto const runner = jQueue.postCoroTask(
-                jtCLIENT, "PostCoroTest1", [ycp = &yieldCount](auto runner) -> CoroTask<void> {
+                JtClient, "PostCoroTest1", [ycp = &yieldCount](auto runner) -> CoroTask<void> {
                     while (++(*ycp) < 4)
                         co_await runner->suspend();
                     co_return;
@@ -86,7 +90,7 @@ class JobQueue_test : public beast::unit_test::suite
             // Test repeated resume()s until the coroutine completes.
             int yieldCount{0};
             auto const runner = jQueue.postCoroTask(
-                jtCLIENT, "PostCoroTest2", [ycp = &yieldCount](auto runner) -> CoroTask<void> {
+                JtClient, "PostCoroTest2", [ycp = &yieldCount](auto runner) -> CoroTask<void> {
                     while (++(*ycp) < 4)
                         co_await runner->suspend();
                     co_return;
@@ -121,9 +125,9 @@ class JobQueue_test : public beast::unit_test::suite
             // The coroutine should never run, so having it access this
             // unprotected variable on the stack should be completely safe.
             // Not recommended for the faint of heart...
-            bool unprotected;
+            bool unprotected = false;
             auto const runner = jQueue.postCoroTask(
-                jtCLIENT, "PostCoroTest3", [up = &unprotected](auto) -> CoroTask<void> {
+                JtClient, "PostCoroTest3", [up = &unprotected](auto) -> CoroTask<void> {
                     *up = false;
                     co_return;
                 });
@@ -142,5 +146,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(JobQueue, core, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

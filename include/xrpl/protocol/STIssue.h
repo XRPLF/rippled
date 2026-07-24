@@ -1,10 +1,19 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
+
+#include <compare>
+#include <cstddef>
+#include <stdexcept>
+#include <string>
 
 namespace xrpl {
 
@@ -34,30 +43,30 @@ public:
     get() const;
 
     template <ValidIssueType TIss>
-    bool
+    [[nodiscard]] bool
     holds() const;
 
-    value_type const&
+    [[nodiscard]] value_type const&
     value() const noexcept;
 
     void
     setIssue(Asset const& issue);
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
-    Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
     void
     add(Serializer& s) const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
     friend constexpr bool
@@ -89,7 +98,7 @@ STIssue::STIssue(SField const& name, A const& asset) : STBase{name}, asset_{asse
 }
 
 STIssue
-issueFromJson(SField const& name, Json::Value const& v);
+issueFromJson(SField const& name, json::Value const& v);
 
 template <ValidIssueType TIss>
 bool
