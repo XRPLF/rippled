@@ -16,7 +16,37 @@ let
     exec ${pkgs.python3}/bin/python3 ${llvmPackages.clang-unwrapped}/bin/run-clang-tidy "$@"
   '';
 
-  rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ../rust-toolchain.toml;
+  # rust-overlay's toolchain propagates the *default* stdenv.cc onto the PATH (so
+  # cargo has a linker). That default may be different from the clang we pin here,
+  # so it shadows our clang and the build silently drops
+  # a version. Drop that cc from every propagation channel instead of pinning a
+  # replacement: the toolchain then carries no compiler and cargo just uses the
+  # active shell's stdenv cc (clang in the clang shell, gcc in the gcc shell, both
+  # OSes, no isDarwin casing). Must cover all channels — rust-overlay uses both
+  # propagatedBuildInputs and depsHostHostPropagated. libiconv etc. are preserved.
+  rustToolchainBase = pkgs.rust-bin.fromRustupToolchainFile ../rust-toolchain.toml;
+  rustToolchain =
+    let
+      defaultCc = pkgs.stdenv.cc; # clang-21 on darwin, gcc-15 on linux
+      filterCc = builtins.filter (dep: (dep.outPath or "") != defaultCc.outPath);
+      channels = [
+        "propagatedBuildInputs"
+        "propagatedNativeBuildInputs"
+        "depsBuildBuildPropagated"
+        "depsBuildTargetPropagated"
+        "depsHostHostPropagated"
+        "depsTargetTargetPropagated"
+      ];
+    in
+    rustToolchainBase.overrideAttrs (
+      old:
+      builtins.listToAttrs (
+        map (c: {
+          name = c;
+          value = filterCc (old.${c} or [ ]);
+        }) channels
+      )
+    );
 
   # Nix wraps its toolchain so that binaries are exposed only under unsuffixed
   # names (gcc, g++, clang-tidy, ...). Several tools probe for a
