@@ -6,24 +6,27 @@
 
 namespace beast {
 
-/** RAII temporary directory.
-
-    The directory and all its contents are deleted when
-    the instance of `temp_dir` is destroyed.
-*/
-class temp_dir
+/**
+ * RAII temporary directory.
+ *
+ * The directory and all its contents are deleted when
+ * the instance of `temp_dir` is destroyed.
+ */
+class TempDir
 {
     boost::filesystem::path path_;
 
 public:
 #if !GENERATING_DOCS
-    temp_dir(temp_dir const&) = delete;
-    temp_dir&
-    operator=(temp_dir const&) = delete;
+    TempDir(TempDir const&) = delete;
+    TempDir&
+    operator=(TempDir const&) = delete;
 #endif
 
-    /// Construct a temporary directory.
-    temp_dir()
+    /**
+     * Construct a temporary directory.
+     */
+    TempDir()
     {
         auto const dir = boost::filesystem::temp_directory_path();
         do
@@ -33,8 +36,10 @@ public:
         boost::filesystem::create_directory(path_);
     }
 
-    /// Destroy a temporary directory.
-    ~temp_dir()
+    /**
+     * Destroy a temporary directory.
+     */
+    ~TempDir()
     {
         // use non-throwing calls in the destructor
         boost::system::error_code ec;
@@ -42,18 +47,21 @@ public:
         // TODO: warn/notify if ec set ?
     }
 
-    /// Get the native path for the temporary directory
-    std::string
+    /**
+     * Get the native path for the temporary directory
+     */
+    [[nodiscard]] std::string
     path() const
     {
         return path_.string();
     }
 
-    /** Get the native path for the a file.
-
-        The file does not need to exist.
-    */
-    std::string
+    /**
+     * Get the native path for the a file.
+     *
+     * The file does not need to exist.
+     */
+    [[nodiscard]] std::string
     file(std::string const& name) const
     {
         return (path_ / name).string();

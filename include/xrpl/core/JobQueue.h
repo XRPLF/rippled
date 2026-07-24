@@ -1,38 +1,55 @@
 #pragma once
 
 #include <xrpl/basics/LocalValue.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Gauge.h>
+#include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ClosureCounter.h>
 #include <xrpl/core/CoroTask.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobTypeData.h>
-#include <xrpl/core/JobTypes.h>
+#include <xrpl/core/LoadEvent.h>
 #include <xrpl/core/detail/Workers.h>
 #include <xrpl/json/json_value.h>
 
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <coroutine>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <mutex>
 #include <set>
+#include <string>
+#include <type_traits>
 
 namespace xrpl {
 
 namespace perf {
 class PerfLog;
-}
+}  // namespace perf
 
 class Logs;
 
-/** A pool of threads to perform work.
-
-    A job posted will always run to completion.
-
-    Coroutines that are suspended must be resumed,
-    and run to completion.
-
-    When the JobQueue stops, it waits for all jobs
-    and coroutines to finish.
-*/
+/**
+ * A pool of threads to perform work.
+ *
+ * A job posted will always run to completion.
+ *
+ * Coroutines that are suspended must be resumed,
+ * and run to completion.
+ *
+ * When the JobQueue stops, it waits for all jobs
+ * and coroutines to finish.
+ */
 class JobQueue : private Workers::Callback
 {
 public:
-    /** C++20 coroutine lifecycle manager.
+    /**
+     * C++20 coroutine lifecycle manager.
      *
      *  Class / Inheritance / Dependency Diagram
      *  =========================================
@@ -49,7 +66,7 @@ public:
      *  | - name_        : std::string                       |
      *  | - runCount_    : int         (in-flight resumes)    |
      *  | - mutex_       : std::mutex      (coroutine guard) |
-     *  | - mutex_run_   : std::mutex      (join guard)      |
+     *  | - mutexRun_    : std::mutex      (join guard)      |
      *  | - cv_          : condition_variable                 |
      *  | - task_        : CoroTask<void>                    |
      *  | - storedFunc_  : unique_ptr<FuncBase> (type-erased)|
@@ -80,7 +97,7 @@ public:
      *  -------------              ----------------------
      *  postCoroTask(f)
      *    |
-     *    +-- check stopping_ (reject if JQ shutting down)
+     *    +-- reserve a jobCounter_ slot (reject if JQ shutting down)
      *    +-- ++nSuspend_  (lazy start counts as suspended)
      *    +-- make_shared<CoroTaskRunner>
      *    +-- init(f)
@@ -122,7 +139,7 @@ public:
      *
      *  1. Fire-and-forget coroutine (most common pattern):
      *
-     *      jq.postCoroTask(jtCLIENT, "MyWork",
+     *      jq.postCoroTask(JtClient, "MyWork",
      *          [](auto runner) -> CoroTask<void> {
      *              doSomeWork();
      *              co_await runner->suspend();  // yield to other jobs
@@ -132,7 +149,7 @@ public:
      *
      *  2. Manually controlling suspend / resume (external trigger):
      *
-     *      auto runner = jq.postCoroTask(jtCLIENT, "ExtTrigger",
+     *      auto runner = jq.postCoroTask(JtClient, "ExtTrigger",
      *          [&result](auto runner) -> CoroTask<void> {
      *              startAsyncOperation(callback);
      *              co_await runner->suspend();
@@ -145,7 +162,7 @@ public:
      *
      *  3. Using yieldAndPost() for automatic suspend + repost:
      *
-     *      jq.postCoroTask(jtCLIENT, "AutoRepost",
+     *      jq.postCoroTask(JtClient, "AutoRepost",
      *          [](auto runner) -> CoroTask<void> {
      *              step1();
      *              co_await runner->yieldAndPost();  // yield + auto-repost
@@ -157,7 +174,7 @@ public:
      *
      *  4. Checking shutdown after co_await (cooperative cancellation):
      *
-     *      jq.postCoroTask(jtCLIENT, "Cancellable",
+     *      jq.postCoroTask(JtClient, "Cancellable",
      *          [&jq](auto runner) -> CoroTask<void> {
      *              while (moreWork()) {
      *                  co_await runner->yieldAndPost();
@@ -231,7 +248,7 @@ public:
         detail::LocalValues lvs_;
 
         // Back-reference to the owning JobQueue. Used to post jobs,
-        // increment/decrement nSuspend_, and acquire jq_.m_mutex.
+        // increment/decrement nSuspend_, and acquire jq_.mutex_.
         JobQueue& jq_;
 
         // Job type passed to addJob() when posting this coroutine.
@@ -242,7 +259,7 @@ public:
 
         // Number of in-flight resume operations (pending + active).
         // Incremented by post(), decremented when resume() finishes.
-        // Guarded by mutex_run_. join() blocks until this reaches 0.
+        // Guarded by mutexRun_. join() blocks until this reaches 0.
         //
         // A counter (not a bool) is needed because post() can be called
         // from within the coroutine body (e.g. via yieldAndPost()),
@@ -259,7 +276,7 @@ public:
 
         // Guards runCount_. Used with cv_ for join() to wait
         // until all pending/active resume operations complete.
-        std::mutex mutex_run_;
+        std::mutex mutexRun_;
 
         // Notified when runCount_ reaches zero, allowing
         // join() waiters to wake up.
@@ -314,19 +331,19 @@ public:
          * Tag type for private construction. Prevents external code
          * from constructing CoroTaskRunner directly. Use postCoroTask().
          */
-        struct create_t
+        struct CreateT
         {
-            explicit create_t() = default;
+            explicit CreateT() = default;
         };
 
         /**
-         * Construct a CoroTaskRunner. Private by convention (create_t tag).
+         * Construct a CoroTaskRunner. Private by convention (CreateT tag).
          *
          * @param jq   The JobQueue this coroutine will run on
          * @param type Job type for scheduling priority
          * @param name Human-readable name for logging
          */
-        CoroTaskRunner(create_t, JobQueue&, JobType, std::string const&);
+        CoroTaskRunner(CreateT, JobQueue&, JobType, std::string const&);
 
         CoroTaskRunner(CoroTaskRunner const&) = delete;
         CoroTaskRunner&
@@ -412,7 +429,7 @@ public:
          * Decrements nSuspend_, swaps in LocalValues, resumes the
          * coroutine handle, swaps out LocalValues, and notifies join()
          * waiters. Lock ordering (sequential, non-overlapping):
-         * jq_.m_mutex -> mutex_ -> mutex_run_.
+         * jq_.mutex_ -> mutex_ -> mutexRun_.
          *
          * @pre post() must have been called before resume(). Direct
          *      calls without a prior post() will corrupt runCount_
@@ -438,7 +455,7 @@ public:
 
         /**
          * Block until all pending/active resume operations complete.
-         * Uses cv_ + mutex_run_ to wait until runCount_ reaches 0.
+         * Uses cv_ + mutexRun_ to wait until runCount_ reaches 0.
          * Warning: deadlocks if the coroutine is suspended and never posted.
          */
         void
@@ -453,23 +470,21 @@ public:
         beast::Journal journal,
         Logs& logs,
         perf::PerfLog& perfLog);
-    ~JobQueue();
+    ~JobQueue() override;
 
-    /** Adds a job to the JobQueue.
-
-        @param type The type of job.
-        @param name Name of the job.
-        @param jobHandler Lambda with signature void (Job&).  Called when the
-       job is executed.
-
-        @return true if jobHandler added to queue.
-    */
-    template <
-        typename JobHandler,
-        typename =
-            std::enable_if_t<std::is_same<decltype(std::declval<JobHandler&&>()()), void>::value>>
+    /**
+     * Adds a job to the JobQueue.
+     *
+     * @param type The type of job.
+     * @param name Name of the job.
+     * @param jobHandler Callable with signature void(). Called when the job is executed.
+     *
+     * @return true if jobHandler added to queue.
+     */
+    template <typename JobHandler>
     bool
     addJob(JobType type, std::string const& name, JobHandler&& jobHandler)
+        requires(std::is_void_v<std::invoke_result_t<JobHandler>>)
     {
         if (auto optionalCountedJob = jobCounter_.wrap(std::forward<JobHandler>(jobHandler)))
         {
@@ -478,40 +493,46 @@ public:
         return false;
     }
 
-    /** Creates a C++20 coroutine and adds a job to the queue to run it.
-
-        @param t The type of job.
-        @param name Name of the job.
-        @param f Callable with signature
-            CoroTask<void>(std::shared_ptr<CoroTaskRunner>).
-
-        @return shared_ptr to posted CoroTaskRunner. nullptr if not successful.
-    */
+    /**
+     * Creates a C++20 coroutine and adds a job to the queue to run it.
+     *
+     * @param t The type of job.
+     * @param name Name of the job.
+     * @param f Callable with signature
+     * CoroTask<void>(std::shared_ptr<CoroTaskRunner>).
+     *
+     * @return shared_ptr to posted CoroTaskRunner. nullptr if not successful.
+     */
     template <class F>
     std::shared_ptr<CoroTaskRunner>
     postCoroTask(JobType t, std::string const& name, F&& f);
 
-    /** Jobs waiting at this priority.
+    /**
+     * Jobs waiting at this priority.
      */
     int
     getJobCount(JobType t) const;
 
-    /** Jobs waiting plus running at this priority.
+    /**
+     * Jobs waiting plus running at this priority.
      */
     int
     getJobCountTotal(JobType t) const;
 
-    /** All waiting jobs at or greater than this priority.
+    /**
+     * All waiting jobs at or greater than this priority.
      */
     int
     getJobCountGE(JobType t) const;
 
-    /** Return a scoped LoadEvent.
+    /**
+     * Return a scoped LoadEvent.
      */
     std::unique_ptr<LoadEvent>
     makeLoadEvent(JobType t, std::string const& name);
 
-    /** Add multiple load events.
+    /**
+     * Add multiple load events.
      */
     void
     addLoadEvents(JobType t, int count, std::chrono::milliseconds elapsed);
@@ -521,10 +542,12 @@ public:
     isOverloaded();
 
     // Cannot be const because LoadMonitor has no const methods.
-    Json::Value
+    json::Value
     getJson(int c = 0);
 
-    /** Block until no jobs running. */
+    /**
+     * Block until no jobs running.
+     */
     void
     rendezvous();
 
@@ -545,29 +568,29 @@ public:
 private:
     using JobDataMap = std::map<JobType, JobTypeData>;
 
-    beast::Journal m_journal;
-    mutable std::mutex m_mutex;
-    std::uint64_t m_lastJob;
-    std::set<Job> m_jobSet;
+    beast::Journal journal_;
+    mutable std::mutex mutex_;
+    std::uint64_t lastJob_{0};
+    std::set<Job> jobSet_;
     JobCounter jobCounter_;
     std::atomic_bool stopping_{false};
     std::atomic_bool stopped_{false};
-    JobDataMap m_jobData;
-    JobTypeData m_invalidJobData;
+    JobDataMap jobData_;
+    JobTypeData invalidJobData_;
 
     // The number of jobs currently in processTask()
-    int m_processCount;
+    int processCount_{0};
 
     // The number of suspended coroutines
     int nSuspend_ = 0;
 
-    Workers m_workers;
+    Workers workers_;
 
     // Statistics tracking
     perf::PerfLog& perfLog_;
-    beast::insight::Collector::ptr m_collector;
-    beast::insight::Gauge job_count;
-    beast::insight::Hook hook;
+    beast::insight::Collector::ptr collector_;
+    beast::insight::Gauge jobCount_;
+    beast::insight::Hook hook_;
 
     std::condition_variable cv_;
 
@@ -593,12 +616,12 @@ private:
     //  A Job in the JobSet whose slots count for its type is greater than zero.
     //
     // Pre-conditions:
-    //  mJobSet must not be empty.
-    //  mJobSet holds at least one RunnableJob
+    //  jobSet_ must not be empty.
+    //  jobSet_ holds at least one RunnableJob
     //
     // Post-conditions:
     //  job is a valid Job object.
-    //  job is removed from mJobQueue.
+    //  job is removed from jobQueue_.
     //  Waiting job count of its type is decremented
     //  Running job count of its type is incremented
     //
@@ -610,7 +633,7 @@ private:
     // Indicates that a running Job has completed its task.
     //
     // Pre-conditions:
-    //  Job must not exist in mJobSet.
+    //  Job must not exist in jobSet_.
     //  The JobType must not be invalid.
     //
     // Post-conditions:
@@ -645,7 +668,7 @@ private:
 
 }  // namespace xrpl
 
-#include <xrpl/core/CoroTaskRunner.ipp>
+#include <xrpl/core/CoroTaskRunner.ipp>  // IWYU pragma: keep
 
 namespace xrpl {
 
@@ -656,7 +679,7 @@ namespace xrpl {
 //
 //   postCoroTask(t, name, f)
 //     |
-//     +-- 1. Check stopping_ — reject if JQ shutting down
+//     +-- 1. Reserve a jobCounter_ slot — reject if JQ shutting down
 //     |
 //     +-- 2. ++nSuspend_   (the coroutine uses lazy-start, so it is
 //     |        "suspended" from the JQ's perspective before its first resume.
@@ -677,6 +700,19 @@ namespace xrpl {
 //     |              +-- runner->expectEarlyExit()
 //     |              |     --nSuspend_, destroy coroutine frame
 //     |              +-- return nullptr
+//     |
+//     +-- 6. Release the jobCounter_ slot (on return)
+//
+// Why reserve a jobCounter_ slot?
+// ===============================
+// JobQueue::stop() joins jobCounter_ before it acquires mutex_ and asserts
+// nSuspend_ == 0.  Without a reservation, stop() could run to completion in
+// the window between the ++nSuspend_ in step 2 and the balancing post() or
+// expectEarlyExit() in step 5, tripping that assert.  Holding a slot blocks
+// stop()'s join() for the whole function, closing the window.  wrap() also
+// returns nullopt once the counter is joined, so it doubles as the shutdown
+// check — a plain stopping_ read cannot do this, because the read and the
+// ++nSuspend_ are not a single atomic step.
 //
 // Why async post() instead of synchronous resume()?
 // ==================================================
@@ -693,19 +729,19 @@ template <class F>
 std::shared_ptr<JobQueue::CoroTaskRunner>
 JobQueue::postCoroTask(JobType t, std::string const& name, F&& f)
 {
-    // Reject if the JQ is shutting down — matches addJob()'s stopping_ check.
-    // Must check before incrementing nSuspend_ to avoid leaving an orphan
-    // count that would cause stop() to hang.
-    if (stopping_)
+    // Held until this function returns. Null once jobCounter_ is joined,
+    // which is how a shutting-down JobQueue rejects new coroutines.
+    auto const shutdownGuard = jobCounter_.wrap([]() {});
+    if (!shutdownGuard)
         return nullptr;
 
     // Account for the initial suspension (CoroTask uses lazy start).
     {
-        std::lock_guard lock(m_mutex);
+        std::lock_guard lock(mutex_);
         ++nSuspend_;
     }
 
-    auto runner = std::make_shared<CoroTaskRunner>(CoroTaskRunner::create_t{}, *this, t, name);
+    auto runner = std::make_shared<CoroTaskRunner>(CoroTaskRunner::CreateT{}, *this, t, name);
     runner->init(std::forward<F>(f));
     if (!runner->post())
     {

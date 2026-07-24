@@ -1,13 +1,23 @@
 #pragma once
 
 #include <xrpld/app/ledger/InboundLedger.h>
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
+#include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/STTx.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <map>
+#include <memory>
+#include <optional>
+#include <set>
+#include <vector>
 
 namespace xrpl {
 class InboundLedgers;
@@ -125,12 +135,12 @@ private:
     InboundLedgers& inboundLedgers_;
     std::uint32_t const ledgerSeq_;
     std::unique_ptr<PeerSet> peerSet_;
-    std::shared_ptr<Ledger const> replayTemp_ = {};
-    std::shared_ptr<Ledger const> fullLedger_ = {};
+    std::shared_ptr<Ledger const> replayTemp_;
+    std::shared_ptr<Ledger const> fullLedger_;
     std::map<std::uint32_t, std::shared_ptr<STTx const>> orderedTxns_;
     std::vector<OnDeltaDataCB> dataReadyCallbacks_;
     std::set<InboundLedger::Reason> reasons_;
-    std::uint32_t noFeaturePeerCount = 0;
+    std::uint32_t noFeaturePeerCount_ = 0;
     bool fallBack_ = false;
 
     friend class LedgerReplayTask;  // for asserts only

@@ -2,9 +2,11 @@
 
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/rdb/DatabaseCon.h>
-#include <xrpl/server/Manifest.h>
+#include <xrpl/rdb/SociDB.h>
 
 #include <boost/filesystem.hpp>
+
+#include <string>
 
 namespace xrpl {
 
@@ -12,7 +14,7 @@ struct SavedState
 {
     std::string writableDb;
     std::string archiveDb;
-    LedgerIndex lastRotated;
+    LedgerIndex lastRotated{};
 };
 
 /**

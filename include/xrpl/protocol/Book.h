@@ -2,29 +2,39 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <boost/utility/base_from_member.hpp>
 
+#include <compare>
+#include <cstddef>
+#include <functional>
+#include <optional>
+#include <ostream>
+#include <string>
+
 namespace xrpl {
 
-/** Specifies an order book.
-    The order book is a pair of Issues called in and out.
-    @see Issue.
-*/
+/**
+ * Specifies an order book.
+ * The order book is a pair of Issues called in and out.
+ * @see Issue.
+ */
 class Book final : public CountedObject<Book>
 {
 public:
-    Issue in;
-    Issue out;
+    Asset in;
+    Asset out;
     std::optional<uint256> domain;
 
-    Book()
-    {
-    }
+    Book() = default;
 
-    Book(Issue const& in_, Issue const& out_, std::optional<uint256> const& domain_)
-        : in(in_), out(out_), domain(domain_)
+    Book(Asset const& in, Asset const& out, std::optional<uint256> const& domain)
+        : in(in), out(out), domain(domain)
     {
     }
 };
@@ -51,23 +61,27 @@ hash_append(Hasher& h, Book const& b)
 Book
 reversed(Book const& book);
 
-/** Equality comparison. */
+/**
+ * Equality comparison.
+ */
 /** @{ */
-[[nodiscard]] inline constexpr bool
+[[nodiscard]] constexpr bool
 operator==(Book const& lhs, Book const& rhs)
 {
     return (lhs.in == rhs.in) && (lhs.out == rhs.out) && (lhs.domain == rhs.domain);
 }
 /** @} */
 
-/** Strict weak ordering. */
+/**
+ * Strict weak ordering.
+ */
 /** @{ */
-[[nodiscard]] inline constexpr std::weak_ordering
+[[nodiscard]] constexpr std::weak_ordering
 operator<=>(Book const& lhs, Book const& rhs)
 {
-    if (auto const c{lhs.in <=> rhs.in}; c != 0)
+    if (auto const c{lhs.in <=> rhs.in}; c != 0)  // NOLINT(modernize-use-nullptr)
         return c;
-    if (auto const c{lhs.out <=> rhs.out}; c != 0)
+    if (auto const c{lhs.out <=> rhs.out}; c != 0)  // NOLINT(modernize-use-nullptr)
         return c;
 
     // Manually compare optionals
@@ -112,17 +126,68 @@ public:
     }
 };
 
+template <>
+struct hash<xrpl::MPTIssue> : private boost::base_from_member<std::hash<xrpl::MPTID>, 0>
+{
+private:
+    using id_hash_type = boost::base_from_member<std::hash<xrpl::MPTID>, 0>;
+
+public:
+    explicit hash() = default;
+
+    using value_type = std::size_t;
+    using argument_type = xrpl::MPTIssue;
+
+    value_type
+    operator()(argument_type const& value) const
+    {
+        value_type const result(id_hash_type::member(value.getMptID()));
+        return result;
+    }
+};
+
+template <>
+struct hash<xrpl::Asset>
+{
+private:
+    using value_type = std::size_t;
+    using argument_type = xrpl::Asset;
+
+    using issue_hasher = std::hash<xrpl::Issue>;
+    using mptissue_hasher = std::hash<xrpl::MPTIssue>;
+
+    issue_hasher mIssueHasher_;
+    mptissue_hasher mMptissueHasher_;
+
+public:
+    explicit hash() = default;
+
+    value_type
+    operator()(argument_type const& asset) const
+    {
+        return asset.visit(
+            [&](xrpl::Issue const& issue) {
+                value_type const result(mIssueHasher_(issue));
+                return result;
+            },
+            [&](xrpl::MPTIssue const& issue) {
+                value_type const result(mMptissueHasher_(issue));
+                return result;
+            });
+    }
+};
+
 //------------------------------------------------------------------------------
 
 template <>
 struct hash<xrpl::Book>
 {
 private:
-    using issue_hasher = std::hash<xrpl::Issue>;
+    using asset_hasher = std::hash<xrpl::Asset>;
     using uint256_hasher = xrpl::uint256::hasher;
 
-    issue_hasher m_issue_hasher;
-    uint256_hasher m_uint256_hasher;
+    asset_hasher issueHasher_;
+    uint256_hasher uint256Hasher_;
 
 public:
     hash() = default;
@@ -133,11 +198,11 @@ public:
     value_type
     operator()(argument_type const& value) const
     {
-        value_type result(m_issue_hasher(value.in));
-        boost::hash_combine(result, m_issue_hasher(value.out));
+        value_type result(issueHasher_(value.in));
+        boost::hash_combine(result, issueHasher_(value.out));
 
         if (value.domain)
-            boost::hash_combine(result, m_uint256_hasher(*value.domain));
+            boost::hash_combine(result, uint256Hasher_(*value.domain));
 
         return result;
     }
@@ -157,6 +222,22 @@ struct hash<xrpl::Issue> : std::hash<xrpl::Issue>
     using Base = std::hash<xrpl::Issue>;
     // VFALCO NOTE broken in vs2012
     // using Base::Base; // inherit ctors
+};
+
+template <>
+struct hash<xrpl::MPTIssue> : std::hash<xrpl::MPTIssue>
+{
+    explicit hash() = default;
+
+    using Base = std::hash<xrpl::MPTIssue>;
+};
+
+template <>
+struct hash<xrpl::Asset> : std::hash<xrpl::Asset>
+{
+    explicit hash() = default;
+
+    using Base = std::hash<xrpl::Asset>;
 };
 
 template <>

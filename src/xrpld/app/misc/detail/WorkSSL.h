@@ -3,17 +3,16 @@
 #include <xrpld/app/misc/detail/WorkBase.h>
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/net/HTTPClientSSLContext.h>
 
 #include <boost/asio/ssl.hpp>
 #include <boost/format.hpp>
 
-#include <functional>
+#include <memory>
+#include <string>
 
-namespace xrpl {
-
-namespace detail {
+namespace xrpl::detail {
 
 // Work over SSL
 class WorkSSL : public WorkBase<WorkSSL>, public std::enable_shared_from_this<WorkSSL>
@@ -37,7 +36,7 @@ public:
         endpoint_type const& lastEndpoint,
         bool lastStatus,
         callback_type cb);
-    ~WorkSSL() = default;
+    ~WorkSSL() override = default;
 
 private:
     stream_type&
@@ -53,6 +52,4 @@ private:
     onHandshake(error_code const& ec);
 };
 
-}  // namespace detail
-
-}  // namespace xrpl
+}  // namespace xrpl::detail

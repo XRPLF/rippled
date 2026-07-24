@@ -2,52 +2,53 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Event.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobTypeInfo.h>
+#include <xrpl/core/LoadMonitor.h>
+
+#include <utility>
 
 namespace xrpl {
 
 struct JobTypeData
 {
 private:
-    LoadMonitor m_load;
+    LoadMonitor load_;
 
     /* Support for insight */
-    beast::insight::Collector::ptr m_collector;
+    beast::insight::Collector::ptr collector_;
 
 public:
     /* The job category which we represent */
     JobTypeInfo const& info;
 
     /* The number of jobs waiting */
-    int waiting;
+    int waiting{0};
 
     /* The number presently running */
-    int running;
+    int running{0};
 
     /* And the number we deferred executing because of job limits */
-    int deferred;
+    int deferred{0};
 
     /* Notification callbacks */
     beast::insight::Event dequeue;
     beast::insight::Event execute;
 
     JobTypeData(
-        JobTypeInfo const& info_,
-        beast::insight::Collector::ptr const& collector,
+        JobTypeInfo const& info,
+        beast::insight::Collector::ptr collector,
         Logs& logs) noexcept
-        : m_load(logs.journal("LoadMonitor"))
-        , m_collector(collector)
-        , info(info_)
-        , waiting(0)
-        , running(0)
-        , deferred(0)
+        : load_(logs.journal("LoadMonitor")), collector_(std::move(collector)), info(info)
+
     {
-        m_load.setTargetLatency(info.getAverageLatency(), info.getPeakLatency());
+        load_.setTargetLatency(info.getAverageLatency(), info.getPeakLatency());
 
         if (!info.special())
         {
-            dequeue = m_collector->make_event(info.name() + "_q");
-            execute = m_collector->make_event(info.name());
+            dequeue = collector_->makeEvent(info.name() + "_q");
+            execute = collector_->makeEvent(info.name());
         }
     }
 
@@ -56,13 +57,13 @@ public:
     JobTypeData&
     operator=(JobTypeData const& other) = delete;
 
-    std::string
+    [[nodiscard]] std::string
     name() const
     {
         return info.name();
     }
 
-    JobType
+    [[nodiscard]] JobType
     type() const
     {
         return info.type();
@@ -71,13 +72,13 @@ public:
     LoadMonitor&
     load()
     {
-        return m_load;
+        return load_;
     }
 
     LoadMonitor::Stats
     stats()
     {
-        return m_load.getStats();
+        return load_.getStats();
     }
 };
 

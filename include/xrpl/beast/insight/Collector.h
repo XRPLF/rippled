@@ -4,23 +4,25 @@
 #include <xrpl/beast/insight/Event.h>
 #include <xrpl/beast/insight/Gauge.h>
 #include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/Meter.h>
 
+#include <memory>
 #include <string>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
-/** Interface for a manager that allows collection of metrics.
-
-    To export metrics from a class, pass and save a shared_ptr to this
-    interface in the class constructor. Create the metric objects
-    as desired (counters, events, gauges, meters, and an optional hook)
-    using the interface.
-
-    @see Counter, Event, Gauge, Hook, Meter
-    @see NullCollector, StatsDCollector
-*/
+/**
+ * Interface for a manager that allows collection of metrics.
+ *
+ * To export metrics from a class, pass and save a shared_ptr to this
+ * interface in the class constructor. Create the metric objects
+ * as desired (counters, events, gauges, meters, and an optional hook)
+ * using the interface.
+ *
+ * @see Counter, Event, Gauge, Hook, Meter
+ * @see NullCollector, StatsDCollector
+ */
 class Collector
 {
 public:
@@ -28,94 +30,98 @@ public:
 
     virtual ~Collector() = 0;
 
-    /** Create a hook.
-
-        A hook is called at each collection interval, on an implementation
-        defined thread. This is a convenience facility for gathering metrics
-        in the polling style. The typical usage is to update all the metrics
-        of interest in the handler.
-
-        Handler will be called with this signature:
-            void handler (void)
-
-        @see Hook
-    */
+    /**
+     * Create a hook.
+     *
+     * A hook is called at each collection interval, on an implementation
+     * defined thread. This is a convenience facility for gathering metrics
+     * in the polling style. The typical usage is to update all the metrics
+     * of interest in the handler.
+     *
+     * Handler will be called with this signature:
+     *     void handler (void)
+     *
+     * @see Hook
+     */
     /** @{ */
     template <class Handler>
     Hook
-    make_hook(Handler handler)
+    makeHook(Handler handler)
     {
-        return make_hook(HookImpl::HandlerType(handler));
+        return makeHook(HookImpl::HandlerType(handler));
     }
 
     virtual Hook
-    make_hook(HookImpl::HandlerType const& handler) = 0;
+    makeHook(HookImpl::HandlerType const& handler) = 0;
     /** @} */
 
-    /** Create a counter with the specified name.
-        @see Counter
-    */
+    /**
+     * Create a counter with the specified name.
+     * @see Counter
+     */
     /** @{ */
     virtual Counter
-    make_counter(std::string const& name) = 0;
+    makeCounter(std::string const& name) = 0;
 
     Counter
-    make_counter(std::string const& prefix, std::string const& name)
+    makeCounter(std::string const& prefix, std::string const& name)
     {
         if (prefix.empty())
-            return make_counter(name);
-        return make_counter(prefix + "." + name);
+            return makeCounter(name);
+        return makeCounter(prefix + "." + name);
     }
     /** @} */
 
-    /** Create an event with the specified name.
-        @see Event
-    */
+    /**
+     * Create an event with the specified name.
+     * @see Event
+     */
     /** @{ */
     virtual Event
-    make_event(std::string const& name) = 0;
+    makeEvent(std::string const& name) = 0;
 
     Event
-    make_event(std::string const& prefix, std::string const& name)
+    makeEvent(std::string const& prefix, std::string const& name)
     {
         if (prefix.empty())
-            return make_event(name);
-        return make_event(prefix + "." + name);
+            return makeEvent(name);
+        return makeEvent(prefix + "." + name);
     }
     /** @} */
 
-    /** Create a gauge with the specified name.
-        @see Gauge
-    */
+    /**
+     * Create a gauge with the specified name.
+     * @see Gauge
+     */
     /** @{ */
     virtual Gauge
-    make_gauge(std::string const& name) = 0;
+    makeGauge(std::string const& name) = 0;
 
     Gauge
-    make_gauge(std::string const& prefix, std::string const& name)
+    makeGauge(std::string const& prefix, std::string const& name)
     {
         if (prefix.empty())
-            return make_gauge(name);
-        return make_gauge(prefix + "." + name);
+            return makeGauge(name);
+        return makeGauge(prefix + "." + name);
     }
     /** @} */
 
-    /** Create a meter with the specified name.
-        @see Meter
-    */
+    /**
+     * Create a meter with the specified name.
+     * @see Meter
+     */
     /** @{ */
     virtual Meter
-    make_meter(std::string const& name) = 0;
+    makeMeter(std::string const& name) = 0;
 
     Meter
-    make_meter(std::string const& prefix, std::string const& name)
+    makeMeter(std::string const& prefix, std::string const& name)
     {
         if (prefix.empty())
-            return make_meter(name);
-        return make_meter(prefix + "." + name);
+            return makeMeter(name);
+        return makeMeter(prefix + "." + name);
     }
     /** @} */
 };
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight

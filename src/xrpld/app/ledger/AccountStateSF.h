@@ -2,8 +2,14 @@
 
 #include <xrpld/app/ledger/AbstractFetchPackContainer.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <cstdint>
+#include <optional>
 
 namespace xrpl {
 
@@ -24,7 +30,7 @@ public:
         Blob&& nodeData,
         SHAMapNodeType type) const override;
 
-    std::optional<Blob>
+    [[nodiscard]] std::optional<Blob>
     getNode(SHAMapHash const& nodeHash) const override;
 
 private:

@@ -1,14 +1,15 @@
-#include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/protocol/messages.h>
+#include <xrpl/beast/unit_test/suite.h>
 
-namespace xrpl {
+#include <xrpl.pb.h>
 
-namespace test {
+#include <algorithm>
+#include <cstdint>
 
-class traffic_count_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+class traffic_count_test : public beast::unit_test::Suite
 {
 public:
     traffic_count_test() = default;
@@ -22,12 +23,12 @@ public:
 
         // a known message is categorized to a proper category
         auto const known = TrafficCount::categorize(message, protocol::mtPING, false);
-        BEAST_EXPECT(known == TrafficCount::category::base);
+        BEAST_EXPECT(known == TrafficCount::Category::Base);
 
         // an unknown message type is categorized as unknown
         auto const unknown =
             TrafficCount::categorize(message, static_cast<protocol::MessageType>(99), false);
-        BEAST_EXPECT(unknown == TrafficCount::category::unknown);
+        BEAST_EXPECT(unknown == TrafficCount::Category::Unknown);
     }
 
     struct TestCase
@@ -47,16 +48,16 @@ public:
     {
         auto run = [&](TestCase const& tc) {
             testcase(tc.name);
-            TrafficCount m_traffic;
+            TrafficCount traffic;
 
-            auto const counts = m_traffic.getCounts();
-            std::for_each(counts.begin(), counts.end(), [&](auto const& pair) {
+            auto const counts = traffic.getCounts();
+            std::ranges::for_each(counts, [&](auto const& pair) {
                 for (auto i = 0; i < tc.messageCount; ++i)
-                    m_traffic.addCount(pair.first, tc.inbound, tc.size);
+                    traffic.addCount(pair.first, tc.inbound, tc.size);
             });
 
-            auto const counts_new = m_traffic.getCounts();
-            std::for_each(counts_new.begin(), counts_new.end(), [&](auto const& pair) {
+            auto const countsNew = traffic.getCounts();
+            std::ranges::for_each(countsNew, [&](auto const& pair) {
                 BEAST_EXPECT(pair.second.bytesIn.load() == tc.expectedBytesIn);
                 BEAST_EXPECT(pair.second.bytesOut.load() == tc.expectedBytesOut);
                 BEAST_EXPECT(pair.second.messagesIn.load() == tc.expectedMessagesIn);
@@ -107,11 +108,11 @@ public:
         testcase("category-to-string");
 
         // known category returns known string value
-        BEAST_EXPECT(TrafficCount::to_string(TrafficCount::category::total) == "total");
+        BEAST_EXPECT(TrafficCount::toString(TrafficCount::Category::Total) == "total");
 
         // return "unknown" for unknown categories
         BEAST_EXPECT(
-            TrafficCount::to_string(static_cast<TrafficCount::category>(1000)) == "unknown");
+            TrafficCount::toString(static_cast<TrafficCount::Category>(1000)) == "unknown");
     }
 
     void
@@ -125,5 +126,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(traffic_count, overlay, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

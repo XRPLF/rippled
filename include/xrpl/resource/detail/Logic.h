@@ -4,43 +4,51 @@
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/clock/abstract_clock.h>
-#include <xrpl/beast/insight/Insight.h>
+#include <xrpl/beast/core/List.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/Disposition.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/Gossip.h>
 #include <xrpl/resource/detail/Import.h>
 
 #include <mutex>
+#include <string>
+#include <tuple>
+#include <utility>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
 class Logic
 {
 private:
     using clock_type = Stopwatch;
     using Imports = hash_map<std::string, Import>;
-    using Table = hash_map<Key, Entry, Key::hasher, Key::key_equal>;
+    using Table = hash_map<Key, Entry, Key::Hasher, Key::KeyEqual>;
     using EntryIntrusiveList = beast::List<Entry>;
 
     struct Stats
     {
         Stats(beast::insight::Collector::ptr const& collector)
         {
-            warn = collector->make_meter("warn");
-            drop = collector->make_meter("drop");
+            warn = collector->makeMeter("warn");
+            drop = collector->makeMeter("drop");
         }
 
         beast::insight::Meter warn;
         beast::insight::Meter drop;
     };
 
-    Stats m_stats;
-    Stopwatch& m_clock;
-    beast::Journal m_journal;
+    Stats stats_;
+    Stopwatch& clock_;
+    beast::Journal journal_;
 
     std::recursive_mutex lock_;
 
@@ -72,7 +80,7 @@ public:
         beast::insight::Collector::ptr const& collector,
         clock_type& clock,
         beast::Journal journal)
-        : m_stats(collector), m_clock(clock), m_journal(journal)
+        : stats_(collector), clock_(clock), journal_(journal)
     {
     }
 
@@ -93,11 +101,11 @@ public:
         Entry* entry(nullptr);
 
         {
-            std::lock_guard _(lock_);
+            std::scoped_lock const _(lock_);
             auto [resultIt, resultInserted] = table_.emplace(
                 std::piecewise_construct,
-                std::make_tuple(kindInbound, address.at_port(0)),  // Key
-                std::make_tuple(m_clock.now()));                   // Entry
+                std::make_tuple(Kind::Inbound, address.atPort(0)),  // Key
+                std::make_tuple(clock_.now()));                     // Entry
 
             entry = &resultIt->second;
             entry->key = &resultIt->first;
@@ -106,13 +114,13 @@ public:
             {
                 if (!resultInserted)
                 {
-                    inactive_.erase(inactive_.iterator_to(*entry));
+                    inactive_.erase(inactive_.iteratorTo(*entry));
                 }
-                inbound_.push_back(*entry);
+                inbound_.pushBack(*entry);
             }
         }
 
-        JLOG(m_journal.debug()) << "New inbound endpoint " << *entry;
+        JLOG(journal_.debug()) << "New inbound endpoint " << *entry;
 
         return Consumer(*this, *entry);
     }
@@ -123,11 +131,11 @@ public:
         Entry* entry(nullptr);
 
         {
-            std::lock_guard _(lock_);
+            std::scoped_lock const _(lock_);
             auto [resultIt, resultInserted] = table_.emplace(
                 std::piecewise_construct,
-                std::make_tuple(kindOutbound, address),  // Key
-                std::make_tuple(m_clock.now()));         // Entry
+                std::make_tuple(Kind::Outbound, address),  // Key
+                std::make_tuple(clock_.now()));            // Entry
 
             entry = &resultIt->second;
             entry->key = &resultIt->first;
@@ -135,12 +143,12 @@ public:
             if (entry->refcount == 1)
             {
                 if (!resultInserted)
-                    inactive_.erase(inactive_.iterator_to(*entry));
-                outbound_.push_back(*entry);
+                    inactive_.erase(inactive_.iteratorTo(*entry));
+                outbound_.pushBack(*entry);
             }
         }
 
-        JLOG(m_journal.debug()) << "New outbound endpoint " << *entry;
+        JLOG(journal_.debug()) << "New outbound endpoint " << *entry;
 
         return Consumer(*this, *entry);
     }
@@ -156,11 +164,11 @@ public:
         Entry* entry(nullptr);
 
         {
-            std::lock_guard _(lock_);
+            std::scoped_lock const _(lock_);
             auto [resultIt, resultInserted] = table_.emplace(
                 std::piecewise_construct,
-                std::make_tuple(kindUnlimited, address.at_port(1)),  // Key
-                std::make_tuple(m_clock.now()));                     // Entry
+                std::make_tuple(Kind::Unlimited, address.atPort(1)),  // Key
+                std::make_tuple(clock_.now()));                       // Entry
 
             entry = &resultIt->second;
             entry->key = &resultIt->first;
@@ -168,61 +176,63 @@ public:
             if (entry->refcount == 1)
             {
                 if (!resultInserted)
-                    inactive_.erase(inactive_.iterator_to(*entry));
-                admin_.push_back(*entry);
+                    inactive_.erase(inactive_.iteratorTo(*entry));
+                admin_.pushBack(*entry);
             }
         }
 
-        JLOG(m_journal.debug()) << "New unlimited endpoint " << *entry;
+        JLOG(journal_.debug()) << "New unlimited endpoint " << *entry;
 
         return Consumer(*this, *entry);
     }
 
-    Json::Value
+    json::Value
     getJson()
     {
-        return getJson(warningThreshold);
+        return getJson(kWarningThreshold);
     }
 
-    /** Returns a Json::objectValue. */
-    Json::Value
+    /**
+     * Returns a json::ValueType::Object.
+     */
+    json::Value
     getJson(int threshold)
     {
-        clock_type::time_point const now(m_clock.now());
+        clock_type::time_point const now(clock_.now());
 
-        Json::Value ret(Json::objectValue);
-        std::lock_guard _(lock_);
+        json::Value ret(json::ValueType::Object);
+        std::scoped_lock const _(lock_);
 
         for (auto& inboundEntry : inbound_)
         {
-            int localBalance = inboundEntry.local_balance.value(now);
-            if ((localBalance + inboundEntry.remote_balance) >= threshold)
+            int const localBalance = inboundEntry.localBalance.value(now);
+            if ((localBalance + inboundEntry.remoteBalance) >= threshold)
             {
-                Json::Value& entry = (ret[inboundEntry.to_string()] = Json::objectValue);
+                json::Value& entry = (ret[inboundEntry.toString()] = json::ValueType::Object);
                 entry[jss::local] = localBalance;
-                entry[jss::remote] = inboundEntry.remote_balance;
+                entry[jss::remote] = inboundEntry.remoteBalance;
                 entry[jss::type] = "inbound";
             }
         }
         for (auto& outboundEntry : outbound_)
         {
-            int localBalance = outboundEntry.local_balance.value(now);
-            if ((localBalance + outboundEntry.remote_balance) >= threshold)
+            int const localBalance = outboundEntry.localBalance.value(now);
+            if ((localBalance + outboundEntry.remoteBalance) >= threshold)
             {
-                Json::Value& entry = (ret[outboundEntry.to_string()] = Json::objectValue);
+                json::Value& entry = (ret[outboundEntry.toString()] = json::ValueType::Object);
                 entry[jss::local] = localBalance;
-                entry[jss::remote] = outboundEntry.remote_balance;
+                entry[jss::remote] = outboundEntry.remoteBalance;
                 entry[jss::type] = "outbound";
             }
         }
         for (auto& adminEntry : admin_)
         {
-            int localBalance = adminEntry.local_balance.value(now);
-            if ((localBalance + adminEntry.remote_balance) >= threshold)
+            int const localBalance = adminEntry.localBalance.value(now);
+            if ((localBalance + adminEntry.remoteBalance) >= threshold)
             {
-                Json::Value& entry = (ret[adminEntry.to_string()] = Json::objectValue);
+                json::Value& entry = (ret[adminEntry.toString()] = json::ValueType::Object);
                 entry[jss::local] = localBalance;
-                entry[jss::remote] = adminEntry.remote_balance;
+                entry[jss::remote] = adminEntry.remoteBalance;
                 entry[jss::type] = "admin";
             }
         }
@@ -233,18 +243,18 @@ public:
     Gossip
     exportConsumers()
     {
-        clock_type::time_point const now(m_clock.now());
+        clock_type::time_point const now(clock_.now());
 
         Gossip gossip;
-        std::lock_guard _(lock_);
+        std::scoped_lock const _(lock_);
 
         gossip.items.reserve(inbound_.size());
 
         for (auto& inboundEntry : inbound_)
         {
             Gossip::Item item;
-            item.balance = inboundEntry.local_balance.value(now);
-            if (item.balance >= minimumGossipBalance)
+            item.balance = inboundEntry.localBalance.value(now);
+            if (item.balance >= kMinimumGossipBalance)
             {
                 item.address = inboundEntry.key->address;
                 gossip.items.push_back(item);
@@ -259,19 +269,19 @@ public:
     void
     importConsumers(std::string const& origin, Gossip const& gossip)
     {
-        auto const elapsed = m_clock.now();
+        auto const elapsed = clock_.now();
         {
-            std::lock_guard _(lock_);
+            std::scoped_lock const _(lock_);
             auto [resultIt, resultInserted] = importTable_.emplace(
                 std::piecewise_construct,
-                std::make_tuple(origin),                                     // Key
-                std::make_tuple(m_clock.now().time_since_epoch().count()));  // Import
+                std::make_tuple(origin),                                    // Key
+                std::make_tuple(clock_.now().time_since_epoch().count()));  // Import
 
             if (resultInserted)
             {
                 // This is a new import
                 Import& next(resultIt->second);
-                next.whenExpires = elapsed + gossipExpirationSeconds;
+                next.whenExpires = elapsed + kGossipExpirationSeconds;
                 next.items.reserve(gossip.items.size());
 
                 for (auto const& gossipItem : gossip.items)
@@ -279,7 +289,7 @@ public:
                     Import::Item item;
                     item.balance = gossipItem.balance;
                     item.consumer = newInboundEndpoint(gossipItem.address);
-                    item.consumer.entry().remote_balance += item.balance;
+                    item.consumer.entry().remoteBalance += item.balance;
                     next.items.push_back(item);
                 }
             }
@@ -289,21 +299,21 @@ public:
                 // balances and then deduct the old remote balances.
 
                 Import next;
-                next.whenExpires = elapsed + gossipExpirationSeconds;
+                next.whenExpires = elapsed + kGossipExpirationSeconds;
                 next.items.reserve(gossip.items.size());
                 for (auto const& gossipItem : gossip.items)
                 {
                     Import::Item item;
                     item.balance = gossipItem.balance;
                     item.consumer = newInboundEndpoint(gossipItem.address);
-                    item.consumer.entry().remote_balance += item.balance;
+                    item.consumer.entry().remoteBalance += item.balance;
                     next.items.push_back(item);
                 }
 
                 Import& prev(resultIt->second);
                 for (auto& item : prev.items)
                 {
-                    item.consumer.entry().remote_balance -= item.balance;
+                    item.consumer.entry().remoteBalance -= item.balance;
                 }
 
                 std::swap(next, prev);
@@ -318,18 +328,18 @@ public:
     void
     periodicActivity()
     {
-        std::lock_guard _(lock_);
+        std::scoped_lock const _(lock_);
 
-        auto const elapsed = m_clock.now();
+        auto const elapsed = clock_.now();
 
         for (auto iter(inactive_.begin()); iter != inactive_.end();)
         {
             if (iter->whenExpires <= elapsed)
             {
-                JLOG(m_journal.debug()) << "Expired " << *iter;
-                auto table_iter = table_.find(*iter->key);
+                JLOG(journal_.debug()) << "Expired " << *iter;
+                auto tableIter = table_.find(*iter->key);
                 ++iter;
-                erase(table_iter);
+                erase(tableIter);
             }
             else
             {
@@ -343,16 +353,17 @@ public:
             Import& import(iter->second);
             if (iter->second.whenExpires <= elapsed)
             {
-                for (auto item_iter(import.items.begin()); item_iter != import.items.end();
-                     ++item_iter)
+                for (auto& item : import.items)
                 {
-                    item_iter->consumer.entry().remote_balance -= item_iter->balance;
+                    item.consumer.entry().remoteBalance -= item.balance;
                 }
 
                 iter = importTable_.erase(iter);
             }
             else
+            {
                 ++iter;
+            }
         }
     }
 
@@ -362,50 +373,50 @@ public:
     static Disposition
     disposition(int balance)
     {
-        if (balance >= dropThreshold)
-            return Disposition::drop;
+        if (balance >= kDropThreshold)
+            return Disposition::Drop;
 
-        if (balance >= warningThreshold)
-            return Disposition::warn;
+        if (balance >= kWarningThreshold)
+            return Disposition::Warn;
 
-        return Disposition::ok;
+        return Disposition::Ok;
     }
 
     void
     erase(Table::iterator iter)
     {
-        std::lock_guard _(lock_);
+        std::scoped_lock const _(lock_);
         Entry& entry(iter->second);
         XRPL_ASSERT(entry.refcount == 0, "xrpl::Resource::Logic::erase : entry not used");
-        inactive_.erase(inactive_.iterator_to(entry));
+        inactive_.erase(inactive_.iteratorTo(entry));
         table_.erase(iter);
     }
 
     void
     acquire(Entry& entry)
     {
-        std::lock_guard _(lock_);
+        std::scoped_lock const _(lock_);
         ++entry.refcount;
     }
 
     void
     release(Entry& entry)
     {
-        std::lock_guard _(lock_);
+        std::scoped_lock const _(lock_);
         if (--entry.refcount == 0)
         {
-            JLOG(m_journal.debug()) << "Inactive " << entry;
+            JLOG(journal_.debug()) << "Inactive " << entry;
 
             switch (entry.key->kind)
             {
-                case kindInbound:
-                    inbound_.erase(inbound_.iterator_to(entry));
+                case Kind::Inbound:
+                    inbound_.erase(inbound_.iteratorTo(entry));
                     break;
-                case kindOutbound:
-                    outbound_.erase(outbound_.iterator_to(entry));
+                case Kind::Outbound:
+                    outbound_.erase(outbound_.iteratorTo(entry));
                     break;
-                case kindUnlimited:
-                    admin_.erase(admin_.iterator_to(entry));
+                case Kind::Unlimited:
+                    admin_.erase(admin_.iteratorTo(entry));
                     break;
                 default:
                     // LCOV_EXCL_START
@@ -415,26 +426,26 @@ public:
                     break;
                     // LCOV_EXCL_STOP
             }
-            inactive_.push_back(entry);
-            entry.whenExpires = m_clock.now() + secondsUntilExpiration;
+            inactive_.pushBack(entry);
+            entry.whenExpires = clock_.now() + kSecondsUntilExpiration;
         }
     }
 
     Disposition
     charge(Entry& entry, Charge const& fee, std::string context = {})
     {
-        static constexpr Charge::value_type feeLogAsWarn = 3000;
-        static constexpr Charge::value_type feeLogAsInfo = 1000;
-        static constexpr Charge::value_type feeLogAsDebug = 100;
+        static constexpr Charge::value_type kFeeLogAsWarn = 3000;
+        static constexpr Charge::value_type kFeeLogAsInfo = 1000;
+        static constexpr Charge::value_type kFeeLogAsDebug = 100;
         static_assert(
-            feeLogAsWarn > feeLogAsInfo && feeLogAsInfo > feeLogAsDebug && feeLogAsDebug > 10);
+            kFeeLogAsWarn > kFeeLogAsInfo && kFeeLogAsInfo > kFeeLogAsDebug && kFeeLogAsDebug > 10);
 
-        static auto getStream = [](Resource::Charge::value_type cost, beast::Journal& journal) {
-            if (cost >= feeLogAsWarn)
+        static auto kGetStream = [](Resource::Charge::value_type cost, beast::Journal& journal) {
+            if (cost >= kFeeLogAsWarn)
                 return journal.warn();
-            if (cost >= feeLogAsInfo)
+            if (cost >= kFeeLogAsInfo)
                 return journal.info();
-            if (cost >= feeLogAsDebug)
+            if (cost >= kFeeLogAsDebug)
                 return journal.debug();
             return journal.trace();
         };
@@ -442,10 +453,10 @@ public:
         if (!context.empty())
             context = " (" + context + ")";
 
-        std::lock_guard _(lock_);
-        clock_type::time_point const now(m_clock.now());
+        std::scoped_lock const _(lock_);
+        clock_type::time_point const now(clock_.now());
         int const balance(entry.add(fee.cost(), now));
-        JLOG(getStream(fee.cost(), m_journal)) << "Charging " << entry << " for " << fee << context;
+        JLOG(kGetStream(fee.cost(), journal_)) << "Charging " << entry << " for " << fee << context;
         return disposition(balance);
     }
 
@@ -455,19 +466,19 @@ public:
         if (entry.isUnlimited())
             return false;
 
-        std::lock_guard _(lock_);
+        std::scoped_lock const _(lock_);
         bool notify(false);
-        auto const elapsed = m_clock.now();
-        if (entry.balance(m_clock.now()) >= warningThreshold && elapsed != entry.lastWarningTime)
+        auto const elapsed = clock_.now();
+        if (entry.balance(clock_.now()) >= kWarningThreshold && elapsed != entry.lastWarningTime)
         {
-            charge(entry, feeWarning);
+            charge(entry, kFeeWarning);
             notify = true;
             entry.lastWarningTime = elapsed;
         }
         if (notify)
         {
-            JLOG(m_journal.info()) << "Load warning: " << entry;
-            ++m_stats.warn;
+            JLOG(journal_.info()) << "Load warning: " << entry;
+            ++stats_.warn;
         }
         return notify;
     }
@@ -478,20 +489,20 @@ public:
         if (entry.isUnlimited())
             return false;
 
-        std::lock_guard _(lock_);
+        std::scoped_lock const _(lock_);
         bool drop(false);
-        clock_type::time_point const now(m_clock.now());
+        clock_type::time_point const now(clock_.now());
         int const balance(entry.balance(now));
-        if (balance >= dropThreshold)
+        if (balance >= kDropThreshold)
         {
-            JLOG(m_journal.warn()) << "Consumer entry " << entry << " dropped with balance "
-                                   << balance << " at or above drop threshold " << dropThreshold;
+            JLOG(journal_.warn()) << "Consumer entry " << entry << " dropped with balance "
+                                  << balance << " at or above drop threshold " << kDropThreshold;
 
             // Adding feeDrop at this point keeps the dropped connection
             // from re-connecting for at least a little while after it is
             // dropped.
-            charge(entry, feeDrop);
-            ++m_stats.drop;
+            charge(entry, kFeeDrop);
+            ++stats_.drop;
             drop = true;
         }
         return drop;
@@ -500,13 +511,13 @@ public:
     int
     balance(Entry& entry)
     {
-        std::lock_guard _(lock_);
-        return entry.balance(m_clock.now());
+        std::scoped_lock const _(lock_);
+        return entry.balance(clock_.now());
     }
 
     //--------------------------------------------------------------------------
 
-    void
+    static void
     writeList(
         clock_type::time_point const now,
         beast::PropertyStream::Set& items,
@@ -517,19 +528,19 @@ public:
             beast::PropertyStream::Map item(items);
             if (entry.refcount != 0)
                 item["count"] = entry.refcount;
-            item["name"] = entry.to_string();
+            item["name"] = entry.toString();
             item["balance"] = entry.balance(now);
-            if (entry.remote_balance != 0)
-                item["remote_balance"] = entry.remote_balance;
+            if (entry.remoteBalance != 0)
+                item["remote_balance"] = entry.remoteBalance;
         }
     }
 
     void
     onWrite(beast::PropertyStream::Map& map)
     {
-        clock_type::time_point const now(m_clock.now());
+        clock_type::time_point const now(clock_.now());
 
-        std::lock_guard _(lock_);
+        std::scoped_lock const _(lock_);
 
         {
             beast::PropertyStream::Set s("inbound", map);
@@ -553,5 +564,4 @@ public:
     }
 };
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource
