@@ -303,10 +303,18 @@ dependencies = [
 [[package]]
 name = "xrpl-host-functions"
 version = "0.1.0"
+dependencies = [
+ "xrpl-host-functions-macros",
+]
 
 [[package]]
 name = "xrpl-host-functions-macros"
 version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.3",
+]
 
 [[package]]
 name = "xrpl-wasm-vm"
