@@ -8,8 +8,8 @@ Core build tools:
 
 Development tooling:
   [ ok ] ccache               ccache version 4.13.6
-  [ ok ] clang                clang version 21.1.8
-  [ ok ] clang++              clang version 21.1.8
+  [ ok ] clang                clang version 22.1.7
+  [ ok ] clang++              clang version 22.1.7
   [ ok ] ClangBuildAnalyzer   ClangBuildAnalyzer 1.6.0
   [ ok ] curl                 curl 8.20.0 (aarch64-apple-darwin25.3.0) libcurl/8.20.0 OpenSSL/3.6.2 zlib/1.3.2 libssh2/1.11.1 nghttp2/1.69.0 mit-krb5/1.22.1
   [ ok ] file                 file-5.47
@@ -21,7 +21,7 @@ Development tooling:
   [ ok ] pkg-config           0.29.2
   [ ok ] vim                  VIM - Vi IMproved 9.2 (2026 Feb 14, compiled Jan 01 1980 00:00:00)
   [ ok ] zip                  Zip 3.0
-  [ ok ] clang-format         clang-format version 21.1.8
+  [ ok ] clang-format         clang-format version 22.1.7
   [ ok ] dot                  dot - graphviz version 12.2.1 (0)
   [ ok ] doxygen              1.16.1
   [ ok ] gcovr                gcovr 8.4
