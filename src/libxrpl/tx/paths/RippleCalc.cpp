@@ -1,12 +1,23 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/RippleCalc.h>
-#include <xrpl/tx/paths/detail/FlowDebugInfo.h>
 
-namespace xrpl {
-namespace path {
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/tx/paths/Flow.h>
+#include <xrpl/tx/paths/detail/Steps.h>
+
+#include <exception>
+#include <optional>
+
+namespace xrpl::path {
 
 RippleCalc::Output
 RippleCalc::rippleCalculate(
@@ -35,12 +46,12 @@ RippleCalc::rippleCalculate(
     STPathSet const& spsPaths,
 
     std::optional<uint256> const& domainID,
-    Logs& l,
+    ServiceRegistry& registry,
     Input const* const pInputs)
 {
     Output flowOut;
     PaymentSandbox flowSB(&view);
-    auto j = l.journal("Flow");
+    auto j = registry.getJournal("Flow");
 
     {
         bool const defaultPaths = (pInputs == nullptr) ? true : pInputs->defaultPathsAllowed;
@@ -48,14 +59,14 @@ RippleCalc::rippleCalculate(
         bool const partialPayment = (pInputs == nullptr) ? false : pInputs->partialPaymentAllowed;
 
         auto const limitQuality = [&]() -> std::optional<Quality> {
-            if (pInputs && pInputs->limitQuality && saMaxAmountReq > beast::zero)
+            if (pInputs && pInputs->limitQuality && saMaxAmountReq > beast::kZero)
                 return Quality{Amounts(saMaxAmountReq, saDstAmountReq)};
             return std::nullopt;
         }();
 
         auto const sendMax = [&]() -> std::optional<STAmount> {
-            if (saMaxAmountReq >= beast::zero ||
-                saMaxAmountReq.getCurrency() != saDstAmountReq.getCurrency() ||
+            if (saMaxAmountReq >= beast::kZero ||
+                !equalTokens(saMaxAmountReq.asset(), saDstAmountReq.asset()) ||
                 saMaxAmountReq.getIssuer() != uSrcAccountID)
             {
                 return saMaxAmountReq;
@@ -74,7 +85,7 @@ RippleCalc::rippleCalculate(
                 defaultPaths,
                 partialPayment,
                 false,
-                OfferCrossing::no,
+                OfferCrossing::No,
                 limitQuality,
                 sendMax,
                 domainID,
@@ -101,5 +112,4 @@ RippleCalc::rippleCalculate(
     return flowOut;
 }
 
-}  // namespace path
-}  // namespace xrpl
+}  // namespace xrpl::path

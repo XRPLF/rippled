@@ -30,6 +30,25 @@ if(tests)
     endif()
 endif()
 
+option(benchmark "Build benchmarks" ON)
+
+# Enabled by default so every header is compiled on its own as the main file of
+# its own compile_commands.json entry - this is what lets clang-tidy (and clangd
+# and IDEs) analyse a header's own includes directly. The per-header objects are
+# EXCLUDE_FROM_ALL (see cmake/verify_headers.cmake) and the aggregate target
+# below is not part of `all`, so a normal `cmake --build` never compiles them.
+option(
+    verify_headers
+    "Compile every header on its own to verify it is self-contained."
+    ON
+)
+if(verify_headers)
+    # Aggregate target that builds every per-module header-verification library
+    # created by add_module (see cmake/verify_headers.cmake). Build it with:
+    #   cmake --build . --target verify-headers
+    add_custom_target(verify-headers)
+endif()
+
 option(unity "Creates a build using UNITY support in cmake." OFF)
 if(unity)
     if(NOT is_ci)

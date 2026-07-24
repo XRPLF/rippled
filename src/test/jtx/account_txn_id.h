@@ -1,24 +1,23 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <xrpl/basics/base_uint.h>
 
-struct account_txn_id
+namespace xrpl::test::jtx {
+
+struct AccountTxnId
 {
 private:
     uint256 hash_;
 
 public:
-    explicit account_txn_id(uint256 const& hash) : hash_(hash)
+    explicit AccountTxnId(uint256 const& hash) : hash_(hash)
     {
     }
 
     void
     operator()(Env&, JTx& jt) const;
 };
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

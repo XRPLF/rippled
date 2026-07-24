@@ -1,22 +1,25 @@
 #pragma once
 
 #include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
 
-/** LedgerStateFix operations. */
-namespace ledgerStateFix {
+/**
+ * LedgerStateFix operations.
+ */
+namespace xrpl::test::jtx::ledgerStateFix {
 
-/** Repair the links in an NFToken directory. */
-Json::Value
+/**
+ * Repair the links in an NFToken directory.
+ */
+json::Value
 nftPageLinks(jtx::Account const& acct, jtx::Account const& owner);
 
-}  // namespace ledgerStateFix
+/**
+ * Repair sfExchangeRate on a book directory's first page.
+ */
+json::Value
+bookExchangeRate(jtx::Account const& acct, uint256 const& bookDir);
 
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::ledgerStateFix

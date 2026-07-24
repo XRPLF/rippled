@@ -1,5 +1,6 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+
+#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <cstdlib>
@@ -9,13 +10,13 @@
 namespace xrpl {
 
 void
-LogThrow(std::string const& title)
+logThrow(std::string const& title)
 {
     JLOG(debugLog().warn()) << title;
 }
 
 [[noreturn]] void
-LogicError(std::string const& s) noexcept
+logicError(std::string const& s) noexcept
 {
     // LCOV_EXCL_START
     JLOG(debugLog().fatal()) << s;

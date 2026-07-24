@@ -1,17 +1,33 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <optional>
+#include <tuple>
 
 namespace xrpl {
 class Sandbox;
 class AMMClawback : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit AMMClawback(ApplyContext& ctx) : Transactor(ctx)
     {
     }
+
+    static bool
+    checkExtraFeatures(PreflightContext const& ctx);
 
     static std::uint32_t
     getFlagsMask(PreflightContext const& ctx);
@@ -25,11 +41,23 @@ public:
     TER
     doApply() override;
 
+    void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
+
 private:
     TER
     applyGuts(Sandbox& view);
 
-    /** Withdraw both assets by providing maximum amount of asset1,
+    /**
+     * Withdraw both assets by providing maximum amount of asset1,
      * asset2's amount will be calculated according to the current proportion.
      * Since it is two-asset withdrawal, tfee is omitted.
      * @param view

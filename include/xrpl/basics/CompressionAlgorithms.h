@@ -5,15 +5,15 @@
 #include <lz4.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <vector>
 
-namespace xrpl {
+namespace xrpl::compression_algorithms {
 
-namespace compression_algorithms {
-
-/** LZ4 block compression.
+/**
+ * LZ4 block compression.
  * @tparam BufferFactory Callable object or lambda.
  *     Takes the requested buffer size and returns allocated buffer pointer.
  * @param in Data to compress
@@ -68,17 +68,21 @@ lz4Decompress(
     if (decompressedSize <= 0)
         Throw<std::runtime_error>("lz4Decompress: integer overflow (output)");
 
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
     if (LZ4_decompress_safe(
             reinterpret_cast<char const*>(in),
             reinterpret_cast<char*>(decompressed),
             inSize,
             decompressedSize) != decompressedSize)
+    {
         Throw<std::runtime_error>("lz4Decompress: failed");
+    }
 
     return decompressedSize;
 }
 
-/** LZ4 block decompression.
+/**
+ * LZ4 block decompression.
  * @tparam InputStream ZeroCopyInputStream
  * @param in Input source stream
  * @param inSize Size of compressed data
@@ -138,6 +142,4 @@ lz4Decompress(
     return lz4Decompress(chunk, inSize, decompressed, decompressedSize);
 }
 
-}  // namespace compression_algorithms
-
-}  // namespace xrpl
+}  // namespace xrpl::compression_algorithms

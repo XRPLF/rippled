@@ -3,8 +3,7 @@
 #include <chrono>
 #include <memory>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 class Event;
 
@@ -18,5 +17,4 @@ public:
     notify(value_type const& value) = 0;
 };
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight

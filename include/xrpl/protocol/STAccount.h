@@ -1,9 +1,13 @@
 #pragma once
 
+#include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
 
+#include <cstddef>
 #include <string>
 
 namespace xrpl {
@@ -13,7 +17,7 @@ class STAccount final : public STBase, public CountedObject<STAccount>
 private:
     // The original implementation of STAccount kept the value in an STBlob.
     // But an STAccount is always 160 bits, so we can store it with less
-    // overhead in a xrpl::uint160.  However, so the serialized format of the
+    // overhead in an xrpl::uint160.  However, so the serialized format of the
     // STAccount stays unchanged, we serialize and deserialize like an STBlob.
     AccountID value_;
     bool default_;
@@ -28,25 +32,25 @@ public:
     STAccount(SerialIter& sit, SField const& name);
     STAccount(SField const& n, AccountID const& v);
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
     void
     add(Serializer& s) const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
     STAccount&
     operator=(AccountID const& value);
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     value() const noexcept;
 
     void

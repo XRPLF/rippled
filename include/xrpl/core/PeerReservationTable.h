@@ -3,6 +3,7 @@
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 
 #include <mutex>
@@ -20,14 +21,16 @@ struct PeerReservation final
 {
 public:
     PublicKey nodeId;
-    std::string description{};
+    std::string description = {};  // NOLINT(readability-redundant-member-init)
 
-    auto
-    toJson() const -> Json::Value;
+    [[nodiscard]] auto
+    toJson() const -> json::Value;
 
     template <typename Hasher>
     friend void
-    hash_append(Hasher& h, PeerReservation const& x) noexcept
+    hash_append(
+        Hasher& h,
+        PeerReservation const& x) noexcept  // NOLINT(readability-identifier-naming)
     {
         using beast::hash_append;
         hash_append(h, x.nodeId);
@@ -67,8 +70,8 @@ public:
     bool
     contains(PublicKey const& nodeId)
     {
-        std::lock_guard lock(this->mutex_);
-        return table_.find({nodeId}) != table_.end();
+        std::scoped_lock const lock(this->mutex_);
+        return table_.contains({.nodeId = nodeId, .description = {}});
     }
 
     // Because `ApplicationImp` has two-phase initialization, so must we.
@@ -78,10 +81,10 @@ public:
 
     /**
      * @return the replaced reservation if it existed
-     * @throw soci::soci_error
+     * @throws soci::soci_error
      */
     std::optional<PeerReservation>
-    insert_or_assign(PeerReservation const& reservation);
+    insertOrAssign(PeerReservation const& reservation);
 
     /**
      * @return the erased reservation if it existed
@@ -92,8 +95,8 @@ public:
 private:
     beast::Journal mutable journal_;
     std::mutex mutable mutex_;
-    DatabaseCon* connection_;
-    std::unordered_set<PeerReservation, beast::uhash<>, KeyEqual> table_;
+    DatabaseCon* connection_{};
+    std::unordered_set<PeerReservation, beast::Uhash<>, KeyEqual> table_;
 };
 
 }  // namespace xrpl

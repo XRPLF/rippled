@@ -1,22 +1,35 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerDelete.h>
-//
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTakesAsset.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
 
 bool
 LoanBrokerDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx);
+    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 NotTEC
 LoanBrokerDelete::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanBrokerID] == beast::zero)
+    if (ctx.tx[sfLoanBrokerID] == beast::kZero)
         return temINVALID;
 
     return tesSUCCESS;
@@ -30,7 +43,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     auto const account = tx[sfAccount];
     auto const brokerID = tx[sfLoanBrokerID];
 
-    auto const sleBroker = ctx.view.read(keylet::loanbroker(brokerID));
+    auto const sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
     if (!sleBroker)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -61,15 +74,16 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
 
     Asset const asset = vault->at(sfAsset);
 
-    if (auto const debtTotal = sleBroker->at(sfDebtTotal); debtTotal != beast::zero)
+    if (auto const debtTotal = sleBroker->at(sfDebtTotal); debtTotal != beast::kZero)
     {
         // Any remaining debt should have been wiped out by the last Loan
         // Delete. This check is purely defensive.
         auto const scale = getAssetsTotalScale(vault);
 
-        auto const rounded = roundToAsset(asset, debtTotal, scale, Number::towards_zero);
+        auto const rounded =
+            roundToAsset(asset, debtTotal, scale, Number::RoundingMode::TowardsZero);
 
-        if (rounded != beast::zero)
+        if (rounded != beast::kZero)
         {
             // LCOV_EXCL_START
             JLOG(ctx.j.warn()) << "LoanBrokerDelete: Debt total is " << debtTotal
@@ -82,12 +96,25 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     auto const coverAvailable = STAmount{asset, sleBroker->at(sfCoverAvailable)};
     // If there are assets in the cover, broker will receive them on deletion.
     // So we need to check if the broker owner is deep frozen for that asset.
-    if (coverAvailable > beast::zero)
+    if (coverAvailable > beast::kZero)
     {
         if (auto const ret = checkDeepFrozen(ctx.view, brokerOwner, asset))
         {
             JLOG(ctx.j.warn()) << "Broker owner account is frozen.";
             return ret;
+        }
+    }
+
+    if (ctx.view.rules().enabled(fixCleanup3_2_0))
+    {
+        if (coverAvailable > beast::kZero)
+        {
+            auto const brokerPseudo = sleBroker->at(sfAccount);
+            if (auto const ret = checkFrozen(ctx.view, brokerPseudo, asset))
+            {
+                JLOG(ctx.j.warn()) << "Broker pseudo-account is frozen/locked.";
+                return ret;
+            }
         }
     }
 
@@ -102,7 +129,7 @@ LoanBrokerDelete::doApply()
     auto const brokerID = tx[sfLoanBrokerID];
 
     // Delete the loan broker
-    auto broker = view().peek(keylet::loanbroker(brokerID));
+    auto broker = view().peek(keylet::loanBroker(brokerID));
     if (!broker)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultID = broker->at(sfVaultID);
@@ -115,7 +142,7 @@ LoanBrokerDelete::doApply()
     auto const brokerPseudoID = broker->at(sfAccount);
 
     if (!view().dirRemove(
-            keylet::ownerDir(account_), broker->at(sfOwnerNode), broker->key(), false))
+            keylet::ownerDir(accountID_), broker->at(sfOwnerNode), broker->key(), false))
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
@@ -128,11 +155,11 @@ LoanBrokerDelete::doApply()
     {
         auto const coverAvailable = STAmount{vaultAsset, broker->at(sfCoverAvailable)};
         if (auto const ter = accountSend(
-                view(), brokerPseudoID, account_, coverAvailable, j_, WaiveTransferFee::Yes))
+                view(), brokerPseudoID, accountID_, coverAvailable, j_, {}, WaiveTransferFee::Yes))
             return ter;
     }
 
-    if (auto ter = removeEmptyHolding(view(), brokerPseudoID, vaultAsset, j_))
+    if (auto ter = removeEmptyHolding(ctx_.getApplyViewContext(), brokerPseudoID, vaultAsset, j_))
         return ter;
 
     auto brokerPseudoSLE = view().peek(keylet::account(brokerPseudoID));
@@ -159,21 +186,39 @@ LoanBrokerDelete::doApply()
 
     view().erase(brokerPseudoSLE);
 
-    view().erase(broker);
-
     {
-        auto owner = view().peek(keylet::account(account_));
+        auto owner = view().peek(keylet::account(accountID_));
         if (!owner)
             return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
         // Decreases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        adjustOwnerCount(view(), owner, -2, j_);
+        decreaseOwnerCountForObject(view(), owner, broker, 2, j_);
     }
+
+    view().erase(broker);
 
     associateAsset(*broker, vaultAsset);
 
     return tesSUCCESS;
+}
+
+void
+LoanBrokerDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+LoanBrokerDelete::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 //------------------------------------------------------------------------------

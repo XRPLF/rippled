@@ -94,6 +94,9 @@ add_module(xrpl basics)
 target_link_libraries(xrpl.libxrpl.basics PUBLIC xrpl.libxrpl.beast)
 
 # Level 03
+add_module(xrpl config)
+target_link_libraries(xrpl.libxrpl.config PUBLIC xrpl.libxrpl.basics)
+
 add_module(xrpl json)
 target_link_libraries(xrpl.libxrpl.json PUBLIC xrpl.libxrpl.basics)
 
@@ -108,23 +111,11 @@ target_link_libraries(
 )
 
 # Level 05
-## Set up code generation for protocol_autogen module
-include(XrplProtocolAutogen)
-# Must call setup_protocol_autogen before add_module so that:
-# 1. Stale generated files are cleared before GLOB runs
-# 2. Output file list is known for custom commands
-setup_protocol_autogen()
-
 add_module(xrpl protocol_autogen)
 target_link_libraries(
     xrpl.libxrpl.protocol_autogen
     PUBLIC xrpl.libxrpl.protocol
 )
-
-# Ensure code generation runs before compiling protocol_autogen
-if(TARGET protocol_autogen_generate)
-    add_dependencies(xrpl.libxrpl.protocol_autogen protocol_autogen_generate)
-endif()
 
 # Level 06
 add_module(xrpl core)
@@ -132,6 +123,7 @@ target_link_libraries(
     xrpl.libxrpl.core
     PUBLIC
         xrpl.libxrpl.basics
+        xrpl.libxrpl.config
         xrpl.libxrpl.json
         xrpl.libxrpl.protocol
         xrpl.libxrpl.protocol_autogen
@@ -140,6 +132,12 @@ target_link_libraries(
 # Level 07
 add_module(xrpl resource)
 target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
+
+add_module(xrpl peerfinder)
+target_link_libraries(
+    xrpl.libxrpl.peerfinder
+    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.protocol
+)
 
 # Level 08
 add_module(xrpl net)
@@ -155,7 +153,11 @@ target_link_libraries(
 add_module(xrpl nodestore)
 target_link_libraries(
     xrpl.libxrpl.nodestore
-    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.json xrpl.libxrpl.protocol
+    PUBLIC
+        xrpl.libxrpl.basics
+        xrpl.libxrpl.config
+        xrpl.libxrpl.json
+        xrpl.libxrpl.protocol
 )
 
 add_module(xrpl shamap)
@@ -171,13 +173,14 @@ target_link_libraries(
 add_module(xrpl rdb)
 target_link_libraries(
     xrpl.libxrpl.rdb
-    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.core
+    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.config xrpl.libxrpl.core
 )
 
 add_module(xrpl server)
 target_link_libraries(
     xrpl.libxrpl.server
     PUBLIC
+        xrpl.libxrpl.config
         xrpl.libxrpl.protocol
         xrpl.libxrpl.core
         xrpl.libxrpl.rdb
@@ -204,6 +207,16 @@ target_link_libraries(
 add_module(xrpl tx)
 target_link_libraries(xrpl.libxrpl.tx PUBLIC xrpl.libxrpl.ledger)
 
+add_module(xrpl consensus)
+target_link_libraries(
+    xrpl.libxrpl.consensus
+    PUBLIC
+        xrpl.libxrpl.basics
+        xrpl.libxrpl.json
+        xrpl.libxrpl.protocol
+        xrpl.libxrpl.ledger
+)
+
 add_library(xrpl.libxrpl)
 set_target_properties(xrpl.libxrpl PROPERTIES OUTPUT_NAME xrpl)
 
@@ -222,6 +235,8 @@ target_link_modules(
     basics
     beast
     conditions
+    config
+    consensus
     core
     crypto
     git
@@ -229,6 +244,7 @@ target_link_modules(
     ledger
     net
     nodestore
+    peerfinder
     protocol
     protocol_autogen
     rdb
@@ -249,6 +265,7 @@ target_link_modules(
 
 if(xrpld)
     add_executable(xrpld)
+    patch_nix_binary(xrpld)
     if(tests)
         target_compile_definitions(xrpld PUBLIC ENABLE_TESTS)
         target_compile_definitions(
@@ -293,5 +310,14 @@ if(xrpld)
             xrpld
             PRIVATE ${CMAKE_SOURCE_DIR}/external/antithesis-sdk
         )
+    endif()
+
+    # The xrpld headers are not built with add_module, so verify them against
+    # the executable's own compile environment.
+    if(verify_headers)
+        verify_target_headers(xrpld "${CMAKE_CURRENT_SOURCE_DIR}/src/xrpld")
+        if(tests)
+            verify_target_headers(xrpld "${CMAKE_CURRENT_SOURCE_DIR}/src/test")
+        endif()
     endif()
 endif()

@@ -1,7 +1,16 @@
-#include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainDelete.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
 
@@ -9,7 +18,7 @@ NotTEC
 PermissionedDomainDelete::preflight(PreflightContext const& ctx)
 {
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
-    if (domain == beast::zero)
+    if (domain == beast::kZero)
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -33,7 +42,9 @@ PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-/** Attempt to delete the Permissioned Domain. */
+/**
+ * Attempt to delete the Permissioned Domain.
+ */
 TER
 PermissionedDomainDelete::doApply()
 {
@@ -44,7 +55,7 @@ PermissionedDomainDelete::doApply()
     auto const slePd = view().peek(keylet::permissionedDomain(ctx_.tx.at(sfDomainID)));
     auto const page = (*slePd)[sfOwnerNode];
 
-    if (!view().dirRemove(keylet::ownerDir(account_), page, slePd->key(), true))
+    if (!view().dirRemove(keylet::ownerDir(accountID_), page, slePd->key(), true))
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete permissioned domain directory entry.";
@@ -52,14 +63,32 @@ PermissionedDomainDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto const ownerSle = view().peek(keylet::account(account_));
+    auto const ownerSle = view().peek(keylet::account(accountID_));
     XRPL_ASSERT(
         ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0,
         "xrpl::PermissionedDomainDelete::doApply : nonzero owner count");
-    adjustOwnerCount(view(), ownerSle, -1, ctx_.journal);
+    decreaseOwnerCountForObject(view(), ownerSle, slePd, 1, ctx_.journal);
     view().erase(slePd);
 
     return tesSUCCESS;
+}
+
+void
+PermissionedDomainDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+PermissionedDomainDelete::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

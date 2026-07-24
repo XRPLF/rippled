@@ -1,12 +1,14 @@
 #pragma once
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
+#include <exception>
+#include <sstream>
 #include <string>
 
 namespace xrpl {
 
-class TestSuite : public beast::unit_test::suite
+class TestSuite : public beast::unit_test::Suite
 {
 public:
     template <class S, class T>
