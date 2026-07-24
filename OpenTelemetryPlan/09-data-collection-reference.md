@@ -165,14 +165,14 @@ or, for the apply pipeline: `{resource.service.name="xrpld" && name=~"tx.preflig
 
 Controlled by `trace_transactions=1` in `[telemetry]` config.
 
-| Span Name          | Parent        | Source File | Description                                         |
-| ------------------ | ------------- | ----------- | --------------------------------------------------- |
-| `txq.enqueue`      | `tx.process`  | TxQ.cpp     | Enqueue decision when a tx is submitted             |
-| `txq.apply_direct` | `txq.enqueue` | TxQ.cpp     | Direct apply attempt that bypasses the queue        |
-| `txq.batch_clear`  | `txq.enqueue` | TxQ.cpp     | Batch clear of an account's queued txs              |
-| `txq.accept`       | —             | TxQ.cpp     | Ledger-close accept loop (drains the queue)         |
-| `txq.accept_tx`    | `txq.accept`  | TxQ.cpp     | Per-queued-transaction apply inside the accept loop |
-| `txq.cleanup`      | —             | TxQ.cpp     | Post-close cleanup of expired queue entries         |
+| Span Name          | Parent                                                      | Source File | Description                                                                                                                                             |
+| ------------------ | ----------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `txq.enqueue`      | `tx.process` (submission path; root on open-ledger rebuild) | TxQ.cpp     | Queue admission decision (apply/queue/reject). Parents to `tx.process` via explicit context on submit; correlates via `current_ledger_seq` on all paths |
+| `txq.apply_direct` | `txq.enqueue`                                               | TxQ.cpp     | Direct apply attempt that bypasses the queue                                                                                                            |
+| `txq.batch_clear`  | `txq.enqueue`                                               | TxQ.cpp     | Batch clear of an account's queued txs                                                                                                                  |
+| `txq.accept`       | —                                                           | TxQ.cpp     | Ledger-close accept loop (drains the queue)                                                                                                             |
+| `txq.accept_tx`    | `txq.accept`                                                | TxQ.cpp     | Per-queued-transaction apply inside the accept loop                                                                                                     |
+| `txq.cleanup`      | —                                                           | TxQ.cpp     | Post-close cleanup of expired queue entries                                                                                                             |
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"txq.*"}`
 
@@ -313,42 +313,47 @@ aggregation. Per the 2026-05-13 naming redesign, span-attribute keys use the
 
 #### Transaction Attributes
 
-| Attribute      | Type    | Set On                                                       | Description                                                           |
-| -------------- | ------- | ------------------------------------------------------------ | --------------------------------------------------------------------- |
-| `tx_hash`      | string  | `tx.process`, `tx.receive`                                   | Transaction hash (hex-encoded)                                        |
-| `local`        | boolean | `tx.process`                                                 | `true` if locally submitted, `false` if peer-relayed                  |
-| `path`         | string  | `tx.process`                                                 | Submission path: `"sync"` or `"async"`                                |
-| `tx_type`      | string  | `tx.process`, `tx.preflight`, `tx.preclaim`, `tx.transactor` | Transaction type name (e.g., `Payment`)                               |
-| `fee`          | int64   | `tx.process`                                                 | Transaction fee in drops                                              |
-| `sequence`     | int64   | `tx.process`                                                 | Transaction sequence number                                           |
-| `suppressed`   | boolean | `tx.receive`                                                 | `true` if transaction was suppressed (duplicate)                      |
-| `tx_status`    | string  | `tx.receive`                                                 | Transaction status (e.g., `"known_bad"`)                              |
-| `peer_id`      | int64   | `tx.receive`                                                 | Peer identifier (also set on peer spans)                              |
-| `peer_version` | string  | `tx.receive`                                                 | Peer protocol version string                                          |
-| `stage`        | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor`               | Apply-pipeline stage: `preflight`, `preclaim`, or `apply`             |
-| `ter_result`   | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor`               | Engine result token for that stage (e.g., `tesSUCCESS`, `terPRE_SEQ`) |
-| `applied`      | boolean | `tx.transactor`                                              | `true` if the transaction was applied to the ledger                   |
+| Attribute             | Type    | Set On                                                       | Description                                                                                                                           |
+| --------------------- | ------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `tx_hash`             | string  | `tx.process`, `tx.receive`                                   | Transaction hash (hex-encoded)                                                                                                        |
+| `local`               | boolean | `tx.process`                                                 | `true` if locally submitted, `false` if peer-relayed                                                                                  |
+| `path`                | string  | `tx.process`                                                 | Submission path: `"sync"` or `"async"`                                                                                                |
+| `tx_type`             | string  | `tx.process`, `tx.preflight`, `tx.preclaim`, `tx.transactor` | Transaction type name (e.g., `Payment`)                                                                                               |
+| `fee`                 | int64   | `tx.process`                                                 | Transaction fee in drops                                                                                                              |
+| `sequence`            | int64   | `tx.process`                                                 | Transaction sequence number                                                                                                           |
+| `suppressed`          | boolean | `tx.receive`                                                 | `true` if transaction was suppressed (duplicate)                                                                                      |
+| `tx_status`           | string  | `tx.receive`                                                 | Transaction status (e.g., `"known_bad"`)                                                                                              |
+| `peer_id`             | int64   | `tx.receive`                                                 | Peer identifier (also set on peer spans)                                                                                              |
+| `peer_version`        | string  | `tx.receive`                                                 | Peer protocol version string                                                                                                          |
+| `stage`               | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor`               | Apply-pipeline stage: `preflight`, `preclaim`, or `apply`                                                                             |
+| `ter_result`          | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor`               | Engine result token for that stage (e.g., `tesSUCCESS`, `terPRE_SEQ`)                                                                 |
+| `applied`             | boolean | `tx.transactor`                                              | `true` if the transaction was applied to the ledger                                                                                   |
+| `current_ledger_seq`  | int64   | `tx.process`, `tx.receive`, `tx.preclaim`, `tx.transactor`   | Seq of the ledger being worked on (open/in-flight, not established) — joins the txID-keyed spans to the ledger trace                  |
+| `current_ledger_hash` | string  | `tx.preclaim`, `tx.transactor`                               | Parent hash of that ledger (= `consensus.round` trace-id seed on the build path). View-bearing stages only; `tx.preflight` omits both |
 
 **Tempo query**: `{span.tx_hash="<hash>"}` to trace a specific transaction across nodes.
+Join a transaction's work to its ledger with `{span.current_ledger_seq=<N>}`.
 
 **Prometheus labels**: `local`, `suppressed`, `tx_type`, `ter_result`, `stage` (SpanMetrics dimensions).
 
 #### Transaction Queue (TxQ) Attributes
 
-| Attribute            | Type    | Set On                         | Description                                                 |
-| -------------------- | ------- | ------------------------------ | ----------------------------------------------------------- |
-| `tx_hash`            | string  | `txq.enqueue`, `txq.accept_tx` | Transaction hash                                            |
-| `tx_type`            | string  | `txq.enqueue`                  | Transaction type name                                       |
-| `txq_status`         | string  | `txq.enqueue`, `txq.accept_tx` | Queue outcome (e.g. `queued`, `applied_direct`, `rejected`) |
-| `fee_level_paid`     | int64   | `txq.enqueue`                  | Fee level paid by the queued tx                             |
-| `required_fee_level` | int64   | `txq.enqueue`                  | Minimum fee level for inclusion                             |
-| `num_cleared`        | int64   | `txq.batch_clear`              | Entries cleared in a batch                                  |
-| `queue_size`         | int64   | `txq.accept`                   | Current TxQ depth                                           |
-| `ledger_changed`     | boolean | `txq.accept`                   | Whether the ledger changed since last attempt               |
-| `ter_code`           | int64   | `txq.accept_tx`                | Transaction engine result code                              |
-| `retries_remaining`  | int64   | `txq.accept_tx`                | Retries left before discard                                 |
-| `ledger_seq`         | int64   | `txq.cleanup`                  | Ledger sequence number                                      |
-| `expired_count`      | int64   | `txq.cleanup`                  | Number of expired entries cleared                           |
+| Attribute             | Type    | Set On                         | Description                                                                      |
+| --------------------- | ------- | ------------------------------ | -------------------------------------------------------------------------------- |
+| `tx_hash`             | string  | `txq.enqueue`, `txq.accept_tx` | Transaction hash                                                                 |
+| `tx_type`             | string  | `txq.enqueue`                  | Transaction type name                                                            |
+| `current_ledger_seq`  | int64   | `txq.enqueue`                  | Seq of the ledger being worked on — correlates the enqueue to the ledger trace   |
+| `current_ledger_hash` | string  | `txq.enqueue`                  | Parent hash of that ledger (= `consensus.round` trace-id seed on the build path) |
+| `txq_status`          | string  | `txq.enqueue`, `txq.accept_tx` | Queue outcome (e.g. `queued`, `applied_direct`, `rejected`)                      |
+| `fee_level_paid`      | int64   | `txq.enqueue`                  | Fee level paid by the queued tx                                                  |
+| `required_fee_level`  | int64   | `txq.enqueue`                  | Minimum fee level for inclusion                                                  |
+| `num_cleared`         | int64   | `txq.batch_clear`              | Entries cleared in a batch                                                       |
+| `queue_size`          | int64   | `txq.accept`                   | Current TxQ depth                                                                |
+| `ledger_changed`      | boolean | `txq.accept`                   | Whether the ledger changed since last attempt                                    |
+| `ter_code`            | int64   | `txq.accept_tx`                | Transaction engine result code                                                   |
+| `retries_remaining`   | int64   | `txq.accept_tx`                | Retries left before discard                                                      |
+| `ledger_seq`          | int64   | `txq.cleanup`                  | Ledger sequence number                                                           |
+| `expired_count`       | int64   | `txq.cleanup`                  | Number of expired entries cleared                                                |
 
 **Prometheus label**: `txq_status` (SpanMetrics dimension).
 
