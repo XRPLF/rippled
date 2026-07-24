@@ -61,11 +61,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: ubuntu
-            snapshot: nix/check-tools/nix-nixos-amd64.txt
+          - runner: ubuntu-latest
+            snapshot: nix/check-tools/nix-ubuntu-amd64.txt
             nix_develop: false
-          - runner: ubuntu-arm64
-            snapshot: nix/check-tools/nix-nixos-arm64.txt
+          - runner: ubuntu-24.04-arm
+            snapshot: nix/check-tools/nix-ubuntu-arm64.txt
             nix_develop: false
           - runner: macos-26-apple-clang-21
             snapshot: nix/check-tools/macos.txt
@@ -73,7 +73,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     # Linux runs inside the pinned nix-nixos image; macOS runs natively and uses
     # the flake's dev shell instead (see the run step below).
-    container: ${{ !matrix.nix_develop && format('ghcr.io/xrplf/xrpld/nix-nixos:{0}', needs.linux-image-tag.outputs.tag) || null }}
+    container: ${{ !matrix.nix_develop && format('ghcr.io/xrplf/xrpld/nix-ubuntu:{0}', needs.linux-image-tag.outputs.tag) || null }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
