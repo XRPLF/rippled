@@ -59,85 +59,19 @@
 
 ## 8.2 Span Hierarchy Visualization
 
-> **TxQ** = Transaction Queue
+The authoritative span-flow diagrams — a master overview plus per-stage
+flowcharts (ingress, the shared apply pipeline, the consensus round, ledger
+finalize, and the pathfinding / ledger-acquire side flows) — live in the operator
+runbook. They map every span onto the **real xrpld control flow and XRPL protocol
+order** (verified against code and `docs/consensus.md`, with file:line evidence),
+label every node and branch with the span that represents that state or
+transition, and call out where the OpenTelemetry span parent links diverge from
+that flow.
 
-```mermaid
-flowchart TB
-    subgraph trace["Trace: Transaction Lifecycle"]
-        rpc["rpc.request<br/>(entry point)"]
-        validate["tx.validate"]
-        relay["tx.relay<br/>(parent span)"]
+> **See**: [docs/telemetry-runbook.md § Protocol Span Flow](../docs/telemetry-runbook.md#protocol-span-flow).
 
-        subgraph peers["Peer Spans"]
-            p1["peer.send<br/>Peer A"]
-            p2["peer.send<br/>Peer B"]
-            p3["peer.send<br/>Peer C"]
-        end
-
-        subgraph pathfinding["PathFinding Spans"]
-            pathfind["pathfind.request"]
-            pathcomp["pathfind.compute"]
-        end
-
-        consensus["consensus.round"]
-        apply["tx.apply"]
-
-        subgraph txqueue["TxQ Spans"]
-            txq["txq.enqueue"]
-            txqApply["txq.apply"]
-        end
-
-        feeCalc["fee.escalate"]
-    end
-
-    subgraph validators["Validator Spans"]
-        valFetch["validator.list.fetch"]
-        valManifest["validator.manifest"]
-    end
-
-    rpc --> validate
-    rpc --> pathfind
-    pathfind --> pathcomp
-    validate --> relay
-    relay --> p1
-    relay --> p2
-    relay --> p3
-    p1 -.->|"context propagation"| consensus
-    consensus --> apply
-    apply --> txq
-    txq --> txqApply
-    txq --> feeCalc
-
-    style trace fill:#0f172a,stroke:#020617,color:#fff
-    style peers fill:#1e3a8a,stroke:#172554,color:#fff
-    style pathfinding fill:#134e4a,stroke:#0f766e,color:#fff
-    style txqueue fill:#064e3b,stroke:#047857,color:#fff
-    style validators fill:#4c1d95,stroke:#6d28d9,color:#fff
-    style rpc fill:#1d4ed8,stroke:#1e40af,color:#fff
-    style validate fill:#047857,stroke:#064e3b,color:#fff
-    style relay fill:#047857,stroke:#064e3b,color:#fff
-    style p1 fill:#0e7490,stroke:#155e75,color:#fff
-    style p2 fill:#0e7490,stroke:#155e75,color:#fff
-    style p3 fill:#0e7490,stroke:#155e75,color:#fff
-    style consensus fill:#fef3c7,stroke:#fde68a,color:#1e293b
-    style apply fill:#047857,stroke:#064e3b,color:#fff
-    style pathfind fill:#0e7490,stroke:#155e75,color:#fff
-    style pathcomp fill:#0e7490,stroke:#155e75,color:#fff
-    style txq fill:#047857,stroke:#064e3b,color:#fff
-    style txqApply fill:#047857,stroke:#064e3b,color:#fff
-    style feeCalc fill:#047857,stroke:#064e3b,color:#fff
-    style valFetch fill:#6d28d9,stroke:#4c1d95,color:#fff
-    style valManifest fill:#6d28d9,stroke:#4c1d95,color:#fff
-```
-
-**Reading the diagram:**
-
-- **rpc.request (blue, top)**: The entry point — every traced transaction starts as an RPC call; this root span is the parent of all downstream work.
-- **tx.validate and pathfind.request (green/teal, first fork)**: The RPC request fans out into transaction validation and, for cross-currency payments, a PathFinding branch (`pathfind.request` -> `pathfind.compute`).
-- **tx.relay -> Peer Spans (teal, middle)**: After validation, the transaction is relayed to peers A, B, and C in parallel; each `peer.send` is a sibling child span showing fan-out across the network.
-- **context propagation (dashed arrow)**: The dotted line from `peer.send Peer A` to `consensus.round` represents the trace context crossing a node boundary — the receiving validator picks up the same `trace_id` and continues the trace.
-- **consensus.round -> tx.apply -> TxQ Spans (green, lower)**: Once consensus accepts the transaction, it is applied to the ledger; the TxQ spans (`txq.enqueue`, `txq.apply`, `fee.escalate`) capture queue depth and fee escalation behavior.
-- **Validator Spans (purple, detached)**: `validator.list.fetch` and `validator.manifest` are independent workflows for UNL management — they run on their own traces and are linked to consensus via Span Links, not parent-child relationships.
+The full span inventory (names, attributes, parents as instrumented) is in
+[09-data-collection-reference.md §1](./09-data-collection-reference.md#1-opentelemetry-spans).
 
 ---
 

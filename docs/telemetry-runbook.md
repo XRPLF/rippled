@@ -14,6 +14,14 @@
   - [Consensus Spans](#consensus-spans)
   - [Ledger Spans](#ledger-spans)
   - [Peer Spans](#peer-spans)
+- [Protocol Span Flow](#protocol-span-flow)
+  - [Master overview](#master-overview)
+  - [Client and peer ingress](#client-and-peer-ingress)
+  - [Shared transaction apply pipeline](#shared-transaction-apply-pipeline)
+  - [Consensus round](#consensus-round)
+  - [Accept, build, and finalize the ledger](#accept-build-and-finalize-the-ledger)
+  - [Side flows: pathfinding and ledger acquire](#side-flows-pathfinding-and-ledger-acquire)
+  - [Where telemetry parenting differs from protocol flow](#where-telemetry-parenting-differs-from-protocol-flow)
 - [Insights and Sample Queries](#insights-and-sample-queries)
   - [Transaction Workflow Analysis](#transaction-workflow-analysis)
   - [DEX (OfferCreate / OfferCancel)](#dex-offercreate--offercancel)
@@ -344,6 +352,645 @@ trace roots. They never inherit an ambient span left active on the peer thread,
 so they do not nest under an unrelated transaction's trace. The distributed
 child span that links back to the sending node is the separate
 `consensus.*.receive` / `tx.receive` span (see Cross-Node Trace Propagation).
+
+---
+
+## Protocol Span Flow
+
+This section maps every span type onto the **real xrpld control flow and XRPL
+protocol order** (verified against code and [docs/consensus.md](consensus.md)) —
+what the code actually executes next, in what order, with which loops and
+branches. Spans are drawn as **labels on real operations**, not as their
+OpenTelemetry parent links; the SDK's span parenting is listed separately in
+[Where telemetry parenting differs from protocol flow](#where-telemetry-parenting-differs-from-protocol-flow).
+
+These diagrams are the **canonical key for linking the span hierarchy** — every
+node and every branch is labelled with the span that represents that state or
+transition, so a span can be wired to its true protocol parent/child by reading
+the graph. They are therefore drawn **exact, not simplified**: every real loop,
+retry, recovery, and drop branch is shown even when it adds clutter.
+
+Naming and edge conventions:
+
+- **Rectangle `[ ]`** — a state/operation that **emits a span**; the first line is
+  the exact `span.name`, the parenthetical below is the operation.
+- **Rounded `( )` with `(no span)`** — a real protocol step that emits **no span**;
+  shown so the flow stays continuous and is never mistaken for a missing span.
+- **Solid arrow** — the code calls or sequences directly into the next operation.
+  When the transition itself emits a span, the edge is labelled `→[span.name]`;
+  otherwise it carries the branch condition.
+- **`↻`** — the edge repeats (per tx, per peer, per dispute, per pass, per round).
+- **Dashed arrow** — a conditional branch or an async job hand-off.
+- **Dotted `⇢ ctx`** — trace context crosses a node boundary over a protobuf peer
+  message (`sender.span ⇢ receiver.span`); a different node continues the trace —
+  **not** an in-process call.
+- **Red-bordered node** — a terminal **drop / abandon** state.
+
+### Master overview
+
+Five ingress origins feed two shared engines — the per-transaction **apply
+pipeline** and the **consensus round** — which converge on ledger build → store →
+validate. Pathfinding and ledger-acquire are side flows. A single ledger can take
+**many consensus rounds** to settle (see [Consensus round](#consensus-round)).
+
+```mermaid
+flowchart TB
+    classDef ingress fill:#1d4ed8,stroke:#1e3a8a,color:#fff;
+    classDef engine  fill:#047857,stroke:#064e3b,color:#fff;
+    classDef consensus fill:#b45309,stroke:#7c2d12,color:#fff;
+    classDef ledger  fill:#6d28d9,stroke:#4c1d95,color:#fff;
+    classDef side    fill:#0e7490,stroke:#155e75,color:#fff;
+    classDef plain   fill:#334155,stroke:#0f172a,color:#fff;
+
+    subgraph ING["Ingress (protocol entry points)"]
+        direction TB
+        RPC["rpc.http_request / rpc.ws_message<br/>rpc.ws_upgrade / grpc.MethodName<br/>(client transport in)"]:::ingress
+        SUB(["submit command<br/>(no span)"]):::plain
+        PRELAY["tx.receive<br/>(peer relay in)"]:::ingress
+        PMSG["peer.proposal.receive<br/>peer.validation.receive<br/>(peer overlay in)"]:::ingress
+    end
+
+    TXP["tx.process<br/>(NetworkOPs::processTransaction)"]:::engine
+    OPEN["txq.enqueue<br/>(open-ledger apply + TxQ decision)"]:::engine
+    PIPE["tx.preflight → tx.preclaim → tx.transactor<br/>(SHARED apply pipeline)"]:::engine
+
+    subgraph CONS["Consensus round"]
+        direction TB
+        ROUND["consensus.round<br/>(Open → Establish → Accepted)"]:::consensus
+        ACC["consensus.accept → consensus.accept.apply"]:::consensus
+    end
+
+    subgraph LGR["Ledger finalize"]
+        direction TB
+        BUILD["ledger.build<br/>(tx.apply over agreed set)"]:::ledger
+        STORE["ledger.store<br/>(built, NOT yet final)"]:::ledger
+        VAL["ledger.validate<br/>(promoted at quorum)"]:::ledger
+    end
+
+    subgraph SIDE["Side flows"]
+        direction TB
+        PF["pathfind.update_all<br/>pathfind.request/compute/discover"]:::side
+        ACQ["ledger.acquire<br/>(fetch missing / correct prior)"]:::side
+    end
+
+    RPC -.->|submit / submit_multisigned| SUB --> TXP
+    RPC -.->|path_find / ripple_path_find| PF
+    PRELAY --> TXP
+    TXP --> OPEN
+    OPEN -->|↻ up to 3 passes| PIPE
+    OPEN -.->|txq.accept re-apply queued tx each close ↻| PIPE
+    PMSG -->|peerProposal / recvValidation| ROUND
+    ROUND --> ACC --> BUILD
+    BUILD -->|↻ each tx × up to 3 passes| PIPE
+    BUILD --> STORE
+    PMSG -. "trusted validations arrive async → checkAccept quorum" .-> VAL
+    ROUND -. "avalanche rounds ↻ (threshold 50→65→70→95%)" .-> ROUND
+    ACC -->|endConsensus ↻ next round until a ledger validates| ROUND
+    ROUND -.->|wrong-ledger: request correct prior| ACQ
+    ACQ -.->|switch-ledger: resume round on correct prior| ROUND
+    ACQ --> STORE
+    VAL -.->|missing ledger| ACQ
+    BUILD -.->|every close re-runs| PF
+```
+
+### Client and peer ingress
+
+RPC submit and peer relay **converge** at `tx.process`, the single NetworkOPs
+entry. gRPC serves ledger queries only — it has no submit path and never runs
+`doCommand`.
+
+```mermaid
+flowchart TB
+    classDef span fill:#1d4ed8,stroke:#1e3a8a,color:#fff;
+    classDef plain fill:#334155,stroke:#0f172a,color:#fff;
+    classDef drop fill:#7f1d1d,stroke:#ef4444,color:#fff;
+
+    HTTP["rpc.http_request<br/>(HTTP entry)"]:::span
+    PROC["rpc.process<br/>(parse + batch)"]:::span
+    CMD["rpc.command.NAME<br/>(one command)"]:::span
+    WSU["rpc.ws_upgrade<br/>(WS handshake)"]:::span
+    WSM["rpc.ws_message<br/>(one frame)"]:::span
+    GRPC["grpc.MethodName<br/>(ledger query)"]:::span
+    GH(["handler_ ctx<br/>(no span)"]):::plain
+    SUBMIT(["doSubmit<br/>(no span)"]):::plain
+    TXP["tx.process<br/>(NetworkOPs::processTransaction)"]:::span
+    RELAYOUT(["Overlay::relay fan-out to N peers<br/>(no span; if applied / terQUEUED,<br/>shouldRelay, not tfInnerBatchTxn)"]):::plain
+    PREDROP(["Diverged / needNetworkLedger<br/>(no span — dropped before tx.receive)"]):::drop
+    RCV["tx.receive<br/>(peer TMTransaction in)"]:::span
+    RCVDROP["tx.receive<br/>tx_status = rejected_inner_batch /<br/>suppressed / dropped_no_sync /<br/>dropped_queue_full"]:::drop
+    CHK(["checkTransaction<br/>(JtTransaction worker, no span)"]):::plain
+    PRELAY_IN(["TMTransaction in (no span)"]):::plain
+
+    HTTP -->|processRequest| PROC
+    PROC -->|↻ each batch request → doCommand| CMD
+    WSU -. "each inbound frame → onWSMessage" .-> WSM
+    WSM -->|doCommand| CMD
+    GRPC --> GH
+    CMD -.->|submit / submit_multisigned| SUBMIT
+    SUBMIT -->|processTransaction| TXP
+    TXP -.->|relay applied / queued tx| RELAYOUT
+
+    PRELAY_IN -.->|tracking == Diverged / needNetworkLedger| PREDROP
+    PRELAY_IN -->|else| RCV
+    RCV -.->|inner-batch / dup / age>4min / JtTransaction full| RCVDROP
+    RCV -->|addJob JtTransaction| CHK
+    CHK -->|processTransaction, trusted=peer| TXP
+
+    RELAYOUT -. "tx.process ⇢ tx.receive (span_id over TMTransaction)" .-> RCV
+```
+
+Ingress branches (all evidence in code):
+
+- `onHandoff`: WS upgrade vs peer bundle vs status page vs legacy HTTP
+  ([ServerHandler.cpp:227](../src/xrpld/rpc/detail/ServerHandler.cpp#L227)).
+- `doSubmit`: `tx_blob` present → submit signed blob; absent → server
+  sign-and-submit ([Submit.cpp:49](../src/xrpld/rpc/handlers/transaction/Submit.cpp#L49)).
+- `tx.process`: local RPC → `doTransactionSync`; peer → `doTransactionAsync`
+  (JtBatch) ([NetworkOPs.cpp:1434](../src/xrpld/app/misc/NetworkOPs.cpp#L1434)).
+- **Pre-span peer drops** (no `tx.receive` created): `Diverged`
+  ([PeerImp.cpp:1299](../src/xrpld/overlay/detail/PeerImp.cpp#L1299)) /
+  `needNetworkLedger` ([1302](../src/xrpld/overlay/detail/PeerImp.cpp#L1302)),
+  before the span at ~1320.
+- **Post-span peer drops** (span exists, `tx_status` set, no job enqueued):
+  `tfInnerBatchTxn` ([1348](../src/xrpld/overlay/detail/PeerImp.cpp#L1348)),
+  HashRouter dup/`BAD` ([1361](../src/xrpld/overlay/detail/PeerImp.cpp#L1361)),
+  `dropped_no_sync` when validated-ledger age > 4 min
+  ([1416](../src/xrpld/overlay/detail/PeerImp.cpp#L1416)), `dropped_queue_full`
+  when `JtTransaction` jobs > `maxTransactions`
+  ([1421](../src/xrpld/overlay/detail/PeerImp.cpp#L1421)).
+- **Relay fan-out**: an accepted/queued `tx.process` relays to N peers via
+  `Overlay::relay`, gated on `applied || (non-FULL local) || terQUEUED`,
+  HashRouter `shouldRelay`, and not `tfInnerBatchTxn`; the span context is
+  injected here ([NetworkOPs.cpp:1797](../src/xrpld/app/misc/NetworkOPs.cpp#L1797)).
+
+Inbound consensus messages take a two-stage handler — a fresh-root `peer.*.receive`
+span created first (kConsumer, always), then a `consensus.*.receive` span (only if
+not dropped) that carries the sender's context — before enqueuing a `checkPropose`
+/ `checkValidation` worker job. The drop points are **asymmetric**: proposals drop
+entirely before `consensus.proposal.receive`, while validations can drop both
+before and after `consensus.validation.receive`.
+
+```mermaid
+flowchart TB
+    classDef span fill:#0e7490,stroke:#155e75,color:#fff;
+    classDef plain fill:#334155,stroke:#0f172a,color:#fff;
+    classDef drop fill:#7f1d1d,stroke:#ef4444,color:#fff;
+
+    PPR["peer.proposal.receive<br/>(freshRoot, always)"]:::span
+    PPRDROP(["no consensus.proposal.receive<br/>(untrusted+relay-off / dup /<br/>untrusted+Diverged / untrusted+loaded)"]):::drop
+    CPR["consensus.proposal.receive<br/>(carries sender ctx)"]:::span
+    CP(["checkPropose worker<br/>(no span)"]):::plain
+    SIGP(["sig-fail: charge, drop<br/>(no relay, no span)"]):::drop
+    PTP(["processTrustedProposal → peerProposal<br/>(no span)"]):::plain
+
+    PVR["peer.validation.receive<br/>(freshRoot, always)"]:::span
+    pvrDrop1(["no consensus.validation.receive<br/>(!isCurrent / relay-off / dup)"]):::drop
+    CVR["consensus.validation.receive<br/>(carries sender ctx)"]:::span
+    cvrDrop2(["dropped after span<br/>(untrusted+Diverged /<br/>untrusted+loaded → no job/relay)"]):::drop
+    CV(["checkValidation worker<br/>(no span)"]):::plain
+    SIGV(["!isValid: charge, drop<br/>(no span)"]):::drop
+    RV(["recvValidation → handleNewValidation<br/>(no span)"]):::plain
+    RELAY(["Overlay::relay fan-out to N peers<br/>(no span)"]):::plain
+
+    PPR -.->|4 drop conditions| PPRDROP
+    PPR -->|else| CPR
+    CPR -->|addJob JtProposalT/Ut| CP
+    CP -.->|!checkSign| SIGP
+    CP -->|isTrusted| PTP
+    CP -.->|if relay| RELAY
+
+    PVR -.->|3 drop conditions| pvrDrop1
+    PVR -->|else| CVR
+    CVR -.->|untrusted+Diverged / loaded| cvrDrop2
+    CVR -->|addJob JtValidationT/Ut| CV
+    CV -.->|!isValid| SIGV
+    CV -->|recvValidation| RV
+    CV -.->|if relay / cluster| RELAY
+```
+
+Consensus-message drop evidence:
+
+- Both `peer.proposal.receive` and `peer.validation.receive` are `freshRoot`
+  spans created at the top of `onMessage`
+  ([PeerImp.cpp:1766](../src/xrpld/overlay/detail/PeerImp.cpp#L1766),
+  [2389](../src/xrpld/overlay/detail/PeerImp.cpp#L2389)) — so they exist even for
+  dropped messages.
+- **Proposal drops (all before `consensus.proposal.receive` at
+  [1868](../src/xrpld/overlay/detail/PeerImp.cpp#L1868))**: untrusted+relay-off
+  ([1807](../src/xrpld/overlay/detail/PeerImp.cpp#L1807)), duplicate
+  ([1832](../src/xrpld/overlay/detail/PeerImp.cpp#L1832)), untrusted+Diverged
+  ([1840](../src/xrpld/overlay/detail/PeerImp.cpp#L1840)), untrusted+loaded
+  ([1846](../src/xrpld/overlay/detail/PeerImp.cpp#L1846)).
+- **Validation drops (asymmetric around `consensus.validation.receive` at
+  [2476](../src/xrpld/overlay/detail/PeerImp.cpp#L2476))**: before — `!isCurrent`
+  ([2426](../src/xrpld/overlay/detail/PeerImp.cpp#L2426)), relay-off
+  ([2445](../src/xrpld/overlay/detail/PeerImp.cpp#L2445)), duplicate
+  ([2468](../src/xrpld/overlay/detail/PeerImp.cpp#L2468)); after — untrusted+Diverged
+  ([2489](../src/xrpld/overlay/detail/PeerImp.cpp#L2489)), untrusted+loaded
+  ([2506](../src/xrpld/overlay/detail/PeerImp.cpp#L2506)).
+- **Worker sig-fail drops** (charged `kFeeInvalidSignature`, suppress processing
+  and relay): `checkPropose !checkSign`
+  ([PeerImp.cpp:3105](../src/xrpld/overlay/detail/PeerImp.cpp#L3105)),
+  `checkValidation !isValid`
+  ([3149](../src/xrpld/overlay/detail/PeerImp.cpp#L3149)).
+
+### Shared transaction apply pipeline
+
+The apply pipeline is the **single protocol tx-processing chain**, expressed in
+code as one composed call
+([apply.cpp:118](../src/libxrpl/tx/apply.cpp#L118)):
+`doApply(preclaim(preflight(), …), …)`. C++ evaluates inner-to-outer, so
+`preflight` runs first, feeds `preclaim`, which feeds `doApply`. Each stage
+inspects the prior stage's `TER` and no-ops if it already failed.
+
+**Four invokers** point into this one pipeline; the diagram draws it once.
+
+```mermaid
+flowchart TB
+    classDef span fill:#047857,stroke:#064e3b,color:#fff;
+    classDef plain fill:#334155,stroke:#0f172a,color:#fff;
+    classDef inv fill:#1d4ed8,stroke:#1e3a8a,color:#fff;
+    classDef drop fill:#7f1d1d,stroke:#ef4444,color:#fff;
+
+    I1(["open-ledger applyOne (no span)<br/>↻ up to 3 passes"]):::inv
+    I2["txq.apply_direct<br/>(fee ≥ required)"]:::span
+    I3["txq.batch_clear / txq.accept_tx<br/>↻ per queued tx"]:::span
+    I4["tx.apply<br/>(consensus set, ↻ each tx × 3 passes)"]:::span
+
+    REPF(["txq path: rules/flags changed?<br/>re-run preflight (no span)"]):::plain
+    FREE(["xrpl::apply() (no span)"]):::plain
+    PF["tx.preflight<br/>(stateless checks)"]:::span
+    PC["tx.preclaim<br/>(ledger-aware checks)"]:::span
+    TR["tx.transactor<br/>(mutate stage)"]:::span
+    CLS(["classify final TER (no span)"]):::plain
+    OK(["Success / erase (no span)"]):::plain
+    FAIL(["tef / tem / tel → hard fail, erase"]):::drop
+    RETRY(["retriable ter → keep in set (no span)"]):::plain
+
+    I1 --> FREE
+    I2 --> FREE
+    I3 --> REPF --> FREE
+    I4 --> FREE
+    FREE --> PF
+    PF -->|preflight tesSUCCESS| PC
+    PF -. "else → classify (no preclaim/transactor)" .-> CLS
+    PC -->|likelyToClaimFee| TR
+    PC -. "else → classify (no transactor)" .-> CLS
+    TR --> CLS
+    CLS --> OK
+    CLS --> FAIL
+    CLS --> RETRY
+    RETRY -. "next pass while pass<3 and changes>0" .-> FREE
+    RETRY -. "last pass → drop from set" .-> FAIL
+```
+
+Pipeline gates and retry (evidence):
+
+- `preclaim` short-circuits if preflight `!tesSUCCESS`
+  ([applySteps.cpp:498](../src/libxrpl/tx/applySteps.cpp#L498)); `doApply`
+  short-circuits if `!likelyToClaimFee`
+  ([applySteps.cpp:532](../src/libxrpl/tx/applySteps.cpp#L532)); the transactor
+  mutates only when preclaim is `tesSUCCESS`
+  ([Transactor.cpp:1647](../src/libxrpl/tx/Transactor.cpp#L1647)).
+- **Final-TER classification**: `applied` → Success; `tef | tem | tel` → hard Fail;
+  else → Retry ([apply.cpp:226](../src/libxrpl/tx/apply.cpp#L226)).
+- **Multi-pass retry**: both open-ledger `applyOne` and consensus `tx.apply` loop
+  `pass < LEDGER_TOTAL_PASSES` (= 3); a `Retry` tx is kept for the next pass, and
+  the final pass converts lingering retriable txs into drops
+  ([OpenLedger.h:237](../src/xrpld/app/ledger/OpenLedger.h#L237),
+  [BuildLedger.cpp:129](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L129);
+  `LEDGER_TOTAL_PASSES` [OpenLedger.h:29](../src/xrpld/app/ledger/OpenLedger.h#L29)).
+- **TxQ re-preflight**: the queue path re-runs `preflight` when the ledger's
+  rules/flags changed since enqueue
+  ([TxQ.cpp:315](../src/xrpld/app/misc/detail/TxQ.cpp#L315)).
+- **TxQ cross-ledger retry**: a queued tx that fails with a retriable result keeps its slot with
+  `--retriesRemaining` (`kRetriesAllowed` = 10) and is re-applied at a **later**
+  ledger close; on `retriesRemaining ≤ 0` or `tef|tem` it is dropped with an
+  account `retryPenalty` ([TxQ.cpp:1528](../src/xrpld/app/misc/detail/TxQ.cpp#L1528)).
+- `TxQ::apply` outcome fork: preflight-reject / `applied_direct` / `batch_clear` /
+  `queued` (`terQUEUED`) / reject
+  ([TxQ.cpp:762](../src/xrpld/app/misc/detail/TxQ.cpp#L762)).
+
+> **`tx.apply` is set-level, consensus-only.** It wraps the retry-pass loop over
+> the agreed set during `buildLedger` and exists on **no other** invoker. It is
+> not a per-transaction span, and TxQ / open-ledger apply create no `tx.apply`.
+
+### Consensus round
+
+`beginConsensus → startRound` starts the round (`consensus.round`, `Open` phase).
+The **heartbeat timer** drives `Consensus::timerEntry` each pass; the round stays
+in `Establish` across many heartbeats until the outcome is decided.
+
+> **A single ledger can take many rounds to settle.** Two nested multi-round
+> mechanisms (see [docs/consensus.md](consensus.md)):
+>
+> 1. **Avalanche rounds inside one Establish phase** — each `timerEntry` runs
+>    `phaseEstablish` again (`establishCounter_++`) and raises the inclusion
+>    threshold **50% → 65% → 70% → 95%** as the round ages
+>    ([ConsensusParms.h:145](../src/xrpld/consensus/ConsensusParms.h#L145)).
+>    `checkConsensus` returning `No` keeps the node in `Establish` and loops; a
+>    round cannot even `Expire` before a minimum of
+>    `avalancheCutoffs.size() × avMinRounds = 4 × 2 = 8` passes
+>    ([Consensus.h:1938](../src/xrpld/consensus/Consensus.h#L1938)).
+> 2. **Retry across consensus rounds** — a round can end `MovedOn` / `Expired`,
+>    meaning the network settled a _different_ ledger. The node still builds a
+>    ledger, but the **next** round's `checkLedger` detects the wrong prior,
+>    switches to `WrongLedger` / `SwitchedLedger` mode, acquires the correct
+>    ledger, and re-deliberates. A ledger is only truly settled once trusted
+>    **validations reach quorum** (`ledger.validate`); the alternate is abandoned.
+
+```mermaid
+flowchart TB
+    classDef span fill:#b45309,stroke:#7c2d12,color:#fff;
+    classDef plain fill:#334155,stroke:#0f172a,color:#fff;
+
+    BEGIN(["beginConsensus → startRound<br/>(Proposing OR Observing; no span)"]):::plain
+    ROUND["consensus.round<br/>(one attempt at next ledger)"]:::span
+    OPENS["consensus.phase.open<br/>(collect txs; buffer peer<br/>proposals / gotTxSet)"]:::span
+    HB(["heartbeat → timerEntry<br/>(every LEDGER_MIN_CLOSE; no span)"]):::plain
+    CKL(["checkLedger<br/>(correct prior ledger? no span)"]):::plain
+    WRONG(["handleWrongLedger → leaveConsensus (no span):<br/>if Proposing send BOW-OUT,<br/>mode → Observing; acquire ledger"]):::plain
+    MODE["consensus.mode_change<br/>(mode transition)"]:::span
+    POPEN(["phaseOpen: shouldCloseLedger? (no span)"]):::plain
+    CLOSE["consensus.ledger_close<br/>(close open ledger, seed disputes)"]:::span
+    pSend["consensus.proposal.send<br/>(broadcast our position)"]:::span
+    PEST["consensus.establish<br/>(phaseEstablish; avalanche round ↻<br/>threshold 50→65→70→95%)"]:::span
+    UPOS["consensus.update_positions<br/>(add/drop disputed txs; child of establish)"]:::span
+    acqTx(["acquireTxSet → gotTxSet<br/>(async peer tx set; no span)"]):::plain
+    PAUSE(["shouldPause?<br/>(wait on laggards; no span)"]):::plain
+    CHECK["consensus.check<br/>(checkConsensus; child of establish)"]:::span
+    CTC(["haveCloseTimeConsensus?<br/>(else agree-to-disagree +1s; no span)"]):::plain
+    ACCEPT["consensus.accept<br/>(round complete)"]:::span
+
+    BEGIN --> ROUND --> OPENS
+    HB -->|under mutex| CKL
+    CKL -.->|wrong prior| WRONG
+    WRONG --> MODE
+    WRONG -. "recovered → re-enter Open (playbackProposals)" .-> OPENS
+    WRONG -. "still missing → keep deliberating, defer to peers" .-> HB
+    CKL -->|prior OK| POPEN
+    HB -.->|phase==Open| POPEN
+    HB -.->|phase==Establish| PEST
+    POPEN -.->|shouldClose| CLOSE
+    CLOSE -.->|mode==Proposing| pSend
+    PEST --> UPOS
+    UPOS -.->|position changed && Proposing| pSend
+    UPOS -.->|disagreeing peer position| acqTx
+    acqTx -. "gotTxSet ↻ → new disputes" .-> UPOS
+    PEST --> PAUSE
+    PAUSE -. "pausing → wait (loop)" .-> HB
+    PAUSE -->|ready| CHECK
+    CHECK -. "No / Expired < 8 passes → next avalanche round" .-> HB
+    CHECK --> CTC
+    CTC -. "no CT consensus → loop" .-> HB
+    CTC -.->|Yes / MovedOn / Expired ≥ 8| ACCEPT
+    ROUND -.->|mode set at start| MODE
+    ACCEPT -. "endConsensus → next round ↻ (until a ledger validates)" .-> BEGIN
+```
+
+Consensus loops and branches (evidence):
+
+- **`consensus.establish` is the parent of `update_positions` and `check`**:
+  `phaseEstablish` creates the establish span (`startEstablishTracing`), and both
+  child spans parent to its captured context
+  ([Consensus.h:2100](../src/xrpld/consensus/Consensus.h#L2100),
+  [1629](../src/xrpld/consensus/Consensus.h#L1629),
+  [1838](../src/xrpld/consensus/Consensus.h#L1838)).
+- **Avalanche-convergence loop (rounds within one ledger)**: repeated
+  `heartbeat → timerEntry → phaseEstablish` bumps `establishCounter_` and raises
+  the inclusion threshold each pass; `checkConsensus` = `No` stays in `Establish`
+  ([NetworkOPs.cpp:1214](../src/xrpld/app/misc/NetworkOPs.cpp#L1214);
+  [Consensus.h:1468](../src/xrpld/consensus/Consensus.h#L1468);
+  thresholds [ConsensusParms.h:145](../src/xrpld/consensus/ConsensusParms.h#L145)).
+- **Retry-across-rounds loop (many rounds per settled ledger)**: `MovedOn` /
+  `Expired` accepts a non-preferred ledger; the next round's `checkLedger` finds
+  the wrong prior and recovers before re-deliberating
+  ([Consensus.h:1194](../src/xrpld/consensus/Consensus.h#L1194)); round-to-round
+  via `endConsensus → beginConsensus`
+  ([NetworkOPs.cpp:2315](../src/xrpld/app/misc/NetworkOPs.cpp#L2315)).
+- **Two extra establish loop-backs before accept**: `shouldPause` (laggard
+  backpressure) and `!haveCloseTimeConsensus_` (TX consensus but not close-time)
+  each `return` and re-loop, distinct from `checkConsensus == No`
+  ([Consensus.h:1497](../src/xrpld/consensus/Consensus.h#L1497),
+  [1500](../src/xrpld/consensus/Consensus.h#L1500)); close time can
+  "agree to disagree" at prior close + 1s ([docs/consensus.md:163](consensus.md)).
+- **acquireTxSet / gotTxSet loop**: a disagreeing peer position triggers an async
+  `acquireTxSet`; the later `gotTxSet` regenerates disputes and can extend the
+  establish phase ([Consensus.h:932](../src/xrpld/consensus/Consensus.h#L932)).
+- **Bow-out / mode change**: `handleWrongLedger → leaveConsensus` sends a bow-out
+  proposal and demotes Proposing → Observing for the rest of the round
+  ([Consensus.h:1977](../src/xrpld/consensus/Consensus.h#L1977)); `startRound`
+  begins in Proposing **or** Observing ([docs/consensus.md:176](consensus.md)).
+- **Buffered Open-phase inputs**: `peerProposal` / `gotTxSet` arriving during Open
+  are stored, then seeded as disputes at `closeLedger` (`createDisputes`);
+  `playbackProposals` replays them at `startRound` / `handleWrongLedger`
+  ([docs/consensus.md:244](consensus.md);
+  [Consensus.h:817](../src/xrpld/consensus/Consensus.h#L817)).
+- **Outcome fork** after `checkConsensus`: `No` (loop) / `Yes` (onAccept) /
+  `MovedOn` / `Expired` ([Consensus.h:1516](../src/xrpld/consensus/Consensus.h#L1516)).
+- **Expired guard**: a round cannot leave on `Expired` before
+  `avalancheCutoffs.size() × avMinRounds` (= 8) passes — below that, `Expired`
+  loops like `No` ([Consensus.h:1938](../src/xrpld/consensus/Consensus.h#L1938)).
+- The **deterministic-vs-random trace-strategy** branch at round start
+  ([RCLConsensus.cpp:1291](../src/xrpld/app/consensus/RCLConsensus.cpp#L1291)) sets
+  only the trace ID — it has **zero protocol effect**.
+
+### Accept, build, and finalize the ledger
+
+`onAccept` enqueues a `JtAccept` job; `doAccept` runs on that worker
+(`consensus.accept.apply`). It builds the ledger (running the apply pipeline over
+the agreed set), cleans the queue, stores the ledger, optionally broadcasts a
+validation, and rebuilds the open ledger. A built ledger is **not final** — it is
+promoted to `ledger.validate` only when trusted validations reach quorum, an
+**async, validation-driven** path re-entered per incoming trusted validation; a
+built ledger that loses is **abandoned**.
+
+```mermaid
+flowchart TB
+    classDef span fill:#6d28d9,stroke:#4c1d95,color:#fff;
+    classDef plain fill:#334155,stroke:#0f172a,color:#fff;
+    classDef drop fill:#7f1d1d,stroke:#ef4444,color:#fff;
+
+    onAcc["consensus.accept<br/>(round complete)"]:::span
+    APPLY["consensus.accept.apply<br/>(JtAccept worker)"]:::span
+    BLCL(["buildLCL: replay data? (no span)"]):::plain
+    BUILD["ledger.build<br/>(normal: apply agreed set)"]:::span
+    RPLY["ledger.build<br/>(replay: TapNone, no tx.apply child)"]:::span
+    TXAP["tx.apply<br/>(↻ each tx × up to 3 passes)"]:::span
+    CLEAN["txq.cleanup<br/>(expire queue entries)"]:::span
+    STORE["ledger.store<br/>(built, NOT yet final)"]:::span
+    vSend["consensus.validation.send<br/>(broadcast our validation)"]:::span
+    CACC(["consensusBuilt → checkAccept<br/>(quorum gate; no span)"]):::plain
+    NEWVAL(["inbound trusted validation<br/>→ handleNewValidation → checkAccept<br/>(async, per validation; no span)"]):::plain
+    VAL["ledger.validate<br/>(promote highest-seq ledger ≥ quorum)"]:::span
+    LOSE(["built ledger loses:<br/>never promoted → abandoned"]):::drop
+    OACC(["OpenLedger::accept<br/>(rebuild open ledger; no span)"]):::plain
+    tqAcc["txq.accept<br/>(↻ drain queued txs)"]:::span
+    swlStd(["switchLCL standalone:<br/>setFullLedger + tryAdvance (no span)"]):::plain
+    swlNet(["switchLCL networked:<br/>checkAccept (no span)"]):::plain
+    END(["endConsensus → next round ↻ (no span)"]):::plain
+
+    onAcc -.->|addJob JtAccept| APPLY
+    APPLY --> BLCL
+    BLCL -->|normal path| BUILD --> TXAP
+    BLCL -. "replay path" .-> RPLY
+    APPLY --> CLEAN
+    APPLY --> STORE
+    APPLY -. "validating && isCompatible && !fail && canValidateSeq" .-> vSend
+    APPLY --> CACC
+    NEWVAL --> CACC
+    CACC -.->|highest-seq trusted ledger ≥ quorum| VAL
+    CACC -.->|tvc < quorum → no promotion| LOSE
+    APPLY --> OACC
+    OACC -->|TxQ::accept callback| tqAcc
+    OACC --> swlStd
+    OACC --> swlNet
+    swlStd -. "marks full-validated (no ledger.validate span)" .-> END
+    swlNet --> CACC
+    onAcc --> END
+```
+
+- Order inside `doAccept`: `buildLCL` (build → `tx.apply`, then `txq.cleanup`,
+  then `ledger.store`) → optional `validate` → `consensusBuilt`/`checkAccept` →
+  `OpenLedger::accept` (rebuilds the open ledger; `txq.accept` runs in its
+  callback) → `switchLCL` promotes the built ledger to the new LCL
+  ([RCLConsensus.cpp:812](../src/xrpld/app/consensus/RCLConsensus.cpp#L812) then
+  [833](../src/xrpld/app/consensus/RCLConsensus.cpp#L833)).
+- **buildLCL replay branch**: if `releaseReplay()` has data, `buildLedger` replays
+  the stored set with `TapNone` — it **still emits `ledger.build`** (via
+  `buildLedgerImpl`) but applies txns directly with **no `tx.apply` child** and no
+  3-pass loop; else the normal consensus-set path runs `tx.apply` over 3 passes
+  ([RCLConsensus.cpp:929](../src/xrpld/app/consensus/RCLConsensus.cpp#L929);
+  [BuildLedger.cpp:252](../src/xrpld/app/ledger/detail/BuildLedger.cpp#L252)).
+- `processClosedLedger` (`txq.cleanup`) runs **after** build, **before** store
+  ([RCLConsensus.cpp:950](../src/xrpld/app/consensus/RCLConsensus.cpp#L950) vs
+  [953](../src/xrpld/app/consensus/RCLConsensus.cpp#L953)).
+- **`ledger.validate` is async + lossy**: `checkAccept` is re-entered per incoming
+  trusted validation (`handleNewValidation → checkAccept`,
+  [RCLValidations.cpp:193](../src/xrpld/app/consensus/RCLValidations.cpp#L193));
+  it promotes the **highest-seq** trusted ledger whose `valCount > neededValidations`
+  ([LedgerMaster.cpp:1180](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1180)),
+  which may be a **different** ledger than the one this node built. Below quorum
+  (`tvc < minVal`) it returns early with no promotion — a built ledger that loses
+  is abandoned ([LedgerMaster.cpp:980](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L980);
+  [docs/consensus.md:50](consensus.md)). The `ledger.validate` span is emitted only
+  inside `checkAccept` ([LedgerMaster.cpp:987](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L987)).
+- **validation-send guard**: broadcast only if
+  `validating_ && isCompatible && !consensusFail && canValidateSeq(seq)` — silently
+  suppressed for incompatible ledgers or an already-validated seq
+  ([RCLConsensus.cpp:730](../src/xrpld/app/consensus/RCLConsensus.cpp#L730)).
+- **switchLCL**: standalone → `setFullLedger` + `tryAdvance` — marks the ledger
+  full-validated **without** emitting `ledger.validate` (that span lives only in
+  `checkAccept`); networked → `checkAccept` (shared async quorum gate)
+  ([LedgerMaster.cpp:442](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L442)).
+
+### Side flows: pathfinding and ledger acquire
+
+**Pathfinding** — an RPC one-shot (`path_find` / `ripple_path_find`) plus an async
+recompute that fires on **every ledger close** for all active subscriptions, and
+also garbage-collects dead subscriptions:
+
+```mermaid
+flowchart TB
+    classDef span fill:#0e7490,stroke:#155e75,color:#fff;
+    classDef plain fill:#334155,stroke:#0f172a,color:#fff;
+    classDef drop fill:#7f1d1d,stroke:#ef4444,color:#fff;
+
+    REQ["pathfind.request<br/>(path_find / ripple_path_find)"]:::span
+    CREATE(["subscribe: makePathRequest →<br/>persistent subscription (no span)"]):::plain
+    COMP["pathfind.compute<br/>(doUpdate, one pass)"]:::span
+    DISC["pathfind.discover<br/>(findPaths)"]:::span
+    PFDR(["Pathfinder + RippleCalc<br/>↻ per source asset (no span)"]):::plain
+    UP(["updatePaths (JtUpdatePf, every close; no span)"]):::plain
+    UALL["pathfind.update_all<br/>(recompute all active)"]:::span
+    DEAD(["dead subscriber → doAborting +<br/>remove_if erase"]):::drop
+
+    REQ -.->|subcommand create| CREATE
+    REQ -->|doUpdate| COMP -->|findPaths| DISC --> PFDR
+    UP -->|once per close| UALL
+    UALL -->|↻ each active request| COMP
+    UALL -. "new request arrived → extra pass ↻" .-> UALL
+    UALL -.->|dead / aborted| DEAD
+```
+
+**Ledger acquire** — a **separate trace root** (not part of the close flow) that
+fetches a missing or correct-prior ledger from peers, retries per peer/timer, and
+finishes with a reason-dependent store; `checkAccept` + `tryAdvance` run on **any**
+completed acquire:
+
+```mermaid
+flowchart TB
+    classDef span fill:#0e7490,stroke:#155e75,color:#fff;
+    classDef plain fill:#334155,stroke:#0f172a,color:#fff;
+    classDef drop fill:#7f1d1d,stroke:#ef4444,color:#fff;
+
+    HIST(["tryAdvance → doAdvance → fetchForHistory<br/>(Reason::HISTORY; no span)"]):::plain
+    NEED(["checkAccept / handleNewValidation /<br/>consensus wrong-ledger (no span)"]):::plain
+    INB(["InboundLedgers::acquire (no span)"]):::plain
+    ACQ["ledger.acquire<br/>(InboundLedger::init)"]:::span
+    TRIG(["trigger / addPeers / onTimer<br/>↻ per peer / chunk (no span)"]):::plain
+    FAILED(["timeouts > 6 → failed_ →<br/>logFailure (NO store, NO checkAccept)"]):::drop
+    DONE(["done() — complete && !failed (no span)"]):::plain
+    ONF(["onLedgerFetched (no span)<br/>(HISTORY: no store)"]):::plain
+    STORE["ledger.store<br/>(GENERIC / CONSENSUS)"]:::span
+    CACC(["checkAccept + tryAdvance (no span)<br/>(↻ may publish/advance many ledgers)"]):::plain
+
+    NEED -.->|GENERIC / CONSENSUS| INB --> ACQ
+    HIST -.->|HISTORY| INB
+    ACQ -.->|not complete| TRIG
+    TRIG -. "retry ↻" .-> TRIG
+    TRIG -.->|timeout cap| FAILED
+    TRIG -.->|complete| DONE
+    DONE -.->|reason == HISTORY| ONF
+    DONE -.->|GENERIC / CONSENSUS| STORE
+    DONE --> CACC
+    CACC -. "advanceWork ↻ → further HISTORY acquire" .-> HIST
+```
+
+Side-flow evidence:
+
+- **Pathfind subscription lifecycle**: `path_find` create inserts a persistent
+  subscription (`makePathRequest`); `update_all` re-runs each active request every
+  close, removes dead subscribers (`doAborting` + `remove_if` erase), and takes an
+  extra pass when a new request arrived mid-run
+  ([PathRequestManager.cpp:103](../src/xrpld/rpc/detail/PathRequestManager.cpp#L103),
+  [169](../src/xrpld/rpc/detail/PathRequestManager.cpp#L169),
+  [181](../src/xrpld/rpc/detail/PathRequestManager.cpp#L181)).
+- **Acquire outcome fork**: `timeouts_ > kLedgerTimeoutRetriesMax` (= 6) sets
+  `failed_` → terminal `logFailure`, no store/checkAccept
+  ([InboundLedger.cpp:387](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L387)).
+- **done() reason branch (store side only)**: `HISTORY` → `onLedgerFetched`, **no**
+  `storeLedger`; else → `storeLedger`. But `checkAccept` + `tryAdvance` run for
+  **any** `complete_ && !failed_` acquire regardless of reason
+  ([InboundLedger.cpp:495](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L495)
+  store switch; [507](../src/xrpld/app/ledger/detail/InboundLedger.cpp#L507)
+  reason-independent checkAccept/tryAdvance).
+- **tryAdvance multi-ledger loop**: `doAdvance` runs `do { … } while (advanceWork_)`,
+  publishing a range of ledgers and recursively triggering further HISTORY acquire
+  ([LedgerMaster.cpp:1905](../src/xrpld/app/ledger/detail/LedgerMaster.cpp#L1905)).
+
+### Where telemetry parenting differs from protocol flow
+
+The graph above is protocol control flow. The OpenTelemetry span **parent links**
+are built differently and, in several places, do **not** represent a real
+call edge. Read a trace with these in mind:
+
+| Telemetry does this                                                                                                                   | Real protocol flow                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tx.process` is a `hashSpan` root from `txID` — an independent trace root ([TxTracing.h:63](../src/xrpld/telemetry/TxTracing.h#L63)). | The real edge is the synchronous `doSubmit → processTransaction` call; it is **not** a child of `rpc.command.submit`.                                                                                                                                 |
+| `tx.preflight` / `tx.preclaim` / `tx.transactor` share one `txID`-derived trace ID.                                                   | That shared ID is a correlation trick, not a call edge. The real order is the composed `apply()` at [apply.cpp:118](../src/libxrpl/tx/apply.cpp#L118). They are **not** children of `tx.process` or `tx.apply`.                                       |
+| `consensus.round` uses a deterministic trace ID from the previous ledger hash.                                                        | This makes **all validators share one trace ID** (a cross-node shared root), not a per-node parent. The real round-to-round edge is `endConsensus → beginConsensus`.                                                                                  |
+| `consensus.accept` (main thread) and `consensus.accept.apply` (JtAccept worker) are wired via a captured context.                     | The real edge is the queued `JtAccept` job, a thread hand-off ([RCLConsensus.cpp:483](../src/xrpld/app/consensus/RCLConsensus.cpp#L483)).                                                                                                             |
+| `pathfind.update_all` parents nothing from the original `pathfind.request`.                                                           | The causal link is the ledger-close job on `JtUpdatePf`, not span nesting.                                                                                                                                                                            |
+| `ledger.acquire` and its downstream `ledger.store` / `ledger.validate`.                                                               | Reached via the `AcqDone` job, not parent inheritance; `ledger.acquire` is its own root.                                                                                                                                                              |
+| `peer.*.receive` (fresh `kConsumer` root) and `consensus.*.receive` on the same message.                                              | Two **sequential stages of one synchronous handler**, not parent/child; on a duplicate/untrusted drop the `consensus.*.receive` is never created.                                                                                                     |
+| Receive spans adopt the sender's `trace_id` + `span_id` as a genuine cross-node parent.                                               | Deliberate: the receive span becomes a child of a **different node's** span (a cross-node context marker, not an in-process edge). `tx.receive` is asymmetric — it borrows only the sender's `span_id` and re-derives its own `trace_id` from `txID`. |
+
+> **Known telemetry artifacts** (from live audits, memory `otel-span-hierarchy-audit`):
+> an RPC entry span's scope can leak across a reused coroutine worker, and the
+> `hashSpan` roots (`tx.*`) — along with plain roots like `ledger.acquire` — can
+> surface in Tempo as dangling "root span not yet received". These are
+> exporter/parenting artifacts, not real control-flow parents.
 
 ---
 
