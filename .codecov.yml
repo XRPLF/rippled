@@ -41,3 +41,6 @@ ignore:
   - "src/xrpld/telemetry/"
   - "src/libxrpl/telemetry/"
   - "include/xrpl/telemetry/"
+  # Per-module span-name constant headers (compile-time constants only,
+  # colocated with their subsystem rather than under telemetry/).
+  - "**/*SpanNames.h"
