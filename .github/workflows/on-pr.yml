@@ -90,6 +90,7 @@ jobs:
             .clang-tidy
             .codecov.yml
             bin/check-tools.sh
+            bin/default-loader-path.sh
             cfg/**
             cmake/**
             conan/**
