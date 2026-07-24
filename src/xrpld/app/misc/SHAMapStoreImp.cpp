@@ -451,7 +451,8 @@ SHAMapStoreImp::run()
                 return;
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug())
-                << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
+                << "copied ledger " << validatedSeq << " duplicated "
+                << dbRotating_->getDuplicationCount() << " / " << nodeCount << " nodes";
 
             JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();

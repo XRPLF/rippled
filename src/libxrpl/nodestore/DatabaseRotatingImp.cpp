@@ -56,6 +56,7 @@ DatabaseRotatingImp::rotate(
     std::shared_ptr<NodeStore::Backend> oldArchiveBackend;
     std::uint64_t copyForwards = 0;
     std::uint64_t copyRejects = 0;
+    std::uint64_t duplications = 0;
     {
         std::scoped_lock const lock(mutex_);
 
@@ -69,6 +70,7 @@ DatabaseRotatingImp::rotate(
 
         copyForwards = copyForwardCount_.exchange(0, std::memory_order_relaxed);
         copyRejects = copyRejectCount_.exchange(0, std::memory_order_relaxed);
+        duplications = duplicationCount_.exchange(0, std::memory_order_relaxed);
     }
 
     if (copyForwards > 0 || copyRejects > 0)
@@ -77,6 +79,11 @@ DatabaseRotatingImp::rotate(
                         << " archive-served reads into the writable backend "
                            "during the rotation window. Rejected "
                         << copyRejects;
+    }
+    if (duplications > 0)
+    {
+        JLOG(j_.warn()) << "Rotating: duplicated " << duplications
+                        << " nodes into the writable backend for the current validated ledger.";
     }
 
     f(newWritableBackendName, newArchiveBackendName);
@@ -93,6 +100,12 @@ LedgerIndex
 DatabaseRotatingImp::getRotationInFlight() const
 {
     return rotationInFlight_.load(std::memory_order_acquire);
+}
+
+std::uint64_t
+DatabaseRotatingImp::getDuplicationCount() const
+{
+    return duplicationCount_.load(std::memory_order_acquire);
 }
 
 std::string
@@ -214,7 +227,11 @@ DatabaseRotatingImp::fetchNodeObject(
                     writable = writableBackend_;
                 }
 
-                if (!duplicate)
+                if (duplicate)
+                {
+                    duplicationCount_.fetch_add(1, std::memory_order_relaxed);
+                }
+                else
                 {
                     JLOG(j_.debug()) << "Rotating: copy node for ledger " << ledgerSeq
                                      << " from archive to writable backend: " << hash;

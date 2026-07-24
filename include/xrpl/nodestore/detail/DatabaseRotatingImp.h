@@ -76,6 +76,9 @@ public:
     LedgerIndex
     getRotationInFlight() const override;
 
+    std::uint64_t
+    getDuplicationCount() const override;
+
 private:
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
@@ -93,6 +96,9 @@ private:
     std::atomic<LedgerIndex> rotationInFlight_{0};
     std::atomic<std::uint64_t> copyForwardCount_{0};
     std::atomic<std::uint64_t> copyRejectCount_{0};
+    // Duplication count tracks the number of nodes that are directly duplicated because they're in
+    // the target ledger or cache.
+    std::atomic<std::uint64_t> duplicationCount_{0};
 
     std::shared_ptr<NodeObject>
     fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)

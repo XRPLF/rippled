@@ -55,6 +55,9 @@ public:
     setRotationInFlight(LedgerIndex inFlight) = 0;
     virtual LedgerIndex
     getRotationInFlight() const = 0;
+
+    virtual std::uint64_t
+    getDuplicationCount() const = 0;
 };
 
 }  // namespace xrpl::NodeStore
