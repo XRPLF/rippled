@@ -1607,6 +1607,13 @@ Transactor::operator()()
     span.setAttribute(telemetry::tx_apply_span::attr::stage, telemetry::tx_apply_span::val::apply);
     if (auto const* fmt = TxFormats::getInstance().findByType(ctx_.tx.getTxnType()))
         span.setAttribute(telemetry::tx_apply_span::attr::txType, fmt->getName().c_str());
+    // The ledger being worked on (seq + parent hash) — correlates this apply
+    // stage to the ledger/consensus trace it is building into.
+    span.setAttribute(
+        telemetry::tx_apply_span::attr::currentLedgerSeq, static_cast<std::int64_t>(view().seq()));
+    span.setAttribute(
+        telemetry::tx_apply_span::attr::currentLedgerHash,
+        to_string(view().header().parentHash).c_str());
 
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
 
