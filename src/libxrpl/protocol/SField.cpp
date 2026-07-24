@@ -1,7 +1,7 @@
 #include <xrpl/protocol/SField.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Feature.h>  // IWYU pragma: keep
 
 #include <string>
 #include <unordered_map>
