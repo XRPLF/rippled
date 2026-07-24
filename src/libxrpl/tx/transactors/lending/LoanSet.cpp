@@ -439,9 +439,8 @@ LoanSet::doApply()
         principalRequested,
         properties.loanState.managementFeeDue);
 
-    auto const vaultMaximum = *vaultSle->at(sfAssetsMaximum);
     XRPL_ASSERT_PARTS(
-        vaultMaximum == 0 || vaultMaximum > *vaultTotalProxy,
+        *vaultSle->at(sfAssetsMaximum) == 0 || *vaultSle->at(sfAssetsMaximum) > *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
         "Vault is below maximum limit");
 
@@ -492,8 +491,9 @@ LoanSet::doApply()
 
     auto const loanAssetsToBorrower = principalRequested - originationFee;
 
-    auto const newDebtDelta = principalRequested + state.interestDue;
-    auto const newDebtTotal = brokerSle->at(sfDebtTotal) + newDebtDelta;
+    auto const [assetsTotalDelta, debtTotalDelta] =
+        loanOriginationDeltas(ctx_.view().rules(), vaultSle, principalRequested, state.interestDue);
+    auto const newDebtTotal = brokerSle->at(sfDebtTotal) + debtTotalDelta;
     if (auto const debtMaximum = brokerSle->at(sfDebtMaximum);
         debtMaximum != 0 && debtMaximum < newDebtTotal)
     {
@@ -635,8 +635,6 @@ LoanSet::doApply()
     view.insert(loan);
 
     // Update the balances in the vault
-    auto const [assetsTotalDelta, debtTotalDelta] =
-        loanOriginationDeltas(ctx_.view().rules(), vaultSle, principalRequested, state.interestDue);
     vaultAvailableProxy -= principalRequested;
     vaultTotalProxy += assetsTotalDelta;
     XRPL_ASSERT_PARTS(

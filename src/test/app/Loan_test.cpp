@@ -8684,8 +8684,7 @@ protected:
         }
 
         // AssetsMaximum guard checks interestDue headroom only under
-        // whole-life accounting (cash-basis never adds interest to
-        // AssetsTotal). DebtMaximum guard is unconditional either way.
+        // whole-life accounting; DebtMaximum guard also varies by model.
         auto runVaultGuard = [&](FeatureBitset features, Number const& slack, TER expected) {
             Env env(*this, features);
 
@@ -8761,12 +8760,16 @@ protected:
             runVaultGuard(all_ | featureLendingProtocolV1_1, oneDrop, tesSUCCESS);
         }
 
-        for (auto const features : {all_ | featureLendingProtocolV1_1, all_})
+        // DebtMaximum guard: cash-basis projects principal-only DebtTotal;
+        // whole-life projects principal + interestDue.
+        for (auto const cashBasis : {true, false})
         {
             testcase(
-                std::string("cash-basis: LoanSet DebtMaximum guard unaffected by amendment (") +
-                (features[featureLendingProtocolV1_1] ? "enabled)" : "disabled)"));
-            Number const newDebtTotal = principalOutstandingCash + interestDueCash;
+                std::string("LoanSet DebtMaximum guard (") +
+                (cashBasis ? "cash-basis)" : "whole-life)"));
+            auto const features = cashBasis ? all_ | featureLendingProtocolV1_1 : all_;
+            Number const newDebtTotal =
+                principalOutstandingCash + (cashBasis ? Number{} : interestDueCash);
             runBrokerGuard(features, newDebtTotal - oneDrop, tecLIMIT_EXCEEDED);
             runBrokerGuard(features, newDebtTotal, tesSUCCESS);
         }
