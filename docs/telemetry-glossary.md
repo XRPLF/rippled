@@ -555,15 +555,35 @@ Acquiring a ledger means requesting it and its contents from peers when the node
 
 **Scope:** per node — measured on and specific to this individual server.
 
+<a id="ledgers-behind-network"></a>
+
+### Ledgers behind network
+
+How many ledgers this node's validated sequence trails the network's. The network figure is the highest ledger sequence any connected peer reports holding, so the gap is what the node still has to close to reach the tip. Trending down to zero is healthy convergence; flat or rising means the node acquires slower than the network advances and will not converge on its own. Because the value is floored at zero and the target comes from peer reports, a node with no peers — or whose peers have not reported a range yet — also reads zero, so a zero is only "at the tip" once there are peers.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Time to first FULL](#time-to-first-full) · [Ledger acquire (inbound fetch)](#ledger-acquire-inbound-fetch) · [Validated ledger on xrpl.org](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers)
+
+<a id="network-ledger-gate"></a>
+
+### Network ledger gate
+
+The startup guard that holds a node back until it has seen a complete ledger from the network. While the gate is closed the node refuses submitted transactions and cannot reach the full state, no matter how healthy the rest of the sync pipeline looks. It normally opens within the first minutes of startup; a gate that stays closed means the node never obtained a full network ledger, which is a peering or quorum fault upstream rather than a sync-pipeline one.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Operating mode / server state](#operating-mode-server-state) · [UNL quorum headroom](#unl-quorum-headroom) · [Operating mode / server state on xrpl.org](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states)
+
 <a id="operating-mode-server-state"></a>
 
 ### Operating mode / server state
 
-The server state describes how fully the node is participating, in ascending order: disconnected, connected, syncing, tracking, full (caught up), and for validators validating and proposing. A healthy non-validator sits in Full; frequent transitions out of Full indicate instability.
+The server state describes how fully the node is participating, in ascending order: disconnected, connected, syncing, tracking, full (caught up), and for validators validating and proposing. A healthy non-validator sits in Full; frequent transitions out of Full indicate instability. Transitions are recorded as a from-to edge rather than a bare count, which is what distinguishes a clean one-way climb to Full from flapping in and out of it.
 
 **Scope:** per node — measured on and specific to this individual server.
 
-**See also:** [Operating mode / server state on xrpl.org](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states)
+**See also:** [Time to first FULL](#time-to-first-full) · [Network ledger gate](#network-ledger-gate) · [Operating mode / server state on xrpl.org](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states)
 
 <a id="outbound-dial-latency"></a>
 
@@ -574,6 +594,26 @@ The elapsed time of one outbound peer connection attempt, from starting the TCP 
 **Scope:** per node — measured on and specific to this individual server.
 
 **See also:** [DNS resolve](#dns-resolve) · [Handshake negotiation failure](#handshake-negotiation-failure) · [Peer protocol on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)
+
+<a id="server-stall"></a>
+
+### Server stall
+
+The server's main loop failing to check in with the load monitor, measured as seconds of unresponsiveness. A stall means main-loop overload, not a shortage of sync data, so the cause is downstream work such as job-queue backlog or slow disk rather than peer supply. Two readings mean different things: a large duration with a flat episode count is one long unresolved stall, while a small duration with a rising episode count is repeated short stalls the server keeps recovering from. Episodes are counted once per stall, not once per stalled second, which is what keeps those two cases distinguishable. A stall that persists long enough is treated as unrecoverable and deliberately ends the process.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Ledgers behind network](#ledgers-behind-network) · [Consensus stall](#consensus-stall)
+
+<a id="time-to-first-full"></a>
+
+### Time to first FULL
+
+The elapsed time from process start until the node first reached the full server state. It is a one-shot measurement: it is set on the first transition to full and never changes afterwards, so it has no trend to read. That leaves exactly two meaningful readings — a duration, meaning the node synced and this is how long it took, or zero, meaning it has never reached full at all. The zero is the diagnostic signal rather than absent data, and it is the starting point for working through the rest of the sync pipeline.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Operating mode / server state](#operating-mode-server-state) · [Network ledger gate](#network-ledger-gate) · [Ledgers behind network](#ledgers-behind-network)
 
 <a id="unl-fetch-outcome"></a>
 

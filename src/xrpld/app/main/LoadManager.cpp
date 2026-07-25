@@ -11,7 +11,9 @@
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <exception>
 #include <memory>
 #include <mutex>
@@ -115,6 +117,13 @@ LoadManager::run()
         static constexpr auto kStallFatalLogMessageTimeLimit = 90s;
         static constexpr auto kStallLogicErrorTimeLimit = 600s;
 
+        // Publish the stall state for telemetry before acting on it, so the
+        // gauge still sees the final duration on the tick that logicErrors.
+        // An unarmed detector reports healthy: its heartbeat is not yet
+        // meaningful, so a large elapsed time there is not a stall.
+        updateStallState(
+            armed ? timeSpentStalled : 0s, std::chrono::seconds(kReportingIntervalSeconds));
+
         if (armed && (timeSpentStalled >= kReportingIntervalSeconds))
         {
             // Report the stalled condition every reportingIntervalSeconds
@@ -169,6 +178,23 @@ LoadManager::run()
         // subscribe in NetworkOPs or Application.
         app_.getOPs().reportFeeChange();
     }
+}
+
+void
+LoadManager::updateStallState(
+    std::chrono::seconds const stalled,
+    std::chrono::seconds const reportThreshold)
+{
+    // Read the previous tick's value before overwriting it: the healthy ->
+    // reportable transition is what defines a new episode. Only the monitor
+    // thread writes these, so the read-then-write needs no atomicity as a pair.
+    auto const state = evaluateStall(
+        currentStallSeconds_.load(std::memory_order_relaxed), stalled, reportThreshold);
+
+    currentStallSeconds_.store(state.seconds, std::memory_order_relaxed);
+
+    if (state.newEpisode)
+        stallEventCount_.fetch_add(1, std::memory_order_relaxed);
 }
 
 //------------------------------------------------------------------------------

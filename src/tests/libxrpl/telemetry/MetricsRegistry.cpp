@@ -17,14 +17,16 @@
  *  so the tests are compiled out.
  *
  *  CONSEQUENCE for the sync-diagnostics gauges (`unl_quorum`,
- *  `clock_close_offset_seconds`): this file CANNOT assert an observed gauge
+ *  `clock_close_offset_seconds`, `sync_state`,
+ *  `server_stall_events_total`): this file CANNOT assert an observed gauge
  *  value, because on this build the gauges do not exist -- their registration
  *  methods and the OTel instrument members are inside
  *  `#ifdef XRPL_ENABLE_TELEMETRY`, and there is no MeterProvider at all. What
  *  is provable here, and what the tests below assert, is the complementary
  *  half: that nothing is registered and no service is consulted. The exact
- *  observed values (trusted_keys=5, quorum=4, offset=-3) are asserted in
- *  MetricMacros.cpp, which is the file compiled when telemetry IS enabled.
+ *  observed values (trusted_keys=5, quorum=4, offset=-3, and the sync_state /
+ *  stall-episode values) are asserted in MetricMacros.cpp, which is the file
+ *  compiled when telemetry IS enabled.
  */
 
 // When telemetry is globally enabled, MetricsRegistry.cpp requires xrpld
@@ -375,11 +377,12 @@ TEST_F(MetricsRegistryTest, destructor_calls_stop)
 // Sync-diagnostics gauges: compile-time-disabled proof.
 //
 // `unl_quorum` reads ValidatorList::trustedKeyCount() and quorum();
-// `clock_close_offset_seconds` reads TimeKeeper::closeOffset(). Both are
+// `clock_close_offset_seconds` reads TimeKeeper::closeOffset(); `sync_state` and
+// `server_stall_events_total` read NetworkOPs and LoadManager. All are
 // reached through the ServiceRegistry, and MockServiceRegistry::getValidators()
-// / getTimeKeeper() THROW std::logic_error. So "no gauge callback ran" is
-// directly observable here: had registerAsyncGauges() run and had a callback
-// fired, one of those accessors would have thrown.
+// / getTimeKeeper() / getOPs() / getLoadManager() THROW std::logic_error. So "no
+// gauge callback ran" is directly observable here: had registerAsyncGauges() run
+// and had a callback fired, one of those accessors would have thrown.
 //
 // Honest scope note: these tests do NOT assert an observed gauge value. On this
 // build the gauges are not compiled at all (see the file header), so there is no
@@ -415,7 +418,8 @@ TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
     telemetry::MetricsRegistry registry(false, mockApp_, j_);
 
     // start() is where registerAsyncGauges() -- and with it
-    // registerUnlQuorumGauge() / registerClockSkewGauge() -- would run.
+    // registerUnlQuorumGauge() / registerClockSkewGauge() /
+    // registerSyncStateGauge() / registerStallEventsCounter() -- would run.
     EXPECT_NO_THROW(registry.start("http://localhost:4318/v1/metrics"));
 
     // detachCallbacks() is the shutdown hook the real gauges honour. It must be
@@ -433,6 +437,12 @@ TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
     // could mean the mock is permissive rather than that no callback ran.
     EXPECT_THROW(mockApp_.getValidators(), std::logic_error);
     EXPECT_THROW(mockApp_.getTimeKeeper(), std::logic_error);
+    // The two services the WP-A2 sync-state signals read. sync_state needs both
+    // (NetworkOPs for the gate/duration/ledgers-behind, LoadManager for stall
+    // seconds) and server_stall_events_total needs the second, so either one
+    // firing would have thrown above.
+    EXPECT_THROW(mockApp_.getOPs(), std::logic_error);
+    EXPECT_THROW(mockApp_.getLoadManager(), std::logic_error);
 }
 
 // Even asking for enabled=true registers no sync-diagnostics gauge on a
@@ -450,8 +460,10 @@ TEST_F(MetricsRegistryTest, enabled_flag_alone_registers_no_gauges_when_compiled
     EXPECT_TRUE(enabledRequest.isEnabled());
 
     // Yet the whole lifecycle stays inert. If registerAsyncGauges() had run and
-    // registered registerUnlQuorumGauge()/registerClockSkewGauge(), a callback
-    // would reach getValidators()/getTimeKeeper() and throw std::logic_error.
+    // registered registerUnlQuorumGauge()/registerClockSkewGauge()/
+    // registerSyncStateGauge()/registerStallEventsCounter(), a callback would
+    // reach getValidators()/getTimeKeeper()/getOPs()/getLoadManager() and throw
+    // std::logic_error.
     EXPECT_NO_THROW(enabledRequest.start("http://localhost:4318/v1/metrics"));
     EXPECT_NO_THROW(enabledRequest.detachCallbacks());
     EXPECT_NO_THROW(enabledRequest.stop());
@@ -459,6 +471,29 @@ TEST_F(MetricsRegistryTest, enabled_flag_alone_registers_no_gauges_when_compiled
     // Contrast: enabled=false reports exactly false.
     telemetry::MetricsRegistry const disabledRequest(false, mockApp_, j_);
     EXPECT_FALSE(disabledRequest.isEnabled());
+}
+
+// The `state_changes_total` counter no longer has a registry-owned wrapper
+// method: WP-A2 moved it to a labelled call-site macro in
+// NetworkOPsImp::setMode so it can carry {from,to}. This compile-time
+// assertion is the regression guard -- if someone reintroduces
+// incrementStateChanges(), the unlabelled instrument would coexist with the
+// labelled one and Prometheus would carry two conflicting versions of the same
+// metric name.
+TEST_F(MetricsRegistryTest, state_changes_counter_has_no_registry_wrapper)
+{
+    auto hasIncrementStateChanges = []<typename T>(T* r) {
+        return requires { r->incrementStateChanges(); };
+    };
+    EXPECT_FALSE(hasIncrementStateChanges(static_cast<telemetry::MetricsRegistry*>(nullptr)));
+
+    // Positive control: a sibling parity counter that WAS deliberately kept as
+    // a registry wrapper is still detectable, so the trait above is really
+    // probing for the method and not vacuously false.
+    auto hasIncrementLedgersClosed = []<typename T>(T* r) {
+        return requires { r->incrementLedgersClosed(); };
+    };
+    EXPECT_TRUE(hasIncrementLedgersClosed(static_cast<telemetry::MetricsRegistry*>(nullptr)));
 }
 
 #endif  // !XRPL_ENABLE_TELEMETRY

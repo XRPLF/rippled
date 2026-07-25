@@ -138,9 +138,16 @@
       "unl_fetch_total",
       "unl_quorum{metric=\"trusted_keys\"}",
       "unl_quorum{metric=\"quorum\"}",
-      "clock_close_offset_seconds{metric=\"offset\"}"
+      "clock_close_offset_seconds{metric=\"offset\"}",
+      "sync_state{metric=\"initial_full_duration_us\"}",
+      "sync_state{metric=\"network_ledger_gate\"}",
+      "sync_state{metric=\"server_stall_seconds\"}",
+      "sync_state{metric=\"ledgers_behind\"}",
+      "server_stall_events_total",
+      "state_changes_total{from!=\"\",to!=\"\"}"
     ],
-    "_conditional_note": "handshake_negotiation_fail_total and unl_fetch_total are conditional under the local harness: the first only exists once a handshake is rejected, and the second needs a [validator_list_sites] entry (run-full-validation.sh generates a static [validators] file instead). The validator has no per-metric optional flag, so if either reports 0 series in a harness run, move it out of this group rather than weakening the check."
+    "_conditional_note": "handshake_negotiation_fail_total and unl_fetch_total are conditional under the local harness: the first only exists once a handshake is rejected, and the second needs a [validator_list_sites] entry (run-full-validation.sh generates a static [validators] file instead). The validator has no per-metric optional flag, so if either reports 0 series in a harness run, move it out of this group rather than weakening the check.",
+    "_sync_state_note": "The four sync_state sub-series are unconditional: the gauge observes all four on every collection tick, so each is present as a series even when its value is 0 (a node that never reached FULL reports initial_full_duration_us=0, and a healthy node reports server_stall_seconds=0). The check asserts series presence, not a non-zero value, which is exactly right here — a zero is a meaningful reading for these signals, and absence is the regression. server_stall_events_total is likewise always present because the observable counter reports the tally (0 or more) every tick. state_changes_total is asserted here with a from!=\"\",to!=\"\" selector rather than bare (parity_counters already asserts the bare name): the selector is what proves the WP-A2 {from,to} label dimension actually reached Prometheus, so a regression to the old unlabelled counter fails this check instead of silently passing on the bare name. It needs at least one real mode transition, which any node reaching connected/syncing produces during startup."
   },
   "grafana_dashboards": {
     "description": "All Grafana dashboards that must render data (UIDs as provisioned on disk under docker/telemetry/grafana/dashboards/).",

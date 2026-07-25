@@ -156,7 +156,16 @@ BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 TRACEQL_SCOPE = re.compile(r"^(?:span|resource|event|link|instrumentation_scope)\.")
 # An OTel metric label key as emitted in C++: `Add(.., {{"label", ...}})` /
 # `{{"label", value}}` instrument calls in MetricsRegistry.
+#
+# Two patterns are needed because a label set is a nested initializer list:
+# `{{"a", x}, {"b", y}}`. The FIRST label is preceded by the doubled brace that
+# opens both the set and the pair, while every SUBSEQUENT label is preceded by
+# `}, {` closing the previous pair and opening the next. Matching only the
+# doubled-brace form would derive just the first label of every multi-label
+# instrument, silently under-deriving the L6 key set and making Rule D reject a
+# dashboard that queries a label the code genuinely emits.
 METRIC_LABEL = re.compile(r'\{\{\s*"([a-z_][a-z0-9_]*)"\s*,')
+METRIC_LABEL_NEXT = re.compile(r'\}\s*,\s*\{\s*"([a-z_][a-z0-9_]*)"\s*,')
 
 
 def strip_comments(text: str) -> str:
@@ -799,7 +808,11 @@ def run_rule_c_tempo(root: Path, l1_keys: Set[str], report: Report) -> None:
 def metric_label_names(root: Path) -> Set[str]:
     """L6: OTel native-metric label keys emitted by the telemetry code, e.g.
     `counter->Add(1, {{"job_type", value}})` in MetricsRegistry.cpp. These are
-    a valid source of dashboard labels distinct from span attributes (L1)."""
+    a valid source of dashboard labels distinct from span attributes (L1).
+
+    Collects both the first label of a set and every subsequent one, so a
+    multi-label instrument such as `{{"from", a}, {"to", b}}` contributes ALL
+    of its keys."""
     labels: Set[str] = set()
     for base in ("src", "include"):
         for p in (root / base).rglob("*.cpp"):
@@ -809,6 +822,7 @@ def metric_label_names(root: Path) -> Set[str]:
             if "MetricsRegistry" not in p.name and "metric" not in text.lower():
                 continue
             labels |= set(METRIC_LABEL.findall(text))
+            labels |= set(METRIC_LABEL_NEXT.findall(text))
     return labels
 
 

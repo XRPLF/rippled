@@ -33,6 +33,7 @@
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
+#include <xrpld/telemetry/MetricMacros.h>
 #include <xrpld/telemetry/MetricsRegistry.h>
 #include <xrpld/telemetry/PropagationHelpers.h>
 #include <xrpld/telemetry/TxSpanNames.h>
@@ -292,6 +293,21 @@ class NetworkOPsImp final : public NetworkOPs
             return std::chrono::duration_cast<std::chrono::microseconds>(
                 std::chrono::steady_clock::now() - start_);
         }
+
+        /**
+         * Microseconds from process start to the first FULL transition. This
+         * is the same quantity reported as `initial_sync_duration_us` in
+         * json(); reading it alone avoids copying the whole counter array.
+         * Thread-safe.
+         *
+         * @return Time to first FULL, or 0 if FULL was never reached.
+         */
+        std::uint64_t
+        initialSyncDurationUs() const
+        {
+            std::scoped_lock const lock(mutex_);
+            return initialSyncUs_;
+        }
     };
 
     /**
@@ -379,11 +395,17 @@ public:
     std::chrono::microseconds
     getServerStateDurationUs() const override;
 
+    std::uint64_t
+    getInitialSyncDurationUs() const override;
+
     std::string
     strOperatingMode(OperatingMode const mode, bool const admin) const override;
 
     std::string
     strOperatingMode(bool const admin = false) const override;
+
+    std::uint32_t
+    getLedgersBehindNetwork() const override;
 
     //
     // Transaction operations.
@@ -1008,6 +1030,33 @@ std::chrono::microseconds
 NetworkOPsImp::getServerStateDurationUs() const
 {
     return accounting_.currentStateDurationUs();
+}
+
+std::uint64_t
+NetworkOPsImp::getInitialSyncDurationUs() const
+{
+    return accounting_.initialSyncDurationUs();
+}
+
+std::uint32_t
+NetworkOPsImp::getLedgersBehindNetwork() const
+{
+    // The network tip is the highest ledger sequence any connected peer says it
+    // holds. Peers report their range in mtSTATUS_CHANGE, which PeerImp caches,
+    // so this is a read of already-received data: no new network round trip.
+    std::uint32_t networkTarget = 0;
+    registry_.get().getOverlay().foreach([&networkTarget](std::shared_ptr<Peer> const& peer) {
+        std::uint32_t minSeq = 0;
+        std::uint32_t maxSeq = 0;
+        peer->ledgerRange(minSeq, maxSeq);
+        networkTarget = std::max(networkTarget, maxSeq);
+    });
+
+    auto const validated = registry_.get().getLedgerMaster().getValidLedgerIndex();
+
+    // Floor at zero: we can legitimately be ahead of every peer's reported
+    // range, and a peer that has reported nothing yet leaves the target at 0.
+    return networkTarget > validated ? networkTarget - validated : 0;
 }
 
 inline std::string
@@ -2661,13 +2710,27 @@ NetworkOPsImp::setMode(OperatingMode om)
     if (mode_ == om)
         return;
 
+    // Capture the mode we are leaving before overwriting it: the transition
+    // edge, not just the destination, is what tells flapping apart from a
+    // clean climb to FULL.
+    auto const prevMode = mode_.load();
+
     mode_ = om;
 
     accounting_.mode(om);
 
-    // Record state change for OTel dashboard parity counter.
-    if (auto* mr = registry_.get().getMetricsRegistry())
-        mr->incrementStateChanges();
+    // Record the mode transition labelled with source and destination, so the
+    // dashboard can chart which edges of the sync state machine are traversed
+    // (e.g. repeated full->connected flapping vs. a one-way
+    // tracking->connected->full climb). Only reached on a real mode change,
+    // never in a hot loop, and there are only five modes so the label
+    // cardinality is bounded. strOperatingMode(mode, admin=false) supplies the
+    // names, which keeps them identical to the ones server_info reports.
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        registry_.get(),
+        "state_changes_total",
+        "Total operating mode changes",
+        {{"from", strOperatingMode(prevMode, false)}, {"to", strOperatingMode(om, false)}});
 
     JLOG(journal_.info()) << "STATE->" << strOperatingMode();
     pubServer();

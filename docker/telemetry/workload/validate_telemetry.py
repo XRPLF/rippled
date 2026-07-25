@@ -590,6 +590,14 @@ async def validate_metrics(
                         "handshake_",
                         "unl_",
                         "clock_close_offset",
+                        # Sync-state signals. sync_state carries the gate,
+                        # stall-seconds, ledgers-behind and time-to-first-FULL
+                        # sub-series; state_changes_total is now labelled with
+                        # the {from,to} transition edge, and
+                        # server_stall_events_total is the stall episode count.
+                        "sync_state",
+                        "state_changes_total",
+                        "server_stall_events",
                     )
                 )
             ]

@@ -32,7 +32,7 @@
       }
     ]
   },
-  "description": "What this shows: Fresh-node ledger-sync diagnostics: pre-quorum bootstrap (Domain 0) and the ledger/tx-set acquire pipeline.  —  Use it to: Find out why a freshly started node is slow to reach, or never reaches, server_state full.",
+  "description": "What this shows: Fresh-node ledger-sync diagnostics: pre-quorum bootstrap (Domain 0) and the ledger/tx-set acquire pipeline.  \u2014  Use it to: Find out why a freshly started node is slow to reach, or never reaches, server_state full.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -57,7 +57,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Rate of peer-hostname DNS resolutions, split by outcome (resolved or empty).*\n\n###### How it's computed:\n*Per-second rate of completed resolutions grouped by outcome, per node.*\n\n###### Reading it:\n*Resolved should account for every attempt; the empty line should stay flat at zero.*\n\n###### Healthy range:\n*A short burst of resolved at startup, then flat. Non-zero empty is always a defect.*\n\n###### Watch for:\n*Any empty rate means a configured bootstrap or [ips_fixed] hostname returned no address, so the node never even tries to dial that peer.*\n\n###### Keywords:\n- **DNS resolve** *(per node)* — turning a configured peer hostname into IP addresses before any dial is attempted; `outcome=empty` means the name resolved to nothing.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl::reportDnsResolve`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#dns-resolve)",
+      "description": "###### What this is:\n*Rate of peer-hostname DNS resolutions, split by outcome (resolved or empty).*\n\n###### How it's computed:\n*Per-second rate of completed resolutions grouped by outcome, per node.*\n\n###### Reading it:\n*Resolved should account for every attempt; the empty line should stay flat at zero.*\n\n###### Healthy range:\n*A short burst of resolved at startup, then flat. Non-zero empty is always a defect.*\n\n###### Watch for:\n*Any empty rate means a configured bootstrap or [ips_fixed] hostname returned no address, so the node never even tries to dial that peer.*\n\n###### Keywords:\n- **DNS resolve** *(per node)* \u2014 turning a configured peer hostname into IP addresses before any dial is attempted; `outcome=empty` means the name resolved to nothing.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl::reportDnsResolve`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#dns-resolve)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -160,7 +160,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Time taken to resolve a configured peer hostname, at the 95th percentile.*\n\n###### How it's computed:\n*Resolution duration samples aggregated to their 95th percentile per node.*\n\n###### Reading it:\n*Lower is better; it is the delay before the node can start dialling peers.*\n\n###### Healthy range:\n*Tens of milliseconds against a healthy resolver.*\n\n###### Watch for:\n*Seconds-scale latency means the resolver is timing out and every bootstrap attempt is paying that delay before the first dial.*\n\n###### Keywords:\n- **DNS resolve** *(per node)* — turning a configured peer hostname into IP addresses before any dial is attempted; slow resolution delays the whole bootstrap.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl::reportDnsResolve`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#dns-resolve)",
+      "description": "###### What this is:\n*Time taken to resolve a configured peer hostname, at the 95th percentile.*\n\n###### How it's computed:\n*Resolution duration samples aggregated to their 95th percentile per node.*\n\n###### Reading it:\n*Lower is better; it is the delay before the node can start dialling peers.*\n\n###### Healthy range:\n*Tens of milliseconds against a healthy resolver.*\n\n###### Watch for:\n*Seconds-scale latency means the resolver is timing out and every bootstrap attempt is paying that delay before the first dial.*\n\n###### Keywords:\n- **DNS resolve** *(per node)* \u2014 turning a configured peer hostname into IP addresses before any dial is attempted; slow resolution delays the whole bootstrap.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl::reportDnsResolve`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#dns-resolve)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -263,7 +263,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Rate of outbound peer connection attempts, split by terminal outcome.*\n\n###### How it's computed:\n*Per-second rate of finished dials grouped by outcome, per node. Filter the outcome set with the Dial Outcome variable.*\n\n###### Reading it:\n*Connected should dominate. The failure lines name the stage that broke: tcp_fail (no route or refused), tls_fail (TLS handshake), upgrade_fail (HTTP upgrade or protocol negotiation), timeout (no terminal state in time).*\n\n###### Healthy range:\n*Connected rising to the configured peer count, then flat with failures near zero.*\n\n###### Watch for:\n*All attempts landing on one failure outcome and no connected line — the node has no outbound peers and can never sync.*\n\n###### Keywords:\n- **Outbound dial latency** *(per node)* — an outbound peer connection attempt from TCP connect through TLS to protocol upgrade; each attempt ends in exactly one outcome.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[ConnectAttempt.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/ConnectAttempt.cpp)\n\n###### Function:\n`ConnectAttempt::reportOutcome`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#outbound-dial-latency)",
+      "description": "###### What this is:\n*Rate of outbound peer connection attempts, split by terminal outcome.*\n\n###### How it's computed:\n*Per-second rate of finished dials grouped by outcome, per node. Filter the outcome set with the Dial Outcome variable.*\n\n###### Reading it:\n*Connected should dominate. The failure lines name the stage that broke: tcp_fail (no route or refused), tls_fail (TLS handshake), upgrade_fail (HTTP upgrade or protocol negotiation), timeout (no terminal state in time).*\n\n###### Healthy range:\n*Connected rising to the configured peer count, then flat with failures near zero.*\n\n###### Watch for:\n*All attempts landing on one failure outcome and no connected line \u2014 the node has no outbound peers and can never sync.*\n\n###### Keywords:\n- **Outbound dial latency** *(per node)* \u2014 an outbound peer connection attempt from TCP connect through TLS to protocol upgrade; each attempt ends in exactly one outcome.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[ConnectAttempt.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/ConnectAttempt.cpp)\n\n###### Function:\n`ConnectAttempt::reportOutcome`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#outbound-dial-latency)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -366,7 +366,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Time from starting an outbound peer dial to its terminal outcome, at the 95th percentile.*\n\n###### How it's computed:\n*Dial duration samples aggregated to their 95th percentile per node.*\n\n###### Reading it:\n*Lower is better. The series covers successes and failures together, so a rising p95 usually means attempts are ending in timeout rather than being refused fast.*\n\n###### Healthy range:\n*Tens to low hundreds of milliseconds on a local or same-region peer.*\n\n###### Watch for:\n*A p95 pinned near the dial timeout, which means peers accept the TCP connection but never complete the handshake.*\n\n###### Keywords:\n- **Outbound dial latency** *(per node)* — elapsed time of an outbound peer connection attempt, measured to whichever outcome ends it.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[ConnectAttempt.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/ConnectAttempt.cpp)\n\n###### Function:\n`ConnectAttempt::reportOutcome`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#outbound-dial-latency)",
+      "description": "###### What this is:\n*Time from starting an outbound peer dial to its terminal outcome, at the 95th percentile.*\n\n###### How it's computed:\n*Dial duration samples aggregated to their 95th percentile per node.*\n\n###### Reading it:\n*Lower is better. The series covers successes and failures together, so a rising p95 usually means attempts are ending in timeout rather than being refused fast.*\n\n###### Healthy range:\n*Tens to low hundreds of milliseconds on a local or same-region peer.*\n\n###### Watch for:\n*A p95 pinned near the dial timeout, which means peers accept the TCP connection but never complete the handshake.*\n\n###### Keywords:\n- **Outbound dial latency** *(per node)* \u2014 elapsed time of an outbound peer connection attempt, measured to whichever outcome ends it.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[ConnectAttempt.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/ConnectAttempt.cpp)\n\n###### Function:\n`ConnectAttempt::reportOutcome`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#outbound-dial-latency)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -469,7 +469,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Rate of peer handshakes rejected during protocol negotiation, split by reason.*\n\n###### How it's computed:\n*Per-second rate of rejected handshakes grouped by reason, per node. Filter the reason set with the Handshake Reason variable.*\n\n###### Reading it:\n*Flat at zero is healthy. The reason names the exact check that rejected the peer, so one dominant reason is the fault to fix.*\n\n###### Healthy range:\n*Zero, or a low background rate of self_connection and remote_ip_mismatch on a NAT'd host.*\n\n###### Watch for:\n*wrong_network or invalid_network_id — the node is configured for a different network than its peers and will never reach a quorum. clock_skew points at the local clock; session_verify_failed and bad_public_key at a misbehaving peer.*\n\n###### Keywords:\n- **Handshake negotiation failure** *(per node)* — a peer connection rejected after TLS while checking network id, clock, keys and addresses; the reason label names the failing check.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[Handshake.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/Handshake.cpp)\n\n###### Function:\n`throwNegotiationFailure`\n\n###### References:\n[Peer protocol on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#handshake-negotiation-failure)",
+      "description": "###### What this is:\n*Rate of peer handshakes rejected during protocol negotiation, split by reason.*\n\n###### How it's computed:\n*Per-second rate of rejected handshakes grouped by reason, per node. Filter the reason set with the Handshake Reason variable.*\n\n###### Reading it:\n*Flat at zero is healthy. The reason names the exact check that rejected the peer, so one dominant reason is the fault to fix.*\n\n###### Healthy range:\n*Zero, or a low background rate of self_connection and remote_ip_mismatch on a NAT'd host.*\n\n###### Watch for:\n*wrong_network or invalid_network_id \u2014 the node is configured for a different network than its peers and will never reach a quorum. clock_skew points at the local clock; session_verify_failed and bad_public_key at a misbehaving peer.*\n\n###### Keywords:\n- **Handshake negotiation failure** *(per node)* \u2014 a peer connection rejected after TLS while checking network id, clock, keys and addresses; the reason label names the failing check.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[Handshake.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/Handshake.cpp)\n\n###### Function:\n`throwNegotiationFailure`\n\n###### References:\n[Peer protocol on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#handshake-negotiation-failure)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -572,7 +572,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Rate of validator-list fetches from each configured UNL site, split by outcome.*\n\n###### How it's computed:\n*Per-second rate of fetch attempts grouped by site and outcome, per node. Filter with the UNL Site and UNL Fetch Outcome variables.*\n\n###### Reading it:\n*accepted is the only success value. same_sequence and known_sequence are normal no-op refreshes of a list the node already holds. fetch_error, bad_status and parse_error are transport or content faults; expired, stale, untrusted, invalid and unsupported_version mean the list was retrieved but rejected.*\n\n###### Healthy range:\n*A first accepted per site at startup, then a steady low rate of same_sequence refreshes.*\n\n###### Watch for:\n*A site with only fetch_error or bad_status is unreachable. Only expired or invalid means the site is reachable but its list is unusable, so no trusted keys are loaded from it.*\n\n###### Keywords:\n- **UNL fetch outcome** *(per node)* — the result of retrieving and applying a validator list from a configured site; `accepted` is the only success.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[ValidatorSite.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/ValidatorSite.cpp)\n\n###### Function:\n`ValidatorSite::reportFetchOutcome`\n\n###### References:\n[UNL (Unique Node List)](https://xrpl.org/docs/concepts/consensus-protocol/unl) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#unl-fetch-outcome)",
+      "description": "###### What this is:\n*Rate of validator-list fetches from each configured UNL site, split by outcome.*\n\n###### How it's computed:\n*Per-second rate of fetch attempts grouped by site and outcome, per node. Filter with the UNL Site and UNL Fetch Outcome variables.*\n\n###### Reading it:\n*accepted is the only success value. same_sequence and known_sequence are normal no-op refreshes of a list the node already holds. fetch_error, bad_status and parse_error are transport or content faults; expired, stale, untrusted, invalid and unsupported_version mean the list was retrieved but rejected.*\n\n###### Healthy range:\n*A first accepted per site at startup, then a steady low rate of same_sequence refreshes.*\n\n###### Watch for:\n*A site with only fetch_error or bad_status is unreachable. Only expired or invalid means the site is reachable but its list is unusable, so no trusted keys are loaded from it.*\n\n###### Keywords:\n- **UNL fetch outcome** *(per node)* \u2014 the result of retrieving and applying a validator list from a configured site; `accepted` is the only success.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[ValidatorSite.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/ValidatorSite.cpp)\n\n###### Function:\n`ValidatorSite::reportFetchOutcome`\n\n###### References:\n[UNL (Unique Node List)](https://xrpl.org/docs/concepts/consensus-protocol/unl) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#unl-fetch-outcome)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -675,7 +675,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Trusted validator keys currently in effect, plotted against the number of agreeing validations a ledger needs.*\n\n###### How it's computed:\n*Two series read from the same gauge: trusted_keys (usable UNL size) and quorum (validations required to declare a ledger validated).*\n\n###### Reading it:\n*Trusted Keys must sit above Quorum. Where the lines cross, or where Trusted Keys is zero, the node cannot reach a quorum and will never validate a ledger no matter how healthy the rest of the pipeline looks.*\n\n###### Healthy range:\n*Trusted Keys comfortably above Quorum and both flat.*\n\n###### Watch for:\n*Trusted Keys at zero (no usable UNL loaded) or below Quorum. Steps in Quorum track validator-list changes; steps down in Trusted Keys mean keys were dropped.*\n\n###### Keywords:\n- **UNL quorum headroom** *(per node)* — trusted UNL key count minus the required quorum; at or below zero the node can never declare a ledger validated.\n- **UNL (Unique Node List)** *(per node)* — the list of validators a node trusts not to collude; the basis for its consensus and quorum.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerUnlQuorumGauge`\n\n###### References:\n[UNL (Unique Node List)](https://xrpl.org/docs/concepts/consensus-protocol/unl) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#unl-quorum-headroom)",
+      "description": "###### What this is:\n*Trusted validator keys currently in effect, plotted against the number of agreeing validations a ledger needs.*\n\n###### How it's computed:\n*Two series read from the same gauge: trusted_keys (usable UNL size) and quorum (validations required to declare a ledger validated).*\n\n###### Reading it:\n*Trusted Keys must sit above Quorum. Where the lines cross, or where Trusted Keys is zero, the node cannot reach a quorum and will never validate a ledger no matter how healthy the rest of the pipeline looks.*\n\n###### Healthy range:\n*Trusted Keys comfortably above Quorum and both flat.*\n\n###### Watch for:\n*Trusted Keys at zero (no usable UNL loaded) or below Quorum. Steps in Quorum track validator-list changes; steps down in Trusted Keys mean keys were dropped.*\n\n###### Keywords:\n- **UNL quorum headroom** *(per node)* \u2014 trusted UNL key count minus the required quorum; at or below zero the node can never declare a ledger validated.\n- **UNL (Unique Node List)** *(per node)* \u2014 the list of validators a node trusts not to collude; the basis for its consensus and quorum.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerUnlQuorumGauge`\n\n###### References:\n[UNL (Unique Node List)](https://xrpl.org/docs/concepts/consensus-protocol/unl) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#unl-quorum-headroom)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -786,7 +786,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*Spare trusted validator keys above the required quorum — the single number that says whether this node can ever validate.*\n\n###### How it's computed:\n*Trusted key count minus the required quorum, matched per node.*\n\n###### Reading it:\n*Positive is healthy. Zero or negative (red) means the trusted UNL is too small to ever satisfy quorum, so the node will stay short of a validated ledger.*\n\n###### Healthy range:\n*Positive; the exact figure depends on UNL size and the configured quorum.*\n\n###### Watch for:\n*Zero or below. Pair it with UNL Fetch Rate by Site & Outcome: a site stuck on fetch_error or expired is the usual cause of a UNL too small to meet quorum.*\n\n###### Keywords:\n- **UNL quorum headroom** *(per node)* — trusted UNL key count minus the required quorum; at or below zero the node can never declare a ledger validated.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerUnlQuorumGauge`\n\n###### References:\n[Validation quorum on xrpl.org](https://xrpl.org/docs/concepts/consensus-protocol/negative-unl) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#unl-quorum-headroom)",
+      "description": "###### What this is:\n*Spare trusted validator keys above the required quorum \u2014 the single number that says whether this node can ever validate.*\n\n###### How it's computed:\n*Trusted key count minus the required quorum, matched per node.*\n\n###### Reading it:\n*Positive is healthy. Zero or negative (red) means the trusted UNL is too small to ever satisfy quorum, so the node will stay short of a validated ledger.*\n\n###### Healthy range:\n*Positive; the exact figure depends on UNL size and the configured quorum.*\n\n###### Watch for:\n*Zero or below. Pair it with UNL Fetch Rate by Site & Outcome: a site stuck on fetch_error or expired is the usual cause of a UNL too small to meet quorum.*\n\n###### Keywords:\n- **UNL quorum headroom** *(per node)* \u2014 trusted UNL key count minus the required quorum; at or below zero the node can never declare a ledger validated.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerUnlQuorumGauge`\n\n###### References:\n[Validation quorum on xrpl.org](https://xrpl.org/docs/concepts/consensus-protocol/negative-unl) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#unl-quorum-headroom)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -853,7 +853,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*How far the network's agreed close time sits from this node's own clock.*\n\n###### How it's computed:\n*Signed offset in seconds, plus its magnitude so a threshold band applies in either direction.*\n\n###### Reading it:\n*Both series should hug zero. A negative signed value means the local clock runs ahead of the network, positive means it lags. The magnitude is what matters: the threshold lines sit at 1s (suspicious) and 60s.*\n\n###### Healthy range:\n*Magnitude under 1 second.*\n\n###### Watch for:\n*A magnitude above 1 second that does not decay, which delays consensus participation. Note that server_info only surfaces close_time_offset once the magnitude reaches 60 seconds, so this panel sees skew long before the API does; a persistent offset is a local NTP fault, not a network one.*\n\n###### Keywords:\n- **Clock close offset** *(per node)* — the difference between the network's agreed close time and this node's clock; a persistent offset delays consensus participation.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerClockSkewGauge`\n\n###### References:\n[Ledger close times on xrpl.org](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#clock-close-offset)",
+      "description": "###### What this is:\n*How far the network's agreed close time sits from this node's own clock.*\n\n###### How it's computed:\n*Signed offset in seconds, plus its magnitude so a threshold band applies in either direction.*\n\n###### Reading it:\n*Both series should hug zero. A negative signed value means the local clock runs ahead of the network, positive means it lags. The magnitude is what matters: the threshold lines sit at 1s (suspicious) and 60s.*\n\n###### Healthy range:\n*Magnitude under 1 second.*\n\n###### Watch for:\n*A magnitude above 1 second that does not decay, which delays consensus participation. Note that server_info only surfaces close_time_offset once the magnitude reaches 60 seconds, so this panel sees skew long before the API does; a persistent offset is a local NTP fault, not a network one.*\n\n###### Keywords:\n- **Clock close offset** *(per node)* \u2014 the difference between the network's agreed close time and this node's clock; a persistent offset delays consensus participation.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerClockSkewGauge`\n\n###### References:\n[Ledger close times on xrpl.org](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) \u00b7 [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#clock-close-offset)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -975,6 +975,472 @@
         "y": 61
       },
       "panels": []
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*Whether the node is still waiting to see a full network ledger before it will participate.*\n\n###### How it's computed:\n*sync_state series network_ledger_gate: 1 while the gate is closed, 0 once it opens.*\n\n###### Reading it:\n*0 (green) is healthy. A persistent 1 (red) means the node has never seen a complete network ledger, so it refuses transactions and can never reach full no matter how healthy the rest of the pipeline looks.*\n\n###### Healthy range:\n*0 within the first few minutes of startup.*\n\n###### Watch for:\n*A 1 that never clears. Pair it with the Bootstrap row \u2014 no peers or no quorum is the usual cause.*\n\n###### Keywords:\n- **Network ledger gate** *(per node)* \u2014 the startup guard that holds a node back until it has seen a full ledger from the network.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerSyncStateGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#network-ledger-gate)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 8,
+        "x": 0,
+        "y": 62
+      },
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(sync_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"network_ledger_gate\"}, \"series\", \"Gate Closed\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Network Ledger Gate",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*How long the node took, from process start, to reach the full server state for the first time.*\n\n###### How it's computed:\n*sync_state series initial_full_duration_us, converted from microseconds to seconds.*\n\n###### Reading it:\n*A value appears only once the node has actually synced. Zero (red) means it has never reached full \u2014 that is the signal, not missing data.*\n\n###### Healthy range:\n*Seconds to a few minutes on a warm node; longer on a fresh one that must acquire history.*\n\n###### Watch for:\n*A flat zero. The value never changes after the first full transition, so it either fills in or the node never synced.*\n\n###### Keywords:\n- **Time to first FULL** *(per node)* \u2014 elapsed time from process start until the node first reached the full server state.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerSyncStateGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#time-to-first-full)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 8,
+        "x": 8,
+        "y": 62
+      },
+      "id": 13,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(sync_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"initial_full_duration_us\"} / 1e6, \"series\", \"Time to FULL\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Time to First FULL",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*How many seconds the server's main loop has currently been unresponsive.*\n\n###### How it's computed:\n*sync_state series server_stall_seconds, the same duration the load monitor logs as \"Server stalled for N seconds\".*\n\n###### Reading it:\n*0 (green) is healthy. Any non-zero value means the main loop missed its heartbeat for at least the 10 second reporting threshold.*\n\n###### Healthy range:\n*0.*\n\n###### Watch for:\n*Any sustained non-zero value. A stall points at main-loop overload rather than sync data starvation, so check job-queue depth and disk latency next, not peer supply.*\n\n###### Keywords:\n- **Server stall** *(per node)* \u2014 the main loop failing to check in with the load monitor, measured in seconds of unresponsiveness.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[LoadManager.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/main/LoadManager.cpp)\n\n###### Function:\n`LoadManager::updateStallState`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#server-stall)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 8,
+        "x": 16,
+        "y": 62
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(sync_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"server_stall_seconds\"}, \"series\", \"Stalled\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Server Stall",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*How far this node's validated ledger trails the highest ledger any connected peer reports holding.*\n\n###### How it's computed:\n*sync_state series ledgers_behind: the peer-reported network tip minus this node's validated sequence, floored at zero.*\n\n###### Reading it:\n*Trending to zero is healthy convergence. Flat or rising means the node is not catching up. Zero also covers \"no peer has reported a newer ledger\", which on a node with no peers is the same thing.*\n\n###### Healthy range:\n*0 to 1 on a synced node.*\n\n###### Watch for:\n*A plateau or a climb during initial sync: the node is acquiring slower than the network advances, so it will never converge. Correlate with the acquire and job-queue panels.*\n\n###### Keywords:\n- **Ledgers behind network** *(per node)* \u2014 the gap between the peer-reported network tip and this node's own validated ledger sequence.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerSyncStateGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#ledgers-behind-network)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Ledgers",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": 1800000,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 0,
+        "y": 74
+      },
+      "id": 15,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(sync_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"ledgers_behind\"}, \"series\", \"Ledgers Behind\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Ledgers Behind Network",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*How often the server enters a NEW stall episode, as opposed to how long one stall lasts.*\n\n###### How it's computed:\n*Per-second rate of server_stall_events_total, which counts once per stall episode rather than once per stalled second.*\n\n###### Reading it:\n*Flat at zero is healthy. Read it beside the Server Stall stat: a rising rate means repeated fresh stalls, while a flat rate with a large stall value means one long unresolved stall.*\n\n###### Healthy range:\n*0.*\n\n###### Watch for:\n*Any repeating rate. Recurring short stalls and one long stall have different causes, and this panel is what separates them.*\n\n###### Keywords:\n- **Server stall** *(per node)* \u2014 the main loop failing to check in with the load monitor, measured in seconds of unresponsiveness.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[LoadManager.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/main/LoadManager.cpp)\n\n###### Function:\n`LoadManager::updateStallState`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#server-stall)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Episodes / Sec",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": 1800000,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 12,
+        "y": 74
+      },
+      "id": 16,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(rate(server_stall_events_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]), \"series\", \"Stall Episodes\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Server Stall Event Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*Which edges of the sync state machine the node actually traversed over the dashboard window, counted per from-to pair.*\n\n###### How it's computed:\n*increase(state_changes_total) over the selected range, summed by the from and to labels.*\n\n###### Reading it:\n*A clean fresh sync shows single traversals along disconnected to connected to syncing to tracking to full. Repeated counts on the full-to-connected edge paired with connected-to-full is flapping.*\n\n###### Healthy range:\n*One traversal per climb edge and nothing on the reverse edges.*\n\n###### Watch for:\n*High counts on a reverse edge such as full to connected: the node reaches full and keeps losing it, which an unlabelled state-change total cannot distinguish from a clean climb.*\n\n###### Keywords:\n- **Operating mode / server state** *(per node)* \u2014 how fully the node is participating, in ascending order: disconnected, connected, syncing, tracking, full.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[NetworkOPs.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/NetworkOPs.cpp)\n\n###### Function:\n`NetworkOPsImp::setMode`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#operating-mode-server-state)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "displayName": "${__field.labels.series}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 86
+      },
+      "id": 17,
+      "options": {
+        "displayMode": "gradient",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 16,
+        "minVizWidth": 8,
+        "namePlacement": "left",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "manual",
+        "valueMode": "color"
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(sum by (from, to) (increase(state_changes_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", from=~\"$mode_from\", to=~\"$mode_to\"}[$__range])), \"series\", \"$1\", \"from\", \"(.*)\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Mode Transitions by Edge",
+      "type": "bargauge"
     }
   ],
   "schemaVersion": 39,
@@ -1200,6 +1666,46 @@
         "description": "Filter validator-list fetches by outcome (accepted is the only success)",
         "type": "query",
         "query": "label_values(unl_fetch_total, outcome)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "mode_from",
+        "label": "Mode From",
+        "description": "Filter mode transitions by the state being left [disconnected / connected / syncing / tracking / full]",
+        "type": "query",
+        "query": "label_values(state_changes_total, from)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "mode_to",
+        "label": "Mode To",
+        "description": "Filter mode transitions by the state being entered [disconnected / connected / syncing / tracking / full]",
+        "type": "query",
+        "query": "label_values(state_changes_total, to)",
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"

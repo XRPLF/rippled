@@ -27,6 +27,7 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/app/main/LoadManager.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/core/TimeKeeper.h>
@@ -255,8 +256,10 @@ MetricsRegistry::initSyncInstruments()
         "validations_sent_total", "Total validations sent by this node");
     validationsCheckedCounter_ = meter_->CreateUInt64Counter(
         "validations_checked_total", "Total network validations received and checked");
-    stateChangesCounter_ =
-        meter_->CreateUInt64Counter("state_changes_total", "Total operating mode changes");
+    // state_changes_total is NOT created here. It is emitted at its call site
+    // (NetworkOPsImp::setMode) through XRPL_METRIC_COUNTER_INC_LABELED so it
+    // can carry the {from,to} transition labels; a registry-owned instrument
+    // would only give an unlabelled total.
     // jq_trans_overflow_total is observed from Overlay's existing cumulative
     // atomic (Overlay::getJqTransOverflow()) rather than pushed. The overlay
     // owns the only increment site (PeerImp), so an ObservableCounter reads the
@@ -483,6 +486,8 @@ MetricsRegistry::registerAsyncGauges()
     registerValidationTotalsCounters();
     registerUnlQuorumGauge();
     registerClockSkewGauge();
+    registerSyncStateGauge();
+    registerStallEventsCounter();
 }
 
 void
@@ -1549,6 +1554,89 @@ MetricsRegistry::registerClockSkewGauge()
         this);
 }
 
+void
+MetricsRegistry::registerSyncStateGauge()
+{
+    // --- Sync diagnostics: why a fresh node is not FULL yet ---
+    // Four values that previously lived only in a log line or in server_info
+    // JSON. All four are cheap reads pulled on the ~10 s reader tick.
+    syncStateGauge_ =
+        meter_->CreateInt64ObservableGauge("sync_state", "Sync-pipeline health signals");
+    syncStateGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* name, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{"metric", name}});
+                };
+
+                auto& ops = app.getOPs();
+
+                // Time to first FULL. Zero means the node has not synced yet,
+                // which is exactly the case this signal exists to expose.
+                observe(
+                    "initial_full_duration_us",
+                    static_cast<int64_t>(ops.getInitialSyncDurationUs()));
+
+                // 1 = still waiting for a full network ledger. While this is
+                // set the node refuses transactions and cannot reach FULL.
+                observe("network_ledger_gate", ops.isNeedNetworkLedger() ? 1 : 0);
+
+                // Current main-loop stall duration; 0 when healthy.
+                observe(
+                    "server_stall_seconds",
+                    static_cast<int64_t>(app.getLoadManager().getCurrentStallSeconds()));
+
+                // Distance from the network tip, floored at zero by the
+                // accessor.
+                observe("ledgers_behind", static_cast<int64_t>(ops.getLedgersBehindNetwork()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerStallEventsCounter()
+{
+    // --- Sync diagnostics: stall episode count ---
+    // Observed rather than pushed: LoadManager's monitor thread already owns
+    // the cumulative tally, and an ObservableCounter reads it each collection
+    // cycle without threading a push path through the load-monitor loop.
+    // Kept out of the sync_state gauge because a cumulative total needs
+    // counter aggregation for rate() to be meaningful.
+    stallEventsObservable_ = meter_->CreateInt64ObservableCounter(
+        "server_stall_events_total", "Total server main-loop stall episodes");
+    stallEventsObservable_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            try
+            {
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                    ->Observe(
+                        static_cast<int64_t>(self->app_.getLoadManager().getStallEventCount()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
 #endif  // XRPL_ENABLE_TELEMETRY
 
 // -----------------------------------------------------------------
@@ -1579,15 +1667,6 @@ MetricsRegistry::incrementValidationsChecked()
 #ifdef XRPL_ENABLE_TELEMETRY
     if (enabled_ && validationsCheckedCounter_)
         validationsCheckedCounter_->Add(1);
-#endif
-}
-
-void
-MetricsRegistry::incrementStateChanges()
-{
-#ifdef XRPL_ENABLE_TELEMETRY
-    if (enabled_ && stateChangesCounter_)
-        stateChangesCounter_->Add(1);
 #endif
 }
 

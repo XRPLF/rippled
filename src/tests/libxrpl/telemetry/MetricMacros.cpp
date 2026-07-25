@@ -1017,4 +1017,233 @@ TEST(MetricMacros, sync_diagnostics_metrics_emit_nothing_when_registry_disabled)
     EXPECT_EQ(app.registry().meterCalls(), 0);
 }
 
+// -----------------------------------------------------------------
+// Sync-state diagnostics (WP-A2).
+//
+// Asserts the EXACT values and label shapes of the five sync-state signals:
+//   state_changes_total{from,to}    NetworkOPsImp::setMode
+//   sync_state{metric}             MetricsRegistry::registerSyncStateGauge
+//                                    initial_full_duration_us
+//                                    network_ledger_gate
+//                                    server_stall_seconds
+//                                    ledgers_behind
+//   server_stall_events_total      MetricsRegistry::registerStallEventsCounter
+//
+// The counter goes through the same macro production uses. The two observable
+// instruments are registered directly on the SDK meter, mirroring the
+// production callback shape, because the real MetricsRegistry's enabled path
+// cannot be linked into this standalone binary (see the file header).
+// -----------------------------------------------------------------
+
+// state_changes_total is keyed on the (from, to) PAIR, so a transition edge is
+// its own series. This is the whole point of the label: an unlabelled total
+// cannot tell a clean tracking->connected->full climb from full->connected
+// flapping, because both produce the same count.
+TEST(MetricMacros, state_changes_total_keys_series_on_from_to_pair)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // Mirrors the production call site: one macro invocation, the label values
+    // supplied by strOperatingMode() on the previous and new mode.
+    auto const transition = [&app](char const* from, char const* to) {
+        XRPL_METRIC_COUNTER_INC_LABELED(
+            app,
+            "state_changes_total",
+            "Total operating mode changes",
+            {{"from", std::string(from)}, {"to", std::string(to)}});
+    };
+
+    // A clean climb: disconnected -> connected -> syncing -> full, once each.
+    transition("disconnected", "connected");
+    transition("connected", "syncing");
+    transition("syncing", "full");
+    // Then flapping: full -> connected twice more, and connected -> full twice.
+    transition("full", "connected");
+    transition("full", "connected");
+    transition("connected", "full");
+    transition("connected", "full");
+
+    auto const data = provider.collect();
+
+    // Six distinct (from, to) pairs -> exactly six series.
+    ASSERT_EQ(data.at("state_changes_total").size(), 6u);
+
+    // The climb edges, each traversed exactly once.
+    EXPECT_EQ(
+        counterValue(data, "state_changes_total", attrs("from", "disconnected", "to", "connected")),
+        1);
+    EXPECT_EQ(
+        counterValue(data, "state_changes_total", attrs("from", "connected", "to", "syncing")), 1);
+    EXPECT_EQ(counterValue(data, "state_changes_total", attrs("from", "syncing", "to", "full")), 1);
+
+    // The flap edges carry their own exact counts and do not merge into the
+    // climb edges above: full->connected is 2, not folded into connected->full.
+    EXPECT_EQ(
+        counterValue(data, "state_changes_total", attrs("from", "full", "to", "connected")), 2);
+    EXPECT_EQ(
+        counterValue(data, "state_changes_total", attrs("from", "connected", "to", "full")), 2);
+
+    // Direction matters: connected->syncing exists, syncing->connected does not,
+    // proving the pair is ordered rather than an unordered edge set.
+    EXPECT_EQ(
+        data.at("state_changes_total").count(attrs("from", "syncing", "to", "connected")), 0u);
+
+    // NEGATIVE: a mode pair never emitted has no series at all.
+    EXPECT_EQ(data.at("state_changes_total").count(attrs("from", "tracking", "to", "full")), 0u);
+
+    // Every series key carries exactly the two expected label names and nothing
+    // else -- no stray dimension inflating the cardinality.
+    for (auto const& [labels, point] : data.at("state_changes_total"))
+    {
+        ASSERT_EQ(labels.size(), 2u);
+        EXPECT_EQ(labels.count("from"), 1u);
+        EXPECT_EQ(labels.count("to"), 1u);
+    }
+}
+
+// sync_state fans four independent signals out of ONE callback under the
+// `metric` label, mirroring MetricsRegistry::registerSyncStateGauge(). The
+// values chosen are the diagnostically interesting combination: never reached
+// FULL (0 duration) while the gate is still closed, the loop is stalled, and
+// the node trails the network.
+TEST(MetricMacros, sync_state_gauge_observes_exact_stuck_node_values)
+{
+    CollectingProvider const provider;
+
+    // The live values the callback reports, owned by the test exactly as the
+    // real registry reads them from NetworkOPs/LoadManager on each tick.
+    struct Observed
+    {
+        std::int64_t initialFullDurationUs;
+        std::int64_t networkLedgerGate;
+        std::int64_t serverStallSeconds;
+        std::int64_t ledgersBehind;
+    };
+    // A node that never synced: no FULL yet, gate closed, 42 s stalled, 150
+    // ledgers behind (network tip 250 vs our validated 100).
+    Observed observed{0, 1, 42, 150};
+
+    // Keep the instrument alive for the whole test: destroying the handle
+    // deregisters the callback, which is why the real registry holds a member.
+    auto gauge =
+        provider.meter()->CreateInt64ObservableGauge("sync_state", "Sync-pipeline health signals");
+    gauge->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto const* self = static_cast<Observed const*>(state);
+            // Same Observe() form the production callback uses.
+            auto observe = [&](char const* name, std::int64_t value) {
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
+                    ->Observe(value, {{"metric", name}});
+            };
+            observe("initial_full_duration_us", self->initialFullDurationUs);
+            observe("network_ledger_gate", self->networkLedgerGate);
+            observe("server_stall_seconds", self->serverStallSeconds);
+            observe("ledgers_behind", self->ledgersBehind);
+        },
+        &observed);
+
+    auto const data = provider.collect();
+
+    // Exactly four series, one per `metric` value -- the four signals must not
+    // collapse into a single series.
+    ASSERT_EQ(data.at("sync_state").size(), 4u);
+
+    // Zero is a REAL observed value here, not a missing series: it is the
+    // "never reached FULL" signal, so the series must exist and read 0.
+    ASSERT_EQ(data.at("sync_state").count(attrs("metric", "initial_full_duration_us")), 1u);
+    EXPECT_EQ(gaugeValue(data, "sync_state", attrs("metric", "initial_full_duration_us")), 0);
+
+    EXPECT_EQ(gaugeValue(data, "sync_state", attrs("metric", "network_ledger_gate")), 1);
+    EXPECT_EQ(gaugeValue(data, "sync_state", attrs("metric", "server_stall_seconds")), 42);
+    EXPECT_EQ(gaugeValue(data, "sync_state", attrs("metric", "ledgers_behind")), 150);
+
+    // The label key is exactly "metric" and it is the only label present.
+    auto const& firstKey = data.at("sync_state").begin()->first;
+    ASSERT_EQ(firstKey.size(), 1u);
+    EXPECT_EQ(firstKey.begin()->first, "metric");
+
+    // NEGATIVE: the stall EPISODE count is deliberately NOT a sync_state
+    // series -- it is a separate cumulative instrument, so querying it here
+    // must find nothing.
+    EXPECT_EQ(data.at("sync_state").count(attrs("metric", "server_stall_events")), 0u);
+
+    // A healthy node reports the complementary values through the same
+    // callback: synced in 12.5 s, gate open, no stall, at the tip.
+    observed = Observed{12'500'000, 0, 0, 0};
+    auto const healthy = provider.collect();
+    EXPECT_EQ(
+        gaugeValue(healthy, "sync_state", attrs("metric", "initial_full_duration_us")), 12'500'000);
+    EXPECT_EQ(gaugeValue(healthy, "sync_state", attrs("metric", "network_ledger_gate")), 0);
+    EXPECT_EQ(gaugeValue(healthy, "sync_state", attrs("metric", "server_stall_seconds")), 0);
+    EXPECT_EQ(gaugeValue(healthy, "sync_state", attrs("metric", "ledgers_behind")), 0);
+}
+
+// server_stall_events_total is a cumulative ObservableCounter, not a gauge
+// series. It must aggregate as a Sum (so rate() is meaningful) and be
+// unlabelled, mirroring MetricsRegistry::registerStallEventsCounter().
+TEST(MetricMacros, stall_events_counter_observes_exact_cumulative_count)
+{
+    CollectingProvider const provider;
+
+    // Three stall episodes reported so far by the load-monitor thread.
+    std::int64_t stallEpisodes = 3;
+
+    auto counter = provider.meter()->CreateInt64ObservableCounter(
+        "server_stall_events_total", "Total server main-loop stall episodes");
+    counter->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto const* value = static_cast<std::int64_t const*>(state);
+            // Production observes this with NO labels.
+            opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
+                ->Observe(*value);
+        },
+        &stallEpisodes);
+
+    auto const data = provider.collect();
+
+    // Exactly one unlabelled series, read through counterValue() -- which
+    // unwraps a SumPointData, so this also proves the instrument aggregates as
+    // a counter and not as a last-value gauge.
+    ASSERT_EQ(data.at("server_stall_events_total").size(), 1u);
+    EXPECT_TRUE(data.at("server_stall_events_total").begin()->first.empty());
+    EXPECT_EQ(counterValue(data, "server_stall_events_total", otel_sdk::PointAttributes{}), 3);
+
+    // Monotonic: a later collection sees the higher total, not a delta.
+    stallEpisodes = 5;
+    EXPECT_EQ(
+        counterValue(provider.collect(), "server_stall_events_total", otel_sdk::PointAttributes{}),
+        5);
+}
+
+// RUNTIME-DISABLED no-op proof for the counter half of WP-A2: with the registry
+// disabled, the setMode call site emits NOTHING -- no series for
+// state_changes_total, and meter() is never consulted, so not even an
+// instrument was created.
+TEST(MetricMacros, state_changes_total_emits_nothing_when_registry_disabled)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/false, provider.meter());
+
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app,
+        "state_changes_total",
+        "Total operating mode changes",
+        {{"from", std::string("connected")}, {"to", std::string("full")}});
+
+    auto const data = provider.collect();
+
+    // Total absence, not a zero-valued series.
+    EXPECT_EQ(data.count("state_changes_total"), 0u);
+    EXPECT_EQ(data.size(), 0u);
+
+    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // macro asked for a meter.
+    EXPECT_EQ(app.registry().meterCalls(), 0);
+}
+
 #endif  // XRPL_ENABLE_TELEMETRY

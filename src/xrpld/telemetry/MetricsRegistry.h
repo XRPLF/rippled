@@ -36,7 +36,6 @@
  * |       +-- ledgers_closed_total
  * |       +-- validations_sent_total
  * |       +-- validations_checked_total
- * |       +-- state_changes_total
  * |       +-- ledger_history_mismatch_total{reason}
  * |       +-- txq_expired_total
  * |       +-- txq_dropped_total{reason}
@@ -61,7 +60,12 @@
  * +-- State tracking (mode value, time in state)
  * +-- Storage detail (NuDB sizes)
  * +-- Validation agreement (1h/24h pct, counts)
+ * +-- UNL quorum (trusted keys vs required quorum)
+ * +-- Clock close offset (local clock skew)
+ * +-- Sync state (time to first FULL, network-ledger gate,
+ * |               server stall seconds, ledgers behind network)
  * +-- jq_trans_overflow_total (observed from Overlay)
+ * +-- server_stall_events_total (observed from LoadManager)
  *
  * Control-flow for async gauges:
  *
@@ -371,14 +375,6 @@ public:
     incrementValidationsChecked();
 
     /**
-     * Increment the state_changes_total counter.
-     * Called from NetworkOPsImp::setMode() when the server operating mode
-     * changes (e.g. CONNECTED -> SYNCING -> TRACKING -> FULL).
-     */
-    void
-    incrementStateChanges();
-
-    /**
      * Increment the ledger_history_mismatch_total counter for a reason.
      * Called from LedgerHistory::handleMismatch() once the mismatch has
      * been classified. The reason label turns fork diagnosis from a
@@ -563,6 +559,18 @@ private:
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> clockSkewGauge_;
     /**
+     * Observable gauge for the sync-pipeline state signals (time to first
+     * FULL, network-ledger gate, server stall, ledgers behind the network).
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> syncStateGauge_;
+    /**
+     * ObservableCounter: server_stall_events_total — observed from
+     * LoadManager::getStallEventCount() (cumulative episode tally owned by the
+     * load-monitor thread).
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        stallEventsObservable_;
+    /**
      * Observable gauge for build version info (label-based, value=1).
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> buildInfoGauge_;
@@ -636,11 +644,6 @@ private:
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         validationsCheckedCounter_;
-    /**
-     * Counter: state_changes_total — incremented on operating mode transitions.
-     */
-    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
-        stateChangesCounter_;
     /**
      * ObservableCounter: jq_trans_overflow_total — observed from
      * Overlay::getJqTransOverflow() (cumulative overflow tally owned by the overlay).
@@ -780,7 +783,56 @@ private:
      */
     void
     registerClockSkewGauge();  // sync diagnostics: close-time offset
-#endif                         // XRPL_ENABLE_TELEMETRY
+
+    /**
+     * Register the `sync_state` gauge.
+     *
+     * One instrument fanning out four series under the `metric` attribute,
+     * each answering a different "why is this node not FULL yet?" question
+     * that previously existed only in a log line or in server_info JSON:
+     *
+     *   `initial_full_duration_us` — microseconds from process start to the
+     *     first FULL transition (NetworkOPs::getInitialSyncDurationUs()).
+     *     Stays 0 until FULL is reached, so a flat 0 IS the "never synced"
+     *     signal; once set it never changes again.
+     *   `network_ledger_gate` — 1 while the node is still waiting to see a
+     *     full network ledger (NetworkOPs::isNeedNetworkLedger()), else 0. A
+     *     persistent 1 blocks transaction submission and FULL.
+     *   `server_stall_seconds` — current main-loop stall duration
+     *     (LoadManager::getCurrentStallSeconds()), 0 when healthy.
+     *   `ledgers_behind` — network tip minus our validated sequence
+     *     (NetworkOPs::getLedgersBehindNetwork()).
+     *
+     * The monotonic stall-episode count is a separate instrument
+     * (`server_stall_events_total`) because a counter and a gauge cannot share
+     * one instrument: Prometheus would otherwise see a cumulative total under
+     * last-value aggregation and `rate()` would be meaningless.
+     *
+     * @note Pulled on the OTel reader thread (~10 s tick), never on a hot
+     * path. Three of the four reads are a lock or atomic load; `ledgers_behind`
+     * additionally walks the connected-peer list, reading each peer's already
+     * cached ledger range — bounded by peer count and issuing no network I/O.
+     */
+    void
+    registerSyncStateGauge();  // sync diagnostics: gate, stall, ledgers behind
+
+    /**
+     * Register the `server_stall_events_total` observable counter.
+     *
+     * Observes LoadManager::getStallEventCount(): how many distinct stall
+     * episodes the monitor thread has reported since process start. Separate
+     * from `sync_state` because it is cumulative and monotonic, so it needs
+     * counter (not last-value) aggregation for `rate()` to mean anything.
+     *
+     * Read together with `sync_state{metric="server_stall_seconds"}`: a rising
+     * event count means repeated fresh stalls, while a flat count with a large
+     * stall-seconds value means one long unresolved stall.
+     *
+     * @note Pulled on the OTel reader thread (~10 s tick); one atomic load.
+     */
+    void
+    registerStallEventsCounter();  // sync diagnostics: stall episode count
+#endif                             // XRPL_ENABLE_TELEMETRY
 };
 
 }  // namespace telemetry

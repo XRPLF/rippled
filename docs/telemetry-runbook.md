@@ -2157,6 +2157,63 @@ first one that is wrong and fix it before reading further panels.
 If all five steps are clean the bootstrap stage is healthy, and the problem is
 in the **Sync pipeline** row instead.
 
+#### Sync pipeline — ordered diagnosis
+
+Once bootstrap is clean, work the Sync pipeline row in this order. As above,
+each step gates the next: stop at the first one that is wrong.
+
+1. **Did the node ever sync at all?**
+   Panel _Time to First FULL_ (`sync_state`, `metric=initial_full_duration_us`,
+   shown in seconds). This is a one-shot measurement: it fills in the moment the
+   node first reaches `full` and never changes again. So there are exactly two
+   readings that matter — a value, meaning the node synced and this is how long
+   it took, or a flat zero (red), meaning it has **never** reached `full`. A
+   flat zero is the signal, not missing data; everything below explains why.
+   Do not read a rising or falling trend into this panel — it cannot have one.
+
+2. **Is the node gated on the network ledger?**
+   Panel _Network Ledger Gate_ (`sync_state`, `metric=network_ledger_gate`). A
+   persistent 1 (red) means the node has never seen a complete ledger from the
+   network, so it refuses submitted transactions and cannot reach `full` however
+   healthy the acquire pipeline looks. This normally clears within the first
+   minutes of startup; a 1 that never clears sends you back to the Bootstrap row
+   (no peers, or no quorum) rather than deeper into the pipeline.
+
+3. **Is the server stalling rather than starving?**
+   Panels _Server Stall_ (`sync_state`, `metric=server_stall_seconds`) and
+   _Server Stall Event Rate_ (`server_stall_events_total`). A non-zero stall
+   means the main loop missed its heartbeat for at least 10 seconds, which is
+   main-loop **overload**, not sync data starvation — so the fix is in job-queue
+   depth and disk latency, not peer supply. Read the two panels together, as
+   they separate two different faults that look identical in a log:
+   - Large stall seconds with a **flat** event rate — one long unresolved
+     stall. Note that past 600 seconds the server deliberately fails with a
+     logic error, so a stall approaching that is about to end the process.
+   - Small stall seconds with a **rising** event rate — repeated short stalls;
+     the server keeps recovering and re-stalling, which points at periodic work
+     (sweeps, large writes) rather than a single stuck operation.
+
+4. **How far behind is it, and is it converging?**
+   Panel _Ledgers Behind Network_ (`sync_state`, `metric=ledgers_behind`). The
+   target is the highest ledger any connected peer reports holding, so this is
+   the gap the node must close. Trending down to 0 is healthy convergence; flat
+   or rising means the node acquires slower than the network advances and will
+   never converge on its own. One caveat when reading a zero: the value is
+   floored at 0 and the target comes from peer reports, so a node with no peers
+   — or whose peers have reported no range yet — also reads 0. Confirm against
+   the peer count before treating a 0 here as "at the tip".
+
+5. **Which state edges is it actually taking?**
+   Panel _Mode Transitions by Edge_ (`state_changes_total`, grouped by `from`
+   and `to`). A clean fresh sync traverses each climb edge
+   (`disconnected`→`connected`→`syncing`→`tracking`→`full`) roughly once.
+   Repeated counts on a reverse edge such as `full`→`connected`, paired with
+   `connected`→`full`, is flapping: the node keeps reaching `full` and losing
+   it. Flapping with a healthy step 4 points back at step 3 (stalls) or at the
+   Bootstrap row's clock and quorum panels, since those are what drop a node out
+   of `full` once it has arrived. Use the _Mode From_ and _Mode To_ template
+   variables to isolate one edge.
+
 ## Performance Tuning
 
 | Scenario                 | Recommendation                                            |
