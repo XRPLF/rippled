@@ -18,7 +18,8 @@
  *
  *  CONSEQUENCE for the sync-diagnostics gauges (`unl_quorum`,
  *  `clock_close_offset_seconds`, `sync_state`,
- *  `server_stall_events_total`, `sync_acquire`, `shamap_cache_hit_rate`):
+ *  `server_stall_events_total`, `sync_acquire`, `shamap_cache_hit_rate`,
+ *  `jobq_backlog`, `jobq_saturation`):
  *  this file CANNOT assert an observed gauge
  *  value, because on this build the gauges do not exist -- their registration
  *  methods and the OTel instrument members are inside
@@ -26,7 +27,8 @@
  *  is provable here, and what the tests below assert, is the complementary
  *  half: that nothing is registered and no service is consulted. The exact
  *  observed values (trusted_keys=5, quorum=4, offset=-3, the sync_state /
- *  stall-episode values, and the acquire-progress / cache-hit-rate values) are
+ *  stall-episode values, the acquire-progress / cache-hit-rate values, and the
+ *  per-type backlog / pool-saturation values) are
  *  asserted in MetricMacros.cpp, which is the file compiled when telemetry IS
  *  enabled.
  */
@@ -382,10 +384,11 @@ TEST_F(MetricsRegistryTest, destructor_calls_stop)
 // `clock_close_offset_seconds` reads TimeKeeper::closeOffset(); `sync_state` and
 // `server_stall_events_total` read NetworkOPs and LoadManager; `sync_acquire`
 // reads InboundLedgers::acquireProgress() and `shamap_cache_hit_rate` reads the
-// node Family's tree-node cache. All are
+// node Family's tree-node cache; `jobq_backlog` and `jobq_saturation` read
+// JobQueue::getJobTypeCounts() / getWorkerSaturation(). All are
 // reached through the ServiceRegistry, and MockServiceRegistry::getValidators()
 // / getTimeKeeper() / getOPs() / getLoadManager() / getInboundLedgers() /
-// getNodeFamily() THROW std::logic_error. So "no
+// getNodeFamily() / getJobQueue() THROW std::logic_error. So "no
 // gauge callback ran" is directly observable here: had registerAsyncGauges() run
 // and had a callback fired, one of those accessors would have thrown.
 //
@@ -425,7 +428,9 @@ TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
     // start() is where registerAsyncGauges() -- and with it
     // registerUnlQuorumGauge() / registerClockSkewGauge() /
     // registerSyncStateGauge() / registerStallEventsCounter() /
-    // registerSyncAcquireGauge() / registerCacheHitRateDetailGauge() -- would run.
+    // registerSyncAcquireGauge() / registerCacheHitRateDetailGauge() /
+    // registerJobQueueBacklogGauge() / registerJobQueueSaturationGauge() --
+    // would run.
     EXPECT_NO_THROW(registry.start("http://localhost:4318/v1/metrics"));
 
     // detachCallbacks() is the shutdown hook the real gauges honour. It must be
@@ -454,6 +459,11 @@ TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
     // Family's tree-node cache. Neither was consulted above.
     EXPECT_THROW(mockApp_.getInboundLedgers(), std::logic_error);
     EXPECT_THROW(mockApp_.getNodeFamily(), std::logic_error);
+    // The service both WP-A4 job-queue gauges read: jobq_backlog polls
+    // getJobTypeCounts() and jobq_saturation polls getWorkerSaturation(),
+    // both on the JobQueue. Neither was consulted above, so neither gauge
+    // took the JobQueue mutex on a telemetry-off build.
+    EXPECT_THROW(mockApp_.getJobQueue(), std::logic_error);
 }
 
 // Even asking for enabled=true registers no sync-diagnostics gauge on a
@@ -473,9 +483,11 @@ TEST_F(MetricsRegistryTest, enabled_flag_alone_registers_no_gauges_when_compiled
     // Yet the whole lifecycle stays inert. If registerAsyncGauges() had run and
     // registered registerUnlQuorumGauge()/registerClockSkewGauge()/
     // registerSyncStateGauge()/registerStallEventsCounter()/
-    // registerSyncAcquireGauge()/registerCacheHitRateDetailGauge(), a callback
-    // would reach getValidators()/getTimeKeeper()/getOPs()/getLoadManager()/
-    // getInboundLedgers()/getNodeFamily() and throw std::logic_error.
+    // registerSyncAcquireGauge()/registerCacheHitRateDetailGauge()/
+    // registerJobQueueBacklogGauge()/registerJobQueueSaturationGauge(), a
+    // callback would reach getValidators()/getTimeKeeper()/getOPs()/
+    // getLoadManager()/getInboundLedgers()/getNodeFamily()/getJobQueue() and
+    // throw std::logic_error.
     EXPECT_NO_THROW(enabledRequest.start("http://localhost:4318/v1/metrics"));
     EXPECT_NO_THROW(enabledRequest.detachCallbacks());
     EXPECT_NO_THROW(enabledRequest.stop());

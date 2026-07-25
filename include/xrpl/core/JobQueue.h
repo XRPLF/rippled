@@ -32,6 +32,7 @@
 #include <set>
 #include <string>
 #include <type_traits>
+#include <vector>
 
 namespace xrpl {
 
@@ -214,6 +215,110 @@ public:
      */
     int
     getJobCountGE(JobType t) const;
+
+    /**
+     * Occupancy snapshot for a single JobType.
+     *
+     * A plain value type so it can cross the libxrpl/xrpld boundary: xrpld
+     * telemetry observes queue occupancy without libxrpl gaining any
+     * dependency on the telemetry code.
+     *
+     * `deferred` is the field with no other exposure anywhere. The
+     * sync-critical types run at tiny concurrency limits (`JtLedgerReq` and
+     * `JtLedgerData` are capped at 3 in JobTypes.h), so a job of those types
+     * is commonly held back rather than merely queued, and a held-back job is
+     * invisible in `waiting` and `running` alike.
+     */
+    struct JobTypeCount
+    {
+        /**
+         * The job type these counts describe. The caller turns this into a
+         * label via JobTypes::name(), so the name is not duplicated here.
+         */
+        JobType type{JtInvalid};
+
+        /**
+         * Jobs enqueued and not yet dispatched to a worker thread.
+         */
+        int waiting{0};
+
+        /**
+         * Jobs currently executing on a worker thread.
+         */
+        int running{0};
+
+        /**
+         * Jobs held back because this type is already at its concurrency
+         * limit. A non-zero value means work of this type exists and is
+         * being denied a worker: starvation, not idleness.
+         */
+        int deferred{0};
+    };
+
+    /**
+     * Snapshot the occupancy of every registered job type.
+     *
+     * One mutex acquire copies three integers per type, which is the same
+     * lock and the same fields getJobCount() already reads — the counting
+     * logic is not duplicated, only batched, so the caller does not have to
+     * take the lock once per type to build a full picture.
+     *
+     * @return One JobTypeCount per registered JobType, in JobType order.
+     *
+     * @note Thread-safe; takes the internal mutex briefly. The values are a
+     * point-in-time reading and are mutually consistent with each other
+     * because they come from one acquire.
+     * @note Intended for a periodic observer (the telemetry reader ticks
+     * every ~10 s). It is not free enough to call from a hot path.
+     */
+    [[nodiscard]] std::vector<JobTypeCount>
+    getJobTypeCounts() const;
+
+    /**
+     * Worker-pool saturation reading: work in flight against capacity.
+     *
+     * Answers "is the whole pool exhausted?" in one place. Without it, a
+     * pool-wide slowdown shows up separately in every subsystem whose jobs
+     * are queued behind it, and each one looks like its own fault.
+     */
+    struct WorkerSaturation
+    {
+        /**
+         * Calls to processTask() executing right now across all job types.
+         */
+        int runningTasks{0};
+
+        /**
+         * Worker threads the pool is configured to run — the ceiling
+         * `runningTasks` is measured against.
+         */
+        int workerThreads{0};
+
+        /**
+         * Jobs queued and not yet dispatched, summed over all job types.
+         */
+        int totalWaiting{0};
+    };
+
+    /**
+     * Read the global worker-pool saturation.
+     *
+     * All three fields are produced under a single mutex acquire so the
+     * running/threads ratio and the backlog describe the same instant; read
+     * separately they could disagree and imply a saturation that never
+     * existed.
+     *
+     * @return The current saturation reading.
+     *
+     * @note Thread-safe with respect to the queue counters, which are read
+     * under the internal mutex. The configured thread count is a plain int
+     * that only changes at pool construction and at stop(); telemetry never
+     * races that write, because Application detaches the metric callbacks
+     * before it stops the JobQueue.
+     * @note Intended for a periodic observer, not a hot path.
+     */
+    [[nodiscard]] WorkerSaturation
+    getWorkerSaturation() const;
 
     /**
      * Return a scoped LoadEvent.

@@ -608,6 +608,14 @@ async def validate_metrics(
                         "sync_acquire",
                         "sync_addnode_total",
                         "shamap_cache_hit_rate",
+                        # JobQueue saturation signals. jobq_backlog carries the
+                        # per-type waiting/running/deferred sub-series and
+                        # jobq_saturation the pool running_tasks/worker_threads/
+                        # total_waiting; both are asserted. No new prefix entry
+                        # is needed -- the "jobq_" prefix above already matches
+                        # them (it was added for the StatsD jobq_job_count
+                        # gauge), so listing them again would only duplicate
+                        # the diagnostic output.
                     )
                 )
             ]

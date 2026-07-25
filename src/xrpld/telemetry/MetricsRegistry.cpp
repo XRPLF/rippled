@@ -37,6 +37,8 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/JobQueue.h>
+#include <xrpl/core/JobTypes.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Database.h>
@@ -490,6 +492,8 @@ MetricsRegistry::registerAsyncGauges()
     registerStallEventsCounter();
     registerSyncAcquireGauge();
     registerCacheHitRateDetailGauge();
+    registerJobQueueBacklogGauge();
+    registerJobQueueSaturationGauge();
 }
 
 void
@@ -1712,6 +1716,99 @@ MetricsRegistry::registerCacheHitRateDetailGauge()
                 opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
                     ->Observe(static_cast<double>(rate), {{"metric", "treenode"}});
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerJobQueueBacklogGauge()
+{
+    // --- Sync diagnostics: which job types are starved right now? ---
+    // The existing job_* counters and histograms describe jobs that already
+    // moved. This is instantaneous occupancy, and `deferred` in particular
+    // has no other exposure: a job held back by its type's concurrency limit
+    // counts as neither waiting nor running anywhere else.
+    jobQueueBacklogGauge_ = meter_->CreateInt64ObservableGauge(
+        "jobq_backlog", "JobQueue occupancy per job type (waiting/running/deferred)");
+    jobQueueBacklogGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* field, std::string const& jobType, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{"metric", field}, {"job_type", jobType}});
+                };
+
+                // One snapshot under one lock acquire, so the three fields of
+                // a type are mutually consistent rather than read at three
+                // different instants.
+                for (auto const& count : app.getJobQueue().getJobTypeCounts())
+                {
+                    // The name helper is the single source of the label value,
+                    // the same one the job_*_total counters already use, so the
+                    // two label sets join.
+                    auto const& jobType = JobTypes::name(count.type);
+                    observe("waiting", jobType, count.waiting);
+                    observe("running", jobType, count.running);
+                    observe("deferred", jobType, count.deferred);
+                }
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerJobQueueSaturationGauge()
+{
+    // --- Sync diagnostics: is the whole worker pool exhausted? ---
+    // Attributes a broad multi-stage slowdown to the pool once, instead of
+    // leaving it to look like an independent fault in every subsystem whose
+    // jobs are queued behind it.
+    jobQueueSaturationGauge_ = meter_->CreateInt64ObservableGauge(
+        "jobq_saturation", "Worker-pool saturation: tasks in flight, worker threads, jobs queued");
+    jobQueueSaturationGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* field, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{"metric", field}});
+                };
+
+                // One reading feeds all three series so the ratio and the
+                // backlog describe the same instant.
+                auto const saturation = app.getJobQueue().getWorkerSaturation();
+                observe("running_tasks", saturation.runningTasks);
+
+                // The denominator for the ratio panel. Derived at startup from
+                // [workers], node size and hardware concurrency, so it cannot
+                // be hardcoded in a dashboard.
+                observe("worker_threads", saturation.workerThreads);
+
+                // Ratio at 1.0 alone is a busy pool; ratio at 1.0 with a
+                // non-zero backlog is an exhausted one.
+                observe("total_waiting", saturation.totalWaiting);
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {

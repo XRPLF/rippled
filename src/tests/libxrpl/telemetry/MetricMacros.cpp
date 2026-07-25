@@ -25,6 +25,10 @@
 
 #include <xrpld/telemetry/MetricMacros.h>
 
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobQueue.h>
+#include <xrpl/core/JobTypes.h>
+
 #include <gtest/gtest.h>
 #include <opentelemetry/metrics/meter.h>
 #include <opentelemetry/metrics/meter_provider.h>
@@ -48,6 +52,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 using namespace xrpl;
 
@@ -1582,6 +1587,200 @@ TEST(MetricMacros, acquire_counters_emit_nothing_when_registry_disabled)
     // Cause, not just state: the isEnabled() gate short-circuited before the
     // macros asked for a meter.
     EXPECT_EQ(app.registry().meterCalls(), 0);
+}
+
+// -----------------------------------------------------------------
+// JobQueue saturation diagnostics (WP-A4).
+//
+// Asserts the EXACT values and label shapes of the two gauges:
+//   jobq_backlog{metric,job_type}   MetricsRegistry::registerJobQueueBacklogGauge
+//                                     waiting / running / deferred, per type
+//   jobq_saturation{metric}         MetricsRegistry::registerJobQueueSaturationGauge
+//                                     running_tasks / worker_threads / total_waiting
+//
+// Both are observable instruments registered directly on the SDK meter,
+// mirroring the production callback shape, because the real MetricsRegistry's
+// enabled path cannot be linked into this standalone binary (see the file
+// header). The snapshot types are the REAL JobQueue::JobTypeCount and
+// JobQueue::WorkerSaturation, and the label values come from the real
+// JobTypes::name(), so a rename or reorder on either side breaks these tests
+// instead of silently drifting from production.
+// -----------------------------------------------------------------
+
+// jobq_backlog must keep waiting, running and deferred on separate series per
+// job type. `deferred` is the reason this gauge exists: a job held back by its
+// type's concurrency limit is counted in neither of the other two fields, and
+// appears in no other metric at all. The values chosen are a starved
+// JtLedgerData -- limit 3, so 3 running and the rest deferred.
+TEST(MetricMacros, jobq_backlog_gauge_separates_waiting_running_and_deferred)
+{
+    CollectingProvider const provider;
+
+    // The real snapshot type the production callback iterates. JtLedgerData is
+    // at its limit of 3 with 5 more jobs held back; JtLedgerReq has one job
+    // merely waiting; JtSweep is registered but idle.
+    std::vector<JobQueue::JobTypeCount> observed{
+        JobQueue::JobTypeCount{.type = JtLedgerData, .waiting = 5, .running = 3, .deferred = 5},
+        JobQueue::JobTypeCount{.type = JtLedgerReq, .waiting = 1, .running = 0, .deferred = 0},
+        JobQueue::JobTypeCount{.type = JtSweep, .waiting = 0, .running = 0, .deferred = 0}};
+
+    // Keep the instrument alive for the whole test: destroying the handle
+    // deregisters the callback, which is why the real registry holds a member.
+    auto gauge = provider.meter()->CreateInt64ObservableGauge(
+        "jobq_backlog", "JobQueue occupancy per job type (waiting/running/deferred)");
+    gauge->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto const* counts = static_cast<std::vector<JobQueue::JobTypeCount> const*>(state);
+            // Same two-label Observe() form the production callback uses.
+            auto observe = [&](char const* field, std::string const& jobType, std::int64_t value) {
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
+                    ->Observe(value, {{"metric", field}, {"job_type", jobType}});
+            };
+            for (auto const& count : *counts)
+            {
+                // The same name helper production uses -- never a literal.
+                auto const& jobType = JobTypes::name(count.type);
+                observe("waiting", jobType, count.waiting);
+                observe("running", jobType, count.running);
+                observe("deferred", jobType, count.deferred);
+            }
+        },
+        &observed);
+
+    auto const starved = provider.collect();
+
+    // Three types x three fields, every one its own series: no field and no
+    // type collapses into another.
+    ASSERT_EQ(starved.at("jobq_backlog").size(), 9u);
+
+    // The starved type, exactly as configured. The limit of 3 is visible as
+    // running=3, and the 5 jobs the limit is denying are the deferred series.
+    EXPECT_EQ(
+        gaugeValue(starved, "jobq_backlog", attrs("metric", "waiting", "job_type", "ledgerData")),
+        5);
+    EXPECT_EQ(
+        gaugeValue(starved, "jobq_backlog", attrs("metric", "running", "job_type", "ledgerData")),
+        3);
+    EXPECT_EQ(
+        gaugeValue(starved, "jobq_backlog", attrs("metric", "deferred", "job_type", "ledgerData")),
+        5);
+
+    // A type that is queued but NOT deferred reads deferred=0 while waiting=1.
+    // This is the distinction the gauge exists to make: "queued" and "denied a
+    // worker" are different states, and only the latter is starvation.
+    EXPECT_EQ(
+        gaugeValue(
+            starved, "jobq_backlog", attrs("metric", "waiting", "job_type", "ledgerRequest")),
+        1);
+    EXPECT_EQ(
+        gaugeValue(
+            starved, "jobq_backlog", attrs("metric", "deferred", "job_type", "ledgerRequest")),
+        0);
+
+    // An idle registered type reports zeros rather than dropping out. Absence
+    // would be indistinguishable from a broken exporter, so every type is
+    // observed on every tick.
+    ASSERT_EQ(
+        starved.at("jobq_backlog").count(attrs("metric", "waiting", "job_type", "sweep")), 1u);
+    EXPECT_EQ(
+        gaugeValue(starved, "jobq_backlog", attrs("metric", "waiting", "job_type", "sweep")), 0);
+
+    // Exactly two label keys, in the documented order, on every series. A
+    // third label would multiply the series count per job type.
+    for (auto const& [labels, point] : starved.at("jobq_backlog"))
+    {
+        ASSERT_EQ(labels.size(), 2u);
+        EXPECT_EQ(labels.count("metric"), 1u);
+        EXPECT_EQ(labels.count("job_type"), 1u);
+    }
+
+    // NEGATIVE: a type never present in the snapshot has no series, so the
+    // readings above are not an artifact of a catch-all series.
+    EXPECT_EQ(
+        starved.at("jobq_backlog").count(attrs("metric", "waiting", "job_type", "transaction")),
+        0u);
+    // NEGATIVE: the label VALUE is the JobTypes name, not the enum spelling.
+    EXPECT_EQ(
+        starved.at("jobq_backlog").count(attrs("metric", "waiting", "job_type", "JtLedgerData")),
+        0u);
+
+    // The starvation clearing is the recovery reading: deferred drains to 0
+    // while running stays at the limit, so the panel shows work flowing again.
+    observed[0] =
+        JobQueue::JobTypeCount{.type = JtLedgerData, .waiting = 0, .running = 3, .deferred = 0};
+    auto const draining = provider.collect();
+    EXPECT_EQ(
+        gaugeValue(draining, "jobq_backlog", attrs("metric", "deferred", "job_type", "ledgerData")),
+        0);
+    EXPECT_EQ(
+        gaugeValue(draining, "jobq_backlog", attrs("metric", "running", "job_type", "ledgerData")),
+        3);
+}
+
+// jobq_saturation exports the worker-thread count alongside the in-flight
+// count so a dashboard can form the ratio without hardcoding a denominator
+// that is derived at startup. The values chosen are a fully exhausted pool.
+TEST(MetricMacros, jobq_saturation_gauge_observes_exact_pool_exhaustion_values)
+{
+    CollectingProvider const provider;
+
+    // The real reading type the production callback consumes: every one of 6
+    // workers busy, with 12 jobs queued behind them.
+    JobQueue::WorkerSaturation observed{.runningTasks = 6, .workerThreads = 6, .totalWaiting = 12};
+
+    auto gauge = provider.meter()->CreateInt64ObservableGauge(
+        "jobq_saturation", "Worker-pool saturation: tasks in flight, worker threads, jobs queued");
+    gauge->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto const* self = static_cast<JobQueue::WorkerSaturation const*>(state);
+            auto observe = [&](char const* field, std::int64_t value) {
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
+                    ->Observe(value, {{"metric", field}});
+            };
+            observe("running_tasks", self->runningTasks);
+            observe("worker_threads", self->workerThreads);
+            observe("total_waiting", self->totalWaiting);
+        },
+        &observed);
+
+    auto const exhausted = provider.collect();
+
+    // Exactly three series, one per `metric` value.
+    ASSERT_EQ(exhausted.at("jobq_saturation").size(), 3u);
+    EXPECT_EQ(gaugeValue(exhausted, "jobq_saturation", attrs("metric", "running_tasks")), 6);
+    EXPECT_EQ(gaugeValue(exhausted, "jobq_saturation", attrs("metric", "worker_threads")), 6);
+    EXPECT_EQ(gaugeValue(exhausted, "jobq_saturation", attrs("metric", "total_waiting")), 12);
+
+    // The label key is exactly "metric" and it is the only label present, so
+    // this gauge stays a single fixed-cardinality group.
+    auto const& firstKey = exhausted.at("jobq_saturation").begin()->first;
+    ASSERT_EQ(firstKey.size(), 1u);
+    EXPECT_EQ(firstKey.begin()->first, "metric");
+
+    // A busy-but-not-exhausted pool: same 1.0 ratio, but nothing is queued.
+    // These two readings are what the ratio alone cannot separate, which is
+    // why total_waiting is exported next to it.
+    observed = JobQueue::WorkerSaturation{.runningTasks = 6, .workerThreads = 6, .totalWaiting = 0};
+    auto const busy = provider.collect();
+    EXPECT_EQ(gaugeValue(busy, "jobq_saturation", attrs("metric", "running_tasks")), 6);
+    EXPECT_EQ(gaugeValue(busy, "jobq_saturation", attrs("metric", "total_waiting")), 0);
+
+    // An idle pool reads zero in flight with the thread count still reported.
+    // A zero denominator would make the dashboard ratio undefined, so the
+    // thread count must never drop out with the load.
+    observed = JobQueue::WorkerSaturation{.runningTasks = 0, .workerThreads = 6, .totalWaiting = 0};
+    auto const idle = provider.collect();
+    EXPECT_EQ(gaugeValue(idle, "jobq_saturation", attrs("metric", "running_tasks")), 0);
+    EXPECT_EQ(gaugeValue(idle, "jobq_saturation", attrs("metric", "worker_threads")), 6);
+
+    // Standalone mode runs a single worker: the denominator is genuinely
+    // node-specific, which is exactly why it is exported and not hardcoded.
+    observed = JobQueue::WorkerSaturation{.runningTasks = 1, .workerThreads = 1, .totalWaiting = 3};
+    auto const standalone = provider.collect();
+    EXPECT_EQ(gaugeValue(standalone, "jobq_saturation", attrs("metric", "worker_threads")), 1);
+    EXPECT_EQ(gaugeValue(standalone, "jobq_saturation", attrs("metric", "total_waiting")), 3);
 }
 
 #endif  // XRPL_ENABLE_TELEMETRY

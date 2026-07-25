@@ -18,6 +18,7 @@
 #include <set>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -151,6 +152,48 @@ JobQueue::getJobCountGE(JobType t) const
     }
 
     return ret;
+}
+
+std::vector<JobQueue::JobTypeCount>
+JobQueue::getJobTypeCounts() const
+{
+    std::vector<JobTypeCount> out;
+
+    std::scoped_lock const lock(mutex_);
+
+    // Reserve once so the loop itself cannot reallocate while the lock is
+    // held; the body is then three integer reads per type.
+    out.reserve(jobData_.size());
+    for (auto const& [type, data] : jobData_)
+    {
+        out.push_back(
+            JobTypeCount{
+                .type = type,
+                .waiting = data.waiting,
+                .running = data.running,
+                .deferred = data.deferred});
+    }
+
+    return out;
+}
+
+JobQueue::WorkerSaturation
+JobQueue::getWorkerSaturation() const
+{
+    // Read the configured thread count and the in-flight task count before
+    // taking the mutex: neither is guarded by it (numberOfThreads_ is set at
+    // construction, runningTaskCount_ is an atomic), and holding the queue
+    // lock across them would add contention for no benefit.
+    WorkerSaturation out;
+    out.runningTasks = workers_.numberOfCurrentlyRunningTasks();
+    out.workerThreads = workers_.getNumberOfThreads();
+
+    std::scoped_lock const lock(mutex_);
+
+    for (auto const& entry : jobData_)
+        out.totalWaiting += entry.second.waiting;
+
+    return out;
 }
 
 std::unique_ptr<LoadEvent>

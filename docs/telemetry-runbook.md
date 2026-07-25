@@ -2274,6 +2274,42 @@ each step gates the next: stop at the first one that is wrong.
      This is also the pairing that explains a large existing database syncing
      slower than a fresh one.
 
+10. **Is the work arriving but never getting a worker thread?**
+    Steps 6 to 9 all assume the node is at least trying to process what it
+    receives. This step covers the case where it is not: the data arrived, the
+    job was queued, and no thread ever ran it. Read the two levels in order,
+    because the pool-wide answer supersedes the per-type one.
+    - **Pool first** — _Worker Pool Saturation_ (`jobq_saturation`,
+      `running_tasks / worker_threads`) with _Worker Pool Capacity & Total
+      Backlog_ beside it. Below 80% the pool has spare capacity, so skip to the
+      per-type read. At 100% the answer depends on `total_waiting`:
+      - 100% with `total_waiting` near zero — the pool is merely busy at this
+        instant. Not a fault.
+      - 100% with `total_waiting` climbing — the pool is **exhausted**. Every
+        job type is starved by it, so every other stage in this row will look
+        slow at once. Stop here: fixing an individual subsystem cannot help
+        while no thread is free to run its jobs. Look at what is holding the
+        threads (long-running jobs, disk waits from step 9) or at the
+        `[workers]` setting for the node size.
+    - **Then per type** — _Deferred Jobs by Type (starvation)_
+      (`jobq_backlog`, `metric=deferred`). This is the signal that exists
+      nowhere else. A deferred job is one the queue **accepted and then
+      withheld** because its type is already running at its concurrency limit,
+      so it appears in neither `waiting` nor `running`, and neither the job
+      counters nor the queue-wait histograms can show it. Any sustained
+      non-zero value names the job type whose limit is the bottleneck. During a
+      fresh sync watch `job_type=ledgerData` and `job_type=ledgerRequest`
+      first: both run at a limit of 3, so they are the types that starve
+      soonest, and starved `ledgerData` is exactly why the received-data stash
+      in step 8 grows while the missing-node count in step 6 stays flat.
+      _Job Queue Occupancy by Type (waiting/running)_ gives the context —
+      `running` pinned at the limit with `waiting` above zero confirms the
+      limit, not the supply, is what is holding the type back.
+      Note the difference from _Job Queue Wait p95 By Type_ on the Ledger Data
+      Sync dashboard: that panel measures how long jobs that already ran had
+      waited, so it reports the past; these gauges report what is sitting in
+      the queue right now, including the part being actively withheld.
+
 ## Performance Tuning
 
 | Scenario                 | Recommendation                                            |

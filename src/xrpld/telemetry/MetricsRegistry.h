@@ -64,6 +64,8 @@
  * +-- Clock close offset (local clock skew)
  * +-- Sync state (time to first FULL, network-ledger gate,
  * |               server stall seconds, ledgers behind network)
+ * +-- JobQueue backlog (waiting/running/deferred per job type)
+ * +-- JobQueue saturation (running tasks vs worker threads vs backlog)
  * +-- jq_trans_overflow_total (observed from Overlay)
  * +-- server_stall_events_total (observed from LoadManager)
  *
@@ -583,6 +585,18 @@ private:
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
         shamapCacheHitRateGauge_;
     /**
+     * Observable gauge for per-job-type JobQueue occupancy: waiting, running
+     * and deferred counts, keyed by job type.
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        jobQueueBacklogGauge_;
+    /**
+     * Observable gauge for global worker-pool saturation: tasks in flight,
+     * configured worker threads, and total jobs queued.
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        jobQueueSaturationGauge_;
+    /**
      * Observable gauge for build version info (label-based, value=1).
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> buildInfoGauge_;
@@ -902,6 +916,68 @@ private:
      */
     void
     registerCacheHitRateDetailGauge();  // sync diagnostics: treenode cache
+
+    /**
+     * Register the `jobq_backlog` gauge.
+     *
+     * Three series per job type, from one JobQueue::getJobTypeCounts()
+     * snapshot, under the `metric` and `job_type` attributes:
+     *
+     *   `waiting` — jobs enqueued and not yet dispatched to a worker.
+     *   `running` — jobs executing on a worker.
+     *   `deferred` — **the signal this gauge exists for.** Jobs held back
+     *     because the type is already at its concurrency limit. The
+     *     sync-critical types run at limits of 3 (`JtLedgerReq`,
+     *     `JtLedgerData` in JobTypes.h), so during a fresh sync those types
+     *     routinely have work denied a worker, and that state appears in
+     *     neither `waiting` nor `running`.
+     *
+     * Distinct from the job metrics that already exist. `job_queued_total` /
+     * `job_started_total` / `job_finished_total` and the `job_queued_us` /
+     * `job_running_us` histograms are all event-driven and come from
+     * PerfLogImp: they describe jobs that already moved. This gauge is
+     * instantaneous occupancy — what is sitting in the queue right now, which
+     * a rate or a latency quantile cannot express. The StatsD
+     * `jobq_job_count` gauge is queue-wide only, with no per-type split and
+     * no deferred count at all.
+     *
+     * `job_type` is the JobTypes::name() string, matching the label the job
+     * counters already use so the two can be joined. Cardinality is bounded
+     * by the JobType enum (~46 values), and every type is observed on every
+     * tick, so an idle type reports 0 rather than dropping its series.
+     *
+     * @note Pulled on the OTel reader thread (~10 s tick), never on a hot
+     * path. Takes the JobQueue mutex once per tick for three integer reads
+     * per type; no per-job cost is added anywhere.
+     */
+    void
+    registerJobQueueBacklogGauge();  // sync diagnostics: per-type backlog
+
+    /**
+     * Register the `jobq_saturation` gauge.
+     *
+     * Three series under the `metric` attribute, from one
+     * JobQueue::getWorkerSaturation() reading:
+     *
+     *   `running_tasks` — worker threads currently executing a job.
+     *   `worker_threads` — threads the pool is configured to run, the
+     *     denominator that makes `running_tasks` legible. Exported rather
+     *     than hardcoded in the dashboard because it is derived at startup
+     *     from `[workers]`, node size and hardware concurrency.
+     *   `total_waiting` — jobs queued across all types.
+     *
+     * The reason this is separate from `jobq_backlog`: when the pool itself
+     * is exhausted, every subsystem waiting behind it looks independently
+     * slow, and each per-type panel invites the wrong conclusion. A
+     * `running_tasks / worker_threads` ratio at 1.0 with a non-zero
+     * `total_waiting` attributes the whole slowdown to pool exhaustion once.
+     *
+     * @note Pulled on the OTel reader thread (~10 s tick). One atomic load,
+     * one plain int read, and one pass over the per-type counters under the
+     * JobQueue mutex.
+     */
+    void
+    registerJobQueueSaturationGauge();  // sync diagnostics: pool saturation
 #endif                                  // XRPL_ENABLE_TELEMETRY
 };
 

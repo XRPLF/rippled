@@ -519,6 +519,16 @@ Turning each configured peer hostname into IP addresses, which happens before an
 
 **See also:** [Outbound dial latency](#outbound-dial-latency) · [Peer protocol on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)
 
+<a id="deferred-job"></a>
+
+### Deferred job
+
+A job the queue accepted but withheld from a worker thread because its job type is already running at that type's concurrency limit. This is a third state alongside waiting and running, and it is counted in neither: the work exists and is being actively denied a thread, which is starvation rather than idleness or overload. The distinction matters because the sync-critical types run at very small limits — ledger requests and inbound ledger data are each capped at three concurrent jobs — so during a fresh sync those types routinely have work withheld while the queue looks shallow and the queue-wait quantiles look unremarkable. A sustained non-zero deferred count names the job type whose limit is the bottleneck.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Job queue occupancy](#job-queue-occupancy) · [Worker-pool saturation](#worker-pool-saturation)
+
 <a id="acquire-source"></a>
 
 ### Acquire source
@@ -576,6 +586,16 @@ A peer connection rejected after TLS succeeds, while the two sides check network
 The rate at which the node fetches older ledgers to extend or repair its stored history. Elevated while back-filling; near zero once history is complete.
 
 **Scope:** per node — measured on and specific to this individual server.
+
+<a id="job-queue-occupancy"></a>
+
+### Job queue occupancy
+
+How many jobs of a given type are queued or executing at the instant the queue is sampled, as opposed to how many passed through it over a period. Occupancy answers "what is sitting there now"; the job counters and queue-wait quantiles answer "what already moved and how long it had waited". The two can disagree in the way that matters most: a type whose jobs are all still queued produces no completed-job samples at all, so a latency quantile can look healthy precisely because nothing is finishing.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Deferred job](#deferred-job) · [Worker-pool saturation](#worker-pool-saturation)
 
 <a id="ledger-acquire-inbound-fetch"></a>
 
@@ -694,6 +714,16 @@ The trusted UNL key count minus the quorum a ledger needs, so it reads as spare 
 **Scope:** per node — measured on and specific to this individual server.
 
 **See also:** [UNL fetch outcome](#unl-fetch-outcome) · [Validation quorum](#validation-quorum) · [Validation quorum on xrpl.org](https://xrpl.org/docs/concepts/consensus-protocol/negative-unl)
+
+<a id="worker-pool-saturation"></a>
+
+### Worker-pool saturation
+
+The share of the job-queue worker threads currently executing a job. The thread count is fixed at startup from configuration, node size and hardware concurrency, so it is a real ceiling rather than an elastic one. Saturation is read together with the total number of jobs queued, because the ratio alone is ambiguous: every thread busy with nothing queued is a busy instant, while every thread busy with work piling up behind them is an exhausted pool. The distinction is what makes this a pool-level signal — when the pool is exhausted, every subsystem whose jobs are queued behind it slows at the same time, so each one appears to have its own independent fault. Reading saturation first attributes that whole pattern once, instead of once per victim.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Deferred job](#deferred-job) · [Job queue occupancy](#job-queue-occupancy) · [Server stall](#server-stall)
 
 <a id="cat-peer-overlay-networking"></a>
 
