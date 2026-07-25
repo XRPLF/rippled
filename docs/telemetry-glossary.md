@@ -197,6 +197,16 @@ A consensus round is one iteration in which validators relay and revise proposal
 
 **See also:** [Consensus round on xrpl.org](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure)
 
+<a id="consensus-round-duration"></a>
+
+### Consensus round duration
+
+The wall-clock time one consensus round took, from its start to the ledger it accepted, as this node measured it. Recorded as a distribution rather than a single number, because the interesting question is not what one round took but how round times are spread and whether that spread is moving: a healthy network sits in a tight band a few seconds wide, and a band drifting upward delays every ledger behind it. Distinct from convergence time, which is how long validators took to agree on the transaction set — a round can converge quickly and still be slow overall if it spent its time waiting for the transaction set to arrive.
+
+**Scope:** per node — measured on and specific to this individual server. The round is a network-wide process, but this is one node's own timing of it.
+
+**See also:** [Consensus round](#consensus-round) · [Convergence time](#convergence-time) · [Tx-set acquire](#tx-set-acquire) · [Consensus round on xrpl.org](https://xrpl.org/docs/concepts/consensus-protocol/consensus-structure)
+
 <a id="consensus-stall"></a>
 
 ### Consensus stall
@@ -539,6 +549,16 @@ A job the queue accepted but withheld from a worker thread because its job type 
 
 **See also:** [Job queue occupancy](#job-queue-occupancy) · [Worker-pool saturation](#worker-pool-saturation)
 
+<a id="acquire-phase"></a>
+
+### Acquire phase
+
+One of the three sequential fetches a ledger acquisition is made of: the ledger header, then the account-state tree, then the transaction tree. The header comes first and gates the other two, because it is what names their root hashes — until it arrives the node does not yet know what to ask for. The distinction matters because the three fail for different reasons and at wildly different scales: on a fresh node the account-state tree is nearly all of the work, so an acquisition measured as a whole reports essentially that tree alone, and a node stuck waiting for the header or for the far smaller transaction tree looks identical to one making normal progress. Measured per phase, the phase that is stuck names itself. A phase can also end because its retry budget expired while the acquisition as a whole is still alive and retrying, which is why running out of time is recorded separately from failing.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Ledger acquire (inbound fetch)](#ledger-acquire-inbound-fetch) · [Missing SHAMap node](#missing-shamap-node) · [Acquire stall](#acquire-stall)
+
 <a id="acquire-source"></a>
 
 ### Acquire source
@@ -624,6 +644,16 @@ An optional faster way to rebuild a run of historical ledgers: instead of downlo
 **Scope:** per node — measured on and specific to this individual server.
 
 **See also:** [Replay fallback](#replay-fallback) · [Ledger acquire (inbound fetch)](#ledger-acquire-inbound-fetch)
+
+<a id="ledger-serve"></a>
+
+### Ledger serve
+
+This node answering a peer's request for ledger data, as opposed to requesting data for itself. It is the supply side of the same exchange every other sync term describes from the receiving side, and it explains a peer's sync rather than this node's own: a server that answers nothing is why some other operator sees no peer able to serve the range they need. Worth reading in two ways. Against the receiving side, healthy serving alongside starved receiving points at peer selection rather than at this node's capacity. On its own, the kind of object asked for matters, because a request for the account-state tree is the expensive one a syncing peer actually depends on, while header replies are cheap. A reply can also be cut short by a size limit rather than refused, which is not a failure but does mean the requesting peer has to come back for the remainder — several round trips for one tree.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Ledger acquire (inbound fetch)](#ledger-acquire-inbound-fetch) · [Acquire phase](#acquire-phase) · [Peer ledger supply](#peer-ledger-supply)
 
 <a id="ledgers-behind-network"></a>
 
@@ -764,6 +794,36 @@ The elapsed time from process start until the node first reached the full server
 **Scope:** per node — measured on and specific to this individual server.
 
 **See also:** [Operating mode / server state](#operating-mode-server-state) · [Network ledger gate](#network-ledger-gate) · [Ledgers behind network](#ledgers-behind-network)
+
+<a id="tx-set-acquire"></a>
+
+### Tx-set acquire
+
+One attempt to fetch the set of transactions a consensus proposal referred to but this node did not already hold. It is the consensus-path sibling of a ledger acquire — the same retry-and-timeout machinery, fetching a transaction tree rather than a whole ledger — and it is on the critical path of a round: until the set arrives, the node cannot evaluate the position that referenced it. This makes it a distinct kind of sync problem from history back-fill, and one that was previously invisible: a round waiting on a set that never arrives is indistinguishable from an idle node unless the attempt itself is measured. Two readings are diagnostic. Attempts that never complete mean rounds are blocked on data rather than on disagreement. Attempts that do complete but take about as long as a round means sets arrive so late that they delay the round they belong to — which the completion rate alone cannot reveal, because those attempts succeed. Zero attempts is normal and healthy: it means the node already held every set proposed to it.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Ledger acquire (inbound fetch)](#ledger-acquire-inbound-fetch) · [Consensus round](#consensus-round) · [Acquire phase](#acquire-phase)
+
+<a id="per-ledger-trace-join"></a>
+
+### Per-ledger trace join
+
+The scheme that makes every span touching one ledger appear in a single trace, so one slow ledger can be read as one unit. The spans are produced on threads that share nothing — the network fetch on a job-queue worker, the acceptance decision on whichever thread received the validation that triggered it, the persist on a third — so none of them can inherit a parent from the others. Instead each derives its trace identifier from the same value they all already hold: the ledger's own hash. Spans keyed on the same ledger therefore land in one trace, and spans for different ledgers stay apart, with nothing passed between the threads. The spans appear as siblings rather than as a chain, which is the honest shape: none directly causes another, and their order varies with the path the ledger took through the node.
+
+**Scope:** per node — measured on and specific to this individual server. Each node builds its own trace for the same ledger.
+
+**See also:** [Ledger acquire (inbound fetch)](#ledger-acquire-inbound-fetch) · [Validation status](#validation-status) · [Time to first validated ledger](#time-to-first-validated-ledger) · [Following ONE slow ledger as a single trace](./telemetry-runbook.md#following-one-slow-ledger-as-a-single-trace)
+
+<a id="validation-status"></a>
+
+### Validation status
+
+What this node's validation store did with an arriving validation. Only one result — current, meaning the validation is new and usable — counts toward accepting a ledger; the rest mean the validation was recorded and then counted for nothing, because it was stale, carried a sequence number that violates the increasing-sequence rule, or duplicated or contradicted another validation from the same validator. The distinction is what separates a node that is slow to validate from one that never will: both receive validations continuously, and without this split the two are indistinguishable. A companion flag says whether the validation actually reached the acceptance gate, since a validation arriving while another thread is already accepting the same ledger is set aside rather than acted on — which is why a trace can show a validation with no acceptance after it.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Validation quorum](#validation-quorum) · [Quorum shortfall](#quorum-shortfall) · [Per-ledger trace join](#per-ledger-trace-join) · [Negative UNL and validation quorum on xrpl.org](https://xrpl.org/docs/concepts/consensus-protocol/negative-unl)
 
 <a id="unl-fetch-outcome"></a>
 

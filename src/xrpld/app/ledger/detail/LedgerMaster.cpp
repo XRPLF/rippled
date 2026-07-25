@@ -83,10 +83,23 @@
 #include <optional>
 #include <ostream>
 #include <sstream>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 namespace xrpl {
+
+// Full span names for the per-ledger trace join (see
+// LedgerMaster::makeLedgerTraceSpan). SpanGuard::hashSpan() takes ONE complete
+// span name, unlike SpanGuard::span(), which takes a prefix and a suffix — so
+// the joined form is needed. Composed here from the authoritative `op::`
+// suffixes in LedgerSpanNames.h rather than written out, so the wire span names
+// stay "ledger.validate" / "ledger.store" by construction and no new string
+// literal exists anywhere.
+static constexpr auto kLedgerValidateSpan =
+    telemetry::join(telemetry::seg::ledger, telemetry::ledger_span::op::validate);
+static constexpr auto kLedgerStoreSpan =
+    telemetry::join(telemetry::seg::ledger, telemetry::ledger_span::op::store);
 
 // Don't catch up more than 100 ledgers (cannot exceed 256)
 static constexpr int kMaxLedgerGap{100};
@@ -146,6 +159,34 @@ LedgerMaster::LedgerMaster(
           app_.getJournal("TaggedCache"))
     , stats_([this] { collectMetrics(); }, collector)
 {
+}
+
+telemetry::SpanGuard
+LedgerMaster::makeLedgerTraceSpan(
+    std::string_view const name,
+    uint256 const& ledgerHash,
+    std::uint32_t const seq)
+{
+    using namespace telemetry;
+
+    // The join: hashSpan derives the trace id from ledgerHash[0:16], so every
+    // stage that passes the same ledger hash lands in the same trace with no
+    // context propagation between the threads. See the header for why.
+    auto span =
+        SpanGuard::hashSpan(TraceCategory::Ledger, name, ledgerHash.data(), ledgerHash.kBytes);
+
+    // Guarded so the hash-to-string conversion is skipped entirely when the
+    // span is null (telemetry off, or ledger tracing disabled).
+    if (span)
+    {
+        // ledger_hash is the join key, so it is recorded on every stage: it is
+        // what an operator searches by to pull up the whole trace for one
+        // ledger, and it is how a reader confirms two spans really are the same
+        // ledger rather than a trace-id coincidence.
+        span.setAttribute(ledger_span::attr::ledgerHash, to_string(ledgerHash).c_str());
+        span.setAttribute(ledger_span::attr::ledgerSeq, static_cast<std::int64_t>(seq));
+    }
+    return span;
 }
 
 LedgerIndex
@@ -463,8 +504,10 @@ bool
 LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
 {
     using namespace telemetry;
-    auto span = SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::store);
-    span.setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(ledger->header().seq));
+    // Same ledger-hash join as ledger.validate: persisting a ledger is part of
+    // that ledger's story, so a slow store shows up in the same trace as the
+    // acquire that fetched it rather than as an unrelated one-span trace.
+    auto span = makeLedgerTraceSpan(kLedgerStoreSpan, ledger->header().hash, ledger->header().seq);
 
     bool const validated = ledger->header().validated;
     // Returns true if we already had the ledger
@@ -1038,8 +1081,11 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     }
 
     using namespace telemetry;
-    auto valSpan = SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::validate);
-    valSpan.setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(ledger->header().seq));
+    // Keyed on the ledger hash so the acceptance decision joins the same trace
+    // as that ledger's acquire and store spans, even though all three run on
+    // different threads. ledger_seq and ledger_hash come from the helper.
+    auto valSpan =
+        makeLedgerTraceSpan(kLedgerValidateSpan, ledger->header().hash, ledger->header().seq);
     valSpan.setAttribute(ledger_span::attr::validations, static_cast<int64_t>(tvc));
 
     JLOG(journal_.info()) << "Advancing accepted ledger to " << ledger->header().seq

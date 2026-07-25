@@ -1,3 +1,7 @@
+// cspell:ignore ISTOGRAM
+// The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
+// compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here.
+
 #include <xrpld/app/consensus/RCLConsensus.h>
 
 #include <xrpld/app/consensus/RCLCensorshipDetector.h>
@@ -513,6 +517,25 @@ RCLConsensus::Adaptor::makeAcceptSpan(Result const& result)
     span->setAttribute(cs::attr::proposers, static_cast<int64_t>(result.proposers));
     span->setAttribute(
         cs::attr::roundTimeMs, static_cast<int64_t>(result.roundTime.read().count()));
+
+    // Round duration as a native histogram, alongside the span attribute above.
+    // The two answer different questions and neither replaces the other: the
+    // attribute says how long THIS round took, readable inside the trace next
+    // to the proposers and disputes that explain it; the histogram gives the
+    // distribution over time, which is what an alert or an SLO panel needs and
+    // what a trace query cannot cheaply produce fleet-wide. The histogram is
+    // also unsampled, so it stays complete when tracing is head-sampled down.
+    //
+    // This is the one site: makeAcceptSpan() is the single function both the
+    // synchronous (onForceAccept) and asynchronous (onAccept) accept paths call
+    // once per round, so recording here cannot double-count and cannot be
+    // skipped. It runs once per round, never per peer, per proposal or per
+    // transaction.
+    XRPL_METRIC_HISTOGRAM_RECORD(
+        app_,
+        "consensus_round_duration_ms",
+        "Wall-clock duration of a completed consensus round in milliseconds",
+        result.roundTime.read().count());
     span->setAttribute(cs::attr::quorum, static_cast<int64_t>(app_.getValidators().quorum()));
     span->setAttribute(cs::attr::disputesCount, static_cast<int64_t>(result.disputes.size()));
     char const* stateStr = [&] {

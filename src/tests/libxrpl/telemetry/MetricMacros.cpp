@@ -2922,4 +2922,72 @@ TEST(MetricMacros, nodestore_latency_gauge_observes_exact_derived_means)
     EXPECT_EQ(untimed.at("nodestore_latency").size(), 3u);
 }
 
+// consensus_round_duration_ms: exact recorded values, not "greater than zero".
+// Three rounds of known length must give a count of exactly 3 and a sum of
+// exactly their total. Mirrors the one record site in
+// RCLConsensus::Adaptor::makeAcceptSpan, which runs once per round.
+//
+// The 15200 sample is above the SDK's 10,000 default top boundary on purpose:
+// that limit is why MetricsRegistry registers explicit buckets for this
+// instrument (addRoundDurationHistogramView), and the sum must carry the real
+// value through no matter how the value is bucketed.
+TEST(MetricMacros, consensus_round_duration_records_exact_values)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // 3100 ms (healthy), 4250 ms (slow), 15200 ms (recovering) = 22550 ms.
+    for (std::int64_t const ms : {3100, 4250, 15200})
+    {
+        XRPL_METRIC_HISTOGRAM_RECORD(
+            app,
+            "consensus_round_duration_ms",
+            "Wall-clock duration of a completed consensus round in milliseconds",
+            ms);
+    }
+
+    auto const data = provider.collect();
+
+    auto const [count, sum] = histogramCountAndSum(data, "consensus_round_duration_ms");
+    EXPECT_EQ(count, 3u);
+    EXPECT_DOUBLE_EQ(sum, 22550.0);
+
+    // Exactly ONE series carrying an EMPTY label set. The round histogram is
+    // deliberately unlabelled: a per-ledger or per-round label would mint a
+    // series per ledger, the same unbounded-cardinality trap the collector
+    // config documents for close_time.
+    ASSERT_EQ(data.at("consensus_round_duration_ms").size(), 1u);
+    EXPECT_TRUE(data.at("consensus_round_duration_ms").begin()->first.empty());
+
+    // One call site, three records: created once via std::call_once, then reused.
+    EXPECT_EQ(app.registry().meterCalls(), 1);
+}
+
+// RUNTIME-DISABLED no-op proof for the round histogram: with the registry
+// disabled, nothing is emitted -- not a zero-valued series but total absence --
+// and the macro never even asks for a meter, so no instrument is created. The
+// runtime counterpart to the compile-time no-op (telemetry not built at all).
+TEST(MetricMacros, consensus_round_duration_emits_nothing_when_registry_disabled)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/false, provider.meter());
+
+    XRPL_METRIC_HISTOGRAM_RECORD(
+        app,
+        "consensus_round_duration_ms",
+        "Wall-clock duration of a completed consensus round in milliseconds",
+        3100);
+
+    auto const data = provider.collect();
+
+    // State: no series at all under that name, and nothing else leaked in.
+    EXPECT_EQ(data.count("consensus_round_duration_ms"), 0u);
+    EXPECT_EQ(data.size(), 0u);
+    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // macro ever asked for a meter.
+    EXPECT_EQ(app.registry().meterCalls(), 0);
+}
+
 #endif  // XRPL_ENABLE_TELEMETRY

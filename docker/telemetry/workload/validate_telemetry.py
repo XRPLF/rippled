@@ -523,6 +523,142 @@ async def _validate_parent_child(
 
 
 # ---------------------------------------------------------------------------
+# Trace-join Validation (Tempo API)
+# ---------------------------------------------------------------------------
+
+
+async def assert_trace_join_groups(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    report: ValidationReport,
+) -> None:
+    """Assert each declared trace-join group really lands in ONE trace.
+
+    A trace-join group is a set of spans that share one trace id with NO
+    parent/child link between them: each derives its trace id deterministically
+    from the same hash (SpanGuard::hashSpan over a ledger hash), which is how
+    spans produced on unrelated threads are joined without propagating any
+    context. The parent/child check above cannot express that -- there is no
+    parent to look for -- so the assertion here is co-occurrence: search for the
+    group's anchor span, then require at least one of its traces to also contain
+    every span in required_members.
+
+    A regression this catches: if the join key or the deterministic-root
+    mechanism breaks, each span reverts to its own single-span trace and no trace
+    contains the members together, so a slow ledger is no longer readable as one
+    unit. That is invisible to every other check in this harness -- the spans are
+    all still emitted with all their attributes.
+
+    An absent "trace_join_groups" key is a genuine no-op (nothing declared yet),
+    not a failure: unlike the sync_diagnostics metric group, this key is optional
+    and older expected_spans.json files predate it.
+
+    Args:
+        session:   aiohttp client session.
+        tempo_url: Base URL for the Tempo API.
+        report:    ValidationReport to accumulate results.
+    """
+    logger.info("--- Trace-Join Validation (Tempo) ---")
+
+    with open(EXPECTED_SPANS_FILE) as f:
+        expected = json.load(f)
+
+    groups = expected.get("trace_join_groups", {}).get("groups", [])
+    if not groups:
+        logger.info("[SKIP] span.trace_join: no join groups declared")
+        return
+
+    for group in groups:
+        await _validate_trace_join_group(session, tempo_url, group, report)
+
+
+async def _validate_trace_join_group(
+    session: aiohttp.ClientSession,
+    tempo_url: str,
+    group: dict[str, Any],
+    report: ValidationReport,
+) -> None:
+    """Validate one trace-join group: anchor and members share a trace.
+
+    Args:
+        session:   aiohttp client session.
+        tempo_url: Tempo API base URL.
+        group:     One entry from expected_spans.json trace_join_groups.groups.
+        report:    ValidationReport to accumulate results.
+    """
+    name = group.get("name", "<unnamed>")
+    anchor = group["anchor"]
+    required = list(group.get("required_members", []))
+    check_name = f"span.trace_join.{name}"
+
+    try:
+        query = '{resource.service.name="xrpld" && name="' + anchor + '"}'
+        traces = await _tempo_search(session, tempo_url, query, limit=10)
+
+        if not traces:
+            report.add(
+                CheckResult(
+                    name=check_name,
+                    category="span",
+                    passed=False,
+                    message=f"{name}: no {anchor} traces to check the join against",
+                    details={"anchor": anchor, "required_members": required},
+                )
+            )
+            return
+
+        # Walk the anchor's traces and keep the best result: the join holds as
+        # soon as ONE trace carries every required member. Several traces are
+        # examined because a given ledger may legitimately be missing an
+        # optional member (e.g. a self-built ledger has no arriving validation).
+        best_missing = required
+        for summary in traces:
+            trace_id = summary.get("traceID", "")
+            if not trace_id:
+                continue
+            spans = await _tempo_get_trace(session, tempo_url, trace_id)
+            present = {s.get("name", "") for s in spans}
+            missing = [m for m in required if m not in present]
+            if len(missing) < len(best_missing):
+                best_missing = missing
+            if not missing:
+                break
+
+        report.add(
+            CheckResult(
+                name=check_name,
+                category="span",
+                passed=not best_missing,
+                message=(
+                    f"{name}: {anchor} shares a trace with {required}"
+                    if not best_missing
+                    else (
+                        f"{name}: no {anchor} trace contained {best_missing} "
+                        f"-- the per-{group.get('join_key', 'hash')} trace join "
+                        f"is broken (spans are landing in separate traces)"
+                    )
+                ),
+                details={
+                    "anchor": anchor,
+                    "join_key": group.get("join_key"),
+                    "required_members": required,
+                    "missing": best_missing,
+                    "traces_examined": len(traces),
+                },
+            )
+        )
+    except Exception as exc:
+        report.add(
+            CheckResult(
+                name=check_name,
+                category="span",
+                passed=False,
+                message=f"{name}: trace-join check failed ({exc})",
+            )
+        )
+
+
+# ---------------------------------------------------------------------------
 # Metric Validation (Prometheus API)
 # ---------------------------------------------------------------------------
 
@@ -1297,6 +1433,7 @@ async def run_validation(
     async with aiohttp.ClientSession() as session:
         await validate_spans(session, tempo_url, report)
         await validate_span_durations(session, tempo_url, report)
+        await assert_trace_join_groups(session, tempo_url, report)
         await validate_metrics(session, prometheus_url, report)
         await assert_sync_diagnostics_metrics(session, prometheus_url, report)
         if not skip_loki:

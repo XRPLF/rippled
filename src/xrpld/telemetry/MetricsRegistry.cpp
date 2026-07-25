@@ -1,3 +1,7 @@
+// cspell:ignore ISTOGRAM
+// The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
+// compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here.
+
 /**
  * MetricsRegistry implementation — OpenTelemetry metric instruments for xrpld.
  *
@@ -94,43 +98,41 @@ constexpr char kJobQueuedDurationUs[] = "job_queued_us";
 constexpr char kJobRunningDurationUs[] = "job_running_us";
 constexpr char kRpcMethodDurationUs[] = "rpc_method_us";
 
+// Millisecond-valued duration histogram instrument names. Same
+// register-then-create pairing as the microsecond names above, so the same
+// reason applies for naming them: the view and the record site must agree.
+//
+// consensus_round_duration_ms is recorded from RCLConsensus at the call site
+// (via XRPL_METRIC_HISTOGRAM_RECORD, which creates the instrument lazily
+// there), not created here. Only the VIEW is registered here, because a view
+// matches by instrument name and must exist before the instrument is first
+// used — the MeterProvider is built with the view registry, and the round
+// histogram is not created until the first consensus round completes, well
+// after start().
+constexpr char kConsensusRoundDurationMs[] = "consensus_round_duration_ms";
+
 /**
- * Register an explicit-bucket histogram view for a microsecond-valued
- * instrument.
+ * Register an explicit-bucket histogram view for a duration instrument.
  *
- * The SDK's default histogram buckets top out at 10,000 (10 ms when the
- * values are microseconds), so any duration above 10 ms saturates and
- * every quantile reads as 10 ms. Job wait/run times and RPC latencies
- * routinely exceed that, so we install boundaries spanning 100 µs to
- * 60 s to capture the real distribution.
+ * The SDK's default histogram boundaries top out at 10,000, so any value
+ * above that lands in the overflow bucket and every quantile reads as the
+ * top boundary. Both duration scales this project records cross that limit
+ * (10,000 µs = 10 ms of job wait; 10,000 ms = 10 s of consensus round), so
+ * every duration histogram installs its own boundaries instead.
  *
- * @param views   The registry to add the view to.
- * @param name    Instrument name to match (e.g. "job_running_us").
+ * @param views      The registry to add the view to.
+ * @param name       Instrument name to match (e.g. "job_running_us").
+ * @param boundaries Bucket upper bounds, in the instrument's own unit,
+ *                   ascending.
  */
 void
-addMicrosecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
+addDurationHistogramView(
+    metric_sdk::ViewRegistry& views,
+    std::string const& name,
+    std::vector<double> boundaries)
 {
-    // Boundaries in microseconds: 100µs, 500µs, 1ms, 5ms, 10ms, 25ms, 50ms,
-    // 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s, 30s, 60s. Covers sub-millisecond
-    // jobs through multi-second stalls without saturating.
     auto config = std::make_shared<metric_sdk::HistogramAggregationConfig>();
-    config->boundaries_ = {
-        100.0,
-        500.0,
-        1'000.0,
-        5'000.0,
-        10'000.0,
-        25'000.0,
-        50'000.0,
-        100'000.0,
-        250'000.0,
-        500'000.0,
-        1'000'000.0,
-        2'500'000.0,
-        5'000'000.0,
-        10'000'000.0,
-        30'000'000.0,
-        60'000'000.0};
+    config->boundaries_ = std::move(boundaries);
 
     auto selector = metric_sdk::InstrumentSelectorFactory::Create(
         metric_sdk::InstrumentType::kHistogram, name, "");
@@ -139,6 +141,81 @@ addMicrosecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& 
         metric_sdk::ViewFactory::Create(name, "", metric_sdk::AggregationType::kHistogram, config);
 
     views.AddView(std::move(selector), std::move(meterSelector), std::move(view));
+}
+
+/**
+ * Register the explicit-bucket view for a MICROSECOND-valued instrument.
+ *
+ * Boundaries: 100µs, 500µs, 1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms,
+ * 1s, 2.5s, 5s, 10s, 30s, 60s — sub-millisecond jobs through multi-second
+ * stalls, without saturating.
+ *
+ * @param views The registry to add the view to.
+ * @param name  Instrument name to match (e.g. "job_running_us").
+ */
+void
+addMicrosecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
+{
+    addDurationHistogramView(
+        views,
+        name,
+        {100.0,
+         500.0,
+         1'000.0,
+         5'000.0,
+         10'000.0,
+         25'000.0,
+         50'000.0,
+         100'000.0,
+         250'000.0,
+         500'000.0,
+         1'000'000.0,
+         2'500'000.0,
+         5'000'000.0,
+         10'000'000.0,
+         30'000'000.0,
+         60'000'000.0});
+}
+
+/**
+ * Register the explicit-bucket view for a consensus-round duration in
+ * MILLISECONDS.
+ *
+ * The round histogram needs its own boundaries for two reasons. The SDK
+ * default tops out at 10,000 ms, and a recovering or stalled node routinely
+ * rounds slower than that — the consensus parameters themselves allow up to
+ * `ledgerAbandonConsensus` = 120 s — so the default would collapse exactly the
+ * slow rounds this signal exists to show into one saturated top bucket. And a
+ * healthy round is about 3-4 s, which the default's coarse spacing near that
+ * value cannot resolve, so a round drifting from 3 s to 5 s would not move any
+ * quantile.
+ *
+ * Boundaries: 500ms, 1s, 2s, 3s, 4s, 5s, 7.5s, 10s, 15s, 20s, 30s, 60s, 120s.
+ * Dense across the healthy 2-5 s band, then widening to the 120 s abandon
+ * limit so a stalled round still lands in a real bucket.
+ *
+ * @param views The registry to add the view to.
+ * @param name  Instrument name to match ("consensus_round_duration_ms").
+ */
+void
+addRoundDurationHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
+{
+    addDurationHistogramView(
+        views,
+        name,
+        {500.0,
+         1'000.0,
+         2'000.0,
+         3'000.0,
+         4'000.0,
+         5'000.0,
+         7'500.0,
+         10'000.0,
+         15'000.0,
+         20'000.0,
+         30'000.0,
+         60'000.0,
+         120'000.0});
 }
 
 }  // namespace
@@ -214,13 +291,17 @@ MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::strin
         attrs[opentelemetry::semconv::service::kServiceInstanceId] = instanceId;
     auto resourceAttrs = resource::Resource::Create(attrs);
 
-    // Build a view registry with explicit microsecond buckets for the
-    // duration histograms. Without this they use the SDK default buckets
-    // (max 10,000 = 10 ms), saturating every quantile at 10 ms.
+    // Build a view registry with explicit buckets for the duration
+    // histograms. Without this they use the SDK default buckets (max 10,000),
+    // which saturates every quantile at 10 ms for the µs instruments and at
+    // 10 s for the round histogram.
     auto views = std::make_unique<metric_sdk::ViewRegistry>();
     addMicrosecondHistogramView(*views, kJobQueuedDurationUs);
     addMicrosecondHistogramView(*views, kJobRunningDurationUs);
     addMicrosecondHistogramView(*views, kRpcMethodDurationUs);
+    // Millisecond-scale: recorded at the RCLConsensus call site, so only the
+    // view is declared here (see the constant's comment).
+    addRoundDurationHistogramView(*views, kConsensusRoundDurationMs);
 
     // Create MeterProvider with resource, then attach the metric reader.
     provider_ = metric_sdk::MeterProviderFactory::Create(std::move(views), resourceAttrs);

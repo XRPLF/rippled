@@ -24,6 +24,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <xrpl.pb.h>
 
@@ -35,6 +36,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -364,6 +366,76 @@ public:
     {
         return timeToFirstValidatedUs_.load(std::memory_order_relaxed);
     }
+
+    /**
+     * Start a span that joins the per-ledger trace keyed on the ledger hash.
+     *
+     * One ledger's spans are produced on threads that know nothing about each
+     * other: `ledger.acquire` on a JtLedgerData worker, `ledger.validate` from
+     * whichever thread calls checkAccept (a peer thread via
+     * handleNewValidation, the JtLedgerData "AcqDone" job, or the consensus
+     * thread via switchLCL), and `ledger.store` from a fourth. No ambient
+     * context reaches across those boundaries, so before this each ledger's
+     * spans were separate one-span traces and a slow ledger could not be read
+     * as one unit.
+     *
+     * They are joined without propagating anything: `SpanGuard::hashSpan()`
+     * derives the trace id from the first 16 bytes of a hash, so every span
+     * that passes the SAME ledger hash lands in the SAME trace, and spans for
+     * different ledgers stay in different traces. Every one of these sites
+     * already holds the ledger hash, so nothing new has to be plumbed through.
+     * This is the pattern the apply pipeline already uses to join preflight,
+     * preclaim and the transactor on the transaction id
+     * (`libxrpl/tx/applySteps.cpp`).
+     *
+     * The span is a true trace root (deterministic trace id, no parent), so
+     * the spans of one ledger are siblings under one trace rather than a
+     * parent/child chain — which is the honest shape, since none of them
+     * causes another directly and their order varies with the sync path taken.
+     *
+     * Which stage a span is stays encoded in the span NAME rather than in an
+     * extra attribute: the collector already exposes the span name as the
+     * `span_name` label on the derived metrics, so a separate phase attribute
+     * would be a second copy of the same fact that could disagree with it.
+     *
+     * @param name        Full span name (e.g. "ledger.validate"). hashSpan
+     *                    takes one complete name, not a prefix/suffix pair, so
+     *                    pass the joined constant.
+     * @param ledgerHash  The ledger's own 32-byte hash: the join key. Its
+     *                    first 16 bytes become the trace id, and the whole
+     *                    hash is recorded as the `ledger_hash` attribute.
+     * @param seq         Ledger sequence, recorded as `ledger_seq` so a trace
+     *                    can be found by ledger number.
+     * @return An active guard, or a null (no-op) guard when telemetry is off,
+     *         built without telemetry, or ledger tracing is not enabled.
+     *
+     * Example — join the acceptance decision to the rest of the ledger's trace:
+     * @code
+     *   auto span = makeLedgerTraceSpan(
+     *       ledger_span::validate, ledger->header().hash, ledger->header().seq);
+     *   span.setAttribute(ledger_span::attr::validations, tvc);
+     * @endcode
+     *
+     * Example — edge case: with tracing disabled the guard is null and every
+     * method on it is a no-op, so no call site needs its own check:
+     * @code
+     *   auto span = makeLedgerTraceSpan(ledger_span::store, hash, seq);
+     *   // span is false; setAttribute() below does nothing.
+     * @endcode
+     *
+     * @note Called once per ledger per stage, never per SHAMap node or per
+     * transaction. Costs one span plus two attributes when tracing is on, and
+     * one predicted branch when it is off.
+     * @note Thread-safe: builds a fresh guard from its arguments and the global
+     * Telemetry instance, touching no LedgerMaster state, so it may be called
+     * from any thread and while mutex_ is held.
+     * @note Limitation: the join holds only for spans keyed on the SAME ledger
+     * hash. A stage that has only a sequence number (a by-seq lookup before the
+     * hash is known) cannot join the trace, and a genuinely different ledger
+     * always gets a different trace.
+     */
+    [[nodiscard]] static telemetry::SpanGuard
+    makeLedgerTraceSpan(std::string_view name, uint256 const& ledgerHash, std::uint32_t seq);
 
 private:
     void

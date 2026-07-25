@@ -2579,6 +2579,197 @@ each step gates the next: stop at the first one that is wrong.
         merely empty. There is nothing validated to publish, so read
         _Trusted Validations vs Quorum Target_ first and ignore this panel
         until the gate passes.
+    - **Are the arriving validations even usable?** Panel _Trusted Validation
+      Accept Rate by Status_ (`consensus.validation.accept`, by
+      `validation_status`). The tally panels above say how many trusted
+      validations were counted; this one says what happened to the validations
+      that arrived, which is the missing half when the tally sits flat:
+      - **Nearly all `current`** — normal. That is the only status that
+        continues to the acceptance gate, so the tally is limited by how many
+        validators are reachable, not by the validations themselves. Go back to
+        Bootstrap step 4.
+      - **Rate concentrated in `stale`, `bad_seq`, `multiple` or
+        `conflicting`** — validations arrive and are counted for nothing. This
+        is the difference between a node that is slow to validate and one that
+        never will, and it is invisible in the tally, which simply stays low
+        either way. `stale` in bulk usually means a clock or timing problem
+        (check _Clock Close Offset_ in Bootstrap); `multiple` or `conflicting`
+        in bulk means a trusted validator is misbehaving or the node is seeing
+        two chains.
+      - **`accept_gated=true` on a share of them** — normal, and not a lost
+        span: another thread was already accepting that ledger, so no
+        acceptance followed this particular validation.
+      - **Flat at zero on a peered node** — no trusted validations are
+        arriving at all, which sends you back to Bootstrap step 4 rather than
+        anywhere in this row.
+        This panel is span-derived, so unlike the native panels above it inherits
+        trace sampling — read it for the **shape** of the split, and the native
+        tally for exact counts.
+
+17. **Which stage of the fetch is stuck, and which peer or object is it stuck
+    on?**
+    Every step above reads a native metric, which is an aggregate: it says how
+    much and how often, never _which one_. This step reads the **span-derived**
+    panels at the bottom of the Sync pipeline row, which answer the "which"
+    questions the aggregates structurally cannot — and each point on them is
+    backed by a trace, so it can be clicked through to the individual fetch,
+    request or dial.
+    Two things to know before reading them. First, unlike every metric above,
+    these series come from spans and are therefore subject to sampling and to
+    the `trace_ledger` / `trace_peer` config flags — an absent series can mean
+    "not enabled" rather than "not happening". Second, use them to _localise_
+    a fault that the metric steps have already established, not to detect one.
+    - **Which acquire phase is stuck?** Panels _Ledger Acquire Phase Duration
+      (p95 by phase)_ and _Ledger Acquire Phase Outcomes (by phase & timeout)_
+      (`ledger.acquire.header` / `.astree` / `.txtree`). Step 6 says the
+      missing-node count is flat; these say _where_. A ledger acquire is three
+      sequential fetches, and the parent `ledger.acquire` span is flat, so its
+      duration is the account-state tree's and hides the other two:
+      - **`astree` band hot, with `timed_out=true` and a non-zero
+        `missing_nodes`** — peers are not supplying account-state nodes. This
+        is the common stuck-fresh-sync shape. Check _Outbound Dial Outcomes_
+        below for `refused` / `timeout` spikes, and step 11 for whether any
+        peer holds the range at all.
+      - **`header` band hot** — the node is waiting to be **told what to
+        fetch**. The header names both trees' root hashes, so until it arrives
+        nothing else can even be requested. This is a peer-supply fault
+        upstream of either tree, and it is invisible in step 6, whose
+        missing-node counts are both still zero at this point.
+      - **`txtree` band hot while `astree` is quiet** — unusual, and worth
+        noting precisely because the transaction tree is normally small: the
+        parent span's duration would not have shown it.
+        Use the `$timed_out` template variable to isolate the timed-out phases.
+        The two are separate dimensions on purpose: a phase can time out and
+        still be retried by its parent acquire, so `timed_out=true` is not the
+        same as the acquire having failed.
+    - **Are proposed transaction sets arriving?** Panels _Tx-Set Acquire
+      Outcomes_ and _Tx-Set Acquire Duration (p95)_ (`txset.acquire`). Nothing
+      measured this before, so a consensus round stalled waiting on a
+      transaction set looked identical to an idle one:
+      - **`timeout` or `abandoned` climbing** — proposed sets never complete,
+        so rounds wait on data rather than on agreement. Read it with the
+        consensus panels rather than with the acquire steps above: this is the
+        consensus path, not history back-fill.
+      - **`complete` series p95 approaching the round interval** — sets do
+        arrive, but so late that they delay the round they belong to. The
+        outcome rate alone cannot show this, because those acquisitions
+        succeed.
+      - **All series flat at zero** — normal. It means this node already held
+        every proposed set locally and never had to fetch one.
+    - **Which peer is the dial failing against?** Panel _Outbound Dial
+      Outcomes (span-derived, per attempt)_ (`peer.dial`). The same five
+      outcomes as `overlay_connect_total` in Bootstrap step 2, set from the
+      same code path so the two cannot disagree — read the counter first for
+      the rate, then come here for the **identity**. The span carries
+      `remote_endpoint`, which the counter deliberately cannot: one metric
+      series per peer address would be unbounded cardinality. Drill into a
+      failing point to get the endpoint, which is what separates one
+      unreachable peer from a broken local network — a distinction the
+      aggregate rate cannot make. A dial torn down by shutdown ends its span
+      with **no** `outcome` attribute; that is deliberate, and means "never
+      concluded" rather than a lost span.
+    - **Are we serving others while starving ourselves?** Panel _Ledger Serve
+      Rate by Object Type_ (`ledger.serve`). This is the **supply side** — what
+      this node does for its peers — so it does not explain this node's own
+      sync, but it does explain its peers'. Compare the `as` series here
+      against the inbound `astree` phase above: healthy serving with starved
+      receiving points at peer selection rather than at this node's capacity.
+      - **`refused` climbing** — this node is declining requests; _Ledger/Object
+        Serve Refusals_ in step 12 gives the specific cause.
+      - **`partial` climbing** — replies keep filling `kSoftMaxReplyNodes`, so
+        peers need repeated round trips for one tree. Expected while serving
+        large state trees; sustained on small requests it is worth a look.
+
+18. **Are consensus rounds themselves slowing down?**
+    Panels _Consensus Round Duration Distribution_ (heatmap) and _Consensus
+    Round Duration (p50/p95)_ (`consensus_round_duration_ms`). A round that
+    used to take 3-4 s and now takes 12 delays every ledger behind it, and
+    until now this was only a span attribute — answering it fleet-wide meant
+    raw trace queries. Being a native metric it is also **never sampled**,
+    unlike every span-derived panel above.
+    - **Band drifting upward, or a second band high up** — rounds are taking
+      longer. Read it against the two panels that explain why: _Tx-Set Acquire
+      Duration (p95)_ (step 16 — rounds waiting on data rather than on
+      agreement) and _Trusted Validations vs Quorum Target_ (step 13 —
+      validations arriving too late to close the round).
+    - **P95 climbing while P50 stays flat** — a minority of rounds stall. This
+      is the early form of what the heatmap later shows as a second band.
+    - **Both rising together** — the whole network is slowing, not this node.
+      Compare against another node using the `$node` variable before treating
+      it as a local fault.
+    - Buckets span 500 ms to 120 s deliberately. The SDK default stops at
+      10 s, which would put every slow round in one saturated bucket and read
+      every quantile as exactly 10 s — and the consensus parameters allow a
+      round up to 120 s before it is abandoned.
+
+#### Following ONE slow ledger as a single trace
+
+The steps above find _which stage_ is slow across all ledgers. This finds why
+_one specific_ ledger was slow, which is the question left when the aggregate
+panels look merely mediocre.
+
+Every span that touches a ledger derives its trace id from that ledger's own
+hash, so they all share one trace even though each runs on a different thread
+and no context is passed between them. One TraceQL query returns the whole
+story:
+
+```
+{span.ledger_hash="<64-hex-ledger-hash>"}
+```
+
+What that trace contains, and what each part tells you:
+
+| Span                          | Thread                        | What a long one means                                              |
+| ----------------------------- | ----------------------------- | ------------------------------------------------------------------ |
+| `ledger.acquire` (+ phases)   | `JtLedgerData` worker         | The node had to fetch this ledger and peers were slow to supply it |
+| `consensus.validation.accept` | validation worker             | Time this trusted validation spent driving the acceptance decision |
+| `ledger.validate`             | whichever thread hit the gate | The acceptance decision itself (`LedgerMaster::checkAccept`)       |
+| `ledger.store`                | caller of `storeLedger`       | Persisting the ledger — a slow one points at the node store        |
+
+Read it this way:
+
+1. **Get a candidate hash.** From a slow point on any per-ledger panel, or from
+   a log line, or by searching for the shape directly — for example an acquire
+   that never finished:
+   `{name="ledger.acquire" && span.outcome="abandoned"}`.
+2. **Open the whole trace** with the query above. The spans appear as
+   **siblings**, not as a parent/child chain. That is deliberate and is the
+   honest shape: none of them directly causes another, and their order changes
+   with the sync path — `checkAccept` is reached from a peer thread (an arriving
+   validation), from the acquire-completion job, and from the consensus thread
+   (`switchLCL`). A chain would assert an order that does not hold.
+3. **Compare the spans' durations,** which is the point of having them in one
+   trace: whether this ledger was slow to _arrive_, slow to be _accepted_, or
+   slow to be _stored_ is now one glance instead of three separate searches
+   that cannot be correlated.
+4. **If a validation span has no `ledger.validate` beside it,** check its
+   `accept_gated` attribute. `true` means another thread was already accepting
+   that ledger, so no acceptance followed this validation — that is normal, not
+   a lost span.
+5. **If the trace holds only one span,** the join is broken rather than the
+   ledger being fast: confirm with the `span.trace_join.per_ledger` check in
+   `validate_telemetry.py`, which fails CI on exactly this regression.
+
+```mermaid
+flowchart TD
+    KEY["Ledger hash (32 bytes)<br/>trace_id = hash[0:16]"]
+
+    KEY --> ACQ["ledger.acquire<br/>JtLedgerData worker<br/>network fetch"]
+    KEY --> VAL["consensus.validation.accept<br/>validation worker<br/>trusted validation arrives"]
+    KEY --> CHK["ledger.validate<br/>checkAccept<br/>acceptance decision"]
+    KEY --> STO["ledger.store<br/>storeLedger<br/>persist"]
+
+    classDef seed fill:#1f3b57,stroke:#8ab4d8,stroke-width:2px,color:#ffffff
+    classDef span fill:#f2f6fa,stroke:#4a6f8a,stroke-width:1px,color:#12232e
+    class KEY seed
+    class ACQ,VAL,CHK,STO span
+```
+
+Two limits worth knowing. The join needs the ledger **hash**: a stage that has
+only a sequence number cannot join, so a by-sequence lookup made before the
+hash is known will not appear. And the trace id is the hash's leading 16 bytes
+only — the `ledger_hash` attribute carries all 32, which is how you confirm two
+spans are genuinely the same ledger rather than a trace-id coincidence.
 
 ## Performance Tuning
 

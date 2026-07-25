@@ -5,6 +5,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/consensus/ConsensusSpanNames.h>
 #include <xrpld/consensus/Validations.h>
 #include <xrpld/core/TimeKeeper.h>
 
@@ -19,6 +20,7 @@
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/tokens.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <algorithm>
 #include <memory>
@@ -179,6 +181,31 @@ handleNewValidation(
     {
         if (val->isTrusted())
         {
+            // Join this trusted validation to the trace of the ledger it
+            // validates. The acceptance decision it triggers runs in
+            // LedgerMaster::checkAccept, which may be this thread or another
+            // (checkAccept is also entered from the acquire completion job and
+            // from switchLCL), and it emits its own ledger.validate span. Both
+            // spans derive their trace id from the SAME validated-ledger hash
+            // via LedgerMaster::makeLedgerTraceSpan, so "which validation
+            // pushed this ledger over quorum, and how long did the resulting
+            // acceptance take" is one trace instead of two unrelated ones.
+            //
+            // Only TRUSTED validations get a span. Untrusted ones cannot move
+            // acceptance, so a span for them would be cost with no causality to
+            // show; this keeps the rate bounded by the UNL size per ledger, in
+            // line with the existing per-message consensus.validation.receive
+            // span rather than on top of it.
+            namespace cs = telemetry::consensus::span;
+            auto span = LedgerMaster::makeLedgerTraceSpan(cs::validationAccept, hash, seq);
+            span.setAttribute(
+                cs::attr::validationStatus, cs::validationStatusValue(static_cast<int>(outcome)));
+            span.setAttribute(cs::attr::fullValidation, val->isFull());
+            span.setAttribute(cs::attr::acceptGated, bypassAccept == BypassAccept::Yes);
+
+            // The span stays alive across checkAccept below, so its duration is
+            // the time this validation spent driving the acceptance decision --
+            // the number that grows when a node is slow to validate.
             if (bypassAccept == BypassAccept::Yes)
             {
                 XRPL_ASSERT(j, "xrpl::handleNewValidation : journal is available");
