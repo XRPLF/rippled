@@ -491,6 +491,16 @@ When a node is missing ledgers (at startup, after an outage, or to extend histor
 
 **Scope:** per node — measured on and specific to this individual server.
 
+<a id="byzantine-ledger-jump"></a>
+
+### Byzantine ledger jump
+
+Being told that the network's last closed ledger is not the one this node built on, and discarding its own chain tip to follow the network instead. It is an abnormal event by construction: the node had already closed a ledger, and it is now throwing that work away because the peers it listens to agree on a different one. A single jump while a fresh node is still settling onto the network's chain can be benign. Repeated jumps are wrong-chain thrash — the node keeps switching between chains and never settles — and the cause is upstream of the sync pipeline, in which peers it is listening to or which network it thinks it is on, so nothing in ledger acquisition can fix it.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Fork](#fork) · [Ledger history mismatch](#ledger-history-mismatch) · [Insane / diverged peers](#insane-diverged-peers)
+
 <a id="clock-close-offset"></a>
 
 ### Clock close offset
@@ -605,6 +615,16 @@ Acquiring a ledger means requesting it and its contents from peers when the node
 
 **Scope:** per node — measured on and specific to this individual server.
 
+<a id="ledger-replay"></a>
+
+### Ledger replay
+
+An optional faster way to rebuild a run of historical ledgers: instead of downloading each ledger whole, the node fetches one starting ledger plus the list of ledger hashes that links the range, then fetches only what changed in each subsequent ledger and applies those changes on top of its predecessor. It is only available when enough connected peers support the protocol feature that serves those pieces, so whether it is used at all depends on the peer set rather than on local configuration alone.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Replay fallback](#replay-fallback) · [Ledger acquire (inbound fetch)](#ledger-acquire-inbound-fetch)
+
 <a id="ledgers-behind-network"></a>
 
 ### Ledgers behind network
@@ -635,6 +655,36 @@ The startup guard that holds a node back until it has seen a complete ledger fro
 
 **See also:** [Operating mode / server state](#operating-mode-server-state) · [UNL quorum headroom](#unl-quorum-headroom) · [Operating mode / server state on xrpl.org](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states)
 
+<a id="node-store-read-latency"></a>
+
+### Node-store read latency
+
+How long the node store takes to return one stored object. Every ledger traversal that is not already answered from an in-memory cache pays this cost, so it is the floor under ledger acquisition and under most queries. It is reported as an average over an interval rather than as a distribution, which means a slow minority of reads shows up as a raised average rather than as a separate tail figure.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Node-store write latency](#node-store-write-latency) · [SHAMap cache hit rate](#shamap-cache-hit-rate)
+
+<a id="node-store-operation-rate"></a>
+
+### Node-store operation rate
+
+How many objects per second the node store is storing and retrieving. It is the companion an average latency needs in order to be read correctly: latency measured over an interval with almost no operations in it is a stale number rather than a good one, and a node writing nothing at all while still behind the network is stalled somewhere upstream of storage rather than slowed by it.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Node-store write latency](#node-store-write-latency)
+
+<a id="node-store-write-latency"></a>
+
+### Node-store write latency
+
+How long the node store takes to persist one object. This is the cost that governs how fast a node can absorb ledger history, because filling in history is dominated by writing rather than by reading. It is the measurement that distinguishes the two ways a sync can be slow: starved of data from peers, or unable to write down the data it already has. A node with a large existing database can be slower to start and catch up than an empty one for exactly this reason, and no read-side measurement reveals it. Like the read figure it is an interval average, not a distribution.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Node-store read latency](#node-store-read-latency) · [Node-store operation rate](#node-store-operation-rate)
+
 <a id="operating-mode-server-state"></a>
 
 ### Operating mode / server state
@@ -655,6 +705,16 @@ The elapsed time of one outbound peer connection attempt, from starting the TCP 
 
 **See also:** [DNS resolve](#dns-resolve) · [Handshake negotiation failure](#handshake-negotiation-failure) · [Peer protocol on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)
 
+<a id="peer-ledger-supply"></a>
+
+### Peer ledger supply
+
+The idea that a connected peer set collectively offers a window of ledger sequences, rather than being simply present or absent. Each peer advertises the oldest and newest ledger it holds, so the set as a whole can serve some range and nothing outside it. This turns "how many peers do I have" into the question that actually matters during a sync: does any connected peer hold the next ledger this node needs. Being unable to advance because nobody holds that sequence is a fundamentally different fault from being slow — it is a supply gap fixed only by changing the peer set, whereas slowness with the data available is a throughput problem fixed locally, and the two are indistinguishable from inside the acquire itself. The shape of a gap matters too: needing a sequence below the window means asking for history nobody kept, while needing one above it means asking for a tip nobody has reached. Peers that have not advertised a range yet are excluded from the counts entirely, so a zero window means unknown rather than empty, and the count of peers that have reported anything is what makes the rest readable.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Ledgers behind network](#ledgers-behind-network) · [Slot census](#slot-census) · [Acquire stall](#acquire-stall) · [Complete ledger ranges](#complete-ledger-ranges)
+
 <a id="received-data-stash"></a>
 
 ### Received-data stash
@@ -664,6 +724,16 @@ Peer packets held for later processing because a ledger acquire cannot apply the
 **Scope:** per node — measured on and specific to this individual server.
 
 **See also:** [Add-node outcome](#add-node-outcome) · [Acquire stall](#acquire-stall)
+
+<a id="replay-fallback"></a>
+
+### Replay fallback
+
+A replay sub-task giving up on the delta shortcut and acquiring the entire ledger instead, which happens when too few connected peers support the feature that serves the pieces replay needs. Nothing fails when this occurs and no error is raised — the node still completes its back-fill, just on the slower path — which is why it is easy to miss: the optimisation is simply absent. It is counted separately for each of the two sub-tasks, because the one that fetches the list of historical ledger hashes and the one that fetches a single ledger's changes can fail independently of each other.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Ledger replay](#ledger-replay)
 
 <a id="shamap-cache-hit-rate"></a>
 
@@ -738,6 +808,16 @@ A cluster is a set of servers run by the same operator that trust each other, ex
 **Scope:** cluster-wide — shared across a co-operated cluster of nodes run by one operator.
 
 **See also:** [Cluster on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/clustering)
+
+<a id="disconnect-reason"></a>
+
+### Disconnect reason
+
+The cause recorded when a peer connection is torn down, kept alongside the direction the connection was originally opened in. A single disconnect count cannot separate the two situations that matter, because they produce the same number: a node shedding load, which drops peers deliberately because it could not keep up with what it owed them or because a peer exceeded its resource allowance, and a network or topology fault, where the peer became unreachable, stopped answering keepalives, or turned out to be following a different chain. The first is a local capacity problem and the peer list is not the fix; the second is the opposite. A third group is neither — clean teardown at shutdown and peers closing their own side are ordinary churn, and a count dominated by those is healthy. The direction matters separately, since churn among the peers a node dials points somewhere different from churn among the peers that dial it.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Resource disconnect](#resource-disconnect) · [Slot census](#slot-census) · [Insane / diverged peers](#insane-diverged-peers)
 
 <a id="fetch-pack"></a>
 
@@ -837,6 +917,26 @@ Set-get (fetch) and set-share messages exchange transaction-set data between pee
 
 **Scope:** per node — measured on and specific to this individual server.
 
+<a id="serve-refusal"></a>
+
+### Serve refusal
+
+A peer data request that this node declined to answer — the supply side of the sync exchange, as opposed to everything a node measures about its own fetching. It matters because a node that refuses everything it is asked for looks, from the outside, exactly like a node nobody asks: both serve nothing. From the asking peer's point of view a refusal is indistinguishable from a peer that does not hold the data, so refusals directly slow the sync of every peer that depends on this node. The reason divides them into two kinds. Self-inflicted refusals mean the node was too loaded to answer — its outgoing queue to that peer had grown past its limit, or the local fee track showed it under load, or too much bulk-transfer work was already queued — and these are the serving-side symptom of the same overload that shows up as stalls and job-queue backlog locally. A refusal because the data was simply not held is different: that is a genuine history gap, a question of what this node retains rather than how busy it is.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Fetch-pack](#fetch-pack) · [GetObject / object fetch](#getobject-object-fetch) · [Complete ledger ranges](#complete-ledger-ranges) · [Peer ledger supply](#peer-ledger-supply)
+
+<a id="slot-census"></a>
+
+### Slot census
+
+A single consistent reading of everything PeerFinder knows about this node's peering position: how many outbound and inbound slots are occupied against how many exist, how many outbound attempts are in flight, how many configured fixed peers are connected against how many were configured, and the depth of the two address stores. Taken together at one instant, so the numbers can be compared against each other. The three terms worth defining plainly: an occupied outbound slot is a peer this node dialled and is now connected to; the bootstrap address store is a persisted list of addresses kept across restarts purely so a starting node has somewhere to dial; and the live address store holds addresses learned from peers during this session and exists only in memory. Occupancy alone cannot explain a peering failure, which is the reason the census exists. A node with no outbound peers might be dialling continuously and never completing, or not dialling at all because it has no addresses to try, or dialling only configured peers that are unreachable — three different faults with three different fixes, and the occupancy count is identical in all of them. It is the attempt count, the address-store depths, and the configured-versus-connected comparison that tell them apart.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Overlay](#overlay) · [Disconnect reason](#disconnect-reason) · [Peer ledger supply](#peer-ledger-supply) · [DNS resolve](#dns-resolve) · [Outbound dial latency](#outbound-dial-latency)
+
 <a id="squelch"></a>
 
 ### Squelch
@@ -904,6 +1004,16 @@ The NodeStore serves reads through a pool of read threads (optionally bundling r
 <a id="cat-validator-health"></a>
 
 ## Validator Health
+
+<a id="amendment-block-countdown"></a>
+
+### Amendment block countdown
+
+The window between an amendment this build does not understand reaching majority among validators and that amendment actually activating. It exists because amendment activation is not instantaneous: once an unsupported amendment has majority support it becomes expected to activate at a known future time, and until then the node still works normally. That window is the only actionable part of an otherwise terminal condition — after activation the node stops validating and cannot resume without a software upgrade, so there is no operational fix left, only a rebuild and restart. Read as a countdown it therefore outranks every other sync signal in urgency: a node counting down is going to stop validating at a knowable moment, and anything else that looks wrong is secondary. The healthy state is reported as an explicit sentinel value rather than as absent data, so a node with nothing pending is distinguishable from a node whose reporting has broken, and the countdown is held at zero rather than going negative once activation is due. The identity of the blocking amendment is deliberately not carried on the metric — the network can vote on any amendment identifier, including ones this build has never heard of, which would make it an unbounded label — so the hash comes from the log line that records the amendment reaching majority.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Amendment blocked](#amendment-blocked) · [UNL blocked](#unl-blocked) · [Amendments on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/amendments)
 
 <a id="amendment-blocked"></a>
 

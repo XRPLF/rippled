@@ -25,6 +25,9 @@
 
 #include <xrpld/telemetry/MetricMacros.h>
 
+#include <xrpld/overlay/Overlay.h>
+#include <xrpld/peerfinder/PeerfinderManager.h>
+
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/JobTypes.h>
@@ -44,12 +47,13 @@
 #include <opentelemetry/sdk/metrics/meter_provider_factory.h>
 #include <opentelemetry/sdk/metrics/metric_reader.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
-#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -268,8 +272,10 @@ public:
                 for (auto const& metric : scope.metric_data_)
                 {
                     for (auto const& point : metric.point_data_attr_)
+                    {
                         out[metric.instrument_descriptor.name_][point.attributes] =
                             point.point_data;
+                    }
                 }
             }
             return true;
@@ -886,10 +892,10 @@ TEST(MetricMacros, unl_quorum_gauge_observes_exact_trusted_keys_and_quorum)
     // registry reads them live from ValidatorList on each collection tick.
     struct Observed
     {
-        std::int64_t trustedKeys;
-        std::int64_t quorum;
+        std::int64_t trustedKeys{0};
+        std::int64_t quorum{0};
     };
-    Observed observed{5, 4};
+    Observed observed{.trustedKeys = 5, .quorum = 4};
 
     // Keep the instrument alive for the whole test: destroying the handle
     // deregisters the callback (ObservableInstrument's destructor calls
@@ -1121,14 +1127,18 @@ TEST(MetricMacros, sync_state_gauge_observes_exact_stuck_node_values)
     // real registry reads them from NetworkOPs/LoadManager on each tick.
     struct Observed
     {
-        std::int64_t initialFullDurationUs;
-        std::int64_t networkLedgerGate;
-        std::int64_t serverStallSeconds;
-        std::int64_t ledgersBehind;
+        std::int64_t initialFullDurationUs{0};
+        std::int64_t networkLedgerGate{0};
+        std::int64_t serverStallSeconds{0};
+        std::int64_t ledgersBehind{0};
     };
     // A node that never synced: no FULL yet, gate closed, 42 s stalled, 150
     // ledgers behind (network tip 250 vs our validated 100).
-    Observed observed{0, 1, 42, 150};
+    Observed observed{
+        .initialFullDurationUs = 0,
+        .networkLedgerGate = 1,
+        .serverStallSeconds = 42,
+        .ledgersBehind = 150};
 
     // Keep the instrument alive for the whole test: destroying the handle
     // deregisters the callback, which is why the real registry holds a member.
@@ -1177,7 +1187,11 @@ TEST(MetricMacros, sync_state_gauge_observes_exact_stuck_node_values)
 
     // A healthy node reports the complementary values through the same
     // callback: synced in 12.5 s, gate open, no stall, at the tip.
-    observed = Observed{12'500'000, 0, 0, 0};
+    observed = Observed{
+        .initialFullDurationUs = 12'500'000,
+        .networkLedgerGate = 0,
+        .serverStallSeconds = 0,
+        .ledgersBehind = 0};
     auto const healthy = provider.collect();
     EXPECT_EQ(
         gaugeValue(healthy, "sync_state", attrs("metric", "initial_full_duration_us")), 12'500'000);
@@ -1433,14 +1447,15 @@ TEST(MetricMacros, sync_acquire_gauge_observes_exact_stuck_acquire_values)
     // registry reads it from InboundLedgers on each collection tick.
     struct Observed
     {
-        std::int64_t maxMissingStateNodes;
-        std::int64_t maxMissingTxNodes;
-        std::int64_t receivedDataDepth;
-        std::int64_t inFlight;
+        std::int64_t maxMissingStateNodes{0};
+        std::int64_t maxMissingTxNodes{0};
+        std::int64_t receivedDataDepth{0};
+        std::int64_t inFlight{0};
     };
     // A stuck acquire: 256 state nodes still outstanding (the sweep cap), the tx
     // tree already done, 4 packets stashed, 2 acquires running.
-    Observed observed{256, 0, 4, 2};
+    Observed observed{
+        .maxMissingStateNodes = 256, .maxMissingTxNodes = 0, .receivedDataDepth = 4, .inFlight = 2};
 
     // Keep the instrument alive for the whole test: destroying the handle
     // deregisters the callback, which is why the real registry holds a member.
@@ -1487,12 +1502,13 @@ TEST(MetricMacros, sync_acquire_gauge_observes_exact_stuck_acquire_values)
     // A shrinking count is the "slow but alive" reading, and an idle node
     // reports all zeros with in_flight=0 -- distinguishable from a stuck node
     // only because in_flight is exported alongside.
-    observed = Observed{128, 0, 1, 2};
+    observed = Observed{
+        .maxMissingStateNodes = 128, .maxMissingTxNodes = 0, .receivedDataDepth = 1, .inFlight = 2};
     EXPECT_EQ(
         gaugeValue(provider.collect(), "sync_acquire", attrs("metric", "missing_state_nodes_max")),
         128);
 
-    observed = Observed{0, 0, 0, 0};
+    observed = Observed{};
     auto const idle = provider.collect();
     EXPECT_EQ(gaugeValue(idle, "sync_acquire", attrs("metric", "missing_state_nodes_max")), 0);
     EXPECT_EQ(gaugeValue(idle, "sync_acquire", attrs("metric", "in_flight")), 0);
@@ -1781,6 +1797,1129 @@ TEST(MetricMacros, jobq_saturation_gauge_observes_exact_pool_exhaustion_values)
     auto const standalone = provider.collect();
     EXPECT_EQ(gaugeValue(standalone, "jobq_saturation", attrs("metric", "worker_threads")), 1);
     EXPECT_EQ(gaugeValue(standalone, "jobq_saturation", attrs("metric", "total_waiting")), 3);
+}
+
+// -----------------------------------------------------------------
+// Peer-supply, slot-census and amendment-countdown diagnostics (WP-A7).
+//
+// Asserts the EXACT values and label shapes of the three gauges and the four
+// counters:
+//   peer_ledger_supply{metric}      MetricsRegistry::registerPeerLedgerSupplyGauge
+//   peerfinder_slot_census{metric}  MetricsRegistry::registerSlotCensusGauge
+//   amendment_block{metric}         MetricsRegistry::registerAmendmentBlockGauge
+//   peer_disconnect_total{reason,direction}       PeerImp::close
+//   peer_accept_total{outcome}                    OverlayImpl::reportAcceptOutcome
+//   serve_refused_total{request,reason}           PeerImp::reportServeRefusal
+//   ledger_jump_total (unlabelled)                NetworkOPsImp::switchLastClosedLedger
+//
+// The three gauges are observable instruments registered directly on the SDK
+// meter, mirroring the production callback shape, because the real
+// MetricsRegistry's enabled path cannot be linked into this standalone binary
+// (see the file header). The snapshot types are the REAL xrpl::PeerLedgerSupply
+// and xrpl::PeerFinder::SlotCensus aggregates, so a field rename or a reorder on
+// either side breaks these tests instead of silently drifting from production.
+// Both are plain header-only aggregates with no out-of-line members, so using
+// them here adds no xrpld link dependency.
+//
+// The four counters are driven through XRPL_METRIC_COUNTER_INC_LABELED /
+// XRPL_METRIC_COUNTER_INC, which is exactly what the production call sites use.
+// -----------------------------------------------------------------
+
+// peer_ledger_supply must keep the two "who can serve me" counts on separate
+// series from the "who is even talking" denominator. The values chosen are the
+// headline supply gap: three peers connected and advertising a range, all three
+// covering the validated sequence, and NOT ONE covering the next one needed.
+TEST(MetricMacros, peer_ledger_supply_gauge_names_a_gap_no_peer_can_fill)
+{
+    CollectingProvider const provider;
+
+    // The real aggregate the production callback reports, filled here as
+    // OverlayImpl::getPeerLedgerSupply() would fill it. Peer set holds
+    // [1000, 4000]; this node's validated sequence is 4000, so the next needed
+    // is 4001 -- past every peer's tip.
+    PeerLedgerSupply observed{
+        .peersReporting = 3,
+        .peersServingValidated = 3,
+        .peersServingNext = 0,
+        .supplyMinSeq = 1000,
+        .supplyMaxSeq = 4000};
+
+    // Keep the instrument alive for the whole test: destroying the handle
+    // deregisters the callback, which is why the real registry holds a member.
+    auto gauge = provider.meter()->CreateInt64ObservableGauge(
+        "peer_ledger_supply", "Peer coverage of the ledger sequence this node needs");
+    gauge->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto const* self = static_cast<PeerLedgerSupply const*>(state);
+            // Same single-label Observe() form the production callback uses.
+            auto observe = [&](char const* field, std::int64_t value) {
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
+                    ->Observe(value, {{"metric", field}});
+            };
+            observe("peers_reporting", self->peersReporting);
+            observe("peers_serving_validated", self->peersServingValidated);
+            observe("peers_serving_next", self->peersServingNext);
+            observe("supply_min_seq", self->supplyMinSeq);
+            observe("supply_max_seq", self->supplyMaxSeq);
+        },
+        &observed);
+
+    auto const gap = provider.collect();
+
+    // Exactly five series, one per `metric` value: no field collapses into
+    // another, so the denominator and the verdict stay separately readable.
+    ASSERT_EQ(gap.at("peer_ledger_supply").size(), 5u);
+
+    // THE verdict this signal exists for: zero peers can serve the next needed
+    // ledger while three are connected and reporting. That pair is the whole
+    // point -- "the network cannot supply what I need" is otherwise
+    // indistinguishable from "my peers are slow", and the two faults have
+    // completely different fixes (change the peer set vs. wait).
+    EXPECT_EQ(gaugeValue(gap, "peer_ledger_supply", attrs("metric", "peers_serving_next")), 0);
+    EXPECT_EQ(gaugeValue(gap, "peer_ledger_supply", attrs("metric", "peers_reporting")), 3);
+
+    // Serving the validated sequence is NOT the same question, and reads 3 here:
+    // the peers can serve where this node already is, just not where it must go
+    // next. Without both counts the gap would look like a total peer failure.
+    EXPECT_EQ(gaugeValue(gap, "peer_ledger_supply", attrs("metric", "peers_serving_validated")), 3);
+
+    // The window, so an operator can see whether the wanted sequence is below
+    // the peer set's floor (discarded history) or above its tip (unreached).
+    EXPECT_EQ(gaugeValue(gap, "peer_ledger_supply", attrs("metric", "supply_min_seq")), 1000);
+    EXPECT_EQ(gaugeValue(gap, "peer_ledger_supply", attrs("metric", "supply_max_seq")), 4000);
+
+    // Exactly one label key, and it is "metric". This is the cardinality guard:
+    // a peer_id label here would mint a new series per connection.
+    for (auto const& [labels, point] : gap.at("peer_ledger_supply"))
+    {
+        ASSERT_EQ(labels.size(), 1u);
+        EXPECT_EQ(labels.begin()->first, "metric");
+    }
+
+    // NEGATIVE: a `metric` value outside the production set of five has no
+    // series, so the readings above are not an artifact of a catch-all series.
+    EXPECT_EQ(gap.at("peer_ledger_supply").count(attrs("metric", "peers_serving")), 0u);
+}
+
+// The complementary reading to the gap above: a healthy peer set where every
+// reporting peer covers the next needed sequence, so waiting WILL finish the
+// sync. Split from the gap test to keep each under the length limit.
+TEST(MetricMacros, peer_ledger_supply_gauge_reads_zero_window_as_unknown)
+{
+    CollectingProvider const provider;
+
+    // Healthy: four peers, all covering both the validated sequence and the
+    // next one, window [1000, 5000].
+    PeerLedgerSupply observed{
+        .peersReporting = 4,
+        .peersServingValidated = 4,
+        .peersServingNext = 4,
+        .supplyMinSeq = 1000,
+        .supplyMaxSeq = 5000};
+
+    auto gauge = provider.meter()->CreateInt64ObservableGauge(
+        "peer_ledger_supply", "Peer coverage of the ledger sequence this node needs");
+    gauge->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto const* self = static_cast<PeerLedgerSupply const*>(state);
+            auto observe = [&](char const* field, std::int64_t value) {
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
+                    ->Observe(value, {{"metric", field}});
+            };
+            observe("peers_reporting", self->peersReporting);
+            observe("peers_serving_validated", self->peersServingValidated);
+            observe("peers_serving_next", self->peersServingNext);
+            observe("supply_min_seq", self->supplyMinSeq);
+            observe("supply_max_seq", self->supplyMaxSeq);
+        },
+        &observed);
+
+    auto const healthy = provider.collect();
+    EXPECT_EQ(gaugeValue(healthy, "peer_ledger_supply", attrs("metric", "peers_serving_next")), 4);
+    EXPECT_EQ(gaugeValue(healthy, "peer_ledger_supply", attrs("metric", "peers_reporting")), 4);
+
+    // NEGATIVE/edge: nothing has advertised a range yet. Peers that have not
+    // sent mtSTATUS_CHANGE report [0, 0] and are excluded from every field, so
+    // all five read 0.
+    observed = PeerLedgerSupply{};
+    auto const silent = provider.collect();
+
+    // A 0 window means "unknown", NOT "the peer set serves from genesis". The
+    // only thing that separates the two is peers_reporting, which is why it must
+    // be read alongside: 0 out of 0 reporting is silence, 0 out of many would be
+    // a real supply gap. Asserting the pair together pins that contract.
+    EXPECT_EQ(gaugeValue(silent, "peer_ledger_supply", attrs("metric", "supply_min_seq")), 0);
+    EXPECT_EQ(gaugeValue(silent, "peer_ledger_supply", attrs("metric", "peers_reporting")), 0);
+    EXPECT_EQ(gaugeValue(silent, "peer_ledger_supply", attrs("metric", "supply_max_seq")), 0);
+
+    // Every field is still a present series at 0, never absent: a dropped
+    // series would be indistinguishable from a dead exporter.
+    ASSERT_EQ(silent.at("peer_ledger_supply").size(), 5u);
+    EXPECT_EQ(gaugeValue(silent, "peer_ledger_supply", attrs("metric", "peers_serving_next")), 0);
+    EXPECT_EQ(
+        gaugeValue(silent, "peer_ledger_supply", attrs("metric", "peers_serving_validated")), 0);
+
+    // A single reporting peer at the network tip: min and max collapse to the
+    // same sequence, which is a legitimate reading, not a defect.
+    observed = PeerLedgerSupply{
+        .peersReporting = 1,
+        .peersServingValidated = 1,
+        .peersServingNext = 0,
+        .supplyMinSeq = 5000,
+        .supplyMaxSeq = 5000};
+    auto const single = provider.collect();
+    EXPECT_EQ(gaugeValue(single, "peer_ledger_supply", attrs("metric", "supply_min_seq")), 5000);
+    EXPECT_EQ(gaugeValue(single, "peer_ledger_supply", attrs("metric", "supply_max_seq")), 5000);
+}
+
+// peerfinder_slot_census must export all nine numbers, because each of the three
+// common bootstrap failures is named by a DIFFERENT pair of them and today only
+// the two active counts exist. The values chosen are the "dialling but never
+// completing" case, which the two legacy gauges cannot express at all.
+TEST(MetricMacros, slot_census_gauge_names_each_bootstrap_fault_exactly)
+{
+    CollectingProvider const provider;
+
+    // The real snapshot type the production callback consumes. Outbound is 2 of
+    // 10 with 6 dials in flight; one configured fixed peer is missing.
+    PeerFinder::SlotCensus observed{
+        .outActive = 2,
+        .outMax = 10,
+        .inActive = 0,
+        .inMax = 0,
+        .connecting = 6,
+        .fixedConfigured = 2,
+        .fixedActive = 1,
+        .bootcache = 40,
+        .livecache = 12};
+
+    auto gauge = provider.meter()->CreateInt64ObservableGauge(
+        "peerfinder_slot_census", "PeerFinder slots, connection attempts and address caches");
+    gauge->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto const* self = static_cast<PeerFinder::SlotCensus const*>(state);
+            // Same single-label Observe() form the production callback uses.
+            auto observe = [&](char const* field, std::int64_t value) {
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
+                    ->Observe(value, {{"metric", field}});
+            };
+            observe("out_active", self->outActive);
+            observe("out_max", self->outMax);
+            observe("in_active", self->inActive);
+            observe("in_max", self->inMax);
+            observe("connecting", self->connecting);
+            observe("fixed_configured", self->fixedConfigured);
+            observe("fixed_active", self->fixedActive);
+            observe("bootcache", self->bootcache);
+            observe("livecache", self->livecache);
+        },
+        &observed);
+
+    auto const dialling = provider.collect();
+
+    // Exactly nine series, one per `metric` value: all nine fields reach the
+    // exporter, not just the two the legacy insight gauges carried.
+    ASSERT_EQ(dialling.at("peerfinder_slot_census").size(), 9u);
+    // FAULT (a) "dialling but never completing": out_active below out_max WITH
+    // connecting non-zero. Without the attempt count this is indistinguishable
+    // from a node that is not dialling at all -- the capacity term alone says
+    // only "under-connected", never why.
+    EXPECT_EQ(gaugeValue(dialling, "peerfinder_slot_census", attrs("metric", "out_active")), 2);
+    EXPECT_EQ(gaugeValue(dialling, "peerfinder_slot_census", attrs("metric", "out_max")), 10);
+    EXPECT_EQ(gaugeValue(dialling, "peerfinder_slot_census", attrs("metric", "connecting")), 6);
+
+    // FAULT (c) "configured fixed peer unreachable": fixed_active strictly below
+    // fixed_configured. 1 of 2 asked-for peers is connected.
+    EXPECT_EQ(
+        gaugeValue(dialling, "peerfinder_slot_census", attrs("metric", "fixed_configured")), 2);
+    EXPECT_EQ(gaugeValue(dialling, "peerfinder_slot_census", attrs("metric", "fixed_active")), 1);
+
+    // Inbound disabled reads in_max=0, which makes in_active=0 a configuration
+    // fact rather than a fault -- the pair is what separates them.
+    EXPECT_EQ(gaugeValue(dialling, "peerfinder_slot_census", attrs("metric", "in_max")), 0);
+    EXPECT_EQ(gaugeValue(dialling, "peerfinder_slot_census", attrs("metric", "in_active")), 0);
+
+    // Addresses ARE available here, so fault (b) is ruled out on this reading:
+    // the node has somewhere to dial and is still not completing.
+    EXPECT_EQ(gaugeValue(dialling, "peerfinder_slot_census", attrs("metric", "bootcache")), 40);
+    EXPECT_EQ(gaugeValue(dialling, "peerfinder_slot_census", attrs("metric", "livecache")), 12);
+
+    // Exactly one label key on every series, and it is "metric": the nine
+    // fields form one fixed-cardinality group, not nine label dimensions.
+    for (auto const& [labels, point] : dialling.at("peerfinder_slot_census"))
+    {
+        ASSERT_EQ(labels.size(), 1u);
+        EXPECT_EQ(labels.begin()->first, "metric");
+    }
+    // NEGATIVE: a `metric` value outside the production set of nine has no
+    // series, so the readings above are not an artifact of a catch-all series.
+    EXPECT_EQ(dialling.at("peerfinder_slot_census").count(attrs("metric", "out_count")), 0u);
+}
+
+// FAULT (b) "nothing to dial", plus the idle-but-healthy reading. Separated from
+// the fault-(a)/(c) test above to keep each function under the length limit.
+TEST(MetricMacros, slot_census_gauge_reports_every_field_even_when_idle)
+{
+    CollectingProvider const provider;
+
+    // A fresh node with no seed addresses at all: nothing dialled because there
+    // is nothing to dial. Distinct from fault (a), where dials are attempted.
+    PeerFinder::SlotCensus observed{
+        .outActive = 0,
+        .outMax = 10,
+        .inActive = 0,
+        .inMax = 20,
+        .connecting = 0,
+        .fixedConfigured = 0,
+        .fixedActive = 0,
+        .bootcache = 0,
+        .livecache = 0};
+
+    auto gauge = provider.meter()->CreateInt64ObservableGauge(
+        "peerfinder_slot_census", "PeerFinder slots, connection attempts and address caches");
+    gauge->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto const* self = static_cast<PeerFinder::SlotCensus const*>(state);
+            auto observe = [&](char const* field, std::int64_t value) {
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
+                    ->Observe(value, {{"metric", field}});
+            };
+            observe("out_active", self->outActive);
+            observe("out_max", self->outMax);
+            observe("in_active", self->inActive);
+            observe("in_max", self->inMax);
+            observe("connecting", self->connecting);
+            observe("fixed_configured", self->fixedConfigured);
+            observe("fixed_active", self->fixedActive);
+            observe("bootcache", self->bootcache);
+            observe("livecache", self->livecache);
+        },
+        &observed);
+
+    auto const nothingToDial = provider.collect();
+
+    // FAULT (b) "nothing to dial": both caches at exactly 0 while outbound
+    // capacity is available. The fix is [ips] / DNS, not the network.
+    EXPECT_EQ(gaugeValue(nothingToDial, "peerfinder_slot_census", attrs("metric", "bootcache")), 0);
+    EXPECT_EQ(gaugeValue(nothingToDial, "peerfinder_slot_census", attrs("metric", "livecache")), 0);
+    // connecting=0 here is what separates fault (b) from fault (a): no dial was
+    // even attempted, because there was no address to attempt.
+    EXPECT_EQ(
+        gaugeValue(nothingToDial, "peerfinder_slot_census", attrs("metric", "connecting")), 0);
+    EXPECT_EQ(gaugeValue(nothingToDial, "peerfinder_slot_census", attrs("metric", "out_max")), 10);
+
+    // NEGATIVE: an idle-but-healthy node still reports EVERY field. A zero-valued
+    // field must be a present series, never an absent one -- absence would be
+    // indistinguishable from a dead exporter or a crashed callback.
+    observed = PeerFinder::SlotCensus{
+        .outActive = 10,
+        .outMax = 10,
+        .inActive = 5,
+        .inMax = 20,
+        .connecting = 0,
+        .fixedConfigured = 0,
+        .fixedActive = 0,
+        .bootcache = 55,
+        .livecache = 30};
+    auto const idle = provider.collect();
+
+    ASSERT_EQ(idle.at("peerfinder_slot_census").size(), 9u);
+    // The four fields that are legitimately 0 on a healthy node are each PRESENT
+    // with value 0, asserted one by one so a dropped series fails the test.
+    for (char const* field : {"connecting", "fixed_configured", "fixed_active"})
+    {
+        ASSERT_EQ(idle.at("peerfinder_slot_census").count(attrs("metric", field)), 1u);
+        EXPECT_EQ(gaugeValue(idle, "peerfinder_slot_census", attrs("metric", field)), 0);
+    }
+    // Slots full: out_active has reached out_max, so nothing is dialling because
+    // nothing needs to be. Same connecting=0 as fault (b), opposite meaning --
+    // only the capacity pair tells them apart.
+    EXPECT_EQ(gaugeValue(idle, "peerfinder_slot_census", attrs("metric", "out_active")), 10);
+    EXPECT_EQ(gaugeValue(idle, "peerfinder_slot_census", attrs("metric", "out_max")), 10);
+}
+
+// amendment_block's whole value is the countdown, so the arithmetic is what this
+// pins: the production callback computes max(expected - now, 0) in std::int64_t
+// and observes -1 when firstUnsupportedExpected() is nullopt. All four states are
+// asserted to EXACT values, including the two that a naive implementation gets
+// wrong (the healthy sentinel, and the unsigned-subtraction wrap).
+TEST(MetricMacros, amendment_block_gauge_observes_exact_countdown_and_sentinel)
+{
+    CollectingProvider const provider;
+
+    // Two explicit epoch-second constants, so the expected difference is exact
+    // rather than approximate -- a clock read would make 7200 unassertable.
+    constexpr std::int64_t kNowEpochSeconds = 800'000'000;
+    constexpr std::int64_t kTwoHours = 7200;
+
+    // Mirrors what the production callback reads: the warned flag from
+    // NetworkOPs::isAmendmentWarned(), and the optional activation time from
+    // AmendmentTable::firstUnsupportedExpected().
+    struct Observed
+    {
+        bool warned{false};
+        std::optional<std::int64_t> expectedEpochSeconds;
+        std::int64_t nowEpochSeconds{0};
+    };
+    // State (a): nothing pending at all -- the healthy case.
+    Observed observed{
+        .warned = false, .expectedEpochSeconds = {}, .nowEpochSeconds = kNowEpochSeconds};
+
+    auto gauge = provider.meter()->CreateInt64ObservableGauge(
+        "amendment_block", "Amendment-block warning and seconds until the node stops validating");
+    gauge->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto const* self = static_cast<Observed const*>(state);
+            auto observe = [&](char const* field, std::int64_t value) {
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
+                    ->Observe(value, {{"metric", field}});
+            };
+            observe("warned", self->warned ? 1 : 0);
+
+            // The production arithmetic, reproduced exactly: -1 sentinel when
+            // nothing is pending, otherwise the difference taken in int64_t and
+            // clamped at 0.
+            std::int64_t secondsToBlock = -1;
+            if (self->expectedEpochSeconds)
+            {
+                secondsToBlock =
+                    std::max<std::int64_t>(*self->expectedEpochSeconds - self->nowEpochSeconds, 0);
+            }
+            observe("seconds_to_block", secondsToBlock);
+        },
+        &observed);
+
+    auto const healthy = provider.collect();
+
+    // Exactly two series, one per `metric` value.
+    ASSERT_EQ(healthy.at("amendment_block").size(), 2u);
+
+    // STATE (a) nothing pending: warned is exactly 0, and the countdown is
+    // exactly -1. Not 0 (which would read as "blocking right now", the most
+    // alarming possible value) and not absent (which a dashboard cannot tell
+    // from a stopped exporter). A distinct in-band sentinel is the only encoding
+    // that makes "healthy" assertable, matching unl_expiry_days' -1.
+    EXPECT_EQ(gaugeValue(healthy, "amendment_block", attrs("metric", "warned")), 0);
+    EXPECT_EQ(gaugeValue(healthy, "amendment_block", attrs("metric", "seconds_to_block")), -1);
+    ASSERT_EQ(healthy.at("amendment_block").count(attrs("metric", "seconds_to_block")), 1u);
+
+    // STATE (b) pending two hours out: warned flips to exactly 1 and the
+    // countdown is exactly 7200, computed from the two constants above.
+    observed = Observed{
+        .warned = true,
+        .expectedEpochSeconds = kNowEpochSeconds + kTwoHours,
+        .nowEpochSeconds = kNowEpochSeconds};
+    auto const pending = provider.collect();
+    EXPECT_EQ(gaugeValue(pending, "amendment_block", attrs("metric", "warned")), 1);
+    EXPECT_EQ(gaugeValue(pending, "amendment_block", attrs("metric", "seconds_to_block")), 7200);
+
+    // Both series are present in both states, so the countdown never drops out
+    // when the warning flips.
+    ASSERT_EQ(pending.at("amendment_block").size(), 2u);
+}
+
+// The clamp at the bottom of the countdown, and the deliberate absence of an
+// amendment-id label. Split out of the test above to keep each function inside
+// the length limit; it re-establishes the same callback shape.
+TEST(MetricMacros, amendment_block_gauge_clamps_past_due_and_carries_no_amendment_id)
+{
+    CollectingProvider const provider;
+
+    constexpr std::int64_t kNowEpochSeconds = 800'000'000;
+    constexpr std::int64_t kOneHour = 3600;
+
+    struct Observed
+    {
+        bool warned{false};
+        std::optional<std::int64_t> expectedEpochSeconds;
+        std::int64_t nowEpochSeconds{0};
+    };
+    // State (c): the activation time passed an hour ago.
+    Observed observed{
+        .warned = true,
+        .expectedEpochSeconds = kNowEpochSeconds - kOneHour,
+        .nowEpochSeconds = kNowEpochSeconds};
+
+    auto gauge = provider.meter()->CreateInt64ObservableGauge(
+        "amendment_block", "Amendment-block warning and seconds until the node stops validating");
+    gauge->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto const* self = static_cast<Observed const*>(state);
+            auto observe = [&](char const* field, std::int64_t value) {
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
+                    ->Observe(value, {{"metric", field}});
+            };
+            observe("warned", self->warned ? 1 : 0);
+            std::int64_t secondsToBlock = -1;
+            if (self->expectedEpochSeconds)
+            {
+                secondsToBlock =
+                    std::max<std::int64_t>(*self->expectedEpochSeconds - self->nowEpochSeconds, 0);
+            }
+            observe("seconds_to_block", secondsToBlock);
+        },
+        &observed);
+
+    // STATE (c) past due by an hour: clamped to exactly 0, never negative. This
+    // is the assertion that proves the difference is taken in std::int64_t and
+    // NOT in NetClock's unsigned representation -- subtracting the time_points
+    // directly would wrap to roughly 4.29 billion and plot as 136 years away,
+    // turning the most urgent reading into the least.
+    auto const pastDue = provider.collect();
+    EXPECT_EQ(gaugeValue(pastDue, "amendment_block", attrs("metric", "seconds_to_block")), 0);
+    EXPECT_EQ(gaugeValue(pastDue, "amendment_block", attrs("metric", "warned")), 1);
+
+    // STATE (d) exactly at the boundary (expected == now): exactly 0. Pins the
+    // clamp's inclusive edge, so the transition into state (c) cannot skip a
+    // value or briefly emit -1.
+    observed = Observed{
+        .warned = true,
+        .expectedEpochSeconds = kNowEpochSeconds,
+        .nowEpochSeconds = kNowEpochSeconds};
+    auto const boundary = provider.collect();
+    EXPECT_EQ(gaugeValue(boundary, "amendment_block", attrs("metric", "seconds_to_block")), 0);
+
+    // NEGATIVE: there is NO label carrying the blocking amendment's id or hash.
+    // Exactly two series, and "metric" is the only label key. The identity is
+    // deliberately excluded: the network can vote on an arbitrary 256-bit
+    // amendment id, not just this build's known features, so an id label would
+    // be unbounded cardinality and would mint a permanent new series per
+    // amendment. The id is already in the log line, correlated by node and time.
+    ASSERT_EQ(boundary.at("amendment_block").size(), 2u);
+    for (auto const& [labels, point] : boundary.at("amendment_block"))
+    {
+        ASSERT_EQ(labels.size(), 1u);
+        EXPECT_EQ(labels.begin()->first, "metric");
+    }
+    // An id-shaped label value has no series, so the two above are the whole set.
+    EXPECT_EQ(boundary.at("amendment_block").count(attrs("metric", "amendment_id")), 0u);
+}
+
+// peer_disconnect_total is the signal that splits today's single unlabelled
+// disconnect tally by cause AND direction. The series identity is the (reason,
+// direction) PAIR: if it were not, a wave of our-fault backpressure on outbound
+// links would be masked by ordinary inbound peer churn.
+TEST(MetricMacros, peer_disconnect_total_keys_series_on_reason_and_direction_pair)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // The exact call PeerImp::close() makes, once per teardown.
+    auto const bump = [&app](char const* reason, char const* direction) {
+        XRPL_METRIC_COUNTER_INC_LABELED(
+            app,
+            "peer_disconnect_total",
+            "Peer disconnects, by cause and connection direction",
+            {{"reason", std::string(reason)}, {"direction", std::string(direction)}});
+    };
+
+    // Two OUR-FAULT reasons: this node could not keep up with what it owed the
+    // peer, or charged it off under its own resource pressure.
+    bump("large_sendq", "outbound");
+    bump("charge_resources", "inbound");
+    // Three NETWORK/TOPOLOGY reasons: the peer is on another chain, stopped
+    // answering, or the socket failed.
+    bump("not_useful", "outbound");
+    bump("ping_timeout", "outbound");
+    bump("read_error", "inbound");
+
+    auto const data = provider.collect();
+
+    // Five distinct (reason, direction) pairs -> exactly five series. Today all
+    // five collapse into one number, which is the defect this fixes.
+    ASSERT_EQ(data.at("peer_disconnect_total").size(), 5u);
+
+    // Exact value 1 per distinct labelset. These two are also the proof that the
+    // labelsets do NOT collapse: each holds exactly 1 rather than one of them
+    // holding 2, so an our-fault outbound teardown and a network-fault inbound
+    // one stay two separate stories with two separate fixes. (counterValue()
+    // looks the key up with std::map::at, so a merged series fails here.)
+    EXPECT_EQ(
+        counterValue(
+            data, "peer_disconnect_total", attrs("reason", "large_sendq", "direction", "outbound")),
+        1);
+    EXPECT_EQ(
+        counterValue(
+            data, "peer_disconnect_total", attrs("reason", "read_error", "direction", "inbound")),
+        1);
+
+    // Our-fault reasons are individually addressable, so "the node is shedding
+    // its own peers" is readable without reading logs.
+    EXPECT_EQ(
+        counterValue(
+            data,
+            "peer_disconnect_total",
+            attrs("reason", "charge_resources", "direction", "inbound")),
+        1);
+    // Network/topology reasons stay distinct from each other too: a chain split
+    // ("not_useful") is not a dead link ("ping_timeout").
+    EXPECT_EQ(
+        counterValue(
+            data, "peer_disconnect_total", attrs("reason", "not_useful", "direction", "outbound")),
+        1);
+    EXPECT_EQ(
+        counterValue(
+            data,
+            "peer_disconnect_total",
+            attrs("reason", "ping_timeout", "direction", "outbound")),
+        1);
+
+    // Exactly two label keys on every series, and exactly these two: a third
+    // (a peer address, say) would be unbounded cardinality.
+    for (auto const& [labels, point] : data.at("peer_disconnect_total"))
+    {
+        ASSERT_EQ(labels.size(), 2u);
+        EXPECT_EQ(labels.count("reason"), 1u);
+        EXPECT_EQ(labels.count("direction"), 1u);
+    }
+}
+
+// The `direction` label must genuinely participate in the series key, not just
+// ride along: the SAME reason seen on both directions has to produce two series
+// of 1 rather than one series of 2. Split out of the test above to keep each
+// function inside the length limit.
+TEST(MetricMacros, peer_disconnect_total_does_not_merge_directions_for_one_reason)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    auto const bump = [&app](char const* reason, char const* direction) {
+        XRPL_METRIC_COUNTER_INC_LABELED(
+            app,
+            "peer_disconnect_total",
+            "Peer disconnects, by cause and connection direction",
+            {{"reason", std::string(reason)}, {"direction", std::string(direction)}});
+    };
+
+    // One read_error each way. If direction did not key the series, this would
+    // collapse to a single series holding 2.
+    bump("read_error", "inbound");
+    bump("read_error", "outbound");
+
+    auto const data = provider.collect();
+
+    // Two series, not one: the same cause on opposite directions stays split.
+    ASSERT_EQ(data.at("peer_disconnect_total").size(), 2u);
+    EXPECT_EQ(
+        counterValue(
+            data, "peer_disconnect_total", attrs("reason", "read_error", "direction", "inbound")),
+        1);
+    EXPECT_EQ(
+        counterValue(
+            data, "peer_disconnect_total", attrs("reason", "read_error", "direction", "outbound")),
+        1);
+
+    // Bumping ONE direction advances only that series. This is the assertion that
+    // would fail if the labels were merged: inbound must stay at exactly 1.
+    bump("read_error", "outbound");
+    auto const second = provider.collect();
+    EXPECT_EQ(
+        counterValue(
+            second,
+            "peer_disconnect_total",
+            attrs("reason", "read_error", "direction", "outbound")),
+        2);
+    EXPECT_EQ(
+        counterValue(
+            second, "peer_disconnect_total", attrs("reason", "read_error", "direction", "inbound")),
+        1);
+    EXPECT_EQ(second.at("peer_disconnect_total").size(), 2u);
+
+    // NEGATIVE: a reason outside the fixed literal set in PeerImp.cpp has no
+    // series, so the counts above are not an artifact of a catch-all series.
+    EXPECT_EQ(
+        second.at("peer_disconnect_total")
+            .count(attrs("reason", "disconnected", "direction", "inbound")),
+        0u);
+    // NEGATIVE: a direction value outside {inbound, outbound} has no series.
+    EXPECT_EQ(
+        second.at("peer_disconnect_total")
+            .count(attrs("reason", "read_error", "direction", "unknown")),
+        0u);
+}
+
+// peer_accept_total is the inbound twin of the existing
+// overlay_connect_total{outcome}: that one counts OUTBOUND dials this node
+// makes, this one counts INBOUND attempts it receives. Together they give the
+// full in/out split, which neither provides alone -- a node whose outbound dials
+// all succeed while every inbound attempt is refused looks perfectly healthy on
+// overlay_connect_total by itself.
+TEST(MetricMacros, peer_accept_total_keys_series_on_outcome)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // The exact call OverlayImpl::reportAcceptOutcome() makes, once per
+    // terminal outcome of one inbound attempt.
+    auto const bump = [&app](char const* outcome) {
+        XRPL_METRIC_COUNTER_INC_LABELED(
+            app,
+            "peer_accept_total",
+            "Inbound peer connection attempts, by terminal outcome",
+            {{"outcome", std::string(outcome)}});
+    };
+
+    // accepted x2, no_slot x3, handshake_error x1 -- three distinct
+    // multiplicities so no two series can be confused with each other.
+    bump("accepted");
+    bump("accepted");
+    bump("no_slot");
+    bump("no_slot");
+    bump("no_slot");
+    bump("handshake_error");
+
+    auto const data = provider.collect();
+
+    // Three distinct outcomes stay three distinct series with exact values.
+    ASSERT_EQ(data.at("peer_accept_total").size(), 3u);
+    EXPECT_EQ(counterValue(data, "peer_accept_total", attrs("outcome", "accepted")), 2);
+    // "no_slot" is capacity, "handshake_error" is a protocol or crypto failure.
+    // Collapsed into one number they would be indistinguishable, yet the first
+    // is fixed by configuration and the second by investigation.
+    EXPECT_EQ(counterValue(data, "peer_accept_total", attrs("outcome", "no_slot")), 3);
+    EXPECT_EQ(counterValue(data, "peer_accept_total", attrs("outcome", "handshake_error")), 1);
+
+    // Exactly one label key, and it is "outcome".
+    auto const& firstKey = data.at("peer_accept_total").begin()->first;
+    ASSERT_EQ(firstKey.size(), 1u);
+    EXPECT_EQ(firstKey.begin()->first, "outcome");
+
+    // NEGATIVE: an outcome from the production set that was not emitted here has
+    // no series, proving outcomes are not being merged into a catch-all.
+    EXPECT_EQ(data.at("peer_accept_total").count(attrs("outcome", "resource_limit")), 0u);
+
+    // Accumulates rather than replaces: the reader is cumulative, so a second
+    // acceptance advances the existing series to exactly 3.
+    bump("accepted");
+    EXPECT_EQ(
+        counterValue(provider.collect(), "peer_accept_total", attrs("outcome", "accepted")), 3);
+}
+
+// serve_refused_total measures the SUPPLY side: what this node refuses to serve
+// its peers. Nothing measured it before, so a node shedding every ledger request
+// looked identical to one being asked for nothing. The series identity is the
+// (request, reason) PAIR, because the same reason means different things on
+// different request kinds.
+TEST(MetricMacros, serve_refused_total_keys_series_on_request_and_reason_pair)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // The exact call PeerImp::reportServeRefusal() makes, once per refused
+    // request.
+    auto const bump = [&app](char const* request, char const* reason) {
+        XRPL_METRIC_COUNTER_INC_LABELED(
+            app,
+            "serve_refused_total",
+            "Peer data requests this node declined to serve, by request kind and cause",
+            {{"request", std::string(request)}, {"reason", std::string(reason)}});
+    };
+
+    // Same request kind, two different reasons -> two series.
+    bump("ledger", "sendq_full");
+    bump("ledger", "sendq_full");
+    bump("ledger", "not_found");
+    // Different request kinds -> their own series, even sharing a reason.
+    bump("fetchpack", "load_shed");
+    bump("fetchpack", "load_shed");
+    bump("fetchpack", "load_shed");
+    bump("txset", "not_found");
+
+    auto const data = provider.collect();
+
+    // Four distinct (request, reason) pairs -> exactly four series.
+    ASSERT_EQ(data.at("serve_refused_total").size(), 4u);
+
+    // SELF-INFLICTED BACKPRESSURE: "sendq_full" and "load_shed" both mean this
+    // node chose not to answer because it was already behind. The fix is local
+    // (capacity, tuning), and the refusal directly slows the asking peer's sync.
+    EXPECT_EQ(
+        counterValue(
+            data, "serve_refused_total", attrs("request", "ledger", "reason", "sendq_full")),
+        2);
+    EXPECT_EQ(
+        counterValue(
+            data, "serve_refused_total", attrs("request", "fetchpack", "reason", "load_shed")),
+        3);
+
+    // HISTORY GAP: "not_found" is not backpressure at all -- the node simply
+    // does not hold what was asked for. Same counter, completely different
+    // meaning and a completely different fix (history configuration), which is
+    // why it must not share a series with the two above.
+    EXPECT_EQ(
+        counterValue(
+            data, "serve_refused_total", attrs("request", "ledger", "reason", "not_found")),
+        1);
+    EXPECT_EQ(
+        counterValue(data, "serve_refused_total", attrs("request", "txset", "reason", "not_found")),
+        1);
+
+    // The same reason on two different request kinds stays two series -- both
+    // present, each holding its own 1: a txset miss (consensus proposal data)
+    // and a ledger miss (history) are unrelated faults despite the shared slug.
+    EXPECT_EQ(
+        data.at("serve_refused_total").count(attrs("request", "ledger", "reason", "not_found")),
+        1u);
+    EXPECT_EQ(
+        data.at("serve_refused_total").count(attrs("request", "txset", "reason", "not_found")), 1u);
+
+    // Exactly two label keys on every series, and exactly these two.
+    for (auto const& [labels, point] : data.at("serve_refused_total"))
+    {
+        ASSERT_EQ(labels.size(), 2u);
+        EXPECT_EQ(labels.count("request"), 1u);
+        EXPECT_EQ(labels.count("reason"), 1u);
+    }
+
+    // NEGATIVE: a pair that was never emitted has no series, so the four counts
+    // above are not an artifact of a catch-all series.
+    EXPECT_EQ(
+        data.at("serve_refused_total").count(attrs("request", "object", "reason", "sendq_full")),
+        0u);
+}
+
+// ledger_jump_total counts a node discarding its own chain tip to follow the
+// network. It is deliberately UNLABELLED, so the single series' key is the empty
+// attribute set -- and repeated jumps must accumulate on it, because a node
+// thrashing between chains is the pattern worth alerting on and a single jump is
+// not.
+TEST(MetricMacros, ledger_jump_total_accumulates_on_one_unlabelled_series)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // The exact call NetworkOPsImp::switchLastClosedLedger() makes. Three jumps
+    // from the same call site, as a thrashing node would produce.
+    for (int i = 0; i < 3; ++i)
+    {
+        XRPL_METRIC_COUNTER_INC(
+            app,
+            "ledger_jump_total",
+            "Forced jumps of the last closed ledger to a divergent chain");
+    }
+
+    auto const data = provider.collect();
+
+    // Exactly ONE series, and its key is the empty attribute set: the metric
+    // carries no labels at all.
+    ASSERT_EQ(data.at("ledger_jump_total").size(), 1u);
+    ASSERT_EQ(data.at("ledger_jump_total").count(otel_sdk::PointAttributes{}), 1u);
+
+    // Three jumps accumulate to exactly 3 on that one series -- the reader is
+    // cumulative, so this is a running total, not a per-interval delta.
+    EXPECT_EQ(counterValue(data, "ledger_jump_total", otel_sdk::PointAttributes{}), 3);
+
+    // ZERO labels, asserted on the series key itself. Both candidate labels were
+    // deliberately rejected as unbounded: the divergent ledger's hash is a
+    // 256-bit value and its sequence grows without limit, so either would mint a
+    // permanent new series per jump. The JLOG error line immediately above the
+    // emit already carries both, correlated to this series by node and time.
+    EXPECT_TRUE(data.at("ledger_jump_total").begin()->first.empty());
+    EXPECT_EQ(data.at("ledger_jump_total").begin()->first.size(), 0u);
+
+    // A fourth jump advances the SAME series to exactly 4 rather than creating a
+    // second one, which is what "no labels" has to mean over time.
+    XRPL_METRIC_COUNTER_INC(
+        app, "ledger_jump_total", "Forced jumps of the last closed ledger to a divergent chain");
+    auto const fourth = provider.collect();
+    ASSERT_EQ(fourth.at("ledger_jump_total").size(), 1u);
+    EXPECT_EQ(counterValue(fourth, "ledger_jump_total", otel_sdk::PointAttributes{}), 4);
+}
+
+// RUNTIME-DISABLED no-op proof for all four WP-A7 counters: with the registry
+// disabled, every one emits NOTHING -- no series at all, and meter() is never
+// consulted, so not even an instrument was created. Proves the isEnabled() gate
+// short-circuits BEFORE any SDK work, which is what makes these emits free on a
+// node with telemetry turned off.
+TEST(MetricMacros, sync_supply_counters_emit_nothing_when_registry_disabled)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/false, provider.meter());
+
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app,
+        "peer_disconnect_total",
+        "Peer disconnects, by cause and connection direction",
+        {{"reason", std::string("large_sendq")}, {"direction", std::string("outbound")}});
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app,
+        "peer_accept_total",
+        "Inbound peer connection attempts, by terminal outcome",
+        {{"outcome", std::string("accepted")}});
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app,
+        "serve_refused_total",
+        "Peer data requests this node declined to serve, by request kind and cause",
+        {{"request", std::string("ledger")}, {"reason", std::string("sendq_full")}});
+    XRPL_METRIC_COUNTER_INC(
+        app, "ledger_jump_total", "Forced jumps of the last closed ledger to a divergent chain");
+
+    auto const data = provider.collect();
+
+    // Total absence, not zero-valued series: the instruments never existed.
+    EXPECT_EQ(data.count("peer_disconnect_total"), 0u);
+    EXPECT_EQ(data.count("peer_accept_total"), 0u);
+    EXPECT_EQ(data.count("serve_refused_total"), 0u);
+    EXPECT_EQ(data.count("ledger_jump_total"), 0u);
+    EXPECT_EQ(data.size(), 0u);
+
+    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // macros asked for a meter, so no instrument was created either.
+    EXPECT_EQ(app.registry().meterCalls(), 0);
+}
+
+// -----------------------------------------------------------------
+// WP-A6: back-fill and persistence sync diagnostics
+// -----------------------------------------------------------------
+
+// Replay falling back to a full ledger acquire silently defeats the replay
+// optimisation. The `stage` label must keep the skip-list and delta stages
+// apart, because they fail for different reasons.
+TEST(MetricMacros, ledger_replay_fallback_counter_separates_stages_by_exact_count)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // The skip-list stage falls back twice, the delta stage once: distinct
+    // counts so a collapsed label set cannot coincidentally look correct.
+    for (int i = 0; i < 2; ++i)
+    {
+        XRPL_METRIC_COUNTER_INC_LABELED(
+            app,
+            "ledger_replay_fallback_total",
+            "Replay sub-acquires that fell back to a full ledger acquire",
+            {{"stage", std::string("skiplist")}});
+    }
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app,
+        "ledger_replay_fallback_total",
+        "Replay sub-acquires that fell back to a full ledger acquire",
+        {{"stage", std::string("delta")}});
+
+    auto const data = provider.collect();
+
+    // Exactly two series, and each carries its own exact total.
+    ASSERT_EQ(data.at("ledger_replay_fallback_total").size(), 2u);
+    EXPECT_EQ(counterValue(data, "ledger_replay_fallback_total", attrs("stage", "skiplist")), 2);
+    EXPECT_EQ(counterValue(data, "ledger_replay_fallback_total", attrs("stage", "delta")), 1);
+
+    // NEGATIVE: a stage that never fell back has no series at all. An absent
+    // series, not a zero, is what a healthy replay path looks like.
+    EXPECT_EQ(data.at("ledger_replay_fallback_total").count(attrs("stage", "txset")), 0u);
+
+    // The label key is exactly `stage` and is the only label, so this stays a
+    // bounded two-value group.
+    auto const& firstKey = data.at("ledger_replay_fallback_total").begin()->first;
+    ASSERT_EQ(firstKey.size(), 1u);
+    EXPECT_EQ(firstKey.begin()->first, "stage");
+}
+
+// The replay task's four terminal states must be four distinct series: a
+// timeout and a failed build are diagnosed differently, and a success total
+// with no failures is the only healthy reading.
+TEST(MetricMacros, ledger_replay_outcome_counter_records_each_terminal_state_exactly)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // Distinct counts per outcome, matching the four terminal sites in
+    // LedgerReplayTask: success, timeout, build_failed, parameter_failed.
+    auto const record = [&app](char const* outcome, int times) {
+        for (int i = 0; i < times; ++i)
+        {
+            XRPL_METRIC_COUNTER_INC_LABELED(
+                app,
+                "ledger_replay_outcome_total",
+                "Ledger replay tasks by terminal outcome",
+                {{"outcome", std::string(outcome)}});
+        }
+    };
+    record("success", 3);
+    record("timeout", 2);
+    record("build_failed", 1);
+    record("parameter_failed", 4);
+
+    auto const data = provider.collect();
+
+    ASSERT_EQ(data.at("ledger_replay_outcome_total").size(), 4u);
+    EXPECT_EQ(counterValue(data, "ledger_replay_outcome_total", attrs("outcome", "success")), 3);
+    EXPECT_EQ(counterValue(data, "ledger_replay_outcome_total", attrs("outcome", "timeout")), 2);
+    EXPECT_EQ(
+        counterValue(data, "ledger_replay_outcome_total", attrs("outcome", "build_failed")), 1);
+    EXPECT_EQ(
+        counterValue(data, "ledger_replay_outcome_total", attrs("outcome", "parameter_failed")), 4);
+
+    // NEGATIVE: an outcome value the code never emits has no series, proving
+    // the four above are real label values and not a catch-all.
+    EXPECT_EQ(data.at("ledger_replay_outcome_total").count(attrs("outcome", "cancelled")), 0u);
+
+    // The two WP-A6 replay counters are separate instruments, so a fallback
+    // never inflates an outcome total.
+    EXPECT_EQ(data.count("ledger_replay_fallback_total"), 0u);
+}
+
+// Telemetry disabled at runtime: both replay counters must be complete no-ops.
+// Absence of the instrument, not a zero-valued series.
+TEST(MetricMacros, ledger_replay_counters_emit_nothing_when_disabled)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/false, provider.meter());
+
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app,
+        "ledger_replay_fallback_total",
+        "Replay sub-acquires that fell back to a full ledger acquire",
+        {{"stage", std::string("skiplist")}});
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app,
+        "ledger_replay_outcome_total",
+        "Ledger replay tasks by terminal outcome",
+        {{"outcome", std::string("timeout")}});
+
+    auto const data = provider.collect();
+
+    EXPECT_EQ(data.count("ledger_replay_fallback_total"), 0u);
+    EXPECT_EQ(data.count("ledger_replay_outcome_total"), 0u);
+    EXPECT_EQ(data.size(), 0u);
+
+    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // macros ever asked for a meter, so no instrument was created.
+    EXPECT_EQ(app.registry().meterCalls(), 0);
+}
+
+// The nodestore_latency gauge derives a mean from two cumulative totals the
+// node store already keeps. This mirrors the production callback in
+// MetricsRegistry::registerNodeStoreLatencyGauge, whose enabled path cannot be
+// linked into this binary, so the derivation is asserted here against the same
+// four inputs.
+TEST(MetricMacros, nodestore_latency_gauge_observes_exact_derived_means)
+{
+    CollectingProvider const provider;
+
+    // The four totals the production callback reads, chosen so each mean
+    // divides exactly and the two means differ: writes are 4x slower per
+    // operation than reads, which is the "existing DB back-fills slowly"
+    // shape this signal exists to show.
+    struct NodeStoreTotals
+    {
+        std::uint64_t storeCount;
+        std::uint64_t storeDurationUs;
+        std::uint64_t fetchCount;
+        std::uint64_t fetchDurationUs;
+    };
+    NodeStoreTotals totals{
+        .storeCount = 500,
+        .storeDurationUs = 2'000'000,  // 2 s over 500 stores -> 4000 us
+        .fetchCount = 1000,
+        .fetchDurationUs = 1'000'000};  // 1 s over 1000 fetches -> 1000 us
+
+    auto gauge = provider.meter()->CreateInt64ObservableGauge(
+        "nodestore_latency", "NodeStore mean store/fetch latency in microseconds, with counts");
+    gauge->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto const* self = static_cast<NodeStoreTotals const*>(state);
+            auto observe = [&](char const* field, std::int64_t value) {
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
+                    ->Observe(value, {{"metric", field}});
+            };
+            observe("write_count", static_cast<std::int64_t>(self->storeCount));
+            observe("read_count", static_cast<std::int64_t>(self->fetchCount));
+            if (self->storeCount > 0 && self->storeDurationUs > 0)
+            {
+                observe(
+                    "write_mean_us",
+                    static_cast<std::int64_t>(self->storeDurationUs / self->storeCount));
+            }
+            if (self->fetchCount > 0 && self->fetchDurationUs > 0)
+            {
+                observe(
+                    "read_mean_us",
+                    static_cast<std::int64_t>(self->fetchDurationUs / self->fetchCount));
+            }
+        },
+        &totals);
+
+    auto const busy = provider.collect();
+
+    // Exactly four series: two means and the two denominators that let a
+    // dashboard recover interval latency from these cumulative totals.
+    ASSERT_EQ(busy.at("nodestore_latency").size(), 4u);
+    EXPECT_EQ(gaugeValue(busy, "nodestore_latency", attrs("metric", "write_mean_us")), 4000);
+    EXPECT_EQ(gaugeValue(busy, "nodestore_latency", attrs("metric", "read_mean_us")), 1000);
+    EXPECT_EQ(gaugeValue(busy, "nodestore_latency", attrs("metric", "write_count")), 500);
+    EXPECT_EQ(gaugeValue(busy, "nodestore_latency", attrs("metric", "read_count")), 1000);
+
+    // The write mean is the new signal, and it must be legible next to the
+    // read mean rather than merely present.
+    EXPECT_GT(
+        gaugeValue(busy, "nodestore_latency", attrs("metric", "write_mean_us")),
+        gaugeValue(busy, "nodestore_latency", attrs("metric", "read_mean_us")));
+
+    // Single fixed-cardinality label group, keyed exactly `metric`.
+    auto const& firstKey = busy.at("nodestore_latency").begin()->first;
+    ASSERT_EQ(firstKey.size(), 1u);
+    EXPECT_EQ(firstKey.begin()->first, "metric");
+
+    // EDGE CASE: a node that has never written. The zero denominator must skip
+    // the mean rather than divide by zero, while the count is still reported --
+    // that is what distinguishes "nothing written yet" from "writes are
+    // instant". The read side is unaffected and still reports both.
+    totals = NodeStoreTotals{
+        .storeCount = 0, .storeDurationUs = 0, .fetchCount = 4, .fetchDurationUs = 800};
+    auto const idle = provider.collect();
+
+    EXPECT_EQ(idle.at("nodestore_latency").count(attrs("metric", "write_mean_us")), 0u);
+    EXPECT_EQ(gaugeValue(idle, "nodestore_latency", attrs("metric", "write_count")), 0);
+    EXPECT_EQ(gaugeValue(idle, "nodestore_latency", attrs("metric", "read_mean_us")), 200);
+    EXPECT_EQ(gaugeValue(idle, "nodestore_latency", attrs("metric", "read_count")), 4);
+
+    // EDGE CASE: integer division truncates rather than rounding. 7 stores
+    // over 100 us is 14.28 us, reported as 14 -- asserted so a future change
+    // to floating point is a deliberate, visible decision.
+    totals = NodeStoreTotals{
+        .storeCount = 7, .storeDurationUs = 100, .fetchCount = 0, .fetchDurationUs = 0};
+    auto const truncating = provider.collect();
+
+    EXPECT_EQ(gaugeValue(truncating, "nodestore_latency", attrs("metric", "write_mean_us")), 14);
+    // The read side now has the zero denominator, so its mean drops out too.
+    EXPECT_EQ(truncating.at("nodestore_latency").count(attrs("metric", "read_mean_us")), 0u);
+    EXPECT_EQ(gaugeValue(truncating, "nodestore_latency", attrs("metric", "read_count")), 0);
+
+    // EDGE CASE, and the one that matters most on a real node: stores were
+    // counted but never TIMED. Database::store() is pure virtual and only the
+    // paths calling recordStoreDuration() contribute a numerator, so a node
+    // whose concrete store override does not time itself has a non-zero count
+    // with a zero duration. The mean must be OMITTED, not reported as 0 --
+    // a 0 would read as "writes are instantaneous", which is worse than a
+    // visible gap. This assertion is the guard on that choice.
+    totals = NodeStoreTotals{
+        .storeCount = 9000, .storeDurationUs = 0, .fetchCount = 10, .fetchDurationUs = 50};
+    auto const untimed = provider.collect();
+
+    EXPECT_EQ(untimed.at("nodestore_latency").count(attrs("metric", "write_mean_us")), 0u);
+    // The count is still published, so the gap is visible rather than silent:
+    // a panel shows real write throughput with no latency line beside it.
+    EXPECT_EQ(gaugeValue(untimed, "nodestore_latency", attrs("metric", "write_count")), 9000);
+    // The read side is independent and unaffected by the write-side gap.
+    EXPECT_EQ(gaugeValue(untimed, "nodestore_latency", attrs("metric", "read_mean_us")), 5);
+    // Exactly three series: both counts plus the one mean that is derivable.
+    EXPECT_EQ(untimed.at("nodestore_latency").size(), 3u);
 }
 
 #endif  // XRPL_ENABLE_TELEMETRY

@@ -66,6 +66,12 @@
  * |               server stall seconds, ledgers behind network)
  * +-- JobQueue backlog (waiting/running/deferred per job type)
  * +-- JobQueue saturation (running tasks vs worker threads vs backlog)
+ * +-- Peer ledger supply (how many peers can serve the needed sequence)
+ * +-- PeerFinder slot census (slots, attempts, fixed peers, address caches)
+ * +-- Amendment block (warned flag + seconds until the node stops validating)
+ * +-- NodeStore latency (mean us per store and per fetch, with counts)
+ * +-- Ledger quorum + publish (validation tally vs quorum target,
+ * |                            time to first validated, publish lag)
  * +-- jq_trans_overflow_total (observed from Overlay)
  * +-- server_stall_events_total (observed from LoadManager)
  *
@@ -597,6 +603,38 @@ private:
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
         jobQueueSaturationGauge_;
     /**
+     * Observable gauge for how much of the needed ledger range the connected
+     * peer set can actually serve.
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        peerLedgerSupplyGauge_;
+    /**
+     * Observable gauge for PeerFinder slot occupancy, connection attempts,
+     * fixed peers and address-cache depth.
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> slotCensusGauge_;
+    /**
+     * Observable gauge for the amendment-block warning flag and the countdown
+     * to the amendment activating.
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        amendmentBlockGauge_;
+    /**
+     * Observable gauge for node-store read and write latency, as mean
+     * microseconds per operation derived from the cumulative duration and
+     * operation-count totals the node store already keeps.
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        nodeStoreLatencyGauge_;
+    /**
+     * Observable gauge for the pre-accept quorum gate and the publish lag:
+     * the trusted-validation tally against the quorum it must reach, the
+     * time to the first fully-validated ledger, and how far publishing
+     * trails validation.
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        ledgerQuorumPublishGauge_;
+    /**
      * Observable gauge for build version info (label-based, value=1).
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> buildInfoGauge_;
@@ -978,7 +1016,244 @@ private:
      */
     void
     registerJobQueueSaturationGauge();  // sync diagnostics: pool saturation
-#endif                                  // XRPL_ENABLE_TELEMETRY
+
+    /**
+     * Register the `peer_ledger_supply` gauge.
+     *
+     * Five series under the `metric` attribute, from one
+     * Overlay::getPeerLedgerSupply() pass over the active peers:
+     *
+     *   `peers_reporting` — peers that have advertised a ledger range at all.
+     *     The denominator that makes the rest readable.
+     *   `peers_serving_validated` — peers whose range covers this node's
+     *     validated sequence.
+     *   `peers_serving_next` — **the signal this gauge exists for.** Peers
+     *     whose range covers validated + 1, the next ledger this node must
+     *     acquire. Zero here with a non-zero `peers_reporting` means no
+     *     connected peer holds what this node needs, so no amount of waiting
+     *     will finish the sync; the peer set has to change.
+     *   `supply_min_seq` / `supply_max_seq` — the sequence window the peer set
+     *     covers, so an operator can see whether the node is asking for
+     *     history nobody kept or for a tip nobody has reached.
+     *
+     * Each peer already caches the range it advertises in mtSTATUS_CHANGE
+     * (`PeerImp::minLedger_` / `maxLedger_`, read via `Peer::ledgerRange()`),
+     * but those ranges were never compared against each other, so "no peer has
+     * what I need" was indistinguishable from "my peers are slow" — the two
+     * faults with completely different fixes.
+     *
+     * Distinct from what already exists. `server_info{metric="peers"}` is a
+     * bare connection count with no notion of what those peers hold.
+     * `sync_state{metric="ledgers_behind"}` uses the same per-peer maxima but
+     * collapses them to a single distance-to-tip number, which cannot say how
+     * many peers can serve that distance or whether the range has a hole.
+     * `peer_quality{metric="peers_insane_count"}` counts peers on a different
+     * chain, which is a correctness signal, not an availability one.
+     *
+     * Peers advertising [0, 0] have not reported yet and are excluded from
+     * every field, so they cannot make a healthy peer set appear to serve from
+     * genesis. When nothing has reported, both window fields read 0, which is
+     * why `peers_reporting` must be read alongside them.
+     *
+     * @note Pulled on the OTel reader thread (~10 s tick), never on a message
+     * path. O(peers): `getActivePeers()` copies the peer list under the overlay
+     * lock and releases it, then each peer's cached range is read under that
+     * peer's own short-lived lock.
+     */
+    void
+    registerPeerLedgerSupplyGauge();  // sync diagnostics: peer range coverage
+
+    /**
+     * Register the `peerfinder_slot_census` gauge.
+     *
+     * Nine series under the `metric` attribute, from one
+     * Overlay::getSlotCensus() snapshot: `out_active`, `out_max`, `in_active`,
+     * `in_max`, `connecting`, `fixed_configured`, `fixed_active`, `bootcache`
+     * and `livecache`.
+     *
+     * All nine are already computed inside PeerFinder (`Counts`, `Bootcache`,
+     * `Livecache`, the fixed-peer map) and only two of them are exported
+     * today, as the legacy beast::insight gauges
+     * `peer_finder_active_inbound_peers` and
+     * `peer_finder_active_outbound_peers`. Those two carry no capacity,
+     * attempt or cache term, which leaves the three most common bootstrap
+     * failures invisible:
+     *
+     *   - `connecting` non-zero while `out_active` stays below `out_max` —
+     *     dials are being started and never completing. Without the attempt
+     *     count this looks the same as a node that is not dialling at all.
+     *   - `bootcache` at 0 — no seed addresses to dial in the first place.
+     *   - `fixed_active` below `fixed_configured` — a peer named in the
+     *     configuration is unreachable.
+     *
+     * The nine fields come from a single acquire of the PeerFinder lock, so
+     * they are mutually consistent and share one label set. The two legacy
+     * gauges are read at unrelated instants and cannot be joined with each
+     * other, let alone with a capacity term.
+     *
+     * @note Pulled on the OTel reader thread (~10 s tick). One lock acquire,
+     * then integer and container-size reads.
+     */
+    void
+    registerSlotCensusGauge();  // sync diagnostics: peerfinder slot census
+
+    /**
+     * Register the `amendment_block` gauge.
+     *
+     * Two series under the `metric` attribute:
+     *
+     *   `warned` — 1 once an unsupported amendment has reached majority, from
+     *     NetworkOPs::isAmendmentWarned().
+     *   `seconds_to_block` — **the leading indicator.** Seconds until that
+     *     amendment activates, derived from
+     *     `AmendmentTable::firstUnsupportedExpected()` against the network
+     *     close time. `-1` when nothing is pending, matching the sentinel
+     *     `validator_health{metric="unl_expiry_days"}` already uses, so the
+     *     healthy state is a distinct value rather than a missing series.
+     *     Clamped at 0 rather than going negative, because past-due means the
+     *     block is imminent, not overdue by some amount.
+     *
+     * Amendment-blocked is a terminal sync blocker: the node stops validating
+     * and never resumes without a software upgrade. The existing
+     * `validator_health{metric="amendment_blocked"}` reports that state after
+     * it has happened, when nothing can be done about it. This gauge is the
+     * window before it, which is the only actionable part.
+     *
+     * The blocking amendment's identity is deliberately NOT a label. The
+     * network can vote on an arbitrary 256-bit amendment id — the set is not
+     * drawn from this build's known features — so an id label would be
+     * unbounded cardinality and would mint a permanent new series per
+     * amendment. The id is already logged by
+     * `AmendmentTableImpl::doValidatedLedger` ("Unsupported amendment <hash>
+     * reached majority at ..."), so it is available through logs, correlated
+     * to this series by node and time.
+     *
+     * @note Pulled on the OTel reader thread (~10 s tick). One mutex acquire
+     * inside the amendment table plus one clock read.
+     * @note The subtraction is done in `std::int64_t`, not in NetClock's
+     * unsigned representation, so a past-due activation cannot wrap to a huge
+     * positive count.
+     */
+    void
+    registerAmendmentBlockGauge();  // sync diagnostics: amendment countdown
+
+    /**
+     * Register the `nodestore_latency` gauge.
+     *
+     * Four series under the `metric` attribute, from the node store's own
+     * cumulative totals:
+     *
+     *   `write_mean_us` — **the signal this gauge exists for.** Mean
+     *     microseconds per store, `getStoreDurationUs() / getStoreCount()`.
+     *     No write-side latency existed anywhere before this:
+     *     `storeDurationUs_` was declared in Database.h and never written, and
+     *     there was no accessor for it. This is the fingerprint of the
+     *     "a node with a large existing DB syncs slower than a fresh one"
+     *     symptom, which is write-bound and therefore invisible in every
+     *     read-side metric.
+     *   `read_mean_us` — mean microseconds per fetch,
+     *     `getFetchDurationUs() / getFetchTotalCount()`, so the write mean has
+     *     a same-instant, same-derivation counterpart to be compared against.
+     *   `write_count` / `read_count` — the denominators, exported so a
+     *     dashboard can recover *interval* latency as
+     *     `rate(duration) / rate(count)`. Without them the means above are
+     *     since-boot averages, which on a long-running node move so slowly
+     *     that a current stall is invisible.
+     *
+     * Gauge, not a histogram — deliberate. A histogram would give true
+     * percentiles, which a mean cannot, but it costs one `Record()` per
+     * operation on a path that runs per node object: a single ledger write
+     * walks thousands of SHAMap nodes, and fetches are more frequent still.
+     * That is a per-object synchronous instrument call plus bucket search on
+     * the hot store/fetch path. This gauge instead reads four already-existing
+     * atomics once per ~10 s collection tick, adding nothing whatsoever to the
+     * hot path — the store side pays only the one clock-sample pair per store
+     * that the read side has always paid per fetch. For the question this work
+     * package answers ("is the write path slow, and slower than the read
+     * path?") a rate-derived mean is sufficient, and a tail latency that
+     * matters will move the mean. Consequence, stated plainly: p99 is NOT
+     * obtainable from this signal. Adding a histogram later would also require
+     * an explicit-bucket View registered in initExporterAndProvider() via
+     * addMicrosecondHistogramView(), because the SDK's default buckets top out
+     * at 10,000 and every microsecond duration above 10 ms would saturate.
+     *
+     * Distinct from `nodestore_state`, which already carries the raw
+     * cumulative `node_reads_duration_us`, `node_reads_total` and
+     * `node_writes` fields, and from the Ledger Data Sync dashboard's "NuDB
+     * Read Latency" panel that divides the first two in PromQL. Neither has
+     * any write-duration input to divide — that quantity did not exist. This
+     * gauge adds the missing write numerator and publishes both means from one
+     * reading so the two sides are directly comparable.
+     *
+     * @note Pulled on the OTel reader thread (~10 s tick). Four relaxed atomic
+     * loads and two integer divisions; no lock, no allocation, no hot-path
+     * cost.
+     * @note A mean is observed only when both its count and its duration total
+     * are non-zero; otherwise the series is omitted rather than reported as 0,
+     * because a 0 would claim the operation is instantaneous. The counts are
+     * always observed, so `write_count` still distinguishes "nothing written
+     * yet" from "writes are instant".
+     * @warning `write_mean_us` is currently produced only by store paths that
+     * call `Database::recordStoreDuration()`, which today is
+     * `Database::importInternal` (the `[import_db]` admin path). `store()` is
+     * pure virtual, and neither `DatabaseNodeImp::store` nor
+     * `DatabaseRotatingImp::store` calls it yet, so on an ordinary node
+     * `write_count` climbs while `write_mean_us` is absent. That is a
+     * deliberate, visible gap: closing it means adding one clock-sample pair to
+     * those two concrete store overrides, which live outside this work
+     * package's file scope.
+     * @note Both totals are monotonic and never reset. A panel wanting current
+     * rather than since-boot latency must divide the two rates, which is why
+     * the counts are exported alongside the means.
+     */
+    void
+    registerNodeStoreLatencyGauge();  // sync diagnostics: store/fetch latency
+
+    /**
+     * Register the `ledger_quorum_publish` gauge.
+     *
+     * Four series under the `metric` attribute, read from LedgerMaster:
+     *
+     *   `trusted_validation_tally` — trusted validations counted at the last
+     *     pre-accept gate in `LedgerMaster::checkAccept`.
+     *   `quorum_target` — validations that gate required. **The pair is the
+     *     signal.** The tally alone cannot separate a node accumulating
+     *     validations toward quorum (slow, will finish) from one whose tally
+     *     plateaus below the target (stuck, never will); with the target
+     *     beside it, the two shapes are unmistakable.
+     *   `time_to_first_validated_us` — how long the node took to get its
+     *     first ledger through that gate. One-shot, like the
+     *     `sync_state{initial_full_duration_us}` milestone: a value means it
+     *     happened and this is how long it took, 0 means it never has.
+     *   `publish_lag` — validated sequence minus published sequence. Non-zero
+     *     and growing means validation is fine and the publish pipeline is
+     *     behind, which no other signal distinguishes.
+     *
+     * All four are grouped under one instrument because they answer one
+     * question in sequence — did enough validations arrive, did the gate pass,
+     * how long did that take, and did the result reach clients — so an
+     * operator reads them from a single consistent poll.
+     *
+     * Distinct from what already exists. `unl_quorum{quorum}` is the quorum
+     * the validator list *configures*, a static property of the trusted set;
+     * `quorum_target` is what an actual gate evaluation *required*, and the
+     * tally beside it is the live count that must reach it — neither existed
+     * anywhere before. `server_info{validated_ledger_seq}` publishes the
+     * validated sequence but nothing published the pubLedgerSeq_ counterpart,
+     * so the lag between them was not derivable at all.
+     *
+     * @note `quorum_target` reports int64 max when the validator list has
+     * switched quorum off (`ValidatorList::quorum()` returns SIZE_MAX). The
+     * clamp lives in `LedgerMaster::checkAccept`, so the wrap to -1 that would
+     * invert a tally-versus-target panel cannot happen here.
+     * @note Pulled on the OTel reader thread (~10 s tick). Five relaxed atomic
+     * loads through lock-free LedgerMaster accessors: no lock is taken, which
+     * is what keeps an OTel callback from ever contending with, or inverting
+     * lock order against, the LedgerMaster mutex held by the emit path.
+     */
+    void
+    registerLedgerQuorumPublishGauge();  // sync diagnostics: quorum + publish
+#endif                                   // XRPL_ENABLE_TELEMETRY
 };
 
 }  // namespace telemetry

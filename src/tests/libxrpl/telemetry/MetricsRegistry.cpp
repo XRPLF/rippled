@@ -9,7 +9,8 @@
  *  - Destructor handles cleanup without crash.
  *  - Compile-time-disabled proof for the sync-diagnostics gauges: the whole
  *    async-gauge registration surface is compiled away, and a full disabled
- *    lifecycle never touches any ServiceRegistry service.
+ *    lifecycle never touches any ServiceRegistry service -- including the
+ *    Overlay and AmendmentTable the WP-A7 gauges would read.
  *
  *  NOTE: These tests only exercise the no-op path (telemetry disabled).
  *  When XRPL_ENABLE_TELEMETRY is defined, MetricsRegistry.cpp pulls in
@@ -19,7 +20,8 @@
  *  CONSEQUENCE for the sync-diagnostics gauges (`unl_quorum`,
  *  `clock_close_offset_seconds`, `sync_state`,
  *  `server_stall_events_total`, `sync_acquire`, `shamap_cache_hit_rate`,
- *  `jobq_backlog`, `jobq_saturation`):
+ *  `jobq_backlog`, `jobq_saturation`, `peer_ledger_supply`,
+ *  `peerfinder_slot_census`, `amendment_block`, `nodestore_latency`):
  *  this file CANNOT assert an observed gauge
  *  value, because on this build the gauges do not exist -- their registration
  *  methods and the OTel instrument members are inside
@@ -27,8 +29,10 @@
  *  is provable here, and what the tests below assert, is the complementary
  *  half: that nothing is registered and no service is consulted. The exact
  *  observed values (trusted_keys=5, quorum=4, offset=-3, the sync_state /
- *  stall-episode values, the acquire-progress / cache-hit-rate values, and the
- *  per-type backlog / pool-saturation values) are
+ *  stall-episode values, the acquire-progress / cache-hit-rate values, the
+ *  per-type backlog / pool-saturation values, the peer-supply /
+ *  slot-census / amendment-countdown values, and the nodestore
+ *  read/write mean-latency values) are
  *  asserted in MetricMacros.cpp, which is the file compiled when telemetry IS
  *  enabled.
  */
@@ -385,10 +389,14 @@ TEST_F(MetricsRegistryTest, destructor_calls_stop)
 // `server_stall_events_total` read NetworkOPs and LoadManager; `sync_acquire`
 // reads InboundLedgers::acquireProgress() and `shamap_cache_hit_rate` reads the
 // node Family's tree-node cache; `jobq_backlog` and `jobq_saturation` read
-// JobQueue::getJobTypeCounts() / getWorkerSaturation(). All are
+// JobQueue::getJobTypeCounts() / getWorkerSaturation(); `peer_ledger_supply` and
+// `peerfinder_slot_census` read Overlay::getPeerLedgerSupply() /
+// getSlotCensus() and `amendment_block` reads
+// AmendmentTable::firstUnsupportedExpected(). All are
 // reached through the ServiceRegistry, and MockServiceRegistry::getValidators()
 // / getTimeKeeper() / getOPs() / getLoadManager() / getInboundLedgers() /
-// getNodeFamily() / getJobQueue() THROW std::logic_error. So "no
+// getNodeFamily() / getJobQueue() / getOverlay() / getAmendmentTable() THROW
+// std::logic_error. So "no
 // gauge callback ran" is directly observable here: had registerAsyncGauges() run
 // and had a callback fired, one of those accessors would have thrown.
 //
@@ -429,7 +437,9 @@ TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
     // registerUnlQuorumGauge() / registerClockSkewGauge() /
     // registerSyncStateGauge() / registerStallEventsCounter() /
     // registerSyncAcquireGauge() / registerCacheHitRateDetailGauge() /
-    // registerJobQueueBacklogGauge() / registerJobQueueSaturationGauge() --
+    // registerJobQueueBacklogGauge() / registerJobQueueSaturationGauge() /
+    // registerPeerLedgerSupplyGauge() / registerSlotCensusGauge() /
+    // registerAmendmentBlockGauge() / registerNodeStoreLatencyGauge() --
     // would run.
     EXPECT_NO_THROW(registry.start("http://localhost:4318/v1/metrics"));
 
@@ -464,6 +474,25 @@ TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
     // both on the JobQueue. Neither was consulted above, so neither gauge
     // took the JobQueue mutex on a telemetry-off build.
     EXPECT_THROW(mockApp_.getJobQueue(), std::logic_error);
+    // The service both WP-A7 peer gauges read: peer_ledger_supply polls
+    // getPeerLedgerSupply(), which walks the active-peer list, and
+    // peerfinder_slot_census polls getSlotCensus(), which takes the PeerFinder
+    // lock. Both go through the Overlay, so a single throw here proves neither
+    // gauge walked the peer list nor took the PeerFinder lock on a
+    // telemetry-off build.
+    EXPECT_THROW(mockApp_.getOverlay(), std::logic_error);
+    // The service the WP-A7 amendment countdown reads: amendment_block polls
+    // firstUnsupportedExpected() on the AmendmentTable, which takes that
+    // table's mutex. Not consulted above, so the countdown never ran. (Its
+    // `warned` half reads NetworkOPs, already covered by the getOPs() check.)
+    EXPECT_THROW(mockApp_.getAmendmentTable(), std::logic_error);
+    // The service the WP-A6 nodestore latency gauge reads: nodestore_latency
+    // polls getStoreDurationUs()/getStoreCount() and
+    // getFetchDurationUs()/getFetchTotalCount() on the node-store Database.
+    // Not consulted above, so the latency gauge never read those atomics on a
+    // telemetry-off build. (The existing nodestore_state gauge reads the same
+    // service, so this single throw covers both.)
+    EXPECT_THROW(mockApp_.getNodeStore(), std::logic_error);
 }
 
 // Even asking for enabled=true registers no sync-diagnostics gauge on a
@@ -484,9 +513,12 @@ TEST_F(MetricsRegistryTest, enabled_flag_alone_registers_no_gauges_when_compiled
     // registered registerUnlQuorumGauge()/registerClockSkewGauge()/
     // registerSyncStateGauge()/registerStallEventsCounter()/
     // registerSyncAcquireGauge()/registerCacheHitRateDetailGauge()/
-    // registerJobQueueBacklogGauge()/registerJobQueueSaturationGauge(), a
+    // registerJobQueueBacklogGauge()/registerJobQueueSaturationGauge()/
+    // registerPeerLedgerSupplyGauge()/registerSlotCensusGauge()/
+    // registerAmendmentBlockGauge()/registerNodeStoreLatencyGauge(), a
     // callback would reach getValidators()/getTimeKeeper()/getOPs()/
-    // getLoadManager()/getInboundLedgers()/getNodeFamily()/getJobQueue() and
+    // getLoadManager()/getInboundLedgers()/getNodeFamily()/getJobQueue()/
+    // getOverlay()/getAmendmentTable()/getNodeStore() and
     // throw std::logic_error.
     EXPECT_NO_THROW(enabledRequest.start("http://localhost:4318/v1/metrics"));
     EXPECT_NO_THROW(enabledRequest.detachCallbacks());

@@ -2310,6 +2310,196 @@ each step gates the next: stop at the first one that is wrong.
       waited, so it reports the past; these gauges report what is sitting in
       the queue right now, including the part being actively withheld.
 
+11. **Can the network even serve the ledgers this node needs?**
+    Steps 6 to 10 all assume some peer holds what the node is asking for. This
+    step tests that assumption, and it is the one that separates "slow" from
+    "impossible". Panel _Peers Able to Serve Needed Sequence_
+    (`peer_ledger_supply`, `metric=peers_reporting`,
+    `peers_serving_validated` and `peers_serving_next`). Read the two counts
+    together — `peers_reporting` is the denominator that makes the rest
+    meaningful:
+    - **`peers_serving_next` at zero with `peers_reporting` above zero** —
+      the decisive reading. Peers are connected and have advertised their
+      ranges, and **none of them holds the next ledger this node must
+      acquire.** No amount of waiting finishes the sync; the peer set itself
+      has to change. Add peers that hold the range, or point the node at a
+      full-history server. Everything in steps 6 to 10 will look starved as a
+      consequence, so do not chase them.
+    - **`peers_serving_next` above zero but the sync is still slow** — supply
+      is fine and the fault is downstream. Go back to steps 6 to 10: the data
+      is available, so the limit is acquire progress, local processing or
+      worker threads.
+    - **`peers_reporting` at zero** — nothing has advertised a range yet.
+      This is not a supply gap; it means the node has no peers, or its peers
+      have not sent a status change. Peers advertising an empty range are
+      excluded from every field, so the two window fields read 0 meaning
+      **unknown**, not genesis — do not read a zero window here as "peers
+      serve from the start of history". Go back to the Bootstrap row, and to
+      step 12 for why there are no peers.
+      Then read _Peer Ledger Supply Window_ (`peer_ledger_supply`,
+      `metric=supply_min_seq` and `supply_max_seq`) against the sequence the
+      node wants. This is what tells the two shapes of a supply gap apart: a
+      needed sequence **below** `supply_min_seq` means the node is asking for
+      history nobody kept, so it needs a full-history peer; a needed sequence
+      **above** `supply_max_seq` means it is asking for a tip nobody has
+      reached, which is a peer set lagging the real network rather than a
+      history problem.
+
+12. **Is this node failing to get or keep peers, and why?**
+    Step 11 says whether the peer set can serve; this step says why the peer
+    set is what it is. Panel _PeerFinder Slot Census_
+    (`peerfinder_slot_census`) with _PeerFinder Address Caches & Fixed Peers_
+    beside it. All nine fields come from one lock acquire, so occupancy and
+    capacity can be compared directly — which is what separates three faults
+    that otherwise look identical:
+    - **`connecting` non-zero while `out_active` stays below `out_max`** —
+      the node is dialling and the dials never complete. Without the attempt
+      count this looks exactly like a node that is not dialling at all. Pair
+      it with _Outbound Dial Outcome Rate_ in the Bootstrap row for the stage
+      that breaks.
+    - **`bootcache` and `livecache` both at 0** — there is nothing to dial.
+      No seed addresses at all, so check `[ips]` and DNS in Bootstrap step 1.
+    - **`fixed_active` below `fixed_configured`** — a peer named in the
+      configuration is unreachable. `fixed_configured` is what was asked for
+      and `fixed_active` is what was obtained, so any shortfall names a
+      specific configured peer to check.
+      Then split the traffic by direction. _Inbound Peer Accept Outcomes_
+      (`peer_accept_total`, by `outcome`) covers connections offered **to**
+      this node; the already-documented `overlay_connect_total{outcome}` in
+      Bootstrap step 2 covers dials **from** it. Reading both is the only way
+      to get the full in/out picture: a node refusing every inbound
+      connection looks the same as one nobody dials until these are separated.
+      On the inbound side `resource_limit`, `no_slot` and `slot_refused` are
+      this node declining (load, capacity, or a duplicate), while
+      `protocol_mismatch`, `bad_cookie` and `handshake_error` point at the
+      peer or at a network-id mismatch.
+      Then read _Peer Disconnects by Reason_ (`peer_disconnect_total`, by
+      `reason` and `direction`). One disconnect count cannot separate the two
+      causes; the label can:
+    - `large_sendq`, `charge_resources` — **our fault.** This node could not
+      keep up with what it owed the peer, or charged it past the resource
+      limit, so it shed the connection as backpressure. The fix is local
+      capacity, not the peer list, and it sends you back to steps 9 and 10.
+    - `not_useful`, `ping_timeout`, `read_error` — topology or network
+      faults. The peer is on a different chain or unreachable, so the fix is
+      the peer set.
+    - `graceful`, `shutdown`, `stopping` — normal churn and clean teardown,
+      not faults. A run dominated by these is healthy.
+      Use `direction` to tell churn in the peers this node dials from churn
+      in the peers that dial it.
+      Finally, the mirror-image question: _Ledger/Object Serve Refusals_
+      (`serve_refused_total`, by `request` and `reason`) is what **this node
+      refuses to serve OTHERS**. It does not explain this node's own sync, but
+      it explains its peers' — and a node that refuses everything is why some
+      other operator is reading step 11 on their side. `sendq_full` and
+      `load_shed` are self-inflicted: this node is too loaded or too far
+      behind on its send queue to answer, so treat them as the serving-side
+      symptom of the same overload steps 3, 9 and 10 cover. `not_found` is
+      different — it is a genuine history gap, meaning the data was asked for
+      and this node simply does not hold it, which is a configuration and
+      retention question rather than a load one.
+
+13. **Is the node about to stop validating for good?**
+    Panel _Amendment Block Countdown_ (`amendment_block`,
+    `metric=seconds_to_block`) with _Amendment Warned_ (`metric=warned`)
+    beside it. **This step outranks every other step in urgency**, so check it
+    whenever a sync looks wrong, not only after the ten above are clean:
+    - `seconds_to_block` at **-1** — healthy. The -1 is an explicit sentinel
+      meaning nothing is pending, chosen so the healthy state is a distinct
+      value rather than a missing series. Do not read it as a negative
+      duration or as absent data.
+    - `seconds_to_block` at **any non-negative value** — a countdown to a
+      **terminal** state. When it expires the node becomes amendment-blocked:
+      it stops validating and will never validate again without a software
+      upgrade. The value is clamped at 0 rather than going negative, so a 0
+      means the activation is due or past due, not that it just started.
+      Nothing else on this dashboard matters if this is counting down — plan
+      the upgrade inside the window, because after it there is no
+      operational fix.
+      `warned` reaching 1 is the same condition seen as a flag: an
+      unsupported amendment has reached majority. The existing
+      `validator_health{metric="amendment_blocked"}` on the Validator Health
+      dashboard is the after-the-fact companion — it reports the block once it
+      has happened, when nothing can be done, whereas this countdown is the
+      only actionable part.
+      The blocking amendment's hash is **not** a metric label, deliberately:
+      the network can vote on an arbitrary 256-bit amendment id, not drawn
+      from this build's known features, so an id label would be unbounded
+      cardinality and would mint a permanent new series per amendment.
+      Get the hash from the log line in `AmendmentTableImpl::doValidatedLedger`
+      ("Unsupported amendment ... reached majority at ...") via Loki,
+      correlated to this series by node and time.
+      Finally, read _Byzantine Ledger Jumps_ (`ledger_jump_total`) in the
+      same pass. Any non-zero rate means the node was fed a last-closed
+      ledger it had not built on and **discarded its own chain tip** to
+      follow. A single jump during a fresh sync can be benign as the node
+      settles onto the network's chain. Repeated jumps are wrong-chain
+      thrash: the node keeps switching between chains and never settles, so
+      check the peer set from step 12 and the configured network id from
+      Bootstrap step 3 — those are what put a node on the wrong chain in the
+      first place. Nothing in the acquire pipeline can fix it.
+
+14. **Is the node store itself the bottleneck — and is it the write side?**
+    This is the step for the specific symptom **"a node with a large existing
+    database starts and syncs slower than a fresh one"**. Back-fill is
+    write-bound, so no read-side panel can show it; check this step whenever a
+    node with existing history is the slow one.
+    Panel _NodeStore Write vs Read Latency (us/op)_ (`nodestore_latency`,
+    `metric=write_mean_us` and `read_mean_us`) with _NodeStore Operation Rate_
+    (`metric=write_count` / `read_count`) beside it:
+    - **Write line rising during history back-fill** — the backend cannot
+      absorb writes fast enough. Sync will stay slow however many peers are
+      available, so adding peers will not help. Check storage IOPS, the
+      `[node_db]` backend and its tuning, and whether the online-delete /
+      rotation cycle is competing with the back-fill writes. Correlate with
+      `nodestore_state{metric="write_load"}` on the Ledger Data Sync dashboard.
+    - **Read line far above the write line** — the read path, not the write
+      path, is the cost. Read it together with _SHAMap TreeNode Cache Hit Rate_
+      (step 7): a cold in-memory cache sends every tree walk to disk, and that
+      shows up here as read latency rather than as a node-store fault.
+    - **Write rate at zero while the node is still behind the network** —
+      nothing is being persisted at all, so the stall is upstream of the node
+      store. Go back to peer supply (step 12) and the acquire panels (steps
+      6-8); storage is not the problem.
+    - Both panels use the **rate of the mean divided by the rate of the
+      count**, which is why the count series exist. Read as an interval
+      latency, not a since-boot average — on a long-running node the raw
+      cumulative mean moves so slowly that a current stall is invisible in it.
+    - Two limits to keep in mind. First, this is a **mean, not a percentile**:
+      a tail that matters will move it, but there is no p99 here. That is a
+      deliberate cost trade — a histogram would need one `Record()` per node
+      object, and a single ledger write walks thousands of SHAMap nodes.
+      Second, `write_mean_us` is currently emitted only for store paths that
+      record their duration, which today is the `[import_db]` admin import.
+      On an ordinary node you will see `write_count` climbing with **no**
+      `write_mean_us` line: that is a known instrumentation gap, not a healthy
+      zero, and the mean is deliberately omitted rather than drawn as 0 so it
+      cannot be misread as "writes are instantaneous".
+
+15. **Is replay-based back-fill silently falling back to the slow path?**
+    Only relevant when `[ledger_replay]` is enabled. Panels _Replay Fallback to
+    Full Acquire (by stage)_ (`ledger_replay_fallback_total`) and _Replay
+    Outcomes (by terminal state)_ (`ledger_replay_outcome_total`):
+    - **Any sustained fallback rate** — too few connected peers support the
+      `LedgerReplay` protocol feature, so every historical ledger is fetched
+      whole instead of as a delta. Back-fill still completes, just far slower,
+      which is why this is easy to miss: nothing fails, the optimisation is
+      simply gone. The `stage` label says which sub-task gave up — `skiplist`
+      (fetching the list of historical ledger hashes) or `delta` (a single
+      ledger's changes). Fix by peering with nodes that support the feature.
+    - **Failure outcomes climbing while `success` stays flat** — replay runs
+      but never completes. The outcome names the layer at fault: `timeout`
+      means the deltas never arrived, so treat it as a peer-supply problem and
+      read it with step 12; `build_failed` means a delta would not apply to its
+      parent, and `parameter_failed` means a peer served a skip list
+      inconsistent with the request — those two are **data** faults from the
+      serving peers, not slowness, so the peer set is suspect rather than the
+      network.
+    - **All series absent** — expected when `[ledger_replay]` is not
+      configured, or on a node with no history to back-fill. Absence here is
+      not a regression; it means no replay task was ever created. For the same
+      reason neither counter is asserted by the local validation harness.
+
 ## Performance Tuning
 
 | Scenario                 | Recommendation                                            |
