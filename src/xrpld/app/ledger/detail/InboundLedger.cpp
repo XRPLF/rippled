@@ -160,6 +160,10 @@ InboundLedger::init(ScopedLockType& collectionLock)
 
     if (!complete_)
     {
+        // Open the span for whichever phase the local lookup left outstanding,
+        // so the phase timeline starts at the same instant the network fetch
+        // does rather than at the first reply.
+        syncPhaseSpans();
         addPeers();
         queueJob(sl);
         return;
@@ -465,6 +469,10 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
         {
             JLOG(journal_.warn()) << timeouts_ << " timeouts for ledger " << hash_;
         }
+        // Record WHY before done() finalizes the spans. failed_ alone reads as
+        // "the data was bad"; this path is "no peer supplied it in time", and
+        // any phase still open is stamped `timeout` because of this flag.
+        timedOut_ = true;
         failed_ = true;
         done();
         return;
@@ -525,8 +533,144 @@ InboundLedger::pmDowncast()
 }
 
 void
+InboundLedger::beginPhaseSpan(
+    std::optional<telemetry::SpanGuard>& span,
+    std::string_view name) noexcept
+{
+    // Already open, or there is no parent to hang it on. The second case is
+    // also the disabled path: with telemetry off acquireSpan_ is inactive, so
+    // no phase span is ever created and this whole feature costs one branch.
+    if (span || !acquireSpan_ || !*acquireSpan_)
+        return;
+
+    // Parented through the acquire span's OWN captured context, not the
+    // thread's ambient context: a phase can open on a JtLedgerData worker where
+    // the ambient context is unrelated, and childSpan(name) would then attach
+    // it to whatever happened to be active there.
+    auto child = telemetry::SpanGuard::childSpan(name, acquireSpan_->spanContext());
+    if (!child)
+        return;
+    // The identity every phase shares with its parent, so a phase span found
+    // on its own in a search still says which ledger it belongs to.
+    child.setAttribute(telemetry::ledger_span::attr::ledgerHash, to_string(hash_).c_str());
+    if (seq_ != 0)
+    {
+        child.setAttribute(
+            telemetry::ledger_span::attr::ledgerSeq, static_cast<std::int64_t>(seq_));
+    }
+    span.emplace(std::move(child));
+}
+
+void
+InboundLedger::endPhaseSpan(
+    std::optional<telemetry::SpanGuard>& span,
+    bool complete,
+    std::optional<int> missingNodes) noexcept
+{
+    // Idempotent: the handle is cleared below, so a second call finds nothing
+    // and cannot overwrite the outcome the real phase end recorded.
+    if (!span)
+        return;
+
+    // Wrapped because ~InboundLedger reaches this through
+    // finalizeAcquireSpan(): an exception escaping a destructor during
+    // unwinding would terminate the process.
+    try
+    {
+        if (*span)
+        {
+            using namespace telemetry;
+            // Same shared rule for every phase, so no phase can mislabel its
+            // own end and a phase still open when the acquire dies reports
+            // `timeout` (budget gone) or `abandoned` (swept) rather than
+            // nothing at all.
+            span->setAttribute(
+                ledger_span::attr::outcome,
+                ledger_span::phaseOutcome(failed_, complete, timedOut_));
+            span->setAttribute(ledger_span::attr::timedOut, timedOut_);
+            // The count the phase's last getMissingNodes() sweep already
+            // produced -- read, never recomputed, so no second tree walk. A
+            // non-zero value on a timed-out phase is the "peers are not serving
+            // this tree" signature.
+            if (missingNodes)
+            {
+                span->setAttribute(
+                    ledger_span::attr::missingNodes, static_cast<std::int64_t>(*missingNodes));
+            }
+        }
+    }
+    catch (...)  // NOLINT(bugprone-empty-catch)
+    {
+        // Telemetry must never break an acquire. A span missing one attribute
+        // is still worth exporting, so fall through and end it below.
+    }
+
+    // End the span outside the try so it happens on every path, and
+    // unconditionally so it never leaks even when it was inactive.
+    span.reset();
+}
+
+void
+InboundLedger::syncPhaseSpans() noexcept
+{
+    // Nothing to parent to: telemetry off, ledger category disabled, or the
+    // acquire already finalized. One branch on the disabled path.
+    if (!acquireSpan_ || !*acquireSpan_)
+        return;
+
+    using namespace telemetry;
+
+    // The header gates both trees, so it is the only phase that can be open
+    // before there is anything else to fetch.
+    if (!haveHeader_)
+    {
+        beginPhaseSpan(headerSpan_, ledger_span::acquireHeader);
+        return;
+    }
+    // The header arrived. Close its span with no missing-node count -- a header
+    // is a single object, not a tree.
+    endPhaseSpan(headerSpan_, /*complete=*/true, /*missingNodes=*/std::nullopt);
+
+    // Both trees are fetched concurrently once their root hashes are known, so
+    // both spans can be open at once. Each closes when its own tree completes,
+    // which is what lets a trace show the state tree still running long after
+    // the transaction tree finished -- the normal shape of a fresh sync.
+    if (haveState_)
+    {
+        endPhaseSpan(asTreeSpan_, /*complete=*/true, getMissingNodeCount(SHAMapType::STATE));
+    }
+    else
+    {
+        beginPhaseSpan(asTreeSpan_, ledger_span::acquireAsTree);
+    }
+
+    if (haveTransactions_)
+    {
+        endPhaseSpan(txTreeSpan_, /*complete=*/true, getMissingNodeCount(SHAMapType::TRANSACTION));
+    }
+    else
+    {
+        beginPhaseSpan(txTreeSpan_, ledger_span::acquireTxTree);
+    }
+}
+
+void
 InboundLedger::finalizeAcquireSpan(std::optional<std::size_t> peerCount) noexcept
 {
+    // Close any phase still open BEFORE the parent ends, so no child span
+    // outlives its parent. A phase open at this point is one that never
+    // finished: it takes `timeout` when the retry budget ran out and
+    // `abandoned` when the acquire was swept, which is exactly the case these
+    // spans exist to show. Each carries the last missing-node count its own
+    // sweep produced, so a stuck phase reports how much it was still waiting
+    // for.
+    // Ahead of the acquire-span check below because each is independently
+    // idempotent: on a second call they are already empty, and when telemetry
+    // is off they were never created.
+    endPhaseSpan(headerSpan_, haveHeader_, std::nullopt);
+    endPhaseSpan(asTreeSpan_, haveState_, getMissingNodeCount(SHAMapType::STATE));
+    endPhaseSpan(txTreeSpan_, haveTransactions_, getMissingNodeCount(SHAMapType::TRANSACTION));
+
     // Idempotent: the handle is cleared below, so a later exit finds nothing to
     // finalize and cannot overwrite the outcome the real exit recorded.
     if (!acquireSpan_)
@@ -668,6 +812,13 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         }
         stream << ss.str();
     }
+
+    // Open the span for whatever phase is now outstanding. Placed here, at the
+    // top of the one function every progress point funnels through (a reply, a
+    // timeout, a newly added peer), so a phase span exists for the whole time
+    // that phase is being requested. Idempotent, so repeated triggers within
+    // one phase do nothing.
+    syncPhaseSpans();
 
     if (!haveHeader_)
     {
@@ -914,6 +1065,12 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         }
     }
 
+    // A tree may have completed in the blocks above without the whole acquire
+    // completing (the usual shape: the small transaction tree finishes long
+    // before the state tree). Close that phase now so its span duration is the
+    // real fetch time rather than stretching to the next trigger.
+    syncPhaseSpans();
+
     if (complete_ || failed_)
     {
         JLOG(journal_.debug()) << "Done:" << (complete_ ? " complete" : "")
@@ -1006,6 +1163,13 @@ InboundLedger::takeHeader(std::string const& data)
     // An empty tree is complete on arrival of the header, with no sweep to
     // publish its count.
     refreshMissingNodeCounts();
+
+    // The header phase ends exactly here, and the tree phases become openable
+    // for the first time -- until now their root hashes were unknown. Doing it
+    // here rather than at the next trigger() is what keeps the header span's
+    // duration equal to the real header wait, which on a fresh node is the
+    // first thing that can stall.
+    syncPhaseSpans();
 
     ledger_->txMap().setSynching();
     ledger_->stateMap().setSynching();
@@ -1106,6 +1270,12 @@ InboundLedger::receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode& 
         // stale. Publishing 0 here is what stops a completed acquire from
         // reading as a permanently stuck one. Outside the per-node loop above.
         refreshMissingNodeCounts();
+
+        // This is the batch that completed a tree, so close that phase's span
+        // here. Without it the phase would stay open until the next trigger()
+        // and its duration would absorb the wait for the other tree. Outside
+        // the per-node loop above, so it runs once per completing batch.
+        syncPhaseSpans();
 
         if (haveTransactions_ && haveState_)
         {

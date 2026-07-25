@@ -32,6 +32,7 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/Handoff.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
@@ -745,6 +746,49 @@ private:
 
     void
     processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m);
+
+    /**
+     * Start the `ledger.serve` span for one incoming ledger-data request.
+     *
+     * This is the supply side of somebody else's sync: this worker is what a
+     * syncing peer waits on, and nothing measured how long it takes or whether
+     * it produced anything at all. A fresh trace root, because the request
+     * arrives from the wire on a shared `JtLedgerReq` worker whose ambient span
+     * is unrelated.
+     *
+     * @param itype The protobuf `TMLedgerInfoType` the peer requested, used to
+     *        stamp `object_type`. Taken as an int so the shared naming rule
+     *        needs no protobuf dependency.
+     * @return An active span guard, or a null guard when telemetry is disabled
+     *         or the ledger trace category is off.
+     *
+     * @note One call per request, never inside the per-tree-node reply loop.
+     */
+    [[nodiscard]] telemetry::SpanGuard
+    startServeSpan(int itype) const;
+
+    /**
+     * End the `ledger.serve` span, stamping what the request produced.
+     *
+     * Called from a scope-exit guard in processLedgerRequest, which is what
+     * makes it exactly-once across that function's eight exits without
+     * repeating an emit per branch — and what stops an exit added later from
+     * silently forgetting to record one.
+     *
+     * Both recorded values are READ from state that already exists at every
+     * exit rather than accumulated: `ledgerData` is the reply itself, so its
+     * node count is the served-node count and is zero on all seven refusal
+     * paths. The per-node assembly loop is therefore untouched.
+     *
+     * @param span       The span to finish; a null guard is a no-op.
+     * @param ledgerData The reply as assembled so far, empty on a refusal.
+     *
+     * @note noexcept: it runs from a scope-exit guard, so it must not throw
+     *       even when the function body leaves by exception. Every call it
+     *       makes is itself noexcept.
+     */
+    static void
+    finishServeSpan(telemetry::SpanGuard& span, protocol::TMLedgerData const& ledgerData) noexcept;
 
 protected:
     // Kept `protected` so test subclasses (see

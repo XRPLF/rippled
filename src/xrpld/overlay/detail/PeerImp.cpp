@@ -6,6 +6,7 @@
 #include <xrpld/app/ledger/InboundTransactions.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
+#include <xrpld/app/ledger/detail/LedgerSpanNames.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/consensus/ConsensusSpanNames.h>
@@ -39,6 +40,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -3458,6 +3460,57 @@ PeerImp::getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const
     return shaMap;
 }
 
+telemetry::SpanGuard
+PeerImp::startServeSpan(int itype) const
+{
+    // A fresh trace root: the request arrives from the wire and is handled on a
+    // shared JtLedgerReq worker, so freshRoot() stops it inheriting whatever
+    // unrelated span happens to be active on that worker.
+    auto span = telemetry::SpanGuard::freshRoot(
+        telemetry::TraceCategory::Ledger,
+        telemetry::seg::ledger,
+        telemetry::ledger_span::op::serve);
+    if (span)
+    {
+        // Which of the four request kinds, from the shared rule so no exit can
+        // disagree with another about the same request.
+        span.setAttribute(
+            telemetry::ledger_span::attr::objectType,
+            telemetry::ledger_span::serveObjectType(itype));
+        // Which peer we are serving. Span-only: one metric series per peer id
+        // would be unbounded, which is why the paired serve_refused_total
+        // counter deliberately carries no peer label either.
+        span.setAttribute(telemetry::peer_span::attr::peerId, static_cast<std::int64_t>(id()));
+    }
+    return span;
+}
+
+void
+PeerImp::finishServeSpan(
+    telemetry::SpanGuard& span,
+    protocol::TMLedgerData const& ledgerData) noexcept
+{
+    if (!span)
+        return;
+    using namespace telemetry;
+    // `ledgerData` IS the reply, so its node count is the served-node count and
+    // is 0 on every refusal path. Reading it here rather than accumulating in
+    // the assembly loop is what keeps the per-node path untouched, and is also
+    // what lets one rule cover all eight exits.
+    auto const served = ledgerData.nodes_size();
+    span.setAttribute(ledger_span::attr::servedNodes, static_cast<std::int64_t>(served));
+    span.setAttribute(
+        ledger_span::attr::outcome, ledger_span::serveOutcome(served, Tuning::kSoftMaxReplyNodes));
+    // Which ledger was served. Known only once getLedger() succeeded, so it is
+    // read here rather than at span start. Span-only: a per-ledger value as a
+    // metric dimension would mint one series per ledger.
+    if (ledgerData.has_ledgerseq() && ledgerData.ledgerseq() != 0)
+    {
+        span.setAttribute(
+            ledger_span::attr::ledgerSeq, static_cast<std::int64_t>(ledgerData.ledgerseq()));
+    }
+}
+
 void
 PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
 {
@@ -3471,6 +3524,14 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
     protocol::TMLedgerData ledgerData;
     bool fatLeaves{true};
     auto const itype{m->itype()};
+
+    // Span this serve, and stamp its result on whichever of the eight exits
+    // below is taken. The scope-exit guard is what makes that exactly-once
+    // without repeating an emit per branch, and without any exit -- including
+    // one added later -- being able to forget.
+    auto serveSpan = startServeSpan(itype);
+    ScopeExit const finalizeServeSpan{
+        [&serveSpan, &ledgerData]() noexcept { PeerImp::finishServeSpan(serveSpan, ledgerData); }};
 
     if (itype == protocol::liTS_CANDIDATE)
     {

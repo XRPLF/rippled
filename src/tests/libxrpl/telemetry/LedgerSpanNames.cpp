@@ -1,6 +1,9 @@
 /**
  * @file LedgerSpanNames.cpp
- * Unit tests for the ledger.acquire span contract in LedgerSpanNames.h.
+ * Unit tests for the sync-diagnostic span contracts in LedgerSpanNames.h and
+ * PeerSpanNames.h: `ledger.acquire` and, in the WP-B2 block at the end of this
+ * file, `txset.acquire`, the three `ledger.acquire.{header,astree,txtree}`
+ * phase children, `ledger.serve` and `peer.dial`.
  *
  * Two things are pinned here:
  *
@@ -22,22 +25,34 @@
  *     InboundLedger, so it is asserted directly here: no Application, no peer
  *     set, and no test-only hook added to production code to reach it.
  *
+ * The WP-B2 spans follow the same two rules, with three more pure functions
+ * standing in for their emitters' exits: `phaseOutcome()` for the acquire
+ * phases and tx-set fetch, and `serveObjectType()` / `serveOutcome()` for the
+ * eight exits of PeerImp::processLedgerRequest. Every one is asserted over its
+ * whole input domain, which is what proves no exit can leave a span without an
+ * outcome -- the property the emitters rely on and that no compiler enforces.
+ *
  * Compiled only when XRPL_ENABLE_TELEMETRY is defined, because that is the
  * configuration in which this test target has `src/` on its include path and
- * can therefore reach <xrpld/app/ledger/detail/...>. The header itself is not
- * telemetry-conditional (constants and one constexpr function, no OTel types);
- * only this file's ability to include it is.
+ * can therefore reach <xrpld/app/ledger/detail/...> and
+ * <xrpld/overlay/detail/...>. Neither header is telemetry-conditional
+ * (constants and constexpr functions, no OTel types); only this file's ability
+ * to include them is.
  */
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
 #include <xrpld/app/ledger/detail/LedgerSpanNames.h>
 
+#include <xrpld/overlay/detail/PeerSpanNames.h>
+
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
 
 #include <gtest/gtest.h>
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string_view>
@@ -222,6 +237,434 @@ TEST(LedgerSpanNames, inactive_guard_finalize_sequence_is_a_no_op)
         auto const activation = activateIfLive(empty);
     }
     EXPECT_FALSE(empty.has_value());
+}
+
+// ===========================================================================
+// WP-B2 — the new sync-diagnostic spans
+//
+// Same contract as the ledger.acquire block above and asserted the same way:
+// the wire names and attribute keys are pinned literally because they are a
+// cross-component contract (the collector aggregates on them, Tempo indexes
+// them, expected_spans.json asserts them by name, and a dashboard PromQL
+// selector matches them -- a rename would break all four with no compile
+// error), and the outcome rules are pinned over their whole input domain
+// because they are what guarantees every exit path of every new span records
+// an outcome.
+// ===========================================================================
+
+TEST(LedgerSpanNames, txset_acquire_span_name_is_dot_qualified)
+{
+    // TransactionAcquire::init builds the name as prefix::txset + "." +
+    // op::acquire. A tx set is not a ledger, so it gets its own root segment
+    // rather than hiding under `ledger.` -- assert both halves so the composed
+    // "txset.acquire" cannot drift from what the dashboard queries.
+    EXPECT_EQ(std::string_view(ledger_span::prefix::txset), "txset");
+    EXPECT_EQ(std::string_view(ledger_span::op::acquire), "acquire");
+}
+
+TEST(LedgerSpanNames, phase_child_span_names_are_fully_composed)
+{
+    // These are used with childSpan(name, ctx), which takes ONE complete name,
+    // so unlike the parent they are pre-joined here. Assert the exact composed
+    // strings: they are what the phase-duration panel selects on and what
+    // expected_spans.json lists.
+    EXPECT_EQ(std::string_view(ledger_span::acquireHeader), "ledger.acquire.header");
+    EXPECT_EQ(std::string_view(ledger_span::acquireAsTree), "ledger.acquire.astree");
+    EXPECT_EQ(std::string_view(ledger_span::acquireTxTree), "ledger.acquire.txtree");
+}
+
+TEST(LedgerSpanNames, phase_child_span_names_are_children_of_the_acquire_name)
+{
+    // The naming property, not just the spelling: each phase name must extend
+    // the parent's "ledger.acquire" exactly, because that shared prefix is what
+    // the panel's span_name=~"ledger.acquire..*" selector relies on to pick up
+    // all three phases and no other span.
+    auto const parent = std::string_view("ledger.acquire");
+    for (std::string_view const phase :
+         {std::string_view(ledger_span::acquireHeader),
+          std::string_view(ledger_span::acquireAsTree),
+          std::string_view(ledger_span::acquireTxTree)})
+    {
+        EXPECT_TRUE(phase.starts_with(parent)) << "phase not under the parent name: " << phase;
+        // A '.' immediately after the parent, and a non-empty leaf after that.
+        ASSERT_GT(phase.size(), parent.size() + 1);
+        EXPECT_EQ(phase[parent.size()], '.');
+        EXPECT_FALSE(phase.substr(parent.size() + 1).empty());
+        // The leaf must be one segment: a further dot would make the panel's
+        // selector pick up a grandchild that does not exist.
+        EXPECT_EQ(phase.substr(parent.size() + 1).find('.'), std::string_view::npos);
+    }
+}
+
+TEST(LedgerSpanNames, phase_child_span_names_are_mutually_distinct)
+{
+    // Cause, not just state: the duration panel plots one series per phase, so
+    // two phases sharing a name would silently merge the account-state tree
+    // (nearly all of a fresh sync) into another phase's line.
+    EXPECT_NE(
+        std::string_view(ledger_span::acquireHeader), std::string_view(ledger_span::acquireAsTree));
+    EXPECT_NE(
+        std::string_view(ledger_span::acquireHeader), std::string_view(ledger_span::acquireTxTree));
+    EXPECT_NE(
+        std::string_view(ledger_span::acquireAsTree), std::string_view(ledger_span::acquireTxTree));
+}
+
+TEST(LedgerSpanNames, serve_span_name_is_dot_qualified)
+{
+    EXPECT_EQ(std::string_view(seg::ledger), "ledger");
+    EXPECT_EQ(std::string_view(ledger_span::op::serve), "serve");
+}
+
+TEST(LedgerSpanNames, b2_attribute_keys_match_collector_and_tempo)
+{
+    // `timed_out` and `object_type` are the two NEW spanmetrics dimensions
+    // listed in BOTH collector configs; the rest are span-only.
+    EXPECT_EQ(std::string_view(ledger_span::attr::timedOut), "timed_out");
+    EXPECT_EQ(std::string_view(ledger_span::attr::objectType), "object_type");
+    // Span-only, asserted by expected_spans.json. txset_hash is additionally a
+    // dedicated Parquet span column in tempo.yaml, for the same per-object
+    // reason ledger_hash is: it identifies WHICH set stalled, and as a metric
+    // dimension it would mint one series per consensus round.
+    EXPECT_EQ(std::string_view(ledger_span::attr::txSetHash), "txset_hash");
+    EXPECT_EQ(std::string_view(ledger_span::attr::missingNodes), "missing_nodes");
+    EXPECT_EQ(std::string_view(ledger_span::attr::servedNodes), "served_nodes");
+    EXPECT_EQ(std::string_view(ledger_span::attr::durationMs), "duration_ms");
+}
+
+TEST(LedgerSpanNames, b2_attribute_keys_are_bare_underscore_never_dotted)
+{
+    // The naming spec reserves dotted keys for resource attributes; a dotted
+    // span-attribute key fails the CI naming check. Assert the property so a
+    // key added to this group later is covered too.
+    for (std::string_view const key :
+         {std::string_view(ledger_span::attr::timedOut),
+          std::string_view(ledger_span::attr::objectType),
+          std::string_view(ledger_span::attr::txSetHash),
+          std::string_view(ledger_span::attr::missingNodes),
+          std::string_view(ledger_span::attr::servedNodes),
+          std::string_view(ledger_span::attr::durationMs)})
+    {
+        EXPECT_EQ(key.find('.'), std::string_view::npos) << "dotted span-attr key: " << key;
+        EXPECT_FALSE(key.empty());
+    }
+}
+
+TEST(LedgerSpanNames, timeout_outcome_value_is_distinct_from_the_other_three)
+{
+    // `timeout` is the value WP-B2 adds to the outcome set the collector
+    // aggregates. It must be distinct from all three existing values, because
+    // the whole point is separating "peers never supplied the data" from
+    // "the data was bad" (failed) and "we stopped waiting" (abandoned).
+    EXPECT_EQ(std::string_view(ledger_span::val::timeout), "timeout");
+    EXPECT_NE(
+        std::string_view(ledger_span::val::timeout), std::string_view(ledger_span::val::failed));
+    EXPECT_NE(
+        std::string_view(ledger_span::val::timeout), std::string_view(ledger_span::val::complete));
+    EXPECT_NE(
+        std::string_view(ledger_span::val::timeout), std::string_view(ledger_span::val::abandoned));
+}
+
+TEST(LedgerSpanNames, serve_object_type_values_are_the_four_request_kinds)
+{
+    // These become the `object_type` dimension's value set (cardinality 4),
+    // which is what makes it safe as a metric dimension.
+    EXPECT_EQ(std::string_view(ledger_span::val::header), "header");
+    EXPECT_EQ(std::string_view(ledger_span::val::txTree), "tx");
+    EXPECT_EQ(std::string_view(ledger_span::val::asTree), "as");
+    EXPECT_EQ(std::string_view(ledger_span::val::txSet), "txset");
+}
+
+TEST(LedgerSpanNames, serve_outcome_values_are_the_three_terminal_states)
+{
+    // `complete` is shared with the acquire outcomes (same concept, told apart
+    // by span name); `partial` and `refused` are serve-specific.
+    EXPECT_EQ(std::string_view(ledger_span::val::partial), "partial");
+    EXPECT_EQ(std::string_view(ledger_span::val::refused), "refused");
+    EXPECT_NE(
+        std::string_view(ledger_span::val::partial), std::string_view(ledger_span::val::refused));
+    EXPECT_NE(
+        std::string_view(ledger_span::val::partial), std::string_view(ledger_span::val::complete));
+    EXPECT_NE(
+        std::string_view(ledger_span::val::refused), std::string_view(ledger_span::val::complete));
+}
+
+TEST(LedgerSpanNames, phaseOutcome_normal_completion_is_complete)
+{
+    // A phase whose tree assembled, or a tx set that arrived: complete_ set,
+    // nothing else. Reached from receiveNode()/trigger() for a phase and from
+    // done() for a tx set.
+    EXPECT_EQ(
+        ledger_span::phaseOutcome(/*failed=*/false, /*complete=*/true, /*timedOut=*/false),
+        "complete");
+}
+
+TEST(LedgerSpanNames, phaseOutcome_bad_data_is_failed)
+{
+    // A terminal data fault with no timeout: a peer served a tree or set that
+    // would not build. This is the case `timeout` must NOT absorb.
+    EXPECT_EQ(
+        ledger_span::phaseOutcome(/*failed=*/true, /*complete=*/false, /*timedOut=*/false),
+        "failed");
+}
+
+TEST(LedgerSpanNames, phaseOutcome_exhausted_budget_reports_timeout_not_failed)
+{
+    // THE assertion this rule exists for, and the one that would regress
+    // silently. Both emitters' exhausted-budget path sets timedOut_ AND
+    // failed_ -- failed_ is how the TimeoutCounter base stops its timer loop --
+    // so if `failed` were checked first, every timeout would be relabelled as a
+    // data fault and the "peers are not serving this" signal would vanish
+    // exactly when a node is stuck.
+    EXPECT_EQ(
+        ledger_span::phaseOutcome(/*failed=*/true, /*complete=*/false, /*timedOut=*/true),
+        "timeout");
+}
+
+TEST(LedgerSpanNames, phaseOutcome_timeout_outranks_a_late_completion)
+{
+    // Edge case: the budget expired and the data then arrived. It still reports
+    // `timeout`, because the retry budget was really spent -- counting it as a
+    // success would hide the cost.
+    EXPECT_EQ(
+        ledger_span::phaseOutcome(/*failed=*/false, /*complete=*/true, /*timedOut=*/true),
+        "timeout");
+}
+
+TEST(LedgerSpanNames, phaseOutcome_dropped_mid_fetch_is_abandoned)
+{
+    // No flag at all: the object was destroyed while still fetching (the
+    // InboundLedger sweep, or InboundTransactions::newRound dropping a set).
+    // Reporting a value here is what keeps a stuck-then-swept unit in the
+    // outcome rate instead of vanishing from it.
+    EXPECT_EQ(
+        ledger_span::phaseOutcome(/*failed=*/false, /*complete=*/false, /*timedOut=*/false),
+        "abandoned");
+}
+
+TEST(LedgerSpanNames, phaseOutcome_covers_its_whole_input_domain)
+{
+    // No input combination yields an empty or undeclared value, which is the
+    // property that guarantees no exit can end up with a blank outcome and that
+    // the spanmetrics dimension can never gain an unexpected fifth value.
+    for (bool const failed : {false, true})
+    {
+        for (bool const complete : {false, true})
+        {
+            for (bool const timedOut : {false, true})
+            {
+                auto const outcome = ledger_span::phaseOutcome(failed, complete, timedOut);
+                EXPECT_FALSE(outcome.empty())
+                    << "failed=" << failed << " complete=" << complete << " timedOut=" << timedOut;
+                EXPECT_TRUE(
+                    outcome == std::string_view(ledger_span::val::complete) ||
+                    outcome == std::string_view(ledger_span::val::failed) ||
+                    outcome == std::string_view(ledger_span::val::timeout) ||
+                    outcome == std::string_view(ledger_span::val::abandoned))
+                    << "undeclared outcome '" << outcome << "' for failed=" << failed
+                    << " complete=" << complete << " timedOut=" << timedOut;
+                // Whenever the budget expired, the answer is `timeout`
+                // regardless of the other two -- the precedence property, not
+                // just the four sampled points above.
+                if (timedOut)
+                    EXPECT_EQ(outcome, std::string_view(ledger_span::val::timeout));
+            }
+        }
+    }
+}
+
+TEST(LedgerSpanNames, phaseOutcome_is_a_compile_time_rule)
+{
+    // constexpr, so the rule costs nothing at its call sites and the mapping is
+    // fixed by the compiler itself.
+    static_assert(ledger_span::phaseOutcome(false, true, false) == std::string_view("complete"));
+    static_assert(ledger_span::phaseOutcome(true, false, false) == std::string_view("failed"));
+    static_assert(ledger_span::phaseOutcome(true, false, true) == std::string_view("timeout"));
+    static_assert(ledger_span::phaseOutcome(false, false, false) == std::string_view("abandoned"));
+    SUCCEED();
+}
+
+TEST(LedgerSpanNames, serveObjectType_maps_every_protobuf_itype)
+{
+    // The exact protobuf TMLedgerInfoType values, which are fixed by the wire
+    // protocol: liBASE=0, liTX_NODE=1, liAS_NODE=2, liTS_CANDIDATE=3. Passed as
+    // an int so this rule stays free of protobuf headers and assertable here.
+    EXPECT_EQ(ledger_span::serveObjectType(0), "header");
+    EXPECT_EQ(ledger_span::serveObjectType(1), "tx");
+    EXPECT_EQ(ledger_span::serveObjectType(2), "as");
+    EXPECT_EQ(ledger_span::serveObjectType(3), "txset");
+}
+
+TEST(LedgerSpanNames, serveObjectType_never_yields_an_undeclared_value)
+{
+    // Edge case: an out-of-range itype cannot occur -- PeerImp::onMessage
+    // rejects the request before the worker runs -- but the rule must still
+    // produce a declared value rather than an empty attribute, so the
+    // object_type dimension's value set stays closed at four.
+    for (int const itype : {-1, 4, 99})
+    {
+        auto const value = ledger_span::serveObjectType(itype);
+        EXPECT_EQ(value, std::string_view(ledger_span::val::header))
+            << "unexpected fallback for itype=" << itype;
+    }
+}
+
+TEST(LedgerSpanNames, serveOutcome_empty_reply_is_refused)
+{
+    // Seven of the eight exits of processLedgerRequest send nothing, and all of
+    // them reach this through a zero node count. Deriving the value from the
+    // reply is what makes those seven impossible to mislabel.
+    EXPECT_EQ(ledger_span::serveOutcome(/*servedNodes=*/0, /*softCap=*/128), "refused");
+}
+
+TEST(LedgerSpanNames, serveOutcome_partial_reply_below_cap_is_complete)
+{
+    EXPECT_EQ(ledger_span::serveOutcome(/*servedNodes=*/12, /*softCap=*/128), "complete");
+    EXPECT_EQ(ledger_span::serveOutcome(/*servedNodes=*/127, /*softCap=*/128), "complete");
+}
+
+TEST(LedgerSpanNames, serveOutcome_reply_at_the_cap_is_partial)
+{
+    // Edge case at the exact boundary: the assembly loop stops here, so the
+    // requester must come back for the rest. Counting it as a success would
+    // hide the extra round trips a large tree really costs.
+    EXPECT_EQ(ledger_span::serveOutcome(/*servedNodes=*/128, /*softCap=*/128), "partial");
+    EXPECT_EQ(ledger_span::serveOutcome(/*servedNodes=*/256, /*softCap=*/128), "partial");
+}
+
+TEST(LedgerSpanNames, serveOutcome_never_yields_an_undeclared_value)
+{
+    // Negative counts cannot occur (nodes_size() is non-negative) but must
+    // still map to a declared value rather than an empty attribute.
+    for (int const served : {-5, 0, 1, 64, 128, 4096})
+    {
+        auto const outcome = ledger_span::serveOutcome(served, 128);
+        EXPECT_TRUE(
+            outcome == std::string_view(ledger_span::val::complete) ||
+            outcome == std::string_view(ledger_span::val::partial) ||
+            outcome == std::string_view(ledger_span::val::refused))
+            << "undeclared serve outcome '" << outcome << "' for servedNodes=" << served;
+    }
+}
+
+TEST(LedgerSpanNames, serveOutcome_is_a_compile_time_rule)
+{
+    static_assert(ledger_span::serveOutcome(0, 128) == std::string_view("refused"));
+    static_assert(ledger_span::serveOutcome(1, 128) == std::string_view("complete"));
+    static_assert(ledger_span::serveOutcome(128, 128) == std::string_view("partial"));
+    SUCCEED();
+}
+
+TEST(LedgerSpanNames, peer_dial_span_name_is_dot_qualified)
+{
+    // ConnectAttempt::run builds the name as seg::peer + "." + op::dial.
+    EXPECT_EQ(std::string_view(seg::peer), "peer");
+    EXPECT_EQ(std::string_view(peer_span::op::dial), "dial");
+}
+
+TEST(LedgerSpanNames, peer_dial_attribute_keys_are_bare_underscore)
+{
+    // remote_endpoint is the dedicated Parquet span column in tempo.yaml and
+    // is deliberately NOT a spanmetrics dimension: one series per peer address
+    // would be unbounded cardinality.
+    EXPECT_EQ(std::string_view(peer_span::attr::remoteEndpoint), "remote_endpoint");
+    EXPECT_EQ(std::string_view(peer_span::attr::durationMs), "duration_ms");
+    EXPECT_EQ(std::string_view(peer_span::attr::outcome), "outcome");
+    for (std::string_view const key :
+         {std::string_view(peer_span::attr::remoteEndpoint),
+          std::string_view(peer_span::attr::durationMs),
+          std::string_view(peer_span::attr::outcome)})
+    {
+        EXPECT_EQ(key.find('.'), std::string_view::npos) << "dotted span-attr key: " << key;
+    }
+}
+
+TEST(LedgerSpanNames, peer_dial_outcome_values_match_the_counter_label_set)
+{
+    // These five ARE the values ConnectAttempt::reportOutcome passes to the
+    // overlay_connect_total counter -- the span and the counter read the same
+    // constants from the same funnel, which is what stops them drifting apart.
+    // Pinned literally because the Bootstrap-row dial panel and the runbook
+    // both name them.
+    EXPECT_EQ(std::string_view(peer_span::val::connected), "connected");
+    EXPECT_EQ(std::string_view(peer_span::val::tcpFail), "tcp_fail");
+    EXPECT_EQ(std::string_view(peer_span::val::tlsFail), "tls_fail");
+    EXPECT_EQ(std::string_view(peer_span::val::upgradeFail), "upgrade_fail");
+    EXPECT_EQ(std::string_view(peer_span::val::timeout), "timeout");
+}
+
+TEST(LedgerSpanNames, peer_dial_outcome_values_are_mutually_distinct)
+{
+    // The dial panel splits by this attribute, so two outcomes sharing a value
+    // would merge two different failure stages into one line -- and the stage
+    // is the whole diagnostic content of the dial signal.
+    std::array<std::string_view, 5> const values{
+        peer_span::val::connected,
+        peer_span::val::tcpFail,
+        peer_span::val::tlsFail,
+        peer_span::val::upgradeFail,
+        peer_span::val::timeout};
+    for (std::size_t i = 0; i < values.size(); ++i)
+    {
+        EXPECT_FALSE(values[i].empty());
+        for (std::size_t j = i + 1; j < values.size(); ++j)
+            EXPECT_NE(values[i], values[j]) << "duplicate dial outcome at " << i << "," << j;
+    }
+}
+
+TEST(LedgerSpanNames, b2_inactive_guard_finalize_sequences_are_no_ops)
+{
+    // Negative / disabled path for all four new spans. A default-constructed
+    // SpanGuard is the exact state TransactionAcquire::acquireSpan_,
+    // InboundLedger's three phase handles and ConnectAttempt::dialSpan_ hold
+    // when telemetry is off or the category is disabled: operator bool() is
+    // false and every setter is inert. Drive the full finalize sequence of each
+    // emitter -- the same calls, in the same order -- and assert the guard
+    // stays inactive and nothing crashes. This is what proves the new spans
+    // emit nothing on a node with telemetry disabled, including from a
+    // destructor.
+    SpanGuard guard;
+    ASSERT_FALSE(static_cast<bool>(guard));
+
+    // TransactionAcquire::finalizeAcquireSpan()
+    guard.setAttribute(ledger_span::attr::txSetHash, "0123456789ABCDEF");
+    guard.setAttribute(
+        ledger_span::attr::outcome,
+        ledger_span::phaseOutcome(/*failed=*/false, /*complete=*/false, /*timedOut=*/false));
+    guard.setAttribute(ledger_span::attr::timeouts, static_cast<std::int64_t>(21));
+    guard.setAttribute(ledger_span::attr::durationMs, static_cast<std::int64_t>(5250));
+    guard.setAttribute(ledger_span::attr::peerCount, static_cast<std::int64_t>(0));
+
+    // InboundLedger::beginPhaseSpan() / endPhaseSpan()
+    guard.setAttribute(ledger_span::attr::ledgerHash, "FEDCBA9876543210");
+    guard.setAttribute(ledger_span::attr::ledgerSeq, static_cast<std::int64_t>(9000));
+    guard.setAttribute(ledger_span::attr::timedOut, true);
+    guard.setAttribute(ledger_span::attr::missingNodes, static_cast<std::int64_t>(256));
+
+    // PeerImp::processLedgerRequest()'s scope-exit finalizer
+    guard.setAttribute(ledger_span::attr::objectType, ledger_span::serveObjectType(/*itype=*/2));
+    guard.setAttribute(ledger_span::attr::servedNodes, static_cast<std::int64_t>(0));
+    guard.setAttribute(
+        ledger_span::attr::outcome, ledger_span::serveOutcome(/*servedNodes=*/0, /*softCap=*/128));
+
+    // ConnectAttempt::reportOutcome()
+    guard.setAttribute(peer_span::attr::remoteEndpoint, "10.0.0.5:51235");
+    guard.setAttribute(peer_span::attr::outcome, peer_span::val::timeout);
+    guard.setAttribute(peer_span::attr::durationMs, static_cast<std::int64_t>(15000));
+
+    // Still inactive: no span was created, so none can be exported.
+    EXPECT_FALSE(static_cast<bool>(guard));
+
+    // childSpan on an inactive guard yields another inactive guard, which is
+    // what makes InboundLedger::beginPhaseSpan() a no-op when telemetry is off:
+    // it never creates a phase span at all, so the whole per-phase feature
+    // costs one branch on the disabled path.
+    auto const child = guard.childSpan(ledger_span::acquireAsTree);
+    EXPECT_FALSE(static_cast<bool>(child));
+    // Same via the explicit-parent overload, the one beginPhaseSpan() actually
+    // calls: an invalid parent context yields an inactive child.
+    auto const childOfCtx = SpanGuard::childSpan(ledger_span::acquireTxTree, guard.spanContext());
+    EXPECT_FALSE(static_cast<bool>(childOfCtx));
+    EXPECT_FALSE(guard.spanContext().isValid());
 }
 
 }  // namespace

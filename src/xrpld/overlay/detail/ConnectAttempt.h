@@ -10,12 +10,15 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/resource/Consumer.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <chrono>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 
 namespace xrpl {
 
@@ -65,6 +68,23 @@ private:
      * most once. Not atomic on purpose -- see reportOutcome().
      */
     bool outcomeReported_{false};
+
+    /**
+     * Spans this dial: started in run() beside `dialStart_`, ended by
+     * reportOutcome() on whichever terminal path the state machine takes, and
+     * by the destructor for an attempt torn down without one.
+     *
+     * The counters WP-A1 added answer "how many dials failed, and at which
+     * stage". This span answers what they cannot: which peer, and how the time
+     * was spent inside one slow attempt. Both are needed because a dial that
+     * hangs is invisible in a rate.
+     *
+     * Thread-free (a SpanGuard holds no thread-local scope). All the completion
+     * handlers that end it are bound through `bind_executor(strand_, ...)`, so
+     * every access after run() is on one strand; run() itself writes it before
+     * any async operation is started, so those handlers see it safely.
+     */
+    std::optional<telemetry::SpanGuard> dialSpan_;
 
 public:
     ConnectAttempt(
@@ -125,6 +145,12 @@ private:
      * Emits:
      *   - `overlay_dial_latency_ms` histogram, no labels
      *   - `overlay_connect_total` counter, label `outcome`
+     *   - ends the `peer.dial` span with the same `outcome` value plus
+     *     `remote_endpoint` and `duration_ms`
+     *
+     * The span shares this funnel rather than being ended per branch, so the
+     * span's outcome and the counter's label can never disagree, and the
+     * first-call-wins guard makes the span exactly-once for free.
      *
      * Dial state machine and where each outcome is reported:
      *
@@ -138,9 +164,12 @@ private:
      *           +-- bad status / protocol / activate ... "upgrade_fail"
      *           +-- PeerImp created + addActive ........ "connected"
      *
-     * @param outcome One of "connected", "tcp_fail", "tls_fail",
-     *        "upgrade_fail", "timeout". A string literal, so no allocation
-     *        happens on the caller side.
+     * @param outcome One of the `peer_span::val` dial-outcome constants:
+     *        `connected`, `tcpFail`, `tlsFail`, `upgradeFail`, `timeout`. Taken
+     *        as a string_view over a compile-time constant, so no allocation
+     *        happens on the caller side. The constants are the single source
+     *        for both the counter label and the span attribute, so the two
+     *        cannot drift apart.
      *
      * @note Per-connection path: one dial per outbound peer, so this is not
      *       a hot loop.
@@ -154,14 +183,17 @@ private:
      * @note Known limitation: an attempt torn down by overlay shutdown
      *       mid-dial (stop() -> close(), or the operation_aborted early
      *       returns) is deliberately not counted -- it has no network
-     *       outcome to attribute.
+     *       outcome to attribute. The span is still ended, by the destructor,
+     *       with no `outcome` attribute: a span whose duration is real but
+     *       whose outcome is absent is exactly what "torn down mid-dial"
+     *       means, and dropping it would instead hide the attempt.
      * @note MetricsRegistry is already started when this runs:
      *       ApplicationImp::setup() calls startTelemetry() before
      *       ApplicationImp::start() calls overlay_->start(). No-op when
      *       telemetry is compiled out or disabled at runtime.
      */
     void
-    reportOutcome(char const* outcome);
+    reportOutcome(std::string_view outcome);
 
     template <class = void>
     static boost::asio::ip::tcp::endpoint

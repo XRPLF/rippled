@@ -341,6 +341,7 @@ words:
   - txns
   - txqueue
   - txs
+  - txset
   - ubsan
   - UBSAN
   - ufdio

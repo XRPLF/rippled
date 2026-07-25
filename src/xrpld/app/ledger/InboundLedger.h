@@ -29,6 +29,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -278,6 +279,70 @@ private:
     void
     finalizeAcquireSpan(std::optional<std::size_t> peerCount) noexcept;
 
+    /**
+     * Open the span for the fetch phase now in progress and close any phase
+     * whose data has arrived.
+     *
+     * One acquire is really three sequential fetches -- the header, then the
+     * account-state tree, then the transaction tree -- and on a fresh sync the
+     * state tree dominates. The parent span is flat, so it cannot say which of
+     * the three a stuck acquire is stuck in. These child spans can.
+     *
+     * Written as an idempotent state sync over the `have*_` flags rather than
+     * as open/close calls scattered through the fetch code: the flags are the
+     * real phase boundary, so deriving the span state from them cannot drift
+     * out of step with the fetch, and the function is safe to call from any
+     * progress point however often.
+     *
+     * The tree phases never open before the header arrives, because the header
+     * is what names their root hashes -- until then there is nothing to fetch.
+     *
+     * @note noexcept and allocation-free on the disabled path: with telemetry
+     *       off the parent span is inactive, so no child is ever created.
+     * @note Call with mtx_ held, as every call site does. Called at phase
+     *       boundaries and per received packet, never per SHAMap node.
+     */
+    void
+    syncPhaseSpans() noexcept;
+
+    /**
+     * Start one phase child span, parented to the acquire span.
+     *
+     * Parented through the acquire span's captured context rather than the
+     * thread's ambient context, so a phase opened on a JtLedgerData worker
+     * still lands under the right acquire.
+     *
+     * @param span  The phase span handle to fill; untouched if already open.
+     * @param name  Full span name from LedgerSpanNames.h.
+     *
+     * @note A no-op when the acquire span is absent or inactive, which is what
+     *       makes the whole phase-span feature cost nothing when telemetry is
+     *       disabled.
+     */
+    void
+    beginPhaseSpan(std::optional<telemetry::SpanGuard>& span, std::string_view name) noexcept;
+
+    /**
+     * End one phase child span exactly once, stamping its outcome.
+     *
+     * Idempotent by the same rule as finalizeAcquireSpan(): the handle is
+     * cleared, so a later call finds nothing and cannot overwrite the outcome
+     * the real phase end recorded.
+     *
+     * @param span         The phase span handle to end.
+     * @param complete     Whether this phase's data was fully assembled.
+     * @param missingNodes Nodes still outstanding in this phase's tree, or
+     *        nullopt for the header phase, which has no tree.
+     *
+     * @note noexcept, and the attribute writes are wrapped, because this is
+     *       reached from ~InboundLedger via finalizeAcquireSpan().
+     */
+    void
+    endPhaseSpan(
+        std::optional<telemetry::SpanGuard>& span,
+        bool complete,
+        std::optional<int> missingNodes) noexcept;
+
     clock_type& clock_;
     clock_type::time_point lastAction_;
 
@@ -336,6 +401,32 @@ private:
      * thread's context stack.
      */
     std::optional<telemetry::SpanGuard> acquireSpan_;
+
+    /**
+     * Child spans for the three fetch phases of this acquire, each a child of
+     * acquireSpan_ and each open only while its phase is in progress.
+     *
+     * Present so a stuck acquire names the phase it is stuck in: on a fresh
+     * sync the account-state tree is nearly all of the work, and the flat
+     * parent span cannot separate it from the small transaction tree or from
+     * the header wait that gates both.
+     *
+     * Same ownership contract as acquireSpan_: written under mtx_ or from the
+     * destructor, and thread-free, so a phase may be ended on whichever worker
+     * receives its last node.
+     */
+    std::optional<telemetry::SpanGuard> headerSpan_;
+    std::optional<telemetry::SpanGuard> asTreeSpan_;
+    std::optional<telemetry::SpanGuard> txTreeSpan_;
+
+    /**
+     * True once the acquire has exhausted its timeout budget, so each phase
+     * still open at that point reports `timeout` rather than `abandoned`.
+     * Distinct from `failed_`, which the same path also sets: `failed_` is how
+     * the timer loop stops, while this is what says the cause was peers not
+     * supplying data rather than data that would not apply.
+     */
+    bool timedOut_{false};
 };
 
 }  // namespace xrpl
