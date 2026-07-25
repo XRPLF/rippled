@@ -323,12 +323,48 @@ JobQueue::CoroTaskRunner::resume()
     XRPL_ASSERT(
         task_.handle() && !task_.done(),
         "xrpl::JobQueue::CoroTaskRunner::resume : task handle is valid and not done");
-    task_.handle().resume();
+    if (task_.handle() && !task_.done())
+    {
+        task_.handle().resume();
+    }
+    else
+    {
+        // A resume() with no coroutine to run (e.g. a duplicate external
+        // post() after completion). Resuming a null or finished handle is
+        // undefined behavior, so skip it -- this matches the old
+        // Coro::resume() `if (coro_)` guard. The bookkeeping below still
+        // runs to balance the ++runCount_ done by the post() that
+        // scheduled this call.
+        JLOG(jq_.journal_.warn())
+            << "CoroTaskRunner::resume called for coroutine '" << name_
+            << "' with no runnable coroutine (duplicate post or already completed)";
+    }
     detail::getLocalValues().release();
     detail::getLocalValues().reset(saved);
     if (task_.done())
     {
         finished_ = true;
+        // An exception that escapes a top-level coroutine body is captured
+        // by promise_type::unhandled_exception() but has no awaiter to
+        // rethrow it, so it would vanish with the frame. Surface it in the
+        // log. (The old Boost path propagated it out of resume() instead.)
+        if (auto const& ep = task_.handle().promise().exception_)
+        {
+            try
+            {
+                std::rethrow_exception(ep);
+            }
+            catch (std::exception const& e)
+            {
+                JLOG(jq_.journal_.error())
+                    << "Unhandled exception in coroutine '" << name_ << "': " << e.what();
+            }
+            catch (...)
+            {
+                JLOG(jq_.journal_.error())
+                    << "Unhandled non-standard exception in coroutine '" << name_ << "'";
+            }
+        }
         // Break the shared_ptr cycle: frame -> shared_ptr<runner> -> this.
         // Use std::move (not task_ = {}) so task_.handle_ is null BEFORE the
         // frame is destroyed. operator= would destroy the frame while handle_
@@ -384,6 +420,13 @@ JobQueue::CoroTaskRunner::expectEarlyExit()
  * decrements runCount_ below zero. In that scenario runCount_
  * never returns to 0, but finished_ becoming true guarantees
  * the coroutine is done and no more resumes will occur.
+ *
+ * Note: when join() returns via the finished_ disjunct, the final
+ * resume() call may still be executing its post-completion
+ * bookkeeping (the --runCount_ / notify after finished_ is set).
+ * That is safe -- the coroutine body has fully completed and the
+ * runner is kept alive by the resume job's shared_ptr -- but
+ * callers must not assume resume() itself has returned.
  */
 inline void
 JobQueue::CoroTaskRunner::join()
