@@ -95,9 +95,9 @@ doRipplePathFind(RPC::JsonContext& context)
             context.params);
         if (request)
         {
-            using namespace std::chrono_literals;
             std::unique_lock lk(state->mtx);
-            if (!state->cv.wait_for(lk, 30s, [&state] { return state->done; }))
+            if (!state->cv.wait_for(
+                    lk, RPC::Tuning::kPathfindCompletionTimeout, [&state] { return state->done; }))
             {
                 // Path-finding continuation never fired (e.g. shutdown
                 // race or unexpected failure). Return an internal error
