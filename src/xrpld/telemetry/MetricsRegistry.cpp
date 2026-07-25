@@ -68,6 +68,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -1491,7 +1492,19 @@ MetricsRegistry::registerUnlQuorumGauge()
                 observe("trusted_keys", static_cast<int64_t>(validators.trustedKeyCount()));
 
                 // Validations required for a ledger to be fully validated.
-                observe("quorum", static_cast<int64_t>(validators.quorum()));
+                // ValidatorList disables quorum by returning SIZE_MAX when too
+                // many publishers are unavailable. Casting that straight to
+                // int64_t would wrap to -1 and make the headroom
+                // (trusted_keys - quorum) read positive on a node that can
+                // never validate, so report the disabled state as int64 max
+                // instead: headroom then goes strongly negative, which is the
+                // truthful signal.
+                auto const quorum = validators.quorum();
+                observe(
+                    "quorum",
+                    quorum == std::numeric_limits<std::size_t>::max()
+                        ? std::numeric_limits<int64_t>::max()
+                        : static_cast<int64_t>(quorum));
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {

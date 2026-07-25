@@ -42,7 +42,6 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <utility>
 
 // VFALCO Shouldn't we have to include the OpenSSL
 // headers or something for SSL_get_finished?
@@ -260,7 +259,7 @@ namespace {
  * @note Always throws; it never returns to its caller.
  */
 [[noreturn]] void
-throwNegotiationFailure(Application& app, char const* reason, std::string message)
+throwNegotiationFailure(Application& app, char const* reason, std::string const& message)
 {
     XRPL_METRIC_COUNTER_INC_LABELED(
         app,
@@ -268,7 +267,7 @@ throwNegotiationFailure(Application& app, char const* reason, std::string messag
         "Peer handshake negotiations rejected, by reason",
         {{"reason", std::string(reason)}});
 
-    throw std::runtime_error(std::move(message));
+    throw std::runtime_error(message);
 }
 
 }  // namespace

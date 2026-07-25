@@ -2122,9 +2122,14 @@ first one that is wrong and fix it before reading further panels.
      node already holds.
    - `fetch_error`, `bad_status`, `parse_error` — transport or content faults;
      the site is effectively unreachable.
-   - `expired`, `stale`, `untrusted`, `invalid`, `unsupported_version`,
-     `pending` — the list arrived but was rejected, so no keys are loaded from
-     that site.
+   - `stale`, `untrusted`, `invalid`, `unsupported_version` — the list arrived
+     but was rejected, so no keys are loaded from that site.
+   - `expired` — the list was applied and its keys were loaded, but it is past
+     its validity window, so the expiry sweep drops them again and the
+     publisher does not count as available. Refresh the publisher blob, and
+     check the local clock, rather than replacing `validators.txt`.
+   - `pending` — the list is valid only from a future date and is held for
+     rotation. Normal, not a fault.
      Then read _UNL Trusted Keys vs Quorum_ and _UNL Quorum Headroom_
      (`unl_quorum`, `metric=trusted_keys` against `metric=quorum`). **This is
      the "will never validate" check.** If `trusted_keys` is zero, or sits at or
@@ -2132,7 +2137,11 @@ first one that is wrong and fix it before reading further panels.
      too small to ever satisfy quorum: the node can track ledgers but will
      never declare one validated, and no amount of healthy acquire traffic
      changes that. A site stuck on `fetch_error` or `expired` in the panel above
-     is the usual cause.
+     is the usual cause. A very large `quorum` with a deeply negative headroom
+     is the distinct "quorum disabled" state: too many publishers are
+     unavailable, so quorum has been switched off entirely rather than merely
+     set high. Fix publisher reachability first — the key count is irrelevant
+     until quorum is enabled again.
 
 5. **Clock — is local time disagreeing with the network?**
    Panel _Clock Close Offset_ (`clock_close_offset_seconds`, `metric=offset`).
