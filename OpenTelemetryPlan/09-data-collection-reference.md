@@ -70,6 +70,12 @@ There are three independent telemetry pipelines entering a single **OTel Collect
 2. **beast::insight OTel Metrics** (**B**) — System-level gauges, counters, and histograms exported natively via OTLP/HTTP (:4318) to the same **OTLP Receiver**. These are batched and exported to Prometheus alongside span-derived metrics. The StatsD UDP transport has been replaced by native OTLP; `server=statsd` remains available as a fallback.
 3. **MetricsRegistry OTel SDK Metrics** (**C**) — Counters, histograms, and observable gauges registered directly with the OTel Metrics SDK, exported via OTLP/HTTP (:4318). This pipeline owns its own `MeterProvider` and reader, separate from **B**'s, so its export cadence is independent — see [§2.5](#25-per-job-type-queue-gauges) for why that matters when comparing the two.
 
+A third, narrower metrics path exists for instruments created at their call site through the
+`XRPL_METRIC_*` macros. These use the OTel Metrics SDK directly and reach the collector's OTLP
+receiver rather than the StatsD receiver, so their names carry no `xrpld_` prefix. See
+[§2a](#2a-call-site-otel-metrics-metricsregistry). Code in `libxrpl` cannot use these macros and
+always goes through `beast::insight` instead.
+
 **Trace backend** — The collector exports traces via OTLP/gRPC to:
 
 - **Grafana Tempo** — Preferred trace backend. Supports TraceQL queries at `:3200`, S3/GCS object storage for cost-effective long-term trace retention, and integrates natively with Grafana.
