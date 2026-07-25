@@ -10,6 +10,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/PeerSet.h>
+#include <xrpld/telemetry/MetricMacros.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -105,6 +106,19 @@ LedgerDeltaAcquire::trigger(std::size_t limit, ScopedLockType& sl)
                     {
                         JLOG(journal_.debug()) << "Fall back for " << hash_;
                         timerInterval_ = LedgerReplayParameters::kSubTaskFallbackTimeout;
+
+                        // Same fallback as the skip-list stage, for the delta
+                        // stage: too few replay-capable peers, so the whole
+                        // ledger is acquired instead of just its delta. The
+                        // `stage` label separates the two, because they fail
+                        // for different reasons and are fixed differently.
+                        // Emitted once, on the transition into fallback.
+                        XRPL_METRIC_COUNTER_INC_LABELED(
+                            app_,
+                            "ledger_replay_fallback_total",
+                            "Replay sub-acquires that fell back to a full ledger acquire",
+                            {{"stage", std::string("delta")}});
+
                         fallBack_ = true;
                     }
                 }

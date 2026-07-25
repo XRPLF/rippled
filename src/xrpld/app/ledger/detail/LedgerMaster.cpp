@@ -18,6 +18,7 @@
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
+#include <xrpld/telemetry/MetricMacros.h>
 #include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/Log.h>
@@ -68,12 +69,14 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <functional>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -977,10 +980,61 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     auto validations = app_.getValidators().negativeUNLFilter(
         app_.getValidations().getTrustedForLedger(ledger->header().hash, ledger->header().seq));
     auto const tvc = validations.size();
+
+    // --- Sync diagnostics: snapshot the pre-accept quorum gate --------------
+    // Stored before the shortfall check, so a node that keeps failing the gate
+    // still reports both numbers. That is the case these signals exist for:
+    // the tally alone cannot say whether validations are accumulating toward
+    // quorum (slow) or plateaued below it (stuck) without the target beside it.
+    // Two relaxed stores, once per validated ledger, not in a loop.
+    lastTrustedTally_.store(static_cast<std::int64_t>(tvc), std::memory_order_relaxed);
+
+    // ValidatorList disables quorum by returning SIZE_MAX, which getNeededValidations
+    // passes straight through. Casting that to int64_t would wrap to -1 and make the
+    // tally look like it exceeds the target on a node that can never validate, so
+    // report the disabled state as int64 max instead: the target then reads far above
+    // any tally, which is the truthful signal. Mirrors the same fix in the unl_quorum
+    // gauge (MetricsRegistry::registerUnlQuorumGauge).
+    lastQuorumTarget_.store(
+        minVal == std::numeric_limits<std::size_t>::max() ? std::numeric_limits<std::int64_t>::max()
+                                                          : static_cast<std::int64_t>(minVal),
+        std::memory_order_relaxed);
+
     if (tvc < minVal)  // nothing we can do
     {
         JLOG(journal_.trace()) << "Only " << tvc << " validations for " << ledger->header().hash;
+
+        // Trusted validations did not reach quorum, so this ledger will not be
+        // declared validated. Previously trace-only, which made a node that
+        // peers and receives validations yet never validates indistinguishable
+        // from an idle one. One macro call at the gate, never in a loop.
+        //
+        // Emitted while mutex_ is held. That is unavoidable here (the gate and
+        // its early return are inside the locked section) and consistent with
+        // the telemetry this function already emits under the same lock -- the
+        // ledger.validate span below, and the validation tracker reached
+        // through setValidLedger. It cannot deadlock against the metrics poll:
+        // every accessor the sync gauges read is a lock-free atomic load, so no
+        // OTel callback ever acquires mutex_.
+        XRPL_METRIC_COUNTER_INC_LABELED(
+            app_,
+            "ledger_quorum_shortfall_total",
+            "Pre-accept gate rejections because trusted validations were below quorum",
+            {{"stage", std::string("pre_accept")}});
         return;
+    }
+
+    // The gate passed, so this node now has a fully-validated ledger. Record how
+    // long that took, exactly once per process: a fresh node that never gets
+    // here keeps reporting 0, which is the diagnostic reading. Writing under
+    // mutex_ makes the once-only check exclusive without a compare-exchange.
+    if (timeToFirstValidatedUs_.load(std::memory_order_relaxed) == 0)
+    {
+        auto const elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - startTime_);
+        // Clamp to 1: a 0 would be indistinguishable from "never reached".
+        timeToFirstValidatedUs_.store(
+            std::max<std::int64_t>(1, elapsed.count()), std::memory_order_relaxed);
     }
 
     using namespace telemetry;

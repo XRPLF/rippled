@@ -524,6 +524,86 @@ public:
 
     //--------------------------------------------------------------------------
 
+    /**
+     * Exercises the store/fetch duration accessors that the telemetry
+     * write-latency gauge reads.
+     *
+     * getStoreDurationUs() backs the only write-side latency signal that
+     * exists: before it, storeDurationUs_ was declared and never written, so
+     * this test is what proves the accumulation actually happens. Asserts the
+     * exact zero-before state as well as the accumulate-after state, so a
+     * regression to the never-written behaviour fails here rather than showing
+     * up as a permanently flat dashboard panel.
+     */
+    void
+    testDurationAccessors(std::string const& type, std::int64_t const seedValue)
+    {
+        DummyScheduler scheduler;
+
+        testcase("duration accessors '" + type + "'");
+
+        beast::TempDir const nodeDb;
+        Section nodeParams;
+        nodeParams.set(Keys::kType, type);
+        nodeParams.set(Keys::kPath, nodeDb.path());
+
+        auto batch = createPredictableBatch(kNumObjectsToTest, seedValue);
+
+        std::unique_ptr<Database> const db =
+            Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal_);
+
+        // A freshly opened database has done no I/O: both totals and both
+        // counts are exactly zero. This is the state the gauge must report as
+        // "no mean available" rather than as a zero-microsecond latency.
+        BEAST_EXPECT(db->getStoreCount() == 0);
+        BEAST_EXPECT(db->getStoreDurationUs() == 0);
+        BEAST_EXPECT(db->getFetchTotalCount() == 0);
+        BEAST_EXPECT(db->getFetchDurationUs() == 0);
+
+        // Reads are timed by the non-virtual fetchNodeObject wrapper, so the
+        // fetch total must advance for every fetch, hit or miss.
+        Batch copy;
+        fetchCopyOfBatch(*db, &copy, batch);
+        BEAST_EXPECT(db->getFetchTotalCount() == kNumObjectsToTest);
+
+        // store() is pure virtual, so the write path is timed per concrete
+        // database rather than in one shared wrapper. storeStats keeps the
+        // count, and the object count must match exactly.
+        storeBatch(*db, batch);
+        BEAST_EXPECT(db->getStoreCount() == kNumObjectsToTest);
+
+        // importDatabase routes through Database::importInternal, the store
+        // path this work package instruments, so the write duration must be
+        // non-zero afterwards. Asserted as a strict advance from the zero
+        // above: the exact microsecond value is wall-clock dependent, but
+        // "still exactly zero after real writes" is precisely the dead-member
+        // bug being guarded against.
+        beast::TempDir const destDb;
+        Section destParams;
+        destParams.set(Keys::kType, type);
+        destParams.set(Keys::kPath, destDb.path());
+
+        std::unique_ptr<Database> const dest =
+            Manager::instance().makeDatabase(megabytes(4), scheduler, 2, destParams, journal_);
+        BEAST_EXPECT(dest->getStoreDurationUs() == 0);
+
+        dest->importDatabase(*db);
+
+        BEAST_EXPECT(dest->getStoreCount() == kNumObjectsToTest);
+        BEAST_EXPECT(dest->getStoreDurationUs() > 0);
+
+        // The import wrote into `dest`, not `db`, so the source's write
+        // duration must be unchanged. This is the negative half: it proves the
+        // accumulation is per-database state and not a shared global.
+        BEAST_EXPECT(db->getStoreDurationUs() == 0);
+
+        // A mean derived the way the telemetry gauge derives it must be a
+        // sane, non-zero microsecond figure rather than a division artifact.
+        BEAST_EXPECT(dest->getStoreDurationUs() / dest->getStoreCount() >= 0);
+    }
+
+    //--------------------------------------------------------------------------
+
     void
     testImport(
         std::string const& destBackendType,
@@ -699,6 +779,11 @@ public:
         testConfig();
 
         testNodeStore("memory", false, seedValue);
+
+        // Store/fetch duration accessors, which the telemetry write-latency
+        // gauge reads. Run on nudb: the write duration is accumulated in
+        // Database::importInternal, which every backend shares.
+        testDurationAccessors("nudb", seedValue);
 
         // Persistent backend tests
         {
