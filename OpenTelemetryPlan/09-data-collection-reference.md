@@ -68,6 +68,12 @@ There are two independent telemetry pipelines entering a single **OTel Collector
 1. **OpenTelemetry Traces** — Distributed spans with attributes, exported via OTLP/HTTP (:4318) to the collector's **OTLP Receiver**. The **Batch Processor** groups spans (1s timeout, batch size 100) before forwarding to trace backends. The **SpanMetrics Connector** derives RED metrics (rate, errors, duration) from every span and feeds them into the metrics pipeline.
 2. **beast::insight StatsD** — System-level gauges, counters, and timers emitted as StatsD UDP packets to port :8125, ingested by the collector's **StatsD Receiver**, and exported alongside span-derived metrics to Prometheus.
 
+A third, narrower metrics path exists for instruments created at their call site through the
+`XRPL_METRIC_*` macros. These use the OTel Metrics SDK directly and reach the collector's OTLP
+receiver rather than the StatsD receiver, so their names carry no `xrpld_` prefix. See
+[§2a](#2a-call-site-otel-metrics-metricsregistry). Code in `libxrpl` cannot use these macros and
+always goes through `beast::insight` instead.
+
 **Trace backend** — The collector exports traces via OTLP/gRPC to:
 
 - **Grafana Tempo** — Preferred trace backend. Supports TraceQL queries at `:3200`, S3/GCS object storage for cost-effective long-term trace retention, and integrates natively with Grafana.
@@ -485,7 +491,7 @@ prefix=xrpld
 | `xrpld_Peer_Finder_Active_Inbound_Peers`          | PeerfinderManager.cpp | Active inbound peer connections          | 0–85                            |
 | `xrpld_Peer_Finder_Active_Outbound_Peers`         | PeerfinderManager.cpp | Active outbound peer connections         | 10–21                           |
 | `xrpld_Overlay_Peer_Disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count      | Low growth                      |
-| `xrpld_job_count`                                 | JobQueue.cpp          | Current job queue depth                  | 0–100 (healthy)                 |
+| `xrpld_jobq_job_count`                            | JobQueue.cpp          | Current job queue depth (all types)      | 0–100 (healthy)                 |
 | `xrpld_Node_family_full_below_cache_size`         | TaggedCache.h         | FullBelowCache entry count               | Varies                          |
 | `xrpld_Node_family_full_below_cache_hit_rate`     | TaggedCache.h         | FullBelowCache hit rate percentage       | 0–100                           |
 
@@ -549,10 +555,14 @@ For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), fo
 
 ### 2.5 Per-Job Timer Events
 
-For each of the 36 non-special job types (defined in `JobTypes.h`), two StatsD timer events are emitted:
+For each of the 35 non-special job types (defined in `JobTypes.h`), two StatsD timer events are emitted:
 
-- `xrpld_{jobName}` — execution duration
-- `xrpld_{jobName}_q` — dequeue wait time
+- `xrpld_jobq_{jobName}` — execution duration
+- `xrpld_jobq_{jobName}_q` — dequeue wait time
+
+The `jobq` segment is added at runtime by the collector group the JobQueue is constructed with —
+see [§2.6](#26-per-job-type-saturation-gauges) for the derivation, which applies to all `jobq_*`
+metrics including the queue-depth gauge in §2.1.
 
 These produce summary metrics with quantiles (0th, 50th, 90th, 95th, 99th, 100th).
 
@@ -575,6 +585,149 @@ These produce summary metrics with quantiles (0th, 50th, 90th, 95th, 99th, 100th
 Special job types (`limit=0`: `peerCommand`, `diskAccess`, `processTransaction`, `orderBookSetup`, `pathFind`, `nodeRead`, `nodeWrite`, `generic`, `SyncReadNode`, `AsyncReadNode`, `WriteNode`) do **not** emit timer events.
 
 **Grafana dashboard**: _Node Health (StatsD)_ (`xrpld-statsd-node-health`) — Key Jobs and All Jobs panels
+
+### 2.6 Per-Job-Type Saturation Gauges
+
+`JobTypeData` has always tracked three per-type counters — `waiting`, `running`, and `deferred`
+(`include/xrpl/core/JobTypeData.h`) — but only the process-wide queue depth was exported. These
+three gauge families export them per job type, so queue pressure can be attributed to a type
+instead of only being visible as a single total.
+
+For each of the same 35 non-special job types, three gauges are created in the `JobTypeData`
+constructor and assigned in `JobQueue::collect()`. Note that the gauge members do not exist on
+this branch — they are introduced on phase-9, which is where the creation and assignment live.
+
+| Metric                          | Source File   | Description                                     |
+| ------------------------------- | ------------- | ----------------------------------------------- |
+| `xrpld_jobq_{jobName}_waiting`  | JobTypeData.h | Jobs enqueued for this type but not yet started |
+| `xrpld_jobq_{jobName}_running`  | JobTypeData.h | Jobs of this type currently executing           |
+| `xrpld_jobq_{jobName}_deferred` | JobTypeData.h | Jobs held back by this type's concurrency limit |
+
+**Why `deferred` matters most.** `JobQueue::addJob()` never rejects — when a type is at its
+concurrency limit it increments `deferred` and returns `true` (`JobQueue.cpp`,
+`addRefCountedJob`). Backpressure on a capped type therefore shows up only as latency, after the
+delay has already happened. A non-zero `deferred` reading precedes that, which makes it the
+leading indicator for a saturating type. It is structurally always zero for special types, which
+is why they are excluded — the same `!info.special()` guard that already gates the timer events.
+
+**Name derivation.** These names are not literals anywhere in the source; the `jobq` segment is
+added at runtime. `Application.cpp` constructs the JobQueue with
+`collectorManager_->group("jobq")`, and `GroupImp::makeName()` (`Groups.cpp`) joins the group name
+and the metric name with a `.`. The StatsD sender then prefixes the configured `prefix` the same
+way, so `JtLedgerReq` (whose type name is `ledgerRequest`) is sent as
+`xrpld.jobq.ledgerRequest_deferred` and arrives in Prometheus as
+`xrpld_jobq_ledgerRequest_deferred`. The same `jobq.` prefix applies to the §2.5 timer events and
+to the queue-depth gauge in §2.1.
+
+> **Sampling granularity**: these are gauges read by the collector hook once per second, not
+> counters incremented at the event. A `deferred` spike shorter than the sampling interval can be
+> missed. Saturation long enough to delay ledger sync persists across a sample, which is the case
+> these gauges are for.
+
+> **Pipeline**: `JobQueue.cpp` is in `libxrpl` and reaches the exporter through
+> `beast::insight::Collector`, like every other metric in this section. It cannot use the
+> `xrpld`-only call-site metric macros used by
+> [§2a](#2a-call-site-otel-metrics-metricsregistry).
+
+---
+
+## 2a. Call-Site OTel Metrics (MetricsRegistry)
+
+> **See also**: [§2](#2-statsd-metrics-beastinsight) for the `beast::insight` metrics that use the
+> StatsD transport instead.
+
+Every metric in [§2](#2-statsd-metrics-beastinsight) goes through `beast::insight`. The metrics
+below are created directly at their call site through the `XRPL_METRIC_*` macros
+(`src/xrpld/telemetry/MetricMacros.h`) and exported by the OTel Metrics SDK rather than over
+StatsD. The macros create each instrument once and expand to an empty statement when telemetry is
+compiled out, so a call site needs no conditional compilation.
+
+These names carry no `xrpld_` prefix: the prefix belongs to the StatsD sender, and this path
+identifies the node through OTel resource attributes instead.
+
+> **Note**: this family is emitted by `MetricsRegistry`, which arrives with the native-metrics
+> work in a later phase than this document's own StatsD pipeline. It is catalogued here because
+> this document is the single source of truth for the whole telemetry surface.
+
+### 2a.1 Job Lifecycle Metrics
+
+Recorded from the three `PerfLog` job hooks that `JobQueue` already calls.
+
+| Metric               | Type      | Unit | Labels                | Description                  |
+| -------------------- | --------- | ---- | --------------------- | ---------------------------- |
+| `job_queued_total`   | Counter   | —    | `job_type`, `handler` | Jobs enqueued                |
+| `job_started_total`  | Counter   | —    | `job_type`, `handler` | Jobs started                 |
+| `job_finished_total` | Counter   | —    | `job_type`, `handler` | Jobs completed               |
+| `job_queued_us`      | Histogram | µs   | `job_type`, `handler` | Queue wait time distribution |
+| `job_running_us`     | Histogram | µs   | `job_type`, `handler` | Execution time distribution  |
+
+`job_queued_us` and `job_running_us` register explicit microsecond buckets spanning 100 µs to
+60 s. Without that view the SDK default buckets stop at 10 ms and every quantile reads as 10 ms.
+
+#### The `handler` Label
+
+`job_type` names the queue a job ran on, not who produced it. Several producers share one type —
+`RcvGetLedger` and `RcvGetObjByHash` both run as `JtLedgerReq`, and `JtLedgerData` has five
+(`ProcessLData` and `GotStaleData` in `InboundLedgers.cpp`, `AcqDone` and the `InboundLedger`
+`TimeoutCounter` job name in `InboundLedger.cpp`, and `GotFetchPack` in `LedgerMaster.cpp`) — so a
+queue-wait spike cannot be pinned to one of them by `job_type` alone. The `handler` label carries
+the name passed to `addJob`, which does distinguish them.
+
+The value is not the raw name. It passes through `MetricsRegistry::sanitiseHandler`, which keeps
+the name only when it is non-empty and every character is an ASCII letter, and otherwise returns
+the literal `other`. The letter test is an explicit ASCII range check rather than a
+locale-dependent one, so it cannot admit non-ASCII bytes.
+
+**Why reduce the name.** Two `addJob` names embed a ledger sequence number:
+`LedgerPersistence.cpp` builds `"Pub" + std::to_string(ledger->seq())`, and
+`OrderBookDBImpl.cpp` builds `"OB" + std::to_string(ledger->seq() % 1000000000)`. Used raw,
+either would mint a new time series for every ledger. Both always contain digits, so both fold to
+`other`.
+
+Every other production job name is a compile-time literal, which makes the label domain a
+function of the source rather than of traffic — it cannot grow at runtime. Names that are literals
+but still fail the rule also fold to `other`: `GetConsL1` and `GetConsL2` contain digits, and the
+coroutine names `RPC-Client`, `WS-Client`, and `gRPC-Client` contain a hyphen. A job name added
+later that fails the rule degrades to `other` rather than becoming unbounded, which is a stronger
+guarantee than a hand-maintained allowlist.
+
+### 2a.2 GetObject Request Metrics
+
+Emitted from the `TMGetObjectByHash` handler in `src/xrpld/overlay/detail/PeerImp.cpp`. Together
+with `job_queued_us` and `job_running_us` filtered to `handler="RcvGetObjByHash"`, they split the
+handler's end-to-end time into queue wait, NodeStore lookup, and everything else — so slowness is
+attributable to a stage rather than merely observed.
+
+| Metric                      | Type      | Unit | Labels   | Description                                    |
+| --------------------------- | --------- | ---- | -------- | ---------------------------------------------- |
+| `getobject_lookup_us`       | Histogram | µs   | —        | Time in the NodeStore fetch loop               |
+| `getobject_request_objects` | Histogram | —    | —        | Objects requested per message                  |
+| `getobject_lookups_total`   | Counter   | —    | `result` | NodeStore lookup outcomes                      |
+| `getobject_rejected_total`  | Counter   | —    | `reason` | Requests refused before any NodeStore access   |
+| `getobject_charge`          | Histogram | —    | —        | Dynamic resource charge applied to the request |
+
+| Label    | Values                             | Meaning                                                 |
+| -------- | ---------------------------------- | ------------------------------------------------------- |
+| `result` | `hit`, `miss`                      | Whether the requested object was found in the NodeStore |
+| `reason` | `oversize`, `malformed_ledgerhash` | Which admission check refused the request               |
+
+**Aggregation.** `getobject_lookup_us` times the fetch loop once per request, and
+`getobject_lookups_total` is added once per request carrying the batch hit and miss totals. The
+loop is bounded by `Tuning::kHardMaxReplyNodes` (12288), so timing or counting each iteration
+would cost more than the lookups it measures. `getobject_request_objects` records the requested
+count, which is what the charge bands price on. `getobject_charge` records only the dynamic
+component returned by `computeGetObjectByHashFee()`; the admission-time base charge is a constant.
+
+> **Bucket view required**: `getobject_lookup_us` needs an explicit microsecond-bucket view like
+> the two job histograms above. Without one the SDK default buckets stop at 10 ms, and a
+> lookup loop running toward its 12288 cap exceeds that routinely — so the metric would saturate
+> exactly when it is needed. The view is registered alongside the other three in
+> `MetricsRegistry.cpp`. Note that `MetricsRegistry` does not exist on this branch — it is
+> introduced on phase-9, which is where the registration lives.
+
+> **Expected to read zero**: `getobject_rejected_total` counts non-conforming requests, which a
+> healthy peer does not send. A zero series does not prove the metric works — verify it with a
+> deliberately oversized request.
 
 ---
 
@@ -756,7 +909,7 @@ All span names and attributes are defined as compile-time constants in colocated
 | Issue                                                              | Impact                                           | Status                                                               |
 | ------------------------------------------------------------------ | ------------------------------------------------ | -------------------------------------------------------------------- |
 | `warn` and `drop` metrics use non-standard StatsD `\|m` meter type | Metrics silently dropped by OTel StatsD receiver | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp |
-| `xrpld_job_count` may not emit in standalone mode                  | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
+| `xrpld_jobq_job_count` may not emit in standalone mode             | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
 | `xrpld_rpc_requests` depends on `[insight]` config                 | Zero series if StatsD not configured             | Requires `[insight] server=statsd` in xrpld.cfg                      |
 | Peer tracing enabled by default                                    | `peer.*` spans emit unless `trace_peer=0`        | High volume — set `trace_peer=0` to opt out on busy mainnet nodes    |
 
