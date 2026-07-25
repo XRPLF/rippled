@@ -203,6 +203,12 @@ connectors:
       - name: method
       - name: grpc_role
       - name: grpc_status
+      # ledger.acquire dimensions. Must stay identical to the local
+      # otel-collector-config.yaml dimension set; see the cardinality note
+      # there for why ledger_hash / ledger_seq are span-only (per-ledger values
+      # would mint one metric series per ledger) and are indexed in Tempo
+      # instead. `outcome` includes `abandoned`, recorded when an acquire is
+      # swept or shut down before reaching a result.
       - name: outcome
       - name: acquire_reason
 

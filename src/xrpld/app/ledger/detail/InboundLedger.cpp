@@ -48,6 +48,7 @@
 #include <exception>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <random>
 #include <sstream>
 #include <stdexcept>
@@ -103,7 +104,8 @@ InboundLedger::init(ScopedLockType& collectionLock)
     collectionLock.unlock();
 
     // Span the acquire lifecycle so back-fill / fork-recovery cost is
-    // observable. Finalized in done() with the outcome and timeout count.
+    // observable. Finalized by finalizeAcquireSpan() on whichever exit this
+    // acquire takes, including the destructor.
     {
         using namespace telemetry;
         // acquireSpan_ is emplaced here but reset() on a JtLedgerData worker
@@ -113,6 +115,10 @@ InboundLedger::init(ScopedLockType& collectionLock)
             SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::acquire));
         if (*acquireSpan_)
         {
+            // The hash is the one identity known at every acquire's start (a
+            // by-hash fetch begins with seq_ == 0), so it is what makes a
+            // still-running or abandoned fetch identifiable in a trace search.
+            acquireSpan_->setAttribute(ledger_span::attr::ledgerHash, to_string(hash_).c_str());
             acquireSpan_->setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(seq_));
             // Map the acquire reason to its span-attribute value. A switch
             // keeps the mapping flat and exhaustive over the Reason enum.
@@ -134,7 +140,12 @@ InboundLedger::init(ScopedLockType& collectionLock)
 
     tryDB(app_.getNodeFamily().db());
     if (failed_)
+    {
+        // tryDB proved the ledger can never be acquired. This exit never
+        // reaches done(), so finalize here or the span would carry no outcome.
+        finalizeAcquireSpan(getPeerCount());
         return;
+    }
 
     // Whether the local node store already held the whole ledger. Emitted once
     // per new acquire (init() runs exactly once), never per node, so the cost is
@@ -156,6 +167,12 @@ InboundLedger::init(ScopedLockType& collectionLock)
 
     JLOG(journal_.debug()) << "Acquiring ledger we already have in "
                            << " local store. " << hash_;
+
+    // The local store already had everything, so the fetch is over here and
+    // never goes through done(). Finalize now: the span's duration then covers
+    // only the store read, not the storeLedger/checkAccept work below.
+    finalizeAcquireSpan(getPeerCount());
+
     XRPL_ASSERT(
         ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
         "xrpl::InboundLedger::init : valid ledger fees");
@@ -248,12 +265,26 @@ InboundLedger::~InboundLedger()
     }
     if (!isDone())
     {
+        // Activate the still-open span so this abort line carries its trace_id,
+        // which is what links the abandoned span to the reason it was dropped.
+        // Non-owning and popped at the end of this block, before the span ends.
+        auto acquireActivation = telemetry::activateIfLive(acquireSpan_);
+
         JLOG(journal_.debug()) << "Acquire " << hash_ << " abort "
                                << ((timeouts_ == 0) ? std::string()
                                                     : (std::string("timeouts:") +
                                                        std::to_string(timeouts_) + " "))
                                << stats_.get();
     }
+
+    // Last exit. A fetch dropped here (swept for making no progress, or torn
+    // down at shutdown) reached no result, so this is what stamps
+    // outcome=abandoned instead of exporting a span with no outcome at all.
+    // Already-finalized acquires are untouched -- the helper is idempotent.
+    // The peer count is not read here: this destructor can run under the
+    // InboundLedgers collection lock, and getPeerCount() would take the Overlay
+    // lock underneath it.
+    finalizeAcquireSpan(std::nullopt);
 }
 
 static std::vector<uint256>
@@ -494,6 +525,60 @@ InboundLedger::pmDowncast()
 }
 
 void
+InboundLedger::finalizeAcquireSpan(std::optional<std::size_t> peerCount) noexcept
+{
+    // Idempotent: the handle is cleared below, so a later exit finds nothing to
+    // finalize and cannot overwrite the outcome the real exit recorded.
+    if (!acquireSpan_)
+        return;
+
+    // The attribute writes are wrapped because the destructor is one of the
+    // callers: an exception escaping there during unwinding would terminate the
+    // process. Each setAttribute is itself noexcept today; the try is the
+    // structural guarantee that stays correct if that ever changes.
+    try
+    {
+        if (*acquireSpan_)
+        {
+            using namespace telemetry;
+            // Derived from this acquire's own flags by the shared rule, so no
+            // call site can mislabel an exit and every exit gets an outcome.
+            // Neither flag set means the fetch was dropped while in flight.
+            acquireSpan_->setAttribute(
+                ledger_span::attr::outcome, ledger_span::acquireOutcome(failed_, complete_));
+            acquireSpan_->setAttribute(
+                ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
+            if (peerCount)
+            {
+                acquireSpan_->setAttribute(
+                    ledger_span::attr::peerCount, static_cast<int64_t>(*peerCount));
+            }
+            // A by-hash acquire starts with seq_ == 0 and learns the sequence
+            // only when the header arrives, so re-stamp it here. OTel
+            // attributes are last-write-wins, so this replaces the placeholder
+            // 0 set at init() and lets the trace be found by ledger number.
+            if (seq_ != 0)
+            {
+                acquireSpan_->setAttribute(
+                    ledger_span::attr::ledgerSeq, static_cast<int64_t>(seq_));
+            }
+        }
+    }
+    catch (...)  // NOLINT(bugprone-empty-catch)
+    {
+        // Telemetry must never break an acquire, and this also runs from the
+        // destructor. A span missing one attribute is still worth exporting, so
+        // fall through and end it below.
+    }
+
+    // End the span, outside the try so it happens on every path. Unconditional
+    // so the span never leaks even when it was inactive, and so this helper is
+    // exactly-once: a later exit sees an empty handle and returns above.
+    // ~SpanGuard is implicitly noexcept, so this cannot throw out of here.
+    acquireSpan_.reset();
+}
+
+void
 InboundLedger::done()
 {
     if (signaled_)
@@ -502,26 +587,12 @@ InboundLedger::done()
     signaled_ = true;
     touch();
 
-    // Finalize the acquire span with the outcome, timeout count, and peer
-    // count. Keep it active as the ambient context across the finalize and
-    // the outcome log below so that log line carries the span's trace_id.
-    // The activation is non-owning; acquireSpan_ still owns the span. The
-    // activation pops at the end of this block (restoring the prior context)
-    // while acquireSpan_ is still alive, then reset() ends the span.
+    // Keep the span active as the ambient context across the outcome log so
+    // that line carries the span's trace_id. The activation is non-owning;
+    // acquireSpan_ still owns the span. It pops at the end of this block, while
+    // the span is still alive, and only then is the span finalized and ended.
     {
         auto acquireActivation = telemetry::activateIfLive(acquireSpan_);
-        if (acquireSpan_ && *acquireSpan_)
-        {
-            using namespace telemetry;
-            acquireSpan_->setAttribute(
-                ledger_span::attr::outcome,
-                failed_ ? std::string_view(ledger_span::val::failed)
-                        : std::string_view(ledger_span::val::complete));
-            acquireSpan_->setAttribute(
-                ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
-            acquireSpan_->setAttribute(
-                ledger_span::attr::peerCount, static_cast<int64_t>(getPeerCount()));
-        }
 
         JLOG(journal_.debug()) << "Acquire " << hash_ << (failed_ ? " fail " : " ")
                                << ((timeouts_ == 0) ? std::string()
@@ -530,9 +601,7 @@ InboundLedger::done()
                                << stats_.get();
         // acquireActivation pops here, before the span is ended below.
     }
-    // End the acquire span after its outcome log. Unconditional so the span
-    // never leaks even when it was inactive.
-    acquireSpan_.reset();
+    finalizeAcquireSpan(getPeerCount());
 
     XRPL_ASSERT(complete_ || failed_, "xrpl::InboundLedger::done : complete or failed");
 

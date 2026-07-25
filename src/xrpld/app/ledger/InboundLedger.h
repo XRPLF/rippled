@@ -243,6 +243,41 @@ private:
     int
     recordBatchOutcome(SHAMapAddNode const& san);
 
+    /**
+     * End the acquire span exactly once, stamping the outcome it reached.
+     *
+     * An acquire can leave through four exits: done(), the local-store
+     * shortcut in init(), the "can never be acquired" exit in init(), and the
+     * destructor when the sweeper drops a fetch that never finished. Every one
+     * of them calls this, so the span always carries an `outcome` and its
+     * duration always ends at the real exit instead of stretching to whenever
+     * the object happened to be destroyed. Without that, the one case worth
+     * detecting -- an acquire that never completes -- was the one case with no
+     * span data.
+     *
+     * The outcome is derived from the acquire's own flags rather than passed
+     * in, so no call site can label an exit wrongly:
+     *   failed_ -> "failed", else complete_ -> "complete", else "abandoned".
+     * "abandoned" therefore means exactly "destroyed with no result".
+     *
+     * Idempotent: the span handle is cleared here, so the second and later
+     * calls do nothing. A no-op when telemetry is disabled (the guard is
+     * inactive) or when the span was never created.
+     *
+     * @param peerCount Peers still reachable for this fetch, or nullopt when
+     *        the caller cannot safely look them up. The destructor passes
+     *        nullopt because it can run while InboundLedgers holds its
+     *        collection lock, and the lookup would take the Overlay lock
+     *        underneath it.
+     *
+     * @note noexcept, and every fallible step is wrapped, because the
+     *       destructor calls this: an escaping exception there would
+     *       terminate the process during unwinding.
+     * @note Called once per acquire exit, never on a per-SHAMap-node path.
+     */
+    void
+    finalizeAcquireSpan(std::optional<std::size_t> peerCount) noexcept;
+
     clock_type& clock_;
     clock_type::time_point lastAction_;
 
@@ -288,13 +323,17 @@ private:
     std::atomic<std::size_t> receivedDataDepth_{0};
 
     /**
-     * Spans the acquire lifecycle: started in init(), finalized in done()
-     * with the outcome (complete/failed), timeout count, and peer count.
-     * Gives operators visibility into back-fill / fork-recovery cost, which
-     * previously emitted no span or metric.
+     * Spans the acquire lifecycle: started in init(), ended by
+     * finalizeAcquireSpan() with the outcome (complete/failed/abandoned),
+     * timeout count, and peer count. Gives operators visibility into
+     * back-fill / fork-recovery cost, which previously emitted no span or
+     * metric.
+     * Held for the object's whole lifetime so the destructor can still stamp
+     * an outcome on a fetch that never reached done().
      * Thread-free: emplaced by the acquiring thread, reset on a JtLedgerData
-     * worker. A SpanGuard owns no thread-local Scope, so it can be destroyed
-     * on the worker without corrupting the origin thread's context stack.
+     * worker or in the destructor. A SpanGuard owns no thread-local Scope, so
+     * it can be destroyed on any thread without corrupting the origin
+     * thread's context stack.
      */
     std::optional<telemetry::SpanGuard> acquireSpan_;
 };

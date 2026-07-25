@@ -303,12 +303,12 @@
         "ledger_seq",
         "acquire_reason",
         "timeouts",
-        "peer_count",
-        "outcome"
+        "outcome",
+        "ledger_hash"
       ],
       "config_flag": "trace_ledger",
       "optional": true,
-      "note": "Only fires when a node must fetch a missing ledger (InboundLedger). A healthy local cluster rarely back-fills history."
+      "note": "Only fires when a node must fetch a missing ledger (InboundLedger). A healthy local cluster rarely back-fills history. outcome is one of complete|failed|abandoned and is stamped on every exit path, including the sweep/shutdown path where the fetch never finished (abandoned). ledger_hash identifies the target ledger from the first moment, since a by-hash acquire starts with ledger_seq 0. peer_count is not required: the destructor path deliberately skips the peer lookup to avoid taking the Overlay lock under the InboundLedgers collection lock."
     },
     {
       "name": "peer.proposal.receive",

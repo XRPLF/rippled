@@ -82,3 +82,20 @@ storage:
       path: /var/tempo/wal
     local:
       path: /var/tempo/blocks
+    block:
+      # Give the highest-value span attributes their own Parquet columns so
+      # TraceQL scopes a search to one ledger without scanning the generic
+      # attribute list. Tempo indexes every attribute for search regardless;
+      # a dedicated column only changes the cost of filtering on it.
+      #
+      # ledger_hash is here rather than in the collector's spanmetrics
+      # `dimensions:` on purpose: it is a per-ledger value, so as a metric
+      # dimension it would mint one series per ledger acquired (unbounded
+      # cardinality). As a trace column it gives the same per-ledger lookup at
+      # zero metric cost -- which is how a single stuck or abandoned
+      # ledger.acquire is found: {name="ledger.acquire" && span.outcome=
+      # "abandoned" && span.ledger_hash="<hash>"}.
+      parquet_dedicated_columns:
+        - name: ledger_hash
+          type: string
+          scope: span

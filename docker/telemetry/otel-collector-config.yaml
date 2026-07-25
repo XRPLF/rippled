@@ -187,6 +187,16 @@ connectors:
       - name: grpc_role
       - name: grpc_status
       # ledger.acquire dimensions (bounded: outcome, acquire reason).
+      # `outcome` carries the four terminal values complete|failed|timeout|
+      # abandoned. `abandoned` is the one recorded when an acquire is destroyed
+      # (swept or shut down) before reaching a result, so a stuck-then-swept
+      # fetch is counted here rather than silently dropped from the rate.
+      # Deliberately NOT promoted: ledger_hash and ledger_seq. Both are
+      # per-ledger values, so a dimension on either would mint a new metric
+      # series for every ledger acquired -- the same unbounded-cardinality rule
+      # already applied to close_time above. They stay span-only and are
+      # searchable in Tempo instead (see the parquet_dedicated_columns block in
+      # tempo.yaml), which gives per-ledger lookup with no metric series.
       - name: outcome
       - name: acquire_reason
 
