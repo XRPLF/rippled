@@ -488,6 +488,8 @@ MetricsRegistry::registerAsyncGauges()
     registerClockSkewGauge();
     registerSyncStateGauge();
     registerStallEventsCounter();
+    registerSyncAcquireGauge();
+    registerCacheHitRateDetailGauge();
 }
 
 void
@@ -1628,6 +1630,88 @@ MetricsRegistry::registerStallEventsCounter()
                     opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
                     ->Observe(
                         static_cast<int64_t>(self->app_.getLoadManager().getStallEventCount()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerSyncAcquireGauge()
+{
+    // --- Sync diagnostics: is ledger acquisition actually progressing? ---
+    // Aggregated on purpose: a per-ledger label would add one series per ledger
+    // acquired, which is unbounded. The per-ledger view lives on the
+    // ledger.acquire span instead.
+    syncAcquireGauge_ = meter_->CreateInt64ObservableGauge(
+        "sync_acquire", "Aggregate ledger-acquire progress across in-flight acquires");
+    syncAcquireGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* name, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{"metric", name}});
+                };
+
+                // One snapshot feeds all four series, so they are mutually
+                // consistent rather than read at four different instants.
+                auto const progress = app.getInboundLedgers().acquireProgress();
+
+                // Flat and non-zero across ticks = this acquire will never
+                // finish. Shrinking = slow but alive.
+                observe(
+                    "missing_state_nodes_max", static_cast<int64_t>(progress.maxMissingStateNodes));
+                observe("missing_tx_nodes_max", static_cast<int64_t>(progress.maxMissingTxNodes));
+
+                // Deep stash = arriving data outpaces processing.
+                observe("received_data_depth", static_cast<int64_t>(progress.receivedDataDepth));
+
+                // Context for the three above: zero everywhere with zero
+                // in-flight acquires is idle, not healthy.
+                observe("in_flight", static_cast<int64_t>(progress.inFlight));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerCacheHitRateDetailGauge()
+{
+    // --- Sync diagnostics: SHAMap tree-node cache hit rate ---
+    // The memory layer above the node store: a miss here is what causes a
+    // node-store read, which the NuDB hit-ratio panel then measures.
+    shamapCacheHitRateGauge_ = meter_->CreateDoubleObservableGauge(
+        "shamap_cache_hit_rate", "SHAMap tree-node cache hit rate (0.0-1.0), by cache");
+    shamapCacheHitRateGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                // TaggedCache::getHitRate() returns 0-100; normalize to 0.0-1.0
+                // so the panel can use Grafana's "percentunit" unit, matching
+                // how cache_metrics already reports its rates.
+                auto const rate = app.getNodeFamily().getTreeNodeCache()->getHitRate() / 100.0F;
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<double>>>(result)
+                    ->Observe(static_cast<double>(rate), {{"metric", "treenode"}});
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {

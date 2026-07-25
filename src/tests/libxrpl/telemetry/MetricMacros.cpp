@@ -1246,4 +1246,342 @@ TEST(MetricMacros, state_changes_total_emits_nothing_when_registry_disabled)
     EXPECT_EQ(app.registry().meterCalls(), 0);
 }
 
+// -----------------------------------------------------------------
+// Acquire + SHAMap sync diagnostics (WP-A3).
+//
+// Asserts the EXACT values and label shapes of the five acquire signals:
+//   sync_acquire_source_total{source}      InboundLedger::init
+//   sync_acquire_no_progress_total         InboundLedger::onTimer
+//   sync_addnode_total{outcome}            InboundLedger::recordBatchOutcome
+//   sync_acquire{metric}                   MetricsRegistry::registerSyncAcquireGauge
+//                                            missing_state_nodes_max
+//                                            missing_tx_nodes_max
+//                                            received_data_depth
+//                                            in_flight
+//   shamap_cache_hit_rate{metric}          MetricsRegistry::registerCacheHitRateDetailGauge
+//
+// The counters go through the same macros production uses. The two observable
+// instruments are registered directly on the SDK meter, mirroring the production
+// callback shape, because the real MetricsRegistry's enabled path cannot be
+// linked into this standalone binary (see the file header).
+// -----------------------------------------------------------------
+
+// sync_acquire_source_total splits acquires by whether the local node store
+// already held the ledger. This is the disk-bound vs peer-bound distinction, so
+// the two sources must never collapse into one series.
+TEST(MetricMacros, acquire_source_splits_local_and_network)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // Mirrors the production call site in InboundLedger::init(): one macro
+    // invocation whose label is derived from complete_ after the first tryDB().
+    auto const acquire = [&app](bool localComplete) {
+        XRPL_METRIC_COUNTER_INC_LABELED(
+            app,
+            "sync_acquire_source_total",
+            "Ledger acquires by where the data came from",
+            {{"source", std::string(localComplete ? "local" : "network")}});
+    };
+    // One satisfied locally, two needing the network.
+    acquire(true);
+    acquire(false);
+    acquire(false);
+
+    auto const data = provider.collect();
+
+    ASSERT_EQ(data.at("sync_acquire_source_total").size(), 2u);
+    EXPECT_EQ(counterValue(data, "sync_acquire_source_total", attrs("source", "local")), 1);
+    EXPECT_EQ(counterValue(data, "sync_acquire_source_total", attrs("source", "network")), 2);
+
+    // The label key is exactly "source" and nothing rides along with it.
+    auto const& firstKey = data.at("sync_acquire_source_total").begin()->first;
+    ASSERT_EQ(firstKey.size(), 1u);
+    EXPECT_EQ(firstKey.begin()->first, "source");
+
+    // NEGATIVE: a source value that was never emitted has no series, so the
+    // counts above are not an artifact of a catch-all series.
+    EXPECT_EQ(data.at("sync_acquire_source_total").count(attrs("source", "fetch_pack")), 0u);
+}
+
+// sync_acquire_no_progress_total counts ONLY timeouts where no node arrived.
+// InboundLedger::onTimer reaches the macro exclusively on its !wasProgress
+// branch, so a tick that made progress must leave the total unchanged -- that
+// is the whole difference between "slow" and "stuck".
+TEST(MetricMacros, acquire_no_progress_counts_only_stalled_timeouts)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // Stands in for onTimer(): the guard lives at the call site in production,
+    // so the harness reproduces the guard rather than the macro alone.
+    auto const onTimer = [&app](bool wasProgress) {
+        if (!wasProgress)
+        {
+            XRPL_METRIC_COUNTER_INC(
+                app,
+                "sync_acquire_no_progress_total",
+                "Ledger-acquire timeouts where no new node arrived");
+        }
+    };
+
+    onTimer(/*wasProgress=*/false);
+    onTimer(/*wasProgress=*/false);
+
+    // Exactly two stalled timeouts so far, on one unlabelled series.
+    auto const stalled = provider.collect();
+    ASSERT_EQ(stalled.at("sync_acquire_no_progress_total").size(), 1u);
+    EXPECT_TRUE(stalled.at("sync_acquire_no_progress_total").begin()->first.empty());
+    EXPECT_EQ(
+        counterValue(stalled, "sync_acquire_no_progress_total", otel_sdk::PointAttributes{}), 2);
+
+    // A tick that DID make progress must not advance the counter: still 2.
+    onTimer(/*wasProgress=*/true);
+    EXPECT_EQ(
+        counterValue(
+            provider.collect(), "sync_acquire_no_progress_total", otel_sdk::PointAttributes{}),
+        2);
+
+    // A further stalled tick does advance it, proving the counter is live and
+    // the unchanged reading above was the guard working, not a dead instrument.
+    onTimer(/*wasProgress=*/false);
+    EXPECT_EQ(
+        counterValue(
+            provider.collect(), "sync_acquire_no_progress_total", otel_sdk::PointAttributes{}),
+        3);
+}
+
+// sync_addnode_total separates useful progress from wasted work. All three
+// outcomes come from ONE aggregated batch tally, added after the per-node loop
+// has finished, so each outcome must land on its own series with its exact count.
+TEST(MetricMacros, addnode_outcomes_record_exact_batch_tallies)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // Mirrors InboundLedger::recordBatchOutcome(): three _ADD calls per batch,
+    // each skipped when its tally is zero (a zero Add would create a series that
+    // says "we saw invalid nodes", which would be false).
+    auto const emitBatch = [&app](int good, int duplicate, int invalid) {
+        auto const emit = [&app](char const* outcome, int count) {
+            if (count <= 0)
+                return;
+            XRPL_METRIC_COUNTER_ADD_LABELED(
+                app,
+                "sync_addnode_total",
+                "SHAMap nodes received during ledger acquire, by outcome",
+                static_cast<std::uint64_t>(count),
+                {{"outcome", std::string(outcome)}});
+        };
+        emit("good", good);
+        emit("duplicate", duplicate);
+        emit("invalid", invalid);
+    };
+
+    // One batch: 5 good, 2 duplicate, 1 invalid.
+    emitBatch(5, 2, 1);
+
+    auto const oneBatch = provider.collect();
+    ASSERT_EQ(oneBatch.at("sync_addnode_total").size(), 3u);
+    EXPECT_EQ(counterValue(oneBatch, "sync_addnode_total", attrs("outcome", "good")), 5);
+    EXPECT_EQ(counterValue(oneBatch, "sync_addnode_total", attrs("outcome", "duplicate")), 2);
+    EXPECT_EQ(counterValue(oneBatch, "sync_addnode_total", attrs("outcome", "invalid")), 1);
+
+    // Every series key carries exactly the one expected label name.
+    for (auto const& [labels, point] : oneBatch.at("sync_addnode_total"))
+    {
+        ASSERT_EQ(labels.size(), 1u);
+        EXPECT_EQ(labels.count("outcome"), 1u);
+    }
+
+    // A second batch accumulates per outcome rather than replacing: 3 more good
+    // and 4 more duplicates, no invalid this time.
+    emitBatch(3, 4, 0);
+    auto const twoBatches = provider.collect();
+    EXPECT_EQ(counterValue(twoBatches, "sync_addnode_total", attrs("outcome", "good")), 8);
+    EXPECT_EQ(counterValue(twoBatches, "sync_addnode_total", attrs("outcome", "duplicate")), 6);
+    // The zero-tally outcome did NOT advance: still exactly 1 from the first
+    // batch, so an all-good batch cannot inflate the invalid series.
+    EXPECT_EQ(counterValue(twoBatches, "sync_addnode_total", attrs("outcome", "invalid")), 1);
+
+    // Still exactly three series after two batches: the zero-tally guard means a
+    // batch never invents a series for an outcome it did not observe.
+    EXPECT_EQ(twoBatches.at("sync_addnode_total").size(), 3u);
+
+    // NEGATIVE: an outcome value outside the production set has no series, so
+    // the three counts above are not an artifact of a catch-all series.
+    EXPECT_EQ(twoBatches.at("sync_addnode_total").count(attrs("outcome", "stale")), 0u);
+}
+
+// sync_acquire fans four values out of ONE aggregated snapshot, mirroring
+// MetricsRegistry::registerSyncAcquireGauge(). The values chosen are the
+// headline stuck-sync reading: two acquires in flight, the state tree still
+// missing nodes, a backed-up stash.
+TEST(MetricMacros, sync_acquire_gauge_observes_exact_stuck_acquire_values)
+{
+    CollectingProvider const provider;
+
+    // The snapshot the callback reports, owned by the test exactly as the real
+    // registry reads it from InboundLedgers on each collection tick.
+    struct Observed
+    {
+        std::int64_t maxMissingStateNodes;
+        std::int64_t maxMissingTxNodes;
+        std::int64_t receivedDataDepth;
+        std::int64_t inFlight;
+    };
+    // A stuck acquire: 256 state nodes still outstanding (the sweep cap), the tx
+    // tree already done, 4 packets stashed, 2 acquires running.
+    Observed observed{256, 0, 4, 2};
+
+    // Keep the instrument alive for the whole test: destroying the handle
+    // deregisters the callback, which is why the real registry holds a member.
+    auto gauge = provider.meter()->CreateInt64ObservableGauge(
+        "sync_acquire", "Aggregate ledger-acquire progress across in-flight acquires");
+    gauge->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto const* self = static_cast<Observed const*>(state);
+            // Same Observe() form the production callback uses.
+            auto observe = [&](char const* name, std::int64_t value) {
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
+                    ->Observe(value, {{"metric", name}});
+            };
+            observe("missing_state_nodes_max", self->maxMissingStateNodes);
+            observe("missing_tx_nodes_max", self->maxMissingTxNodes);
+            observe("received_data_depth", self->receivedDataDepth);
+            observe("in_flight", self->inFlight);
+        },
+        &observed);
+
+    auto const stuck = provider.collect();
+
+    // Exactly four series, one per `metric` value.
+    ASSERT_EQ(stuck.at("sync_acquire").size(), 4u);
+    EXPECT_EQ(gaugeValue(stuck, "sync_acquire", attrs("metric", "missing_state_nodes_max")), 256);
+    EXPECT_EQ(gaugeValue(stuck, "sync_acquire", attrs("metric", "received_data_depth")), 4);
+    EXPECT_EQ(gaugeValue(stuck, "sync_acquire", attrs("metric", "in_flight")), 2);
+
+    // Zero is a REAL reading here, not a missing series: it says the tx tree
+    // needs nothing while the state tree is still stuck, which is exactly the
+    // per-map split this signal exists to provide.
+    ASSERT_EQ(stuck.at("sync_acquire").count(attrs("metric", "missing_tx_nodes_max")), 1u);
+    EXPECT_EQ(gaugeValue(stuck, "sync_acquire", attrs("metric", "missing_tx_nodes_max")), 0);
+
+    // The label key is exactly "metric" and it is the only label present. This
+    // is the cardinality guard: a ledger_seq label here would mint a new series
+    // per ledger acquired.
+    auto const& firstKey = stuck.at("sync_acquire").begin()->first;
+    ASSERT_EQ(firstKey.size(), 1u);
+    EXPECT_EQ(firstKey.begin()->first, "metric");
+    EXPECT_EQ(stuck.at("sync_acquire").count(attrs("metric", "ledger_seq")), 0u);
+
+    // A shrinking count is the "slow but alive" reading, and an idle node
+    // reports all zeros with in_flight=0 -- distinguishable from a stuck node
+    // only because in_flight is exported alongside.
+    observed = Observed{128, 0, 1, 2};
+    EXPECT_EQ(
+        gaugeValue(provider.collect(), "sync_acquire", attrs("metric", "missing_state_nodes_max")),
+        128);
+
+    observed = Observed{0, 0, 0, 0};
+    auto const idle = provider.collect();
+    EXPECT_EQ(gaugeValue(idle, "sync_acquire", attrs("metric", "missing_state_nodes_max")), 0);
+    EXPECT_EQ(gaugeValue(idle, "sync_acquire", attrs("metric", "in_flight")), 0);
+}
+
+// shamap_cache_hit_rate reports the tree-node cache rate normalized to 0.0-1.0,
+// mirroring MetricsRegistry::registerCacheHitRateDetailGauge(). The scaling is
+// the part worth pinning: TaggedCache::getHitRate() returns 0-100, and the
+// dashboard panel uses percentunit, so an unnormalized value would render as
+// 9000% instead of 90%.
+TEST(MetricMacros, shamap_cache_hit_rate_gauge_normalizes_to_unit_fraction)
+{
+    CollectingProvider const provider;
+
+    // What TaggedCache::getHitRate() would return: 90 means 90%.
+    float rawHitRatePercent = 90.0F;
+
+    auto gauge = provider.meter()->CreateDoubleObservableGauge(
+        "shamap_cache_hit_rate", "SHAMap tree-node cache hit rate (0.0-1.0), by cache");
+    gauge->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto const* raw = static_cast<float const*>(state);
+            // Same normalization the production callback performs.
+            opentelemetry::nostd::get<
+                opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObserverResultT<double>>>(
+                result)
+                ->Observe(static_cast<double>(*raw / 100.0F), {{"metric", "treenode"}});
+        },
+        &rawHitRatePercent);
+
+    auto const warm = provider.collect();
+
+    // Exactly one series: the full-below cache is deliberately not reported
+    // (its TaggedCache hit accounting writes members getHitRate() never reads,
+    // so it would be a hard-wired zero).
+    ASSERT_EQ(warm.at("shamap_cache_hit_rate").size(), 1u);
+    EXPECT_EQ(warm.at("shamap_cache_hit_rate").count(attrs("metric", "full_below")), 0u);
+
+    // 90 percent arrives as exactly 0.9, not 90 and not 9000.
+    auto const& warmPoint = warm.at("shamap_cache_hit_rate").at(attrs("metric", "treenode"));
+    auto const& warmLast = opentelemetry::nostd::get<otel_sdk::LastValuePointData>(warmPoint);
+    EXPECT_DOUBLE_EQ(opentelemetry::nostd::get<double>(warmLast.value_), 0.9);
+
+    // A cold cache reads exactly 0.0 -- the fresh-sync case, where every lookup
+    // goes to the node store.
+    rawHitRatePercent = 0.0F;
+    auto const cold = provider.collect();
+    auto const& coldPoint = cold.at("shamap_cache_hit_rate").at(attrs("metric", "treenode"));
+    auto const& coldLast = opentelemetry::nostd::get<otel_sdk::LastValuePointData>(coldPoint);
+    EXPECT_DOUBLE_EQ(opentelemetry::nostd::get<double>(coldLast.value_), 0.0);
+
+    // A fully warm cache reads exactly 1.0, pinning the upper bound of the
+    // normalized range.
+    rawHitRatePercent = 100.0F;
+    auto const full = provider.collect();
+    auto const& fullPoint = full.at("shamap_cache_hit_rate").at(attrs("metric", "treenode"));
+    auto const& fullLast = opentelemetry::nostd::get<otel_sdk::LastValuePointData>(fullPoint);
+    EXPECT_DOUBLE_EQ(opentelemetry::nostd::get<double>(fullLast.value_), 1.0);
+}
+
+// RUNTIME-DISABLED no-op proof for the counter half of WP-A3: with the registry
+// disabled, all three acquire counters emit NOTHING -- no series at all, and
+// meter() is never consulted, so not even an instrument was created.
+TEST(MetricMacros, acquire_counters_emit_nothing_when_registry_disabled)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/false, provider.meter());
+
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app,
+        "sync_acquire_source_total",
+        "Ledger acquires by where the data came from",
+        {{"source", std::string("network")}});
+    XRPL_METRIC_COUNTER_INC(
+        app, "sync_acquire_no_progress_total", "Ledger-acquire timeouts where no new node arrived");
+    XRPL_METRIC_COUNTER_ADD_LABELED(
+        app,
+        "sync_addnode_total",
+        "SHAMap nodes received during ledger acquire, by outcome",
+        static_cast<std::uint64_t>(5),
+        {{"outcome", std::string("good")}});
+
+    auto const data = provider.collect();
+
+    // Total absence, not zero-valued series: the instruments never existed.
+    EXPECT_EQ(data.count("sync_acquire_source_total"), 0u);
+    EXPECT_EQ(data.count("sync_acquire_no_progress_total"), 0u);
+    EXPECT_EQ(data.count("sync_addnode_total"), 0u);
+    EXPECT_EQ(data.size(), 0u);
+
+    // Cause, not just state: the isEnabled() gate short-circuited before the
+    // macros asked for a meter.
+    EXPECT_EQ(app.registry().meterCalls(), 0);
+}
+
 #endif  // XRPL_ENABLE_TELEMETRY

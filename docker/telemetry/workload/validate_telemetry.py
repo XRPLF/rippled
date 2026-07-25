@@ -598,6 +598,16 @@ async def validate_metrics(
                         "sync_state",
                         "state_changes_total",
                         "server_stall_events",
+                        # Acquire + SHAMap signals. sync_acquire carries the
+                        # missing-node, stash-depth and in-flight sub-series and
+                        # shamap_cache_hit_rate the tree-node cache rate; both
+                        # are asserted. The sync_acquire_* / sync_addnode_total
+                        # counters are listed here for diagnosis only -- they
+                        # need a real ledger acquire, so they are not asserted
+                        # (see _acquire_note in expected_metrics.json).
+                        "sync_acquire",
+                        "sync_addnode_total",
+                        "shamap_cache_hit_rate",
                     )
                 )
             ]

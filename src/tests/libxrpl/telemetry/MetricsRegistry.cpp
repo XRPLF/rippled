@@ -18,15 +18,17 @@
  *
  *  CONSEQUENCE for the sync-diagnostics gauges (`unl_quorum`,
  *  `clock_close_offset_seconds`, `sync_state`,
- *  `server_stall_events_total`): this file CANNOT assert an observed gauge
+ *  `server_stall_events_total`, `sync_acquire`, `shamap_cache_hit_rate`):
+ *  this file CANNOT assert an observed gauge
  *  value, because on this build the gauges do not exist -- their registration
  *  methods and the OTel instrument members are inside
  *  `#ifdef XRPL_ENABLE_TELEMETRY`, and there is no MeterProvider at all. What
  *  is provable here, and what the tests below assert, is the complementary
  *  half: that nothing is registered and no service is consulted. The exact
- *  observed values (trusted_keys=5, quorum=4, offset=-3, and the sync_state /
- *  stall-episode values) are asserted in MetricMacros.cpp, which is the file
- *  compiled when telemetry IS enabled.
+ *  observed values (trusted_keys=5, quorum=4, offset=-3, the sync_state /
+ *  stall-episode values, and the acquire-progress / cache-hit-rate values) are
+ *  asserted in MetricMacros.cpp, which is the file compiled when telemetry IS
+ *  enabled.
  */
 
 // When telemetry is globally enabled, MetricsRegistry.cpp requires xrpld
@@ -378,9 +380,12 @@ TEST_F(MetricsRegistryTest, destructor_calls_stop)
 //
 // `unl_quorum` reads ValidatorList::trustedKeyCount() and quorum();
 // `clock_close_offset_seconds` reads TimeKeeper::closeOffset(); `sync_state` and
-// `server_stall_events_total` read NetworkOPs and LoadManager. All are
+// `server_stall_events_total` read NetworkOPs and LoadManager; `sync_acquire`
+// reads InboundLedgers::acquireProgress() and `shamap_cache_hit_rate` reads the
+// node Family's tree-node cache. All are
 // reached through the ServiceRegistry, and MockServiceRegistry::getValidators()
-// / getTimeKeeper() / getOPs() / getLoadManager() THROW std::logic_error. So "no
+// / getTimeKeeper() / getOPs() / getLoadManager() / getInboundLedgers() /
+// getNodeFamily() THROW std::logic_error. So "no
 // gauge callback ran" is directly observable here: had registerAsyncGauges() run
 // and had a callback fired, one of those accessors would have thrown.
 //
@@ -419,7 +424,8 @@ TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
 
     // start() is where registerAsyncGauges() -- and with it
     // registerUnlQuorumGauge() / registerClockSkewGauge() /
-    // registerSyncStateGauge() / registerStallEventsCounter() -- would run.
+    // registerSyncStateGauge() / registerStallEventsCounter() /
+    // registerSyncAcquireGauge() / registerCacheHitRateDetailGauge() -- would run.
     EXPECT_NO_THROW(registry.start("http://localhost:4318/v1/metrics"));
 
     // detachCallbacks() is the shutdown hook the real gauges honour. It must be
@@ -443,6 +449,11 @@ TEST_F(MetricsRegistryTest, disabled_lifecycle_never_consults_gauge_services)
     // firing would have thrown above.
     EXPECT_THROW(mockApp_.getOPs(), std::logic_error);
     EXPECT_THROW(mockApp_.getLoadManager(), std::logic_error);
+    // The two services the WP-A3 acquire signals read: sync_acquire polls the
+    // in-flight acquire collection, shamap_cache_hit_rate polls the node
+    // Family's tree-node cache. Neither was consulted above.
+    EXPECT_THROW(mockApp_.getInboundLedgers(), std::logic_error);
+    EXPECT_THROW(mockApp_.getNodeFamily(), std::logic_error);
 }
 
 // Even asking for enabled=true registers no sync-diagnostics gauge on a
@@ -461,9 +472,10 @@ TEST_F(MetricsRegistryTest, enabled_flag_alone_registers_no_gauges_when_compiled
 
     // Yet the whole lifecycle stays inert. If registerAsyncGauges() had run and
     // registered registerUnlQuorumGauge()/registerClockSkewGauge()/
-    // registerSyncStateGauge()/registerStallEventsCounter(), a callback would
-    // reach getValidators()/getTimeKeeper()/getOPs()/getLoadManager() and throw
-    // std::logic_error.
+    // registerSyncStateGauge()/registerStallEventsCounter()/
+    // registerSyncAcquireGauge()/registerCacheHitRateDetailGauge(), a callback
+    // would reach getValidators()/getTimeKeeper()/getOPs()/getLoadManager()/
+    // getInboundLedgers()/getNodeFamily() and throw std::logic_error.
     EXPECT_NO_THROW(enabledRequest.start("http://localhost:4318/v1/metrics"));
     EXPECT_NO_THROW(enabledRequest.detachCallbacks());
     EXPECT_NO_THROW(enabledRequest.stop());

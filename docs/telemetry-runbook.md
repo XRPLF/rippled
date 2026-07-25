@@ -2214,6 +2214,66 @@ each step gates the next: stop at the first one that is wrong.
    of `full` once it has arrived. Use the _Mode From_ and _Mode To_ template
    variables to isolate one edge.
 
+6. **Is ledger acquisition progressing, or permanently stuck?**
+   Panel _Missing SHAMap Nodes per Acquire (state/tx)_ (`sync_acquire`,
+   `metric=missing_state_nodes_max` and `missing_tx_nodes_max`). **This is the
+   panel that separates "sync is slow" from "sync will never finish."** Read the
+   shape over several minutes, not the instantaneous value:
+   - **Falling toward zero** — the acquire is progressing. Slow is not stuck.
+   - **Flat and non-zero** — no peer is serving that tree. The node will sit
+     here forever; no amount of waiting fixes it. Go to step 7.
+   - **Pinned at 256** — that is the per-sweep cap (`kMissingNodesFind`), so the
+     real backlog is at least that large. Meaningful only in combination with
+     the trend: pinned-and-falling is a large but progressing tree.
+   - **Zero on one tree, non-zero on the other** — that tree is already
+     complete; concentrate on the one still reporting nodes.
+     One caveat: zero on both is only healthy if _In-Flight Acquires_ (step 8)
+     is non-zero. Zero everywhere with zero acquires in flight is an idle node,
+     which says nothing about acquire health.
+
+7. **Is the node asking and getting nothing back?**
+   Panel _Acquire Stall Rate (no progress)_ (`sync_acquire_no_progress_total`).
+   This counts acquire timeouts in which not a single node arrived. A sustained
+   rate here **together with** a flat missing-node count from step 6 is the
+   definitive stuck-sync signature: the node is requesting and no peer is
+   answering. Check the peer count and whether any connected peer actually holds
+   the ledger range being requested — a peer set that cannot serve the range
+   looks identical to no peers at all from inside the acquire.
+
+8. **Is the data arriving useful, or wasted?**
+   Panel _Add-Node Outcomes_ (`sync_addnode_total`, stacked by `outcome`).
+   Traffic-level metrics count all three outcomes as healthy throughput, which
+   is why this split matters:
+   - `good` — new, valid nodes. This is the only line that represents progress.
+   - `duplicate` — nodes already held. A share that swamps `good` means peers
+     keep re-sending known data, so bandwidth is busy while the acquire stands
+     still.
+   - `invalid` — nodes that failed validation. A rising share points at a
+     specific misbehaving peer rather than a local fault.
+     Then read _Received-Data Stash Depth & In-Flight Acquires_
+     (`sync_acquire`, `metric=received_data_depth` and `in_flight`). A growing
+     stash means node data is arriving faster than it can be applied, which is a
+     job-queue or disk problem, not a peer-supply one — the opposite conclusion
+     from step 7, and the two are distinguished only by this panel.
+
+9. **Is it disk-bound rather than peer-bound?**
+   Panels _Acquire Source (local vs network)_ (`sync_acquire_source_total`) and
+   _SHAMap TreeNode Cache Hit Rate_ (`shamap_cache_hit_rate`). During a genuine
+   fresh sync `network` dominates and the cache hit rate is low — both expected,
+   because nothing is local yet. The diagnostic case is a node that should
+   already be warm:
+   - Sustained `network` on a range the node should already hold means the local
+     store is not retaining data.
+   - A persistently low tree-node hit rate means the working set does not fit
+     the cache, or continuous re-acquisition is churning it, so every tree walk
+     pays disk latency.
+     Note this is the in-memory tree-node cache, one layer **above** the
+     _NuDB Cache Hit Ratio_ panel on the Ledger Data Sync dashboard: a miss here
+     is what produces a node-store read there. A low rate on both is disk-bound
+     sync; a low rate here with a healthy NuDB ratio is cache pressure alone.
+     This is also the pairing that explains a large existing database syncing
+     slower than a fresh one.
+
 ## Performance Tuning
 
 | Scenario                 | Recommendation                                            |

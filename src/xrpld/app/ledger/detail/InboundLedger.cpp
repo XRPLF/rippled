@@ -10,6 +10,7 @@
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/PeerSet.h>
+#include <xrpld/telemetry/MetricMacros.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
@@ -29,6 +30,7 @@
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
 #include <xrpl/telemetry/SpanGuard.h>
@@ -39,6 +41,7 @@
 #include <xrpl.pb.h>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -133,6 +136,17 @@ InboundLedger::init(ScopedLockType& collectionLock)
     if (failed_)
         return;
 
+    // Whether the local node store already held the whole ledger. Emitted once
+    // per new acquire (init() runs exactly once), never per node, so the cost is
+    // a single labelled counter Add. This is what separates disk-bound sync
+    // ("everything was local, we are just slow to read it") from peer-bound sync
+    // ("nothing was local, every node must come over the wire").
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        "sync_acquire_source_total",
+        "Ledger acquires by where the data came from",
+        {{"source", std::string(complete_ ? "local" : "network")}});
+
     if (!complete_)
     {
         addPeers();
@@ -155,6 +169,28 @@ InboundLedger::init(ScopedLockType& collectionLock)
     // Check if this could be a newer fully-validated ledger
     if (reason_ == Reason::CONSENSUS)
         app_.getLedgerMaster().checkAccept(ledger_);
+}
+
+int
+InboundLedger::getMissingNodeCount(SHAMapType type) const noexcept
+{
+    return (type == SHAMapType::TRANSACTION ? missingTxNodes_ : missingStateNodes_)
+        .load(std::memory_order_relaxed);
+}
+
+std::size_t
+InboundLedger::getReceivedDataDepth() const noexcept
+{
+    return receivedDataDepth_.load(std::memory_order_relaxed);
+}
+
+void
+InboundLedger::refreshMissingNodeCounts() noexcept
+{
+    if (haveState_)
+        missingStateNodes_.store(0, std::memory_order_relaxed);
+    if (haveTransactions_)
+        missingTxNodes_.store(0, std::memory_order_relaxed);
 }
 
 std::size_t
@@ -359,6 +395,10 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
         }
     }
 
+    // A tree satisfied from the local store never ran a sweep, so publish its
+    // zero here rather than leaving the gauge on a stale count.
+    refreshMissingNodeCounts();
+
     if (haveTransactions_ && haveState_)
     {
         JLOG(journal_.debug()) << "Had everything locally";
@@ -407,6 +447,16 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
 
         std::size_t const pc = getPeerCount();
         JLOG(journal_.debug()) << "No progress(" << pc << ") for ledger " << hash_;
+
+        // A timeout with no node received since the previous one means this
+        // acquire is stalled. Fires on the acquire timer (once every 3 s at
+        // most), not on any per-node path, so one counter Add here is free.
+        // A climbing rate here alongside a flat missing-node count is the
+        // signature of a sync that will never complete.
+        XRPL_METRIC_COUNTER_INC(
+            app_,
+            "sync_acquire_no_progress_total",
+            "Ledger-acquire timeouts where no new node arrived");
 
         // addPeers triggers if the reason is not HISTORY
         // So if the reason IS HISTORY, need to trigger after we add
@@ -681,6 +731,12 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
             auto nodes = ledger_->stateMap().getMissingNodes(kMissingNodesFind, &filter);
             sl.lock();
 
+            // Publish the outstanding count for the telemetry gauge. The sweep
+            // above already produced it, so this is one relaxed atomic store per
+            // sweep and never per tree node -- getMissingNodes() walks thousands
+            // of nodes internally and must stay free of metric work.
+            missingStateNodes_.store(static_cast<int>(nodes.size()), std::memory_order_relaxed);
+
             // Make sure nothing happened while we released the lock
             if (!failed_ && !complete_ && !haveState_)
             {
@@ -748,6 +804,10 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
             TransactionStateSF filter(ledger_->txMap().family().db(), app_.getLedgerMaster());
 
             auto nodes = ledger_->txMap().getMissingNodes(kMissingNodesFind, &filter);
+
+            // Same contract as the state-tree store above: one atomic store per
+            // sweep, outside the per-node walk.
+            missingTxNodes_.store(static_cast<int>(nodes.size()), std::memory_order_relaxed);
 
             if (nodes.empty())
             {
@@ -874,6 +934,10 @@ InboundLedger::takeHeader(std::string const& data)
     if (ledger_->header().accountHash.isZero())
         haveState_ = true;
 
+    // An empty tree is complete on arrival of the header, with no sweep to
+    // publish its count.
+    refreshMissingNodeCounts();
+
     ledger_->txMap().setSynching();
     ledger_->stateMap().setSynching();
 
@@ -968,6 +1032,11 @@ InboundLedger::receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode& 
         {
             haveState_ = true;
         }
+
+        // The tree finished on this batch, so the last sweep's count is now
+        // stale. Publishing 0 here is what stops a completed acquire from
+        // reading as a permanently stuck one. Outside the per-node loop above.
+        refreshMissingNodeCounts();
 
         if (haveTransactions_ && haveState_)
         {
@@ -1077,6 +1146,8 @@ InboundLedger::gotData(
         return false;
 
     receivedData_.emplace_back(peer, data);
+    // Mirror the depth for the telemetry gauge, which must not take this lock.
+    receivedDataDepth_.store(receivedData_.size(), std::memory_order_relaxed);
 
     if (receiveDispatched_)
         return false;
@@ -1144,11 +1215,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
             return -1;
         }
 
-        if (san.isUseful())
-            progress_ = true;
-
-        stats_ += san;
-        return san.getGood();
+        return recordBatchOutcome(san);
     }
 
     if ((packet.type() == protocol::liTX_NODE) || (packet.type() == protocol::liAS_NODE))
@@ -1180,14 +1247,41 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
                                << ((packet.type() == protocol::liTX_NODE) ? "TX" : "AS")
                                << " node stats: " << san.get();
 
-        if (san.isUseful())
-            progress_ = true;
-
-        stats_ += san;
-        return san.getGood();
+        return recordBatchOutcome(san);
     }
 
     return -1;
+}
+
+int
+InboundLedger::recordBatchOutcome(SHAMapAddNode const& san)
+{
+    if (san.isUseful())
+        progress_ = true;
+
+    stats_ += san;
+
+    // Emit the tallies the trace log above already printed. receiveNode() walks
+    // every node in the packet, so these MUST stay out here: the loop has
+    // finished and the tallies are aggregated, giving at most three counter Adds
+    // per received packet rather than per node. The split is what separates real
+    // progress (good) from wasted bandwidth (duplicate) and a misbehaving peer
+    // (invalid) -- traffic-level metrics show all three as healthy throughput.
+    auto const emit = [this](char const* outcome, int count) {
+        if (count <= 0)
+            return;
+        XRPL_METRIC_COUNTER_ADD_LABELED(
+            app_,
+            "sync_addnode_total",
+            "SHAMap nodes received during ledger acquire, by outcome",
+            static_cast<std::uint64_t>(count),
+            {{"outcome", std::string(outcome)}});
+    };
+    emit("good", san.getGood());
+    emit("duplicate", san.getDuplicate());
+    emit("invalid", san.getBad());
+
+    return san.getGood();
 }
 
 namespace detail {
@@ -1290,10 +1384,13 @@ InboundLedger::runData()
             if (receivedData_.empty())
             {
                 receiveDispatched_ = false;
+                receivedDataDepth_.store(0, std::memory_order_relaxed);
                 break;
             }
 
             data.swap(receivedData_);
+            // The stash was just drained into `data`; keep the mirror in step.
+            receivedDataDepth_.store(receivedData_.size(), std::memory_order_relaxed);
         }
 
         for (auto& entry : data)

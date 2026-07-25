@@ -24,10 +24,12 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <xrpl.pb.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -433,6 +435,37 @@ public:
     {
         ScopedLockType const lock(lock_);
         return ledgers_.size();
+    }
+
+    AcquireProgress
+    acquireProgress() override
+    {
+        // Copy the handles under the lock, then read each acquire's atomics
+        // without it -- same pattern gotFetchPack() uses, so the ~10 s telemetry
+        // poll never contends with the node-receive path.
+        std::vector<std::shared_ptr<InboundLedger>> acquires;
+        {
+            ScopedLockType const sl(lock_);
+            acquires.reserve(ledgers_.size());
+            for (auto const& it : ledgers_)
+            {
+                XRPL_ASSERT(
+                    it.second, "xrpl::InboundLedgersImp::acquireProgress : non-null ledger");
+                acquires.push_back(it.second);
+            }
+        }
+
+        AcquireProgress out;
+        out.inFlight = acquires.size();
+        for (auto const& acquire : acquires)
+        {
+            out.maxMissingStateNodes =
+                std::max(out.maxMissingStateNodes, acquire->getMissingNodeCount(SHAMapType::STATE));
+            out.maxMissingTxNodes = std::max(
+                out.maxMissingTxNodes, acquire->getMissingNodeCount(SHAMapType::TRANSACTION));
+            out.receivedDataDepth += acquire->getReceivedDataDepth();
+        }
+        return out;
     }
 
 private:

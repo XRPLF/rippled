@@ -519,6 +519,36 @@ Turning each configured peer hostname into IP addresses, which happens before an
 
 **See also:** [Outbound dial latency](#outbound-dial-latency) · [Peer protocol on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)
 
+<a id="acquire-source"></a>
+
+### Acquire source
+
+Whether a ledger acquire was satisfied entirely from the local node store or required fetching the data from peers. During a genuine fresh sync almost every acquire is network-sourced, because nothing is local yet. The signal becomes diagnostic on a node that should already hold the range: acquires that still go to the network mean the local store is not retaining data, so the slowness is disk-bound rather than peer-bound. This is the pairing that explains why a node with a large existing database can start slower than a fresh one.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [SHAMap cache hit rate](#shamap-cache-hit-rate) · [Ledger acquire (inbound fetch)](#ledger-acquire-inbound-fetch)
+
+<a id="acquire-stall"></a>
+
+### Acquire stall
+
+A ledger-acquire timeout in which not a single new tree node arrived since the previous timeout, so the acquire made no progress at all. Distinct from a slow acquire, which still receives data between timeouts. A sustained stall rate alongside a missing-node count that never falls is the definitive "this sync will never complete" signature: the node keeps asking and no peer answers.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Missing SHAMap node](#missing-shamap-node) · [Ledger acquire (inbound fetch)](#ledger-acquire-inbound-fetch)
+
+<a id="add-node-outcome"></a>
+
+### Add-node outcome
+
+The result of applying one SHAMap node received from a peer during a ledger acquire: good (new and valid), duplicate (already held), or invalid (failed validation). The split matters because traffic-level metrics count all three as healthy throughput. Only good represents progress; a duplicate share that swamps it means peers keep re-sending data the node already has, and a rising invalid share points at one misbehaving peer rather than a local fault.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Received-data stash](#received-data-stash) · [Missing SHAMap node](#missing-shamap-node)
+
 <a id="fresh-node-sync-diagnostics"></a>
 
 ### Fresh-node sync diagnostics
@@ -565,6 +595,16 @@ How many ledgers this node's validated sequence trails the network's. The networ
 
 **See also:** [Time to first FULL](#time-to-first-full) · [Ledger acquire (inbound fetch)](#ledger-acquire-inbound-fetch) · [Validated ledger on xrpl.org](https://xrpl.org/docs/concepts/ledgers/open-closed-validated-ledgers)
 
+<a id="missing-shamap-node"></a>
+
+### Missing SHAMap node
+
+A node of a ledger's account-state or transaction tree that this server needs in order to complete the ledger but does not yet hold. The count of outstanding missing nodes is the clearest available answer to "is this acquire progressing?": a count falling toward zero is progress, while a count that stays flat and non-zero means no peer is serving that tree and the acquire will never finish. Reported per tree, as the maximum across in-flight acquires, and capped per sweep — so a value sitting at the cap means the real backlog is at least that large, and only the trend distinguishes a large-but-progressing tree from a stuck one.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Acquire stall](#acquire-stall) · [Received-data stash](#received-data-stash) · [Ledger acquire (inbound fetch)](#ledger-acquire-inbound-fetch)
+
 <a id="network-ledger-gate"></a>
 
 ### Network ledger gate
@@ -594,6 +634,26 @@ The elapsed time of one outbound peer connection attempt, from starting the TCP 
 **Scope:** per node — measured on and specific to this individual server.
 
 **See also:** [DNS resolve](#dns-resolve) · [Handshake negotiation failure](#handshake-negotiation-failure) · [Peer protocol on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)
+
+<a id="received-data-stash"></a>
+
+### Received-data stash
+
+Peer packets held for later processing because a ledger acquire cannot apply them as fast as they arrive. A shallow stash means node data is applied as it lands. A growing stash means the bottleneck is local processing — job-queue depth or disk latency — rather than peer supply, which is the opposite conclusion from an acquire that receives nothing at all. Read alongside the in-flight acquire count, since an empty stash on an idle node says nothing about acquire health.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Add-node outcome](#add-node-outcome) · [Acquire stall](#acquire-stall)
+
+<a id="shamap-cache-hit-rate"></a>
+
+### SHAMap cache hit rate
+
+The share of SHAMap tree-node lookups answered from the in-memory tree-node cache rather than the node store. This is the layer above the node store's own hit ratio: a miss here is what causes a node-store read there. A low rate is expected during a fresh sync while the cache fills. A persistently low rate on a node that should be warm means the working set does not fit the cache, or continuous re-acquisition is churning it, so every tree walk pays disk latency.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Acquire source](#acquire-source) · [Missing SHAMap node](#missing-shamap-node)
 
 <a id="server-stall"></a>
 

@@ -91,6 +91,56 @@ public:
 
     virtual std::size_t
     cacheSize() = 0;
+
+    /**
+     * Aggregate acquire-progress snapshot across every in-flight acquire.
+     *
+     * Bounded, pre-aggregated telemetry: one value per field regardless of how
+     * many acquires are in flight, so the derived metric cannot grow a series
+     * per ledger. Per-ledger detail stays available on the `ledger.acquire`
+     * span, which is where unbounded identity belongs.
+     */
+    struct AcquireProgress
+    {
+        /**
+         * Largest outstanding account-state node count of any in-flight
+         * acquire. The max, not the sum, so one stuck acquire stays visible
+         * instead of being averaged away by healthy ones.
+         */
+        int maxMissingStateNodes{0};
+
+        /**
+         * Largest outstanding transaction-tree node count of any in-flight
+         * acquire.
+         */
+        int maxMissingTxNodes{0};
+
+        /**
+         * Total unprocessed peer packets stashed across all in-flight acquires.
+         * Summed because it measures one shared processing backlog.
+         */
+        std::size_t receivedDataDepth{0};
+
+        /**
+         * Number of acquires currently in flight, so the three values above can
+         * be read in context (all zero with zero acquires is idle, not healthy).
+         */
+        std::size_t inFlight{0};
+    };
+
+    /**
+     * Collect the aggregate acquire-progress snapshot.
+     *
+     * Intended for the telemetry observable gauge, polled about every 10 s.
+     * Takes the collection lock only long enough to copy the handles, then reads
+     * each acquire's relaxed atomics without holding it, so it never blocks the
+     * node-receive path.
+     *
+     * @return Aggregated progress; an all-zero value with `inFlight == 0` when
+     *         nothing is being acquired.
+     */
+    [[nodiscard]] virtual AcquireProgress
+    acquireProgress() = 0;
 };
 
 std::unique_ptr<InboundLedgers>

@@ -14,11 +14,13 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAddNode.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
 #include <xrpl.pb.h>
 
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -122,6 +124,43 @@ public:
         return lastAction_;
     }
 
+    /**
+     * Outstanding missing SHAMap nodes in one of this acquire's two trees.
+     *
+     * Refreshed by trigger() after each getMissingNodes() sweep, which already
+     * computes the count as a byproduct of its walk — this accessor adds no
+     * traversal of its own and does not take the acquire lock.
+     *
+     * Read by the telemetry observable-gauge callback (~10 s cadence). A count
+     * that stays flat and non-zero across ticks means the acquire will never
+     * finish; a shrinking count means it is slow but alive.
+     *
+     * @param type Which tree to report: SHAMapType::TRANSACTION selects the
+     *        transaction tree, every other value selects the account-state tree.
+     * @return Node count from the most recent sweep of that tree; 0 before the
+     *         first sweep and after the tree completes.
+     *
+     * @note Thread-safe and lock-free: a relaxed atomic load. The reader
+     *       tolerates a value one sweep out of date.
+     */
+    [[nodiscard]] int
+    getMissingNodeCount(SHAMapType type) const noexcept;
+
+    /**
+     * Number of peer packets stashed in receivedData_ awaiting processing.
+     *
+     * A deep stash means node data is arriving faster than runData() can apply
+     * it, which is a processing bottleneck rather than a peer-supply one.
+     *
+     * @return Current stash depth; 0 when nothing is pending.
+     *
+     * @note Thread-safe and lock-free: a relaxed atomic load of a counter
+     *       mirrored on every push/drain, so it never blocks the receive path
+     *       nor waits on receivedDataLock_.
+     */
+    [[nodiscard]] std::size_t
+    getReceivedDataDepth() const noexcept;
+
 private:
     enum class TriggerReason { Added, Reply, Timeout };
 
@@ -173,6 +212,37 @@ private:
     std::vector<uint256>
     neededStateHashes(int max, SHAMapSyncFilter const* filter) const;
 
+    /**
+     * Re-publish the missing-node counts from the completion flags.
+     *
+     * Called under mtx_ wherever a tree flips to complete. A tree that needs no
+     * more nodes must publish 0: otherwise the last sweep's count lingers and a
+     * finished acquire keeps reporting a flat non-zero, which is exactly the
+     * "permanently stuck" reading the gauge exists to detect. Idempotent, so it
+     * is safe to call from every flip site.
+     */
+    void
+    refreshMissingNodeCounts() noexcept;
+
+    /**
+     * Fold one processed batch into the acquire totals and emit its telemetry.
+     *
+     * Both processData() branches (header batch and node batch) finished with
+     * the same three steps, so they share this one helper: mark progress, add to
+     * stats_, and emit the per-outcome add-node counters.
+     *
+     * @param san Outcome tally for the batch just processed.
+     * @return Number of good nodes in the batch, which is processData()'s
+     *         "useful data from this peer" return value.
+     *
+     * @note Called once per received packet, after the per-node loop inside
+     *       receiveNode() has completed. The tallies are already aggregated, so
+     *       the counters are emitted once per batch and never per node.
+     * @note Call with mtx_ held, as both call sites already do.
+     */
+    int
+    recordBatchOutcome(SHAMapAddNode const& san);
+
     clock_type& clock_;
     clock_type::time_point lastAction_;
 
@@ -195,6 +265,27 @@ private:
         receivedData_;
     bool receiveDispatched_{false};
     std::unique_ptr<PeerSet> peerSet_;
+
+    /**
+     * Outstanding missing nodes in the account-state tree, as counted by the
+     * last getMissingNodes() sweep in trigger(). Relaxed atomic: written by the
+     * acquiring thread, read by the telemetry gauge callback, and a value one
+     * sweep stale is acceptable for a ~10 s gauge.
+     */
+    std::atomic<int> missingStateNodes_{0};
+
+    /**
+     * Outstanding missing nodes in the transaction tree. Same ownership and
+     * staleness contract as missingStateNodes_.
+     */
+    std::atomic<int> missingTxNodes_{0};
+
+    /**
+     * Mirror of receivedData_.size(), maintained under receivedDataLock_ on
+     * every push and drain. Exists so the telemetry gauge callback can read the
+     * depth without contending for that lock on the node-receive path.
+     */
+    std::atomic<std::size_t> receivedDataDepth_{0};
 
     /**
      * Spans the acquire lifecycle: started in init(), finalized in done()

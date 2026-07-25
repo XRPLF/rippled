@@ -252,6 +252,14 @@ public:
         return 0;
     }
 
+    // This mock holds no InboundLedger objects, so there is no acquire progress
+    // to report; the all-zero snapshot is the honest answer.
+    AcquireProgress
+    acquireProgress() override
+    {
+        return {};
+    }
+
     LedgerMaster& ledgerSource;
     LedgerMaster& ledgerSink;
     InboundLedgersBehavior bhvr;

@@ -571,6 +571,18 @@ private:
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
         stallEventsObservable_;
     /**
+     * Observable gauge for aggregate ledger-acquire progress (max missing state
+     * and tx nodes, received-data stash depth, in-flight acquire count).
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        syncAcquireGauge_;
+    /**
+     * Observable gauge for the SHAMap tree-node cache hit rate, which is the
+     * memory layer above the node store's own hit ratio.
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        shamapCacheHitRateGauge_;
+    /**
      * Observable gauge for build version info (label-based, value=1).
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> buildInfoGauge_;
@@ -832,7 +844,65 @@ private:
      */
     void
     registerStallEventsCounter();  // sync diagnostics: stall episode count
-#endif                             // XRPL_ENABLE_TELEMETRY
+
+    /**
+     * Register the `sync_acquire` gauge.
+     *
+     * One instrument fanning out four series under the `metric` attribute, all
+     * from a single InboundLedgers::acquireProgress() snapshot:
+     *
+     *   `missing_state_nodes_max` — largest outstanding account-state node count
+     *     of any in-flight acquire. THE headline stuck-sync signal: flat and
+     *     non-zero across ticks means the acquire will never finish, shrinking
+     *     means it is slow but alive.
+     *   `missing_tx_nodes_max` — the same for the transaction tree.
+     *   `received_data_depth` — peer packets stashed across all acquires waiting
+     *     to be applied. Deep means processing, not peer supply, is the limit.
+     *   `in_flight` — how many acquires are running, so the three values above
+     *     can be read in context: all zero with `in_flight` zero is idle, not
+     *     healthy.
+     *
+     * Deliberately aggregated rather than per-ledger. A `ledger_seq` label would
+     * mint a new time series for every ledger the node ever acquires, which is
+     * unbounded cardinality; the max/sum keeps the "is it stuck?" answer while
+     * the per-ledger identity stays on the `ledger.acquire` span, where
+     * high-cardinality identity belongs.
+     *
+     * @note Pulled on the OTel reader thread (~10 s tick), never on a hot path.
+     * The snapshot takes the acquire-collection lock only to copy shared_ptrs,
+     * then reads relaxed atomics; the emit sites that feed those atomics all sit
+     * outside the per-tree-node loops.
+     */
+    void
+    registerSyncAcquireGauge();  // sync diagnostics: acquire progress
+
+    /**
+     * Register the `shamap_cache_hit_rate` gauge.
+     *
+     * Observes one series, `treenode`, from TreeNodeCache::getHitRate(): the
+     * percentage of SHAMap tree-node lookups served from memory instead of the
+     * node store. During a fresh sync a low rate means the node re-reads the
+     * same subtrees from disk, so sync is disk-bound rather than peer-bound.
+     *
+     * Distinct from the `NuDB Cache Hit Ratio` panel on the ledger-data-sync
+     * dashboard: that one is derived from `nodestore_state` and measures the
+     * node-store layer (`node_reads_hit / node_reads_total`). This gauge
+     * measures the in-memory tree-node cache that sits ABOVE it, so a request
+     * missing here is what produces a node-store read there.
+     *
+     * The full-below cache is deliberately NOT reported. It is a KeyCache, whose
+     * only lookup path is TaggedCache::touchIfExists(), and that method
+     * increments `stats_.hits`/`stats_.misses` while `getHitRate()` reads the
+     * separate `hits_`/`misses_` members. Its hit rate is therefore hard-wired
+     * to 0 regardless of behaviour, so exporting it would ship a permanently
+     * empty panel; fixing that accounting belongs in a libxrpl change of its own.
+     *
+     * @note Pulled on the OTel reader thread (~10 s tick). Takes the cache's
+     * mutex for two integer reads and a divide; no hot-path cost.
+     */
+    void
+    registerCacheHitRateDetailGauge();  // sync diagnostics: treenode cache
+#endif                                  // XRPL_ENABLE_TELEMETRY
 };
 
 }  // namespace telemetry
