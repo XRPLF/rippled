@@ -1356,6 +1356,115 @@
         "overrides": []
       },
       "id": 26
+    },
+    {
+      "title": "Job Queue Saturation",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 115
+      },
+      "collapsed": false,
+      "panels": [],
+      "id": 27
+    },
+    {
+      "title": "Job Queue Backlog and Deferred by Type",
+      "description": "###### What this is:\n*Per-job-type queue depth, two series per type. Waiting is the whole backlog: every job enqueued for that type that has not started yet. Deferred is the subset of that backlog that is blocked specifically because the type is already running at its concurrency limit. Deferred is the leading indicator of backpressure, because JobQueue::addJob never rejects a job -- it always returns success and defers instead, so a capped type under pressure produces no error and no dropped work. Without these the only evidence is latency, which appears after the harm is already done.*\n\n###### How it's computed:\n*Two targets, each the top 10 gauges by current value: jobq_<jobtype>_waiting and jobq_<jobtype>_deferred. Both are live depths published by JobQueue::collect() under the same mutex that guards the counters, so the pair is always read at the same instant and is directly comparable. Gauges exist only for non-special job types, so the 11 special types -- the ones declared with a limit of 0, which bypass the limit logic entirely and therefore never defer -- do not appear on either series.*\n\n###### Reading it:\n*Read the two together; the ratio is the diagnostic, not either value alone. Deferred is always a subset of waiting, because addRefCountedJob increments waiting for every job and deferred only for the ones that arrive while the type is at its limit. Waiting high with deferred at zero means the type has spare slots and the backlog is just arrival burstiness -- it will drain without intervention. Waiting high with deferred also high means the concurrency limit is the binding constraint, not the work. Both near zero is the normal state. These are depths, not rates: the value is how many jobs are queued right now. finishJob drains deferred one per completion, so a deferred line that stays elevated means arrivals are outpacing completions rather than one isolated burst. Only the 10 highest series per state are drawn, which on an idle node is arbitrary among the zeros and under load is exactly the types under pressure.*\n\n###### Healthy range:\n*Deferred zero on all types. Waiting near zero, with brief spikes during ledger close.*\n\n###### Watch for:\n*ledgerrequest deferred above zero: the 3-slot ledgerRequest queue is full, so TMGetLedger service to syncing peers is being delayed. Use LedgerReq Wait by Handler next to see which of its two producers is responsible. ledgerdata or fetchtxndata deferred: inbound ledger data cannot be absorbed fast enough, which is what makes validated ledger age grow. A waiting line that climbs steadily while deferred stays flat points at the worker pool or at slow jobs rather than at the limit. Note both are sampled by the collector hook once per interval, so a sub-second spike can be missed; a reading of zero is not proof that nothing was ever queued or deferred.*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::addRefCountedJob / JobQueue::collect`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 116
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(topk(10, {service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", __name__=~\"jobq_.*_deferred\"}), \"series\", \"$1 Deferred\", \"__name__\", \"jobq_(.*)_deferred\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(topk(10, {service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", __name__=~\"jobq_.*_waiting\"}), \"series\", \"$1 Waiting\", \"__name__\", \"jobq_(.*)_waiting\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Queued Jobs (Waiting / Deferred)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      },
+      "id": 28
+    },
+    {
+      "title": "LedgerReq Wait by Handler",
+      "description": "###### What this is:\n*Queue wait for the ledgerRequest job type, split by which handler enqueued the job. The type has a concurrency limit of 3 and two producers that compete for those slots: RcvGetLedger, which serves TMGetLedger to syncing peers, and RcvGetObjByHash, which serves TMGetObjectByHash. Both report the same job_type, so without the handler split a wait spike cannot be attributed to either.*\n\n###### How it's computed:\n*p99 of job_queued_us for job_type=\"ledgerRequest\", grouped by the handler label. The handler value is the addJob name passed through a sanitiser that keeps letters-only names and folds anything else to \"other\", which bounds the label domain.*\n\n###### Reading it:\n*This is the panel that answers which producer is starving the 3-slot queue. Both lines high together means the queue is genuinely oversubscribed and both kinds of peer request are being delayed. One line high while the other is flat means that producer is arriving faster than 3 concurrent slots can absorb, and it is the one delaying the other. Wait is queue time only, so a high line here is contention, not slow work; the work itself is on the GetObject Handler Latency Breakdown panel.*\n\n###### Healthy range:\n*Single-digit to low-tens of milliseconds p99 for both handlers, matching the wider Job Queue Wait p95 By Type panel.*\n\n###### Watch for:\n*RcvGetObjByHash wait climbing: one in-bounds TMGetObjectByHash request can perform thousands of NodeStore lookups, so a few concurrent ones occupy every slot and delay TMGetLedger to peers that are themselves syncing. Cross-check Job Queue Backlog and Deferred by Type for jobq_ledgerrequest_deferred above zero to confirm the limit, not the work, is the binding constraint.*\n\n###### Source:\n[core/JobQueue.cpp](https://github.com/XRPLF/rippled/blob/develop/src/libxrpl/core/detail/JobQueue.cpp)\n\n###### Function:\n`JobQueue::processTask -> PerfLog::jobStart`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 116
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.99, sum by (le, handler, service_instance_id, xrpl_branch, xrpl_node_role) (rate(job_queued_us_bucket{job_type=\"ledgerRequest\", handler=~\"$handler\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"$1 q-wait p99\", \"handler\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "unit": "\u00b5s",
+          "custom": {
+            "axisLabel": "p99 Wait (\u03bcs)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      },
+      "id": 29
     }
   ],
   "schemaVersion": 39,
@@ -1488,6 +1597,26 @@
         "description": "Filter by rippled node (service.instance.id)",
         "type": "query",
         "query": "label_values(target_info, service_instance_id)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "handler",
+        "label": "Handler",
+        "description": "Filter by enqueueing handler (sanitised addJob name, e.g. RcvGetLedger)",
+        "type": "query",
+        "query": "label_values(job_queued_total, handler)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"

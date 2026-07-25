@@ -92,30 +92,41 @@ public:
      * Log queued job
      *
      * @param type Job type
+     * @param name Job name as given to JobQueue::addJob. Distinguishes the
+     * several producers that share one job type. May be empty.
      */
     virtual void
-    jobQueue(JobType const type) = 0;
+    jobQueue(JobType const type, std::string const& name) = 0;
 
     /**
      * Log job executing
      *
      * @param type Job type
+     * @param name Job name as given to JobQueue::addJob. Distinguishes the
+     * several producers that share one job type. May be empty.
      * @param dur Duration enqueued in microseconds
      * @param startTime Time that execution began
      * @param instance JobQueue worker thread instance
      */
     virtual void
-    jobStart(JobType const type, microseconds dur, steady_time_point startTime, int instance) = 0;
+    jobStart(
+        JobType const type,
+        std::string const& name,
+        microseconds dur,
+        steady_time_point startTime,
+        int instance) = 0;
 
     /**
      * Log job finishing
      *
      * @param type Job type
+     * @param name Job name as given to JobQueue::addJob. Distinguishes the
+     * several producers that share one job type. May be empty.
      * @param dur Duration running in microseconds
      * @param instance Jobqueue worker thread instance
      */
     virtual void
-    jobFinish(JobType const type, microseconds dur, int instance) = 0;
+    jobFinish(JobType const type, std::string const& name, microseconds dur, int instance) = 0;
 
     /**
      * Render performance counters in Json

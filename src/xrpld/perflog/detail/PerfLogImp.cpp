@@ -414,7 +414,7 @@ PerfLogImp::rpcEnd(std::string const& method, std::uint64_t const requestId, boo
 }
 
 void
-PerfLogImp::jobQueue(JobType const type)
+PerfLogImp::jobQueue(JobType const type, std::string const& name)
 {
     auto counter = counters_.jq.find(type);
     if (counter == counters_.jq.end())
@@ -429,12 +429,13 @@ PerfLogImp::jobQueue(JobType const type)
 
     // Task 9.5: Record job enqueue in OTel metrics pipeline.
     if (auto* mr = app_.getMetricsRegistry())
-        mr->recordJobQueued(JobTypes::name(type));
+        mr->recordJobQueued(JobTypes::name(type), name);
 }
 
 void
 PerfLogImp::jobStart(
     JobType const type,
+    std::string const& name,
     microseconds dur,
     steady_time_point startTime,
     int instance)
@@ -459,11 +460,11 @@ PerfLogImp::jobStart(
 
     // Task 9.5: Record job start in OTel metrics pipeline.
     if (auto* mr = app_.getMetricsRegistry())
-        mr->recordJobStarted(JobTypes::name(type), dur.count());
+        mr->recordJobStarted(JobTypes::name(type), name, dur.count());
 }
 
 void
-PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
+PerfLogImp::jobFinish(JobType const type, std::string const& name, microseconds dur, int instance)
 {
     auto counter = counters_.jq.find(type);
     if (counter == counters_.jq.end())
@@ -485,7 +486,7 @@ PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
 
     // Task 9.5: Record job finish in OTel metrics pipeline.
     if (auto* mr = app_.getMetricsRegistry())
-        mr->recordJobFinished(JobTypes::name(type), dur.count());
+        mr->recordJobFinished(JobTypes::name(type), name, dur.count());
 }
 
 void

@@ -18,6 +18,7 @@
 #include <set>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -65,8 +66,45 @@ JobQueue::~JobQueue()
 void
 JobQueue::collect()
 {
-    std::scoped_lock const lock(mutex_);
-    jobCount_ = jobSet_.size();
+    // Gauge::value_type is unsigned. The counters are only ever expected to
+    // be non-negative (the surrounding asserts enforce it), but clamp anyway:
+    // an unclamped negative would wrap to ~1.8e19 and swamp every dashboard
+    // reading this family.
+    auto const toGauge = [](int value) {
+        return static_cast<beast::insight::Gauge::value_type>(std::max(0, value));
+    };
+
+    // Snapshot under the lock, publish after releasing it.
+    //
+    // Writing gauges while holding `mutex_` would invert a lock order: a
+    // collector's gauge write can take the collector's own lock, while the
+    // collector's flush thread already holds that lock when it calls this
+    // hook and then needs `mutex_`. Publishing outside the lock keeps
+    // `mutex_` strictly innermost, so no cycle can form. It also keeps the
+    // queue's hot lock (every addJob and every job start/finish takes it)
+    // off the per-gauge write path, which on some collectors allocates.
+    //
+    // A snapshot can be one flush interval stale; these are sampled
+    // saturation gauges, so that is the intended accuracy.
+    std::vector<std::tuple<JobTypeData*, int, int, int>> snapshot;
+    {
+        std::scoped_lock const lock(mutex_);
+        jobCount_ = jobSet_.size();
+
+        snapshot.reserve(jobData_.size());
+        for (auto& [type, data] : jobData_)
+            snapshot.emplace_back(&data, data.waiting, data.running, data.deferred);
+    }
+
+    // Gauges exist only for non-special types (JobTypeData's ctor). Assigning
+    // to a special type's default-constructed Gauge is a safe no-op --
+    // Gauge::set() checks its impl pointer -- so this needs no special case.
+    for (auto const& [data, waiting, running, deferred] : snapshot)
+    {
+        data->waitingGauge = toGauge(waiting);
+        data->runningGauge = toGauge(running);
+        data->deferredGauge = toGauge(deferred);
+    }
 }
 
 bool
@@ -98,7 +136,9 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
         JobType const type(job.getType());
         XRPL_ASSERT(type != JtInvalid, "xrpl::JobQueue::addRefCountedJob : has valid job type");
         XRPL_ASSERT(jobSet_.contains(job), "xrpl::JobQueue::addRefCountedJob : job found");
-        perfLog_.jobQueue(type);
+        // `name` is the addJob name; it becomes the `handler` metric label so
+        // producers sharing a job type stay individually attributable.
+        perfLog_.jobQueue(type, name);
 
         JobTypeData& data(getJobTypeData(type));
 
@@ -359,7 +399,7 @@ JobQueue::processTask(int instance)
 
             // The amount of time that the job was in the queue
             auto const qTime = ceil<microseconds>(startTime - job.queueTime());
-            perfLog_.jobStart(type, qTime, startTime, instance);
+            perfLog_.jobStart(type, job.getName(), qTime, startTime, instance);
 
             job.doJob();
 
@@ -371,7 +411,9 @@ JobQueue::processTask(int instance)
                 getJobTypeData(type).dequeue.notify(qTime);
                 getJobTypeData(type).execute.notify(xTime);
             }
-            perfLog_.jobFinish(type, xTime, instance);
+            // `job` is still alive here: it is scoped to the enclosing block
+            // and doJob() only releases the callable, not the name.
+            perfLog_.jobFinish(type, job.getName(), xTime, instance);
         }
     }
 

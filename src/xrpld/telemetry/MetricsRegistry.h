@@ -28,11 +28,11 @@
  * |       +-- rpc_method_finished_total
  * |       +-- rpc_method_errored_total
  * |       +-- rpc_method_us (Histogram)
- * |       +-- job_queued_total
- * |       +-- job_started_total
- * |       +-- job_finished_total
- * |       +-- job_queued_us (Histogram)
- * |       +-- job_running_us (Histogram)
+ * |       +-- job_queued_total{job_type,handler}
+ * |       +-- job_started_total{job_type,handler}
+ * |       +-- job_finished_total{job_type,handler}
+ * |       +-- job_queued_us{job_type,handler} (Histogram)
+ * |       +-- job_running_us{job_type,handler} (Histogram)
  * |       +-- ledgers_closed_total
  * |       +-- validations_sent_total
  * |       +-- validations_checked_total
@@ -109,9 +109,10 @@
  * // or: mr->recordRpcErrored("server_info", durationUs);
  * }
  *
- * // In PerfLogImp::jobQueue():
+ * // In PerfLogImp::jobQueue(). The second argument is the addJob name;
+ * // it is sanitised internally into the bounded `handler` label.
  * if (auto* mr = app_.getMetricsRegistry())
- * mr->recordJobQueued("ledgerData");
+ * mr->recordJobQueued("ledgerData", "ProcessLData");
  *
  * // Shutdown:
  * metricsRegistry_->stop();
@@ -134,9 +135,11 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
+#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <string_view>
 
@@ -316,27 +319,114 @@ public:
     recordRpcErrored(std::string_view method, std::int64_t durationUs);
 
     /**
+     * The `handler` label value used for any job name that fails the
+     * sanitiser's all-ASCII-letters rule.
+     *
+     * Public because both sanitiseHandler() and its unit tests must agree
+     * on the exact fallback token; a test asserting against its own copy
+     * of the string would not catch a change made here.
+     *
+     * Declared as std::string_view rather than the `constexpr char k[]`
+     * form used for instrument names in MetricsRegistry.cpp: this value is
+     * *returned* by sanitiseHandler(), whose return type is
+     * std::string_view, and is compared against std::string_view in tests.
+     * Matching the type avoids array-to-pointer decay and a needless
+     * strlen at each use.
+     */
+    static constexpr std::string_view kHandlerOther{"other"};
+
+    /**
+     * Reduce a job name to a bounded-cardinality `handler` label value.
+     *
+     * A job type can have several producers — both `RcvGetLedger` and
+     * `RcvGetObjByHash` run as `JtLedgerReq` — so `job_type` alone cannot
+     * attribute a latency spike to one of them. The job name can, but it
+     * cannot be used raw: two names embed a ledger sequence number
+     * (`"Pub" + std::to_string(seq)` in LedgerPersistence.cpp and
+     * `"OB" + std::to_string(...)` in OrderBookDBImpl.cpp), which would
+     * mint a fresh Prometheus series for every ledger.
+     *
+     * The rule is therefore: keep the name only when it is non-empty and
+     * every character is an ASCII letter; otherwise return `"other"`.
+     * Both dynamic names always contain digits, so they always fold to
+     * `"other"`, while every all-letter name is a compile-time literal.
+     * The label domain is thus a function of the literals present in the
+     * source — 43 names plus `"other"` at the time of writing — and
+     * cannot grow at runtime. A name added later that does not satisfy
+     * the rule degrades to `"other"` rather than becoming unbounded,
+     * which is a stronger guarantee than an allowlist that would have to
+     * be maintained by hand.
+     *
+     * Defined inline so unit tests can call it without linking the rest
+     * of the registry: in a telemetry-enabled build MetricsRegistry.cpp
+     * is not compiled into the test binary, so an out-of-line definition
+     * would be unreachable from tests. Being inline also makes it usable
+     * regardless of XRPL_ENABLE_TELEMETRY.
+     *
+     * @param name  The job name as passed to JobQueue::addJob.
+     * @return @p name when it is non-empty and all ASCII letters, else
+     * kHandlerOther.
+     *
+     * @note Pure and reentrant: holds no state, performs no I/O, and is
+     * safe to call concurrently from any thread.
+     * @note The letter test is an explicit ASCII range check rather than
+     * std::isalpha, which classifies by the current C locale. A
+     * locale-dependent test could admit non-ASCII bytes and so
+     * weaken the cardinality bound this function exists to provide.
+     * @note When the name is kept, the returned view aliases @p name, so
+     * it must not outlive the caller's buffer. The kHandlerOther case
+     * returns a view of a static constant and is always valid.
+     *
+     * Example:
+     * @code
+     * sanitiseHandler("RcvGetObjByHash");  // "RcvGetObjByHash"
+     * sanitiseHandler("Pub94512331");      // kHandlerOther  (digits)
+     * sanitiseHandler("");                 // kHandlerOther  (empty)
+     * @endcode
+     */
+    [[nodiscard]] static constexpr std::string_view
+    sanitiseHandler(std::string_view name) noexcept
+    {
+        auto const isAsciiLetter = [](char const c) {
+            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+        };
+
+        if (name.empty() || !std::ranges::all_of(name, isAsciiLetter))
+            return kHandlerOther;
+
+        return name;
+    }
+
+    /**
      * Record a job enqueued event.
      * @param jobType  The job type name (e.g. "ledgerData").
+     * @param jobName  The addJob name, reduced to a bounded `handler`
+     * label by sanitiseHandler(). Distinguishes producers
+     * that share a job type.
      */
     void
-    recordJobQueued(std::string_view jobType);
+    recordJobQueued(std::string_view jobType, std::string_view jobName);
 
     /**
      * Record a job start event.
      * @param jobType        The job type name.
+     * @param jobName        The addJob name; see recordJobQueued().
      * @param queuedDurUs   Time the job spent waiting in the queue (us).
      */
     void
-    recordJobStarted(std::string_view jobType, std::int64_t queuedDurUs);
+    recordJobStarted(std::string_view jobType, std::string_view jobName, std::int64_t queuedDurUs);
 
     /**
      * Record a job finish event.
      * @param jobType         The job type name.
+     * @param jobName         The addJob name; see recordJobQueued().
      * @param runningDurUs   Execution time in microseconds.
      */
     void
-    recordJobFinished(std::string_view jobType, std::int64_t runningDurUs);
+    recordJobFinished(
+        std::string_view jobType,
+        std::string_view jobName,
+        std::int64_t runningDurUs);
 
     // -----------------------------------------------------------------
     // External dashboard parity counters (Tasks 7.9-7.14)
@@ -503,25 +593,27 @@ private:
         rpcDurationHistogram_;
 
     // --- Synchronous instruments (Job Queue) ---
+    // All five carry handler="<sanitised addJob name>" in addition to
+    // job_type, so producers that share a job type stay distinguishable.
     /**
-     * Counter: job_queued_total{job_type="<name>"}
+     * Counter: job_queued_total{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobQueuedCounter_;
     /**
-     * Counter: job_started_total{job_type="<name>"}
+     * Counter: job_started_total{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobStartedCounter_;
     /**
-     * Counter: job_finished_total{job_type="<name>"}
+     * Counter: job_finished_total{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobFinishedCounter_;
     /**
-     * Histogram: job_queued_duration_us{job_type="<name>"}
+     * Histogram: job_queued_duration_us{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
         jobQueuedDurationHistogram_;
     /**
-     * Histogram: job_running_duration_us{job_type="<name>"}
+     * Histogram: job_running_duration_us{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
         jobRunningDurationHistogram_;
