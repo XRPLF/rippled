@@ -795,6 +795,36 @@ The share of the job-queue worker threads currently executing a job. The thread 
 
 **See also:** [Deferred job](#deferred-job) · [Job queue occupancy](#job-queue-occupancy) · [Server stall](#server-stall)
 
+<a id="quorum-shortfall"></a>
+
+### Quorum shortfall
+
+A candidate ledger being refused the status of validated because the agreeing trusted validations counted for it fell short of the quorum it needed. It is the last gate of the sync pipeline and the one that can fail while everything upstream looks healthy: the node can hold every ledger it needs, apply them all, and still never declare one validated. Two shapes mean opposite things. A tally accumulating toward the quorum is slow and will get there, so the shortfall is transient. A tally that plateaus below the quorum is stuck, and the causes are upstream of ledger acquisition entirely — too few trusted validators reachable, or a validator-list or negative-UNL configuration that excludes the ones that are — so nothing in acquisition can fix it. A shortfall is also expected briefly on every healthy round, because the gate is first evaluated the moment this node finishes building a ledger, before its peers' validations for that ledger have arrived, and is retried as they come in. That makes the bare occurrence of a shortfall uninformative; only its persistence alongside a flat tally is a fault.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Validation quorum](#validation-quorum) · [UNL quorum headroom](#unl-quorum-headroom) · [Validated ledger](#validated-ledger) · [Time to first validated ledger](#time-to-first-validated-ledger) · [Negative UNL on xrpl.org](https://xrpl.org/docs/concepts/consensus-protocol/negative-unl)
+
+<a id="publish-lag"></a>
+
+### Publish lag
+
+The number of ledgers a node has fully validated but not yet published to its clients and subscribers. Publication trails validation by design, so a small lag that drains each round is the normal state; the diagnostic reading is a lag that stays positive or grows. That is a distinct fault from anything the quorum or acquisition signals describe: validation is working, the node itself is current, and only the pipeline that hands finished ledgers to subscribers is behind — so the visible symptom is stale data for API clients on a server that is not itself behind the network. Because it is local processing rather than peer supply that falls behind, the causes sit in job-queue starvation and main-loop stalls. One reading trap: a lag of zero is only healthy on a node that is validating. On a node that never has, the zero means there is nothing validated to publish at all, and the quorum gate is the thing to read instead.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Published ledger](#published-ledger) · [Validated ledger](#validated-ledger) · [Quorum shortfall](#quorum-shortfall) · [Deferred job](#deferred-job) · [Worker-pool saturation](#worker-pool-saturation)
+
+<a id="time-to-first-validated-ledger"></a>
+
+### Time to first validated ledger
+
+The elapsed time from process start until the node first declared a ledger fully validated. Like the time to first reaching the full server state, it is a one-shot measurement: it is set the first time the quorum gate passes and never changes afterwards, so it has no trend to read. That leaves exactly two meaningful readings — a duration, meaning the node got there and this is how long it took, or zero, meaning it never has. The zero is the diagnostic signal rather than absent data. Its value is in the pairing: a duration for reaching the full server state beside a zero here means the node reached that state but has still never fully validated a ledger, which places the fault at the quorum gate rather than in ledger acquisition.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Time to first FULL](#time-to-first-full) · [Quorum shortfall](#quorum-shortfall) · [Validated ledger](#validated-ledger) · [Operating mode / server state](#operating-mode-server-state)
+
 <a id="cat-peer-overlay-networking"></a>
 
 ## Peer & Overlay Networking

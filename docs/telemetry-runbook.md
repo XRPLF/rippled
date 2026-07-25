@@ -2500,6 +2500,86 @@ each step gates the next: stop at the first one that is wrong.
       not a regression; it means no replay task was ever created. For the same
       reason neither counter is asserted by the local validation harness.
 
+16. **The node has peers and a UNL, yet never declares a ledger validated —
+    is it slow, stuck, or is only publishing behind?**
+    This is the last stage of the pipeline and the one every step above
+    assumes away. Steps 1 to 15 all ask whether ledger data arrives and gets
+    applied; this step asks whether the ledgers the node already holds ever
+    pass the **quorum gate**, and whether the ones that pass ever reach
+    clients. It is the step for the specific symptom **"peers are connected,
+    the trusted list is loaded, acquisition looks healthy, and
+    `server_state` still never becomes `full`."**
+    - **Slow or stuck?** Panel _Trusted Validations vs Quorum Target_
+      (`ledger_quorum_publish`, `metric=trusted_validation_tally` against
+      `quorum_target`). Both are snapshots of the most recent gate
+      evaluation, recorded whether it passed or failed, so a node that keeps
+      failing still reports both numbers — which is exactly what separates
+      the two cases:
+      - **Tally climbing toward the target** — slow, not stuck. Validations
+        are accumulating and the gate will pass. Keep waiting; nothing here
+        needs fixing.
+      - **Tally flat below the target** — **stuck.** Validations arrive and
+        never reach quorum, so this node can hold every ledger it needs and
+        still never declare one validated. Two causes: too few trusted
+        validators are reachable, or the UNL / negative-UNL configuration
+        excludes the ones that are. Go to Bootstrap step 4 (_UNL Trusted Keys
+        vs Quorum_ and _UNL Quorum Headroom_) — a trusted list that cannot
+        satisfy quorum makes every panel in this row look starved as a
+        consequence, so do not chase them.
+      - **Target reading about 9.2e18** (signed 64-bit maximum) — the
+        explicit **quorum-disabled** sentinel. Too many list publishers are
+        unavailable, so the trusted list switched quorum off entirely rather
+        than merely setting it high, and the node can never validate however
+        far the tally climbs. The value is reported as that maximum rather
+        than being allowed to wrap to -1, precisely so it cannot be misread
+        as a target the tally already exceeds. Fix publisher reachability
+        first; the key count is irrelevant until quorum is enabled again.
+      - **Both series flat at 0** — the gate has never been evaluated at all,
+        so nothing has yet been offered for validation. That is an upstream
+        problem, not a quorum one: go back to the Bootstrap row.
+        One reading caveat that matters more here than anywhere else in this
+        row: judge the tally by its **sustained floor over minutes**, never by
+        a single sample. Each series is a snapshot of the last evaluation, and
+        the first evaluation of every round runs before peer validations for
+        that ledger arrive, so a healthy node sawtooths.
+    - **Is the gate actually rejecting?** Panel _Pre-Accept Quorum Shortfall
+      Rate_ (`ledger_quorum_shortfall_total`, `stage=pre_accept`). Read this
+      one carefully, because **a non-zero rate is not by itself a fault.**
+      Consensus issues this node's own validation and evaluates the gate
+      immediately, before its peers' validations for that same ledger have
+      arrived, so the first evaluation of each round tallies short and is
+      retried as validations come in. A healthy cluster emits this counter
+      every round. The fault signature is the **combination**: this rate
+      climbing well above the ledger-close rate while the tally above stays
+      flat below its target and _Time to First Validated Ledger_ stays at
+      zero. That is the retry loop never converging, rather than merely
+      running early.
+    - **Did it ever validate at all?** Panel _Time to First Validated Ledger_
+      (`ledger_quorum_publish`, `metric=time_to_first_validated_us`, shown in
+      seconds). A one-shot measurement, read exactly like _Time to First
+      FULL_ in step 1: a value means the node got there and this is how long
+      it took, a flat zero means it never has. Reading the two together is
+      what pins down the fault — a value on _Time to First FULL_ beside a
+      zero here means the node reached the `full` server state but has still
+      never fully validated a ledger, which points at the quorum gate rather
+      than at acquisition.
+    - **Validation fine, publishing behind?** Panel _Publish Lag (validated
+      minus published)_ (`ledger_quorum_publish`, `metric=publish_lag`). This
+      is the separate question, and the one no other panel can answer: the
+      published sequence was never exported before, so this gap was not
+      derivable from any other series. Publishing trails validation by
+      design, so a small lag that drains each round is normal.
+      - **Lag flat at 0 or 1** — healthy.
+      - **Lag positive and growing** — validation is healthy and the
+        **publish pipeline is not.** The node itself is current while its
+        clients and subscriptions see stale data. This is a local processing
+        fault, not a peer or quorum one, so go back to steps 3, 9 and 10:
+        a starved job queue or a stalling main loop is the usual cause.
+      - **Lag flat at 0 on a node that has never validated** — not healthy,
+        merely empty. There is nothing validated to publish, so read
+        _Trusted Validations vs Quorum Target_ first and ignore this panel
+        until the gate passes.
+
 ## Performance Tuning
 
 | Scenario                 | Recommendation                                            |
