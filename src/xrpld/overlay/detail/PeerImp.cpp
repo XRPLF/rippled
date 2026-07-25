@@ -1,3 +1,7 @@
+// cspell:ignore ISTOGRAM
+// The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
+// compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here.
+
 #include <xrpld/overlay/detail/PeerImp.h>
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
@@ -24,6 +28,7 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
 #include <xrpld/telemetry/ConsensusReceiveTracing.h>
+#include <xrpld/telemetry/MetricMacros.h>
 #include <xrpld/telemetry/TxSpanNames.h>
 #include <xrpld/telemetry/TxTracing.h>
 
@@ -68,6 +73,7 @@
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/telemetry/GetObjectMetricNames.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/tx/apply.h>
@@ -2568,6 +2574,12 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
             {
                 JLOG(pJournal_.debug()) << "GetObj: malformed ledgerhash from peer " << id_;
                 fee_.update(Resource::kFeeMalformedRequest, "get object ledger hash");
+                XRPL_METRIC_COUNTER_INC_LABELED(
+                    app_,
+                    telemetry::kGetObjectRejectedTotal,
+                    telemetry::kGetObjectRejectedTotalDesc,
+                    {{telemetry::kLabelReason,
+                      std::string(telemetry::kReasonMalformedLedgerHash)}});
                 return;
             }
         }
@@ -2580,6 +2592,11 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
                 << "GetObj: oversized request from peer " << id_ << " (" << packet.objects_size()
                 << " > " << Tuning::kHardMaxReplyNodes << ")";
             fee_.update(Resource::kFeeInvalidData, "oversized get object request");
+            XRPL_METRIC_COUNTER_INC_LABELED(
+                app_,
+                telemetry::kGetObjectRejectedTotal,
+                telemetry::kGetObjectRejectedTotalDesc,
+                {{telemetry::kLabelReason, std::string(telemetry::kReasonOversize)}});
             return;
         }
 
@@ -2699,6 +2716,11 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
     int const requested = packet.objects_size();
     int const iterLimit = std::min(requested, Tuning::kHardMaxReplyNodes);
 
+    // Time the whole loop once, not each iteration: the loop can run up to
+    // kHardMaxReplyNodes times, so per-iteration clock reads would cost more
+    // than the lookups they measure.
+    auto const lookupStart = std::chrono::steady_clock::now();
+
     for (int i = 0; i < iterLimit; ++i)
     {
         auto const& obj = packet.objects(i);
@@ -2723,18 +2745,72 @@ PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> con
             newObj.set_ledgerseq(obj.ledgerseq());
     }
 
+    auto const lookupElapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now() - lookupStart);
+
     // Apply work-proportional charge. `charge()` posts the disconnect
     // step (if any) back to strand_, so it is safe to call from this
     // JobQueue worker thread.
-    charge(
-        // We pass `requested` directly here, instead of actual lookups done. Which could be
-        // std::min(packet.objects_size(), static_cast<int>(Tuning::kHardMaxReplyNodes));
-        // Because we want to charge as per the request size, to discourage large requests.
-        computeGetObjectByHashFee(requested, reply.objects_size()),
-        "processed get object by hash request");
+    //
+    // We pass `requested` directly here, instead of actual lookups done. Which could be
+    // std::min(packet.objects_size(), static_cast<int>(Tuning::kHardMaxReplyNodes));
+    // Because we want to charge as per the request size, to discourage large requests.
+    //
+    // Computed into a local so the recorded metric is exactly the charge
+    // that is applied -- calling the helper twice could diverge.
+    Resource::Charge const fee = computeGetObjectByHashFee(requested, reply.objects_size());
+    charge(fee, "processed get object by hash request");
+
+    recordGetObjectMetrics(requested, reply.objects_size(), lookupElapsed, fee);
 
     JLOG(pJournal_.trace()) << "GetObj: " << reply.objects_size() << " of " << requested;
     send(std::make_shared<Message>(reply, protocol::mtGET_OBJECTS));
+}
+
+void
+PeerImp::recordGetObjectMetrics(
+    int const requested,
+    int const found,
+    std::chrono::microseconds const lookupElapsed,
+    Resource::Charge const& fee)
+{
+    using namespace telemetry;
+
+    XRPL_METRIC_HISTOGRAM_RECORD(
+        app_, kGetObjectRequestObjects, kGetObjectRequestObjectsDesc, requested);
+
+    XRPL_METRIC_HISTOGRAM_RECORD(
+        app_, kGetObjectLookupUs, kGetObjectLookupUsDesc, lookupElapsed.count());
+
+    XRPL_METRIC_HISTOGRAM_RECORD(app_, kGetObjectCharge, kGetObjectChargeDesc, fee.cost());
+
+    // Batch totals, added once per request rather than once per object:
+    // per-object increments on a loop bounded by kHardMaxReplyNodes would be
+    // a measurable cost for no extra information.
+    //
+    // `found` is the reply size, which the fetch loop only grows on a
+    // successful lookup within `iterLimit <= requested`, so `found <=
+    // requested` always holds. std::max still clamps both values, so a future
+    // caller passing found > requested cannot make the miss count wrap
+    // negative -- the counter takes an unsigned amount, where a wrap would
+    // read as ~1.8e19 rather than as an error.
+    //
+    // Written as two calls rather than a loop over a {hit, miss} pair: the
+    // macros expand to empty statements in a telemetry-off build, which would
+    // leave a loop's induction variable unused and fail the -Werror build.
+    XRPL_METRIC_COUNTER_ADD_LABELED(
+        app_,
+        kGetObjectLookupsTotal,
+        kGetObjectLookupsTotalDesc,
+        static_cast<std::uint64_t>(std::max(0, found)),
+        {{kLabelResult, std::string(kResultHit)}});
+
+    XRPL_METRIC_COUNTER_ADD_LABELED(
+        app_,
+        kGetObjectLookupsTotal,
+        kGetObjectLookupsTotalDesc,
+        static_cast<std::uint64_t>(std::max(0, requested - found)),
+        {{kLabelResult, std::string(kResultMiss)}});
 }
 
 void

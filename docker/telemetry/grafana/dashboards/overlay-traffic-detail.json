@@ -596,6 +596,257 @@
         },
         "overrides": []
       }
+    },
+    {
+      "title": "GetObject Handler (TMGetObjectByHash)",
+      "type": "row",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "title": "GetObject Handler Latency Breakdown",
+      "description": "###### What this is:\n*The three additive parts of TMGetObjectByHash service time, drawn on one axis so the expensive part names itself. Queue Wait is how long the RcvGetObjByHash job sat queued before a worker took it; its job type, ledgerRequest, allows only 3 to run at once. Handler Total is the whole job body once running. NodeStore Lookup is only the fetch loop inside that body. End-to-end service time is Queue Wait plus Handler Total, and Handler Total itself splits into NodeStore Lookup plus everything else.*\n\n###### How it's computed:\n*p99 of job_queued_us and job_running_us, both filtered to handler=\"RcvGetObjByHash\", plus p99 of getobject_lookup_us. Each is histogram_quantile over the microsecond bucket series, summed by le so the quantile is computed across the whole bucket set. The handler label is the sanitised addJob name, so RcvGetObjByHash is separated from RcvGetLedger even though both are job type ledgerRequest.*\n\n###### Reading it:\n*Read it as a subtraction, not as three independent lines. The vertical gap between Handler Total and NodeStore Lookup is the serialization and protobuf reply-building cost, because those are the only other things the job body does. So: Queue Wait tall with Handler Total flat means queue contention and the work itself is fine. Handler Total tracking NodeStore Lookup closely means storage is the bottleneck. Handler Total well above NodeStore Lookup means the cost has moved out of the fetch loop into reply construction. All three flat means this path is not the source of the slowness.*\n\n###### Healthy range:\n*All three sub-millisecond while peers ask for the usual 8 hashes per request; workload-dependent above that.*\n\n###### Watch for:\n*Queue Wait climbing while the other two stay flat: the ledgerRequest queue is saturated, so cross-check Job Queue Backlog and Deferred by Type and LedgerReq Wait by Handler on the Ledger Data and Sync dashboard to see which producer is starving it. A widening Handler Total minus NodeStore Lookup gap: reply construction regressed. NodeStore Lookup rising on its own: check getobject_lookups_total misses and the NuDB panels.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::recordGetObjectMetrics (lookup) / MetricsRegistry::recordJobStarted, recordJobFinished (queue, total)`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 33
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "label_replace(histogram_quantile(0.99, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(job_queued_us_bucket{handler=\"RcvGetObjByHash\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"Queue Wait p99\", \"\", \"\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "label_replace(histogram_quantile(0.99, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(job_running_us_bucket{handler=\"RcvGetObjByHash\", service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"Handler Total p99\", \"\", \"\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "label_replace(histogram_quantile(0.99, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(getobject_lookup_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"NodeStore Lookup p99\", \"\", \"\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "unit": "µs",
+          "custom": {
+            "axisLabel": "Duration (μs)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3,
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 5
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "GetObject Request Size Distribution",
+      "description": "###### What this is:\n*How many objects peers ask for per TMGetObjectByHash message, as a full distribution rather than an average. This characterises the request that caused any latency seen in the breakdown panel: large batches make the work genuinely large, which is a different problem from the same work becoming slower.*\n\n###### How it's computed:\n*Counts of requests falling in each object-count band per 5-minute window, from the getobject_request_objects bucket series, drawn as colour density.*\n\n###### Reading it:\n*A tight band at the bottom is honest traffic: InboundLedger asks for at most 8 hashes per call. Bands above 64 and above 1024 are the medium and large pricing bands, so mass there means the size surcharge is being applied. A hot cell in the top row is the overflow bucket and means requests larger than the top bucket boundary.*\n\n###### Healthy range:\n*Nearly all mass in the lowest bands (8 objects or fewer per request).*\n\n###### Watch for:\n*Mass appearing in the high bands, especially a persistent hot row near the top: a peer is batching thousands of hashes per message, which is what the differential pricing exists to charge for. Confirm with GetObject Charge Distribution and GetObject Rejections. Buckets are explicit (1,2,4,8,16,64,256,1024,4096,12288) and reach the handler's hard cap, so the top row is real traffic at the cap, not a measurement ceiling.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::recordGetObjectMetrics`",
+      "type": "heatmap",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 41
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "yAxis": {
+          "axisLabel": "Objects Per Request",
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum(increase(getobject_request_objects_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m])) by (le)",
+          "legendFormat": "{{le}}",
+          "format": "heatmap"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "GetObject Lookups by Result",
+      "description": "###### What this is:\n*NodeStore lookups performed by the handler, split into hits and misses. A miss does a node-store seek while a hit is usually served from cache, so the hit/miss mix is the reason NodeStore Lookup time moves.*\n\n###### How it's computed:\n*Per-second rate of getobject_lookups_total, grouped by the result label. The counter is advanced once per request with the batch total, not once per object, so the rate is objects per second rather than requests per second.*\n\n###### Reading it:\n*Use this to explain the NodeStore Lookup line on the breakdown panel. A miss-heavy mix makes that line rise for a real reason: seeks, not a regression. A hit-heavy mix with rising lookup time points at the storage layer instead.*\n\n###### Healthy range:\n*Hits dominating on a warm synced node; misses low and driven by genuine catch-up requests.*\n\n###### Watch for:\n*A sustained miss rate far above the hit rate: a peer is asking for hashes this node does not hold, which is either a badly out-of-sync peer or probing traffic. Cross-check GetObject Charge Distribution, since misses are billed first and at eight times the hit cost.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::recordGetObjectMetrics`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 41
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "label_replace(sum by (result, service_instance_id, xrpl_branch, xrpl_node_role) (rate(getobject_lookups_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", result=~\"$result\"}[$__rate_interval])), \"series\", \"$1\", \"result\", \"(.*)\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "unit": "cps",
+          "custom": {
+            "axisLabel": "Lookups / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "GetObject Rejections",
+      "description": "###### What this is:\n*Requests refused by the message handler before any NodeStore access, split by which gate refused them: oversize means more objects than the handler accepts, malformed_ledgerhash means the ledger hash was not 32 bytes.*\n\n###### How it's computed:\n*Per-second rate of getobject_rejected_total, grouped by the reason label. Both gates run in onMessage before the job is queued, so a rejection consumes no queue slot and no NodeStore lookup.*\n\n###### Reading it:\n*Any non-zero value is traffic that does not conform to the protocol: an honest peer asks for at most 8 hashes and always sends a full-size hash. Because the gates fire before the fetch loop, rejections explain why request volume can be high while lookups stay flat.*\n\n###### Healthy range:\n*Zero. No honest peer produces either rejection.*\n\n###### Watch for:\n*A rising oversize rate: a peer is probing the request-size limit. Confirm the pricing response on GetObject Charge Distribution, and expect the peer to be disconnected once its resource balance crosses the drop threshold. A rising malformed rate points at a broken or hostile client rather than at load.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::onMessage (TMGetObjectByHash)`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 49
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "label_replace(sum by (reason, service_instance_id, xrpl_branch, xrpl_node_role) (rate(getobject_rejected_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", reason=~\"$reason\"}[$__rate_interval])), \"series\", \"$1\", \"reason\", \"(.*)\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "unit": "cps",
+          "custom": {
+            "axisLabel": "Rejections / Sec",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "GetObject Charge Distribution",
+      "description": "###### What this is:\n*The dynamic resource charge applied per TMGetObjectByHash request, as percentiles. This is the differential-pricing component only, so it shows whether cost actually escalates with request size and miss ratio the way the pricing model intends.*\n\n###### How it's computed:\n*p50, p90 and p99 of getobject_charge over the dashboard rate interval, from its bucket series summed by le. The value recorded is the charge that was applied, computed from billable hits, billable misses and the request-size band.*\n\n###### Reading it:\n*p50 sitting at zero is the healthy shape: requests inside the free allowance cost nothing. Movement in p99 while p50 stays at zero means a small number of expensive requests, which is exactly the traffic the model is meant to price. Compare with GetObject Request Size Distribution: charge should rise in steps as requests cross the size-band edges, not smoothly.*\n\n###### Healthy range:\n*p50 at zero, p99 low. Honest requests of 16 objects or fewer are free by design.*\n\n###### Watch for:\n*p99 climbing steadily: sustained expensive traffic, and the peers producing it should be approaching the resource drop threshold. Buckets are explicit and bracket the resource thresholds (5000 warning, 25000 drop), so p99 crossing 25000 means senders are being disconnected on a single message. The axis is deliberately unscaled rather than abbreviated, so those two numbers are readable exactly rather than as 5 K and 25 K.*\n\n###### Source:\n[PeerImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/PeerImp.cpp)\n\n###### Function:\n`PeerImp::computeGetObjectByHashFee`",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 49
+      },
+      "options": {
+        "tooltip": {
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "label_replace(histogram_quantile(0.5, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(getobject_charge_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"Charge p50\", \"\", \"\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "label_replace(histogram_quantile(0.9, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(getobject_charge_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"Charge p90\", \"\", \"\")"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "label_replace(histogram_quantile(0.99, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(getobject_charge_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"Charge p99\", \"\", \"\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "displayName": "${__field.labels.series} [${__field.labels.service_instance_id} ${__field.labels.xrpl_branch} ${__field.labels.xrpl_node_role} ${__field.labels.xrpl_work_item}]",
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Charge (Cost Units)",
+            "spanNulls": 1800000,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3,
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 5
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
     }
   ],
   "schemaVersion": 39,
@@ -744,6 +995,46 @@
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "result",
+        "label": "Lookup Result",
+        "description": "Filter GetObject NodeStore lookups by result [hit / miss]",
+        "type": "query",
+        "query": "label_values(getobject_lookups_total, result)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "reason",
+        "label": "Rejection Reason",
+        "description": "Filter GetObject rejections by gate [oversize / malformed_ledgerhash]",
+        "type": "query",
+        "query": "label_values(getobject_rejected_total, reason)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
         },
         "includeAll": true,
         "allValue": ".*",

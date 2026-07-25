@@ -46,9 +46,18 @@
  *     if (queueIsFull)
  *         XRPL_METRIC_COUNTER_INC_LABELED(app, "txq_dropped_total",
  *             "Transactions refused admission to the queue",
- *             ({{"reason", std::string("queue_full")}}));
+ *             {{"reason", std::string("queue_full")}});
  * }
  * @endcode
+ *
+ * Pass the label set as a bare brace-enclosed list, as above. Do not wrap
+ * it in an extra pair of parentheses: the list is forwarded verbatim into
+ * the OTel `Add()`/`Record()` call, which takes an initializer_list, and
+ * the extra parentheses do not compile.
+ *
+ * Wrap each label *value* in `std::string`. `AttributeValue` is a variant
+ * in which a bare `const char*` selects the boolean alternative, so an
+ * unwrapped literal is recorded as `true`.
  *
  * Example usage -- UpDownCounter (edge case: value that can decrease):
  * @code

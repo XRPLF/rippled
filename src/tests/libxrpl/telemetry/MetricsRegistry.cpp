@@ -1,24 +1,295 @@
 /**
- * GTest unit tests for MetricsRegistry (no-op / telemetry-disabled path).
+ * GTest unit tests for MetricsRegistry.
  *
- *  Tests cover:
- *  - Construction with telemetry disabled (no-op behavior).
- *  - start()/stop() lifecycle when disabled.
- *  - Synchronous instrument recording methods do not crash when disabled.
- *  - Double stop() is safe.
- *  - Destructor handles cleanup without crash.
+ *  Two independent groups, split by what they can link:
  *
- *  NOTE: These tests only exercise the no-op path (telemetry disabled).
- *  When XRPL_ENABLE_TELEMETRY is defined, MetricsRegistry.cpp pulls in
- *  xrpld symbols that cannot be linked into this standalone test binary,
- *  so the tests are compiled out.
+ *  1. sanitiseHandler() — the `handler` label sanitiser. Runs in **both**
+ *     builds. sanitiseHandler() is a public static constexpr defined inline
+ *     in the header, so it needs no part of MetricsRegistry.cpp on the link
+ *     line. These tests therefore sit outside the guard below; putting them
+ *     inside it would silently compile them out of the telemetry-enabled
+ *     build, which is the build that actually exports the label.
+ *
+ *  2. The no-op / telemetry-disabled path — construction, start()/stop()
+ *     lifecycle, and the synchronous record*() methods. Guarded, because
+ *     when XRPL_ENABLE_TELEMETRY is defined MetricsRegistry.cpp is not
+ *     compiled into this binary (see src/tests/libxrpl/CMakeLists.txt) and
+ *     its out-of-line symbols are unresolvable here.
  */
+
+#include <xrpld/telemetry/MetricsRegistry.h>
+
+#include <gtest/gtest.h>
+
+#include <array>
+#include <cstddef>
+#include <set>
+#include <string_view>
+
+namespace {
+
+using xrpl::telemetry::MetricsRegistry;
+
+/**
+ * Every job name reaching the JobQueue in non-test code that
+ * sanitiseHandler() must return unchanged, i.e. every one consisting solely
+ * of ASCII letters.
+ *
+ * How to re-derive this set (it is read off the source, not off docs):
+ *
+ *  1. Enumerate the four surfaces that put a name into the JobQueue,
+ *     excluding `src/test/` and `src/tests/`:
+ *       - `JobQueue::addJob`
+ *       - `JobQueue::postCoro` (its `name` becomes `Coro::name_`, which
+ *         `Coro::post()` hands to `addRefCountedJob`)
+ *       - `LedgerMaster::newPFWork`, a thin `addJob` wrapper
+ *       - each `TimeoutCounter` subclass's `.jobName =` designated
+ *         initialiser, consumed by `TimeoutCounter::queueJob()`'s `addJob`
+ *     `addRefCountedJob` is private and has only those callers, so the four
+ *     surfaces close the set.
+ *  2. Resolve each `name` argument to the literal(s) it can hold. Most are
+ *     literals written in place, but four call sites pass a variable and
+ *     must be traced back:
+ *       - `PeerImp.cpp` passes a local `std::string const name =
+ *         isTrusted ? "ChkTrust" : "ChkUntrust";`, so one call site
+ *         contributes *two* names. Neither literal appears at an `addJob`
+ *         call site, which is why a grep of `addJob` alone misses them.
+ *       - `LedgerMaster::newPFWork` forwards its own `char const* name`
+ *         parameter; its three callers supply the three `PthFind*` literals.
+ *       - `TimeoutCounter` forwards `queueJobParameter_.jobName`, set by a
+ *         `.jobName =` designated initialiser in each of its five
+ *         subclasses.
+ *       - `Coro::post()` forwards `name_`, set from `postCoro`'s argument.
+ *  3. Keep the names that satisfy sanitiseHandler()'s rule — non-empty and
+ *     all ASCII letters. Everything else belongs in kFoldToOtherHandlers.
+ *
+ * Note what step 3 excludes. Two call sites compose the name at runtime from
+ * a literal prefix and a ledger sequence: `"Pub" + std::to_string(seq)` and
+ * `"OB" + std::to_string(seq % 1000000000)`. The bare prefixes `"Pub"` and
+ * `"OB"` are all letters, but they are never what reaches the JobQueue — the
+ * *composed* form is, and it always carries digits. So they are absent here
+ * and their composed forms appear in kFoldToOtherHandlers instead.
+ *
+ * `JobQueue::makeLoadEvent` is deliberately out of scope: its `name` feeds
+ * `LoadEvent`/`LoadMonitor`, neither of which reaches MetricsRegistry, so
+ * names like `"cmd:" + method` never become a `handler` label value.
+ *
+ * Asserting on the real list is the point of the test: it proves the
+ * cardinality bound holds for the names actually in the binary, so a job
+ * added later whose name breaks the rule shows up as a failure here rather
+ * than as an unexplained `other` bucket on a dashboard.
+ */
+constexpr std::array kPassThroughHandlers = {
+    std::string_view{"AcceptLedger"},     // RCLConsensus.cpp
+    std::string_view{"AcqDone"},          // InboundLedger.cpp
+    std::string_view{"AdvanceLedger"},    // LedgerMaster.cpp
+    std::string_view{"ChkTrust"},         // PeerImp.cpp (local, ternary)
+    std::string_view{"ChkUntrust"},       // PeerImp.cpp (local, ternary)
+    std::string_view{"ComplAcquire"},     // TransactionAcquire.cpp
+    std::string_view{"DoTxs"},            // PeerImp.cpp
+    std::string_view{"GotFetchPack"},     // LedgerMaster.cpp
+    std::string_view{"GotStaleData"},     // InboundLedgers.cpp
+    std::string_view{"HandleHaveTxs"},    // PeerImp.cpp
+    std::string_view{"HistTxStream"},     // NetworkOPs.cpp
+    std::string_view{"InboundLedger"},    // InboundLedger.cpp (.jobName)
+    std::string_view{"LedReplDelta"},     // LedgerDeltaAcquire.cpp (.jobName)
+    std::string_view{"LedReplTask"},      // LedgerReplayTask.cpp (.jobName)
+    std::string_view{"MakeFetchPack"},    // PeerImp.cpp
+    std::string_view{"NObjStore"},        // NodeStoreScheduler.cpp
+    std::string_view{"NetCluster"},       // NetworkOPs.cpp
+    std::string_view{"NetHeart"},         // NetworkOPs.cpp
+    std::string_view{"OnLedBuilt"},       // LedgerDeltaAcquire.cpp
+    std::string_view{"ProcessLData"},     // InboundLedgers.cpp
+    std::string_view{"PthFindNewLed"},    // LedgerMaster.cpp (newPFWork)
+    std::string_view{"PthFindNewReq"},    // LedgerMaster.cpp (newPFWork)
+    std::string_view{"PthFindOBDB"},      // LedgerMaster.cpp (newPFWork)
+    std::string_view{"PubCons"},          // NetworkOPs.cpp
+    std::string_view{"PubFee"},           // NetworkOPs.cpp
+    std::string_view{"RPCSubSendThr"},    // RPCSub.cpp
+    std::string_view{"RcvCheckTx"},       // PeerImp.cpp
+    std::string_view{"RcvGetLedger"},     // PeerImp.cpp
+    std::string_view{"RcvGetObjByHash"},  // PeerImp.cpp
+    std::string_view{"RcvManifests"},     // PeerImp.cpp
+    std::string_view{"RcvPeerData"},      // PeerImp.cpp
+    std::string_view{"RcvProofPReq"},     // PeerImp.cpp
+    std::string_view{"RcvReplDReq"},      // PeerImp.cpp
+    std::string_view{"SkipListAcq"},      // SkipListAcquire.cpp (.jobName)
+    std::string_view{"SubmitTxn"},        // NetworkOPs.cpp
+    std::string_view{"TryFill"},          // LedgerMaster.cpp
+    std::string_view{"TxAcq"},            // TransactionAcquire.cpp (.jobName)
+    std::string_view{"TxBatchAsync"},     // NetworkOPs.cpp
+    std::string_view{"TxBatchSync"},      // NetworkOPs.cpp
+    std::string_view{"TxsToTxn"},         // ConsensusTransSetSF.cpp
+    std::string_view{"WAL"},              // SociDB.cpp
+    std::string_view{"checkPropose"},     // PeerImp.cpp (lowercase start)
+    std::string_view{"sweep"},            // Application.cpp (all lowercase)
+};
+
+/**
+ * Names that must fold to kHandlerOther.
+ *
+ * The first two are the composed forms of the only two dynamically built job
+ * names in the tree: `"Pub" + std::to_string(ledger->seq())`
+ * (LedgerPersistence.cpp) and
+ * `"OB" + std::to_string(ledger->seq() % 1000000000)` (OrderBookDBImpl.cpp).
+ * They are the reason the sanitiser exists — used raw they would mint a
+ * Prometheus series per ledger — so realistic sequence values are used
+ * rather than short placeholders. The sequence is unbounded at the `"Pub"`
+ * site and masked to nine digits at the `"OB"` site, but a digit appears
+ * either way (even `seq == 0` gives `"Pub0"`), so no reachable input at
+ * either site can produce an all-letter name.
+ *
+ * The next five are static literals that already fail the rule today, so
+ * the fallback is exercised by real code and not only by synthetic input.
+ *
+ * The remainder are the edge cases: empty, and one entry per disallowed
+ * character class (space, digit, underscore, hyphen, non-ASCII byte). The
+ * non-ASCII entry is UTF-8 'e-acute'; on a signed-char platform its lead
+ * byte is negative, which the explicit ASCII range check rejects where a
+ * locale-sensitive std::isalpha might not.
+ */
+constexpr std::array kFoldToOtherHandlers = {
+    std::string_view{"Pub97531234"},  // dynamic: "Pub" + ledger seq
+    std::string_view{"OB123456789"},  // dynamic: "OB" + ledger seq % 1e9
+    std::string_view{"GetConsL1"},    // static, digit  (RCLConsensus.cpp)
+    std::string_view{"GetConsL2"},    // static, digit  (RCLValidations.cpp)
+    std::string_view{"gRPC-Client"},  // static, hyphen (GRPCServer.cpp)
+    std::string_view{"RPC-Client"},   // static, hyphen (ServerHandler.cpp)
+    std::string_view{"WS-Client"},    // static, hyphen (ServerHandler.cpp)
+    std::string_view{""},             // empty
+    std::string_view{"Rcv Ledger"},   // space
+    std::string_view{"Handler7"},     // digit
+    std::string_view{"Rcv_Ledger"},   // underscore
+    std::string_view{"Rcv-Ledger"},   // hyphen
+    std::string_view{"caf\xC3\xA9"},  // non-ASCII byte (UTF-8 e-acute)
+};
+
+/**
+ * True when sanitiseHandler() returns each pass-through name unchanged.
+ *
+ * consteval so a regression is a compile error rather than a test failure:
+ * the sanitiser is constexpr precisely so this bound can be checked without
+ * running anything.
+ */
+consteval bool
+allPassThroughUnchanged()
+{
+    for (auto const name : kPassThroughHandlers)
+    {
+        if (MetricsRegistry::sanitiseHandler(name) != name)
+            return false;
+    }
+    return true;
+}
+
+/**
+ * True when sanitiseHandler() maps every listed name to kHandlerOther.
+ */
+consteval bool
+allFoldToOther()
+{
+    for (auto const name : kFoldToOtherHandlers)
+    {
+        if (MetricsRegistry::sanitiseHandler(name) != MetricsRegistry::kHandlerOther)
+            return false;
+    }
+    return true;
+}
+
+// Compile-time guarantees. Duplicated at runtime below so a failure names
+// the offending input instead of only pointing at the assertion.
+static_assert(allPassThroughUnchanged());
+static_assert(allFoldToOther());
+
+// The verified size of the pass-through set as of this branch: 43 all-letter
+// job-name literals. Pinned so that adding or removing a job name without
+// revisiting the label-cardinality budget fails the build here.
+static_assert(kPassThroughHandlers.size() == 43);
+
+/**
+ * Total distinct `handler` label values reachable from the inputs above:
+ * one per pass-through name plus the single shared kHandlerOther bucket.
+ * This is the number the Prometheus cardinality budget is sized against.
+ */
+constexpr std::size_t kExpectedHandlerDomain = kPassThroughHandlers.size() + 1;
+static_assert(kExpectedHandlerDomain == 44);
+
+}  // namespace
+
+TEST(MetricsRegistrySanitiseHandler, static_job_names_pass_through_unchanged)
+{
+    // Every all-letter job name in the tree survives sanitisation, so the
+    // `handler` label keeps its attribution value for real producers.
+    for (auto const name : kPassThroughHandlers)
+    {
+        EXPECT_EQ(MetricsRegistry::sanitiseHandler(name), name)
+            << "job name should pass through unchanged: " << name;
+        // Cause, not just state: it passed because it is not the fallback.
+        EXPECT_NE(MetricsRegistry::sanitiseHandler(name), MetricsRegistry::kHandlerOther)
+            << "job name wrongly folded to the fallback: " << name;
+    }
+}
+
+TEST(MetricsRegistrySanitiseHandler, dynamic_and_non_letter_names_fold_to_other)
+{
+    // Negative path: everything that is not an all-letter name collapses
+    // into exactly one bucket, which is what bounds the label domain.
+    for (auto const name : kFoldToOtherHandlers)
+    {
+        EXPECT_EQ(MetricsRegistry::sanitiseHandler(name), MetricsRegistry::kHandlerOther)
+            << "name should fold to the fallback: " << name;
+    }
+}
+
+TEST(MetricsRegistrySanitiseHandler, empty_name_folds_to_other)
+{
+    // Called out separately because it is the one case the all-letter scan
+    // cannot catch: std::ranges::all_of() is vacuously true on an empty
+    // range, so the sanitiser needs its own emptiness check.
+    EXPECT_EQ(MetricsRegistry::sanitiseHandler(std::string_view{}), MetricsRegistry::kHandlerOther);
+    EXPECT_EQ(MetricsRegistry::sanitiseHandler(""), MetricsRegistry::kHandlerOther);
+}
+
+TEST(MetricsRegistrySanitiseHandler, fallback_value_is_the_shared_constant)
+{
+    // The fallback must be the constant the dashboards and the reference doc
+    // are written against, not merely some non-empty string.
+    EXPECT_EQ(MetricsRegistry::kHandlerOther, std::string_view{"other"});
+    EXPECT_EQ(MetricsRegistry::kHandlerOther.size(), 5u);
+
+    // "other" is itself all letters, so sanitising it is idempotent -- a
+    // handler genuinely named "other" is indistinguishable from the bucket.
+    EXPECT_EQ(
+        MetricsRegistry::sanitiseHandler(MetricsRegistry::kHandlerOther),
+        MetricsRegistry::kHandlerOther);
+}
+
+TEST(MetricsRegistrySanitiseHandler, output_domain_is_exactly_44_values)
+{
+    // The cardinality bound itself: over every input above -- 43 real job
+    // names, 2 dynamic names, 5 non-conforming static names and 6 edge
+    // cases -- the sanitiser can emit only 44 distinct label values (43
+    // names plus the single "other" bucket).
+    std::set<std::string_view> domain;
+    for (auto const name : kPassThroughHandlers)
+        domain.insert(MetricsRegistry::sanitiseHandler(name));
+    for (auto const name : kFoldToOtherHandlers)
+        domain.insert(MetricsRegistry::sanitiseHandler(name));
+
+    EXPECT_EQ(domain.size(), kExpectedHandlerDomain);
+    EXPECT_EQ(domain.size(), 44u);
+
+    // State plus cause: the domain is the pass-through names and nothing
+    // else besides the one fallback bucket.
+    EXPECT_TRUE(domain.contains(MetricsRegistry::kHandlerOther));
+    EXPECT_EQ(domain.size() - 1, kPassThroughHandlers.size());
+    for (auto const name : kPassThroughHandlers)
+        EXPECT_TRUE(domain.contains(name)) << "missing from domain: " << name;
+}
 
 // When telemetry is globally enabled, MetricsRegistry.cpp requires xrpld
 // link dependencies we cannot satisfy in a standalone GTest binary.
 #ifndef XRPL_ENABLE_TELEMETRY
-
-#include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -26,8 +297,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 
 #include <boost/asio/io_context.hpp>
-
-#include <gtest/gtest.h>
 
 #include <optional>
 #include <stdexcept>
@@ -339,9 +608,9 @@ TEST_F(MetricsRegistryTest, disabled_recording_methods)
     registry.recordRpcStarted("server_info");
     registry.recordRpcFinished("server_info", 1000);
     registry.recordRpcErrored("ledger", 500);
-    registry.recordJobQueued("ledgerData");
-    registry.recordJobStarted("ledgerData", 200);
-    registry.recordJobFinished("ledgerData", 3000);
+    registry.recordJobQueued("ledgerData", "ProcessLData");
+    registry.recordJobStarted("ledgerData", "ProcessLData", 200);
+    registry.recordJobFinished("ledgerData", "ProcessLData", 3000);
 
     registry.stop();
 }
