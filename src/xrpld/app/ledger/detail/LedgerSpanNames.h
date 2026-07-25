@@ -65,6 +65,13 @@ inline constexpr auto txset = makeStr("txset");
  * names a dashboard and TraceQL query match on, so they must stay stable and
  * unambiguous rather than reading as a further-nested `as.tree`.
  */
+/**
+ * The parent acquire span's full name. Named here rather than composed at the
+ * call site because it is passed to hashSpan(), which takes one complete name,
+ * and because the phase names below are built from the same two segments.
+ */
+inline constexpr auto acquireFull = join(seg::ledger, op::acquire);
+
 inline constexpr auto acquireHeader = join(join(seg::ledger, op::acquire), makeStr("header"));
 inline constexpr auto acquireAsTree = join(join(seg::ledger, op::acquire), makeStr("astree"));
 inline constexpr auto acquireTxTree = join(join(seg::ledger, op::acquire), makeStr("txtree"));

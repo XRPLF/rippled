@@ -34,7 +34,6 @@
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
 #include <xrpl/telemetry/SpanGuard.h>
-#include <xrpl/telemetry/SpanNames.h>
 
 #include <boost/iterator/function_output_iterator.hpp>
 
@@ -111,8 +110,15 @@ InboundLedger::init(ScopedLockType& collectionLock)
         // acquireSpan_ is emplaced here but reset() on a JtLedgerData worker
         // thread. A SpanGuard is thread-free (owns no thread-local Scope), so it
         // can be created here and destroyed on the worker with no scope to strip.
+        // hashSpan, not span: the trace id is derived from hash_[0:16], so this
+        // acquire lands in the same trace as the ledger.validate,
+        // ledger.store and consensus.validation.accept spans for the same
+        // ledger, which run on other threads. One trace then shows whether a
+        // slow ledger was slow to fetch, to be accepted, or to be stored. The
+        // phase children below inherit this trace id automatically.
         acquireSpan_.emplace(
-            SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::acquire));
+            SpanGuard::hashSpan(
+                TraceCategory::Ledger, ledger_span::acquireFull, hash_.data(), hash_.kBytes));
         if (*acquireSpan_)
         {
             // The hash is the one identity known at every acquire's start (a
