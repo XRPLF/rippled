@@ -3,6 +3,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
+#include <xrpld/telemetry/MetricMacros.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
@@ -41,6 +42,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 
 // VFALCO Shouldn't we have to include the OpenSSL
 // headers or something for SSL_get_finished?
@@ -226,6 +228,51 @@ buildHandshake(
     }
 }
 
+namespace {
+
+/**
+ * Count one handshake negotiation failure, then throw as before.
+ *
+ * verifyHandshake() rejects a peer by throwing, from more than a dozen
+ * distinct branches. Routing every one of them through this helper keeps a
+ * single emit site -- which matters beyond avoiding duplicated code, because
+ * the metric macro caches its instrument in a function-local `static`: one
+ * call site means one instrument shared by all reasons, distinguished only by
+ * the `reason` label.
+ *
+ * Emits `handshake_negotiation_fail_total`, label `reason`.
+ *
+ * The thrown message is passed through unchanged so callers, which log
+ * `e.what()`, see exactly the text they saw before. The reason label is a
+ * separate, low-cardinality machine-readable value; it is never derived from
+ * the message.
+ *
+ * @param app Provides the metrics registry.
+ * @param reason Short snake_case cause, e.g. "wrong_network". A string
+ *        literal from a fixed set, so cardinality stays bounded.
+ * @param message The exact message to throw, byte-identical to the previous
+ *        behaviour.
+ *
+ * @note Per-connection handshake path -- one call per rejected peer, not a
+ *       hot loop.
+ * @note No-op when telemetry is compiled out or disabled at runtime; the
+ *       macro carries that guard, so there is no `#ifdef` here.
+ * @note Always throws; it never returns to its caller.
+ */
+[[noreturn]] void
+throwNegotiationFailure(Application& app, char const* reason, std::string message)
+{
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app,
+        "handshake_negotiation_fail_total",
+        "Peer handshake negotiations rejected, by reason",
+        {{"reason", std::string(reason)}});
+
+    throw std::runtime_error(std::move(message));
+}
+
+}  // namespace
+
 PublicKey
 verifyHandshake(
     boost::beast::http::fields const& headers,
@@ -238,7 +285,7 @@ verifyHandshake(
     if (auto const iter = headers.find("Server-Domain"); iter != headers.end())
     {
         if (!isProperlyFormedTomlDomain(iter->value()))
-            throw std::runtime_error("Invalid server domain");
+            throwNegotiationFailure(app, "invalid_server_domain", "Invalid server domain");
     }
 
     if (auto const iter = headers.find("Network-ID"); iter != headers.end())
@@ -246,15 +293,15 @@ verifyHandshake(
         std::uint32_t nid = 0;
 
         if (!beast::lexicalCastChecked(nid, iter->value()))
-            throw std::runtime_error("Invalid peer network identifier");
+            throwNegotiationFailure(app, "invalid_network_id", "Invalid peer network identifier");
 
         if (networkID && nid != *networkID)
-            throw std::runtime_error("Peer is on a different network");
+            throwNegotiationFailure(app, "wrong_network", "Peer is on a different network");
     }
 
     if (auto const iter = headers.find("Network-Time"); iter != headers.end())
     {
-        auto const netTime = [str = iter->value()]() -> TimeKeeper::time_point {
+        auto const netTime = [str = iter->value(), &app]() -> TimeKeeper::time_point {
             TimeKeeper::duration::rep val = 0;
 
             if (beast::lexicalCastChecked(val, str))
@@ -262,7 +309,7 @@ verifyHandshake(
 
             // It's not an error for the header field to not be present but if
             // it is present and it contains junk data, that is an error.
-            throw std::runtime_error("Invalid peer clock timestamp");
+            throwNegotiationFailure(app, "invalid_clock_timestamp", "Invalid peer clock timestamp");
         }();
 
         using namespace std::chrono;
@@ -282,10 +329,10 @@ verifyHandshake(
         auto const offset = calculateOffset(netTime, ourTime);
 
         if (abs(offset) > tolerance)
-            throw std::runtime_error("Peer clock is too far off");
+            throwNegotiationFailure(app, "clock_skew", "Peer clock is too far off");
     }
 
-    PublicKey const publicKey = [&headers] {
+    PublicKey const publicKey = [&headers, &app] {
         if (auto const iter = headers.find("Public-Key"); iter != headers.end())
         {
             auto pk = parseBase58<PublicKey>(TokenType::NodePublic, iter->value());
@@ -293,13 +340,14 @@ verifyHandshake(
             if (pk)
             {
                 if (publicKeyType(*pk) != KeyType::Secp256k1)
-                    throw std::runtime_error("Unsupported public key type");
+                    throwNegotiationFailure(
+                        app, "unsupported_key_type", "Unsupported public key type");
 
                 return *pk;
             }
         }
 
-        throw std::runtime_error("Bad node public key");
+        throwNegotiationFailure(app, "bad_public_key", "Bad node public key");
     }();
 
     // This check gets two birds with one stone:
@@ -312,16 +360,16 @@ verifyHandshake(
         auto const iter = headers.find("Session-Signature");
 
         if (iter == headers.end())
-            throw std::runtime_error("No session signature specified");
+            throwNegotiationFailure(app, "no_session_signature", "No session signature specified");
 
         auto sig = base64Decode(iter->value());
 
         if (!verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
-            throw std::runtime_error("Failed to verify session");
+            throwNegotiationFailure(app, "session_verify_failed", "Failed to verify session");
     }
 
     if (publicKey == app.nodeIdentity().first)
-        throw std::runtime_error("Self connection");
+        throwNegotiationFailure(app, "self_connection", "Self connection");
 
     if (auto const iter = headers.find("Local-IP"); iter != headers.end())
     {
@@ -329,11 +377,13 @@ verifyHandshake(
         auto const localIp = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
 
         if (ec)
-            throw std::runtime_error("Invalid Local-IP");
+            throwNegotiationFailure(app, "invalid_local_ip", "Invalid Local-IP");
 
         if (beast::IP::isPublic(remote) && remote != localIp)
         {
-            throw std::runtime_error(
+            throwNegotiationFailure(
+                app,
+                "local_ip_mismatch",
                 "Incorrect Local-IP: " + remote.to_string() + " instead of " + localIp.to_string());
         }
     }
@@ -344,7 +394,7 @@ verifyHandshake(
         auto const remoteIp = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
 
         if (ec)
-            throw std::runtime_error("Invalid Remote-IP");
+            throwNegotiationFailure(app, "invalid_remote_ip", "Invalid Remote-IP");
 
         if (beast::IP::isPublic(remote) && !beast::IP::isUnspecified(publicIp))
         {
@@ -352,9 +402,11 @@ verifyHandshake(
             // from some other IP.
             if (remoteIp != publicIp)
             {
-                throw std::runtime_error(
+                throwNegotiationFailure(
+                    app,
+                    "remote_ip_mismatch",
                     "Incorrect Remote-IP: " + publicIp.to_string() + " instead of " +
-                    remoteIp.to_string());
+                        remoteIp.to_string());
             }
         }
     }

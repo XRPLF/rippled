@@ -52,6 +52,20 @@ private:
     std::shared_ptr<PeerFinder::Slot> slot_;
     request_type req_;
 
+    /**
+     * When the dial began, set at the top of run() before any async
+     * operation is started. Base for the `overlay_dial_latency_ms`
+     * measurement.
+     */
+    std::chrono::steady_clock::time_point dialStart_;
+
+    /**
+     * True once this attempt's outcome has been reported, so the first
+     * (most specific) terminal path wins and each attempt is counted at
+     * most once. Not atomic on purpose -- see reportOutcome().
+     */
+    bool outcomeReported_{false};
+
 public:
     ConnectAttempt(
         Application& app,
@@ -97,6 +111,57 @@ private:
     onShutdown(error_code ec);
     void
     processResponse();
+
+    /**
+     * Record how this outbound dial ended, exactly once per attempt.
+     *
+     * Every terminal path in the dial state machine funnels here, so the
+     * emit code and its cached instruments live in one place instead of
+     * being repeated per branch. The first call wins: later calls return
+     * immediately, which keeps the reported outcome the most specific one
+     * (e.g. a "timeout" is not later overwritten by the "tcp_fail" that
+     * the cancelled socket operation reports).
+     *
+     * Emits:
+     *   - `overlay_dial_latency_ms` histogram, no labels
+     *   - `overlay_connect_total` counter, label `outcome`
+     *
+     * Dial state machine and where each outcome is reported:
+     *
+     *   run() ---- dialStart_ = now
+     *     |
+     *     +-- onTimer  ................................. "timeout"
+     *     +-- onConnect      (connect / local_endpoint) . "tcp_fail"
+     *     +-- onHandshake    (TLS / slot / shared value)  "tls_fail"
+     *     +-- onWrite / onRead / onShutdown ............. "upgrade_fail"
+     *     +-- processResponse
+     *           +-- bad status / protocol / activate ... "upgrade_fail"
+     *           +-- PeerImp created + addActive ........ "connected"
+     *
+     * @param outcome One of "connected", "tcp_fail", "tls_fail",
+     *        "upgrade_fail", "timeout". A string literal, so no allocation
+     *        happens on the caller side.
+     *
+     * @note Per-connection path: one dial per outbound peer, so this is not
+     *       a hot loop.
+     * @note Thread safety: every completion handler that calls this is bound
+     *       through `bind_executor(strand_, ...)`, so all callers of this
+     *       method run on the same strand and `outcomeReported_` needs no
+     *       atomic or mutex. `dialStart_` is written once in run(), before
+     *       any async operation is initiated, so it is safely visible to
+     *       those handlers even though run() itself may execute on the
+     *       calling thread rather than the strand.
+     * @note Known limitation: an attempt torn down by overlay shutdown
+     *       mid-dial (stop() -> close(), or the operation_aborted early
+     *       returns) is deliberately not counted -- it has no network
+     *       outcome to attribute.
+     * @note MetricsRegistry is already started when this runs:
+     *       ApplicationImp::setup() calls startTelemetry() before
+     *       ApplicationImp::start() calls overlay_->start(). No-op when
+     *       telemetry is compiled out or disabled at runtime.
+     */
+    void
+    reportOutcome(char const* outcome);
 
     template <class = void>
     static boost::asio::ip::tcp::endpoint

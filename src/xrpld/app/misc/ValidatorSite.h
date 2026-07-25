@@ -18,6 +18,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace xrpl {
@@ -270,6 +271,36 @@ private:
      */
     bool
     missingSite(std::scoped_lock<std::mutex> const&);
+
+    /**
+     * Record the terminal outcome of one validator list fetch attempt.
+     *
+     * Increments the `unl_fetch_total` counter with a `site` label (the
+     * URI as configured, so the series is stable across redirects) and an
+     * `outcome` label. Called exactly once per completed fetch attempt.
+     * Redirects are not terminal, so no outcome is recorded for them.
+     *
+     * A node with no reachable list site never gains trusted keys and can
+     * never reach quorum, so this counter is the signal that separates
+     * "misconfigured or unreachable list site" from other sync stalls.
+     *
+     * The single call to the metric macro lives here rather than at each
+     * outcome site because the macro caches its instrument in a
+     * function-local static, one per call site.
+     *
+     * @param siteIdx Index into sites_ of the site that was fetched.
+     * @param outcome Outcome label, e.g. "accepted", "fetch_error".
+     * @param sitesLock Proof that sitesMutex_ is held; sites_ is read here.
+     *
+     * @note Fetches are periodic (minutes apart), not a hot path, so the
+     * cost of building the label set per call is irrelevant. No-op when
+     * telemetry is compiled out or disabled.
+     */
+    void
+    reportFetchOutcome(
+        std::size_t siteIdx,
+        std::string_view outcome,
+        std::scoped_lock<std::mutex> const& sitesLock);
 };
 
 }  // namespace xrpl

@@ -555,6 +555,14 @@ private:
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> serverInfoGauge_;
     /**
+     * Observable gauge for trusted UNL key count against the required quorum.
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> unlQuorumGauge_;
+    /**
+     * Observable gauge for the network close-time offset (local clock skew).
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> clockSkewGauge_;
+    /**
      * Observable gauge for build version info (label-based, value=1).
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> buildInfoGauge_;
@@ -735,7 +743,44 @@ private:
     registerValidationAgreementGauge();  // Task 7.15
     void
     registerValidationTotalsCounters();  // gap-fill: lifetime agree/miss _total
-#endif                                   // XRPL_ENABLE_TELEMETRY
+
+    /**
+     * Register the `unl_quorum` gauge.
+     *
+     * Observes two series under the `metric` attribute:
+     * `trusted_keys` (ValidatorList::trustedKeyCount()) and `quorum`
+     * (ValidatorList::quorum()). Both are cheap accessors — one shared
+     * lock and one atomic load.
+     *
+     * `trusted_keys < quorum` means the node can never fully validate a
+     * ledger, so it will sit in `syncing` until the UNL is fixed. That
+     * makes this the first place to look when a node never leaves
+     * `syncing`.
+     *
+     * @note Pulled on the OTel reader thread (~10 s tick); does no work
+     * on any hot path.
+     */
+    void
+    registerUnlQuorumGauge();  // sync diagnostics: UNL vs quorum
+
+    /**
+     * Register the `clock_close_offset_seconds` gauge.
+     *
+     * Observes one series, `offset`, from
+     * TimeKeeper::closeOffset(): the seconds this node's notion of
+     * network close time is displaced from its own wall clock.
+     *
+     * The value MAY BE NEGATIVE, meaning the local clock runs ahead of
+     * the network. Whole-second resolution is all the signal carries,
+     * since that is the unit TimeKeeper stores.
+     *
+     * @note `server_info` only reports this field once |offset| >= 60 s
+     * (NetworkOPs), so this gauge is the first continuous export of it.
+     * Pulled on the OTel reader thread (~10 s tick); one atomic load.
+     */
+    void
+    registerClockSkewGauge();  // sync diagnostics: close-time offset
+#endif                         // XRPL_ENABLE_TELEMETRY
 };
 
 }  // namespace telemetry

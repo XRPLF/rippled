@@ -579,6 +579,17 @@ async def validate_metrics(
                         "ledger_economy",
                         "state_tracking",
                         "storage_detail",
+                        # Fresh-node sync diagnostics. Two of these only exist
+                        # under specific conditions (a rejected handshake, a
+                        # configured UNL site), so listing them here is how a
+                        # failed run shows whether the metric was absent or
+                        # merely misnamed.
+                        "dns_resolve",
+                        "overlay_connect",
+                        "overlay_dial",
+                        "handshake_",
+                        "unl_",
+                        "clock_close_offset",
                     )
                 )
             ]

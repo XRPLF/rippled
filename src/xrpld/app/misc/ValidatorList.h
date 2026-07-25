@@ -714,6 +714,27 @@ public:
     getTrustedMasterKeys() const;
 
     /**
+     * get the number of trusted master public keys
+     *
+     * Takes the shared (read) lock and returns the size of the trusted
+     * master key set. O(1): unlike getTrustedMasterKeys() it copies
+     * nothing, so it is cheap enough to poll periodically.
+     *
+     * A count below quorum() means the node can never fully validate a
+     * ledger, which is the difference between "still syncing" and
+     * "will never sync".
+     *
+     * @par Thread Safety
+     *
+     * May be called concurrently, including from a metrics callback
+     * thread; it only takes the same shared lock as the other getters.
+     *
+     * @return the number of trusted master public keys
+     */
+    std::size_t
+    trustedKeyCount() const;
+
+    /**
      * get the validator list threshold
      * @return the threshold
      */

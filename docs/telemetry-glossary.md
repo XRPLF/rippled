@@ -491,6 +491,16 @@ When a node is missing ledgers (at startup, after an outage, or to extend histor
 
 **Scope:** per node — measured on and specific to this individual server.
 
+<a id="clock-close-offset"></a>
+
+### Clock close offset
+
+The difference between the network's agreed ledger close time and this node's own clock, negative when the local clock runs ahead and positive when it lags. A magnitude above a second that does not decay delays consensus participation and is a local time-sync fault rather than a network one; the server-info API only reports the offset once the magnitude reaches 60 seconds, so the metric sees skew far earlier.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Clock drift](#clock-drift) · [Ledger close times on xrpl.org](https://xrpl.org/docs/concepts/ledgers/ledger-close-times)
+
 <a id="complete-ledger-ranges"></a>
 
 ### Complete ledger ranges
@@ -498,6 +508,16 @@ When a node is missing ledgers (at startup, after an outage, or to extend histor
 A node stores ledger history as one or more contiguous ranges. One continuous range means an unbroken history; many fragmented ranges indicate gaps from missed or failed fetches that the node is still back-filling.
 
 **Scope:** per node — measured on and specific to this individual server.
+
+<a id="dns-resolve"></a>
+
+### DNS resolve
+
+Turning each configured peer hostname into IP addresses, which happens before any connection is attempted. An empty outcome means the name resolved to nothing, so that peer is never dialled at all; slow resolution delays every dial behind it even when it eventually succeeds.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Outbound dial latency](#outbound-dial-latency) · [Peer protocol on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)
 
 <a id="fresh-node-sync-diagnostics"></a>
 
@@ -508,6 +528,16 @@ The set of signals that explain why a freshly-started node is slow to reach, or 
 **Scope:** per node — measured on and specific to this individual server.
 
 **See also:** [Diagnosing slow/stuck fresh sync](./telemetry-runbook.md#diagnosing-slowstuck-fresh-sync) (operator flow) · [Server states on xrpl.org](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states)
+
+<a id="handshake-negotiation-failure"></a>
+
+### Handshake negotiation failure
+
+A peer connection rejected after TLS succeeds, while the two sides check network identifier, clock, keys and reported addresses. The rejection reason names the failing check: a wrong network identifier means the node can never reach a quorum with those peers, a clock reason points at local time sync, and key or signature reasons point at the peer.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Outbound dial latency](#outbound-dial-latency) · [Clock close offset](#clock-close-offset) · [Peer protocol on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)
 
 <a id="historical-fetch-rate"></a>
 
@@ -534,6 +564,36 @@ The server state describes how fully the node is participating, in ascending ord
 **Scope:** per node — measured on and specific to this individual server.
 
 **See also:** [Operating mode / server state on xrpl.org](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states)
+
+<a id="outbound-dial-latency"></a>
+
+### Outbound dial latency
+
+The elapsed time of one outbound peer connection attempt, from starting the TCP connect through TLS to the protocol upgrade, measured to whichever outcome ends it. Every attempt ends in exactly one outcome, so the outcome names the stage that broke; because the timing covers failures too, a value pinned near the dial timeout means peers accept the connection but never finish the handshake.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [DNS resolve](#dns-resolve) · [Handshake negotiation failure](#handshake-negotiation-failure) · [Peer protocol on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol)
+
+<a id="unl-fetch-outcome"></a>
+
+### UNL fetch outcome
+
+The result of retrieving a validator list from one configured UNL site and applying it. Accepted is the only success; same-sequence and known-sequence are normal no-op refreshes of a list the node already holds; fetch, status and parse errors are transport or content faults; and expired, stale, untrusted, invalid or unsupported-version mean the list arrived but was rejected, so no trusted keys are loaded from that site.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [UNL quorum headroom](#unl-quorum-headroom) · [UNL (Unique Node List)](#unl-unique-node-list) · [UNL (Unique Node List) on xrpl.org](https://xrpl.org/docs/concepts/consensus-protocol/unl)
+
+<a id="unl-quorum-headroom"></a>
+
+### UNL quorum headroom
+
+The trusted UNL key count minus the quorum a ledger needs, so it reads as spare validator keys. At or below zero — including a trusted key count of zero, meaning no usable list loaded — the node can track ledgers but can never declare one validated, however healthy the rest of the sync pipeline looks. A UNL site that keeps failing to fetch is the usual cause.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [UNL fetch outcome](#unl-fetch-outcome) · [Validation quorum](#validation-quorum) · [Validation quorum on xrpl.org](https://xrpl.org/docs/concepts/consensus-protocol/negative-unl)
 
 <a id="cat-peer-overlay-networking"></a>
 

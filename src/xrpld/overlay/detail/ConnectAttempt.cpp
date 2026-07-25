@@ -1,3 +1,7 @@
+// cspell:ignore ISTOGRAM
+// The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
+// compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here.
+
 #include <xrpld/overlay/detail/ConnectAttempt.h>
 
 #include <xrpld/app/main/Application.h>
@@ -9,6 +13,7 @@
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
+#include <xrpld/telemetry/MetricMacros.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
@@ -99,12 +104,45 @@ ConnectAttempt::stop()
 void
 ConnectAttempt::run()
 {
+    // Start the dial clock before any async operation is initiated. The
+    // constructor is too early (it only builds the object; the caller decides
+    // when to dial), and after setTimer() would be too late: setTimer() already
+    // queues a strand-bound wait that can read dialStart_ via reportOutcome().
+    dialStart_ = std::chrono::steady_clock::now();
+
     setTimer();
 
     stream_.next_layer().async_connect(
         remoteEndpoint_,
         boost::asio::bind_executor(
             strand_, [self = shared_from_this()](error_code const& ec) { self->onConnect(ec); }));
+}
+
+void
+ConnectAttempt::reportOutcome(char const* outcome)
+{
+    if (outcomeReported_)
+        return;
+    outcomeReported_ = true;
+
+    // Elapsed time is computed inline, not in a named local, so nothing is
+    // left unused when the macros compile away. Microseconds are converted to
+    // fractional milliseconds: `duration<double, std::milli>` would put a
+    // comma in a non-variadic macro argument, which the preprocessor splits.
+    XRPL_METRIC_HISTOGRAM_RECORD(
+        app_,
+        "overlay_dial_latency_ms",
+        "Time from starting an outbound peer dial to its terminal outcome, in milliseconds",
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - dialStart_)
+                .count() /
+            1000.0);
+
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        "overlay_connect_total",
+        "Outbound peer connection attempts, by terminal outcome",
+        {{"outcome", std::string(outcome)}});
 }
 
 //------------------------------------------------------------------------------
@@ -192,6 +230,7 @@ ConnectAttempt::onTimer(error_code ec)
         close();
         return;
     }
+    reportOutcome("timeout");
     fail("Timeout");
 }
 
@@ -205,6 +244,7 @@ ConnectAttempt::onConnect(error_code ec)
         if (ec == boost::asio::error::operation_aborted)
             return;
 
+        reportOutcome("tcp_fail");
         fail("onConnect", ec);
         return;
     }
@@ -216,6 +256,7 @@ ConnectAttempt::onConnect(error_code ec)
     socket_.local_endpoint(ec);
     if (ec)
     {
+        reportOutcome("tcp_fail");
         fail("onConnect", ec);
         return;
     }
@@ -241,6 +282,7 @@ ConnectAttempt::onHandshake(error_code ec)
         if (ec == boost::asio::error::operation_aborted)
             return;
 
+        reportOutcome("tls_fail");
         fail("onHandshake", ec);
         return;
     }
@@ -248,6 +290,7 @@ ConnectAttempt::onHandshake(error_code ec)
     auto const localEndpoint = socket_.local_endpoint(ec);
     if (ec)
     {
+        reportOutcome("tls_fail");
         fail("onHandshake", ec);
         return;
     }
@@ -255,6 +298,7 @@ ConnectAttempt::onHandshake(error_code ec)
     if (!overlay_.peerFinder().onConnected(
             slot_, beast::IPAddressConversion::fromAsio(localEndpoint)))
     {
+        reportOutcome("tls_fail");
         fail("Duplicate connection");
         return;
     }
@@ -262,6 +306,7 @@ ConnectAttempt::onHandshake(error_code ec)
     auto const sharedValue = makeSharedValue(*streamPtr_, journal_);
     if (!sharedValue)
     {
+        reportOutcome("tls_fail");
         close();  // makeSharedValue logs
         return;
     }
@@ -303,6 +348,7 @@ ConnectAttempt::onWrite(error_code ec)
         if (ec == boost::asio::error::operation_aborted)
             return;
 
+        reportOutcome("upgrade_fail");
         fail("onWrite", ec);
         return;
     }
@@ -340,6 +386,7 @@ ConnectAttempt::onRead(error_code ec)
             return;
         }
 
+        reportOutcome("upgrade_fail");
         fail("onRead", ec);
         return;
     }
@@ -359,6 +406,7 @@ ConnectAttempt::onShutdown(error_code ec)
 
     if (ec != boost::asio::error::eof)
     {
+        reportOutcome("upgrade_fail");
         fail("onShutdown", ec);
         return;
     }
@@ -406,10 +454,13 @@ ConnectAttempt::processResponse()
         }
     }
 
+    // The HTTP-503 block above only harvests redirect hints and falls through,
+    // so this is the first terminal point for a response we cannot upgrade.
     if (!OverlayImpl::isPeerUpgrade(response_))
     {
         JLOG(journal_.info()) << "Unable to upgrade to peer protocol: " << response_.result()
                               << " (" << response_.reason() << ")";
+        reportOutcome("upgrade_fail");
         close();
         return;
     }
@@ -426,6 +477,7 @@ ConnectAttempt::processResponse()
 
         if (!negotiatedProtocol)
         {
+            reportOutcome("upgrade_fail");
             fail("processResponse: Unable to negotiate protocol version");
             return;
         }
@@ -434,6 +486,7 @@ ConnectAttempt::processResponse()
     auto const sharedValue = makeSharedValue(*streamPtr_, journal_);
     if (!sharedValue)
     {
+        reportOutcome("upgrade_fail");
         close();  // makeSharedValue logs
         return;
     }
@@ -464,6 +517,7 @@ ConnectAttempt::processResponse()
             overlay_.peerFinder().activate(slot_, publicKey, static_cast<bool>(member));
         if (result != PeerFinder::Result::Success)
         {
+            reportOutcome("upgrade_fail");
             fail("Outbound " + std::string(to_string(result)));
             return;
         }
@@ -481,9 +535,14 @@ ConnectAttempt::processResponse()
             overlay_);
 
         overlay_.addActive(peer);
+
+        // Only after addActive succeeds is the dial genuinely complete. If
+        // anything above threw, the catch below reports the failure instead.
+        reportOutcome("connected");
     }
     catch (std::exception const& e)
     {
+        reportOutcome("upgrade_fail");
         fail(std::string("Handshake failure (") + e.what() + ")");
         return;
     }

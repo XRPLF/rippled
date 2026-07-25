@@ -1,3 +1,7 @@
+// cspell:ignore ISTOGRAM
+// The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
+// compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here.
+
 #include <xrpld/overlay/detail/OverlayImpl.h>
 
 #include <xrpld/app/misc/ValidatorList.h>
@@ -15,6 +19,7 @@
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/handlers/admin/status/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
+#include <xrpld/telemetry/MetricMacros.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Resolver.h>
@@ -536,9 +541,16 @@ OverlayImpl::start()
         bootstrapIps.emplace_back("hub.xrpl-commons.org 51235");
     }
 
+    // Timestamp the resolve request so the handler can report how long the
+    // whole batch resolve took for each name it reports back.
+    auto const bootstrapDnsStart = std::chrono::steady_clock::now();
+
     resolver_.resolve(
         bootstrapIps,
-        [this](std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) {
+        [this, bootstrapDnsStart](
+            std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) {
+            reportDnsResolve(bootstrapDnsStart, !addresses.empty());
+
             std::vector<std::string> ips;
             ips.reserve(addresses.size());
             for (auto const& addr : addresses)
@@ -561,9 +573,14 @@ OverlayImpl::start()
     // Add the ips_fixed from the xrpld.cfg file
     if (!app_.config().standalone() && !app_.config().ipsFixed.empty())
     {
+        auto const fixedDnsStart = std::chrono::steady_clock::now();
+
         resolver_.resolve(
             app_.config().ipsFixed,
-            [this](std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) {
+            [this, fixedDnsStart](
+                std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) {
+                reportDnsResolve(fixedDnsStart, !addresses.empty());
+
                 std::vector<beast::IP::Endpoint> ips;
                 ips.reserve(addresses.size());
 
@@ -588,6 +605,29 @@ OverlayImpl::start()
     list_.emplace(timer.get(), timer);
     timer_ = timer;
     timer->asyncWait();
+}
+
+void
+OverlayImpl::reportDnsResolve(std::chrono::steady_clock::time_point start, bool resolved)
+{
+    // Elapsed time is computed inline, not in a named local, so nothing is
+    // left unused when the macros compile away. Microseconds are converted to
+    // fractional milliseconds: `duration<double, std::milli>` would put a
+    // comma in a non-variadic macro argument, which the preprocessor splits.
+    XRPL_METRIC_HISTOGRAM_RECORD(
+        app_,
+        "dns_resolve_latency_ms",
+        "Time taken to resolve a configured peer hostname, in milliseconds",
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - start)
+                .count() /
+            1000.0);
+
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        "dns_resolve_total",
+        "Peer hostname resolutions, by outcome",
+        {{"outcome", std::string(resolved ? "resolved" : "empty")}});
 }
 
 void

@@ -565,6 +565,41 @@ private:
     void
     deleteIdlePeers();
 
+    /**
+     * Emit the DNS resolve outcome and latency metrics for one resolved name.
+     *
+     * Shared by both `resolver_.resolve(...)` completion handlers in
+     * OverlayImpl::start() (the bootstrap `[ips]` batch and the `[ips_fixed]`
+     * batch), so the emit code exists exactly once. This matters beyond
+     * de-duplication: the metric macros cache their instrument in a
+     * function-local `static`, so keeping a single call site also keeps a
+     * single shared instrument for both batches.
+     *
+     * Emits:
+     *   - `dns_resolve_latency_ms` histogram, no labels
+     *   - `dns_resolve_total` counter, label `outcome` = "resolved" | "empty"
+     *
+     * ResolverAsio invokes its handler with the same signature for success and
+     * failure; on failure the address list is empty. So an empty list is the
+     * only failure signal available to the caller, and `resolved` must be
+     * derived from it.
+     *
+     * @param start When the resolve request was submitted. The measured latency
+     *        therefore spans the whole batch resolve for that name, not just
+     *        the final DNS round trip.
+     * @param resolved True when the resolver returned at least one address.
+     *
+     * @note Called once per resolved name during overlay startup only
+     *       (bootstrap plus fixed peers) -- this is not a hot loop.
+     * @note MetricsRegistry is already started when this runs:
+     *       ApplicationImp::setup() calls startTelemetry() before
+     *       ApplicationImp::start() calls overlay_->start().
+     * @note No-op when telemetry is compiled out or disabled at runtime; the
+     *       macro carries that guard, so this method needs no `#ifdef`.
+     */
+    void
+    reportDnsResolve(std::chrono::steady_clock::time_point start, bool resolved);
+
 private:
     struct TrafficGauges
     {

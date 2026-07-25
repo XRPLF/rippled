@@ -32,7 +32,7 @@
       }
     ]
   },
-  "description": "What this shows: Fresh-node ledger-sync diagnostics: pre-quorum bootstrap (Domain 0) and the ledger/tx-set acquire pipeline.  \u2014  Use it to: Find out why a freshly started node is slow to reach, or never reaches, server_state full.",
+  "description": "What this shows: Fresh-node ledger-sync diagnostics: pre-quorum bootstrap (Domain 0) and the ledger/tx-set acquire pipeline.  —  Use it to: Find out why a freshly started node is slow to reach, or never reaches, server_state full.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -53,6 +53,917 @@
       "panels": []
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*Rate of peer-hostname DNS resolutions, split by outcome (resolved or empty).*\n\n###### How it's computed:\n*Per-second rate of completed resolutions grouped by outcome, per node.*\n\n###### Reading it:\n*Resolved should account for every attempt; the empty line should stay flat at zero.*\n\n###### Healthy range:\n*A short burst of resolved at startup, then flat. Non-zero empty is always a defect.*\n\n###### Watch for:\n*Any empty rate means a configured bootstrap or [ips_fixed] hostname returned no address, so the node never even tries to dial that peer.*\n\n###### Keywords:\n- **DNS resolve** *(per node)* — turning a configured peer hostname into IP addresses before any dial is attempted; `outcome=empty` means the name resolved to nothing.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl::reportDnsResolve`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#dns-resolve)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Resolutions / Sec",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": 1800000,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ops"
+        }
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 0,
+        "y": 1
+      },
+      "id": 3,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(sum by (outcome, service_instance_id, xrpl_branch, xrpl_node_role) (rate(dns_resolve_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"$1\", \"outcome\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "title": "DNS Resolve Outcome Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*Time taken to resolve a configured peer hostname, at the 95th percentile.*\n\n###### How it's computed:\n*Resolution duration samples aggregated to their 95th percentile per node.*\n\n###### Reading it:\n*Lower is better; it is the delay before the node can start dialling peers.*\n\n###### Healthy range:\n*Tens of milliseconds against a healthy resolver.*\n\n###### Watch for:\n*Seconds-scale latency means the resolver is timing out and every bootstrap attempt is paying that delay before the first dial.*\n\n###### Keywords:\n- **DNS resolve** *(per node)* — turning a configured peer hostname into IP addresses before any dial is attempted; slow resolution delays the whole bootstrap.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[OverlayImpl.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/OverlayImpl.cpp)\n\n###### Function:\n`OverlayImpl::reportDnsResolve`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#dns-resolve)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Latency (ms)",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": 1800000,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ms"
+        }
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "id": 4,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(dns_resolve_latency_ms_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 DNS Resolve\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "title": "DNS Resolve Latency (p95)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*Rate of outbound peer connection attempts, split by terminal outcome.*\n\n###### How it's computed:\n*Per-second rate of finished dials grouped by outcome, per node. Filter the outcome set with the Dial Outcome variable.*\n\n###### Reading it:\n*Connected should dominate. The failure lines name the stage that broke: tcp_fail (no route or refused), tls_fail (TLS handshake), upgrade_fail (HTTP upgrade or protocol negotiation), timeout (no terminal state in time).*\n\n###### Healthy range:\n*Connected rising to the configured peer count, then flat with failures near zero.*\n\n###### Watch for:\n*All attempts landing on one failure outcome and no connected line — the node has no outbound peers and can never sync.*\n\n###### Keywords:\n- **Outbound dial latency** *(per node)* — an outbound peer connection attempt from TCP connect through TLS to protocol upgrade; each attempt ends in exactly one outcome.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[ConnectAttempt.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/ConnectAttempt.cpp)\n\n###### Function:\n`ConnectAttempt::reportOutcome`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#outbound-dial-latency)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Attempts / Sec",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": 1800000,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ops"
+        }
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 0,
+        "y": 13
+      },
+      "id": 5,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(sum by (outcome, service_instance_id, xrpl_branch, xrpl_node_role) (rate(overlay_connect_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", outcome=~\"$dial_outcome\"}[$__rate_interval])), \"series\", \"$1\", \"outcome\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Outbound Dial Outcome Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*Time from starting an outbound peer dial to its terminal outcome, at the 95th percentile.*\n\n###### How it's computed:\n*Dial duration samples aggregated to their 95th percentile per node.*\n\n###### Reading it:\n*Lower is better. The series covers successes and failures together, so a rising p95 usually means attempts are ending in timeout rather than being refused fast.*\n\n###### Healthy range:\n*Tens to low hundreds of milliseconds on a local or same-region peer.*\n\n###### Watch for:\n*A p95 pinned near the dial timeout, which means peers accept the TCP connection but never complete the handshake.*\n\n###### Keywords:\n- **Outbound dial latency** *(per node)* — elapsed time of an outbound peer connection attempt, measured to whichever outcome ends it.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[ConnectAttempt.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/ConnectAttempt.cpp)\n\n###### Function:\n`ConnectAttempt::reportOutcome`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#outbound-dial-latency)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Latency (ms)",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": 1800000,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ms"
+        }
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 12,
+        "y": 13
+      },
+      "id": 6,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(overlay_dial_latency_ms_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[5m]))), \"series\", \"P95 Outbound Dial\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Outbound Dial Latency (p95)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*Rate of peer handshakes rejected during protocol negotiation, split by reason.*\n\n###### How it's computed:\n*Per-second rate of rejected handshakes grouped by reason, per node. Filter the reason set with the Handshake Reason variable.*\n\n###### Reading it:\n*Flat at zero is healthy. The reason names the exact check that rejected the peer, so one dominant reason is the fault to fix.*\n\n###### Healthy range:\n*Zero, or a low background rate of self_connection and remote_ip_mismatch on a NAT'd host.*\n\n###### Watch for:\n*wrong_network or invalid_network_id — the node is configured for a different network than its peers and will never reach a quorum. clock_skew points at the local clock; session_verify_failed and bad_public_key at a misbehaving peer.*\n\n###### Keywords:\n- **Handshake negotiation failure** *(per node)* — a peer connection rejected after TLS while checking network id, clock, keys and addresses; the reason label names the failing check.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[Handshake.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/overlay/detail/Handshake.cpp)\n\n###### Function:\n`throwNegotiationFailure`\n\n###### References:\n[Peer protocol on xrpl.org](https://xrpl.org/docs/concepts/networks-and-servers/peer-protocol) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#handshake-negotiation-failure)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Failures / Sec",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": 1800000,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ops"
+        }
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      },
+      "id": 7,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(sum by (reason, service_instance_id, xrpl_branch, xrpl_node_role) (rate(handshake_negotiation_fail_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", reason=~\"$handshake_reason\"}[$__rate_interval])), \"series\", \"$1\", \"reason\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "title": "Handshake Negotiation Failures by Reason",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*Rate of validator-list fetches from each configured UNL site, split by outcome.*\n\n###### How it's computed:\n*Per-second rate of fetch attempts grouped by site and outcome, per node. Filter with the UNL Site and UNL Fetch Outcome variables.*\n\n###### Reading it:\n*accepted is the only success value. same_sequence and known_sequence are normal no-op refreshes of a list the node already holds. fetch_error, bad_status and parse_error are transport or content faults; expired, stale, untrusted, invalid and unsupported_version mean the list was retrieved but rejected.*\n\n###### Healthy range:\n*A first accepted per site at startup, then a steady low rate of same_sequence refreshes.*\n\n###### Watch for:\n*A site with only fetch_error or bad_status is unreachable. Only expired or invalid means the site is reachable but its list is unusable, so no trusted keys are loaded from it.*\n\n###### Keywords:\n- **UNL fetch outcome** *(per node)* — the result of retrieving and applying a validator list from a configured site; `accepted` is the only success.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[ValidatorSite.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/detail/ValidatorSite.cpp)\n\n###### Function:\n`ValidatorSite::reportFetchOutcome`\n\n###### References:\n[UNL (Unique Node List)](https://xrpl.org/docs/concepts/consensus-protocol/unl) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#unl-fetch-outcome)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Fetches / Sec",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": 1800000,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ops"
+        }
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      },
+      "id": 8,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_join(sum by (outcome, site, service_instance_id, xrpl_branch, xrpl_node_role) (rate(unl_fetch_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", site=~\"$unl_site\", outcome=~\"$unl_outcome\"}[$__rate_interval])), \"series\", \" \", \"outcome\", \"site\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "title": "UNL Fetch Rate by Site & Outcome",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*Trusted validator keys currently in effect, plotted against the number of agreeing validations a ledger needs.*\n\n###### How it's computed:\n*Two series read from the same gauge: trusted_keys (usable UNL size) and quorum (validations required to declare a ledger validated).*\n\n###### Reading it:\n*Trusted Keys must sit above Quorum. Where the lines cross, or where Trusted Keys is zero, the node cannot reach a quorum and will never validate a ledger no matter how healthy the rest of the pipeline looks.*\n\n###### Healthy range:\n*Trusted Keys comfortably above Quorum and both flat.*\n\n###### Watch for:\n*Trusted Keys at zero (no usable UNL loaded) or below Quorum. Steps in Quorum track validator-list changes; steps down in Trusted Keys mean keys were dropped.*\n\n###### Keywords:\n- **UNL quorum headroom** *(per node)* — trusted UNL key count minus the required quorum; at or below zero the node can never declare a ledger validated.\n- **UNL (Unique Node List)** *(per node)* — the list of validators a node trusts not to collude; the basis for its consensus and quorum.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerUnlQuorumGauge`\n\n###### References:\n[UNL (Unique Node List)](https://xrpl.org/docs/concepts/consensus-protocol/unl) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#unl-quorum-headroom)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Validator Keys",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": 1800000,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 0,
+        "y": 37
+      },
+      "id": 9,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(unl_quorum{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"trusted_keys\"}, \"series\", \"Trusted Keys\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(unl_quorum{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"quorum\"}, \"series\", \"Quorum\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "B"
+        }
+      ],
+      "title": "UNL Trusted Keys vs Quorum",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*Spare trusted validator keys above the required quorum — the single number that says whether this node can ever validate.*\n\n###### How it's computed:\n*Trusted key count minus the required quorum, matched per node.*\n\n###### Reading it:\n*Positive is healthy. Zero or negative (red) means the trusted UNL is too small to ever satisfy quorum, so the node will stay short of a validated ledger.*\n\n###### Healthy range:\n*Positive; the exact figure depends on UNL size and the configured quorum.*\n\n###### Watch for:\n*Zero or below. Pair it with UNL Fetch Rate by Site & Outcome: a site stuck on fetch_error or expired is the usual cause of a UNL too small to meet quorum.*\n\n###### Keywords:\n- **UNL quorum headroom** *(per node)* — trusted UNL key count minus the required quorum; at or below zero the node can never declare a ledger validated.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerUnlQuorumGauge`\n\n###### References:\n[Validation quorum on xrpl.org](https://xrpl.org/docs/concepts/consensus-protocol/negative-unl) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#unl-quorum-headroom)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "green",
+                "value": 2
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 12,
+        "y": 37
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(unl_quorum{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"trusted_keys\"} - ignoring(metric) unl_quorum{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"quorum\"}, \"series\", \"Quorum Headroom\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        }
+      ],
+      "title": "UNL Quorum Headroom",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "###### What this is:\n*How far the network's agreed close time sits from this node's own clock.*\n\n###### How it's computed:\n*Signed offset in seconds, plus its magnitude so a threshold band applies in either direction.*\n\n###### Reading it:\n*Both series should hug zero. A negative signed value means the local clock runs ahead of the network, positive means it lags. The magnitude is what matters: the threshold lines sit at 1s (suspicious) and 60s.*\n\n###### Healthy range:\n*Magnitude under 1 second.*\n\n###### Watch for:\n*A magnitude above 1 second that does not decay, which delays consensus participation. Note that server_info only surfaces close_time_offset once the magnitude reaches 60 seconds, so this panel sees skew long before the API does; a persistent offset is a local NTP fault, not a network one.*\n\n###### Keywords:\n- **Clock close offset** *(per node)* — the difference between the network's agreed close time and this node's clock; a persistent offset delays consensus participation.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerClockSkewGauge`\n\n###### References:\n[Ledger close times on xrpl.org](https://xrpl.org/docs/concepts/ledgers/ledger-close-times) · [Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#clock-close-offset)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": true,
+            "axisColorMode": "text",
+            "axisLabel": "Close Offset (s)",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 3,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": 1800000,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 60
+              }
+            ]
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 49
+      },
+      "id": 11,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "enableFacetedFilter": false,
+          "overflow": "ellipsis",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "13.2.0-28926505616",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(clock_close_offset_seconds{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"offset\"}, \"series\", \"Close Offset\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace(abs(clock_close_offset_seconds{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"offset\"}), \"series\", \"Offset Magnitude\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "B"
+        }
+      ],
+      "title": "Clock Close Offset",
+      "type": "timeseries"
+    },
+    {
       "id": 2,
       "type": "row",
       "title": "Sync pipeline",
@@ -61,7 +972,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 1
+        "y": 61
       },
       "panels": []
     }
@@ -209,6 +1120,86 @@
         "description": "Filter by xrpld node (service.instance.id)",
         "type": "query",
         "query": "label_values(target_info, service_instance_id)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "dial_outcome",
+        "label": "Dial Outcome",
+        "description": "Filter outbound dial attempts by terminal outcome [connected / tcp_fail / tls_fail / upgrade_fail / timeout]",
+        "type": "query",
+        "query": "label_values(overlay_connect_total, outcome)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "handshake_reason",
+        "label": "Handshake Reason",
+        "description": "Filter handshake negotiation failures by the check that rejected the peer (e.g. wrong_network, clock_skew)",
+        "type": "query",
+        "query": "label_values(handshake_negotiation_fail_total, reason)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "unl_site",
+        "label": "UNL Site",
+        "description": "Filter validator-list fetches by configured UNL site URI",
+        "type": "query",
+        "query": "label_values(unl_fetch_total, site)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "unl_outcome",
+        "label": "UNL Fetch Outcome",
+        "description": "Filter validator-list fetches by outcome (accepted is the only success)",
+        "type": "query",
+        "query": "label_values(unl_fetch_total, outcome)",
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"

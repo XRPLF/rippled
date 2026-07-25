@@ -6,6 +6,7 @@
 #include <xrpld/app/misc/detail/WorkFile.h>
 #include <xrpld/app/misc/detail/WorkPlain.h>
 #include <xrpld/app/misc/detail/WorkSSL.h>
+#include <xrpld/telemetry/MetricMacros.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -37,6 +38,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -381,6 +383,24 @@ ValidatorSite::onTimer(std::size_t siteIdx, error_code const& ec)
 }
 
 void
+ValidatorSite::reportFetchOutcome(
+    std::size_t siteIdx,
+    std::string_view outcome,
+    std::scoped_lock<std::mutex> const& sitesLock)
+{
+    // loadedResource is set in Site's constructor and never reassigned, so
+    // it is always non-null. Unlike activeResource (reset once a fetch
+    // completes) it also keeps the URI exactly as configured, which keeps
+    // the time series stable when a site redirects.
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        "unl_fetch_total",
+        "Validator list fetch attempts, by site and outcome",
+        {{"site", std::string(sites_[siteIdx].loadedResource->uri)},
+         {"outcome", std::string(outcome)}});
+}
+
+void
 ValidatorSite::parseJsonResponse(
     std::string const& res,
     std::size_t siteIdx,
@@ -496,6 +516,9 @@ ValidatorSite::parseJsonResponse(
         sites_[siteIdx].refreshInterval = refresh;
         sites_[siteIdx].nextRefresh = clock_type::now() + sites_[siteIdx].refreshInterval;
     }
+
+    // Last on purpose: if anything above throws, the caller's catch counts it.
+    reportFetchOutcome(siteIdx, to_string(applyResult.bestDisposition()), sitesLock);
 }
 
 std::shared_ptr<ValidatorSite::Site::Resource>
@@ -552,7 +575,7 @@ ValidatorSite::onSiteFetch(
             sites_[siteIdx].lastRequestEndpoint = endpoint;
         JLOG(j_.debug()) << "Got completion for " << sites_[siteIdx].activeResource->uri << " "
                          << endpoint;
-        auto onError = [&](std::string const& errMsg, bool retry) {
+        auto onError = [&](std::string const& errMsg, bool retry, std::string_view outcome) {
             sites_[siteIdx].lastRefreshStatus.emplace(
                 Site::Status{
                     .refreshed = clock_type::now(),
@@ -560,6 +583,7 @@ ValidatorSite::onSiteFetch(
                     .message = errMsg});
             if (retry)
                 sites_[siteIdx].nextRefresh = clock_type::now() + kErrorRetryInterval;
+            reportFetchOutcome(siteIdx, outcome, lockSites);
 
             // See if there's a copy saved locally from last time we
             // saw the list.
@@ -569,7 +593,7 @@ ValidatorSite::onSiteFetch(
         {
             JLOG(j_.warn()) << "Problem retrieving from " << sites_[siteIdx].activeResource->uri
                             << " " << endpoint << " " << ec.value() << ":" << ec.message();
-            onError("fetch error", true);
+            onError("fetch error", true, "fetch_error");
         }
         else
         {
@@ -605,14 +629,14 @@ ValidatorSite::onSiteFetch(
                         JLOG(j_.warn()) << "Request for validator list at "
                                         << sites_[siteIdx].activeResource->uri << " " << endpoint
                                         << " returned bad status: " << res.result_int();
-                        onError("bad result code", true);
+                        onError("bad result code", true, "bad_status");
                     }
                 }
             }
             catch (std::exception const& ex)
             {
                 JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
-                onError(ex.what(), false);
+                onError(ex.what(), false, "parse_error");
             }
         }
         sites_[siteIdx].activeResource.reset();
@@ -633,12 +657,15 @@ ValidatorSite::onTextFetch(
 {
     std::scoped_lock const lockSites{sitesMutex_};
     {
+        // Both failures share one catch, so the label is set where detected.
+        std::string_view outcome = "parse_error";
         try
         {
             if (ec)
             {
                 JLOG(j_.warn()) << "Problem retrieving from " << sites_[siteIdx].activeResource->uri
                                 << " " << ec.value() << ": " << ec.message();
+                outcome = "fetch_error";
                 throw std::runtime_error{"fetch error"};
             }
 
@@ -654,6 +681,7 @@ ValidatorSite::onTextFetch(
                     .refreshed = clock_type::now(),
                     .disposition = ListDisposition::Invalid,
                     .message = ex.what()});
+            reportFetchOutcome(siteIdx, outcome, lockSites);
         }
         sites_[siteIdx].activeResource.reset();
     }

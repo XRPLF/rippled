@@ -128,8 +128,19 @@
     "metrics": ["storage_detail{metric=\"nudb_bytes\"}"]
   },
   "sync_diagnostics": {
-    "description": "Fresh-node sync diagnostics (MetricsRegistry native metrics). Bootstrap (Domain 0) and acquire-pipeline signals rendered by the ledger-sync-health dashboard. Empty until the emitting work packages land; names are appended one per signal.",
-    "metrics": []
+    "description": "Fresh-node sync diagnostics (native metrics). Bootstrap (Domain 0) and acquire-pipeline signals rendered by the ledger-sync-health dashboard. Names are appended one per signal. Histograms are listed by their Prometheus _bucket series (the bare instrument name is not a series). The two observable gauges carry an inline metric= selector so the specific sub-series is asserted, matching the parity_* groups.",
+    "metrics": [
+      "dns_resolve_total",
+      "dns_resolve_latency_ms_bucket",
+      "overlay_connect_total",
+      "overlay_dial_latency_ms_bucket",
+      "handshake_negotiation_fail_total",
+      "unl_fetch_total",
+      "unl_quorum{metric=\"trusted_keys\"}",
+      "unl_quorum{metric=\"quorum\"}",
+      "clock_close_offset_seconds{metric=\"offset\"}"
+    ],
+    "_conditional_note": "handshake_negotiation_fail_total and unl_fetch_total are conditional under the local harness: the first only exists once a handshake is rejected, and the second needs a [validator_list_sites] entry (run-full-validation.sh generates a static [validators] file instead). The validator has no per-metric optional flag, so if either reports 0 series in a harness run, move it out of this group rather than weakening the check."
   },
   "grafana_dashboards": {
     "description": "All Grafana dashboards that must render data (UIDs as provisioned on disk under docker/telemetry/grafana/dashboards/).",

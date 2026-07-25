@@ -480,6 +480,8 @@ MetricsRegistry::registerAsyncGauges()
     registerStorageDetailGauge();
     registerValidationAgreementGauge();
     registerValidationTotalsCounters();
+    registerUnlQuorumGauge();
+    registerClockSkewGauge();
 }
 
 void
@@ -1453,6 +1455,82 @@ MetricsRegistry::registerValidationTotalsCounters()
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
                 // Silently skip on error.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerUnlQuorumGauge()
+{
+    // --- Sync diagnostics: trusted UNL size against required quorum ---
+    // validator_health already exports the quorum on its own; pairing it
+    // with the trusted-key count in one instrument is what makes the
+    // "can this node ever validate?" comparison a single query.
+    unlQuorumGauge_ = meter_->CreateInt64ObservableGauge(
+        "unl_quorum", "Trusted UNL key count vs required quorum");
+    unlQuorumGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* name, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{"metric", name}});
+                };
+
+                auto& validators = app.getValidators();
+
+                // Trusted master keys currently in effect. Zero means no
+                // usable UNL: quorum can never be met.
+                observe("trusted_keys", static_cast<int64_t>(validators.trustedKeyCount()));
+
+                // Validations required for a ledger to be fully validated.
+                observe("quorum", static_cast<int64_t>(validators.quorum()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerClockSkewGauge()
+{
+    // --- Sync diagnostics: network close-time offset ---
+    // A persistent offset shows the local clock disagrees with the
+    // network, which delays consensus participation. server_info hides
+    // this below 60 s, so export it continuously instead.
+    clockSkewGauge_ = meter_->CreateInt64ObservableGauge(
+        "clock_close_offset_seconds", "Network close time offset from the local clock, in seconds");
+    clockSkewGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto observe = [&](char const* name, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{"metric", name}});
+                };
+
+                // Negative when the local clock runs ahead of the network.
+                observe("offset", static_cast<int64_t>(app.getTimeKeeper().closeOffset().count()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
             }
         },
         this);

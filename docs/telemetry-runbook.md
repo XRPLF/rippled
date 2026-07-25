@@ -2068,7 +2068,85 @@ Signal index (instrument, emit site, panel):
 Note: the sync signals are native metrics, which are never sampled — unlike the
 span-derived (spanmetrics) series, they are always complete.
 
-_(Per-signal diagnosis steps are added as each signal lands.)_
+#### Bootstrap (Domain 0) — ordered diagnosis
+
+Work the Bootstrap row in this order. Each step gates the next, so stop at the
+first one that is wrong and fix it before reading further panels.
+
+1. **DNS — did the node resolve its configured peers?**
+   Panel _DNS Resolve Outcome Rate_ (`dns_resolve_total`). Any rate on
+   `outcome=empty` means a name in `[ips]` or `[ips_fixed]` returned no address,
+   so that peer is never dialled. Fix the hostname or point at an IP.
+   If both outcomes are flat at zero the node resolved nothing at all — check
+   that `[ips]`/`[ips_fixed]` is actually populated.
+   Then check _DNS Resolve Latency (p95)_ (`dns_resolve_latency_ms`): a
+   seconds-scale p95 is a resolver timing out, which delays every dial behind
+   it even when the resolution eventually succeeds.
+
+2. **Outbound dial — did the connections complete?**
+   Panel _Outbound Dial Outcome Rate_ (`overlay_connect_total`). The `outcome`
+   label names the stage that broke:
+   - `connected` — success; this is the line that must be non-zero.
+   - `tcp_fail` — no route, refused, or the peer port is closed or firewalled.
+   - `tls_fail` — the TLS handshake failed.
+   - `upgrade_fail` — TLS succeeded but the HTTP upgrade or protocol
+     negotiation was rejected. This is the outcome that pairs with step 3.
+   - `timeout` — the attempt never reached a terminal state.
+     If every attempt lands on one failure outcome and `connected` stays at
+     zero, the node has no outbound peers and cannot sync at all.
+     _Outbound Dial Latency (p95)_ (`overlay_dial_latency_ms`) covers successes
+     and failures together, so a p95 pinned near the dial timeout means peers
+     accept the TCP connection but never finish the handshake.
+
+3. **Handshake — why were peers rejected?**
+   Panel _Handshake Negotiation Failures by Reason_
+   (`handshake_negotiation_fail_total`). This is where an `upgrade_fail` from
+   step 2 gets its cause. The `reason` label is the check that rejected the
+   peer; the ones worth acting on first:
+   - `wrong_network` or `invalid_network_id` — **most common fresh-node
+     misconfiguration.** The node is on a different network than its peers, so
+     it will never reach a quorum however healthy everything else looks. Fix
+     `[network_id]` and the peer list together.
+   - `clock_skew` — the peer rejected this node's clock; go to step 5.
+   - `session_verify_failed`, `bad_public_key`, `no_session_signature` — a
+     misbehaving or mismatched peer rather than a local fault.
+   - `self_connection`, `local_ip_mismatch`, `remote_ip_mismatch` — a low
+     background rate is normal on a NAT'd host.
+
+4. **UNL — can the node ever form a quorum?**
+   Panel _UNL Fetch Rate by Site & Outcome_ (`unl_fetch_total`), grouped by
+   `site` and `outcome`. Read the outcome carefully — `accepted` is the only
+   success value:
+   - `accepted` — the list was applied.
+   - `same_sequence`, `known_sequence` — normal no-op refreshes of a list the
+     node already holds.
+   - `fetch_error`, `bad_status`, `parse_error` — transport or content faults;
+     the site is effectively unreachable.
+   - `expired`, `stale`, `untrusted`, `invalid`, `unsupported_version`,
+     `pending` — the list arrived but was rejected, so no keys are loaded from
+     that site.
+     Then read _UNL Trusted Keys vs Quorum_ and _UNL Quorum Headroom_
+     (`unl_quorum`, `metric=trusted_keys` against `metric=quorum`). **This is
+     the "will never validate" check.** If `trusted_keys` is zero, or sits at or
+     below `quorum` (headroom zero or negative, shown red), the trusted UNL is
+     too small to ever satisfy quorum: the node can track ledgers but will
+     never declare one validated, and no amount of healthy acquire traffic
+     changes that. A site stuck on `fetch_error` or `expired` in the panel above
+     is the usual cause.
+
+5. **Clock — is local time disagreeing with the network?**
+   Panel _Clock Close Offset_ (`clock_close_offset_seconds`, `metric=offset`).
+   The signed series is negative when the local clock runs ahead of the network
+   and positive when it lags; the magnitude series carries the threshold bands.
+   A magnitude above 1 second that does not decay is suspicious and delays
+   consensus participation. Note that `server_info` only reports
+   `close_time_offset` once the magnitude reaches 60 seconds, so this panel sees
+   skew long before the API does. A persistent offset is a local NTP fault, not
+   a network one — and it is also the cause behind a `clock_skew` reason in
+   step 3.
+
+If all five steps are clean the bootstrap stage is healthy, and the problem is
+in the **Sync pipeline** row instead.
 
 ## Performance Tuning
 
