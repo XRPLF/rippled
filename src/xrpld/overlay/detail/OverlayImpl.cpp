@@ -7,6 +7,7 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/ValidatorSite.h>
 #include <xrpld/overlay/Cluster.h>
+#include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/detail/ConnectAttempt.h>
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/PeerImp.h>
@@ -82,6 +83,7 @@
 #include <exception>
 #include <functional>
 #include <iomanip>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -230,18 +232,26 @@ OverlayImpl::onHandoff(
 
     JLOG(journal.debug()) << "Peer connection upgrade from " << remoteEndpoint;
 
+    // From here on every exit is a terminal outcome for one inbound peer
+    // attempt, so each reports exactly once. The two returns above are not
+    // peer attempts at all (a handled HTTP request, and a request that never
+    // asked to upgrade), which is why they are not counted.
     error_code ec;
     auto const localEndpoint(streamPtr->next_layer().socket().local_endpoint(ec));
     if (ec)
     {
         JLOG(journal.debug()) << remoteEndpoint << " failed: " << ec.message();
+        reportAcceptOutcome("local_endpoint_fail");
         return handoff;
     }
 
     auto consumer =
         resourceManager_.newInboundEndpoint(beast::IPAddressConversion::fromAsio(remoteEndpoint));
     if (consumer.disconnect(journal))
+    {
+        reportAcceptOutcome("resource_limit");
         return handoff;
+    }
 
     auto const [slot, result] = peerFinder_->newInboundSlot(
         beast::IPAddressConversion::fromAsio(localEndpoint),
@@ -252,6 +262,7 @@ OverlayImpl::onHandoff(
         // connection refused either IP limit exceeded or self-connect
         handoff.moved = false;
         JLOG(journal.debug()) << "Peer " << remoteEndpoint << " refused, " << to_string(result);
+        reportAcceptOutcome("no_slot");
         return handoff;
     }
 
@@ -266,6 +277,7 @@ OverlayImpl::onHandoff(
             handoff.moved = false;
             handoff.response = makeRedirectResponse(slot, request, remoteEndpoint.address());
             handoff.keepAlive = beast::rfc2616::isKeepAlive(request);
+            reportAcceptOutcome("not_peer_request");
             return handoff;
         }
     }
@@ -278,6 +290,7 @@ OverlayImpl::onHandoff(
         handoff.response = makeErrorResponse(
             slot, request, remoteEndpoint.address(), "Unable to agree on a protocol version");
         handoff.keepAlive = false;
+        reportAcceptOutcome("protocol_mismatch");
         return handoff;
     }
 
@@ -289,6 +302,7 @@ OverlayImpl::onHandoff(
         handoff.response =
             makeErrorResponse(slot, request, remoteEndpoint.address(), "Incorrect security cookie");
         handoff.keepAlive = false;
+        reportAcceptOutcome("bad_cookie");
         return handoff;
     }
 
@@ -318,6 +332,7 @@ OverlayImpl::onHandoff(
                 handoff.moved = false;
                 handoff.response = makeRedirectResponse(slot, request, remoteEndpoint.address());
                 handoff.keepAlive = false;
+                reportAcceptOutcome("slot_refused");
                 return handoff;
             }
         }
@@ -347,6 +362,10 @@ OverlayImpl::onHandoff(
             peer->run();
         }
         handoff.moved = true;
+
+        // Only after run() is the peer genuinely accepted. Anything that threw
+        // above is reported as a handshake error by the catch below instead.
+        reportAcceptOutcome("accepted");
         return handoff;
     }
     catch (std::exception const& e)
@@ -358,6 +377,7 @@ OverlayImpl::onHandoff(
         handoff.moved = false;
         handoff.response = makeErrorResponse(slot, request, remoteEndpoint.address(), e.what());
         handoff.keepAlive = false;
+        reportAcceptOutcome("handshake_error");
         return handoff;
     }
 }
@@ -628,6 +648,70 @@ OverlayImpl::reportDnsResolve(std::chrono::steady_clock::time_point start, bool 
         "dns_resolve_total",
         "Peer hostname resolutions, by outcome",
         {{"outcome", std::string(resolved ? "resolved" : "empty")}});
+}
+
+void
+OverlayImpl::reportAcceptOutcome(char const* outcome)
+{
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        "peer_accept_total",
+        "Inbound peer connection attempts, by terminal outcome",
+        {{"outcome", std::string(outcome)}});
+}
+
+PeerLedgerSupply
+OverlayImpl::getPeerLedgerSupply(std::uint32_t validatedSeq) const
+{
+    PeerLedgerSupply supply;
+
+    // Tracked separately from supply.supplyMinSeq so the "nothing reported
+    // yet" case stays distinguishable: a peer set that genuinely serves from
+    // sequence 0 and a peer set that has said nothing must not both read 0.
+    // Only a peer that reported anything can lower this.
+    auto lowest = std::numeric_limits<std::uint32_t>::max();
+
+    // The next sequence this node must acquire. Widened before the increment
+    // so it cannot wrap to 0 at the top of the sequence space, which would
+    // silently turn "needs the next ledger" into "needs the genesis ledger".
+    // On a node with no validated ledger yet this is 1, which is correct.
+    auto const neededSeq = static_cast<std::uint64_t>(validatedSeq) + 1;
+
+    // getActivePeers() takes the overlay lock, copies the list and releases
+    // it, so the per-peer reads below hold no overlay lock.
+    for (auto const& peer : getActivePeers())
+    {
+        std::uint32_t minSeq = 0;
+        std::uint32_t maxSeq = 0;
+        peer->ledgerRange(minSeq, maxSeq);
+
+        // A peer that has not sent mtSTATUS_CHANGE yet reports [0, 0]. It
+        // supplies nothing, so it must not be counted as serving and must not
+        // pull the reported window down to zero.
+        if (maxSeq == 0)
+            continue;
+
+        ++supply.peersReporting;
+
+        if (validatedSeq >= minSeq && validatedSeq <= maxSeq)
+            ++supply.peersServingValidated;
+
+        if (neededSeq >= static_cast<std::uint64_t>(minSeq) &&
+            neededSeq <= static_cast<std::uint64_t>(maxSeq))
+        {
+            ++supply.peersServingNext;
+        }
+
+        lowest = std::min(lowest, minSeq);
+        supply.supplyMaxSeq = std::max(supply.supplyMaxSeq, static_cast<std::int64_t>(maxSeq));
+    }
+
+    // Convert the sentinel explicitly. Casting the unsigned max would produce
+    // 4294967295, which a dashboard would plot as a real sequence.
+    if (supply.peersReporting > 0)
+        supply.supplyMinSeq = static_cast<std::int64_t>(lowest);
+
+    return supply;
 }
 
 void

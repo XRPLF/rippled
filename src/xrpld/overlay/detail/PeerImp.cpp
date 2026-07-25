@@ -24,6 +24,7 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
 #include <xrpld/telemetry/ConsensusReceiveTracing.h>
+#include <xrpld/telemetry/MetricMacros.h>
 #include <xrpld/telemetry/TxSpanNames.h>
 #include <xrpld/telemetry/TxTracing.h>
 
@@ -228,7 +229,10 @@ PeerImp::run()
             closed = parseLedgerHash(iter->value());
 
             if (!closed)
+            {
+                self->setDisconnectReason("malformed_handshake");
                 self->fail("Malformed handshake data (1)");
+            }
         }
 
         if (auto const iter = self->headers_.find("Previous-Ledger"); iter != self->headers_.end())
@@ -236,11 +240,17 @@ PeerImp::run()
             previous = parseLedgerHash(iter->value());
 
             if (!previous)
+            {
+                self->setDisconnectReason("malformed_handshake");
                 self->fail("Malformed handshake data (2)");
+            }
         }
 
         if (previous && !closed)
+        {
+            self->setDisconnectReason("malformed_handshake");
             self->fail("Malformed handshake data (3)");
+        }
 
         {
             std::scoped_lock const sl(self->recentLock_);
@@ -271,6 +281,9 @@ PeerImp::stop()
         if (!self->socket_.is_open())
             return;
 
+        // Overlay-wide shutdown, not a fault with this peer. Distinguished so
+        // a clean restart does not look like a wave of peer failures.
+        self->setDisconnectReason("stopping");
         self->close();
     });
 }
@@ -397,6 +410,10 @@ PeerImp::charge(Resource::Charge const& fee, std::string const& context)
                     expected, true, std::memory_order_acq_rel))
             {
                 self->overlay_.incPeerDisconnectCharges();
+                // Set inside the latch, so only the one worker that wins the
+                // exchange writes it. This is the node's own backpressure, not
+                // a peer or network fault.
+                self->setDisconnectReason("charge_resources");
                 self->fail("charge: Resources");
             }
         }
@@ -622,7 +639,32 @@ PeerImp::close()
     socket_.close(ec);  // NOLINT(bugprone-unused-return-value)
 
     overlay_.incPeerDisconnect();
+
+    // Emitted right next to incPeerDisconnect() above, and behind the same
+    // socket-already-closed early return, so this counter's total tracks that
+    // existing tally rather than being a second, differently-scoped count.
+    // What it adds is the split: today every disconnect collapses into one
+    // number, so our-fault backpressure ("large_sendq", "charge_resources")
+    // cannot be told apart from a topology or network fault ("not_useful",
+    // "ping_timeout", "read_error"), and the two need opposite responses.
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        "peer_disconnect_total",
+        "Peer disconnects, by cause and connection direction",
+        {{"reason", std::string(disconnectReason_)},
+         {"direction", std::string(inbound_ ? "inbound" : "outbound")}});
+
     JLOG((inbound_ ? journal_.debug() : journal_.info())) << "close: Closed";
+}
+
+void
+PeerImp::reportServeRefusal(char const* request, char const* reason)
+{
+    XRPL_METRIC_COUNTER_INC_LABELED(
+        app_,
+        "serve_refused_total",
+        "Peer data requests this node declined to serve, by request kind and cause",
+        {{"request", std::string(request)}, {"reason", std::string(reason)}});
 }
 
 void
@@ -718,12 +760,16 @@ PeerImp::onTimer(error_code const& ec)
 
         // This should never happen
         JLOG(journal_.error()) << "onTimer: " << ec.message();
+        setDisconnectReason("timer_error");
         close();
         return;
     }
 
     if (largeSendq_++ >= Tuning::kSendqIntervals)
     {
+        // Our own send queue never drained: this node could not keep up with
+        // what it owed the peer, so it is local backpressure, not a peer fault.
+        setDisconnectReason("large_sendq");
         fail("Large send queue");
         return;
     }
@@ -741,6 +787,9 @@ PeerImp::onTimer(error_code const& ec)
             (t == Tracking::Unknown && (duration > app_.config().maxUnknownTime)))
         {
             overlay_.peerFinder().onFailure(slot_);
+            // The peer is on a different chain, or we cannot tell: a topology
+            // signal, not a fault on either side.
+            setDisconnectReason("not_useful");
             fail("Not useful");
             return;
         }
@@ -749,6 +798,7 @@ PeerImp::onTimer(error_code const& ec)
     // Already waiting for PONG
     if (lastPingSeq_)
     {
+        setDisconnectReason("ping_timeout");
         fail("Ping Timeout");
         return;
     }
@@ -787,6 +837,10 @@ PeerImp::onShutdown(error_code ec)
         }
     }
 
+    // The TLS shutdown handshake finished. First-wins means the reason set by
+    // whoever asked for the graceful close is kept; "shutdown" only lands when
+    // the teardown started here, i.e. a clean close with no earlier cause.
+    setDisconnectReason("shutdown");
     close();
 }
 
@@ -802,6 +856,7 @@ PeerImp::doAccept()
     // the shared value successfully in OverlayImpl
     if (!sharedValue)
     {
+        setDisconnectReason("shared_value");
         fail("makeSharedValue: Unexpected failure");
         return;
     }
@@ -851,6 +906,7 @@ PeerImp::doAccept()
                     if (ec == boost::asio::error::operation_aborted)
                         return;
 
+                    setDisconnectReason("write_error");
                     fail("onWriteResponse", ec);
                     return;
                 }
@@ -860,6 +916,7 @@ PeerImp::doAccept()
                     doProtocolStart();
                     return;
                 }
+                setDisconnectReason("write_error");
                 fail("Failed to write header");
                 return;
             }));
@@ -934,10 +991,14 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytesTransferred)
         if (ec == boost::asio::error::eof)
         {
             JLOG(journal_.info()) << "EOF";
+            // The peer closed its side cleanly. Counted apart from a read
+            // error because it is normal peer churn, not a fault.
+            setDisconnectReason("graceful");
             gracefulClose();
             return;
         }
 
+        setDisconnectReason("read_error");
         fail("onReadMessage", ec);
         return;
     }
@@ -967,6 +1028,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytesTransferred)
 
         if (ec)
         {
+            setDisconnectReason("read_error");
             fail("onReadMessage", ec);
             return;
         }
@@ -1003,6 +1065,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytesTransferred)
         if (ec == boost::asio::error::operation_aborted)
             return;
 
+        setDisconnectReason("write_error");
         fail("onWriteMessage", ec);
         return;
     }
@@ -2536,6 +2599,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
         if (sendQueue_.size() >= Tuning::kDropSendQueue)
         {
             JLOG(pJournal_.debug()) << "GetObject: Large send queue";
+            reportServeRefusal("object", "sendq_full");
             return;
         }
 
@@ -2891,6 +2955,10 @@ PeerImp::doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
         (app_.getJobQueue().getJobCount(JtPack) > 10))
     {
         JLOG(pJournal_.info()) << "Too busy to make fetch pack";
+        // A fetch pack is how a syncing peer catches up in bulk, so refusing
+        // one directly slows that peer's sync. Counted separately from the
+        // ledger path because the shed threshold is a different one.
+        reportServeRefusal("fetchpack", "load_shed");
         return;
     }
 
@@ -3407,7 +3475,10 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
     if (itype == protocol::liTS_CANDIDATE)
     {
         if (sharedMap = getTxSet(m); !sharedMap)
+        {
+            reportServeRefusal("txset", "not_found");
             return;
+        }
         map = sharedMap.get();
 
         // Fill out the reply
@@ -3425,16 +3496,21 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
         if (sendQueue_.size() >= Tuning::kDropSendQueue)
         {
             JLOG(pJournal_.debug()) << "processLedgerRequest: Large send queue";
+            reportServeRefusal("ledger", "sendq_full");
             return;
         }
         if (app_.getFeeTrack().isLoadedLocal() && !cluster())
         {
             JLOG(pJournal_.debug()) << "processLedgerRequest: Too busy";
+            reportServeRefusal("ledger", "load_shed");
             return;
         }
 
         if (ledger = getLedger(m); !ledger)
+        {
+            reportServeRefusal("ledger", "not_found");
             return;
+        }
 
         // Fill out the reply
         auto const ledgerHash{ledger->header().hash};
@@ -3465,6 +3541,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
             default:
                 // This case should not be possible here
                 JLOG(pJournal_.error()) << "processLedgerRequest: Invalid ledger info type";
+                reportServeRefusal("ledger", "bad_type");
                 return;
         }
     }
@@ -3472,6 +3549,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
     if (map == nullptr)
     {
         JLOG(pJournal_.warn()) << "processLedgerRequest: Unable to find map";
+        reportServeRefusal("ledger", "no_map");
         return;
     }
 
@@ -3556,7 +3634,13 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
     }
 
     if (ledgerData.nodes_size() == 0)
+    {
+        // The map was found but produced no nodes to return, so the requester
+        // gets nothing back and will have to ask someone else. Emitted here,
+        // after the node loop, rather than inside it -- one call per request.
+        reportServeRefusal(itype == protocol::liTS_CANDIDATE ? "txset" : "ledger", "empty_reply");
         return;
+    }
 
     send(std::make_shared<Message>(ledgerData, protocol::mtLEDGER_DATA));
 }

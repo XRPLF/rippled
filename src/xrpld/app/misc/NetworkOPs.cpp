@@ -2164,6 +2164,17 @@ NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLC
     // set the newLCL as our last closed ledger -- this is abnormal code
     JLOG(journal_.error()) << "JUMP last closed ledger to " << newLCL->header().hash;
 
+    // This node was told the network's last closed ledger is not the one it
+    // built on, and is discarding its own chain tip to follow. Log-only until
+    // now, so a node repeatedly thrashing between chains left no time series
+    // to correlate against the rest of the sync pipeline. Rare event, one
+    // counter Add, no labels: the ledger hash and sequence would both be
+    // unbounded as label values, and the log line above already carries them.
+    XRPL_METRIC_COUNTER_INC(
+        registry_.get(),
+        "ledger_jump_total",
+        "Forced jumps of the last closed ledger to a divergent chain");
+
     clearNeedNetworkLedger();
 
     // Update fee computations.

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpld/overlay/Peer.h>
+#include <xrpld/peerfinder/PeerfinderManager.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/net/IPAddress.h>
@@ -30,6 +31,62 @@ class context;
 }  // namespace boost::asio::ssl
 
 namespace xrpl {
+
+/**
+ * How much of the ledger range this node needs its peer set can serve.
+ *
+ * Aggregated from the per-peer ranges advertised in mtSTATUS_CHANGE. The
+ * distinction this exists to draw: a node that is behind because no connected
+ * peer holds the sequence it wants is a supply problem to be fixed by changing
+ * the peer set, while a node whose peers all hold that sequence is a
+ * throughput problem. Without the aggregate the two look identical.
+ *
+ * Example usage -- the supply verdict from a telemetry gauge callback:
+ * @code
+ * auto const supply = overlay.getPeerLedgerSupply(validatedSeq);
+ * if (supply.peersReporting > 0 && supply.peersServingNext == 0)
+ *     // peers are connected, but none holds the next ledger needed
+ * @endcode
+ *
+ * Example usage -- edge case: nothing has advertised a range yet:
+ * @code
+ * auto const supply = overlay.getPeerLedgerSupply(validatedSeq);
+ * if (supply.peersReporting == 0)
+ *     // supplyMinSeq / supplyMaxSeq are 0 and mean "unknown", not "empty"
+ * @endcode
+ *
+ * @note A peer that has not yet sent a status change advertises [0, 0]. Such
+ *       peers are excluded from every field, so `peersReporting` is the
+ *       denominator that makes the other counts readable: zero serving out of
+ *       zero reporting is silence, zero out of many is a genuine gap.
+ */
+struct PeerLedgerSupply
+{
+    /**
+     * Connected peers that have advertised a non-empty ledger range.
+     */
+    std::int64_t peersReporting{0};
+
+    /**
+     * Reporting peers whose range covers this node's validated sequence.
+     */
+    std::int64_t peersServingValidated{0};
+
+    /**
+     * Reporting peers whose range covers validated + 1, the next one needed.
+     */
+    std::int64_t peersServingNext{0};
+
+    /**
+     * Lowest sequence any reporting peer offers; 0 when none report.
+     */
+    std::int64_t supplyMinSeq{0};
+
+    /**
+     * Highest sequence any reporting peer offers; 0 when none report.
+     */
+    std::int64_t supplyMaxSeq{0};
+};
 
 /**
  * Manages the set of connected peers.
@@ -242,6 +299,41 @@ public:
      */
     [[nodiscard]] virtual json::Value
     txMetrics() const = 0;
+
+    /**
+     * Returns how much of the sequence range this node needs its peers can
+     * actually serve.
+     *
+     * Each peer advertises the smallest and largest ledger it holds in
+     * mtSTATUS_CHANGE, which the connection caches. Those ranges are never
+     * compared against each other, so "no peer on the network holds the
+     * ledger I need" is today indistinguishable from "my peers are slow".
+     * This aggregates them into that answer.
+     *
+     * @param validatedSeq This node's validated sequence; the ledger it is
+     *        currently able to serve from.
+     * @return The supply counts and the sequence window the peer set covers.
+     *
+     * @note O(peers), taking the peer-list lock once. Intended for a ~10 s
+     *       telemetry poll, never a per-message path.
+     */
+    [[nodiscard]] virtual PeerLedgerSupply
+    getPeerLedgerSupply(std::uint32_t validatedSeq) const = 0;
+
+    /**
+     * Returns PeerFinder slot occupancy and address-cache depth.
+     *
+     * Forwarded from PeerFinder, which owns the counts. Exposed on Overlay
+     * because that is the only handle the rest of the server holds; the
+     * PeerFinder itself is private to the overlay implementation.
+     *
+     * Not `const`: the PeerFinder lock is a plain member, so no method on
+     * that path can be const.
+     *
+     * @return One consistent snapshot of all nine fields.
+     */
+    [[nodiscard]] virtual PeerFinder::SlotCensus
+    getSlotCensus() = 0;
 };
 
 }  // namespace xrpl

@@ -427,6 +427,56 @@ public:
     }
 
     /**
+     * Aggregates the per-peer advertised ledger ranges into supply counts.
+     *
+     * Iterates the active peers once, reading each one's cached
+     * `ledgerRange()`. Peers advertising [0, 0] have not reported yet and are
+     * skipped entirely, so they cannot drag `supplyMinSeq` to zero and make a
+     * healthy peer set look like it offers history from genesis.
+     *
+     * @param validatedSeq This node's validated sequence.
+     * @return The supply counts and the covered sequence window.
+     *
+     * @note O(peers). `getActivePeers()` copies the peer list under the
+     *       overlay lock and releases it before the loop runs, so no peer's
+     *       `ledgerRange()` lock is ever taken while holding the overlay lock.
+     * @note Called from the ~10 s telemetry gauge callback only.
+     */
+    [[nodiscard]] PeerLedgerSupply
+    getPeerLedgerSupply(std::uint32_t validatedSeq) const override;
+
+    /**
+     * Forwards the PeerFinder slot census.
+     *
+     * @return One consistent snapshot of all nine slot/cache fields.
+     */
+    [[nodiscard]] PeerFinder::SlotCensus
+    getSlotCensus() override
+    {
+        return peerFinder_->getSlotCensus();
+    }
+
+    /**
+     * Emits the inbound-accept outcome counter for one handoff attempt.
+     *
+     * Counts the terminal outcome of every inbound connection this node is
+     * offered. The outbound twin (`overlay_connect_total`) already exists in
+     * ConnectAttempt, so this closes the in/out split: without it, a node
+     * refusing every inbound connection looks the same as one nobody dials.
+     *
+     * @param outcome Stable slug for the terminal outcome. Drawn from a fixed
+     *        set of literals at the call sites, never from peer-supplied data,
+     *        so label cardinality is bounded by the code.
+     *
+     * @note Cold path: one call per inbound handoff, which is a
+     *       connection-rate event, not a message-rate one.
+     * @note No-op when telemetry is compiled out or disabled; the macro
+     *       carries that guard, so this needs no `#ifdef`.
+     */
+    void
+    reportAcceptOutcome(char const* outcome);
+
+    /**
      * Add tx reduce-relay metrics.
      */
     template <typename... Args>

@@ -165,6 +165,43 @@ public:
         return config_;
     }
 
+    /**
+     * Builds one consistent snapshot of slot occupancy and cache depth.
+     *
+     * Lives here rather than on ManagerImp because this is the only scope
+     * that can see all four sources at once: `counts_` and `fixed_` are
+     * private, and `lock` is what makes the nine fields describe a single
+     * instant instead of nine successive ones.
+     *
+     * `fixedConfigured` comes from `fixed_.size()` (peers named in the
+     * config), not `counts_.fixed()` (slots currently present that happen to
+     * be fixed). The pair that matters to an operator is "how many did I ask
+     * for" against "how many do I have", which is `fixed_.size()` against
+     * `counts_.fixedActive()` -- the same comparison autoconnect() makes when
+     * it decides to redial a fixed peer.
+     *
+     * @return All nine fields, read under a single acquire of `lock`.
+     *
+     * @note The container sizes are unsigned; each is converted explicitly so
+     *       no value can wrap into a negative reading.
+     */
+    SlotCensus
+    getSlotCensus()
+    {
+        std::scoped_lock const _(lock);
+
+        return SlotCensus{
+            .outActive = counts_.outActive(),
+            .outMax = counts_.outMax(),
+            .inActive = counts_.inboundActive(),
+            .inMax = counts_.inMax(),
+            .connecting = counts_.connectCount(),
+            .fixedConfigured = static_cast<std::int64_t>(fixed_.size()),
+            .fixedActive = static_cast<std::int64_t>(counts_.fixedActive()),
+            .bootcache = static_cast<std::int64_t>(bootcache.size()),
+            .livecache = static_cast<std::int64_t>(livecache.size())};
+    }
+
     void
     addFixedPeer(std::string_view name, beast::IP::Endpoint const& ep)
     {

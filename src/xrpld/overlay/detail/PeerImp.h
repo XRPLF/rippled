@@ -52,6 +52,7 @@
 #include <queue>
 #include <shared_mutex>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -186,6 +187,30 @@ private:
     // post duplicate fail() calls) when several queued requests cross
     // kDropThreshold before the first fail() lands on the strand.
     std::atomic<bool> chargeDisconnectFired_{false};
+
+    /**
+     * Why this connection is being torn down, as a stable slug for the
+     * `peer_disconnect_total` counter's `reason` label.
+     *
+     * Set by the site that decides to disconnect and read once by close(),
+     * which is the single funnel every teardown passes through. Recording at
+     * close() rather than at each decision site is what makes the count equal
+     * the real disconnect count: several sites call fail() and then close(),
+     * and close() itself already self-guards on the socket being open.
+     *
+     * First writer wins, so a reason is never overwritten by a later, less
+     * specific one on the same teardown. Defaults to "unknown" so a path that
+     * reaches close() without setting a reason still produces a series rather
+     * than vanishing.
+     *
+     * @note Only ever touched on the strand (or, for the charge path, behind
+     *       the chargeDisconnectFired_ latch), so it needs no lock.
+     * @note The value is always one of a fixed set of literals in this file --
+     *       never peer-supplied data -- so the label's cardinality is bounded
+     *       by the code.
+     */
+    char const* disconnectReason_{"unknown"};
+
     std::shared_ptr<PeerFinder::Slot> const slot_;
     boost::beast::multi_buffer readBuffer_;
     http_request_type request_;
@@ -470,6 +495,46 @@ public:
     }
 
 private:
+    /**
+     * Records why this connection is closing, first writer wins.
+     *
+     * @param reason Stable slug from the fixed set used in PeerImp.cpp.
+     *
+     * @note Not a metric emit. close() does the single emit per teardown; this
+     *       only carries the cause to it, so a site that decides to disconnect
+     *       and a site that performs it stay separate.
+     */
+    void
+    setDisconnectReason(char const* reason) noexcept
+    {
+        // Only the first cause is kept: fail() sites frequently run before
+        // close(), and a later generic reason must not mask the real one.
+        if (disconnectReason_ == std::string_view{"unknown"})
+            disconnectReason_ = reason;
+    }
+
+    /**
+     * Emits the serve-refusal counter for one request this node would not
+     * answer.
+     *
+     * This is the supply side of the sync exchange: what this node refuses to
+     * serve its peers. Nothing measured it before, so a node shedding every
+     * ledger request looked identical to one being asked for nothing.
+     *
+     * @param request Which request kind was refused: "ledger", "txset",
+     *        "object" or "fetchpack".
+     * @param reason Why it was refused, from the fixed slug set in PeerImp.cpp.
+     *
+     * @note Cold relative to the message loop: one call per refused request,
+     *       and never inside the per-tree-node loop of processLedgerRequest.
+     * @note Both labels are code literals, never peer-supplied data, so
+     *       cardinality is bounded at compile time.
+     * @note No-op when telemetry is compiled out or disabled; the macro
+     *       carries that guard.
+     */
+    void
+    reportServeRefusal(char const* request, char const* reason);
+
     void
     close();
 
