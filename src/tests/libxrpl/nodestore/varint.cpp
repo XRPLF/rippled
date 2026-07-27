@@ -1,18 +1,17 @@
-#include <xrpl/nodestore/detail/varint.h>
+#include <xrpl/nodestore/detail/Varint.h>
 
 #include <gtest/gtest.h>
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <string>
-#include <vector>
+#include <limits>
 
-using namespace xrpl::node_store;
+using namespace xrpl::NodeStore;
 
-TEST(varint, encode_decode)
+TEST(Varint, encode_decode)
 {
-    std::vector<std::size_t> const kVALUES = {
+    static constexpr auto kValues = std::to_array<std::size_t>({
         0,
         1,
         2,
@@ -29,18 +28,19 @@ TEST(varint, encode_decode)
         0xffff,
         0xffffffff,
         0xffffffffffffUL,
-        0xffffffffffffffffUL};
+        std::numeric_limits<std::size_t>::max(),
+    });
 
-    for (auto const v : kVALUES)
+    for (auto const value : kValues)
     {
-        SCOPED_TRACE("value=" + std::to_string(v));
-        std::array<std::uint8_t, varint_traits<std::size_t>::kMax> vi{};
-        auto const n0 = writeVarint(vi.data(), v);
-        EXPECT_GT(n0, 0u) << "write error";
-        EXPECT_EQ(n0, sizeVarint(v)) << "size error";
-        std::size_t v1 = 0;
-        auto const n1 = readVarint(vi.data(), n0, v1);
-        EXPECT_EQ(n1, n0) << "read error";
-        EXPECT_EQ(v1, v) << "wrong value";
+        std::array<std::uint8_t, VarintTraits<std::size_t>::kMax> buffer{};
+        auto const bytesWritten = writeVarint(buffer.data(), value);
+        EXPECT_GT(bytesWritten, 0u);
+        EXPECT_EQ(bytesWritten, sizeVarint(value));
+
+        std::size_t decoded = 0;
+        auto const bytesRead = readVarint(buffer.data(), bytesWritten, decoded);
+        EXPECT_EQ(bytesRead, bytesWritten);
+        EXPECT_EQ(value, decoded);
     }
 }
