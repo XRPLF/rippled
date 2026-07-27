@@ -2042,7 +2042,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(sum by (from, to) (increase(state_changes_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", from=~\"$mode_from\", to=~\"$mode_to\"}[$__range])), \"series\", \"$1\", \"from\", \"(.*)\")",
+          "expr": "label_join(sum by (from, to) (increase(state_changes_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", from=~\"$mode_from\", to=~\"$mode_to\"}[$__range])), \"series\", \" \u2192 \", \"from\", \"to\")",
           "refId": "A"
         }
       ],
