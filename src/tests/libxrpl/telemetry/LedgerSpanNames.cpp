@@ -465,8 +465,12 @@ TEST(LedgerSpanNames, phaseOutcome_covers_its_whole_input_domain)
                 // Whenever the budget expired, the answer is `timeout`
                 // regardless of the other two -- the precedence property, not
                 // just the four sampled points above.
+                // Braced deliberately: EXPECT_EQ expands to an if/else, so an
+                // unbraced if around it is a dangling else, which gcc rejects.
                 if (timedOut)
+                {
                     EXPECT_EQ(outcome, std::string_view(ledger_span::val::timeout));
+                }
             }
         }
     }
