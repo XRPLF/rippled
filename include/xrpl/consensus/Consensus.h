@@ -1,10 +1,5 @@
 #pragma once
 
-#include <xrpld/consensus/ConsensusParms.h>
-#include <xrpld/consensus/ConsensusProposal.h>
-#include <xrpld/consensus/ConsensusSpanNames.h>
-#include <xrpld/consensus/ConsensusTypes.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
@@ -13,6 +8,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/consensus/ConsensusParms.h>
 #include <xrpl/consensus/ConsensusProposal.h>
+#include <xrpl/consensus/ConsensusSpanNames.h>
 #include <xrpl/consensus/ConsensusTypes.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>

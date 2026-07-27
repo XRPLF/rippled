@@ -326,5 +326,6 @@ xrpld.shamap > xrpl.nodestore
 xrpld.shamap > xrpl.protocol
 xrpld.shamap > xrpl.shamap
 xrpld.telemetry > xrpl.basics
+xrpld.telemetry > xrpl.consensus
 xrpld.telemetry > xrpl.protocol
 xrpld.telemetry > xrpl.telemetry
