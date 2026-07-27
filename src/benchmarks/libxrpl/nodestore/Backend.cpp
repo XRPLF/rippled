@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 namespace {
 
 constexpr std::size_t kPoolSizes[] = {1000, 10000, 100000};
@@ -326,4 +326,4 @@ registerStoreBatch(BackendConfig const& bc)
 }();
 
 }  // namespace
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

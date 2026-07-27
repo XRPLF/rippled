@@ -25,7 +25,7 @@ namespace xrpl {
 class Section;
 }  // namespace xrpl
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 /**
  * Persistency layer for NodeObject
@@ -292,7 +292,7 @@ protected:
     void
     storeStats(std::uint64_t count, std::uint64_t sz)
     {
-        XRPL_ASSERT(count <= sz, "xrpl::NodeStore::Database::storeStats : valid inputs");
+        XRPL_ASSERT(count <= sz, "xrpl::node_store::Database::storeStats : valid inputs");
         storeCount_ += count;
         storeSz_ += sz;
     }
@@ -397,4 +397,4 @@ private:
     threadEntry();
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

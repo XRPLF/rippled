@@ -258,7 +258,7 @@ InboundLedger::neededStateHashes(int max, SHAMapSyncFilter const* filter) const
 // See how much of the ledger data is stored locally
 // Data found in a fetch pack will be stored
 void
-InboundLedger::tryDB(NodeStore::Database& srcDB)
+InboundLedger::tryDB(node_store::Database& srcDB)
 {
     if (!haveHeader_)
     {
