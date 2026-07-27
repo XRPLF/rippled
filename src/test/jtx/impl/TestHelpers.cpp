@@ -250,6 +250,9 @@ findPathsRequest(
 
     json::Value result;
     Gate g;
+    // Safe capture: the caller blocks on g.waitFor() until the coroutine
+    // completes, so the captured locals outlive the coroutine.
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
     app.getJobQueue().postCoroTask(JtClient, "RPC-Client", [&](auto) -> CoroTask<void> {
         context.params = std::move(params);
         RPC::doCommand(context, result);
