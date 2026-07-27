@@ -135,6 +135,9 @@ public:
         numSrc.reserve(RPC::Tuning::kMaxSrcCur);
         for (std::uint8_t i = 0; i < RPC::Tuning::kMaxSrcCur; ++i)
             numSrc.push_back(makeMptID(i, bob));
+        // Safe capture: the test blocks on g.waitFor() until the coroutine
+        // completes, so the captured locals outlive the coroutine.
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         app.getJobQueue().postCoroTask(JtClient, "RPC-Client", [&](auto) -> CoroTask<void> {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, numSrc);
             RPC::doCommand(context, result);
@@ -146,6 +149,9 @@ public:
 
         // Test more than RPC::Tuning::max_src_cur source currencies.
         numSrc.push_back(makeMptID(RPC::Tuning::kMaxSrcCur, bob));
+        // Safe capture: the test blocks on g.waitFor() until the coroutine
+        // completes, so the captured locals outlive the coroutine.
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         app.getJobQueue().postCoroTask(JtClient, "RPC-Client", [&](auto) -> CoroTask<void> {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, numSrc);
             RPC::doCommand(context, result);
@@ -162,6 +168,9 @@ public:
             auto curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
             numSrc.push_back(curm.issuanceID());
         }
+        // Safe capture: the test blocks on g.waitFor() until the coroutine
+        // completes, so the captured locals outlive the coroutine.
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         app.getJobQueue().postCoroTask(JtClient, "RPC-Client", [&](auto) -> CoroTask<void> {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, {});
             RPC::doCommand(context, result);
@@ -173,6 +182,9 @@ public:
 
         // Test more than RPC::Tuning::max_auto_src_cur source currencies.
         auto curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
+        // Safe capture: the test blocks on g.waitFor() until the coroutine
+        // completes, so the captured locals outlive the coroutine.
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         app.getJobQueue().postCoroTask(JtClient, "RPC-Client", [&](auto) -> CoroTask<void> {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, {});
             RPC::doCommand(context, result);

@@ -6,7 +6,6 @@
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/core/JobQueue.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Consumer.h>
