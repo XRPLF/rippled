@@ -34,8 +34,7 @@ expectRoundTrip(T value)
 {
     SCOPED_TRACE(::testing::Message() << "value: " << value);
 
-    std::string text;
-    ASSERT_TRUE(lexicalCastChecked(text, value));
+    auto const text = lexicalCast<std::string>(value);
     EXPECT_EQ(text, std::to_string(value));
 
     auto decoded = static_cast<T>(~value);  // ensure decoded != value
