@@ -75,6 +75,8 @@ Checks: "-*,
 # readability-static-accessed-through-instance,        # this check is probably unnecessary. It makes the code less readable
 # ---
 
+FormatStyle: file
+
 CheckOptions:
   bugprone-unsafe-functions.ReportMoreUnsafeFunctions: true
   bugprone-unused-return-value.CheckedReturnTypes: ::std::error_code;::std::error_condition;::std::errc
