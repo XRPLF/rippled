@@ -16,7 +16,6 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
-#include <coroutine>
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -266,7 +265,7 @@ public:
         // enqueuing a second resume while the first is still running.
         // A bool would be clobbered: R2.post() sets true, then R1's
         // cleanup sets false — losing the fact that R2 is still pending.
-        int runCount_;
+        int runCount_ = 0;
 
         // Serializes all coroutine resume() calls, preventing concurrent
         // execution of the coroutine body on multiple threads. Handles the
@@ -346,7 +345,7 @@ public:
          * @param type Job type for scheduling priority
          * @param name Human-readable name for logging
          */
-        CoroTaskRunner(CreateT, JobQueue&, JobType, std::string const&);
+        CoroTaskRunner(CreateT, JobQueue&, JobType, std::string);
 
         CoroTaskRunner(CoroTaskRunner const&) = delete;
         CoroTaskRunner&
@@ -744,7 +743,7 @@ JobQueue::postCoroTask(JobType t, std::string const& name, F&& f)
     // true between the check and the increment, leaving an orphan nSuspend_
     // that causes stop() to hang.
     {
-        std::lock_guard lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         if (stopping_)
             return nullptr;
         ++nSuspend_;
