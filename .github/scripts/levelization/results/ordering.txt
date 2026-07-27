@@ -200,6 +200,7 @@ tests.libxrpl > xrpl.basics
 tests.libxrpl > xrpl.config
 tests.libxrpl > xrpl.core
 tests.libxrpl > xrpld.app
+tests.libxrpl > xrpld.consensus
 tests.libxrpl > xrpld.overlay
 tests.libxrpl > xrpld.peerfinder
 tests.libxrpl > xrpld.telemetry

@@ -268,6 +268,58 @@ inline constexpr char nodestoreLatency[] = "nodestore_latency";
  */
 inline constexpr char consensusRoundDurationMs[] = "consensus_round_duration_ms";
 
+// ===== Sweep: what the periodic cache sweep costs ============================
+//
+// The sweep runs every `SizedItem::SweepInterval` seconds (10 s on a tiny node
+// through 120 s on a huge one), so these three emit sites are cold: one
+// histogram Record and two counter Adds per sweep is free at that cadence.
+
+/**
+ * Wall-clock duration of the `malloc_trim` call that ends every cache sweep.
+ *
+ * The cost of returning free heap pages to the kernel scales with the resident
+ * heap, so this is the signal that a node with a large existing database pays a
+ * per-sweep penalty a fresh node does not.
+ */
+inline constexpr char sweepMallocTrimUs[] = "sweep_malloc_trim_us";
+/**
+ * Minor page faults taken *inside* the `malloc_trim` call.
+ *
+ * Cumulative, so `rate()` gives faults/sec. Scoped to the trim call only -- see
+ * the limitation noted on the runbook branch: this proves the trim itself
+ * faults, not that the trim causes later faults as the caches refill.
+ */
+inline constexpr char sweepMallocTrimMinorFaultsTotal[] = "sweep_malloc_trim_minor_faults_total";
+/**
+ * Resident kilobytes the trim actually returned to the kernel.
+ *
+ * Cumulative and clamped at zero per sweep: a trim that reclaimed nothing, or
+ * during which another thread grew the heap faster than the trim shrank it,
+ * contributes 0 rather than a negative amount.
+ */
+inline constexpr char sweepMallocTrimReclaimedKbTotal[] = "sweep_malloc_trim_reclaimed_kb_total";
+
+// ===== Rotation: the extra writes an online_delete rotation performs =========
+
+/**
+ * Nodes re-stored by `copyNode` because they were missing from both backends.
+ *
+ * The genuinely unmeasured extra write of a rotation: a clean node reachable
+ * from the validated state map whose only on-disk copy lived in a backend an
+ * earlier rotation removed. Was warn-log-only.
+ */
+inline constexpr char rotationCopyNodeRestoreTotal[] = "rotation_copy_node_restore_total";
+/**
+ * Rotation state: whether one is running, and the copy-forward write total.
+ *
+ * A gauge, not a counter, because the two readings are polled from the node
+ * store rather than pushed: `in_flight` is current state and `copy_forward` is a
+ * cumulative total the nodestore already keeps. Observed from the existing
+ * `registerNodeStoreGauge` callback, which is how everything else reads the node
+ * store from xrpld without libxrpl having to know about telemetry.
+ */
+inline constexpr char rotationState[] = "rotation_state";
+
 // ===== Pre-existing instruments pulled in by the family ratchet ==============
 //
 // These predate the sync-diagnostics work. They are declared here because the
@@ -591,6 +643,20 @@ namespace amendment_block {
 inline constexpr char warned[] = "warned";
 inline constexpr char secondsToBlock[] = "seconds_to_block";
 }  // namespace amendment_block
+
+/**
+ * `rotation_state` sub-metrics: is a rotation running, and how many extra
+ * writes have rotations caused.
+ *
+ * Read together: a `copy_forward` total that climbs while `in_flight` is 1 is
+ * the rotation doing its extra writes, which is the expected shape. The same
+ * total climbing while `in_flight` is 0 would mean the flag leaked, not that
+ * rotation is cheap.
+ */
+namespace rotation_state {
+inline constexpr char inFlight[] = "in_flight";
+inline constexpr char copyForward[] = "copy_forward";
+}  // namespace rotation_state
 
 /**
  * `nodestore_latency` sub-metrics: mean latency per direction, with counts.

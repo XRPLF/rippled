@@ -4233,6 +4233,426 @@
           ],
           "title": "Replay Outcomes (by terminal state)",
           "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "###### What this is:\n*How long the heap trim that ends every cache sweep takes. The trim returns free heap pages to the kernel, and its cost scales with the resident heap \u2014 so this is the panel that shows a node with a large existing database paying a per-sweep penalty a fresh node never pays.*\n\n###### How it's computed:\n*p50 and p95 of the sweep_malloc_trim_us histogram. Recorded once per sweep, so the sample rate is one per sweep interval (10 s on a tiny node through 120 s on a huge one). The measurement used to run only at debug log level, so on an ordinary node there was no value at all.*\n\n###### Reading it:\n*Read the two lines together against the sweep interval. Sub-millisecond is free. Tens of milliseconds against a 10 s interval is still a small duty cycle but means the trim is walking a large heap, and it runs on the sweep job \u2014 so the cost lands on the job queue, not in the background.*\n\n###### Healthy range:\n*Under a millisecond on a warm node with a modest heap.*\n\n###### Watch for:\n*p95 climbing as the database grows, especially alongside a rising sweep-job queue wait. IMPORTANT LIMITATION: the fault counter beside this panel covers the trim call only. It proves the trim itself faults; it does NOT prove the trim causes the later faults taken as the caches refill. Correlate this duration against sweep-job queueing rather than concluding the trim caused a slow sync.*\n\n###### Keywords:\n- **Heap trim** *(per node)* \u2014 returning free heap pages from the allocator's arenas back to the kernel.\n- **Sweep interval** *(per node)* \u2014 how often the periodic cache sweep runs, set by node size.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[Application.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/main/Application.cpp)\n\n###### Function:\n`ApplicationImp::trimHeapAndRecord`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#heap-trim)",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "Trim Duration",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "pointSize": 3,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": 1800000,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "\u00b5s"
+            }
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 12,
+            "x": 0,
+            "y": 272
+          },
+          "id": 64,
+          "options": {
+            "annotations": {
+              "clustering": -1,
+              "multiLane": false
+            },
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "enableFacetedFilter": false,
+              "overflow": "ellipsis",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "maxHeight": 600,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "13.2.0-28926505616",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "label_replace(label_join(label_replace(histogram_quantile(0.5, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(sweep_malloc_trim_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"P50 Trim\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "label_replace(label_join(label_replace(histogram_quantile(0.95, sum by (le, service_instance_id, xrpl_branch, xrpl_node_role) (rate(sweep_malloc_trim_us_bucket{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval]))), \"series\", \"P95 Trim\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+              "refId": "B"
+            }
+          ],
+          "title": "Sweep Heap-Trim Duration (p50/p95)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "###### What this is:\n*Two rates side by side: minor page faults taken inside the heap trim, and the resident memory the trim actually returned to the kernel. Together they say whether the trim is buying anything for what it costs.*\n\n###### How it's computed:\n*Rate of sweep_malloc_trim_minor_faults_total and of sweep_malloc_trim_reclaimed_kb_total. Both are cumulative counters exported per sweep, so the panel rates them rather than plotting the totals. Reclaim is published only when resident memory actually fell; a sweep during which another thread grew the heap contributes nothing rather than a negative amount.*\n\n###### Reading it:\n*Reclaim rate with a near-zero fault rate is a cheap, useful trim. A fault rate that moves with the reclaim rate means the pages are being handed back and immediately taken again, which is churn rather than savings.*\n\n###### Healthy range:\n*A reclaim rate that tracks cache turnover, with faults near zero.*\n\n###### Watch for:\n*Reclaim near zero while the trim duration panel shows real time being spent: the trim is walking the heap and freeing nothing, which is pure cost. IMPORTANT LIMITATION: the fault delta is scoped to the trim call, so it cannot show the re-fault cost paid later as the caches refill and touch the returned pages. That later cost is real but is NOT measured here; do not read a low fault rate as proof the trim was free.*\n\n###### Keywords:\n- **Minor page fault** *(per node)* \u2014 a memory access satisfied without disk I/O, by mapping a page the kernel already holds.\n- **Reclaimed resident memory** *(per node)* \u2014 resident kilobytes the allocator handed back to the kernel.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[Application.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/main/Application.cpp)\n\n###### Function:\n`ApplicationImp::trimHeapAndRecord`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#minor-page-fault)",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "Faults & KB / Sec",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "pointSize": 3,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": 1800000,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "cps"
+            }
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 12,
+            "x": 12,
+            "y": 272
+          },
+          "id": 65,
+          "options": {
+            "annotations": {
+              "clustering": -1,
+              "multiLane": false
+            },
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "enableFacetedFilter": false,
+              "overflow": "ellipsis",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "maxHeight": 600,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "13.2.0-28926505616",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_work_item) (rate(sweep_malloc_trim_minor_faults_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"Minor Faults / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_work_item) (rate(sweep_malloc_trim_reclaimed_kb_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"Reclaimed KB / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+              "refId": "B"
+            }
+          ],
+          "title": "Sweep Heap-Trim Faults & Reclaim Rate",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "###### What this is:\n*When an online-delete rotation is running, and the rate of the extra writes it forces. A rotation rewrites into the new backend any node body the doomed archive serves, which is I/O an ordinary fetch would never perform \u2014 and it exists only on a populated, already-rotated database, which is why it never appears on a fresh node.*\n\n###### How it's computed:\n*rotation_state with metric=in_flight plotted raw (it is a 0/1 state flag), and metric=copy_forward \u2014 a cumulative write total \u2014 plotted as a rate. Both are read from the node store on each collection tick. The copy-forward count existed before as a log-only per-rotation tally that reset on every swap; the total behind this panel never resets, so it can be rated.*\n\n###### Reading it:\n*The two must move together: copy-forward writes should only appear while the window flag is 1. Read the write rate against the node-store write latency panel above \u2014 that is what tells extra rotation writes from a slow backend.*\n\n###### Healthy range:\n*Flag at 0 most of the time, rising to 1 briefly once per delete interval, with the write rate non-zero only inside those windows.*\n\n###### Watch for:\n*A copy-forward rate that is large enough to move node-store write latency: rotation is competing with sync I/O, which is the whole hypothesis this panel tests. Copy-forward writes while the flag reads 0 would mean the window flag leaked, not that rotation is cheap. NO SERIES AT ALL on either query means online_delete is not configured on this node, which is different from a rotation that costs nothing.*\n\n###### Keywords:\n- **Rotation window** *(per node)* \u2014 the interval during which an online-delete backend swap is in progress.\n- **Copy-forward write** *(per node)* \u2014 rewriting a node body from the backend about to be deleted into the one replacing it.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerRotationStateGauge`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#rotation-window)",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "State & Writes / Sec",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "pointSize": 3,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": 1800000,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "cps"
+            }
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 12,
+            "x": 0,
+            "y": 284
+          },
+          "id": 66,
+          "options": {
+            "annotations": {
+              "clustering": -1,
+              "multiLane": false
+            },
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "enableFacetedFilter": false,
+              "overflow": "ellipsis",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "maxHeight": 600,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "13.2.0-28926505616",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_work_item) (rotation_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"in_flight\"}), \"series\", \"Rotation In Flight (0/1)\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_work_item) (rate(rotation_state{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"copy_forward\"}[$__rate_interval])), \"series\", \"Copy-Forward Writes / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+              "refId": "B"
+            }
+          ],
+          "title": "Online-Delete Rotation Window & Copy-Forward Writes",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "###### What this is:\n*Rate at which a rotation has to rescue a tree node that was missing from BOTH backends and rewrite it from memory. Each one is an extra write on top of the whole-state-map walk the rotation already performs.*\n\n###### How it's computed:\n*Rate of rotation_copy_node_restore_total. Incremented once per rescued node in the rotation's state-map walk, from a branch that was warn-log-only before, so the volume was invisible unless someone was reading logs.*\n\n###### Reading it:\n*Zero on a healthy node. Any sustained rate means clean nodes reachable from the validated state map have no on-disk copy left, because the backend holding them was removed by an earlier rotation and they were never rewritten.*\n\n###### Healthy range:\n*Flat at zero.*\n\n###### Watch for:\n*A non-zero rate is the signal that earlier rotations dropped data the current state map still needs: each rescue is a write that competes with sync I/O, and without the rescue the node would later surface as an unresolvable missing-node error. Read with the copy-forward panel \u2014 both are rotation-time writes, but this one also indicates prior data loss rather than merely cost. The node hash is deliberately not a label (unbounded cardinality); get it from the copyNode warning in Loki, correlated by node and time.*\n\n###### Keywords:\n- **Node re-store** *(per node)* \u2014 rewriting an in-memory tree node whose only on-disk copy was removed by an earlier rotation.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[SHAMapStoreImp.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/app/misc/SHAMapStoreImp.cpp)\n\n###### Function:\n`SHAMapStoreImp::copyNode`\n\n###### References:\n[Telemetry glossary](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#node-re-store)",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "Re-Stores / Sec",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "pointSize": 3,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": 1800000,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "ops"
+            }
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 12,
+            "x": 12,
+            "y": 284
+          },
+          "id": 67,
+          "options": {
+            "annotations": {
+              "clustering": -1,
+              "multiLane": false
+            },
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "enableFacetedFilter": false,
+              "overflow": "ellipsis",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "maxHeight": 600,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "13.2.0-28926505616",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "label_replace(label_join(label_replace(sum by (service_instance_id, xrpl_branch, xrpl_work_item) (rate(rotation_copy_node_restore_total{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\"}[$__rate_interval])), \"series\", \"Nodes Re-Stored / Sec\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+              "refId": "A"
+            }
+          ],
+          "title": "Rotation Node Re-Store Rate",
+          "type": "timeseries"
         }
       ],
       "title": "Back-fill & persistence",

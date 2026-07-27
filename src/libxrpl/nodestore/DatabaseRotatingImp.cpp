@@ -211,7 +211,13 @@ DatabaseRotatingImp::fetchNodeObject(
             if (duplicate || rotationInFlight_.load(std::memory_order_acquire))
             {
                 if (!duplicate)
+                {
+                    // Two counters, one event: the per-rotation tally that
+                    // rotate() resets for its log line, and the monotonic total
+                    // the metrics gauge reads, which must never go backwards.
                     copyForwardCount_.fetch_add(1, std::memory_order_relaxed);
+                    copyForwardTotal_.fetch_add(1, std::memory_order_relaxed);
+                }
                 writable->store(nodeObject);
             }
         }

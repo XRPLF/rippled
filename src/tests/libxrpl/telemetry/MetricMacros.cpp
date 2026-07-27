@@ -17,10 +17,6 @@
  * MetricsRegistry.cpp is only compiled into this binary on the no-op path.
  */
 
-// cspell:ignore ISTOGRAM
-// The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
-// compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here.
-
 #ifdef XRPL_ENABLE_TELEMETRY
 
 #include <xrpld/telemetry/MetricMacros.h>
@@ -29,6 +25,7 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/telemetry/MetricNames.h>
 
+#include <xrpl/basics/MallocTrim.h>
 #include <xrpl/core/JobQueue.h>
 
 #include <gtest/gtest.h>
@@ -2918,6 +2915,378 @@ TEST(MetricMacros, consensus_round_duration_emits_nothing_when_registry_disabled
     EXPECT_EQ(data.size(), 0u);
     // Cause, not just state: the isEnabled() gate short-circuited before the
     // macro ever asked for a meter.
+    EXPECT_EQ(app.registry().meterCalls(), 0);
+}
+
+// -----------------------------------------------------------------
+// WP-B5: per-sweep malloc_trim, and online_delete rotation writes
+//
+// Suspect 3. malloc_trim runs after EVERY cache sweep and its cost scales with
+// the resident heap, so a node with a large existing database pays a per-sweep
+// penalty a fresh one does not. The MallocTrimReport already carried every
+// number; the emit site discarded it.
+//
+// Suspect 4. An online_delete rotation performs writes an ordinary fetch would
+// not -- copy-forward from the doomed archive, plus copyNode re-stores -- which
+// compete with sync I/O and only exist on a populated, already-rotated
+// database.
+// -----------------------------------------------------------------
+
+// The three sweep instruments must stay three separate series carrying their own
+// exact values, and the guards at the emit site must drop a reading that was
+// never measured rather than publishing a zero for it.
+//
+// The 45000 us sample is above the SDK's 10,000 default top boundary on
+// purpose: that is why MetricsRegistry registers the microsecond ladder for
+// this instrument, and a 45 ms trim is exactly the large-heap case the signal
+// exists to catch. The sum must carry the real value however it is bucketed.
+TEST(MetricMacros, sweep_malloc_trim_records_exact_duration_faults_and_reclaim)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // Mirrors ApplicationImp::trimHeapAndRecord for three sweeps: a cheap trim
+    // on a small heap, an expensive one on a large heap, and one that reclaimed
+    // nothing. Distinct values so a collapsed instrument cannot look correct.
+    struct Sweep
+    {
+        std::int64_t durationUs;
+        std::int64_t minfltDelta;
+        std::int64_t reclaimedKb;
+    };
+    for (auto const& sweep : {
+             Sweep{.durationUs = 120, .minfltDelta = 3, .reclaimedKb = 512},
+             Sweep{.durationUs = 45'000, .minfltDelta = 900, .reclaimedKb = 262'144},
+             Sweep{.durationUs = 80, .minfltDelta = 0, .reclaimedKb = 0},
+         })
+    {
+        XRPL_METRIC_HISTOGRAM_RECORD(
+            app,
+            telemetry::metric::sweepMallocTrimUs,
+            "Duration of the malloc_trim call ending each cache sweep (microseconds)",
+            sweep.durationUs);
+        if (sweep.minfltDelta > 0)
+        {
+            XRPL_METRIC_COUNTER_ADD(
+                app,
+                telemetry::metric::sweepMallocTrimMinorFaultsTotal,
+                "Minor page faults taken inside the sweep's malloc_trim call",
+                static_cast<std::uint64_t>(sweep.minfltDelta));
+        }
+        if (sweep.reclaimedKb > 0)
+        {
+            XRPL_METRIC_COUNTER_ADD(
+                app,
+                telemetry::metric::sweepMallocTrimReclaimedKbTotal,
+                "Resident kilobytes returned to the OS by the sweep's malloc_trim",
+                static_cast<std::uint64_t>(sweep.reclaimedKb));
+        }
+    }
+
+    auto const data = provider.collect();
+
+    // Histogram: all three sweeps recorded, including the one whose fault and
+    // reclaim readings were skipped -- a trim always has a duration.
+    auto const [count, sum] = histogramCountAndSum(data, "sweep_malloc_trim_us");
+    EXPECT_EQ(count, 3u);
+    EXPECT_NEAR(sum, 45'200.0, 1e-9);
+
+    // Counters: cumulative totals, so the panel can rate() them. The zero-value
+    // third sweep contributed to neither.
+    EXPECT_EQ(
+        counterValue(data, "sweep_malloc_trim_minor_faults_total", otel_sdk::PointAttributes{}),
+        903);
+    EXPECT_EQ(
+        counterValue(data, "sweep_malloc_trim_reclaimed_kb_total", otel_sdk::PointAttributes{}),
+        262'656);
+
+    // All three are unlabelled: one series each, per node. A label here would be
+    // unbounded (there is no bounded dimension a sweep varies over) and the
+    // dashboard reads one line per node instead.
+    ASSERT_EQ(data.at("sweep_malloc_trim_us").size(), 1u);
+    EXPECT_TRUE(data.at("sweep_malloc_trim_us").begin()->first.empty());
+    ASSERT_EQ(data.at("sweep_malloc_trim_minor_faults_total").size(), 1u);
+    EXPECT_TRUE(data.at("sweep_malloc_trim_minor_faults_total").begin()->first.empty());
+    ASSERT_EQ(data.at("sweep_malloc_trim_reclaimed_kb_total").size(), 1u);
+    EXPECT_TRUE(data.at("sweep_malloc_trim_reclaimed_kb_total").begin()->first.empty());
+
+    // Exactly the three instruments, so neither counter absorbed the other's
+    // adds and the histogram did not spawn a sibling.
+    EXPECT_EQ(data.size(), 3u);
+}
+
+// EDGE CASE: nothing was measured. On a non-glibc platform mallocTrim() returns
+// a report whose fields are all at their -1 sentinel, and the emit site's
+// guards must publish NO series for it. A zero-valued series would claim the
+// trim was instantaneous and reclaimed nothing, which is a different (and
+// false) statement from "this platform has no trim".
+//
+// A FRESH provider, because the reader is cumulative: a second collect() on the
+// provider used above would still show the earlier series and the absence
+// assertions could not fail.
+TEST(MetricMacros, sweep_malloc_trim_publishes_nothing_when_unmeasured)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // The sentinel report, exactly as MallocTrimReport default-constructs it.
+    MallocTrimReport const unsupported;
+    ASSERT_FALSE(unsupported.supported);
+    ASSERT_EQ(unsupported.durationUs.count(), -1);
+    ASSERT_EQ(unsupported.minfltDelta, -1);
+    ASSERT_EQ(unsupported.deltaKB(), 0);
+
+    // trimHeapAndRecord's first guard: an unsupported report emits nothing at
+    // all, so the three statements below are never reached on such a platform.
+    if (unsupported.supported)
+    {
+        if (unsupported.durationUs.count() >= 0)
+        {
+            XRPL_METRIC_HISTOGRAM_RECORD(
+                app,
+                telemetry::metric::sweepMallocTrimUs,
+                "Duration of the malloc_trim call ending each cache sweep (microseconds)",
+                unsupported.durationUs.count());
+        }
+    }
+
+    auto const data = provider.collect();
+
+    // State: not one of the three series exists.
+    EXPECT_EQ(data.count("sweep_malloc_trim_us"), 0u);
+    EXPECT_EQ(data.count("sweep_malloc_trim_minor_faults_total"), 0u);
+    EXPECT_EQ(data.count("sweep_malloc_trim_reclaimed_kb_total"), 0u);
+    EXPECT_EQ(data.size(), 0u);
+}
+
+// EDGE CASE: RSS GREW across the trim, because another thread allocated faster
+// than the trim released. deltaKB() is then positive, and the reclaimed counter
+// must skip it -- a counter cannot decrease, and there is no such thing as
+// reclaiming a negative number of kilobytes. The duration is still recorded,
+// because the trim did happen and did cost time.
+TEST(MetricMacros, sweep_malloc_trim_skips_reclaim_when_rss_grew)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // A report whose after-RSS is ABOVE its before-RSS.
+    MallocTrimReport grew;
+    grew.supported = true;
+    grew.trimResult = 1;
+    grew.rssBeforeKB = 1'000'000;
+    grew.rssAfterKB = 1'000'800;
+    grew.durationUs = std::chrono::microseconds{9'000};
+    grew.minfltDelta = 11;
+
+    // Cause: the sign convention is after-minus-before, so growth is positive
+    // and a naive negation would add 800 to a "reclaimed" total.
+    ASSERT_EQ(grew.deltaKB(), 800);
+
+    XRPL_METRIC_HISTOGRAM_RECORD(
+        app,
+        telemetry::metric::sweepMallocTrimUs,
+        "Duration of the malloc_trim call ending each cache sweep (microseconds)",
+        grew.durationUs.count());
+    XRPL_METRIC_COUNTER_ADD(
+        app,
+        telemetry::metric::sweepMallocTrimMinorFaultsTotal,
+        "Minor page faults taken inside the sweep's malloc_trim call",
+        static_cast<std::uint64_t>(grew.minfltDelta));
+    if (auto const deltaKB = grew.deltaKB(); deltaKB < 0)
+    {
+        XRPL_METRIC_COUNTER_ADD(
+            app,
+            telemetry::metric::sweepMallocTrimReclaimedKbTotal,
+            "Resident kilobytes returned to the OS by the sweep's malloc_trim",
+            static_cast<std::uint64_t>(-deltaKB));
+    }
+
+    auto const data = provider.collect();
+
+    // The duration and the faults are real and are recorded.
+    auto const [count, sum] = histogramCountAndSum(data, "sweep_malloc_trim_us");
+    EXPECT_EQ(count, 1u);
+    EXPECT_NEAR(sum, 9'000.0, 1e-9);
+    EXPECT_EQ(
+        counterValue(data, "sweep_malloc_trim_minor_faults_total", otel_sdk::PointAttributes{}),
+        11);
+
+    // NEGATIVE: the reclaim counter has no series at all. Absence, not a zero
+    // and emphatically not 800.
+    EXPECT_EQ(data.count("sweep_malloc_trim_reclaimed_kb_total"), 0u);
+    EXPECT_EQ(data.size(), 2u);
+}
+
+// rotation_state is polled from the node store, so the production callback in
+// MetricsRegistry::registerRotationStateGauge cannot be linked into this
+// binary. The derivation it performs is asserted here against the same two
+// inputs, mirroring how nodestore_latency is tested above.
+TEST(MetricMacros, rotation_state_gauge_observes_in_flight_window_and_copy_forward_total)
+{
+    // Each scenario gets a FRESH provider: the reader is cumulative, so a
+    // series observed once would persist into the next collect() and the
+    // "no rotating store means no series" assertion below could not fail.
+    struct RotationState
+    {
+        bool isRotating;
+        std::uint64_t copyForwardTotal;
+        bool hasRotatingStore;
+    };
+
+    auto collectWith = [](RotationState& state) {
+        CollectingProvider const provider;
+        auto gauge = provider.meter()->CreateInt64ObservableGauge(
+            telemetry::metric::rotationState,
+            "Online-delete rotation state and copy-forward write total");
+        gauge->AddCallback(
+            [](opentelemetry::metrics::ObserverResult result, void* state) {
+                auto const* self = static_cast<RotationState const*>(state);
+                // The production dynamic_cast: a node without online_delete has
+                // a non-rotating store and publishes nothing.
+                if (!self->hasRotatingStore)
+                    return;
+                auto observe = [&](char const* field, std::int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
+                        ->Observe(value, {{telemetry::label::metric, field}});
+                };
+                observe(
+                    telemetry::lval::rotation_state::inFlight,
+                    static_cast<std::int64_t>(self->isRotating ? 1 : 0));
+                observe(
+                    telemetry::lval::rotation_state::copyForward,
+                    static_cast<std::int64_t>(self->copyForwardTotal));
+            },
+            &state);
+        return provider.collect();
+    };
+
+    // A rotation is running and has already forced 4096 copy-forward writes:
+    // the shape an operator should see, and the one that explains sync I/O
+    // contention on a populated online_delete database.
+    RotationState state{.isRotating = true, .copyForwardTotal = 4096, .hasRotatingStore = true};
+    auto const rotating = collectWith(state);
+
+    ASSERT_EQ(rotating.at("rotation_state").size(), 2u);
+    EXPECT_EQ(gaugeValue(rotating, "rotation_state", attrs("metric", "in_flight")), 1);
+    EXPECT_EQ(gaugeValue(rotating, "rotation_state", attrs("metric", "copy_forward")), 4096);
+
+    // Single fixed-cardinality label group, keyed exactly `metric`.
+    auto const& firstKey = rotating.at("rotation_state").begin()->first;
+    ASSERT_EQ(firstKey.size(), 1u);
+    EXPECT_EQ(firstKey.begin()->first, "metric");
+
+    // Between rotations: in_flight drops to 0 while the total HOLDS its value.
+    // That combination is the whole point of pairing them -- the extra writes
+    // are not happening now, but they did, and the total must not reset (a
+    // counter that drops cannot be rated).
+    state = RotationState{.isRotating = false, .copyForwardTotal = 4096, .hasRotatingStore = true};
+    auto const idle = collectWith(state);
+
+    EXPECT_EQ(gaugeValue(idle, "rotation_state", attrs("metric", "in_flight")), 0);
+    EXPECT_EQ(gaugeValue(idle, "rotation_state", attrs("metric", "copy_forward")), 4096);
+    // Both series still exist while idle: a zero in_flight is a real reading,
+    // and absence would be the regression.
+    EXPECT_EQ(idle.at("rotation_state").size(), 2u);
+
+    // EDGE CASE: a fresh node that has online_delete configured but has never
+    // rotated. Both readings are 0 and BOTH series still exist -- 0 copy-forward
+    // writes is the healthy answer to "what did rotation cost", not missing data.
+    state = RotationState{.isRotating = false, .copyForwardTotal = 0, .hasRotatingStore = true};
+    auto const neverRotated = collectWith(state);
+
+    EXPECT_EQ(gaugeValue(neverRotated, "rotation_state", attrs("metric", "in_flight")), 0);
+    EXPECT_EQ(gaugeValue(neverRotated, "rotation_state", attrs("metric", "copy_forward")), 0);
+    EXPECT_EQ(neverRotated.at("rotation_state").size(), 2u);
+
+    // NEGATIVE: no rotating store at all -- online_delete is not configured, so
+    // the node store is a DatabaseNodeImp and the cast fails. NO series is
+    // published, deliberately: an absent series means "rotation is not
+    // configured", which a zero would misreport as "rotation is free".
+    state = RotationState{.isRotating = false, .copyForwardTotal = 0, .hasRotatingStore = false};
+    auto const notConfigured = collectWith(state);
+
+    EXPECT_EQ(notConfigured.count("rotation_state"), 0u);
+    EXPECT_EQ(notConfigured.size(), 0u);
+}
+
+// The copyNode re-store counter: one increment per node rescued from neither
+// backend, on ONE unlabelled series. The node hash must never become a label --
+// it is unbounded runtime data and would mint one series per rescued node.
+TEST(MetricMacros, rotation_copy_node_restore_accumulates_on_one_unlabelled_series)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/true, provider.meter());
+
+    // Seven rescued nodes across one rotation's state-map walk.
+    for (int i = 0; i < 7; ++i)
+    {
+        XRPL_METRIC_COUNTER_INC(
+            app,
+            telemetry::metric::rotationCopyNodeRestoreTotal,
+            "Nodes re-stored during rotation because they were missing from both backends");
+    }
+
+    auto const data = provider.collect();
+
+    ASSERT_EQ(data.at("rotation_copy_node_restore_total").size(), 1u);
+    EXPECT_EQ(
+        counterValue(data, "rotation_copy_node_restore_total", otel_sdk::PointAttributes{}), 7);
+
+    // The single series carries NO labels, which is what bounds its cardinality
+    // to one per node however many distinct hashes were rescued.
+    EXPECT_TRUE(data.at("rotation_copy_node_restore_total").begin()->first.empty());
+
+    // The rotation gauge is a separate instrument, so the counter cannot inflate
+    // the copy-forward total: they measure two different extra writes.
+    EXPECT_EQ(data.count("rotation_state"), 0u);
+    EXPECT_EQ(data.size(), 1u);
+}
+
+// RUNTIME-DISABLED no-op proof for all four WP-B5 push instruments. With the
+// registry disabled nothing is emitted -- total absence, not zero-valued series
+// -- and no macro ever asks for a meter.
+TEST(MetricMacros, sweep_and_rotation_metrics_emit_nothing_when_registry_disabled)
+{
+    CollectingProvider const provider;
+    FakeApp app;
+    wire(app, /*enabled=*/false, provider.meter());
+
+    XRPL_METRIC_HISTOGRAM_RECORD(
+        app,
+        telemetry::metric::sweepMallocTrimUs,
+        "Duration of the malloc_trim call ending each cache sweep (microseconds)",
+        45'000);
+    XRPL_METRIC_COUNTER_ADD(
+        app,
+        telemetry::metric::sweepMallocTrimMinorFaultsTotal,
+        "Minor page faults taken inside the sweep's malloc_trim call",
+        900);
+    XRPL_METRIC_COUNTER_ADD(
+        app,
+        telemetry::metric::sweepMallocTrimReclaimedKbTotal,
+        "Resident kilobytes returned to the OS by the sweep's malloc_trim",
+        262'144);
+    XRPL_METRIC_COUNTER_INC(
+        app,
+        telemetry::metric::rotationCopyNodeRestoreTotal,
+        "Nodes re-stored during rotation because they were missing from both backends");
+
+    auto const data = provider.collect();
+
+    // State: no series under any of the four names, and nothing else leaked in.
+    EXPECT_EQ(data.count("sweep_malloc_trim_us"), 0u);
+    EXPECT_EQ(data.count("sweep_malloc_trim_minor_faults_total"), 0u);
+    EXPECT_EQ(data.count("sweep_malloc_trim_reclaimed_kb_total"), 0u);
+    EXPECT_EQ(data.count("rotation_copy_node_restore_total"), 0u);
+    EXPECT_EQ(data.size(), 0u);
+
+    // Cause, not just state: the isEnabled() gate short-circuited before any
+    // macro asked for a meter, so no instrument was ever created.
     EXPECT_EQ(app.registry().meterCalls(), 0);
 }
 

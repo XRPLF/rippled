@@ -646,6 +646,13 @@ private:
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> nodeStoreGauge_;
     /**
+     * Observable gauge for online-delete rotation state and its copy-forward
+     * write total. Publishes nothing on a node without `online_delete`, where
+     * the node store is not a rotating one.
+     */
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        rotationStateGauge_;
+    /**
      * Observable gauge for server-level health metrics (state, uptime, peers, etc.).
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument> serverInfoGauge_;
@@ -871,6 +878,8 @@ private:
     registerLoadFactorGauge();  // Task 9.7
     void
     registerNodeStoreGauge();  // Task 9.1
+    void
+    registerRotationStateGauge();  // Sync diagnostics: online_delete rotation
     void
     registerServerInfoGauge();  // Task 9.7a
     void

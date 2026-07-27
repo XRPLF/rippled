@@ -73,6 +73,18 @@ public:
     void
     setRotationInFlight(bool inFlight) override;
 
+    [[nodiscard]] bool
+    isRotationInFlight() const override
+    {
+        return rotationInFlight_.load(std::memory_order_acquire);
+    }
+
+    [[nodiscard]] std::uint64_t
+    copyForwardTotal() const override
+    {
+        return copyForwardTotal_.load(std::memory_order_relaxed);
+    }
+
 private:
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
@@ -85,6 +97,13 @@ private:
     // summary line logged at swap.
     std::atomic<bool> rotationInFlight_{false};
     std::atomic<std::uint64_t> copyForwardCount_{0};
+
+    // Same events as copyForwardCount_, but never reset. rotate() zeroes the
+    // per-rotation tally above to produce its one-line summary, which makes that
+    // counter unusable as a metric: a series that drops to 0 on every swap
+    // cannot be rated. This one only ever increases, so rate() over it reads
+    // correctly and the two uses do not fight over one variable.
+    std::atomic<std::uint64_t> copyForwardTotal_{0};
 
     std::shared_ptr<NodeObject>
     fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)

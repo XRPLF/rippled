@@ -744,6 +744,76 @@ How long the node store takes to persist one object. This is the cost that gover
 
 **See also:** [Node-store read latency](#node-store-read-latency) · [Node-store operation rate](#node-store-operation-rate)
 
+<a id="heap-trim"></a>
+
+### Heap trim
+
+Asking the memory allocator to return free pages from its own pools back to the operating system. The node does this at the end of every periodic cache sweep, because a sweep is exactly when a large amount of memory has just been released. The cost is not fixed: the allocator has to walk its pools to find what is returnable, so the work grows with how much memory the process is holding — which is why a node with a large existing database pays more for it, every sweep, than an empty one does. The pages handed back are not gone for good; the next access to that memory has to take them again, which is the reason a trim is a trade rather than a pure saving.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Minor page fault](#minor-page-fault) · [Reclaimed resident memory](#reclaimed-resident-memory) · [Sweep interval](#sweep-interval)
+
+<a id="minor-page-fault"></a>
+
+### Minor page fault
+
+A memory access the operating system satisfies without touching a disk, by attaching a page it already had available. Cheap next to a disk read but not free, and taken in volume it becomes a real cost. Faults counted during a heap trim show the trim doing its own work of releasing memory. They deliberately say nothing about the faults paid afterwards, when caches refill and touch the memory that was given back — that later cost is the reason a trim can slow other work down, and counting the faults inside the trim does not capture it. Reading the figure as the total price of trimming overstates what was measured.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Heap trim](#heap-trim) · [Reclaimed resident memory](#reclaimed-resident-memory)
+
+<a id="reclaimed-resident-memory"></a>
+
+### Reclaimed resident memory
+
+How much memory a heap trim actually handed back to the operating system, as opposed to how long it spent looking. This is what makes the trim's cost judgeable: time spent with memory returned is a trade, and time spent with nothing returned is pure loss. Only memory the allocator holds in its own pools can be returned at all, so a trim can legitimately reclaim nothing — and a reading of zero is a real answer rather than a missing one. Memory can also grow across a trim, when other threads allocate faster than it releases; that is reported as no reclaim rather than as a negative amount, since a running total cannot go backwards.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Heap trim](#heap-trim) · [Sweep interval](#sweep-interval)
+
+<a id="sweep-interval"></a>
+
+### Sweep interval
+
+How often the node runs its periodic pass over the in-memory caches, expiring what is stale. The period is chosen from the configured node size, so a larger node sweeps less often. It sets the cadence of everything the sweep does, including the heap trim at the end of it, and it is therefore the number against which any per-sweep cost has to be judged: the same expense is negligible at one interval and significant at another. The sweep runs as a queued job, so its cost is paid on a worker thread and competes with other work rather than happening in the background.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Heap trim](#heap-trim) · [Job queue occupancy](#job-queue-occupancy)
+
+<a id="rotation-window"></a>
+
+### Rotation window
+
+The interval during which the node is swapping the pair of storage backends that make online deletion of old history possible. New data goes to one backend while the older one is kept for reading; on a swap the older one is discarded and a fresh one takes over. The window matters because it is the only time certain extra writes happen, so a cost seen inside it and a cost seen outside it have different explanations. A node that is not configured for online deletion has no window at all, which is a different situation from a window that costs nothing.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Copy-forward write](#copy-forward-write) · [Node re-store](#node-re-store) · [Node-store write latency](#node-store-write-latency)
+
+<a id="copy-forward-write"></a>
+
+### Copy-forward write
+
+Rewriting a stored object out of the backend that is about to be discarded and into the one replacing it. An ordinary read would not write anything; this one must, because the copy it just read is about to be deleted and would otherwise survive only in memory. The volume scales with how much of the outgoing backend gets read during the swap, so it is a cost only a node that already holds history can incur — the reason this competes with catching up on a populated database and never appears on a fresh one.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Rotation window](#rotation-window) · [Node re-store](#node-re-store)
+
+<a id="node-re-store"></a>
+
+### Node re-store
+
+Writing a tree node back to storage from memory because it could not be found in either storage backend. It signals more than cost. The node is still reachable from the current validated state, yet its only stored copy was in a backend an earlier swap discarded, and it was never rewritten because nothing had modified it. Rescuing it is an extra write, and skipping the rescue would leave the node unresolvable later. A sustained rate therefore reports two things at once: added write pressure now, and history quietly dropped by an earlier swap.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Rotation window](#rotation-window) · [Copy-forward write](#copy-forward-write) · [Missing SHAMap node](#missing-shamap-node)
+
 <a id="operating-mode-server-state"></a>
 
 ### Operating mode / server state

@@ -1,6 +1,3 @@
-// cspell:ignore ISTOGRAM
-// The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
-// compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here.
 
 /**
  * MetricsRegistry implementation — OpenTelemetry metric instruments for xrpld.
@@ -47,6 +44,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/DatabaseRotating.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/RelationalDatabase.h>
@@ -328,6 +326,19 @@ MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::strin
     // comes from the shared constant both sites use.
     addMicrosecondHistogramView(*views, kGetObjectLookupUs);
 
+    // Sweep malloc_trim duration. Shares the microsecond ladder rather than
+    // getting a bespoke one, and the ladder is what makes it readable: a trim on
+    // a small heap lands in the tens-of-microseconds buckets, while a trim on a
+    // multi-gigabyte resident heap runs well past 10 ms -- which is exactly the
+    // large-existing-database case this signal exists to catch. With the SDK
+    // default ceiling of 10,000 every one of those would collapse into the
+    // overflow bucket and p95 would read exactly 10 ms however bad it got. The
+    // shared ladder's upper reaches (25 ms, 50 ms, 100 ms, 250 ms, 500 ms, 1 s
+    // and beyond) resolve those, and its lower reaches (100 us, 500 us) resolve
+    // the healthy fresh-node case, so a per-instrument ladder would add a second
+    // thing to maintain for no extra resolution.
+    addMicrosecondHistogramView(*views, metric::sweepMallocTrimUs);
+
     // Millisecond dial/resolve latencies. Both exceed the SDK default ceiling
     // of 10,000: the dial timer is 15 s, so without an explicit ladder every
     // timed-out dial lands in the overflow bucket and p95 reads exactly 10 s
@@ -336,13 +347,39 @@ MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::strin
     addHistogramView(
         *views,
         metric::dnsResolveLatencyMs,
-        {1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1'000.0, 2'500.0, 5'000.0, 10'000.0,
-         15'000.0, 20'000.0, 30'000.0});
+        {1.0,
+         5.0,
+         10.0,
+         25.0,
+         50.0,
+         100.0,
+         250.0,
+         500.0,
+         1'000.0,
+         2'500.0,
+         5'000.0,
+         10'000.0,
+         15'000.0,
+         20'000.0,
+         30'000.0});
     addHistogramView(
         *views,
         metric::overlayDialLatencyMs,
-        {1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1'000.0, 2'500.0, 5'000.0, 10'000.0,
-         15'000.0, 20'000.0, 30'000.0});
+        {1.0,
+         5.0,
+         10.0,
+         25.0,
+         50.0,
+         100.0,
+         250.0,
+         500.0,
+         1'000.0,
+         2'500.0,
+         5'000.0,
+         10'000.0,
+         15'000.0,
+         20'000.0,
+         30'000.0});
 
     // The remaining two GetObject histograms are not durations, so the
     // microsecond ladder above does not fit them. Both still need explicit
@@ -635,6 +672,7 @@ MetricsRegistry::registerAsyncGauges()
     registerObjectCountGauge();
     registerLoadFactorGauge();
     registerNodeStoreGauge();
+    registerRotationStateGauge();
     registerServerInfoGauge();
     registerBuildInfoGauge();
     registerCompleteLedgersGauge();
@@ -962,6 +1000,70 @@ MetricsRegistry::registerNodeStoreGauge()
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
                 // Silently skip on error.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerRotationStateGauge()
+{
+    // --- Sync diagnostics: what an online_delete rotation costs ---
+    // A rotation performs writes an ordinary fetch would not: the archive
+    // backend is about to be deleted, so any node body it serves during the
+    // rotation window has to be rewritten into the writable backend to survive.
+    // That work scales with the archive, competes with sync I/O, and appears
+    // ONLY on a populated, already-rotated online_delete database -- which is
+    // why it never shows up on a fresh node and why it was never measured. The
+    // count existed as copyForwardCount_ but was log-only and reset per
+    // rotation.
+    //
+    // Polled from the node store rather than pushed, matching
+    // registerNodeStoreGauge above: DatabaseRotatingImp lives in libxrpl and
+    // cannot include xrpld/telemetry, so the counters are read through the
+    // DatabaseRotating accessors on each collection tick instead.
+    rotationStateGauge_ = meter_->CreateInt64ObservableGauge(
+        metric::rotationState, "Online-delete rotation state and copy-forward write total");
+    rotationStateGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                // Only a rotating store has a rotation to report. On a node
+                // without online_delete the node store is a DatabaseNodeImp, so
+                // the cast fails and NO series is published -- deliberately, so
+                // that an absent series means "rotation is not configured"
+                // rather than a zero that would read as "rotation is free".
+                auto* rotating = dynamic_cast<NodeStore::DatabaseRotating*>(&app.getNodeStore());
+                if (rotating == nullptr)
+                    return;
+
+                auto observe = [&](char const* field, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{label::metric, field}});
+                };
+
+                // The window the extra writes happen in. A panel needs this to
+                // know when the copy-forward total is expected to move.
+                observe(
+                    lval::rotation_state::inFlight,
+                    static_cast<int64_t>(rotating->isRotationInFlight() ? 1 : 0));
+
+                // Monotonic, so the panel takes rate() over it. The per-rotation
+                // tally that rotate() logs is reset on every swap and is
+                // therefore unusable here.
+                observe(
+                    lval::rotation_state::copyForward,
+                    static_cast<int64_t>(rotating->copyForwardTotal()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready.
             }
         },
         this);
@@ -2183,8 +2285,7 @@ MetricsRegistry::registerNodeStoreLatencyGauge()
                     lval::nodestore_latency::writeDurationUs,
                     static_cast<int64_t>(storeDurationUs));
                 observe(
-                    lval::nodestore_latency::readDurationUs,
-                    static_cast<int64_t>(fetchDurationUs));
+                    lval::nodestore_latency::readDurationUs, static_cast<int64_t>(fetchDurationUs));
 
                 if (storeCount > 0 && storeDurationUs > 0)
                 {

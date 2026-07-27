@@ -18,6 +18,7 @@ dictionaries:
 ignoreRegExpList:
   - /\b[rs][1-9A-HJ-NP-Za-km-z]{25,34}/g # addresses and seeds
   - /\bC[A-Z0-9]{15}/g # CTIDs
+  - /\bXRPL_METRIC_[A-Z_]+/g # telemetry macro names; the splitter emits subwords like ISTOGRAM
   - /\b(XRPL|BEAST)_[A-Z_0-9]+_H_INCLUDED+/g # include guards
   - /\b(XRPL|BEAST)_[A-Z_0-9]+_H+/g # include guards
   - /::[a-z:_]+/g # things from other namespaces

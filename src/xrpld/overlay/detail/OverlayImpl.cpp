@@ -1,6 +1,3 @@
-// cspell:ignore ISTOGRAM
-// The all-caps macro name XRPL_METRIC_HISTOGRAM_RECORD trips cspell's
-// compound-word splitter, which emits the subword "ISTOGRAM"; ignore it here.
 
 #include <xrpld/overlay/detail/OverlayImpl.h>
 
