@@ -60,11 +60,13 @@ class JobQueue_test : public beast::unit_test::Suite
         {
             // Test repeated post()s until the coroutine completes.
             std::atomic<int> yieldCount{0};
-            // Safe capture: the test blocks below until the coroutine
-            // completes, so the captured pointer outlives the coroutine.
-            // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
             auto const runner = jQueue.postCoroTask(
-                JtClient, "PostCoroTest1", [ycp = &yieldCount](auto runner) -> CoroTask<void> {
+                JtClient,
+                "PostCoroTest1",
+                // Safe capture: the test blocks below until the coroutine
+                // completes, so the captured pointer outlives the coroutine.
+                // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+                [ycp = &yieldCount](auto runner) -> CoroTask<void> {
                     while (++(*ycp) < 4)
                         co_await runner->suspend();
                     co_return;
@@ -91,11 +93,13 @@ class JobQueue_test : public beast::unit_test::Suite
         {
             // Test repeated post()+join()s until the coroutine completes.
             int yieldCount{0};
-            // Safe capture: the test blocks below until the coroutine
-            // completes, so the captured pointer outlives the coroutine.
-            // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
             auto const runner = jQueue.postCoroTask(
-                JtClient, "PostCoroTest2", [ycp = &yieldCount](auto runner) -> CoroTask<void> {
+                JtClient,
+                "PostCoroTest2",
+                // Safe capture: the test blocks below until the coroutine
+                // completes, so the captured pointer outlives the coroutine.
+                // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+                [ycp = &yieldCount](auto runner) -> CoroTask<void> {
                     while (++(*ycp) < 4)
                         co_await runner->suspend();
                     co_return;
@@ -138,11 +142,13 @@ class JobQueue_test : public beast::unit_test::Suite
             // unprotected variable on the stack should be completely safe.
             // Not recommended for the faint of heart...
             bool unprotected = false;
-            // Safe capture: the JobQueue is stopped, so the coroutine is
-            // never started and the captured pointer is never dereferenced.
-            // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
             auto const runner = jQueue.postCoroTask(
-                JtClient, "PostCoroTest3", [up = &unprotected](auto) -> CoroTask<void> {
+                JtClient,
+                "PostCoroTest3",
+                // Safe capture: the JobQueue is stopped, so the coroutine is
+                // never started and the captured pointer is never dereferenced.
+                // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
+                [up = &unprotected](auto) -> CoroTask<void> {
                     *up = true;
                     co_return;
                 });
