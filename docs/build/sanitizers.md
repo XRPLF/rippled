@@ -97,6 +97,11 @@ export TSAN_OPTIONS="include=sanitizers/suppressions/runtime-tsan-options.txt:su
 ./xrpld --unittest --unittest-jobs=5
 ```
 
+`runtime-tsan-options.txt` sets `halt_on_error=true`, so the process aborts on
+the first unsuppressed report. To collect all reports in one run instead (e.g.
+when triaging locally), append `:halt_on_error=false` to `TSAN_OPTIONS`; the
+exit code is still non-zero (66) if any report was produced.
+
 More details [here](https://github.com/google/sanitizers/wiki/ThreadSanitizerCppManual).
 
 ### LeakSanitizer (LSan)

@@ -312,6 +312,8 @@ jobs:
           [ "$COVERAGE_ENABLED" = "true" ] && BUILD_NPROC=$((BUILD_NPROC - 2))
           # Sanitizer builds are memory hungry; run the tests single-threaded
           [ "$SANITIZERS_ON" = "true" ] && BUILD_NPROC=1
+          # Never drop below one job (small runners could go to 0 or negative above)
+          [ "$BUILD_NPROC" -ge 1 ] || BUILD_NPROC=1
 
           # The resolver/preload workaround is only correct for the ASan build:
           # a regular build doesn't hit the __dn_expand interceptor bug, and must

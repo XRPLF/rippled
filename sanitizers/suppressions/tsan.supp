@@ -3,24 +3,22 @@
 # Races in rippled's own code should be fixed, not suppressed.
 
 # Boost ASIO / Boost Context false positives
-# These are internal to Boost's reactor, fiber context switching, and memory management.
+# These are internal to Boost's reactor and the fiber context switching used
+# by boost::asio::spawn (server Spawn.h, test yield_to.h).
+# NOTE: a suppression fires if ANY frame in the report matches, so these
+# path patterns can also hide rippled races that merely pass through asio
+# (e.g. handlers running on an io_context). Narrow them to specific frames
+# once TSAN runs cleanly.
 race:boost/asio/
 race:boost/context/
-race:boost/asio/executor.hpp
-race:boost::asio
-race:boost::context::fiber::resume
-race:boost::asio::detail::spawned_fiber_thread
-race:boost::asio::detail::spawned_fiber_thread::suspend_with
-race:boost::asio::detail::spawned_fiber_thread::destroy
 race:__cxxabiv1::manage_exception_state
-race:__tsan_memcpy
 
 # TSAN's own syscall interceptors and libc internals
 # These are false positives from TSAN's fd tracking in glibc.
 # TODO: Tighten these suppressions once TSAN runs cleanly — they may mask
 # real fd-lifetime bugs in rippled's networking code.
 race:crtstuff.c
-race:pipe
+race:__pipe
 race:epoll_ctl
 race:epoll_create
 race:closedir
@@ -33,7 +31,6 @@ race:eventfd
 # C++ standard library internals
 race:ostreambuf_iterator
 race:basic_ostream
-called_from_lib:libclang_rt
 
 # Deadlock false positives in Boost and threading primitives
 deadlock:pthread_create
@@ -71,9 +68,7 @@ deadlock:xrpl::doLedgerAccept
 deadlock:beast::PropertyStream::Source
 
 # Signal/crash suppressions for GCC TSAN instrumentation issues
-signal:std::__cxx11::basic_stringbuf
 signal:basic_stringbuf
 signal:basic_ostringstream
 signal:boost::asio::aligned_new
 signal:boost::asio::detail::memory
-signal:execute_native_thread_routine
