@@ -590,6 +590,7 @@ loanMakePayment(
 /**
  * Verify the loan asset can be held and that none of the accounts involved in
  * disbursing the loan are frozen in a way that would block the fund flows.
+ * This function Implements items 8-12 of XLS-66 spec, section 3.8.5.2.
  *
  * Checks, in order: that a holding for the asset can be created, that the vault
  * pseudo-account (the sender) is not frozen, that the broker pseudo-account (a
@@ -623,6 +624,7 @@ reserveLoanOwner(
 /**
  * Transfer the loan principal to the borrower and the origination fee, if any,
  * to the LoanBroker owner. Creates holdings as necessary.
+ * This function implements items 3-5 of XLS-66 spec, section 3.8.6.
  */
 [[nodiscard]] TER
 disburseLoan(
