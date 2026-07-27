@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Feature-interaction graph",
+  "type": "object",
+  "required": ["features", "resources", "edges"],
+  "additionalProperties": false,
+  "properties": {
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "name"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "enum": ["transactor", "amendment"] },
+          "name": { "type": "string" },
+          "delegable": { "type": ["boolean", "null"] },
+          "amendment": { "type": ["string", "null"] },
+          "privileges": { "type": "array", "items": { "type": "string" } },
+          "fields": { "type": "array", "items": { "type": "string" } },
+          "wrapper": { "type": "boolean" }
+        }
+      }
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "name", "signal"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "enum": ["fork", "invariant", "shared_sfield"] },
+          "name": { "type": "string" },
+          "signal": { "enum": ["high", "medium", "low"] },
+          "lever_fields": { "type": "array", "items": { "type": "string" } },
+          "lever_flags": { "type": "array", "items": { "type": "string" } },
+          "amendment_gates": { "type": "array", "items": { "type": "string" } },
+          "state_space": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "src", "dst", "via"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "enum": ["consumer", "mediator", "wrapper"] },
+          "src": { "type": "string" },
+          "dst": { "type": "string" },
+          "via": { "type": "string" }
+        }
+      }
+    }
+  }
+}

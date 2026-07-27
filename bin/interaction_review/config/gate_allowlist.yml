@@ -1,0 +1,8 @@
+# Amendment-gate globals (feature*/fix*) that a fork body may reference but that
+# do NOT resolve to an active amendment in features.macro — e.g. an amendment
+# retired while its transition check is still in the C++.
+#
+# An unresolved gate not listed here fails the build: a typo'd or renamed
+# amendment reference must not silently drop its mediator edge. List is a YAML
+# sequence of global tokens (e.g. `- featureOldThing`). Empty today.
+[]
