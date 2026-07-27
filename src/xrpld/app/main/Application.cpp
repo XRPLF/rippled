@@ -240,7 +240,7 @@ public:
 
     std::unique_ptr<Resource::Manager> resourceManager_;
 
-    std::unique_ptr<NodeStore::Database> nodeStore_;
+    std::unique_ptr<node_store::Database> nodeStore_;
     NodeFamily nodeFamily_;
     std::unique_ptr<OrderBookDB> orderBookDB_;
     std::unique_ptr<PathRequestManager> pathRequestManager_;
@@ -678,7 +678,7 @@ public:
         return tempNodeCache_;
     }
 
-    NodeStore::Database&
+    node_store::Database&
     getNodeStore() override
     {
         return *nodeStore_;
@@ -883,9 +883,9 @@ public:
         if (config_->doImport)
         {
             auto j = logs_->journal("NodeObject");
-            NodeStore::DummyScheduler dummyScheduler;
-            std::unique_ptr<NodeStore::Database> source =
-                NodeStore::Manager::instance().makeDatabase(
+            node_store::DummyScheduler dummyScheduler;
+            std::unique_ptr<node_store::Database> source =
+                node_store::Manager::instance().makeDatabase(
                     megabytes(config_->getValueFor(SizedItem::BurstSize, std::nullopt)),
                     dummyScheduler,
                     0,
