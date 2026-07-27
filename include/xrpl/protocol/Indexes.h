@@ -188,6 +188,20 @@ check(uint256 const& key) noexcept
 /** @} */
 
 /**
+ * A TransactionProposal
+ */
+/** @{ */
+Keylet
+txProposal(AccountID const& target, std::uint32_t ticketSequence) noexcept;
+
+inline Keylet
+txProposal(uint256 const& key) noexcept
+{
+    return {ltTRANSACTION_PROPOSAL, key};
+}
+/** @} */
+
+/**
  * A DepositPreauth
  */
 /** @{ */

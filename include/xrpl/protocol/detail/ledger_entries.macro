@@ -636,5 +636,24 @@ LEDGER_ENTRY(ltSPONSORSHIP, 0x0090, Sponsorship, sponsorship, ({
     {sfSponseeNode,          SoeRequired},
 }))
 
+/** A ledger object holding a pending transaction proposal.
+
+    The proposed transaction is stored unsigned in ProposedTransaction, and
+    signatures accumulate on it over time. It becomes fully signed either from
+    a single signature by its own Account (or that account's Delegate), or once
+    the weight collected in its Signers field meets that account's quorum. At
+    that point the stored transaction is one that anyone may copy and submit.
+
+    \sa keylet::txProposal
+ */
+LEDGER_ENTRY(ltTRANSACTION_PROPOSAL, 0x0091, TransactionProposal, transaction_proposal, ({
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+    {sfOwner,                SoeRequired},
+    {sfProposedTransaction,  SoeRequired},
+    {sfExpiration,           SoeRequired},
+    {sfOwnerNode,            SoeRequired},
+}))
+
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE
