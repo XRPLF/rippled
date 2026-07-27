@@ -88,7 +88,6 @@ words:
   - coros
   - cowid
   - cpack
-  - cppcoro
   - cryptocondition
   - cryptoconditional
   - cryptoconditions
@@ -127,7 +126,6 @@ words:
   - fsanitize
   - funclets
   - Gamal
-  - gantt
   - gcov
   - gcovr
   - ghead
@@ -171,7 +169,6 @@ words:
   - lseq
   - lsmf
   - ltype
-  - Mankawde
   - mathbunnyru
   - mcmodel
   - MEMORYSTATUSEX
@@ -233,7 +230,6 @@ words:
   - permissioned
   - pointee
   - populator
-  - Pratik
   - preauth
   - preauthorization
   - preauthorize

@@ -3,15 +3,21 @@
 
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/LocalValue.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/CoroTask.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/JobQueueAwaiter.h>
 
+#include <array>
 #include <chrono>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace xrpl::test {
 
@@ -42,9 +48,9 @@ namespace xrpl::test {
  *   testVoidCompletion        | CoroTask<void> basic lifecycle
  *   testCorrectOrder          | suspend() -> join() -> post() -> complete
  *   testIncorrectOrder        | post() before suspend() (race-safe path)
- *   testJobQueueAwaiter       | JobQueueAwaiter suspend + auto-repost
+ *   testJobQueueAwaiter       | JobQueueAwaiter + yieldAndPost suspend/repost
  *   testThreadSpecificStorage | LocalValue isolation across coroutines
- *   testExceptionPropagation  | unhandled_exception() in promise_type
+ *   testExceptionPropagation  | CoroTask<void> exception via co_await
  *   testMultipleYields        | N sequential suspend/resume cycles
  *   testValueReturn           | CoroTask<T> co_return value
  *   testValueException        | CoroTask<T> exception via co_await
@@ -125,7 +131,8 @@ public:
                 co_return;
             });
         BEAST_EXPECT(runner);
-        BEAST_EXPECT(g.waitFor(5s));
+        if (!BEAST_EXPECT(g.waitFor(5s)))
+            return;
         runner->join();
         BEAST_EXPECT(!runner->runnable());
     }
@@ -148,22 +155,20 @@ public:
         }));
 
         Gate g1, g2;
-        std::shared_ptr<JobQueue::CoroTaskRunner> r;
         auto runner = env.app().getJobQueue().postCoroTask(
-            JtClient,
-            "CoroTaskTest",
-            [rp = &r, g1p = &g1, g2p = &g2](auto runner) -> CoroTask<void> {
-                *rp = runner;
+            JtClient, "CoroTaskTest", [g1p = &g1, g2p = &g2](auto runner) -> CoroTask<void> {
                 g1p->signal();
                 co_await runner->suspend();
                 g2p->signal();
                 co_return;
             });
         BEAST_EXPECT(runner);
-        BEAST_EXPECT(g1.waitFor(5s));
+        if (!BEAST_EXPECT(g1.waitFor(5s)))
+            return;
         runner->join();
         runner->post();
-        BEAST_EXPECT(g2.waitFor(5s));
+        if (!BEAST_EXPECT(g2.waitFor(5s)))
+            return;
         runner->join();
     }
 
@@ -196,7 +201,11 @@ public:
     }
 
     /**
-     * JobQueueAwaiter suspend + auto-repost across multiple yield points.
+     * Suspend + auto-repost across multiple yield points, using the
+     * external JobQueueAwaiter struct for the first suspension and the
+     * inline yieldAndPost() awaiter for the second. JobQueueAwaiter is
+     * used at only one co_await point per coroutine (see the GCC-12
+     * multi-use warning in JobQueueAwaiter.h).
      */
     void
     testJobQueueAwaiter()
@@ -212,19 +221,22 @@ public:
         }));
 
         Gate g;
-        int step = 0;
-        env.app().getJobQueue().postCoroTask(
-            JtClient, "CoroTaskTest", [sp = &step, gp = &g](auto runner) -> CoroTask<void> {
-                *sp = 1;
+        std::vector<int> steps;
+        auto runner = env.app().getJobQueue().postCoroTask(
+            JtClient, "CoroTaskTest", [sp = &steps, gp = &g](auto runner) -> CoroTask<void> {
+                sp->push_back(1);
+                co_await JobQueueAwaiter{runner};
+                sp->push_back(2);
                 co_await runner->yieldAndPost();
-                *sp = 2;
-                co_await runner->yieldAndPost();
-                *sp = 3;
+                sp->push_back(3);
                 gp->signal();
                 co_return;
             });
-        BEAST_EXPECT(g.waitFor(5s));
-        BEAST_EXPECT(step == 3);
+        BEAST_EXPECT(runner);
+        if (!BEAST_EXPECT(g.waitFor(5s)))
+            return;
+        runner->join();
+        BEAST_EXPECT(steps == std::vector<int>({1, 2, 3}));
     }
 
     /**
@@ -255,7 +267,8 @@ public:
             this->BEAST_EXPECT(*lv == -2);
             g.signal();
         });
-        BEAST_EXPECT(g.waitFor(5s));
+        if (!BEAST_EXPECT(g.waitFor(5s)))
+            return;
         BEAST_EXPECT(*lv == -1);
 
         for (int i = 0; i < N; ++i)
@@ -277,13 +290,15 @@ public:
                     this->BEAST_EXPECT(**lvp == id);
                     co_return;
                 });
-            BEAST_EXPECT(g.waitFor(5s));
+            if (!BEAST_EXPECT(g.waitFor(5s)))
+                return;
             a[i]->join();
         }
         for (auto const& r : a)
         {
             r->post();
-            BEAST_EXPECT(g.waitFor(5s));
+            if (!BEAST_EXPECT(g.waitFor(5s)))
+                return;
             r->join();
         }
         for (auto const& r : a)
@@ -296,13 +311,17 @@ public:
             this->BEAST_EXPECT(*lv == -2);
             g.signal();
         });
-        BEAST_EXPECT(g.waitFor(5s));
+        if (!BEAST_EXPECT(g.waitFor(5s)))
+            return;
         BEAST_EXPECT(*lv == -1);
     }
 
     /**
-     * Exception thrown in coroutine body is caught by
-     * promise_type::unhandled_exception(). Coroutine completes.
+     * An exception thrown in an awaited CoroTask<void> is rethrown into
+     * the awaiting coroutine by await_resume(), with the original
+     * message intact. (An exception escaping the top-level body has no
+     * awaiter to rethrow it; it is captured by unhandled_exception()
+     * and logged by CoroTaskRunner::resume().)
      */
     void
     testExceptionPropagation()
@@ -318,17 +337,29 @@ public:
         }));
 
         Gate g;
+        std::string what;
         auto runner = env.app().getJobQueue().postCoroTask(
-            JtClient, "CoroTaskTest", [gp = &g](auto) -> CoroTask<void> {
+            JtClient, "CoroTaskTest", [wp = &what, gp = &g](auto) -> CoroTask<void> {
+                auto inner = []() -> CoroTask<void> {
+                    throw std::runtime_error("test exception");
+                    co_return;
+                };
+                try
+                {
+                    co_await inner();
+                }
+                catch (std::runtime_error const& e)
+                {
+                    *wp = e.what();
+                }
                 gp->signal();
-                throw std::runtime_error("test exception");
                 co_return;
             });
         BEAST_EXPECT(runner);
-        BEAST_EXPECT(g.waitFor(5s));
+        if (!BEAST_EXPECT(g.waitFor(5s)))
+            return;
         runner->join();
-        // The exception is caught by promise_type::unhandled_exception()
-        // and the coroutine is considered done
+        BEAST_EXPECT(what == "test exception");
         BEAST_EXPECT(!runner->runnable());
     }
 
@@ -350,12 +381,8 @@ public:
 
         Gate g;
         int counter = 0;
-        std::shared_ptr<JobQueue::CoroTaskRunner> r;
         auto runner = env.app().getJobQueue().postCoroTask(
-            JtClient,
-            "CoroTaskTest",
-            [rp = &r, cp = &counter, gp = &g](auto runner) -> CoroTask<void> {
-                *rp = runner;
+            JtClient, "CoroTaskTest", [cp = &counter, gp = &g](auto runner) -> CoroTask<void> {
                 ++(*cp);
                 gp->signal();
                 co_await runner->suspend();
@@ -368,17 +395,20 @@ public:
             });
         BEAST_EXPECT(runner);
 
-        BEAST_EXPECT(g.waitFor(5s));
+        if (!BEAST_EXPECT(g.waitFor(5s)))
+            return;
         BEAST_EXPECT(counter == 1);
         runner->join();
 
         runner->post();
-        BEAST_EXPECT(g.waitFor(5s));
+        if (!BEAST_EXPECT(g.waitFor(5s)))
+            return;
         BEAST_EXPECT(counter == 2);
         runner->join();
 
         runner->post();
-        BEAST_EXPECT(g.waitFor(5s));
+        if (!BEAST_EXPECT(g.waitFor(5s)))
+            return;
         BEAST_EXPECT(counter == 3);
         runner->join();
         BEAST_EXPECT(!runner->runnable());
@@ -411,7 +441,8 @@ public:
                 co_return;
             });
         BEAST_EXPECT(runner);
-        BEAST_EXPECT(g.waitFor(5s));
+        if (!BEAST_EXPECT(g.waitFor(5s)))
+            return;
         runner->join();
         BEAST_EXPECT(result == 42);
         BEAST_EXPECT(!runner->runnable());
@@ -435,9 +466,9 @@ public:
         }));
 
         Gate g;
-        bool caught = false;
+        std::string what;
         auto runner = env.app().getJobQueue().postCoroTask(
-            JtClient, "CoroTaskTest", [cp = &caught, gp = &g](auto) -> CoroTask<void> {
+            JtClient, "CoroTaskTest", [wp = &what, gp = &g](auto) -> CoroTask<void> {
                 auto inner = []() -> CoroTask<int> {
                     throw std::runtime_error("inner error");
                     co_return 0;
@@ -448,15 +479,16 @@ public:
                 }
                 catch (std::runtime_error const& e)
                 {
-                    *cp = true;
+                    *wp = e.what();
                 }
                 gp->signal();
                 co_return;
             });
         BEAST_EXPECT(runner);
-        BEAST_EXPECT(g.waitFor(5s));
+        if (!BEAST_EXPECT(g.waitFor(5s)))
+            return;
         runner->join();
-        BEAST_EXPECT(caught);
+        BEAST_EXPECT(what == "inner error");
         BEAST_EXPECT(!runner->runnable());
     }
 
@@ -491,7 +523,8 @@ public:
                 co_return;
             });
         BEAST_EXPECT(runner);
-        BEAST_EXPECT(g.waitFor(5s));
+        if (!BEAST_EXPECT(g.waitFor(5s)))
+            return;
         runner->join();
         BEAST_EXPECT(result == 14);  // (3 + 4) * 2
         BEAST_EXPECT(!runner->runnable());
