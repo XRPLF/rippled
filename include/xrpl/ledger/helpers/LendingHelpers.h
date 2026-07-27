@@ -341,23 +341,21 @@ loanPaymentDeltas(LoanPaymentParts const& parts);
 // transactors call.
 AccountingDeltas
 loanOriginationDeltas(
-    Rules const& rules,
     SLE::const_ref vaultSle,
     Number const& principalRequested,
     Number const& interestDue);
 
 bool
 loanOriginationExceedsVaultMaximum(
-    Rules const& rules,
     SLE::const_ref vaultSle,
     Number const& vaultTotal,
     Number const& interestDue);
 
 Number
-loanVaultExposure(Rules const& rules, SLE::const_ref vaultSle, SLE::const_ref loanSle);
+loanVaultExposure(SLE::const_ref vaultSle, SLE::const_ref loanSle);
 
 AccountingDeltas
-loanPaymentDeltas(Rules const& rules, SLE::const_ref vaultSle, LoanPaymentParts const& parts);
+loanPaymentDeltas(SLE::const_ref vaultSle, LoanPaymentParts const& parts);
 
 namespace detail {
 // These classes and functions should only be accessed by LendingHelper
