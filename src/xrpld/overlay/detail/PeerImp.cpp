@@ -1724,19 +1724,35 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
 
             // If the original requester doesn't support the new depth-based format, rewrite any
             // nodes that use it back to the legacy nodeid format before relaying. Once all nodes
-            // have upgraded, the old protocol version and this code can be removed. To add some
-            // protection against malicious peers sending arbitrary data, we check that the format
-            // of the nodes is consistent - either all use the legacy format or the new format.
+            // have upgraded, the old protocol version and this code can be removed. Make sure that
+            // the format of the nodes is consistent - either all use the legacy format or the new
+            // format, unless it is liBASE data in which case none of these fields should be set.
             auto const peerSupportsNodeDepth =
                 peer->supportsFeature(ProtocolFeature::LedgerNodeDepth);
-            enum class MessageType { Unknown, Legacy, NodeDepth };
+            enum class MessageType { Unknown, Base, Legacy, Depth };
             MessageType messageType = MessageType::Unknown;
             for (int i = 0; i < m->nodes_size(); ++i)
             {
                 auto* ledgerNode = m->mutable_nodes(i);
 
-                MessageType const msgType =
-                    ledgerNode->has_nodeid() ? MessageType::Legacy : MessageType::NodeDepth;
+                MessageType msgType = MessageType::Unknown;
+                if (m->type() == protocol::liBASE)
+                {
+                    if (ledgerNode->has_nodeid() || ledgerNode->has_id() || ledgerNode->has_depth())
+                    {
+                        badData(
+                            "Received liBASE message with node reference while relaying ledger "
+                            "data for " +
+                            to_string(uint256::fromRaw(m->ledgerhash())) + " to peer " +
+                            std::to_string(peer->id()));
+                        return;
+                    }
+                    msgType = MessageType::Base;
+                }
+                else
+                {
+                    msgType = ledgerNode->has_nodeid() ? MessageType::Legacy : MessageType::Depth;
+                }
                 if (messageType != MessageType::Unknown && messageType != msgType)
                 {
                     badData(
@@ -1747,7 +1763,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
                 }
                 messageType = msgType;
 
-                if (peerSupportsNodeDepth || msgType == MessageType::Legacy)
+                if (peerSupportsNodeDepth || msgType != MessageType::Depth)
                     continue;
 
                 switch (ledgerNode->reference_case())
