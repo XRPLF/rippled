@@ -27,6 +27,7 @@ target_link_libraries(xrpl_tests PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl)
 # supported on Windows.
 set(test_modules
     basics
+    beast
     consensus
     crypto
     json
