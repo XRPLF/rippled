@@ -723,7 +723,27 @@ The server state describes how fully the node is participating, in ascending ord
 
 **Scope:** per node — measured on and specific to this individual server.
 
-**See also:** [Time to first FULL](#time-to-first-full) · [Network ledger gate](#network-ledger-gate) · [Operating mode / server state on xrpl.org](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states)
+**See also:** [Time to first FULL](#time-to-first-full) · [Network ledger gate](#network-ledger-gate) · [Mode flapping](#mode-flapping) · [Operating mode / server state on xrpl.org](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/xrpld-server-states)
+
+<a id="mode-flapping"></a>
+
+### Mode flapping
+
+Mode flapping is a node repeatedly reaching the full server state and losing it again, rather than climbing to it once and staying. It is visible only because state transitions are recorded as a from-to edge: a clean fresh sync traverses each climb edge roughly once, whereas flapping shows repeated counts on a reverse edge paired with its forward partner. A bare transition count cannot distinguish the two, which is why the edge labels exist. Flapping alongside healthy ledger acquisition points away from the acquire pipeline and at whatever drops a node out of full once it has arrived — a stalling main loop, a clock disagreeing with the network, or a trusted list that keeps failing quorum.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Operating mode / server state](#operating-mode-server-state) · [Server stall](#server-stall) · [Clock close offset](#clock-close-offset) · [Validation quorum](#validation-quorum)
+
+<a id="sentinel-reading"></a>
+
+### Sentinel reading
+
+A sentinel reading is a deliberately out-of-range value a gauge reports to mean "this condition does not apply", chosen so the healthy or unknown state is a distinct value rather than a missing series. The distinction matters because these are observable gauges: they report on every collection tick whatever the value, so absence is a regression while an unusual number may be the intended answer. Three appear in the sync diagnostics: an amendment-block countdown of -1 means nothing is pending, and is not a negative duration; a quorum target at the signed 64-bit maximum means quorum has been switched off entirely because too many list publishers are unavailable, reported as that maximum rather than allowed to wrap negative so it cannot be misread as a target already exceeded; and a peer supply window of zero means no peer has advertised a range yet, meaning unknown rather than the start of history. A one-shot duration reading of zero is the related case — it means the milestone was never reached, not that it took no time.
+
+**Scope:** per node — measured on and specific to this individual server.
+
+**See also:** [Amendment block countdown](#amendment-block-countdown) · [Validation quorum](#validation-quorum) · [Peer ledger supply](#peer-ledger-supply) · [Time to first FULL](#time-to-first-full) · [Time to first validated ledger](#time-to-first-validated-ledger)
 
 <a id="outbound-dial-latency"></a>
 

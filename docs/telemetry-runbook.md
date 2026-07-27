@@ -2047,17 +2047,192 @@ The `getKBUsed*()` methods require SQLite databases to exist. If running with
 
 A fresh node that is slow to reach `server_state=full`, or never reaches it, is
 diagnosed from the **Ledger Sync Health** dashboard (uid `ledger-sync-health`).
+Its nine rows are ordered the way a fresh node progresses, so reading the board
+top-to-bottom walks the same path a sync does:
 
-Walk the dashboard rows top-down — the first row that looks wrong is the stage
-that is blocking:
+| #   | Row                                 | Question it answers                                  |
+| --- | ----------------------------------- | ---------------------------------------------------- |
+| 1   | Bootstrap (Domain 0)                | Can the node reach peers and form a quorum at all?   |
+| 2   | Peer supply                         | Does any peer hold what this node needs?             |
+| 3   | Sync state                          | Is the node advancing through the mode machine?      |
+| 4   | Ledger acquire & SHAMap fetch       | Is ledger data arriving and being applied?           |
+| 5   | Job queue                           | Does arrived work ever get a worker thread?          |
+| 6   | Quorum & publish                    | Does a held ledger ever validate, and reach clients? |
+| 7   | Terminal blockers & serving         | Will the node stop validating for good?              |
+| 8   | Back-fill & persistence (collapsed) | Is an existing database the bottleneck?              |
+| 9   | Spans & traces (collapsed)          | _Which_ fetch, peer or object — not how many?        |
 
-1. **Bootstrap (Domain 0)** — can the node reach peers and form a quorum at all?
-   Covers DNS resolution, outbound dial, protocol/network-ID negotiation, UNL
-   fetch with trusted-key-vs-quorum, and clock skew. A node that never gets past
-   this row can never validate, no matter how healthy the pipeline looks.
-2. **Sync pipeline** — is ledger data actually arriving and being applied?
-   Covers sync-state transitions, ledger/tx-set acquire progress, job-queue
-   backlog, quorum and publish lag, back-fill, and persistence latency.
+**Start from the symptom, not from row 1.** Match what you observe to a branch
+below; each branch names the panels that discriminate it, what healthy and
+unhealthy look like, and what to conclude. The branch then points at the
+numbered ordered-diagnosis steps further down, which are the detail.
+
+```mermaid
+flowchart TD
+    S["Node is not reaching<br/>server_state = full"] --> Q1{"Amendment Block Countdown<br/>at -1?"}
+    Q1 -->|"No: counting down"| T["Branch F<br/>Terminal blocker"]
+    Q1 -->|"Yes: healthy"| Q2{"Which sync mode<br/>is it stuck in?"}
+
+    Q2 -->|"disconnected"| A["Branch A<br/>DNS / dial / negotiation"]
+    Q2 -->|"connected or syncing,<br/>no validated ledger"| B["Branch B<br/>UNL, quorum, clock"]
+    Q2 -->|"acquiring,<br/>never finishing"| C["Branch C<br/>SHAMap fetch and job queue"]
+    Q2 -->|"reaches full,<br/>slowly or flapping"| D["Branch D<br/>Publish, back-fill, rounds"]
+    Q2 -->|"was fine when the<br/>DB was empty"| E["Branch E<br/>Node-store and cache"]
+
+    classDef start fill:#1f3b57,stroke:#8ab4d8,stroke-width:2px,color:#ffffff
+    classDef gate fill:#4a3a10,stroke:#d8b45a,stroke-width:2px,color:#ffffff
+    classDef leaf fill:#f2f6fa,stroke:#4a6f8a,stroke-width:1px,color:#12232e
+    classDef stop fill:#5c1f1f,stroke:#e08a8a,stroke-width:2px,color:#ffffff
+    class S start
+    class Q1,Q2 gate
+    class A,B,C,D,E leaf
+    class T stop
+```
+
+**Check branch F first, always.** It is the only branch whose window closes:
+once an unsupported amendment activates there is no operational fix, so it
+outranks every other symptom regardless of what the mode machine says.
+
+#### Branch A — stuck at `disconnected`
+
+Peer count flat at zero; _Mode Transitions by Edge_ shows the node never leaving
+`disconnected`, or churning straight back to it.
+
+| Look at                                    | Healthy                                | Unhealthy                                                                          | Conclude                                                                                                                                                                     |
+| ------------------------------------------ | -------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _DNS Resolve Outcome Rate_                 | all rate on `outcome=resolved`         | any rate on `empty`, or both flat at zero                                          | a name in `[ips]`/`[ips_fixed]` returns no address, or the list is empty — fix the hostname or use an IP                                                                     |
+| _DNS Resolve Latency (p95)_                | milliseconds                           | seconds-scale                                                                      | the resolver is timing out and delaying every dial behind it                                                                                                                 |
+| _Outbound Dial Outcome Rate_               | `connected` non-zero                   | all attempts on one failure outcome                                                | `tcp_fail` = route/firewall/closed port · `tls_fail` = TLS · `upgrade_fail` = negotiation, go to the next row · `timeout` = never terminal                                   |
+| _Outbound Dial Latency (p95)_              | well under the dial timeout            | pinned near it                                                                     | peers accept TCP but never finish the handshake                                                                                                                              |
+| _Handshake Negotiation Failures by Reason_ | flat, or a low background rate         | any sustained `reason`                                                             | `wrong_network`/`invalid_network_id` is the most common fresh-node fault — the node is on a different network and can never reach quorum; `clock_skew` sends you to branch B |
+| _PeerFinder Slot Census_                   | `out_active` climbing toward `out_max` | `connecting` non-zero with `out_active` low; or `bootcache` and `livecache` both 0 | dials never complete; or there is nothing to dial at all                                                                                                                     |
+
+**Conclusion:** the node has no usable overlay. Nothing downstream can be
+diagnosed until `connected` on _Outbound Dial Outcome Rate_ is non-zero. Detail:
+[Bootstrap ordered diagnosis](#bootstrap-domain-0--ordered-diagnosis) steps 1-3
+and [Sync-pipeline](#sync-pipeline--ordered-diagnosis) step 12.
+
+#### Branch B — stuck at `connected`/`syncing`, no validated ledger
+
+The node has peers, `server_state` reaches `connected` or `syncing`, and
+_Time to First Validated Ledger_ stays flat at zero.
+
+| Look at                                              | Healthy                                                                   | Unhealthy                                                     | Conclude                                                                                                                                                                                                                                                   |
+| ---------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _UNL Fetch Rate by Site & Outcome_                   | `accepted` once per site, then `same_sequence`/`known_sequence` refreshes | `fetch_error`/`bad_status`/`parse_error`                      | the publisher site is unreachable, so no keys load from it                                                                                                                                                                                                 |
+|                                                      |                                                                           | `expired`                                                     | the list applied but is past its validity window — refresh the blob and check the local clock, do not replace `validators.txt`                                                                                                                             |
+| _UNL Trusted Keys vs Quorum_ + _UNL Quorum Headroom_ | `trusted_keys` above `quorum`, headroom positive                          | headroom zero or negative (red)                               | **the node will never validate**: the trusted list is too small to satisfy quorum. It can track ledgers forever and never declare one validated                                                                                                            |
+|                                                      |                                                                           | `quorum` about 9.2e18                                         | the **quorum-disabled** sentinel — too many publishers unavailable. Fix publisher reachability; the key count is irrelevant until quorum is re-enabled                                                                                                     |
+| _Clock Close Offset_                                 | magnitude decaying under 1 s                                              | above 1 s and not decaying                                    | local NTP fault delaying consensus participation, and the cause behind a `clock_skew` handshake reason                                                                                                                                                     |
+| _Network Ledger Gate_                                | clears within minutes of startup                                          | persistent 1 (red)                                            | the node has never seen a complete network ledger — go back to branch A, not deeper                                                                                                                                                                        |
+| _Trusted Validations vs Quorum Target_               | tally climbing toward the target                                          | tally flat below the target                                   | **stuck at the quorum gate**: validations arrive and never reach quorum. Judge by the sustained floor over minutes, never one sample — the first evaluation of each round runs before peers' validations arrive, so a healthy node sawtooths               |
+|                                                      |                                                                           | both flat at 0                                                | the gate has never been evaluated; nothing has been offered — upstream problem, back to branch A                                                                                                                                                           |
+| _Trusted Validation Accept Rate by Status_ (row 9)   | nearly all `current`                                                      | concentrated in `stale`, `bad_seq`, `multiple`, `conflicting` | validations arrive and are counted for nothing — this is what separates "slow to validate" from "never will", and it is invisible in the tally. Bulk `stale` = clock/timing; bulk `multiple`/`conflicting` = a misbehaving trusted validator or two chains |
+
+**Conclusion:** the fault is in trust and time, not in data supply. Detail:
+[Bootstrap](#bootstrap-domain-0--ordered-diagnosis) steps 4-5 and
+[Sync pipeline](#sync-pipeline--ordered-diagnosis) steps 2 and 16.
+
+#### Branch C — acquiring but never finishing
+
+Ledger acquires are in flight, _Ledgers Behind Network_ is flat or rising, and
+`full` never arrives.
+
+| Look at                                                                                                       | Healthy                                                   | Unhealthy                                                       | Conclude                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _Missing SHAMap Nodes per Acquire (state/tx)_                                                                 | falling toward zero (read the trend over minutes)         | **flat and non-zero**                                           | **no peer is serving that tree** — the node will sit here forever. Pinned at 256 is the per-sweep cap, meaningful only with the trend                                                                                                       |
+| _Acquire Stall Rate (no progress)_                                                                            | flat                                                      | sustained rate **together with** a flat missing-node count      | the definitive stuck-sync signature: requesting and nobody answering                                                                                                                                                                        |
+| _Peers Able to Serve Needed Sequence_                                                                         | `peers_serving_next` above zero                           | `peers_serving_next` = 0 while `peers_reporting` > 0            | **decisive**: peers are connected and none holds the next needed ledger. Waiting cannot finish it — the peer set must change. Everything else in branch C will look starved as a consequence, so do not chase it                            |
+| _Peer Ledger Supply Window_                                                                                   | needed sequence inside `[supply_min_seq, supply_max_seq]` | needed below `supply_min_seq`                                   | asking for history nobody kept — needs a full-history peer                                                                                                                                                                                  |
+|                                                                                                               |                                                           | needed above `supply_max_seq`                                   | the peer set lags the real network; not a history problem                                                                                                                                                                                   |
+| _Ledger Acquire Phase Outcomes (by phase & timeout)_ + _Ledger Acquire Phase Duration (p95 by phase)_ (row 9) | `header` short, `astree` the bulk                         | `astree` hot with `timed_out=true` and non-zero `missing_nodes` | the common stuck shape — peers are not supplying account-state nodes                                                                                                                                                                        |
+|                                                                                                               |                                                           | `header` hot                                                    | the node is waiting to be **told what to fetch**; invisible in the missing-node counts, which are both still zero                                                                                                                           |
+| _Add-Node Outcomes_                                                                                           | `good` dominates                                          | `duplicate` swamps `good`                                       | bandwidth busy, acquire standing still — peers re-sending known data                                                                                                                                                                        |
+|                                                                                                               |                                                           | `invalid` rising                                                | a specific misbehaving peer, not a local fault                                                                                                                                                                                              |
+| _Received-Data Stash Depth & In-Flight Acquires_                                                              | stash drains                                              | stash growing                                                   | data arrives faster than it is applied — a job-queue or disk problem, the **opposite** conclusion from a stall rate, and only this panel separates them                                                                                     |
+| _Deferred Jobs by Type (starvation)_                                                                          | flat at 0                                                 | sustained non-zero on `ledgerData`/`ledgerRequest`              | a job the queue accepted then **withheld** at its concurrency limit of 3 — it appears in neither `waiting` nor `running`, so no other signal can show it. Starved `ledgerData` is exactly why the stash grows while missing nodes stay flat |
+| _Worker Pool Saturation_ + _Worker Pool Capacity & Total Backlog_                                             | under 80%                                                 | 100% with `total_waiting` climbing                              | the pool is **exhausted** — every stage looks slow at once. Stop here; no per-subsystem fix helps while no thread is free                                                                                                                   |
+| Acquire outcome `abandoned` in Tempo (`{name="ledger.acquire" && span.outcome="abandoned"}`)                  | absent                                                    | present                                                         | the acquire was swept or shut down before reaching a result — without this value a stuck-then-swept fetch had no `outcome` at all and vanished from every outcome rate                                                                      |
+
+**Conclusion:** distinguish "nobody is serving it" (peer supply) from "it arrives
+and we cannot process it" (job queue / disk). The two look identical in a log and
+are separated only by the stash-depth and deferred-jobs panels. Detail:
+[Sync pipeline](#sync-pipeline--ordered-diagnosis) steps 6-12 and 17.
+
+#### Branch D — reaching `full` but slowly, or falling back out of it
+
+_Time to First FULL_ has a value, or the node flaps between `full` and
+`connected`.
+
+| Look at                                                                        | Healthy                         | Unhealthy                                                  | Conclude                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------ | ------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _Publish Lag (validated minus published)_                                      | flat at 0 or 1                  | positive and growing                                       | validation is healthy and the **publish pipeline is not** — the node is current while its clients see stale data. Local processing fault: go to the job-queue and stall panels                                                     |
+|                                                                                |                                 | flat at 0 on a node that never validated                   | not healthy, merely empty — read _Trusted Validations vs Quorum Target_ first                                                                                                                                                      |
+| _Server Stall_ + _Server Stall Event Rate_                                     | both zero                       | large seconds, **flat** event rate                         | one long unresolved stall; past 600 s the server deliberately fails                                                                                                                                                                |
+|                                                                                |                                 | small seconds, **rising** event rate                       | repeated short stalls — periodic work (sweeps, large writes), not one stuck operation                                                                                                                                              |
+| _Mode Transitions by Edge_                                                     | each climb edge roughly once    | repeated `full`→`connected` paired with `connected`→`full` | flapping: reaching `full` and losing it. Sends you to the stall panels or to branch B's clock and quorum panels — those are what drop a node out of `full`                                                                         |
+| _Consensus Round Duration (p50/p95)_ + _Consensus Round Duration Distribution_ | band steady                     | band drifting up, or a second high band                    | rounds are taking longer; read against _Tx-Set Acquire Duration (p95)_ (rounds waiting on data) and _Trusted Validations vs Quorum Target_ (validations arriving too late)                                                         |
+|                                                                                |                                 | p95 climbing, p50 flat                                     | a minority of rounds stall — the early form of a second band                                                                                                                                                                       |
+|                                                                                |                                 | both rising together                                       | the network is slowing, not this node. Compare another node via `$node` first                                                                                                                                                      |
+| _Tx-Set Acquire Outcomes_ + _Tx-Set Acquire Duration (p95)_ (row 9)            | flat at zero, or all `complete` | `timeout`/`abandoned` climbing                             | proposed sets never complete — rounds wait on data, not on agreement. This is the consensus path, not history back-fill                                                                                                            |
+|                                                                                |                                 | `complete` p95 approaching the round interval              | sets arrive but so late they delay their own round; the outcome rate cannot show this because they succeed                                                                                                                         |
+| _Replay Fallback to Full Acquire (by stage)_ (row 8)                           | flat                            | any sustained rate                                         | too few peers support the `LedgerReplay` feature, so every historical ledger is fetched whole. Nothing fails — the optimisation is simply gone, which is why it is easy to miss. `stage` names the sub-task: `skiplist` or `delta` |
+| _Replay Outcomes (by terminal state)_ (row 8)                                  | `success` climbing              | `timeout` climbing                                         | deltas never arrived — treat as peer supply, read with branch C                                                                                                                                                                    |
+|                                                                                |                                 | `build_failed`/`parameter_failed`                          | **data** faults from the serving peers, not slowness — the peer set is suspect                                                                                                                                                     |
+
+**Conclusion:** the pipeline works; something behind it is not keeping up.
+Publish lag and stalls are local, round duration is often network-wide, and
+replay fallback is a silent loss of an optimisation rather than a failure.
+Detail: [Sync pipeline](#sync-pipeline--ordered-diagnosis) steps 3, 5, 15, 16
+and 18.
+
+#### Branch E — an existing database syncs slower than a fresh one
+
+The specific symptom: a node with history starts and is slower than the same node
+was when empty. Back-fill is **write**-bound, so no read-side panel shows it.
+Expand the collapsed **Back-fill & persistence** row.
+
+| Look at                                                     | Healthy                          | Unhealthy                                           | Conclude                                                                                                                                                                  |
+| ----------------------------------------------------------- | -------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _NodeStore Write vs Read Latency (us/op)_                   | write line flat and low          | write line rising during back-fill                  | the backend cannot absorb writes. Adding peers will not help — check storage IOPS, the `[node_db]` backend and whether online-delete/rotation competes with the back-fill |
+|                                                             |                                  | read line far above write                           | the read path is the cost; read with the cache-hit panel below                                                                                                            |
+| _NodeStore Operation Rate (writes vs reads)_                | write rate non-zero while behind | write rate zero while still behind the network      | nothing is being persisted — the stall is **upstream** of the node store. Go to branch C; storage is not the problem                                                      |
+| _SHAMap TreeNode Cache Hit Rate_                            | rising as the cache warms        | persistently low                                    | the working set does not fit the cache, or re-acquisition churns it, so every tree walk pays disk latency                                                                 |
+| _Acquire Source (local vs network)_                         | `local` dominant on a warm node  | sustained `network` on a range the node should hold | the local store is not retaining data                                                                                                                                     |
+| paired with _NuDB Cache Hit Ratio_ (Ledger Data Sync board) | both healthy                     | low on both                                         | disk-bound sync                                                                                                                                                           |
+|                                                             |                                  | low here, NuDB healthy                              | cache pressure alone — this is the pairing that explains the whole symptom                                                                                                |
+
+**Conclusion:** the tree-node cache sits one layer **above** the node store, so a
+miss here is what produces a node-store read there; reading the two together is
+what tells cache pressure from a disk bottleneck. Two limits: these are **means,
+not percentiles**, and `write_mean_us` is currently emitted only for the
+`[import_db]` admin import path — on an ordinary node `write_count` climbs with
+no `write_mean_us` line, which is a known instrumentation gap, not a healthy
+zero. Detail: [Sync pipeline](#sync-pipeline--ordered-diagnosis) steps 9 and 14.
+
+#### Branch F — terminal: the node will stop validating for good
+
+Check this branch on **every** slow sync, before the mode machine, because it is
+the only one with a deadline.
+
+| Look at                        | Healthy                                                                                                | Unhealthy                         | Conclude                                                                                                                                                                                                                                                          |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------ | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _Amendment Block Countdown_    | **-1** — an explicit sentinel meaning nothing is pending. Not a negative duration and not missing data | any non-negative value            | a countdown to a **terminal** state: at expiry the node becomes amendment-blocked and will never validate again without a software upgrade. Clamped at 0, so 0 means due or past due. Nothing else on this dashboard matters — plan the upgrade inside the window |
+| _Amendment Warned_             | 0                                                                                                      | 1                                 | the same condition as a flag: an unsupported amendment reached majority                                                                                                                                                                                           |
+| _Byzantine Ledger Jumps_       | flat at zero                                                                                           | a single jump during a fresh sync | benign — the node is settling onto the network's chain                                                                                                                                                                                                            |
+|                                |                                                                                                        | repeated jumps                    | wrong-chain thrash: the node keeps switching chains and never settles. Check the peer set (branch A) and the configured network id. Nothing in the acquire pipeline can fix it                                                                                    |
+| _Ledger/Object Serve Refusals_ | near zero                                                                                              | `sendq_full`/`load_shed` climbing | self-inflicted: this node is too loaded to answer. It does not explain **this** node's sync — it explains its peers', and is the serving-side symptom of the same overload branches C-E cover                                                                     |
+|                                |                                                                                                        | `not_found` climbing              | a genuine history gap — a retention and configuration question, not a load one                                                                                                                                                                                    |
+
+**Conclusion:** the countdown is the only actionable amendment signal. The
+existing `validator_health{metric="amendment_blocked"}` on the Validator Health
+dashboard reports the block after it has happened, when nothing can be done. The
+blocking amendment's hash is deliberately not a label (unbounded cardinality) —
+get it from the `AmendmentTableImpl::doValidatedLedger` log line via Loki,
+correlated by node and time. Detail:
+[Sync pipeline](#sync-pipeline--ordered-diagnosis) step 13.
+
+---
 
 Signal definitions:
 [telemetry-glossary.md](./telemetry-glossary.md) "Fresh-node sync diagnostics".
@@ -2065,8 +2240,14 @@ Signal index (instrument, emit site, panel):
 [09-data-collection-reference.md](../OpenTelemetryPlan/09-data-collection-reference.md)
 "Fresh-node sync diagnostics".
 
-Note: the sync signals are native metrics, which are never sampled — unlike the
-span-derived (spanmetrics) series, they are always complete.
+Note: rows 1-8 are native metrics, which are never sampled — unlike the
+span-derived (spanmetrics) series in row 9, they are always complete. An absent
+series in row 9 can mean "tracing not enabled" (`trace_ledger` / `trace_peer`)
+rather than "not happening", so use row 9 to **localise** a fault the native
+rows have already established, not to detect one.
+
+The two sections below are the ordered detail the branches point into. They walk
+every panel in sequence; the branches above are the fast path to the right step.
 
 #### Bootstrap (Domain 0) — ordered diagnosis
 
@@ -2155,12 +2336,14 @@ first one that is wrong and fix it before reading further panels.
    step 3.
 
 If all five steps are clean the bootstrap stage is healthy, and the problem is
-in the **Sync pipeline** row instead.
+in the sync pipeline — rows 2 to 9 — instead.
 
 #### Sync pipeline — ordered diagnosis
 
-Once bootstrap is clean, work the Sync pipeline row in this order. As above,
-each step gates the next: stop at the first one that is wrong.
+Once bootstrap is clean, work rows 2 to 9 in this order. As above, each step
+gates the next: stop at the first one that is wrong. The step order is the
+diagnosis order, which crosses rows deliberately — a step names the row and
+panel it reads.
 
 1. **Did the node ever sync at all?**
    Panel _Time to First FULL_ (`sync_state`, `metric=initial_full_duration_us`,
@@ -2227,7 +2410,8 @@ each step gates the next: stop at the first one that is wrong.
      the trend: pinned-and-falling is a large but progressing tree.
    - **Zero on one tree, non-zero on the other** — that tree is already
      complete; concentrate on the one still reporting nodes.
-     One caveat: zero on both is only healthy if _In-Flight Acquires_ (step 8)
+     One caveat: zero on both is only healthy if the `in_flight` series on
+     _Received-Data Stash Depth & In-Flight Acquires_ (step 8)
      is non-zero. Zero everywhere with zero acquires in flight is an idle node,
      which says nothing about acquire health.
 
@@ -2443,10 +2627,11 @@ each step gates the next: stop at the first one that is wrong.
     This is the step for the specific symptom **"a node with a large existing
     database starts and syncs slower than a fresh one"**. Back-fill is
     write-bound, so no read-side panel can show it; check this step whenever a
-    node with existing history is the slow one.
+    node with existing history is the slow one. Both panels live in the
+    collapsed **Back-fill & persistence** row — expand it.
     Panel _NodeStore Write vs Read Latency (us/op)_ (`nodestore_latency`,
-    `metric=write_mean_us` and `read_mean_us`) with _NodeStore Operation Rate_
-    (`metric=write_count` / `read_count`) beside it:
+    `metric=write_mean_us` and `read_mean_us`) with _NodeStore Operation Rate
+    (writes vs reads)_ (`metric=write_count` / `read_count`) beside it:
     - **Write line rising during history back-fill** — the backend cannot
       absorb writes fast enough. Sync will stay slow however many peers are
       available, so adding peers will not help. Check storage IOPS, the
@@ -2479,7 +2664,8 @@ each step gates the next: stop at the first one that is wrong.
 15. **Is replay-based back-fill silently falling back to the slow path?**
     Only relevant when `[ledger_replay]` is enabled. Panels _Replay Fallback to
     Full Acquire (by stage)_ (`ledger_replay_fallback_total`) and _Replay
-    Outcomes (by terminal state)_ (`ledger_replay_outcome_total`):
+    Outcomes (by terminal state)_ (`ledger_replay_outcome_total`), also in the
+    collapsed **Back-fill & persistence** row:
     - **Any sustained fallback rate** — too few connected peers support the
       `LedgerReplay` protocol feature, so every historical ledger is fetched
       whole instead of as a delta. Back-fill still completes, just far slower,
@@ -2610,7 +2796,7 @@ each step gates the next: stop at the first one that is wrong.
     on?**
     Every step above reads a native metric, which is an aggregate: it says how
     much and how often, never _which one_. This step reads the **span-derived**
-    panels at the bottom of the Sync pipeline row, which answer the "which"
+    panels in the collapsed **Spans & traces** row, which answer the "which"
     questions the aggregates structurally cannot — and each point on them is
     backed by a trace, so it can be clicked through to the individual fetch,
     request or dial.
@@ -2627,9 +2813,9 @@ each step gates the next: stop at the first one that is wrong.
       duration is the account-state tree's and hides the other two:
       - **`astree` band hot, with `timed_out=true` and a non-zero
         `missing_nodes`** — peers are not supplying account-state nodes. This
-        is the common stuck-fresh-sync shape. Check _Outbound Dial Outcomes_
-        below for `refused` / `timeout` spikes, and step 11 for whether any
-        peer holds the range at all.
+        is the common stuck-fresh-sync shape. Check _Outbound Dial Outcomes
+        (span-derived, per attempt)_ below for `tcp_fail` / `timeout` spikes,
+        and step 11 for whether any peer holds the range at all.
       - **`header` band hot** — the node is waiting to be **told what to
         fetch**. The header names both trees' root hashes, so until it arrives
         nothing else can even be requested. This is a peer-supply fault

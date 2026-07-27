@@ -9,6 +9,7 @@
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
 
+#include <chrono>
 #include <cstdint>
 #include <exception>
 #include <functional>
@@ -23,7 +24,12 @@ DatabaseNodeImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, st
     storeStats(1, data.size());
 
     auto obj = NodeObject::createObject(type, std::move(data), hash);
+    // Time only the backend write, which is the disk work. One clock pair per
+    // stored object, accumulated into an atomic that the metrics gauge reads on
+    // its own schedule, so nothing is added to the read path or per tree node.
+    auto const begin = std::chrono::steady_clock::now();
     backend_->store(obj);
+    recordStoreDuration(std::chrono::steady_clock::now() - begin);
     if (cache_)
     {
         // After the store, replace a negative cache entry if there is one

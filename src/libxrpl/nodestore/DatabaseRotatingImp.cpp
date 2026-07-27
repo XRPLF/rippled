@@ -14,6 +14,7 @@
 #include <xrpl/nodestore/Types.h>
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <exception>
 #include <functional>
@@ -128,7 +129,12 @@ DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash
         return writableBackend_;
     }();
 
+    // Time only the backend write, which is the disk work. One clock pair per
+    // stored object, accumulated into an atomic that the metrics gauge reads on
+    // its own schedule, so nothing is added to the read path or per tree node.
+    auto const begin = std::chrono::steady_clock::now();
     backend->store(nObj);
+    recordStoreDuration(std::chrono::steady_clock::now() - begin);
     storeStats(1, nObj->getData().size());
 }
 

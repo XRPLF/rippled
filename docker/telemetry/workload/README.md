@@ -203,7 +203,7 @@ Automated validation that all expected telemetry data exists. Every metric and s
 - **Span validation**: All span types from `expected_spans.json` with required attributes and parent-child hierarchies
 - **Metric validation**: All metrics from `expected_metrics.json` — SpanMetrics, StatsD gauges/counters/histograms, Phase 9 OTLP metrics. Every listed metric must have > 0 series. Uses the Prometheus `/api/v1/series` endpoint (not instant queries) to avoid false negatives from stale gauges.
 - **Log-trace correlation**: trace_id/span_id in Loki logs (requires Loki)
-- **Dashboard validation**: All 10 Grafana dashboards load with panels
+- **Dashboard validation**: All 15 Grafana dashboards load with panels
 
 ```bash
 # Run all validations

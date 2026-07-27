@@ -521,6 +521,7 @@
       }
     ]
   },
+  "_conditional_attributes_note": "Five attributes documented in the 'Fresh-node sync diagnostics' table of OpenTelemetryPlan/09-data-collection-reference.md are deliberately absent from required_attributes above, because each is emitted only when its value is known and _validate_span_attributes_otlp() has no per-attribute optional flag -- listing one would fail CI red on a healthy run. ledger.acquire/peer_count is set only when finalizeAcquireSpan() is passed a peer count (InboundLedger.cpp), which the sweep and shutdown paths cannot supply. ledger_seq on the three ledger.acquire.header/.astree/.txtree phase spans is set only when seq_ != 0 (InboundLedger.cpp startPhaseSpan), and a by-hash acquire starts with seq_ == 0 and learns the sequence only when the header arrives -- so a phase that opens before the header legitimately carries no sequence. ledger_seq on ledger.serve is set only when the reply carries one (PeerImp.cpp), which an object-by-hash request does not. All five ARE indexed in the 09-reference table and rendered by the Ledger Sync Health board; the honest encoding is to document them here rather than assert a conditional attribute as required.",
   "total_span_types": 47,
   "total_unique_attributes": 76
 }
