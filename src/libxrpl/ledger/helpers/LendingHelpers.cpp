@@ -2158,8 +2158,16 @@ checkLoanFreeze(
     if (auto const ter = canAddHolding(view, asset))
         return ter;
 
-    // vaultPseudo is going to send funds, so it can't be frozen.
-    if (auto const ret = checkFrozen(view, vaultPseudo, asset))
+    // A global freeze on the asset blocks every leg of the loan regardless of
+    // which account is involved, so check it once up front.
+    if (auto const ret = checkGlobalFrozen(view, asset))
+    {
+        JLOG(j.warn()) << "Loan asset is globally frozen.";
+        return ret;
+    }
+
+    // vaultPseudo is going to send funds, so it can't be individually frozen.
+    if (auto const ret = checkIndividualFrozen(view, vaultPseudo, asset))
     {
         JLOG(j.warn()) << "Vault pseudo-account is frozen.";
         return ret;
@@ -2175,10 +2183,10 @@ checkLoanFreeze(
     }
 
     // borrower is eventually going to have to pay back the loan, so it can't be
-    // frozen now. It is also going to receive funds, so it can't be deep
-    // frozen, but being frozen is a prerequisite for being deep frozen, so
-    // checking the one is sufficient.
-    if (auto const ret = checkFrozen(view, borrower, asset))
+    // individually frozen now. It is also going to receive funds, so it can't
+    // be deep frozen, but being individually frozen is a prerequisite for being
+    // deep frozen, so checking the one is sufficient.
+    if (auto const ret = checkIndividualFrozen(view, borrower, asset))
     {
         JLOG(j.warn()) << "Borrower account is frozen.";
         return ret;
