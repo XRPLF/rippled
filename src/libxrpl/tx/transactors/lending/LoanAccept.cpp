@@ -50,7 +50,7 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    if (!isPendingLoan(loanSle))
+    if (!isLoanPending(loanSle))
     {
         JLOG(ctx.j.warn()) << "Loan is not pending acceptance.";
         return tecNO_PERMISSION;

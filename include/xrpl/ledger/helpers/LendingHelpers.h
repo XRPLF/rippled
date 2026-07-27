@@ -287,7 +287,7 @@ constructLoanState(SLE::const_ref loan);
  * been accepted by the borrower.
  */
 inline bool
-isPendingLoan(SLE::const_ref loan)
+isLoanPending(SLE::const_ref loan)
 {
     return loan->isFlag(lsfLoanPending);
 }

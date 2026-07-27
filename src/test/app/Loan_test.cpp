@@ -3840,6 +3840,10 @@ protected:
             // CounterpartySignature.
             env(set(lender, broker.brokerID, broker.asset(200).number()), Ter(temBAD_SIGNER));
 
+            // LoanAccept is introduced by the two-step amendment, so with the
+            // amendment disabled the transaction type itself is rejected.
+            env(accept(borrower, keylet::loan(broker.brokerID, 1).key), Ter(temDISABLED));
+
             // Rest of the tests are not applicable
             return;
         }
@@ -4000,6 +4004,18 @@ protected:
             // inner transaction, and with no Borrower field matches neither
             // the one-step nor the two-step (Borrower) flow.
             env(set(lender, broker.brokerID, broker.asset(200).number()), Ter(temINVALID));
+
+            // A LoanSet with Borrower but no StartDate matches neither the
+            // one-step nor the two-step (Borrower) flow.
+            env(set(lender, broker.brokerID, broker.asset(200).number()),
+                kBorrower(borrower),
+                Ter(temINVALID));
+
+            // A LoanSet with StartDate but no Borrower matches neither the
+            // one-step nor the two-step (Borrower) flow.
+            env(set(lender, broker.brokerID, broker.asset(200).number()),
+                kStartDate((env.now() + 1h).time_since_epoch().count()),
+                Ter(temINVALID));
         }
 
         {
