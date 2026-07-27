@@ -112,8 +112,8 @@ struct ValuesCase
     int majorVersion;
     int minorVersion;
     int patchVersion;
-    IdentifierList preReleaseIdentifiers{};
-    IdentifierList metaData{};
+    IdentifierList preReleaseIdentifiers{};  // NOLINT(readability-redundant-member-init)
+    IdentifierList metaData{};               // NOLINT(readability-redundant-member-init)
 };
 
 std::string
