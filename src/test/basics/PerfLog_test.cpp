@@ -533,7 +533,7 @@ public:
         // the jobs data with every addition.
         for (int i = 0; i < jobs.size(); ++i)
         {
-            perfLog->jobQueue(jobs[i].type);
+            perfLog->jobQueue(jobs[i].type, jobs[i].typeName);
             json::Value const jqCounters{perfLog->countersJson()[jss::job_queue]};
 
             BEAST_EXPECT(jqCounters.size() == i + 2);
@@ -581,7 +581,8 @@ public:
         // be half as many queued as started...
         for (int i = 0; i < jobs.size(); ++i)
         {
-            perfLog->jobStart(jobs[i].type, microseconds{i + 1}, steady_clock::now(), i * 2);
+            perfLog->jobStart(
+                jobs[i].type, jobs[i].typeName, microseconds{i + 1}, steady_clock::now(), i * 2);
             std::this_thread::sleep_for(microseconds(10));
 
             // Check each jobType counter entry.
@@ -623,7 +624,8 @@ public:
                 BEAST_EXPECT(total[jss::running_duration_us] == "0");
             }
 
-            perfLog->jobStart(jobs[i].type, microseconds{0}, steady_clock::now(), (i * 2) + 1);
+            perfLog->jobStart(
+                jobs[i].type, jobs[i].typeName, microseconds{0}, steady_clock::now(), (i * 2) + 1);
             std::this_thread::sleep_for(microseconds{10});
 
             // Verify that every entry in jobs appears twice in currents.
@@ -651,7 +653,7 @@ public:
             // A number of the computations in this loop care about the
             // number of jobs that have finished.  Make that available.
             int const finished = ((jobs.size() - i) * 2) - 1;
-            perfLog->jobFinish(jobs[i].type, microseconds(finished), (i * 2) + 1);
+            perfLog->jobFinish(jobs[i].type, jobs[i].typeName, microseconds(finished), (i * 2) + 1);
             std::this_thread::sleep_for(microseconds(10));
 
             json::Value const jqCounters{perfLog->countersJson()[jss::job_queue]};
@@ -697,7 +699,7 @@ public:
                 BEAST_EXPECT(jsonToUInt64(total[jss::running_duration_us]) == runningDur);
             }
 
-            perfLog->jobFinish(jobs[i].type, microseconds(finished + 1), (i * 2));
+            perfLog->jobFinish(jobs[i].type, jobs[i].typeName, microseconds(finished + 1), (i * 2));
             std::this_thread::sleep_for(microseconds(10));
 
             // Verify that the two jobs we just finished no longer appear in
@@ -891,25 +893,25 @@ public:
         };
 
         // Start an ID that's too large.
-        perfLog->jobStart(jobType, microseconds{11}, steady_clock::now(), 2);
+        perfLog->jobStart(jobType, jobTypeName, microseconds{11}, steady_clock::now(), 2);
         std::this_thread::sleep_for(microseconds{10});
         verifyCounters(perfLog->countersJson(), 1, 0, 11, 0);
         verifyEmptyCurrent(perfLog->currentJson());
 
         // Start a negative ID
-        perfLog->jobStart(jobType, microseconds{13}, steady_clock::now(), -1);
+        perfLog->jobStart(jobType, jobTypeName, microseconds{13}, steady_clock::now(), -1);
         std::this_thread::sleep_for(microseconds{10});
         verifyCounters(perfLog->countersJson(), 2, 0, 24, 0);
         verifyEmptyCurrent(perfLog->currentJson());
 
         // Finish the too large ID
-        perfLog->jobFinish(jobType, microseconds{17}, 2);
+        perfLog->jobFinish(jobType, jobTypeName, microseconds{17}, 2);
         std::this_thread::sleep_for(microseconds{10});
         verifyCounters(perfLog->countersJson(), 2, 1, 24, 17);
         verifyEmptyCurrent(perfLog->currentJson());
 
         // Finish the negative ID
-        perfLog->jobFinish(jobType, microseconds{19}, -1);
+        perfLog->jobFinish(jobType, jobTypeName, microseconds{19}, -1);
         std::this_thread::sleep_for(microseconds{10});
         verifyCounters(perfLog->countersJson(), 2, 2, 24, 36);
         verifyEmptyCurrent(perfLog->currentJson());

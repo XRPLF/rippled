@@ -48,7 +48,7 @@
  *    The unit belongs in the name because the OTel `unit` argument is not
  *    surfaced on the Prometheus metric name.
  *  - A gauge that is a snapshot of current state takes no suffix
- *    (`jobq_backlog`, `sync_state`).
+ *    (`jobq_saturation`, `sync_state`).
  *  - Label VALUES are declared here only when they come from a fixed set that
  *    the code itself writes (`namespace lval`), which is what keeps series
  *    cardinality bounded. A value derived from runtime data -- a site URI, a
@@ -200,10 +200,6 @@ inline constexpr char syncAddnodeTotal[] = "sync_addnode_total";
 // ===== JobQueue: is the worker pool the bottleneck? ==========================
 
 /**
- * Instantaneous JobQueue occupancy, per job type and per state.
- */
-inline constexpr char jobqBacklog[] = "jobq_backlog";
-/**
  * Worker-pool saturation: tasks in flight, threads, and jobs queued.
  */
 inline constexpr char jobqSaturation[] = "jobq_saturation";
@@ -337,6 +333,16 @@ inline constexpr char metric[] = "metric";
  * Job type, as produced by `JobTypes::name()`.
  */
 inline constexpr char jobType[] = "job_type";
+/**
+ * Which producer submitted a job, within its job type.
+ *
+ * A job type has several producers (`RcvGetLedger` and `RcvGetObjByHash` both
+ * run as `JtLedgerReq`), so this is what attributes a latency spike to one of
+ * them. Bounded by `MetricsRegistry::sanitiseHandler()`, which folds any job
+ * name that is not all ASCII letters -- the ones embedding a ledger sequence
+ * -- down to a single `other` value.
+ */
+inline constexpr char handler[] = "handler";
 /**
  * Terminal result of a bounded operation.
  */
@@ -533,18 +539,6 @@ inline constexpr char good[] = "good";
 inline constexpr char duplicate[] = "duplicate";
 inline constexpr char invalid[] = "invalid";
 }  // namespace addnode
-
-/**
- * `jobq_backlog` sub-metrics -- the three occupancy states of a job type.
- *
- * `deferred` has no other exposure anywhere: a job held back by its type's
- * concurrency limit counts as neither waiting nor running.
- */
-namespace jobq_backlog {
-inline constexpr char waiting[] = "waiting";
-inline constexpr char running[] = "running";
-inline constexpr char deferred[] = "deferred";
-}  // namespace jobq_backlog
 
 /**
  * `jobq_saturation` sub-metrics: the numerator, denominator and the backlog.

@@ -1359,7 +1359,7 @@ class InstrumentKindClassification(unittest.TestCase):
 class MetricPrefixFamilies(unittest.TestCase):
     def test_first_segment_is_the_family(self):
         self.assertEqual(
-            chk.metric_prefixes({"sync_state", "jobq_backlog", "unl_quorum"}),
+            chk.metric_prefixes({"sync_state", "jobq_saturation", "unl_quorum"}),
             {"sync_", "jobq_", "unl_"},
         )
 

@@ -1430,18 +1430,80 @@ The `OTelCollector` implementation exports metrics via OTLP/HTTP to the same OTe
 
 #### Gauges
 
-| Prometheus Metric                     | Source                    | Description                                                                                                                                                               |
-| ------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ledgermaster_validated_ledger_age`   | LedgerMaster.h:373        | Age of validated ledger (seconds)                                                                                                                                         |
-| `ledgermaster_published_ledger_age`   | LedgerMaster.h:374        | Age of published ledger (seconds)                                                                                                                                         |
-| `state_accounting_{mode}_duration`    | NetworkOPs.cpp:774        | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full)                                                                                                |
-| `state_accounting_{mode}_transitions` | NetworkOPs.cpp:780        | Transition count per mode                                                                                                                                                 |
-| `peer_finder_active_inbound_peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                                                                                                                           |
-| `peer_finder_active_outbound_peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                                                                                                                          |
-| `overlay_peer_disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                                                                                                                     |
-| `jobq_job_count`                      | JobQueue.cpp:26           | Current job queue depth (emitted as `jobq_job_count`: the JobQueue collector is wrapped in `group("jobq")`, so the registered `job_count` gauge gains the `jobq_` prefix) |
-| `{category}_bytes_in/out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                                                                                                                        |
-| `{category}_messages_in/out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                                                                                                                     |
+| Prometheus Metric                     | Source                    | Description                                                                |
+| ------------------------------------- | ------------------------- | -------------------------------------------------------------------------- |
+| `ledgermaster_validated_ledger_age`   | LedgerMaster.h:373        | Age of validated ledger (seconds)                                          |
+| `ledgermaster_published_ledger_age`   | LedgerMaster.h:374        | Age of published ledger (seconds)                                          |
+| `state_accounting_{mode}_duration`    | NetworkOPs.cpp:774        | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
+| `state_accounting_{mode}_transitions` | NetworkOPs.cpp:780        | Transition count per mode                                                  |
+| `peer_finder_active_inbound_peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                            |
+| `peer_finder_active_outbound_peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
+| `overlay_peer_disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
+| `jobq_job_count`                      | JobQueue.cpp:26           | Current job queue depth (all types)                                        |
+| `jobq_{jobtype}_waiting`              | JobTypeData.h             | Jobs of this type enqueued but not yet running                             |
+| `jobq_{jobtype}_running`              | JobTypeData.h             | Jobs of this type currently executing                                      |
+| `jobq_{jobtype}_deferred`             | JobTypeData.h             | Jobs of this type held back because the type's concurrency limit was hit   |
+| `{category}_bytes_in/out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
+| `{category}_messages_in/out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
+
+Note that `job_count` is exported as `jobq_job_count`: the JobQueue is
+constructed with `collectorManager_->group("jobq")` (Application.cpp:386),
+`GroupImp::makeName()` joins prefix and name with a `.` (Groups.cpp:42), and
+`OTelCollectorImp::formatName()` then turns the `.` into `_` and lowercases the
+whole string (OTelCollector.cpp:860). The same mechanism produces the
+`jobq_{jobtype}_*` names above and the pre-existing
+`jobq_{jobtype}_milliseconds` timing family.
+
+#### Per-Job-Type Queue Saturation
+
+The three `jobq_{jobtype}_{waiting,running,deferred}` families expose the
+per-type counters that `JobTypeData` already maintained but never exported.
+`{jobtype}` is the lowercased `JobTypes` name, so `JtLedgerReq` ("ledgerRequest")
+becomes `jobq_ledgerrequest_waiting` / `_running` / `_deferred`.
+
+They are emitted for every **non-special** job type — 35 of the 46 declared
+types. A "special" type is one whose concurrency limit is 0
+(`JobTypeInfo::special()`, JobTypeInfo.h:71-74); the limit logic never applies
+to it, so its `deferred` is always zero. The gauge members are declared at
+JobTypeData.h:78-80 and created at :100-102, next to the existing
+`dequeue`/`execute` events and under the same `!info.special()` guard (:95). They
+are published by `JobQueue::collect()` under the `mutex_` that already guards the
+counters (JobQueue.cpp:66-93) — no new locking.
+
+**`deferred` is the leading indicator.** `JobQueue::addJob()` never rejects
+work — when a type is at its limit, `addRefCountedJob()` increments `deferred`
+and returns `true` anyway (JobQueue.cpp:131-142), and `finishJob()` drains one
+deferred job per completion (JobQueue.cpp:353-362). Backpressure on a capped type
+therefore shows up **only as latency**, after the harm is done. `deferred > 0`
+says the cap is being hit _now_, before the duration histograms move.
+
+Limits that matter for ledger sync (JobTypes.h:54-77):
+
+| Job type       | Metric prefix         | Limit | Producers                                                                       |
+| -------------- | --------------------- | ----- | ------------------------------------------------------------------------------- |
+| `JtPack`       | `jobq_makefetchpack_` | 1     | `MakeFetchPack`                                                                 |
+| `JtLedgerReq`  | `jobq_ledgerrequest_` | 3     | `RcvGetLedger`, `RcvGetObjByHash`                                               |
+| `JtLedgerData` | `jobq_ledgerdata_`    | 3     | `ProcessLData`, `GotStaleData`, `GotFetchPack`, `AcqDone`, `InboundLedger`      |
+| `JtUpdatePf`   | `jobq_updatepaths_`   | 1     | `PthFindNewReq`, `PthFindOBDB`, `PthFindNewLed`, `OB<seq>` — see the note below |
+| `JtTxnData`    | `jobq_fetchtxndata_`  | 5     | `TxAcq`, `ComplAcquire`, `RcvPeerData`                                          |
+
+> **`JtUpdatePf` has four producers, three of them individually visible.** All
+> four run the same `updatePaths()` work but arrive under different names. Three
+> come through `LedgerMaster::newPFWork()` (LedgerMaster.cpp:1545), which passes
+> its caller's name straight to `addJob`: `PthFindNewReq` (:1512),
+> `PthFindOBDB` (:1533), and `PthFindNewLed` (:1984). All three are all-letters,
+> so each is its own `handler` series. The fourth is
+> `"OB" + std::to_string(seq)` (OrderBookDBImpl.cpp:84), which contains digits
+> and therefore folds to `handler="other"` — order-book rebuild traffic is the
+> only one of the four that is not directly attributable. Do not read the whole
+> type as invisible: three of its four producers are named.
+
+> **Sampling caveat**: these are gauges read by the `JobQueue::collect()` hook,
+> which the beast::insight `PeriodicMetricReader` drives every 1 s
+> (Telemetry.cpp:441). A `deferred` spike shorter than the sample interval can be
+> missed entirely. Treat a non-zero reading as real saturation, but do not treat
+> a zero reading as proof that no saturation occurred — cross-check
+> `job_queued_us` for the same type.
 
 #### OTel MetricsRegistry Gauges
 
@@ -1490,6 +1552,126 @@ These gauges are exported via the OTel Metrics SDK `PeriodicMetricReader` (10s i
 | `ios_latency`     | Application.cpp:438   | I/O service loop latency (ms)  |
 | `pathfind_fast`   | PathRequests.h:23     | Fast pathfinding duration (ms) |
 | `pathfind_full`   | PathRequests.h:24     | Full pathfinding duration (ms) |
+
+#### Job Instruments
+
+These five come from the `PerfLog` job hooks, not from beast::insight, so they
+are exported by the `MetricsRegistry` meter. `job_queued_us` and `job_running_us`
+have explicit microsecond bucket views registered
+(`addMicrosecondHistogramView()`, MetricsRegistry.cpp:253-254) spanning 100 µs to
+60 s; without those the SDK default buckets stop at 10 ms and every quantile
+saturates.
+
+| Prometheus Metric    | Kind      | Labels                | Description                          |
+| -------------------- | --------- | --------------------- | ------------------------------------ |
+| `job_queued_total`   | Counter   | `job_type`, `handler` | Jobs enqueued                        |
+| `job_started_total`  | Counter   | `job_type`, `handler` | Jobs dequeued and started            |
+| `job_finished_total` | Counter   | `job_type`, `handler` | Jobs run to completion               |
+| `job_queued_us`      | Histogram | `job_type`, `handler` | Time spent waiting in the queue (µs) |
+| `job_running_us`     | Histogram | `job_type`, `handler` | Time spent executing (µs)            |
+
+#### The `handler` Label
+
+`job_type` names the queue a job ran on, not the code that submitted it. Several
+job types have more than one producer, so `job_type` alone cannot attribute a
+latency spike. The clearest case: `RcvGetLedger` (PeerImp.cpp:1566) and
+`RcvGetObjByHash` (PeerImp.cpp:2603) both submit to `JtLedgerReq`, so both report
+as `job_type="ledgerRequest"`. `JtLedgerData` has five producers, `JtUpdatePf` has
+four, and `JtAdvance` has four.
+
+The `handler` label carries the name string passed to `addJob()` — the specific
+call site. It resolves all of those at once, not just the GetObject path.
+
+**The value is sanitized, not raw.** A raw job name would be unbounded, because
+two production job names embed a ledger sequence number:
+
+- `"Pub" + std::to_string(ledger->seq())` (LedgerPersistence.cpp:84)
+- `"OB" + std::to_string(ledger->seq() % 1000000000)` (OrderBookDBImpl.cpp:84)
+
+A raw label would mint a new Prometheus series for every ledger — unbounded
+growth at ~1 series every 3-5 s, forever.
+`MetricsRegistry::sanitiseHandler()` (declared inline in
+`src/xrpld/telemetry/MetricsRegistry.h`) therefore applies one rule:
+
+- Keep the name when it is **non-empty and every character is an ASCII letter**.
+- Otherwise return the constant `"other"`. An empty name, a digit, a hyphen, or
+  any punctuation all fall here.
+
+Both dynamic names always contain digits, so both collapse to `"other"`. Because
+the rule is a pure function of compile-time string literals, the label domain is
+fixed at build time and cannot grow at runtime. That is a stronger guarantee than
+an allowlist, which would silently mislabel any job added later; this rule
+degrades to `"other"` instead.
+
+**Five static job names also fall into `"other"`.** Sweeping every `addJob` /
+`addRefCountedJob` / `postCoro` / `newPFWork` / `TimeoutCounter::jobName` call
+site outside `src/test` finds 48 distinct static name literals. 43 are
+all-letters and pass through; five are not, and two more are built at runtime
+from a ledger sequence. The domain is therefore **44 values** (43 names plus
+`"other"`):
+
+| Name          | Why it is not all-letters | Call site              |
+| ------------- | ------------------------- | ---------------------- |
+| `GetConsL1`   | digit                     | RCLConsensus.cpp:169   |
+| `GetConsL2`   | digit                     | RCLValidations.cpp:135 |
+| `gRPC-Client` | hyphen                    | GRPCServer.cpp:156     |
+| `RPC-Client`  | hyphen                    | ServerHandler.cpp:332  |
+| `WS-Client`   | hyphen                    | ServerHandler.cpp:376  |
+
+> The consequence worth remembering: `handler="other"` is a **mixed bucket**, not
+> a residual. It holds the two per-ledger dynamic names _and_ those five static
+> ones, so `GetConsL1` and `GetConsL2` — two different `JtAdvance` producers —
+> are not separable, and neither are the three RPC client-session names. Do not
+> read a handler breakdown as exhaustive. The GetObject path is unaffected:
+> `RcvGetObjByHash` and `RcvGetLedger` are all-letters and pass through as
+> distinct series.
+>
+> The count is "at the time of writing" — it is a property of the source, not of
+> the rule. Re-derive it from the call sites after adding a job rather than
+> trusting this number.
+
+#### GetObject Request Metrics
+
+Five instruments on the `TMGetObjectByHash` query path, recorded via the
+`XRPL_METRIC_*` macros at their call sites in `PeerImp.cpp`. Label cardinality is
+fixed and tiny: two `result` values, two `reason` values.
+
+| Prometheus Metric           | Kind      | Labels                                          | Description                                           |
+| --------------------------- | --------- | ----------------------------------------------- | ----------------------------------------------------- |
+| `getobject_lookup_us`       | Histogram | none                                            | Time inside the NodeStore fetch loop (µs)             |
+| `getobject_request_objects` | Histogram | none                                            | Objects requested per request                         |
+| `getobject_lookups_total`   | Counter   | `result` = `hit` \| `miss`                      | NodeStore hit/miss volume                             |
+| `getobject_rejected_total`  | Counter   | `reason` = `oversize` \| `malformed_ledgerhash` | Requests refused before any NodeStore access          |
+| `getobject_charge`          | Histogram | none                                            | Dynamic component of the differential resource charge |
+
+Aggregation choices worth knowing when reading these:
+
+- `getobject_lookup_us` times the **whole fetch loop once**
+  (`processGetObjectByHash()`, PeerImp.cpp:2713-2742 — the iteration cap is set
+  at :2713 and the loop ends at :2742), not each iteration. The loop can run up
+  to `kHardMaxReplyNodes` = 12288 times (Tuning.h:30); timing each
+  `fetchNodeObject()` would cost more than the lookups. It needs an
+  `addMicrosecondHistogramView()` entry for the same reason the job histograms
+  do — a 12288-lookup loop routinely exceeds 10 ms, so without the view the
+  metric saturates exactly when it matters.
+- `getobject_lookups_total` is incremented **once per request with the batch
+  totals**, not once per object. A 12288-iteration loop incrementing per object
+  would be a measurable hot-path cost for no extra information.
+- `getobject_request_objects` records `packet.objects_size()` — the _requested_
+  count, which is what the charge bands price on, not the count actually found.
+- `getobject_charge` records only the **dynamic** part returned by
+  `computeGetObjectByHashFee()` (PeerImp.cpp:3658-3681), applied at
+  PeerImp.cpp:2757-2758 just after the loop. The admission-time base charge is a
+  constant (`kFeeModerateBurdenPeer`, PeerImp.cpp:2634) and is already implied.
+- `getobject_rejected_total` counts the two early returns in
+  `onMessage(TMGetObjectByHash)`: the malformed-ledgerhash check (PeerImp.cpp:2569,
+  counter at :2573) and the oversize gate (PeerImp.cpp:2585, counter at :2591).
+  Both fire before the job is enqueued, so a rejected request contributes to no
+  other GetObject metric.
+
+> On a healthy local network `getobject_rejected_total` reads zero — no honest
+> peer sends an oversized request. Verify its panel with a synthetic oversized
+> request; do not assume it works because the query parses.
 
 #### Adding a New Metric
 
@@ -2041,6 +2223,114 @@ Wait for the node to sync with the network.
 The `getKBUsed*()` methods require SQLite databases to exist. If running with
 `--standalone` or before the first ledger is stored, these will be zero.
 
+### Slow TMGetObjectByHash service
+
+Use this when a peer reports slow object fetches, or when `job_queued_us` /
+`job_running_us` for `job_type="ledgerRequest"` rises. The goal is to name the
+cause, not to confirm the slowness.
+
+End-to-end handler time splits into three additive parts, and each has its own
+signal:
+
+```mermaid
+flowchart LR
+    A["`**Request arrives**
+    onMessage
+    TMGetObjectByHash`"] --> B["`**1. Queue wait**
+    job_queued_us
+    handler=RcvGetObjByHash`"]
+    B --> C["`**2. NodeStore lookup**
+    getobject_lookup_us`"]
+    C --> D["`**3. Everything else**
+    protobuf, serialization,
+    reply construction`"]
+    D --> E["`**Reply sent**`"]
+
+    C -.-> F["`job_running_us
+    handler=RcvGetObjByHash
+    covers steps 2 + 3`"]
+    D -.-> F
+
+    style A fill:#1f4e79,color:#ffffff
+    style B fill:#7b3f00,color:#ffffff
+    style C fill:#2d5016,color:#ffffff
+    style D fill:#4a148c,color:#ffffff
+    style E fill:#1f4e79,color:#ffffff
+    style F fill:#37474f,color:#ffffff
+```
+
+**Reading the diagram**
+
+- Step 1 is time the job sat in `JtLedgerReq` before a worker picked it up. Only
+  `job_queued_us` measures it.
+- Steps 2 and 3 both happen inside the worker, so `job_running_us` covers them
+  together. `getobject_lookup_us` isolates step 2 alone.
+- Step 3 is therefore not measured directly. Derive it:
+  `job_running_us − getobject_lookup_us`. That subtraction is what makes the set
+  able to name a cause instead of just reporting a duration.
+
+**Procedure** — work through these in order. The first row that matches is the
+answer.
+
+> **Scope every query to one node.** All snippets below carry
+> `service_instance_id="$node"`. On a shared Grafana stack an unscoped selector
+> aggregates across every node and branch reporting to it, so another node's
+> saturation would be attributed to this one. Substitute the node's public key
+> for `$node` when querying Prometheus directly rather than from a dashboard.
+
+1. Split queue wait from run time. Compare the two p99s for the handler:
+
+   ```promql
+   histogram_quantile(0.99, sum by (le) (rate(job_queued_us_bucket{handler="RcvGetObjByHash", service_instance_id="$node"}[5m])))
+   histogram_quantile(0.99, sum by (le) (rate(job_running_us_bucket{handler="RcvGetObjByHash", service_instance_id="$node"}[5m])))
+   ```
+
+2. If run time is the larger term, split it against the fetch loop:
+
+   ```promql
+   histogram_quantile(0.99, sum by (le) (rate(getobject_lookup_us_bucket{service_instance_id="$node"}[5m])))
+   ```
+
+3. Match the outcome below.
+
+| Observation                                                                | Root cause and next step                                                                                                                                                                                                                                                           |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `job_queued_us{handler="RcvGetObjByHash"}` high, `job_running_us` normal   | **Queue contention** — the work is cheap, the wait is not. Confirm with `jobq_ledgerrequest_deferred{service_instance_id="$node"} > 0`, then compare `job_queued_us{handler="RcvGetLedger"}`: if it is also high, both producers are starved by the limit of 3, not by each other. |
+| `job_running_us` high and within ~10% of `getobject_lookup_us`             | **NodeStore is the bottleneck** — nearly all run time is in the fetch loop. Check `rate(getobject_lookups_total{result="miss"}[5m])` and the existing NuDB / `nodestore_state` panels. A miss-heavy mix means real disk seeks.                                                     |
+| `job_running_us` high but `getobject_lookup_us` low                        | **Cost is outside the fetch loop** — protobuf, serialization, or reply construction. Storage is fine. Look at reply size: a large `getobject_request_objects` with a high hit rate means big replies to build and send.                                                            |
+| `getobject_request_objects` p99 large                                      | **Peers are sending big batches** — the work is real, not a regression. Nothing is broken; the node is being asked to do more. Decide whether to accept the load or price it higher.                                                                                               |
+| `rate(getobject_rejected_total{reason="oversize"}[5m])` rising             | **Non-conforming traffic** — requests above `kHardMaxReplyNodes` are being refused before any NodeStore access. Check `getobject_charge` to confirm the pricing escalates for the requests that _are_ accepted.                                                                    |
+| `rate(getobject_rejected_total{reason="malformed_ledgerhash"}[5m])` rising | **Malformed requests** — a peer is sending a ledgerhash that is not 32 bytes. Refused at the gate; no queue or storage cost incurred.                                                                                                                                              |
+| All GetObject metrics normal, `jobq_*_deferred` high on another type       | **This path is exonerated** — the slowness is elsewhere. Find the saturated type with `topk(5, {__name__=~"jobq_.*_deferred", service_instance_id="$node"} > 0)` and investigate that producer instead.                                                                            |
+
+Row 2 says "within ~10%", not "equal", deliberately: `job_running_us` also
+covers the charge computation (PeerImp.cpp:2757) and the reply `send()` that
+follow the loop, so it is always the larger of the two. Treat a small residual as
+normal and only a large one as a signal — that is what row 3 is for.
+
+The last row matters as much as the others: the set can rule this path _out_,
+which a slowness-only metric cannot.
+
+**Caveats**
+
+- `handler` collapses to `"other"` for any job name that is not all ASCII
+  letters, so a handler breakdown is not exhaustive — see
+  [The `handler` Label](#the-handler-label). This does not affect
+  `RcvGetObjByHash` or `RcvGetLedger`; both pass through as distinct series.
+- `jobq_*_deferred` is sampled at 1 s. A zero reading does not prove no
+  saturation occurred — see the sampling caveat under
+  [Per-Job-Type Queue Saturation](#per-job-type-queue-saturation).
+- The two families compared in this procedure are exported on **different
+  cadences by separate meter providers**: the `jobq_*` gauges every 1 s
+  (`Telemetry.cpp` global provider) and `job_queued_us` / `job_running_us` /
+  `getobject_*` every 10 s (the private `MetricsRegistry` provider). A short
+  spike can therefore appear in one family a step before the other. When
+  correlating them, widen the window rather than reading a single scrape, and
+  do not conclude the two disagree from one interval's difference.
+- A request rejected at either gate contributes to no other GetObject metric, so
+  a rejection spike will _not_ show up as latency. Check the rejection counters
+  before concluding that traffic is normal.
+
 ### High memory usage
 
 - Reduce trace volume with collector-side tail sampling (xrpld head sampling is
@@ -2175,13 +2465,13 @@ Ledger acquires are in flight, _Ledgers Behind Network_ is flat or rising, and
 | _Add-Node Outcomes_                                                                                           | `good` dominates                                          | `duplicate` swamps `good`                                       | bandwidth busy, acquire standing still — peers re-sending known data                                                                                                                                                                        |
 |                                                                                                               |                                                           | `invalid` rising                                                | a specific misbehaving peer, not a local fault                                                                                                                                                                                              |
 | _Received-Data Stash Depth & In-Flight Acquires_                                                              | stash drains                                              | stash growing                                                   | data arrives faster than it is applied — a job-queue or disk problem, the **opposite** conclusion from a stall rate, and only this panel separates them                                                                                     |
-| _Deferred Jobs by Type (starvation)_                                                                          | flat at 0                                                 | sustained non-zero on `ledgerData`/`ledgerRequest`              | a job the queue accepted then **withheld** at its concurrency limit of 3 — it appears in neither `waiting` nor `running`, so no other signal can show it. Starved `ledgerData` is exactly why the stash grows while missing nodes stay flat |
+| `jobq_<jobtype>_deferred`                                                                                     | flat at 0                                                 | sustained non-zero on `ledgerdata`/`ledgerrequest`              | a job the queue accepted then **withheld** at its concurrency limit of 3 — it appears in neither `waiting` nor `running`, so no other signal can show it. Starved `ledgerdata` is exactly why the stash grows while missing nodes stay flat |
 | _Worker Pool Saturation_ + _Worker Pool Capacity & Total Backlog_                                             | under 80%                                                 | 100% with `total_waiting` climbing                              | the pool is **exhausted** — every stage looks slow at once. Stop here; no per-subsystem fix helps while no thread is free                                                                                                                   |
 | Acquire outcome `abandoned` in Tempo (`{name="ledger.acquire" && span.outcome="abandoned"}`)                  | absent                                                    | present                                                         | the acquire was swept or shut down before reaching a result — without this value a stuck-then-swept fetch had no `outcome` at all and vanished from every outcome rate                                                                      |
 
 **Conclusion:** distinguish "nobody is serving it" (peer supply) from "it arrives
 and we cannot process it" (job queue / disk). The two look identical in a log and
-are separated only by the stash-depth and deferred-jobs panels. Detail:
+are separated only by the stash-depth and per-type deferred gauges. Detail:
 [Sync pipeline](#sync-pipeline--ordered-diagnosis) steps 6-12 and 17.
 
 #### Branch D — reaching `full` but slowly, or falling back out of it
@@ -2500,18 +2790,22 @@ panel it reads.
         while no thread is free to run its jobs. Look at what is holding the
         threads (long-running jobs, disk waits from step 9) or at the
         `[workers]` setting for the node size.
-    - **Then per type** — _Deferred Jobs by Type (starvation)_
-      (`jobq_backlog`, `metric=deferred`). This is the signal that exists
-      nowhere else. A deferred job is one the queue **accepted and then
-      withheld** because its type is already running at its concurrency limit,
-      so it appears in neither `waiting` nor `running`, and neither the job
-      counters nor the queue-wait histograms can show it. Any sustained
-      non-zero value names the job type whose limit is the bottleneck. During a
-      fresh sync watch `job_type=ledgerData` and `job_type=ledgerRequest`
-      first: both run at a limit of 3, so they are the types that starve
-      soonest, and starved `ledgerData` is exactly why the received-data stash
-      in step 8 grows while the missing-node count in step 6 stays flat.
-      _Job Queue Occupancy by Type (waiting/running)_ gives the context —
+    - **Then per type** — the `jobq_<jobtype>_deferred` gauges, one series per
+      job type (see
+      [Per-Job-Type Queue Saturation](#per-job-type-queue-saturation)). This is
+      the signal that exists nowhere else. A deferred job is one the queue
+      **accepted and then withheld** because its type is already running at its
+      concurrency limit, so it appears in neither `waiting` nor `running`, and
+      neither the job counters nor the queue-wait histograms can show it. Any
+      sustained non-zero value names the job type whose limit is the
+      bottleneck; find it with
+      `topk(5, {__name__=~"jobq_.*_deferred", service_instance_id="$node"})`.
+      During a fresh sync watch `jobq_ledgerdata_deferred` and
+      `jobq_ledgerrequest_deferred` first: both types run at a limit of 3, so
+      they are the ones that starve soonest, and starved `ledgerdata` is
+      exactly why the received-data stash in step 8 grows while the
+      missing-node count in step 6 stays flat. The matching
+      `jobq_<jobtype>_running` and `_waiting` gauges give the context —
       `running` pinned at the limit with `waiting` above zero confirms the
       limit, not the supply, is what is holding the type back.
       Note the difference from _Job Queue Wait p95 By Type_ on the Ledger Data

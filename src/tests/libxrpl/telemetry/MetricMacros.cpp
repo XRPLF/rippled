@@ -29,9 +29,7 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/telemetry/MetricNames.h>
 
-#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
-#include <xrpl/core/JobTypes.h>
 
 #include <gtest/gtest.h>
 #include <opentelemetry/metrics/meter.h>
@@ -57,7 +55,6 @@
 #include <optional>
 #include <string>
 #include <utility>
-#include <vector>
 
 using namespace xrpl;
 
@@ -1617,134 +1614,21 @@ TEST(MetricMacros, acquire_counters_emit_nothing_when_registry_disabled)
 // -----------------------------------------------------------------
 // JobQueue saturation diagnostics (WP-A4).
 //
-// Asserts the EXACT values and label shapes of the two gauges:
-//   jobq_backlog{metric,job_type}   MetricsRegistry::registerJobQueueBacklogGauge
-//                                     waiting / running / deferred, per type
+// Asserts the EXACT values and label shapes of the pool-wide gauge:
 //   jobq_saturation{metric}         MetricsRegistry::registerJobQueueSaturationGauge
 //                                     running_tasks / worker_threads / total_waiting
 //
-// Both are observable instruments registered directly on the SDK meter,
+// It is an observable instrument registered directly on the SDK meter,
 // mirroring the production callback shape, because the real MetricsRegistry's
 // enabled path cannot be linked into this standalone binary (see the file
-// header). The snapshot types are the REAL JobQueue::JobTypeCount and
-// JobQueue::WorkerSaturation, and the label values come from the real
-// JobTypes::name(), so a rename or reorder on either side breaks these tests
-// instead of silently drifting from production.
+// header). The reading type is the REAL JobQueue::WorkerSaturation, so a
+// rename or reorder on either side breaks this test instead of silently
+// drifting from production.
+//
+// The per-job-type waiting/running/deferred counts are a separate mechanism:
+// JobQueue::collect() publishes them as the beast::insight gauges
+// jobq_<jobtype>_waiting / _running / _deferred, which JobQueue_test covers.
 // -----------------------------------------------------------------
-
-// jobq_backlog must keep waiting, running and deferred on separate series per
-// job type. `deferred` is the reason this gauge exists: a job held back by its
-// type's concurrency limit is counted in neither of the other two fields, and
-// appears in no other metric at all. The values chosen are a starved
-// JtLedgerData -- limit 3, so 3 running and the rest deferred.
-TEST(MetricMacros, jobq_backlog_gauge_separates_waiting_running_and_deferred)
-{
-    CollectingProvider const provider;
-
-    // The real snapshot type the production callback iterates. JtLedgerData is
-    // at its limit of 3 with 5 more jobs held back; JtLedgerReq has one job
-    // merely waiting; JtSweep is registered but idle.
-    std::vector<JobQueue::JobTypeCount> observed{
-        JobQueue::JobTypeCount{.type = JtLedgerData, .waiting = 5, .running = 3, .deferred = 5},
-        JobQueue::JobTypeCount{.type = JtLedgerReq, .waiting = 1, .running = 0, .deferred = 0},
-        JobQueue::JobTypeCount{.type = JtSweep, .waiting = 0, .running = 0, .deferred = 0}};
-
-    // Keep the instrument alive for the whole test: destroying the handle
-    // deregisters the callback, which is why the real registry holds a member.
-    auto gauge = provider.meter()->CreateInt64ObservableGauge(
-        telemetry::metric::jobqBacklog,
-        "JobQueue occupancy per job type (waiting/running/deferred)");
-    gauge->AddCallback(
-        [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto const* counts = static_cast<std::vector<JobQueue::JobTypeCount> const*>(state);
-            // Same two-label Observe() form the production callback uses.
-            auto observe = [&](char const* field, std::string const& jobType, std::int64_t value) {
-                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
-                    opentelemetry::metrics::ObserverResultT<std::int64_t>>>(result)
-                    ->Observe(
-                        value,
-                        {{telemetry::label::metric, field}, {telemetry::label::jobType, jobType}});
-            };
-            for (auto const& count : *counts)
-            {
-                // The same name helper production uses -- never a literal.
-                auto const& jobType = JobTypes::name(count.type);
-                observe("waiting", jobType, count.waiting);
-                observe("running", jobType, count.running);
-                observe("deferred", jobType, count.deferred);
-            }
-        },
-        &observed);
-
-    auto const starved = provider.collect();
-
-    // Three types x three fields, every one its own series: no field and no
-    // type collapses into another.
-    ASSERT_EQ(starved.at("jobq_backlog").size(), 9u);
-
-    // The starved type, exactly as configured. The limit of 3 is visible as
-    // running=3, and the 5 jobs the limit is denying are the deferred series.
-    EXPECT_EQ(
-        gaugeValue(starved, "jobq_backlog", attrs("metric", "waiting", "job_type", "ledgerData")),
-        5);
-    EXPECT_EQ(
-        gaugeValue(starved, "jobq_backlog", attrs("metric", "running", "job_type", "ledgerData")),
-        3);
-    EXPECT_EQ(
-        gaugeValue(starved, "jobq_backlog", attrs("metric", "deferred", "job_type", "ledgerData")),
-        5);
-
-    // A type that is queued but NOT deferred reads deferred=0 while waiting=1.
-    // This is the distinction the gauge exists to make: "queued" and "denied a
-    // worker" are different states, and only the latter is starvation.
-    EXPECT_EQ(
-        gaugeValue(
-            starved, "jobq_backlog", attrs("metric", "waiting", "job_type", "ledgerRequest")),
-        1);
-    EXPECT_EQ(
-        gaugeValue(
-            starved, "jobq_backlog", attrs("metric", "deferred", "job_type", "ledgerRequest")),
-        0);
-
-    // An idle registered type reports zeros rather than dropping out. Absence
-    // would be indistinguishable from a broken exporter, so every type is
-    // observed on every tick.
-    ASSERT_EQ(
-        starved.at("jobq_backlog").count(attrs("metric", "waiting", "job_type", "sweep")), 1u);
-    EXPECT_EQ(
-        gaugeValue(starved, "jobq_backlog", attrs("metric", "waiting", "job_type", "sweep")), 0);
-
-    // Exactly two label keys, in the documented order, on every series. A
-    // third label would multiply the series count per job type.
-    for (auto const& [labels, point] : starved.at("jobq_backlog"))
-    {
-        ASSERT_EQ(labels.size(), 2u);
-        EXPECT_EQ(labels.count("metric"), 1u);
-        EXPECT_EQ(labels.count("job_type"), 1u);
-    }
-
-    // NEGATIVE: a type never present in the snapshot has no series, so the
-    // readings above are not an artifact of a catch-all series.
-    EXPECT_EQ(
-        starved.at("jobq_backlog").count(attrs("metric", "waiting", "job_type", "transaction")),
-        0u);
-    // NEGATIVE: the label VALUE is the JobTypes name, not the enum spelling.
-    EXPECT_EQ(
-        starved.at("jobq_backlog").count(attrs("metric", "waiting", "job_type", "JtLedgerData")),
-        0u);
-
-    // The starvation clearing is the recovery reading: deferred drains to 0
-    // while running stays at the limit, so the panel shows work flowing again.
-    observed[0] =
-        JobQueue::JobTypeCount{.type = JtLedgerData, .waiting = 0, .running = 3, .deferred = 0};
-    auto const draining = provider.collect();
-    EXPECT_EQ(
-        gaugeValue(draining, "jobq_backlog", attrs("metric", "deferred", "job_type", "ledgerData")),
-        0);
-    EXPECT_EQ(
-        gaugeValue(draining, "jobq_backlog", attrs("metric", "running", "job_type", "ledgerData")),
-        3);
-}
 
 // jobq_saturation exports the worker-thread count alongside the in-flight
 // count so a dashboard can form the ratio without hardcoding a denominator

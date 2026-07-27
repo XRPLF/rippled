@@ -791,6 +791,34 @@ private:
     static void
     finishServeSpan(telemetry::SpanGuard& span, protocol::TMLedgerData const& ledgerData) noexcept;
 
+    /**
+     * Record the OTel metrics for one completed `TMGetObjectByHash` request.
+     *
+     * Extracted from `processGetObjectByHash()` purely to keep that method
+     * within the 80-line limit; it holds no logic of its own beyond deriving
+     * the hit/miss split from `requested` and `found`. Called once per
+     * request, after the fetch loop and the `charge()` call.
+     *
+     * Records `getobject_request_objects`, `getobject_lookup_us`,
+     * `getobject_charge`, and both label values of
+     * `getobject_lookups_total`. Compiles to nothing when telemetry is
+     * disabled, because the `XRPL_METRIC_*` macros do.
+     *
+     * @param requested     Objects the peer asked for (`objects_size()`).
+     * @param found         Objects returned, i.e. the reply's object count.
+     *                      Expected to be `<= requested`; clamped either way
+     *                      so the derived miss count cannot go negative.
+     * @param lookupElapsed Wall time of the whole fetch loop.
+     * @param fee           The dynamic charge that was applied, so the
+     *                      recorded value is exactly the one charged.
+     */
+    void
+    recordGetObjectMetrics(
+        int const requested,
+        int const found,
+        std::chrono::microseconds const lookupElapsed,
+        Resource::Charge const& fee);
+
 protected:
     // Kept `protected` so test subclasses (see
     // TMGetObjectByHash_test) can drive the

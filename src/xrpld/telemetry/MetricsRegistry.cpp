@@ -43,7 +43,6 @@
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/JobQueue.h>
-#include <xrpl/core/JobTypes.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/AmendmentTable.h>
@@ -53,6 +52,7 @@
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/telemetry/GetObjectMetricNames.h>
 
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
@@ -73,6 +73,7 @@
 #include <opentelemetry/semconv/incubating/service_attributes.h>
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <cstddef>
@@ -126,8 +127,44 @@ constexpr char kConsensusRoundDurationMs[] = "consensus_round_duration_ms";
  * @param boundaries Bucket upper bounds, in the instrument's own unit,
  *                   ascending.
  */
+
+/**
+ * Bucket boundaries for microsecond-valued duration instruments.
+ *
+ * 100 µs, 500 µs, 1 ms, 5 ms, 10 ms, 25 ms, 50 ms, 100 ms, 250 ms, 500 ms,
+ * 1 s, 2.5 s, 5 s, 10 s, 30 s, 60 s. Covers sub-millisecond jobs through
+ * multi-second stalls without saturating.
+ */
+constexpr std::array kMicrosecondBoundaries{
+    100.0,
+    500.0,
+    1'000.0,
+    5'000.0,
+    10'000.0,
+    25'000.0,
+    50'000.0,
+    100'000.0,
+    250'000.0,
+    500'000.0,
+    1'000'000.0,
+    2'500'000.0,
+    5'000'000.0,
+    10'000'000.0,
+    30'000'000.0,
+    60'000'000.0};
+
+/**
+ * Register an explicit-bucket histogram view.
+ *
+ * The SDK's default boundaries top out at 10,000, so any instrument whose
+ * values exceed that saturates and every quantile reads as the ceiling.
+ *
+ * @param views      The registry to add the view to.
+ * @param name       Instrument name to match (e.g. "job_running_us").
+ * @param boundaries Bucket upper bounds, ascending.
+ */
 void
-addDurationHistogramView(
+addHistogramView(
     metric_sdk::ViewRegistry& views,
     std::string const& name,
     std::vector<double> boundaries)
@@ -145,11 +182,12 @@ addDurationHistogramView(
 }
 
 /**
- * Register the explicit-bucket view for a MICROSECOND-valued instrument.
+ * Register the microsecond-ladder view for a duration instrument.
  *
- * Boundaries: 100µs, 500µs, 1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms,
- * 1s, 2.5s, 5s, 10s, 30s, 60s — sub-millisecond jobs through multi-second
- * stalls, without saturating.
+ * Job wait/run times and RPC latencies routinely exceed the SDK default
+ * ceiling, so they all share `kMicrosecondBoundaries`: 100µs, 500µs, 1ms, 5ms,
+ * 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s, 30s, 60s —
+ * sub-millisecond jobs through multi-second stalls, without saturating.
  *
  * @param views The registry to add the view to.
  * @param name  Instrument name to match (e.g. "job_running_us").
@@ -157,25 +195,7 @@ addDurationHistogramView(
 void
 addMicrosecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
 {
-    addDurationHistogramView(
-        views,
-        name,
-        {100.0,
-         500.0,
-         1'000.0,
-         5'000.0,
-         10'000.0,
-         25'000.0,
-         50'000.0,
-         100'000.0,
-         250'000.0,
-         500'000.0,
-         1'000'000.0,
-         2'500'000.0,
-         5'000'000.0,
-         10'000'000.0,
-         30'000'000.0,
-         60'000'000.0});
+    addHistogramView(views, name, {kMicrosecondBoundaries.begin(), kMicrosecondBoundaries.end()});
 }
 
 /**
@@ -201,7 +221,7 @@ addMicrosecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& 
 void
 addRoundDurationHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
 {
-    addDurationHistogramView(
+    addHistogramView(
         views,
         name,
         {500.0,
@@ -303,6 +323,31 @@ MetricsRegistry::initExporterAndProvider(std::string const& endpoint, std::strin
     // Millisecond-scale: recorded at the RCLConsensus call site, so only the
     // view is declared here (see the constant's comment).
     addRoundDurationHistogramView(*views, kConsensusRoundDurationMs);
+
+    // Recorded at its PeerImp.cpp call site, not created here, so the name
+    // comes from the shared constant both sites use.
+    addMicrosecondHistogramView(*views, kGetObjectLookupUs);
+
+    // The remaining two GetObject histograms are not durations, so the
+    // microsecond ladder above does not fit them. Both still need explicit
+    // boundaries: the SDK default stops at 10,000 and both ranges exceed it.
+    //
+    // Object counts run 1..kHardMaxReplyNodes (12288). The honest sync path
+    // asks for at most 8, so the low buckets are fine-grained and the upper
+    // ones follow the charge size bands (64, 1024) up to the hard cap.
+    addHistogramView(
+        *views,
+        kGetObjectRequestObjects,
+        {1.0, 2.0, 4.0, 8.0, 16.0, 64.0, 256.0, 1'024.0, 4'096.0, 12'288.0});
+
+    // Charge values span 0 (free tier) to ~99k for a full-size all-miss
+    // request. Boundaries bracket the resource thresholds that decide a
+    // peer's fate -- kWarningThreshold (5000) and kDropThreshold (25000) --
+    // so a dashboard can show how close charges run to each.
+    addHistogramView(
+        *views,
+        kGetObjectCharge,
+        {0.0, 100.0, 500.0, 1'000.0, 5'000.0, 10'000.0, 25'000.0, 50'000.0, 100'000.0});
 
     // Create MeterProvider with resource, then attach the metric reader.
     provider_ = metric_sdk::MeterProviderFactory::Create(std::move(views), resourceAttrs);
@@ -482,25 +527,35 @@ MetricsRegistry::recordRpcErrored(std::string_view method, std::int64_t duration
 // -----------------------------------------------------------------
 
 void
-MetricsRegistry::recordJobQueued(std::string_view jobType)
+MetricsRegistry::recordJobQueued(std::string_view jobType, std::string_view jobName)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_ || !jobQueuedCounter_)
         return;
-    jobQueuedCounter_->Add(1, {{"job_type", std::string(jobType)}});
+    jobQueuedCounter_->Add(
+        1,
+        {{label::jobType, std::string(jobType)},
+         {label::handler, std::string(sanitiseHandler(jobName))}});
 #else
     (void)jobType;
+    (void)jobName;
     (void)enabled_;
 #endif
 }
 
 void
-MetricsRegistry::recordJobStarted(std::string_view jobType, std::int64_t queuedDurUs)
+MetricsRegistry::recordJobStarted(
+    std::string_view jobType,
+    std::string_view jobName,
+    std::int64_t queuedDurUs)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_ || !jobStartedCounter_)
         return;
-    jobStartedCounter_->Add(1, {{"job_type", std::string(jobType)}});
+    // Build the attribute pair once: both the counter and the histogram
+    // must carry the identical label set or they cannot be joined.
+    std::string const handler(sanitiseHandler(jobName));
+    jobStartedCounter_->Add(1, {{label::jobType, std::string(jobType)}, {label::handler, handler}});
     if (jobQueuedDurationHistogram_ && queuedDurUs >= 0)
     {
         // Guard against negative queued durations: the caller derives this
@@ -509,32 +564,39 @@ MetricsRegistry::recordJobStarted(std::string_view jobType, std::int64_t queuedD
         // (logging a warning per call), so skip them rather than spam.
         jobQueuedDurationHistogram_->Record(
             static_cast<double>(queuedDurUs),
-            {{"job_type", std::string(jobType)}},
+            {{label::jobType, std::string(jobType)}, {label::handler, handler}},
             opentelemetry::context::Context{});
     }
 #else
     (void)jobType;
+    (void)jobName;
     (void)queuedDurUs;
     (void)enabled_;
 #endif
 }
 
 void
-MetricsRegistry::recordJobFinished(std::string_view jobType, std::int64_t runningDurUs)
+MetricsRegistry::recordJobFinished(
+    std::string_view jobType,
+    std::string_view jobName,
+    std::int64_t runningDurUs)
 {
 #ifdef XRPL_ENABLE_TELEMETRY
     if (!enabled_ || !jobFinishedCounter_)
         return;
-    jobFinishedCounter_->Add(1, {{"job_type", std::string(jobType)}});
+    std::string const handler(sanitiseHandler(jobName));
+    jobFinishedCounter_->Add(
+        1, {{label::jobType, std::string(jobType)}, {label::handler, handler}});
     if (jobRunningDurationHistogram_)
     {
         jobRunningDurationHistogram_->Record(
             static_cast<double>(runningDurUs),
-            {{"job_type", std::string(jobType)}},
+            {{label::jobType, std::string(jobType)}, {label::handler, handler}},
             opentelemetry::context::Context{});
     }
 #else
     (void)jobType;
+    (void)jobName;
     (void)runningDurUs;
     (void)enabled_;
 #endif
@@ -575,7 +637,6 @@ MetricsRegistry::registerAsyncGauges()
     registerStallEventsCounter();
     registerSyncAcquireGauge();
     registerCacheHitRateDetailGauge();
-    registerJobQueueBacklogGauge();
     registerJobQueueSaturationGauge();
     registerPeerLedgerSupplyGauge();
     registerSlotCensusGauge();
@@ -1817,53 +1878,6 @@ MetricsRegistry::registerCacheHitRateDetailGauge()
                     opentelemetry::metrics::ObserverResultT<double>>>(result)
                     ->Observe(
                         static_cast<double>(rate), {{label::metric, lval::shamap_cache::treenode}});
-            }
-            catch (...)  // NOLINT(bugprone-empty-catch)
-            {
-                // Silently skip if services are not yet ready.
-            }
-        },
-        this);
-}
-
-void
-MetricsRegistry::registerJobQueueBacklogGauge()
-{
-    // --- Sync diagnostics: which job types are starved right now? ---
-    // The existing job_* counters and histograms describe jobs that already
-    // moved. This is instantaneous occupancy, and `deferred` in particular
-    // has no other exposure: a job held back by its type's concurrency limit
-    // counts as neither waiting nor running anywhere else.
-    jobQueueBacklogGauge_ = meter_->CreateInt64ObservableGauge(
-        metric::jobqBacklog, "JobQueue occupancy per job type (waiting/running/deferred)");
-    jobQueueBacklogGauge_->AddCallback(
-        [](opentelemetry::metrics::ObserverResult result, void* state) {
-            auto* self = static_cast<MetricsRegistry*>(state);
-            if (self->callbacksDetached_.load(std::memory_order_acquire))
-                return;
-            auto& app = self->app_;
-
-            try
-            {
-                auto observe = [&](char const* field, std::string const& jobType, int64_t value) {
-                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
-                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
-                        ->Observe(value, {{label::metric, field}, {label::jobType, jobType}});
-                };
-
-                // One snapshot under one lock acquire, so the three fields of
-                // a type are mutually consistent rather than read at three
-                // different instants.
-                for (auto const& count : app.getJobQueue().getJobTypeCounts())
-                {
-                    // The name helper is the single source of the label value,
-                    // the same one the job_*_total counters already use, so the
-                    // two label sets join.
-                    auto const& jobType = JobTypes::name(count.type);
-                    observe(lval::jobq_backlog::waiting, jobType, count.waiting);
-                    observe(lval::jobq_backlog::running, jobType, count.running);
-                    observe(lval::jobq_backlog::deferred, jobType, count.deferred);
-                }
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {

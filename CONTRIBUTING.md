@@ -432,7 +432,7 @@ the C++ layers; a CI check validates the layers that cannot reference a constant
 3. A duration carries its unit as the suffix — `_us`, `_ms` or `_seconds`. The
    unit belongs in the name because the OTel `unit` argument is not surfaced on
    the Prometheus metric name.
-4. A gauge that snapshots current state takes no suffix (`jobq_backlog`,
+4. A gauge that snapshots current state takes no suffix (`jobq_saturation`,
    `sync_state`), and never `_total`.
 5. Label keys are `lower_snake_case` and must have **bounded** cardinality. A
    multi-series gauge discriminates its readings with the `metric` label rather

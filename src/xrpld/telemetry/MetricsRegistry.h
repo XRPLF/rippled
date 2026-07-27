@@ -28,11 +28,11 @@
  * |       +-- rpc_method_finished_total
  * |       +-- rpc_method_errored_total
  * |       +-- rpc_method_us (Histogram)
- * |       +-- job_queued_total
- * |       +-- job_started_total
- * |       +-- job_finished_total
- * |       +-- job_queued_us (Histogram)
- * |       +-- job_running_us (Histogram)
+ * |       +-- job_queued_total{job_type,handler}
+ * |       +-- job_started_total{job_type,handler}
+ * |       +-- job_finished_total{job_type,handler}
+ * |       +-- job_queued_us{job_type,handler} (Histogram)
+ * |       +-- job_running_us{job_type,handler} (Histogram)
  * |       +-- ledgers_closed_total
  * |       +-- validations_sent_total
  * |       +-- validations_checked_total
@@ -64,7 +64,6 @@
  * +-- Clock close offset (local clock skew)
  * +-- Sync state (time to first FULL, network-ledger gate,
  * |               server stall seconds, ledgers behind network)
- * +-- JobQueue backlog (waiting/running/deferred per job type)
  * +-- JobQueue saturation (running tasks vs worker threads vs backlog)
  * +-- Peer ledger supply (how many peers can serve the needed sequence)
  * +-- PeerFinder slot census (slots, attempts, fixed peers, address caches)
@@ -121,9 +120,10 @@
  * // or: mr->recordRpcErrored("server_info", durationUs);
  * }
  *
- * // In PerfLogImp::jobQueue():
+ * // In PerfLogImp::jobQueue(). The second argument is the addJob name;
+ * // it is sanitised internally into the bounded `handler` label.
  * if (auto* mr = app_.getMetricsRegistry())
- * mr->recordJobQueued("ledgerData");
+ * mr->recordJobQueued("ledgerData", "ProcessLData");
  *
  * // Shutdown:
  * metricsRegistry_->stop();
@@ -146,9 +146,11 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
+#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <string_view>
 
@@ -328,27 +330,114 @@ public:
     recordRpcErrored(std::string_view method, std::int64_t durationUs);
 
     /**
+     * The `handler` label value used for any job name that fails the
+     * sanitiser's all-ASCII-letters rule.
+     *
+     * Public because both sanitiseHandler() and its unit tests must agree
+     * on the exact fallback token; a test asserting against its own copy
+     * of the string would not catch a change made here.
+     *
+     * Declared as std::string_view rather than the `constexpr char k[]`
+     * form used for instrument names in MetricsRegistry.cpp: this value is
+     * *returned* by sanitiseHandler(), whose return type is
+     * std::string_view, and is compared against std::string_view in tests.
+     * Matching the type avoids array-to-pointer decay and a needless
+     * strlen at each use.
+     */
+    static constexpr std::string_view kHandlerOther{"other"};
+
+    /**
+     * Reduce a job name to a bounded-cardinality `handler` label value.
+     *
+     * A job type can have several producers — both `RcvGetLedger` and
+     * `RcvGetObjByHash` run as `JtLedgerReq` — so `job_type` alone cannot
+     * attribute a latency spike to one of them. The job name can, but it
+     * cannot be used raw: two names embed a ledger sequence number
+     * (`"Pub" + std::to_string(seq)` in LedgerPersistence.cpp and
+     * `"OB" + std::to_string(...)` in OrderBookDBImpl.cpp), which would
+     * mint a fresh Prometheus series for every ledger.
+     *
+     * The rule is therefore: keep the name only when it is non-empty and
+     * every character is an ASCII letter; otherwise return `"other"`.
+     * Both dynamic names always contain digits, so they always fold to
+     * `"other"`, while every all-letter name is a compile-time literal.
+     * The label domain is thus a function of the literals present in the
+     * source — 43 names plus `"other"` at the time of writing — and
+     * cannot grow at runtime. A name added later that does not satisfy
+     * the rule degrades to `"other"` rather than becoming unbounded,
+     * which is a stronger guarantee than an allowlist that would have to
+     * be maintained by hand.
+     *
+     * Defined inline so unit tests can call it without linking the rest
+     * of the registry: in a telemetry-enabled build MetricsRegistry.cpp
+     * is not compiled into the test binary, so an out-of-line definition
+     * would be unreachable from tests. Being inline also makes it usable
+     * regardless of XRPL_ENABLE_TELEMETRY.
+     *
+     * @param name  The job name as passed to JobQueue::addJob.
+     * @return @p name when it is non-empty and all ASCII letters, else
+     * kHandlerOther.
+     *
+     * @note Pure and reentrant: holds no state, performs no I/O, and is
+     * safe to call concurrently from any thread.
+     * @note The letter test is an explicit ASCII range check rather than
+     * std::isalpha, which classifies by the current C locale. A
+     * locale-dependent test could admit non-ASCII bytes and so
+     * weaken the cardinality bound this function exists to provide.
+     * @note When the name is kept, the returned view aliases @p name, so
+     * it must not outlive the caller's buffer. The kHandlerOther case
+     * returns a view of a static constant and is always valid.
+     *
+     * Example:
+     * @code
+     * sanitiseHandler("RcvGetObjByHash");  // "RcvGetObjByHash"
+     * sanitiseHandler("Pub94512331");      // kHandlerOther  (digits)
+     * sanitiseHandler("");                 // kHandlerOther  (empty)
+     * @endcode
+     */
+    [[nodiscard]] static constexpr std::string_view
+    sanitiseHandler(std::string_view name) noexcept
+    {
+        auto const isAsciiLetter = [](char const c) {
+            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+        };
+
+        if (name.empty() || !std::ranges::all_of(name, isAsciiLetter))
+            return kHandlerOther;
+
+        return name;
+    }
+
+    /**
      * Record a job enqueued event.
      * @param jobType  The job type name (e.g. "ledgerData").
+     * @param jobName  The addJob name, reduced to a bounded `handler`
+     * label by sanitiseHandler(). Distinguishes producers
+     * that share a job type.
      */
     void
-    recordJobQueued(std::string_view jobType);
+    recordJobQueued(std::string_view jobType, std::string_view jobName);
 
     /**
      * Record a job start event.
      * @param jobType        The job type name.
+     * @param jobName        The addJob name; see recordJobQueued().
      * @param queuedDurUs   Time the job spent waiting in the queue (us).
      */
     void
-    recordJobStarted(std::string_view jobType, std::int64_t queuedDurUs);
+    recordJobStarted(std::string_view jobType, std::string_view jobName, std::int64_t queuedDurUs);
 
     /**
      * Record a job finish event.
      * @param jobType         The job type name.
+     * @param jobName         The addJob name; see recordJobQueued().
      * @param runningDurUs   Execution time in microseconds.
      */
     void
-    recordJobFinished(std::string_view jobType, std::int64_t runningDurUs);
+    recordJobFinished(
+        std::string_view jobType,
+        std::string_view jobName,
+        std::int64_t runningDurUs);
 
     // -----------------------------------------------------------------
     // External dashboard parity counters (Tasks 7.9-7.14)
@@ -507,25 +596,27 @@ private:
         rpcDurationHistogram_;
 
     // --- Synchronous instruments (Job Queue) ---
+    // All five carry handler="<sanitised addJob name>" in addition to
+    // job_type, so producers that share a job type stay distinguishable.
     /**
-     * Counter: job_queued_total{job_type="<name>"}
+     * Counter: job_queued_total{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobQueuedCounter_;
     /**
-     * Counter: job_started_total{job_type="<name>"}
+     * Counter: job_started_total{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobStartedCounter_;
     /**
-     * Counter: job_finished_total{job_type="<name>"}
+     * Counter: job_finished_total{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> jobFinishedCounter_;
     /**
-     * Histogram: job_queued_duration_us{job_type="<name>"}
+     * Histogram: job_queued_duration_us{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
         jobQueuedDurationHistogram_;
     /**
-     * Histogram: job_running_duration_us{job_type="<name>"}
+     * Histogram: job_running_duration_us{job_type="<name>",handler="<name>"}
      */
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Histogram<double>>
         jobRunningDurationHistogram_;
@@ -590,12 +681,6 @@ private:
      */
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
         shamapCacheHitRateGauge_;
-    /**
-     * Observable gauge for per-job-type JobQueue occupancy: waiting, running
-     * and deferred counts, keyed by job type.
-     */
-    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
-        jobQueueBacklogGauge_;
     /**
      * Observable gauge for global worker-pool saturation: tasks in flight,
      * configured worker threads, and total jobs queued.
@@ -956,42 +1041,6 @@ private:
     registerCacheHitRateDetailGauge();  // sync diagnostics: treenode cache
 
     /**
-     * Register the `jobq_backlog` gauge.
-     *
-     * Three series per job type, from one JobQueue::getJobTypeCounts()
-     * snapshot, under the `metric` and `job_type` attributes:
-     *
-     *   `waiting` — jobs enqueued and not yet dispatched to a worker.
-     *   `running` — jobs executing on a worker.
-     *   `deferred` — **the signal this gauge exists for.** Jobs held back
-     *     because the type is already at its concurrency limit. The
-     *     sync-critical types run at limits of 3 (`JtLedgerReq`,
-     *     `JtLedgerData` in JobTypes.h), so during a fresh sync those types
-     *     routinely have work denied a worker, and that state appears in
-     *     neither `waiting` nor `running`.
-     *
-     * Distinct from the job metrics that already exist. `job_queued_total` /
-     * `job_started_total` / `job_finished_total` and the `job_queued_us` /
-     * `job_running_us` histograms are all event-driven and come from
-     * PerfLogImp: they describe jobs that already moved. This gauge is
-     * instantaneous occupancy — what is sitting in the queue right now, which
-     * a rate or a latency quantile cannot express. The StatsD
-     * `jobq_job_count` gauge is queue-wide only, with no per-type split and
-     * no deferred count at all.
-     *
-     * `job_type` is the JobTypes::name() string, matching the label the job
-     * counters already use so the two can be joined. Cardinality is bounded
-     * by the JobType enum (~46 values), and every type is observed on every
-     * tick, so an idle type reports 0 rather than dropping its series.
-     *
-     * @note Pulled on the OTel reader thread (~10 s tick), never on a hot
-     * path. Takes the JobQueue mutex once per tick for three integer reads
-     * per type; no per-job cost is added anywhere.
-     */
-    void
-    registerJobQueueBacklogGauge();  // sync diagnostics: per-type backlog
-
-    /**
      * Register the `jobq_saturation` gauge.
      *
      * Three series under the `metric` attribute, from one
@@ -1004,11 +1053,14 @@ private:
      *     from `[workers]`, node size and hardware concurrency.
      *   `total_waiting` — jobs queued across all types.
      *
-     * The reason this is separate from `jobq_backlog`: when the pool itself
-     * is exhausted, every subsystem waiting behind it looks independently
-     * slow, and each per-type panel invites the wrong conclusion. A
-     * `running_tasks / worker_threads` ratio at 1.0 with a non-zero
-     * `total_waiting` attributes the whole slowdown to pool exhaustion once.
+     * The reason this is separate from the per-job-type gauges JobQueue
+     * itself publishes (`jobq_<type>_waiting` / `_running` / `_deferred`):
+     * when the pool itself is exhausted, every subsystem waiting behind it
+     * looks independently slow, and each per-type panel invites the wrong
+     * conclusion. A `running_tasks / worker_threads` ratio at 1.0 with a
+     * non-zero `total_waiting` attributes the whole slowdown to pool
+     * exhaustion once. Those per-type gauges carry no capacity term at all,
+     * so no reading there can say whether the pool is the cause.
      *
      * @note Pulled on the OTel reader thread (~10 s tick). One atomic load,
      * one plain int read, and one pass over the per-type counters under the

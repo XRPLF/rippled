@@ -914,8 +914,17 @@ def metric_constants(root: Path) -> Tuple[Set[str], Set[str], Set[str]]:
     comment cannot seed the authoritative set (same reasoning as
     `strip_comments` for L1 spans).
 
-    A constant in none of the three namespaces is ignored rather than guessed
-    at, keeping the derivation conservative in the same direction as L1."""
+    Two header styles are recognised, because both are in use:
+
+    * Namespaced: constants sit inside `namespace metric` / `label` / `lval`,
+      and the enclosing namespace decides the bucket.
+    * Flat `k`-prefixed: a header with no such namespaces names the role in the
+      identifier instead -- `kLabelFoo` is a label key, `kResultFoo` and
+      `kReasonFoo` are label values. Used by the per-subsystem headers.
+
+    A constant that neither sits in one of the three namespaces nor carries a
+    recognised prefix is ignored rather than guessed at, keeping the derivation
+    conservative in the same direction as L1."""
     names: Set[str] = set()
     keys: Set[str] = set()
     values: Set[str] = set()
@@ -929,6 +938,14 @@ def metric_constants(root: Path) -> Tuple[Set[str], Set[str], Set[str]]:
             for block in namespace_spans(text, ns):
                 for m in METRIC_CONST_DEF.finditer(block):
                     bucket.add(m.group(2))
+        # Flat style: classify by identifier prefix. Only constants outside the
+        # namespaced blocks reach here, so a namespaced header is unaffected.
+        for m in METRIC_CONST_DEF.finditer(text):
+            ident, value = m.group(1), m.group(2)
+            if ident.startswith("kLabel"):
+                keys.add(value)
+            elif ident.startswith(("kResult", "kReason")):
+                values.add(value)
     return names, keys, values
 
 

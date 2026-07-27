@@ -146,6 +146,7 @@ words:
   - hwrap
   - ifndef
   - inequation
+  - initialiser
   - insuf
   - insuff
   - invasively
@@ -286,6 +287,11 @@ words:
   - rustfmt
   - rustup
   - sahyadri
+  - sanitisation
+  - sanitise
+  - sanitised
+  - sanitiser
+  - sanitising
   - Satoshi
   - scons
   - Schnorr
@@ -305,6 +311,7 @@ words:
   - sles
   - soci
   - socidb
+  - speciality
   - sponsee
   - sponsees
   - SRPMS
@@ -365,6 +372,7 @@ words:
   - unsquelch
   - unsquelched
   - unsquelching
+  - unstored
   - unvalidated
   - unveto
   - unvetoed
@@ -375,6 +383,7 @@ words:
   - vfalco
   - vinnie
   - wasmi
+  - werror
   - wextra
   - wptr
   - writeme
