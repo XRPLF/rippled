@@ -14,18 +14,23 @@
 #include <xrpl/server/Port.h>
 
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/error.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address_v4.hpp>
 #include <boost/asio/ip/address_v6.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/dynamic_body.hpp>
+#include <boost/beast/http/error.hpp>
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/string_body.hpp>
 #include <boost/beast/http/verb.hpp>
 #include <boost/beast/http/write.hpp>
+#include <boost/system/system_error.hpp>
 
+#include <algorithm>
+#include <array>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -84,6 +89,40 @@ class JSONRPCClient : public AbstractClient
     boost::beast::multi_buffer bout_;
     unsigned rpcVersion_;
 
+    bool disconnected_ = false;
+
+    // Errors that mean the persistent keep-alive connection was dropped by the
+    // server (rather than a genuine protocol failure), so the request can be
+    // safely retried on a fresh connection.
+    static bool
+    droppedConnection(boost::system::error_code const& ec)
+    {
+        namespace error = boost::asio::error;
+        static auto const kDroppedConnectionErrors = std::to_array<boost::system::error_code>({
+            boost::beast::http::error::end_of_stream,
+            error::eof,
+            error::connection_reset,
+            error::connection_aborted,
+            error::broken_pipe,
+            error::not_connected,
+        });
+
+        return std::ranges::any_of(
+            kDroppedConnectionErrors,
+            [&ec](boost::system::error_code const& e) { return ec == e; });
+    }
+
+    // Tear down and re-establish the socket to ep_, discarding any buffered
+    // bytes left over from the dropped connection.
+    void
+    reconnect()
+    {
+        boost::system::error_code ec;
+        stream_.close(ec);
+        bin_.clear();
+        stream_.connect(ep_);
+    }
+
 public:
     explicit JSONRPCClient(Config const& cfg, unsigned rpcVersion)
         : ep_(getEndpoint(cfg)), stream_(ios_), rpcVersion_(rpcVersion)
@@ -91,18 +130,23 @@ public:
         stream_.connect(ep_);
     }
 
-    /*
-        Return value is an Object type with up to three keys:
-            status
-            error
-            result
-    */
+    // Return value is an Object type with up to three keys:
+    //     status
+    //     error
+    //     result
     json::Value
     invoke(std::string const& cmd, json::Value const& params) override
     {
         using namespace boost::beast::http;
         using namespace boost::asio;
         using namespace std::string_literals;
+
+        // Once disconnect() has released the slot, the client must not be
+        // reused (see AbstractClient::disconnect). Refuse rather than let the
+        // failed write/read below trip the reconnect path and silently
+        // re-consume a connection slot, which would defeat disconnectClient().
+        if (disconnected_)
+            Throw<std::logic_error>("JSONRPCClient::invoke called after disconnect()");
 
         request<string_body> req;
         req.method(boost::beast::http::verb::post);
@@ -131,10 +175,29 @@ public:
             req.body() = to_string(jr);
         }
         req.prepare_payload();
-        write(stream_, req);
 
+        // The client keeps a single keep-alive connection for its whole
+        // lifetime, but the server drops idle localhost connections after a few
+        // seconds (BaseHTTPPeer::kTimeoutSecondsLocal). If a slow gap between
+        // requests let the server close the socket, the write/read here fails
+        // with end_of_stream; reconnect and retry the request exactly once.
         response<dynamic_body> res;
-        read(stream_, bin_, res);
+        auto writeAndRead = [&] {
+            write(stream_, req);
+            read(stream_, bin_, res);
+        };
+        try
+        {
+            writeAndRead();
+        }
+        catch (boost::system::system_error const& e)
+        {
+            if (!droppedConnection(e.code()))
+                throw;
+            reconnect();
+            res = {};
+            writeAndRead();
+        }
 
         json::Reader jr;
         json::Value jv;
@@ -150,6 +213,19 @@ public:
     version() const override
     {
         return rpcVersion_;
+    }
+
+    void
+    disconnect() override
+    {
+        if (disconnected_)
+            return;
+
+        disconnected_ = true;
+
+        boost::system::error_code ec;
+        stream_.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+        stream_.close(ec);
     }
 };
 
