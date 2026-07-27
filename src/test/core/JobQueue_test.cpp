@@ -87,7 +87,7 @@ class JobQueue_test : public beast::unit_test::Suite
             BEAST_EXPECT(yieldCount == 4);
         }
         {
-            // Test repeated resume()s until the coroutine completes.
+            // Test repeated post()+join()s until the coroutine completes.
             int yieldCount{0};
             auto const runner = jQueue.postCoroTask(
                 JtClient, "PostCoroTest2", [ycp = &yieldCount](auto runner) -> CoroTask<void> {
@@ -106,11 +106,18 @@ class JobQueue_test : public beast::unit_test::Suite
             // Wait for the Job to run and yield.
             runner->join();
 
-            // Now resume until the CoroTaskRunner says it is done.
+            // Now post()+join() until the CoroTaskRunner says it is done.
+            // resume() requires a prior post() (see the precondition on
+            // CoroTaskRunner::resume()), so the posted job performs the
+            // resume and join() blocks until it completes. yieldCount is
+            // deliberately not atomic: the mutexRun_ handoff inside join()
+            // must provide the happens-before edge that makes the
+            // increment visible to this thread.
             int old = yieldCount;
             while (runner->runnable())
             {
-                runner->resume();  // Resume runs synchronously on this thread.
+                BEAST_EXPECT(runner->post());
+                runner->join();
                 BEAST_EXPECT(++old == yieldCount);
             }
             BEAST_EXPECT(yieldCount == 4);
@@ -128,10 +135,11 @@ class JobQueue_test : public beast::unit_test::Suite
             bool unprotected = false;
             auto const runner = jQueue.postCoroTask(
                 JtClient, "PostCoroTest3", [up = &unprotected](auto) -> CoroTask<void> {
-                    *up = false;
+                    *up = true;
                     co_return;
                 });
             BEAST_EXPECT(runner == nullptr);
+            BEAST_EXPECT(unprotected == false);
         }
     }
 

@@ -6,6 +6,7 @@
 #include <xrpld/rpc/detail/PathRequest.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
@@ -137,9 +138,12 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
                     }
                     else if (request->hasCompletion())
                     {
-                        // One-shot request with completion function
+                        // One-shot request with completion function. Fire the
+                        // completion even if doUpdate throws, so the RPC
+                        // handler blocked in doRipplePathFind is released
+                        // immediately instead of waiting out its timeout.
+                        ScopeExit const complete{[&request] { request->updateComplete(); }};
                         request->doUpdate(cache, false);
-                        request->updateComplete();
                         ++processed;
                     }
                 }

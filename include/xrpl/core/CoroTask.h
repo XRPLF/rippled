@@ -63,7 +63,7 @@ class CoroTask;
  * Usage Examples
  * ==============
  *
- * 1. Basic void coroutine (the most common case in rippled):
+ * 1. Basic void coroutine (the most common case in xrpld):
  *
  *      CoroTask<void> doWork(std::shared_ptr<CoroTaskRunner> runner) {
  *          // do something
@@ -146,7 +146,7 @@ class CoroTask;
  * LIMITATION: Stackless -- cannot suspend from nested non-coroutine calls.
  *   If a coroutine calls a regular function that wants to "yield", it
  *   cannot. Only the immediate coroutine body can use co_await.
- *   This is acceptable for rippled because all yield() sites are shallow.
+ *   This is acceptable for xrpld because all yield() sites are shallow.
  */
 template <>
 class CoroTask<void>
