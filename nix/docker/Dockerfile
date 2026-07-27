@@ -58,7 +58,7 @@ ENV GIT_SSL_CAINFO="/nix/ci-env/etc/ssl/certs/ca-bundle.crt"
 # Externally-built dynamically-linked ELF binaries hard-code the loader path
 # (e.g. /lib64/ld-linux-x86-64.so.2) in their PT_INTERP header. Install it
 # from the Nix store when the base image doesn't already provide one.
-COPY nix/docker/loader-path.sh /tmp/loader-path.sh
+COPY bin/default-loader-path.sh /tmp/loader-path.sh
 
 RUN <<EOF
 target="$(/tmp/loader-path.sh)"
