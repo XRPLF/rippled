@@ -1080,7 +1080,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "###### What this is:\n*The lowest and highest ledger sequence any connected peer offers \u2014 the sequence window the peer set can actually serve from.*\n\n###### How it's computed:\n*peer_ledger_supply series supply_min_seq and supply_max_seq: the minimum and maximum over the ledger ranges advertised by all connected peers.*\n\n###### Reading it:\n*supply_max_seq is the network tip as this node's peers report it. supply_min_seq is the oldest history reachable from the current peer set; anything below it cannot be back-filled from these peers at all.*\n\n###### Healthy range:\n*supply_max_seq advancing with the network, supply_min_seq well below this node's own validated sequence.*\n\n###### Watch for:\n*supply_min_seq sitting above this node's validated sequence \u2014 every connected peer has already pruned the history this node still needs, so the gap can never be closed from this peer set. Pair with Peers Able to Serve Needed Sequence: that panel says how many peers can serve the next ledger, this one says which sequences are on offer at all.*\n\n###### Keywords:\n- **Peer ledger supply window** *(per node)* \u2014 the lowest and highest ledger sequence offered by any connected peer; the span the peer set can serve.\n\n###### Computation boundary:\n*Result: Per node \u2014 each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query selects and aggregates it.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerPeerLedgerSupplyGauge`\n\n###### References:\n[Complete ledger ranges](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#complete-ledger-ranges) \u00b7 [Back-fill / catch-up](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#back-fill-catch-up)",
+      "description": "###### What this is:\n*Two distances that say whether the sequence this node needs is inside the window its peers can serve: how much history is still reachable behind it, and how far the network tip is ahead of it.*\n\n###### How it's computed:\n*History Headroom = this node's validated_ledger_seq minus peer_ledger_supply supply_min_seq. Tip Gap = supply_max_seq minus validated_ledger_seq. Both operands are gated on being above zero, so neither line is drawn until the node has a validated ledger and at least one peer has advertised a range.*\n\n###### Reading it:\n*Plotted as distances rather than absolute sequences on purpose. The raw sequences sit around 105,890,000 and roughly 300,000 apart, so on one linear axis the tip movement that shows whether sync is progressing is a fraction of a percent of the scale and reads as a flat line. Differencing puts the meaning on the axis: zero is the boundary in both cases. History Headroom uses the left axis, Tip Gap the right, because the two differ by orders of magnitude.*\n\n###### Healthy range:\n*History Headroom comfortably positive and roughly steady. Tip Gap at or near zero.*\n\n###### Watch for:\n*History Headroom crossing below zero — every connected peer has pruned the history this node still needs, so the gap can never be closed from this peer set and the node needs different peers. Tip Gap growing steadily means the network is closing ledgers faster than this node validates them. Pair with Peers Able to Serve Needed Sequence: that panel counts how many peers can serve the next ledger, this one says how far outside the served window the node has drifted.*\n\n###### Keywords:\n- **History headroom** *(per node)* — validated sequence minus the lowest sequence any connected peer offers; how much of the history behind this node is still reachable.\n- **Tip gap** *(per node)* — the highest sequence any connected peer offers minus this node's validated sequence; how far behind the peer-reported tip this node is.\n\n###### Computation boundary:\n*Result: Per node — each series is one server's own value.*\n*Computed in xrpld code (MetricsRegistry, OpenTelemetry SDK) and exported as a metric; the collector only forwards it; the Grafana query subtracts the two series and aggregates them.*\n\n###### Source:\n[MetricsRegistry.cpp](https://github.com/XRPLF/rippled/blob/develop/src/xrpld/telemetry/MetricsRegistry.cpp)\n\n###### Function:\n`registerPeerLedgerSupplyGauge`\n\n###### References:\n[Complete ledger ranges](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#complete-ledger-ranges) · [Back-fill / catch-up](https://github.com/XRPLF/rippled/blob/develop/docs/telemetry-glossary.md#back-fill-catch-up)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1088,9 +1088,9 @@
           },
           "custom": {
             "axisBorderShow": false,
-            "axisCenteredZero": false,
+            "axisCenteredZero": true,
             "axisColorMode": "text",
-            "axisLabel": "Ledger Sequence",
+            "axisLabel": "Ledgers",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -1117,7 +1117,7 @@
               "mode": "none"
             },
             "thresholdsStyle": {
-              "mode": "off"
+              "mode": "line"
             }
           },
           "displayName": "${__field.labels.series} ${__field.labels.xrpl_ident}",
@@ -1125,13 +1125,35 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
+              },
+              {
+                "color": "green",
+                "value": 0
               }
             ]
           },
-          "unit": "none"
-        }
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "Tip Gap.*"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.axisLabel",
+                "value": "Ledgers behind tip"
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 12,
@@ -1167,11 +1189,19 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "label_replace(label_join(label_replace(peer_ledger_supply{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=~\"supply_min_seq|supply_max_seq\"}, \"series\", \"$1\", \"metric\", \"(.*)\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "expr": "label_replace(label_join(label_replace((server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"validated_ledger_seq\"} > 0) - ignoring(metric) (peer_ledger_supply{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"supply_min_seq\"} > 0), \"series\", \"History Headroom\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "expr": "label_replace(label_join(label_replace((peer_ledger_supply{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"supply_max_seq\"} > 0) - ignoring(metric) (server_info{service_instance_id=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", xrpl_work_item=~\"$xrpl_work_item\", xrpl_branch=~\"$xrpl_branch\", xrpl_node_role=~\"$xrpl_node_role\", metric=\"validated_ledger_seq\"} > 0), \"series\", \"Tip Gap\", \"\", \"\"), \"xrpl_ident\", \", \", \"service_instance_id\", \"xrpl_branch\", \"xrpl_work_item\"), \"xrpl_ident\", \"[$1]\", \"xrpl_ident\", \"(?:, )*(.*[^, ])(?:, )*\")",
+          "refId": "B"
         }
       ],
-      "title": "Peer Ledger Supply Window",
+      "title": "Peer Supply Window Margin (history headroom vs tip gap)",
       "type": "timeseries"
     },
     {
