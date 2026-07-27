@@ -36,7 +36,28 @@
     "root": {
       "inputs": {
         "nixpkgs": "nixpkgs",
-        "nixpkgs-custom-glibc": "nixpkgs-custom-glibc"
+        "nixpkgs-custom-glibc": "nixpkgs-custom-glibc",
+        "rust-overlay": "rust-overlay"
+      }
+    },
+    "rust-overlay": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1784611586,
+        "narHash": "sha256-OfqgY+0hp/zseZB7uyH0U8kIDPS4scZZCyAurEplvG0=",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "14f58845249f3552a89b07772626b8d3c632fa86",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "type": "github"
       }
     }
   },

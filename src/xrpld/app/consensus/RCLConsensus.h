@@ -1,20 +1,20 @@
 #pragma once
 
-#include <xrpld/app/consensus/RCLCensorshipDetector.h>
 #include <xrpld/app/consensus/RCLCxLedger.h>
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/consensus/RCLCxTx.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/FeeVote.h>
 #include <xrpld/app/misc/NegativeUNLVote.h>
-#include <xrpld/consensus/Consensus.h>
-#include <xrpld/consensus/ConsensusParms.h>
-#include <xrpld/consensus/ConsensusTypes.h>
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/consensus/CensorshipDetector.h>
+#include <xrpl/consensus/Consensus.h>
+#include <xrpl/consensus/ConsensusParms.h>
+#include <xrpl/consensus/ConsensusTypes.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/protocol/Protocol.h>
@@ -85,7 +85,7 @@ class RCLConsensus
         std::atomic<std::chrono::milliseconds> prevRoundTime_{std::chrono::milliseconds{0}};
         std::atomic<ConsensusMode> mode_{ConsensusMode::Observing};
 
-        RCLCensorshipDetector<TxID, LedgerIndex> censorshipDetector_;
+        CensorshipDetector<TxID, LedgerIndex> censorshipDetector_;
         NegativeUNLVote nUnlVote_;
 
         /**
