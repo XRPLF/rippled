@@ -21,20 +21,16 @@
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/json/json_value.h>
 
-#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <cstdint>
-#include <functional>
 #include <limits>
 #include <map>
 #include <memory>
 #include <mutex>
-#include <numeric>
 #include <optional>
 #include <string>
-#include <thread>
 #include <utility>
 #include <vector>
 
@@ -476,7 +472,7 @@ class JobQueue_test : public beast::unit_test::Suite
     {
         testcase("Saturation gauge creation");
 
-        GaugeFixture fixture(1);
+        GaugeFixture const fixture(1);
 
         // JtLedgerReq has limit 3, so it is not special and must be gauged.
         BEAST_EXPECT(!JobTypes::instance().get(JtLedgerReq).special());
@@ -663,7 +659,7 @@ class JobQueue_test : public beast::unit_test::Suite
     {
         testcase("Saturation gauge coverage");
 
-        GaugeFixture fixture(1);
+        GaugeFixture const fixture(1);
         fixture.collector->runHooks();
 
         // Sanity-check the fixture against the job-type table itself, so the

@@ -56,6 +56,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <set>
@@ -209,12 +210,9 @@ constexpr std::array kFoldToOtherHandlers = {
 consteval bool
 allPassThroughUnchanged()
 {
-    for (auto const name : kPassThroughHandlers)
-    {
-        if (MetricsRegistry::sanitiseHandler(name) != name)
-            return false;
-    }
-    return true;
+    return std::ranges::all_of(kPassThroughHandlers, [](auto const name) {
+        return MetricsRegistry::sanitiseHandler(name) == name;
+    });
 }
 
 /**
@@ -223,12 +221,9 @@ allPassThroughUnchanged()
 consteval bool
 allFoldToOther()
 {
-    for (auto const name : kFoldToOtherHandlers)
-    {
-        if (MetricsRegistry::sanitiseHandler(name) != MetricsRegistry::kHandlerOther)
-            return false;
-    }
-    return true;
+    return std::ranges::all_of(kFoldToOtherHandlers, [](auto const name) {
+        return MetricsRegistry::sanitiseHandler(name) == MetricsRegistry::kHandlerOther;
+    });
 }
 
 // Compile-time guarantees. Duplicated at runtime below so a failure names

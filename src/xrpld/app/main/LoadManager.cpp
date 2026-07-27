@@ -13,7 +13,6 @@
 
 #include <atomic>
 #include <chrono>
-#include <cstdint>
 #include <exception>
 #include <memory>
 #include <mutex>
