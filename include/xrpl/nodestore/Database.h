@@ -173,13 +173,25 @@ public:
         return storeCount_;
     }
 
-    std::uint32_t
+    /**
+     * Total number of fetches attempted, whether or not they found anything.
+     *
+     * @return The running count for the lifetime of this process.
+     */
+    std::uint64_t
     getFetchTotalCount() const
     {
         return fetchTotalCount_;
     }
 
-    std::uint32_t
+    /**
+     * Number of fetches that found the object.
+     *
+     * Divide by getFetchTotalCount() to get the read hit rate.
+     *
+     * @return The running count for the lifetime of this process.
+     */
+    std::uint64_t
     getFetchHitCount() const
     {
         return fetchHitCount_;
@@ -191,7 +203,12 @@ public:
         return storeSz_;
     }
 
-    std::uint32_t
+    /**
+     * Total payload bytes returned by successful fetches.
+     *
+     * @return The running byte total for the lifetime of this process.
+     */
+    std::uint64_t
     getFetchSize() const
     {
         return fetchSz_;
@@ -228,9 +245,6 @@ protected:
     beast::Journal const j_;
     Scheduler& scheduler_;
     int fdRequired_{0};
-
-    std::atomic<std::uint32_t> fetchHitCount_{0};
-    std::atomic<std::uint32_t> fetchSz_{0};
 
     // The default is XRP_LEDGER_EARLIEST_SEQ (32570) to match the XRP ledger
     // network's earliest allowed ledger sequence. Can be set through the
@@ -269,6 +283,23 @@ private:
     std::atomic<std::uint64_t> storeCount_{0};
     std::atomic<std::uint64_t> storeSz_{0};
     std::atomic<std::uint64_t> fetchTotalCount_{0};
+
+    /**
+     * Fetches that found the object.
+     *
+     * 64-bit because a 32-bit counter wraps on a long-lived node, which
+     * silently corrupts the read hit rate.
+     */
+    std::atomic<std::uint64_t> fetchHitCount_{0};
+
+    /**
+     * Payload bytes returned by successful fetches.
+     *
+     * 64-bit for the same reason: at production read rates 32 bits wraps
+     * in under an hour.
+     */
+    std::atomic<std::uint64_t> fetchSz_{0};
+
     std::atomic<std::uint64_t> fetchDurationUs_{0};
     std::atomic<std::uint64_t> storeDurationUs_{0};
 

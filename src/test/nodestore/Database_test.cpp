@@ -23,9 +23,11 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 namespace xrpl::NodeStore {
@@ -524,6 +526,94 @@ public:
 
     //--------------------------------------------------------------------------
 
+    /**
+     * Verify the fetch counters are 64-bit and accumulate exact values.
+     *
+     * These counters run for the whole process lifetime. A 32-bit byte
+     * counter wraps in under an hour at production read rates, which
+     * silently corrupts any ratio built from it.
+     */
+    void
+    testCounterWidths()
+    {
+        testcase("Fetch counters are 64-bit");
+
+        // The accessors must not narrow the widened members back to 32 bits.
+        static_assert(
+            std::is_same_v<
+                decltype(std::declval<Database const&>().getFetchTotalCount()),
+                std::uint64_t>,
+            "getFetchTotalCount must be 64-bit");
+        static_assert(
+            std::is_same_v<
+                decltype(std::declval<Database const&>().getFetchHitCount()),
+                std::uint64_t>,
+            "getFetchHitCount must be 64-bit");
+        static_assert(
+            std::is_same_v<decltype(std::declval<Database const&>().getFetchSize()), std::uint64_t>,
+            "getFetchSize must be 64-bit");
+
+        // A 64-bit counter must be able to represent the byte totals a
+        // long-lived node reaches. 32 bits cannot.
+        static_assert(
+            std::numeric_limits<std::uint64_t>::max() > std::numeric_limits<std::uint32_t>::max(),
+            "64-bit counters must exceed the 32-bit ceiling");
+
+        DummyScheduler scheduler;
+
+        beast::TempDir const nodeDb;
+        Section nodeParams;
+        nodeParams.set(Keys::kType, "memory");
+        nodeParams.set(Keys::kPath, nodeDb.path());
+
+        // No cache_size/cache_age is set, so DatabaseNodeImp builds no cache
+        // and every fetch reaches the backend. That makes the counts exact.
+        std::unique_ptr<Database> db =
+            Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal_);
+
+        // A fresh database has counted nothing.
+        BEAST_EXPECT(db->getFetchTotalCount() == 0);
+        BEAST_EXPECT(db->getFetchHitCount() == 0);
+        BEAST_EXPECT(db->getFetchSize() == 0);
+
+        // Store a small batch and record the exact payload byte total.
+        constexpr std::uint64_t kNumStored = 8;
+        auto const stored = createPredictableBatch(static_cast<int>(kNumStored), 12345);
+        BEAST_EXPECT(stored.size() == kNumStored);
+        storeBatch(*db, stored);
+
+        std::uint64_t expectedBytes = 0;
+        for (auto const& object : stored)
+            expectedBytes += object->getData().size();
+
+        // Storing must not move the fetch counters.
+        BEAST_EXPECT(db->getFetchTotalCount() == 0);
+        BEAST_EXPECT(db->getFetchHitCount() == 0);
+        BEAST_EXPECT(db->getFetchSize() == 0);
+
+        // Positive path: every fetch finds its object.
+        for (auto const& object : stored)
+            BEAST_EXPECT(db->fetchNodeObject(object->getHash(), 0) != nullptr);
+
+        BEAST_EXPECT(db->getFetchTotalCount() == kNumStored);
+        BEAST_EXPECT(db->getFetchHitCount() == kNumStored);
+        BEAST_EXPECT(db->getFetchSize() == expectedBytes);
+
+        // Negative path: hashes that were never stored count as attempts but
+        // not as hits, and add no bytes.
+        constexpr std::uint64_t kNumMissing = 5;
+        auto const missing = createPredictableBatch(static_cast<int>(kNumMissing), 999);
+        BEAST_EXPECT(missing.size() == kNumMissing);
+        for (auto const& object : missing)
+            BEAST_EXPECT(db->fetchNodeObject(object->getHash(), 0) == nullptr);
+
+        BEAST_EXPECT(db->getFetchTotalCount() == kNumStored + kNumMissing);
+        BEAST_EXPECT(db->getFetchHitCount() == kNumStored);
+        BEAST_EXPECT(db->getFetchSize() == expectedBytes);
+    }
+
+    //--------------------------------------------------------------------------
+
     void
     testImport(
         std::string const& destBackendType,
@@ -695,6 +785,8 @@ public:
     run() override
     {
         std::int64_t const seedValue = 50;
+
+        testCounterWidths();
 
         testConfig();
 
