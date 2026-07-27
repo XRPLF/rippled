@@ -5472,13 +5472,13 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
     void
     testSendOverdraftBulletproof(FeatureBitset features)
     {
-        // balance is 100
-        testSendOverdraftBulletproofImpl(features, 100);  // SUCCEED
-        testSendOverdraftBulletproofImpl(features, 101);  // FAIL
+        uint64_t const balance = 100;
+        testSendOverdraftBulletproofImpl(features, balance, balance);      // SUCCEED
+        testSendOverdraftBulletproofImpl(features, balance, balance + 1);  // FAIL
     }
 
     void
-    testSendOverdraftBulletproofImpl(FeatureBitset features, unsigned amt)
+    testSendOverdraftBulletproofImpl(FeatureBitset features, unsigned balance, unsigned amt)
     {
         testcase("Send: overdraft prevention via bulletproof");
         using namespace test::jtx;
@@ -5492,7 +5492,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         Env env{*this, features};
         Account const alice("alice"), bob("bob"), issuer("issuer");
 
-        uint64_t const aliceBalance = 100;
+        uint64_t const aliceBalance = balance;
         uint64_t const aliceAmount = amt;
         uint64_t const aliceRemaining = aliceBalance - aliceAmount;
 
@@ -5671,7 +5671,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             amtCommit.data(),
             balanceCommit.data(),
             ctxHash.data());
-        if (!BEAST_EXPECTS(x == errors.first, "Range verification failed"))
+        if (!BEAST_EXPECTS(x == errors.first, "Forged proof passed validation"))
             return;
 
         // Attempt the transaction with forged proof
